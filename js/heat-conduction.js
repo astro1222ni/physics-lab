@@ -33,6 +33,11 @@
   let thermalPaletteVersion = -1;
   let thermalPalette;
   let arrowScale;
+  const records = [];
+  let recordNumber = 0;
+  let probe = 0.5;
+  let plotArea = null;
+  let probePointer = null;
   const flowPositions = [0.13, 0.31, 0.50, 0.69, 0.87];
 
   function selected() { return selection[mode === 'bimetal' ? 'strip' : 'rod']; }
@@ -48,6 +53,9 @@
   }
 
   function updateSettings() {
+    cv.classList.toggle('parallel', mode === 'parallel');
+    $('camFace').textContent = mode === 'bimetal' ? T('正看彎曲', 'Bending profile') : T('看棒側面', 'Side view');
+    $('camSide').textContent = mode === 'bimetal' ? T('斜看雙層', 'Oblique strip view') : T('看棒剖面', 'Section view');
     $('rodControls').hidden = mode === 'bimetal';
     $('stripControls').hidden = mode !== 'bimetal';
     $('playback').hidden = mode === 'bimetal';
@@ -69,7 +77,7 @@
         const sup = document.createElement('sup');
         sup.textContent = '2';
         output.replaceChildren(val(id) + ' cm', sup);
-      } else output.textContent = val(id) + ' ' + unit;
+      } else output.textContent = String(val(id)).replace('-', '−') + ' ' + unit;
     }
   }
 
@@ -114,7 +122,7 @@
         ...read(T('A 自由長度變化', 'A free length change'), format(strip.freeA * 1000, 3) + ' mm'),
         ...read(T('B 自由長度變化', 'B free length change'), format(strip.freeB * 1000, 3) + ' mm'),
         ...read(T('曲率半徑', 'Radius of curvature'), strip.curvature === 0 ? '∞' : format(1 / Math.abs(strip.curvature), 3) + ' m'),
-        ...read(T('端點位移', 'Tip deflection'), format(strip.tip.y * 1000, 2) + ' mm'));
+        ...read(T('端點垂直位移（向下為正）', 'Tip vertical deflection (downward +)'), format(strip.tip.y * 1000, 2) + ' mm'));
       hint.textContent = strip.curvature === 0 ? T('兩層等量伸縮，金屬片維持平直。', 'Both layers change length equally, and the strip stays straight.')
         : strip.curvature > 0 ? T('朝下層 B 彎。', 'Bends toward lower layer B.') : T('朝上層 A 彎。', 'Bends toward upper layer A.');
       return;
@@ -132,6 +140,7 @@
     if (mode === 'series') {
       const profile = profiles[0];
       const t = profile.temperatures[profile.x.length >> 1];
+      rows.push(...read(T('穩態溫降 A／B', 'Steady drops A / B'), format(m.left - m.junction) + ' / ' + format(m.junction - m.right) + ' °C'));
       rows.push(...read(T('當下接面溫度', 'Current junction temperature'), format(t) + ' °C'));
       rows.push(...read(T('穩態接面溫度', 'Steady junction temperature'), format(m.junction) + ' °C'));
       rows.push(...read(T('接面熱流率', 'Junction heat rate'), format(profile.flows[profile.flows.length >> 1]) + ' W'));
@@ -139,6 +148,8 @@
       rows.push(...read(T('A 支路穩態熱流率', 'Branch A steady heat rate'), format(m.rates[0]) + ' W'));
       rows.push(...read(T('B 支路穩態熱流率', 'Branch B steady heat rate'), format(m.rates[1]) + ' W'));
     }
+    rows.push(...read(T('棒內能量變化', 'Change in stored energy'),
+      format(run.paths.reduce((sum, _, i) => sum + C.storedEnergy(run, i), 0)) + ' J'));
     output.replaceChildren(...rows);
     hint.textContent = T('熱流率以向右為正。', 'Rightward heat flow is positive.');
   }
@@ -171,10 +182,28 @@
 
   function flowAt(branch, fraction) {
     const { faceX } = run.paths[branch];
-    const x = fraction * run.model.length;
-    const i = faceX.findIndex(pos => pos >= x);
-    const q = profiles[branch].flows;
-    return q[i - 1] + (q[i] - q[i - 1]) * (x - faceX[i - 1]) / (faceX[i] - faceX[i - 1]);
+    return C.interpolate(faceX, profiles[branch].flows, fraction * run.model.length);
+  }
+
+  function probeText() {
+    const x = probe * run.model.length;
+    return 'x = ' + format(x * 100, 1) + ' cm · ' + profiles.map((profile, i) => {
+      const values = format(C.interpolate(profile.x, profile.temperatures, x)) + ' / ' +
+        format(run.model.temperature(i, x)) + ' °C · ' + format(flowAt(i, probe)) + ' W';
+      return (mode === 'parallel' ? (i ? 'B ' : 'A ') : '') + values;
+    }).join(' ｜ ');
+  }
+
+  function comparable() {
+    const length = val('length') / 100;
+    return records.filter(r => r.mode === mode && r.length === length).slice(-2);
+  }
+
+  function drawTrace(points, tint, dash) {
+    ctx.beginPath();
+    points.forEach(([x, y], i) => { if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+    ctx.strokeStyle = tint; ctx.lineWidth = 1.8;
+    ctx.setLineDash(dash); ctx.stroke(); ctx.setLineDash([]);
   }
 
   function insulation(left, y, width, height) {
@@ -258,7 +287,9 @@
     const top = y + 31, bottom = y + height - 31;
     const wide = width > 430;
     const px = v => left + (right - left) * v / m.length;
-    const extrema = [m.left, m.right, run.initial];
+    plotArea = { left, right, top, bottom };
+    const overlays = comparable();
+    const extrema = [m.left, m.right, run.initial, ...overlays.flatMap(r => [r.left, r.right])];
     const step = Math.max(10, Math.ceil((Math.max(...extrema) - Math.min(...extrema)) / 40) * 10);
     const lo = Math.floor(Math.min(...extrema) / step) * step;
     const hi = Math.max(lo + step * 2, Math.ceil(Math.max(...extrema) / step) * step);
@@ -267,7 +298,8 @@
     D.grid(ctx, left, top, right, bottom, (right - left) / 4, (right - left) / 16, left, bottom);
     D.haloText(ctx, 'T (°C)', left, y + 17, D.c.muted);
     D.haloText(ctx, 'x (cm)', right, y + height - 5, D.c.muted, 'right');
-    const ticks = Math.max(1, Math.min(wide ? 4 : 3, Math.floor((bottom - top) / 17), Math.floor((hi - lo) / step)));
+    let ticks = Math.max(1, Math.min(wide ? 4 : 3, Math.floor((bottom - top) / 18), Math.floor((hi - lo) / step)));
+    while ((hi - lo) % ticks !== 0) ticks--;
     for (let i = 0; i <= ticks; i++) {
       const t = lo + (hi - lo) * i / ticks;
       const p = py(t);
@@ -298,6 +330,14 @@
       xs.forEach((v, j) => { if (j) ctx.lineTo(px(v), py(profile.temperatures[j])); else ctx.moveTo(px(v), py(profile.temperatures[j])); });
       ctx.strokeStyle = color; ctx.lineWidth = i === 0 ? 2.4 : 1.65; ctx.stroke();
     });
+    overlays.forEach((record, index) => record.profiles.forEach((p, branch) => {
+      drawTrace(p.x.map((v, j) => [px(v), py(p.temperatures[j])]), branch ? D.c.neg : D.c.field,
+        index ? [2, 4] : [8, 4, 2, 4]);
+    }));
+    const xProbe = probe * m.length;
+    drawTrace([[px(xProbe), top], [px(xProbe), bottom]], D.c.equi, [2, 2]);
+    profiles.forEach((p, i) => D.ball(ctx, px(xProbe), py(C.interpolate(p.x, p.temperatures, xProbe)),
+      i ? 2.7 : 4, i ? D.c.neg : D.c.pos));
   }
 
   function drawConduction(w, h) {
@@ -315,7 +355,7 @@
     const rodHeight = Math.min(46, Math.max(20, sceneH * 0.24));
     const totalArea = m.parts[0].area + m.parts[1].area;
     profiles.forEach((p, i) => drawRod(left - 2, right + 2,
-      parallel ? sceneH * (0.50 + 0.29 * i) : sceneH * 0.59,
+      parallel ? sceneH * (0.46 + 0.35 * i) : sceneH * 0.59,
       parallel ? rodHeight * Math.sqrt(m.parts[i].area / totalArea) : rodHeight, p, i));
     const top = Math.max(36, sceneH * (parallel ? 0.34 : 0.38));
     const bottom = sceneH * (parallel ? 0.90 : 0.79);
@@ -332,9 +372,12 @@
   function drawStrip(w, h) {
     const length = strip.arcLength;
     const points = Array.from({ length: 81 }, (_, i) => C.arcPoint(length * i / 80, strip.curvature));
-    const highest = Math.min(0, strip.tip.y), lowest = Math.max(0, strip.tip.y);
-    const furthest = Math.max(...points.map(p => p.x), length * 0.55);
-    const scale = Math.min((w - 96) / furthest, (h - 91) / Math.max(lowest - highest, length * 0.16));
+    const overlays = comparable();
+    const outlines = overlays.map(r => Array.from({ length: 81 }, (_, i) => C.arcPoint(r.arcLength * i / 80, r.curvature)));
+    const all = points.concat(...outlines);
+    const highest = Math.min(0, ...all.map(p => p.y)), lowest = Math.max(0, ...all.map(p => p.y));
+    const furthest = Math.max(...all.map(p => p.x), length * 0.55);
+    const scale = Math.max(1e-6, Math.min((w - 96) / furthest, (h - 91) / Math.max(lowest - highest, length * 0.16)));
     const x = 45, y = h * 0.52 - scale * (lowest + highest) / 2;
     D.grid(ctx, 14, 32, w - 14, h - 35, 40, 10, x, y);
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(w - 22, y);
@@ -350,15 +393,19 @@
     });
     D.block(ctx, x - 21, y - 16, 23, 32, D.c.muted);
     const tipX = x + strip.tip.x * scale, tipY = y + strip.tip.y * scale;
-    D.arrow(ctx, tipX, y, tipX, tipY, D.c.probe, 2.2);
+    outlines.forEach((outline, i) => drawTrace(outline.map(p => [x + p.x * scale, y + p.y * scale]),
+      D.c.field, i ? [2, 4] : [8, 4, 2, 4]));
+    const dimensionX = x + furthest * scale + 16;
+    drawTrace([[tipX, tipY], [dimensionX + 3, tipY]], D.c.muted, [3, 4]);
+    D.arrow(ctx, dimensionX, y, dimensionX, tipY, D.c.probe, 2.2);
     D.pill(ctx, 'A · ' + names(selected().a), 14, 27, D.c.pos);
     D.pill(ctx, 'B · ' + names(selected().b), w - 14, 27, D.c.neg, 'right');
-    D.pill(ctx, T('端點位移 ', 'Tip ') + format(strip.tip.y * 1000, 2) + ' mm', w / 2, h - 6, D.c.probe, 'center');
+    D.pill(ctx, T('端點垂直位移 ', 'Vertical tip shift ') + format(strip.tip.y * 1000, 2) + ' mm', w / 2, h - 6, D.c.probe, 'center');
   }
 
   function draw2D() {
     const { width: w, height: h } = cv.getBoundingClientRect();
-    if (!w || !h) return;
+    if (w <= 96 || h <= 91) return;
     const dpr = Math.min(devicePixelRatio || 1, 2);
     const dw = Math.round(w * dpr), dh = Math.round(h * dpr);
     if (cv.width !== dw || cv.height !== dh) { cv.width = dw; cv.height = dh; }
@@ -382,7 +429,7 @@
     texture.colorSpace = THREE.SRGBColorSpace;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
     sprite.position.set(x, y, z);
-    const height = 0.31;
+    const height = Math.min(0.62, Math.max(0.32, 209 / Math.max(1, $('view3').clientWidth)));
     sprite.scale.set(height * crop.width / crop.height, height, 1);
     sprite.renderOrder = 5;
     group.add(sprite);
@@ -409,13 +456,18 @@
           const s = strip.arcLength * i / n;
           const p = C.arcPoint(s, strip.curvature);
           const u = strip.curvature * s;
-          const half = 0.065;
-          const xx = offset + scale * p.x + sign * half * Math.sin(u);
-          const yy = -scale * p.y + sign * half * Math.cos(u);
-          position.push(xx, yy, -0.48, xx, yy, 0.48);
+          // 每層以中面為共同接觸面，外表面、側壁與端面封成實體。
+          for (const [height, z] of [[0,-0.48], [0,0.48], [sign * 0.13,0.48], [sign * 0.13,-0.48]]) {
+            position.push(offset + scale * p.x + height * Math.sin(u), -scale * p.y + height * Math.cos(u), z);
+          }
         }
         const index = [];
-        for (let i = 0; i < n; i++) index.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
+        for (let i = 0; i < n; i++) for (let j = 0; j < 4; j++) {
+          const a = 4 * i + j, b = 4 * i + (j + 1) % 4;
+          index.push(a, b, a + 4, b, b + 4, a + 4);
+        }
+        index.push(0, 2, 1, 0, 3, 2, 4*n, 4*n+1, 4*n+2, 4*n, 4*n+2, 4*n+3);
+        if (sign > 0) index.reverse();
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
         geometry.setIndex(index);
@@ -545,14 +597,17 @@
       ? T('紅色是上層 A，藍色是下層 B。厚度放大。', 'Red is upper layer A, and blue is lower layer B. The thickness is magnified.')
       : T('兩端為定溫熱庫，隔熱套使熱只沿棒長傳遞。棒色越暖，溫度越高。箭長與當地熱流率成正比，本刻度最長箭頭代表 ',
         'Fixed-temperature reservoirs contact insulated rods. Warmer colors show higher temperatures. Arrow length scales with local heat rate. Full length represents ') +
-        format(arrowScale, 2) + ' W.';
+        format(arrowScale, 2) + T(' W。', ' W.') +
+        (active ? '' : T(' 在溫度圖上拖曳或按方向鍵可移動探針。', ' Drag on the temperature plot or use the arrow keys to move the probe.'));
     const legend = $('legend');
-    const legendKey = mode + ':' + D.ver;
+    const overlays = comparable();
+    const legendKey = [mode, D.ver, ...overlays.map(r => r.number)].join(':');
     const items = mode === 'bimetal' ? [] : [
       [D.c.pos, mode === 'series' ? T('當下溫度', 'Current temperature') : T('A 支路', 'Branch A')],
       ...(mode === 'parallel' ? [[D.c.neg, T('B 支路', 'Branch B')]] : []),
       [D.c.probe, T('虛線為穩態溫度', 'Dashed: steady temperature')]
     ];
+    if (overlays.length) items.push([D.c.field, T('對照虛線 ', 'Saved traces ') + overlays.map(r => '#' + r.number).join(' / ')]);
     if (lastLegendKey !== legendKey) legend.replaceChildren(...items.map(([tint, caption]) => {
       const span = document.createElement('span');
       const line = document.createElement('i');
@@ -570,6 +625,8 @@
       ? T('重新導熱', 'Restart conduction') : run && run.time > 0
         ? T('繼續導熱', 'Resume conduction') : T('開始導熱', 'Start conduction');
     if (!playing || run.time - lastReadingTime >= speed * 0.12) {
+      $('probeReadout').hidden = mode === 'bimetal' || !!active;
+      if (mode !== 'bimetal' && !active) $('probeReadout').textContent = T('探針（當下／穩態溫度、熱流率） ', 'Probe (current / steady temperature, heat rate) ') + probeText();
       readings();
       lastReadingTime = run ? run.time : -Infinity;
     }
@@ -608,17 +665,18 @@
   function setMode(next) {
     if (next === mode) return;
     mode = next;
+    plotArea = null;
     resetModel();
-    reportMission('state-changed');
+    reportMission('state-changed', true);
   }
 
-  function reportMission(event) {
+  function reportMission(event, modeEntry = false) {
     if (!window.LabMission || (window.LabShare && window.LabShare.restoring)) return;
     const data = mode === 'bimetal'
       ? { mode, ...selected(), length: val('length') / 100,
         thickness: val('thickness') / 1000, deltaT: val('deltaT'), ...strip }
       : C.measureConduction(run);
-    window.LabMission.emit(event, data);
+    window.LabMission.emit(event, { ...data, modeEntry });
   }
 
   for (const [id, slot] of [['materialA', 'a'], ['materialB', 'b']]) {
@@ -662,18 +720,83 @@
       reportMission('state-changed');
     }
   });
+  function newRow(parent, values) {
+    const row = parent.insertRow();
+    for (const value of values) row.insertCell().textContent = value;
+    return row;
+  }
+
+  for (const [key, m] of Object.entries(C.materials)) {
+    newRow($('constants'), [names(key), m.k, m.rho, m.c, format(m.alpha * 1e6, 0), format(C.diffusivity(m) * 1e6, 2)]);
+  }
+
   $('record').addEventListener('click', () => {
-    $('recordNote').textContent = T('已記錄目前讀數。', 'Current readings recorded.');
+    const number = ++recordNumber;
+    const length = val('length') / 100;
+    const isStrip = mode === 'bimetal';
+    const snapshot = isStrip ? { ...strip } : { left: run.model.left, right: run.model.right, profiles };
+    records.push({ number, mode, length, ...snapshot });
+    if (records.length > 20) { records.shift(); $('recordRows').deleteRow(0); }
+    const setup = $(isStrip ? 'modeBimetal' : mode === 'series' ? 'modeSeries' : 'modeParallel').textContent +
+      ' · A/B ' + names(selected().a) + ' / ' + names(selected().b) + ' · L ' + val('length') + ' cm';
+    const params = isStrip ? 'h ' + val('thickness') + ' mm · ΔT ' + format(val('deltaT'), 1) + ' °C'
+      : T('A 占 ', 'A share ') + val('fraction') + '% · ' + T('面積 ', 'Area ') + format(val('area')) +
+        T(' 平方公分', ' sq cm') + ' · L/R ' + format(run.model.left, 1) + ' / ' + format(run.model.right, 1) + ' °C';
+    const values = isStrip ? T('端點垂直位移 ', 'Vertical tip shift ') + format(strip.tip.y * 1000) + ' mm · κ ' +
+      format(strip.curvature, 4) + ' /m' : format(run.time, 1) + ' s · ' + T('穩態熱流率 ', 'Steady heat rate ') +
+      run.model.rates.map(v => format(v)).join(' / ') + ' W · ' +
+      (mode === 'series' ? T('接面 ', 'Junction ') + format(C.interpolate(profiles[0].x, profiles[0].temperatures, run.model.parts[0].length)) + ' °C · ' : '') +
+      T('探針 ', 'Probe ') + probeText();
+    newRow($('recordRows'), [number, setup + ' · ' + params, values]);
+    $('recordSheet').hidden = false;
+    $('clearRecords').disabled = false;
+    render();
+    $('recordNote').textContent = T('已記錄第 ', 'Saved reading #') + number +
+      T(' 筆。同模式、同原長的最近兩筆以虛線對照。', '. Dashed overlays show the last two readings with the same mode and original length.');
     $('recordNote').hidden = false;
     reportMission('recorded');
+  });
+  $('clearRecords').addEventListener('click', () => {
+    records.length = 0; recordNumber = 0;
+    $('recordRows').replaceChildren();
+    $('recordSheet').hidden = true; $('clearRecords').disabled = true;
+    $('recordNote').textContent = T('量測紀錄已清除。', 'All readings cleared.');
+    $('recordNote').hidden = false;
+    reportMission('records-cleared');
+    render();
+  });
+
+  function moveProbe(event, start) {
+    if (mode === 'bimetal' || !plotArea) return;
+    const rect = cv.getBoundingClientRect();
+    const { left, right, top, bottom } = plotArea;
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    if (right <= left || (start && (x < left || x > right || y < top || y > bottom))) return;
+    if (start) { probePointer = event.pointerId; cv.setPointerCapture(probePointer); }
+    probe = Math.min(1, Math.max(0, (x - left) / (right - left)));
+    lastReadingTime = -Infinity;
+    render();
+  }
+  cv.addEventListener('pointerdown', e => { if (e.isPrimary && e.button === 0) moveProbe(e, true); });
+  cv.addEventListener('pointermove', e => { if (e.pointerId === probePointer) moveProbe(e, false); });
+  cv.addEventListener('lostpointercapture', () => { probePointer = null; });
+  LabKeys.attach(cv, {
+    label: T('溫度位置圖，左右方向鍵移動探針，Shift 可大步移動。', 'Temperature profile. Move the probe with arrow keys, hold Shift for larger steps.'),
+    items: [{ name: T('溫度探針', 'Temperature probe'), describe: () => mode === 'bimetal' ? $('readNote').textContent : probeText(),
+      move(dx, dy, big) {
+        if (mode === 'bimetal') return false;
+        probe = Math.max(0, Math.min(1, probe + (dx || dy) * (big ? 0.1 : 0.01)));
+        lastReadingTime = -Infinity; render(); return true;
+      } }]
   });
   document.addEventListener('visibilitychange', () => { last = 0; });
   window.addEventListener('lab:themechange', render);
   (new ResizeObserver(draw2D)).observe(cv);
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: () => ({ materials: { ...selected() } }),
+    get: () => ({ materials: { ...selected() }, probe }),
     set: data => {
       if (!data || !data.materials) return;
+      if (Number.isFinite(data.probe)) probe = Math.min(1, Math.max(0, data.probe));
       for (const slot of ['a', 'b']) {
         const key = data.materials[slot];
         if (Object.hasOwn(C.materials, key) && !(mode === 'bimetal' && key === 'glass')) selected()[slot] = key;
@@ -702,7 +825,8 @@
       controls.dampingFactor = 0.13;
       controls.minDistance = 6;
       controls.maxDistance = 31;
-      scene.add(new THREE.HemisphereLight(D.c.surface, D.c.muted, 2.1));
+      const ambient = new THREE.HemisphereLight(0xffffff, D.c.muted, 2.1);
+      scene.add(ambient);
       const light = new THREE.DirectionalLight(D.shade(D.c.surface, D.dark ? 0.83 : 0), 1.9);
       light.position.set(-3, 7, 5);
       light.castShadow = true;
@@ -773,9 +897,12 @@
         if (canvas.isConnected) switchTo2D(T('3D 連線中斷，已回到平面檢視。', 'The 3D context was lost. The 2D view is active.'));
       });
       cameraAt('default');
+      resize();
       return {
         cameraAt,
         draw() {
+          ambient.groundColor.set(D.c.muted);
+          light.color.set(D.shade(D.c.surface, D.dark ? 0.83 : 0));
           clear();
           drawScene(THREE, group, cameraKey);
           const bounds = new THREE.Box3().setFromObject(group);
@@ -827,9 +954,9 @@
           import('../vendor/three/three.module.min.js'), import('../vendor/three/OrbitControls.js')
         ]);
         if (generation !== token) return;
-        view = makeView(THREE, orbit.OrbitControls);
-        $('view2').hidden = true;
         host.hidden = false;
+        $('view2').hidden = true;
+        view = makeView(THREE, orbit.OrbitControls);
         $('cameraOptions').hidden = false;
         $('view2d').setAttribute('aria-pressed', 'false');
         $('view3d').setAttribute('aria-pressed', 'true');
@@ -852,7 +979,7 @@
   view = installView(
     scene3D,
     T('導熱棒和熱流箭頭，或雙金屬片。拖曳旋轉，兩指縮放。', 'Conducting rods and heat-flow arrows, or the bimetallic strip. Drag to orbit or pinch to zoom.'),
-    key => ({ face: [0, 1.9, 13.75], side: [0.6, 1.9, 13.7], default: [2.6, 3.3, 12.7] })[key],
+    key => ({ face: [0, 1.9, 13.75], side: mode === 'bimetal' ? [4.8, 4.3, 12.8] : [0.6, 1.9, 13.7], default: [2.6, 3.3, 12.7] })[key],
     render
   );
   resetModel();

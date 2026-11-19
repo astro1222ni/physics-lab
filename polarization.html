@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:30">
-  <script src="js/settings.js?v=202611201158"></script>
+<meta name="lab-updated" content="2026-11-17 10:19">
+  <script src="js/settings.js?v=202611171020"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- 11/14 站長要求先下架：等物理子工作串優化後再上線，上線時拿掉這行 -->
   <meta name="robots" content="noindex, nofollow">
-  <title data-en="Polarization of Light | Astro Ni Science Lab">光的偏振｜Astro Ni 科學實驗室</title>
+  <title data-en="Polarization of Light | Astro Ni Lab">光的偏振｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="旋轉偏振片量出透射光強，插入第三片讓互相垂直的兩片重新透光，再找布魯斯特角，轉動檢偏片讓反射光消失。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/polarization.html">
@@ -30,7 +30,16 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"光的偏振","alternateName":"Polarization of Light","description":"旋轉偏振片量出透射光強，插入第三片讓互相垂直的兩片重新透光，再找布魯斯特角，轉動檢偏片讓反射光消失。","url":"https://lab.astroni.org/polarization.html","image":"https://lab.astroni.org/img/og/polarization.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201158">
+  <link rel="stylesheet" href="lab.css?v=202611171020">
+  <style>
+    #recordSheet { margin-top: 16px; }
+    .tablewrap { max-width: 100%; overflow-x: auto; }
+    table.data { width: 100%; border-collapse: collapse; font-size: .92em; font-variant-numeric: tabular-nums; }
+    table.data :is(th, td) { padding: .45em .65em; border-bottom: 1px solid var(--border); text-align: start; }
+    table.data th { color: var(--accent); }
+    table.data :is(th, td):first-child { white-space: nowrap; }
+    @media (max-width: 460px) { table.data :is(th, td) { padding: .35em; } }
+  </style>
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -69,6 +78,7 @@
           <p class="hint" id="sceneHint"></p>
         </div>
         <canvas id="graph" role="img" aria-label="透射光強或反射率對角度的圖" data-en-aria-label="Transmitted intensity or reflectance versus angle"></canvas>
+        <p class="hint" data-en="Drag on the graph or use the arrow keys to change the angle. Hold Shift for a larger step.">在圖上左右拖曳或用方向鍵調整角度，按住 Shift 可大步調整。</p>
         <div class="legend" id="legend"></div>
       </div>
 
@@ -109,6 +119,11 @@
 
         <section class="card" id="mediumCard" hidden>
           <h2 data-en="The two media">兩側介質</h2>
+          <div id="reflectionSource" class="lab-seg" role="group" aria-label="入射光偏振態" data-en-aria-label="Incident polarization">
+            <button type="button" id="incUnpolarized" data-pol="unpolarized" aria-pressed="true" data-en="Unpolarized">無偏振光</button>
+            <button type="button" id="incS" data-pol="s" aria-pressed="false" data-en="Pure s">純 s 偏振</button>
+            <button type="button" id="incP" data-pol="p" aria-pressed="false" data-en="Pure p">純 p 偏振</button>
+          </div>
           <div class="slider">
             <label for="n1" data-en-html="Incident index n&lt;sub&gt;1&lt;/sub&gt;">入射側折射率 n<sub>1</sub></label><output id="n1o" for="n1"></output>
             <input id="n1" type="range" min="1" max="2.5" step="0.01" value="1" data-decimals="3">
@@ -123,6 +138,9 @@
           </div>
           <div id="mediaPresets" class="btns presets" role="group" aria-label="介質組合" data-en-aria-label="Media presets">
             <button type="button" id="airGlass" data-en="Air → glass">空氣 → 玻璃</button>
+            <button type="button" id="airWater" data-en="Air → water">空氣 → 水</button>
+            <button type="button" id="waterAir" data-en="Water → air">水 → 空氣</button>
+            <button type="button" id="airDiamond" data-en="Air → diamond">空氣 → 鑽石</button>
             <button type="button" id="glassAir" data-en="Glass → air">玻璃 → 空氣</button>
           </div>
         </section>
@@ -149,57 +167,67 @@
 
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
+          <div class="btns">
+            <button type="button" id="record" data-en="Record readings">記錄讀數</button>
+            <button type="button" id="clearRecords" data-en="Clear all records" disabled>清除全部紀錄</button>
+          </div>
           <dl class="readout" id="readout"></dl>
           <p class="status" id="readNote" hidden></p>
-          <div class="btns"><button type="button" id="record" data-en="Record readings">記錄讀數</button></div>
           <p class="status" id="recordNote" role="status" hidden></p>
         </section>
       </aside>
     </div>
 
+    <section class="card" id="recordSheet" hidden>
+      <h2 data-en="Recorded readings">量測紀錄</h2>
+      <div class="tablewrap"><table class="data">
+        <thead><tr><th scope="col" data-en="No.">編號</th><th scope="col" data-en="Setup">實驗設定</th><th scope="col" data-en="Measurements">量測結果</th></tr></thead>
+        <tbody id="recordRows"></tbody>
+      </table></div>
+    </section>
+
     <section class="notes">
       <h2 data-en="The physics behind it">背後的物理</h2>
       <h3 data-en="Polarizing filters and Malus’s law">偏振片與馬呂斯定律</h3>
-      <p data-en="A light wave’s electric field oscillates in a plane perpendicular to the beam. An ideal polarizer passes the electric-field component along its transmission axis. For linearly polarized input, \(\theta\) is the angle between the field and that axis.">光的電場在垂直於傳播方向的平面振動。理想偏振片只讓沿透光軸的電場分量通過。若入射光已是線偏振，\(\theta\) 是電場方向與透光軸的夾角。</p>
-      <div class="formula">[ E_{parallel}=E_{
-m in}cos	heta,qquad I=I_{
-m in}cos^2	heta ]</div>
-      <p data-en="Unpolarized input loses half its intensity at its first ideal polarizer. Each later filter multiplies the intensity by the squared cosine of the angle from the previous axis. With the outer axes crossed and a middle filter at 45°, the output is \(I_0/8\) for unpolarized input.">無偏振光第一次經過理想偏振片，平均光強變成 \(I_0/2\)。之後每片乘上與上一片軸夾角的 \(\cos^2\theta\)。兩外片相差 90° 時，插入 45° 的中間片，無偏振入射時有 \(I_0/8\) 通過。</p>
+      <p data-en-html="A light wave’s electric field oscillates in a plane perpendicular to the beam. An ideal polarizer passes the electric-field component along its transmission axis. For linearly polarized input, \(\theta\) is the angle between the field and that axis.">光的電場在垂直於傳播方向的平面振動。理想偏振片只讓沿透光軸的電場分量通過。若入射光已是線偏振，\(\theta\) 是電場方向與透光軸的夾角。</p>
+      <div class="formula">\[ E_{\parallel}=E_{\mathrm{in}}\cos\theta,\qquad I=I_{\mathrm{in}}\cos^2\theta \]</div>
+      <p data-en-html="Unpolarized input loses half its intensity at its first ideal polarizer. Each later filter multiplies the intensity by the squared cosine of the angle from the previous axis. With the outer axes crossed and a middle filter at 45°, the output is \(I_0/8\) for unpolarized input.">無偏振光第一次經過理想偏振片，平均光強變成 \(I_0/2\)。之後每片乘上與上一片軸夾角的 \(\cos^2\theta\)。兩外片相差 90° 時，插入 45° 的中間片，無偏振入射時有 \(I_0/8\) 通過。</p>
 
       <h3 data-en="Fresnel equations and Brewster’s angle">菲涅耳公式與布魯斯特角</h3>
       <p data-en="At a flat boundary between lossless, nonmagnetic media, the s electric field is perpendicular to the plane of incidence and the p electric field is parallel to that plane. Angles are measured from the normal.">在兩種無吸收、非磁性介質的平界面，s 偏振的電場垂直入射面，p 偏振的電場平行入射面。角度相對界面法線量起。</p>
-      <div class="formula">[ n_1sin	heta_i=n_2sin	heta_t ]</div>
-      <div class="formula">[ R_s=left(rac{n_1cos	heta_i-n_2cos	heta_t}{n_1cos	heta_i+n_2cos	heta_t}
-ight)^2 ]</div>
-      <div class="formula">[ R_p=left(rac{n_2cos	heta_i-n_1cos	heta_t}{n_2cos	heta_i+n_1cos	heta_t}
-ight)^2 ]</div>
-      <p data-en="For distinct indices, Brewster’s angle satisfies \(\tan\theta_B=n_2/n_1\). The reflected and refracted rays are perpendicular and \(R_p=0\). Only the s component remains in the reflection of unpolarized light, while p-polarized input transmits entirely. At total internal reflection, \(R_s=R_p=1\).">兩側折射率不同時，布魯斯特角滿足 \(\tan\theta_B=n_2/n_1\)。這時反射線與折射線垂直、\(R_p=0\)。對無偏振入射光，反射光只剩 s 分量；p 入射光則完全透射。全反射時 \(R_s=R_p=1\)。</p>
+      <div class="formula">\[ n_1\sin\theta_i=n_2\sin\theta_t \]</div>
+      <div class="formula">\[ R_s=\left(\frac{n_1\cos\theta_i-n_2\cos\theta_t}{n_1\cos\theta_i+n_2\cos\theta_t}\right)^2 \]</div>
+      <div class="formula">\[ R_p=\left(\frac{n_2\cos\theta_i-n_1\cos\theta_t}{n_2\cos\theta_i+n_1\cos\theta_t}\right)^2 \]</div>
+      <p data-en-html="For distinct indices, Brewster’s angle satisfies \(\tan\theta_B=n_2/n_1\). The reflected and refracted rays are perpendicular and \(R_p=0\). Only the s component remains in the reflection of unpolarized light, while p-polarized input transmits entirely. At total internal reflection, \(R_s=R_p=1\).">兩側折射率不同時，布魯斯特角滿足 \(\tan\theta_B=n_2/n_1\)。這時反射線與折射線垂直、\(R_p=0\)。對無偏振入射光，反射光只剩 s 分量；p 入射光則完全透射。全反射時 \(R_s=R_p=1\)。</p>
 
+      <p data-en="For unpolarized incidence at Brewster’s angle, all of the p component and part of the s component enter the second medium. The transmitted light is therefore only partially polarized. Select pure p to compare. At normal incidence the s and p directions use the limiting plane shown in the diagram.">無偏振光以布魯斯特角入射時，全部的 p 分量和一部分的 s 分量進入第二介質，因此折射光只有部分偏振。可切換成純 p 光作對照。正向入射時，圖上的 s、p 方向沿用斜入射趨近法線時的定義。</p>
       <h3 data-en="What to look for">觀察重點</h3>
       <ul>
         <li data-en="Keep polarizer A fixed, rotate analyzer C, and find the brightest and dimmest orientations.">保持偏振片 A 不動，轉動檢偏片 C，找出最亮和最暗的方向。</li>
         <li data-en="Cross the outer filters and rotate B. Check where the intensity reaches its maximum.">交叉兩外片後，轉中間片 B，觀察光強不是隨著 B 的角度一直增加。</li>
         <li data-en="Compare s and p reflectance at Brewster’s angle and at total internal reflection. Use 3D to identify the plane of incidence.">比較布魯斯特角與全反射時的 s、p 反射率，並切到 3D 找入射面。</li>
       </ul>
-      <p data-en="Rotate the analyzer in the reflected beam to measure its polarization. Its axis makes angle \(\phi\) with s. Because the incident light is unpolarized, the two reflected intensities contribute separately. At Brewster’s angle the 90° setting blocks the reflected light.">旋轉反射光路上的檢偏片，就能測出反射光的偏振。透光軸與 s 的夾角為 \(\phi\)。入射光無偏振，反射的 s、p 兩分量各自投影後，再把光強相加。在布魯斯特角時，轉到 90° 就能擋掉反射光。</p>
-      <div class="formula">\[ I_{\rm analyzer}/I_0=\tfrac12(R_s\cos^2\phi+R_p\sin^2\phi) \]</div>
+      <p data-en-html="Rotate the analyzer in the reflected beam to measure its polarization. Its axis makes angle \(\phi\) with s. Because the incident light is unpolarized, the two reflected intensities contribute separately. At Brewster’s angle the 90° setting blocks the reflected light.">旋轉反射光路上的檢偏片，就能測出反射光的偏振。透光軸與 s 的夾角為 \(\phi\)。入射光無偏振，反射的 s、p 兩分量各自投影後，再把光強相加。在布魯斯特角時，轉到 90° 就能擋掉反射光。</p>
+      <div class="formula">\[ \frac{I_{\mathrm{an}}}{I_0}=\tfrac12\left(R_s\cos^2\phi+R_p\sin^2\phi\right) \]</div>
       <p data-en="Field arrow length in the transverse diagrams is proportional to amplitude, and intensity to amplitude squared. The first unpolarized beam is shown with several directions, and its blocked and passed components use RMS amplitudes. Optical dimensions are schematic.">截面圖上的電場箭頭長度與振幅成正比，光強與振幅平方成正比。第一片前以數個方向示意無偏振光，被擋與通過的分量用均方根振幅表示。光學元件的尺寸為示意。</p>
       <p data-en-html="See &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/1-7-polarization&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenStax on polarization&lt;/a&gt; and &lt;a href=&quot;https://fab.cba.mit.edu/classes/MAS.862/notes/optics.pdf&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;MIT on optics and the Fresnel equations&lt;/a&gt;.">參考 <a href="https://openstax.org/books/university-physics-volume-3/pages/1-7-polarization" target="_blank" rel="noopener">OpenStax 光的偏振</a>、<a href="https://fab.cba.mit.edu/classes/MAS.862/notes/optics.pdf" target="_blank" rel="noopener">MIT 光學與菲涅耳公式</a>。</p>
     </section>
-    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Science Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201158"></script>
-  <script src="js/polarization-core.js?v=202611201158"></script>
-  <script src="js/numinput.js?v=202611201158"></script>
-  <script src="js/drawkit.js?v=202611201158"></script>
-  <script src="js/polarization.js?v=202611201158"></script>
-  <script src="js/firebase-config.js?v=202611201158"></script>
-  <script src="js/missions.js?v=202611201158" data-module="polarization"></script>
-  <script src="js/missions/polarization.js?v=202611201158"></script>
-  <script src="js/stats.js?v=202611201158" data-module="polarization"></script>
-  <script src="js/comments.js?v=202611201158"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/polarization-core.js?v=202611200545"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/polarization.js?v=202611200545"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="polarization"></script>
+  <script src="js/missions/polarization.js?v=202611200545"></script>
+  <script src="js/stats.js?v=202611171020" data-module="polarization"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

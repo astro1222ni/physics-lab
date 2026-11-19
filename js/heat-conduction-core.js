@@ -6,7 +6,7 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
 
-  // 常溫下的近似值。k：W/(m·K)，rho：kg/m³，c：J/(kg·K)，alpha：1/K。
+  // 常溫下的近似值。k：W/(m·K)，rho：公斤／立方公尺，c：J/(kg·K)，alpha：1/K。
   const materials = {
     copper: { zh: '銅', en: 'Copper', k: 390, rho: 8960, c: 385, alpha: 17e-6 },
     aluminum: { zh: '鋁', en: 'Aluminum', k: 220, rho: 2700, c: 900, alpha: 23e-6 },
@@ -26,6 +26,11 @@
   }
 
   function steady({ mode, left, right, length, area, fraction, a, b }) {
+    if (!['series', 'parallel'].includes(mode) || !Object.hasOwn(materials, a) || !Object.hasOwn(materials, b) ||
+        ![left, right, length, area, fraction].every(Number.isFinite) ||
+        length <= 0 || area <= 0 || fraction <= 0 || fraction >= 1) {
+      throw new RangeError('導熱棒需要有效材料、正長度、正截面積及介於零與一之間的占比。');
+    }
     const parallel = mode === 'parallel';
     const parts = [
       { material: materials[a], length: parallel ? length : length * fraction, area: parallel ? area * fraction : area },
@@ -142,6 +147,15 @@
     return { x, temperatures, flows, maxGap };
   }
 
+  // 網格中心、接面與兩端均可取樣。面座標的浮點尾差不應造成外插。
+  function interpolate(xs, values, x) {
+    if (x <= xs[0]) return values[0];
+    if (x >= xs[xs.length - 1]) return values[values.length - 1];
+    const hi = xs.findIndex(v => v >= x);
+    const f = (x - xs[hi - 1]) / (xs[hi] - xs[hi - 1]);
+    return values[hi - 1] + f * (values[hi] - values[hi - 1]);
+  }
+
   function storedEnergy(run, branch) {
     const { temperatures, capacity } = run.paths[branch];
     return temperatures.reduce((total, t, i) => total + (t - run.initial) * capacity[i], 0);
@@ -178,5 +192,5 @@
   }
 
   return { materials, initialTemperature, diffusivity, thermalResistance, steady,
-    createRun, advance, sample, storedEnergy, measureConduction, expansion, arcPoint };
+    createRun, advance, sample, interpolate, storedEnergy, measureConduction, expansion, arcPoint };
 });

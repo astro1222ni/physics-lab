@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:30">
-  <script src="js/settings.js?v=202611201158"></script>
+<meta name="lab-updated" content="2026-11-17 10:19">
+  <script src="js/settings.js?v=202611171020"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- 11/14 站長要求先下架：等物理子工作串優化後再上線，上線時拿掉這行 -->
   <meta name="robots" content="noindex, nofollow">
-  <title data-en="Heat Conduction and Thermal Expansion | Astro Ni Science Lab">熱傳導與熱膨脹｜Astro Ni 科學實驗室</title>
+  <title data-en="Heat Conduction and Thermal Expansion | Astro Ni Lab">熱傳導與熱膨脹｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="把不同材料的導熱棒串聯或並聯，觀察局部熱流如何從暫態變成穩態。量出接面溫度與支路熱流，再加熱或冷卻雙金屬片，看看彎曲方向。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/heat-conduction.html">
@@ -30,7 +30,18 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"熱傳導與熱膨脹","alternateName":"Heat Conduction and Thermal Expansion","description":"把不同材料的導熱棒串聯或並聯，觀察局部熱流如何從暫態變成穩態。量出接面溫度與支路熱流，再加熱或冷卻雙金屬片，看看彎曲方向。","url":"https://lab.astroni.org/heat-conduction.html","image":"https://lab.astroni.org/img/og/heat-conduction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["熱學（Heat）","溫度與熱（Temperature and Heat）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201158">
+  <link rel="stylesheet" href="lab.css?v=202611171020">
+  <style>
+    @media (max-width: 460px) { #cv.parallel { aspect-ratio: 4 / 3; height: auto; } }
+    #cv { touch-action: pan-y; }
+    #recordSheet { margin-top: 16px; }
+    .tablewrap { max-width: 100%; overflow-x: auto; }
+    table.data { width: 100%; border-collapse: collapse; font-size: .92em; font-variant-numeric: tabular-nums; }
+    table.data :is(th, td) { padding: .45em .65em; border-bottom: 1px solid var(--border); text-align: start; }
+    table.data th { color: var(--accent); }
+    table.data :is(th, td):first-child { white-space: nowrap; }
+    @media (max-width: 460px) { table.data :is(th, td) { padding: .35em; } }
+  </style>
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -60,6 +71,7 @@
           <canvas id="cv" role="img" aria-label="熱傳導的棒子、溫度對位置圖，或雙金屬片的剖面" data-en-aria-label="Heat-conducting rods and temperature versus position, or a bimetal strip cross-section"></canvas>
         </div>
         <div id="view3" hidden></div>
+        <p class="status" id="probeReadout"></p>
         <div id="playback">
           <div id="playbar" class="btns playbar" role="group" aria-label="導熱操作" data-en-aria-label="Conduction controls">
             <button type="button" id="play" class="primary" data-en="Start conduction">開始導熱</button>
@@ -136,37 +148,51 @@
 
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
+          <div class="btns">
+            <button type="button" id="record" data-en="Record readings">記錄讀數</button>
+            <button type="button" id="clearRecords" data-en="Clear all records" disabled>清除全部紀錄</button>
+          </div>
           <dl class="readout" id="readout"></dl>
           <p class="status" id="readNote" hidden></p>
-          <div class="btns"><button type="button" id="record" data-en="Record readings">記錄讀數</button></div>
           <p class="status" id="recordNote" role="status" hidden></p>
         </section>
       </aside>
     </div>
 
+    <section class="card" id="recordSheet" hidden>
+      <h2 data-en="Recorded readings">量測紀錄</h2>
+      <div class="tablewrap"><table class="data">
+        <thead><tr><th scope="col" data-en="No.">編號</th><th scope="col" data-en="Setup">實驗設定</th><th scope="col" data-en="Measurements">量測結果</th></tr></thead>
+        <tbody id="recordRows"></tbody>
+      </table></div>
+    </section>
+
     <section class="notes">
       <h2 data-en="The physics behind it">背後的物理</h2>
       <h3 data-en="Fourier’s law and thermal resistance">傅立葉定律與熱阻</h3>
-      <p data-en="The heat flow rate \(P\) is the energy crossing a section per second. Taking rightward flow as positive, the steady rate in a uniform rod is proportional to the temperature difference at its ends.">熱流率 \(P\) 是每秒通過截面的熱量。取向右為正，均勻棒在穩態的熱流率與兩端溫差成正比。</p>
-      <div class="formula">[ R=rac{L}{kA}, qquad P=rac{T_L-T_R}{R} ]</div>
+      <p data-en-html="The heat flow rate \(P\) is the energy crossing a section per second. Taking rightward flow as positive, the steady rate in a uniform rod is proportional to the temperature difference at its ends.">熱流率 \(P\) 是每秒通過截面的熱量。取向右為正，均勻棒在穩態的熱流率與兩端溫差成正比。</p>
+      <div class="formula">\[ R=\frac{L}{kA},\qquad P=\frac{T_L-T_R}{R} \]</div>
       <p data-en="In series, both sections carry the same steady heat rate, and the drop in the first section gives the junction temperature. In parallel, both rods contact the same reservoirs and split the heat flow.">串聯時，穩態下兩段的熱流率相同，接面溫度由第一段的溫降求出。並聯時兩棒接觸同一對熱庫，各自分擔熱流。</p>
-      <div class="formula">[ R_{
-m s}=R_A+R_B,quad T_{
-m j}=T_L-P R_A ]</div>
-      <div class="formula">[ rac{1}{R_{
-m p}}=rac{1}{R_A}+rac{1}{R_B},quad P=P_A+P_B ]</div>
+      <div class="formula">\[ R_{\mathrm{s}}=R_A+R_B,\quad T_{\mathrm{j}}=T_L-P R_A \]</div>
+      <div class="formula">\[ \frac{1}{R_{\mathrm{p}}}=\frac{1}{R_A}+\frac{1}{R_B},\quad P=P_A+P_B \]</div>
 
+      <h3 data-en="Room-temperature material properties">常溫材料常數</h3>
+      <p data-en="The steel is carbon steel and the glass is ordinary soda-lime glass. In series the larger resistance takes the larger temperature drop, just as in a voltage divider. Thermal diffusivity measures how rapidly temperature differences spread through a material.">鋼取碳鋼的近似值，玻璃取普通鈉鈣玻璃。串聯時，熱阻較大的一段分到較多溫降，如同串聯電阻分壓。熱擴散率描述溫度變化在材料內傳開的快慢。</p>
+      <div class="tablewrap"><table class="data" data-export="no">
+        <thead><tr><th data-en="Material">材料</th><th>k<br>W/(m·K)</th><th>ρ<br>kg/m<sup>3</sup></th><th>c<br>J/(kg·K)</th><th>α<br>µm/(m·K)</th><th>k/(ρc)<br>mm<sup>2</sup>/s</th></tr></thead>
+        <tbody id="constants"></tbody>
+      </table></div>
       <h3 data-en="From transient to steady conduction">從暫態到穩態</h3>
       <p data-en="The rods start at 20 °C and their ends are brought into contact with fixed-temperature reservoirs. The sides are insulated, the series junction is ideal, and the parallel branches are insulated from one another. The solid curves show the current temperatures and the dashed curve shows the steady solution.">棒內初溫為 20 °C，起始時兩端接上固定溫度的熱庫。模型假設側面隔熱、串聯接觸理想、並聯支路彼此隔熱。圖上實線是當下溫度，虛線是穩態解。</p>
-      <div class="formula">[ 
-ho cA,partial_t T = partial_x!left(kA,partial_x T
-ight) ]</div>
+      <div class="formula">\[ \rho c A\,\partial_t T=\partial_x\!\left(kA\,\partial_x T\right) \]</div>
       <p data-en="The net heat flow into each cell changes its stored heat. The solver uses finite volumes and backward Euler, with the two half-cell resistances setting the interface heat rate. The 3D view uses the same section temperatures and heat rates, with magnified cross-sectional dimensions and uniform temperature within each section.">每小段的熱量變化由兩側熱流差決定。模擬用有限體積法及後向歐拉法，接面熱流由兩個半格熱阻決定。3D 使用同一組截面溫度與熱流，橫向尺寸放大，截面內溫度均勻。</p>
 
       <h3 data-en="Linear expansion and a bimetallic strip">線膨脹與雙金屬片</h3>
-      <div class="formula">[ Delta L=alpha LDelta T,qquad kappa=rac{3,(alpha_A-alpha_B)Delta T}{2h} ]</div>
+      <div class="formula">\[ \Delta L=\alpha L\Delta T,\qquad \kappa=\frac{3(\alpha_A-\alpha_B)\Delta T}{2h} \]</div>
       <p data-en="The free length change is what each layer would undergo on its own. Once bonded, the layer that expands more under heating lies outside the bend and the strip curves toward the other layer. Cooling reverses the bend. The radius and tip displacement use an equal-thickness, equal-Young’s-modulus model with a uniform temperature change and small strain.">自由膨脹量是兩層分開時各自的長度變化。黏合後，受熱時膨脹較多的一層在外側，金屬片朝另一層彎曲。冷卻時彎曲方向對調。此處的半徑與端點位移採等厚、等楊氏模數、均勻升溫的小應變近似。</p>
 
+      <div class="formula">\[ \Delta y=\frac{1-\cos(\kappa s)}{\kappa}\approx\frac{\kappa s^2}{2} \]</div>
+      <p data-en="The arc length s includes the mean free expansion of the two layers. Vertical displacement is measured from the initial horizontal line, positive downward toward B. The straight strip has zero deflection. The approximation applies to small bending angles.">弧長 s 包含兩層的平均自由伸長量。端點垂直位移從原來的水平線量起，朝下層 B 為正，平直時為零。上式的近似適用於小彎角。</p>
       <h3 data-en="What to look for">觀察重點</h3>
       <ul>
         <li data-en="Keep the end temperatures fixed and swap materials A and B. Compare the changes in junction temperature and steady heat rate.">把兩端溫差設成一樣，換一下 A、B 材料的位置。比較接面溫度和穩態熱流率各有什麼變化。</li>
@@ -175,20 +201,22 @@ ight) ]</div>
       </ul>
       <p data-en-html="Material properties are approximate room-temperature values. See &lt;a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenStax on heat transfer&lt;/a&gt;, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/1-3-thermal-expansion&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenStax on thermal expansion&lt;/a&gt;, &lt;a href=&quot;https://ocw.mit.edu/ans7870/18/18.03/s06/tools/HeatEquationHelp.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;MIT on the heat equation&lt;/a&gt;, and &lt;a href=&quot;https://doi.org/10.1364/JOSA.11.000233&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Timoshenko’s bimetallic-strip model&lt;/a&gt;.">材料數值是常溫近似值。參考 <a href="https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer" target="_blank" rel="noopener">OpenStax 熱傳遞</a>、<a href="https://openstax.org/books/university-physics-volume-2/pages/1-3-thermal-expansion" target="_blank" rel="noopener">OpenStax 熱膨脹</a>、<a href="https://ocw.mit.edu/ans7870/18/18.03/s06/tools/HeatEquationHelp.html" target="_blank" rel="noopener">MIT 熱方程</a>、<a href="https://doi.org/10.1364/JOSA.11.000233" target="_blank" rel="noopener">Timoshenko 雙金屬片模型</a>。</p>
     </section>
-    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Science Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201158"></script>
-  <script src="js/heat-conduction-core.js?v=202611201158"></script>
-  <script src="js/numinput.js?v=202611201158"></script>
-  <script src="js/drawkit.js?v=202611201158"></script>
-  <script src="js/heat-conduction.js?v=202611201158"></script>
-  <script src="js/firebase-config.js?v=202611201158"></script>
-  <script src="js/missions.js?v=202611201158" data-module="heat-conduction"></script>
-  <script src="js/missions/heat-conduction.js?v=202611201158"></script>
-  <script src="js/stats.js?v=202611201158" data-module="heat-conduction"></script>
-  <script src="js/comments.js?v=202611201158"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/heat-conduction-core.js?v=202611200545"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/heat-conduction.js?v=202611200545"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="heat-conduction"></script>
+  <script src="js/missions/heat-conduction.js?v=202611200545"></script>
+  <script src="js/stats.js?v=202611171020" data-module="heat-conduction"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

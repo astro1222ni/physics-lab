@@ -15,10 +15,14 @@
   const percent = (v, n = 2) => format(v * 100, n) + ' %';
   const rad = Math.PI / 180;
   const filterIds = { two: ['A', 'C'], three: ['A', 'B', 'C'] };
-  // A fixed set of sample directions keeps the unpolarized illustration still.
+  // 固定取樣方向，讓無偏振光的示意箭頭保持穩定。
   const sampleDirections = [19, 121, 72, 151].map(C.axis);
   let mode = 'two';
   let unpolarized = true;
+  let incidentPol = 'unpolarized';
+  let recordNumber = 0;
+  let graphPointer = null;
+  const polName = pol => ({ unpolarized: T('無偏振光', 'Unpolarized'), s: T('純 s 偏振', 'Pure s'), p: T('純 p 偏振', 'Pure p') })[pol];
   let state;
   let view;
 
@@ -32,6 +36,9 @@
   function updateSettings() {
     const reflection = mode === 'reflection';
     $('sourceCard').hidden = reflection;
+    $('camFace').textContent = reflection ? T('正對入射面', 'Face incidence plane') : T('沿光束看', 'Along the beam');
+    $('camSide').textContent = reflection ? T('斜看入射面', 'Oblique view') : T('由側面看', 'Side view');
+    for (const b of $('reflectionSource').children) b.setAttribute('aria-pressed', String(b.dataset.pol === incidentPol));
     $('filterCard').hidden = reflection;
     $('mediumCard').hidden = !reflection;
     $('filterOptions').hidden = reflection;
@@ -45,7 +52,7 @@
       : T('第一片透射的光強也遵守馬呂斯定律。', 'The intensity after the first filter also follows Malus’s law.');
     modeButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
     ['sourceAngle', 'angleA', 'angleB', 'angleC', 'n1', 'n2', 'incident', 'reflectionAnalyzer'].forEach(id => {
-      $(id + 'o').textContent = val(id) + (id[0] === 'n' ? '' : '°');
+      $(id + 'o').textContent = id[0] === 'n' ? format(val(id), 3) : val(id) + '°';
     });
   }
 
@@ -55,8 +62,9 @@
       const n1 = val('n1'), n2 = val('n2'), inc = val('incident');
       const r = C.fresnel(n1, n2, inc);
       const analyzer = val('reflectionAnalyzer');
-      state = { n1, n2, inc, r, analyzer, brewster: C.brewsterAngle(n1, n2),
-        analyzed: C.reflectedThroughAnalyzer(r, analyzer) };
+      state = { n1, n2, inc, r, analyzer, incidentPol, powers: C.beamPowers(r, incidentPol),
+        critical: C.criticalAngle(n1, n2), brewster: C.brewsterAngle(n1, n2),
+        analyzed: C.reflectedThroughAnalyzer(r, analyzer, incidentPol) };
     } else {
       const ids = filterIds[mode];
       const angles = ids.map(id => val('angle' + id));
@@ -81,19 +89,25 @@
     const note = $('readNote');
     note.hidden = false;
     if (mode === 'reflection') {
-      const { r, brewster } = state;
+      const { r, brewster, critical, powers } = state;
       read.replaceChildren(
         ...row(T('折射角', 'Refraction angle'), r.angleT === null ? '—' : format(r.angleT) + '°'),
         ...row(T('布魯斯特角', 'Brewster’s angle'), brewster === null ? '—' : format(brewster) + '°'),
+        ...row(T('臨界角', 'Critical angle'), critical === null ? '—' : format(critical) + '°'),
         ...row(T('s 反射率', 's reflectance'), percent(r.rs)),
         ...row(T('p 反射率', 'p reflectance'), percent(r.rp)),
-        ...row(T('無偏振光反射率', 'Unpolarized reflectance'), percent(r.reflected)),
-        ...row(T('反射光的偏振度', 'Reflected polarization'), r.polarization === null ? '—' : percent(r.polarization)),
+        ...row(T('入射光的反射率', 'Reflected fraction'), percent(powers.reflected)),
+        ...row(T('反射光的偏振度', 'Reflected polarization'), powers.reflectedDegree === null ? '—' : percent(powers.reflectedDegree)),
+        ...row(T('s／p 穿透率', 's / p transmittance'), percent(r.ts) + ' / ' + percent(r.tp)),
+        ...row(T('入射光的穿透率', 'Transmitted fraction'), percent(powers.transmitted)),
+        ...row(T('折射光的偏振度', 'Transmitted polarization'), powers.transmittedDegree === null ? '—' : percent(powers.transmittedDegree)),
         ...row(T('檢偏片後光強', 'After the analyzer'), percent(state.analyzed)));
       note.textContent = brewster === null ? T('兩側折射率相同，界面沒有反射。', 'Matching refractive indices produce no reflection.')
         : r.totalInternal ? T('全反射：s、p 反射率皆為 100 %。', 'Total internal reflection: both reflectances are 100%.')
           : Math.abs(state.inc - brewster) <= 0.05
-            ? T('接近布魯斯特角，反射光幾乎只剩 s 分量。', 'Near Brewster’s angle, almost all reflected light is s-polarized.')
+            ? (incidentPol === 'p'
+              ? T('接近布魯斯特角，純 p 入射光幾乎全部透射。', 'Near Brewster’s angle, almost all pure p light is transmitted.')
+              : T('接近布魯斯特角，反射光幾乎只剩 s 分量。', 'Near Brewster’s angle, almost all reflected light is s-polarized.'))
             : T('s 垂直入射面，p 平行入射面。', 's is perpendicular to the plane of incidence, and p lies in it.');
       return;
     }
@@ -122,8 +136,8 @@
       line(ctx, D.alpha(D.c.muted, 0.44), 1.05, [a, b], [3, 5]);
       return;
     }
-    line(ctx, D.alpha(tint, 0.29), maxWidth * 1.8 * power, [a, b]);
-    line(ctx, D.mix(tint, D.c.text, 0.13), maxWidth * power, [a, b]);
+    line(ctx, D.alpha(tint, 0.29), maxWidth * 1.6 * Math.sqrt(power), [a, b]);
+    line(ctx, D.mix(tint, D.c.text, 0.13), Math.max(1, maxWidth * Math.sqrt(power)), [a, b]);
   }
 
   function drawFilters(ctx, w, h) {
@@ -145,7 +159,7 @@
       const length = Math.min(31, dx * 0.36);
       glyphs.forEach((field, j) => {
         const x = baseX[i] + dx * (glyphs.length === 1 ? 0.50 : 0.33 + 0.17 * j);
-        // An oblique projection of the plane perpendicular to the beam.
+        // 將垂直光束的截面斜投影到圖上。
         const fx = field.x * length * 0.48;
         const fy = -(field.y + field.x * 0.28) * length;
         D.arrow(ctx, x, rowY, x + fx, rowY + fy, i ? tint.pass : D.c.field, 1.7);
@@ -188,7 +202,7 @@
 
   function drawReflection(ctx, w, h) {
     const tint = colors();
-    const { inc, n1, n2, r } = state;
+    const { inc, n1, n2, r, powers } = state;
     const x = w / 2, y = h * 0.58;
     const distance = Math.min(w * 0.41, h * 0.51);
     const ray = (angle, sx, sy) => [x + sx * Math.sin(angle * rad) * distance, y + sy * Math.cos(angle * rad) * distance];
@@ -202,14 +216,18 @@
     const beamIn = ray(inc, -1, -1), beamR = ray(inc, 1, -1);
     const [ux, uy] = [Math.sin(inc * rad), -Math.cos(inc * rad)];
     const analyzer = [x + (beamR[0] - x) * 0.61, y + (beamR[1] - y) * 0.61];
-    beam(ctx, [x, y], analyzer, r.reflected, tint.axis, 16);
+    beam(ctx, [x, y], analyzer, powers.reflected, tint.axis, 16);
     beam(ctx, analyzer, beamR, state.analyzed, tint.pass, 16);
+    if (powers.reflected > 1e-9) {
+      const d = distance * 0.42;
+      D.arrow(ctx, x + ux * (d - 10), y + uy * (d - 10), x + ux * d, y + uy * d, tint.axis, 1.8);
+    }
     D.arrow(ctx, ...beamIn, x, y, D.mix(tint.light, D.c.text, 0.25), 2.75);
-    if (r.angleT !== null && r.reflected < 1 - 1e-10) {
+    if (r.angleT !== null && powers.transmitted > 1e-10) {
       const refracted = ray(r.angleT, 1, 1);
       refracted[1] = Math.min(h - 19, refracted[1]);
       if (r.angleT < 89.999 && refracted[1] === h - 19) refracted[0] = x + Math.tan(r.angleT * rad) * (refracted[1] - y);
-      D.arrow(ctx, x, y, ...refracted, tint.light, 2.2 + 2.4 * Math.sqrt(1 - r.reflected));
+      D.arrow(ctx, x, y, ...refracted, tint.light, 2.2 + 2.4 * Math.sqrt(powers.transmitted));
     }
     const [ax, ay] = analyzer;
     const cos = Math.cos(state.analyzer * rad);
@@ -219,10 +237,10 @@
     line(ctx, D.alpha(D.c.surface, 0.72), 1.4, [[ax - px * 10, ay - py * 10], [ax + px * 10, ay + py * 10]]);
     D.arrow(ctx, ax - (px * sin + 0.42 * cos) * 11, ay - (py * sin - 0.58 * cos) * 11,
       ax + (px * sin + 0.42 * cos) * 11, ay + (py * sin - 0.58 * cos) * 11, tint.pass, 1.9);
-    if (inc >= 21 && r.reflected > 1e-9) {
+    if (inc >= 21 && powers.reflected > 1e-9) {
       const sx = x + (beamR[0] - x) * 0.35, sy = y + (beamR[1] - y) * 0.35;
-      if (r.rs > 1e-9) D.ball(ctx, sx, sy, Math.sqrt(r.rs) * 8.5, tint.s);
-      const pLength = 22 * Math.sqrt(r.rp);
+      if (powers.reflectedS > 1e-9) D.ball(ctx, sx, sy, Math.sqrt(powers.reflectedS) * 10, tint.s);
+      const pLength = 26 * Math.sqrt(powers.reflectedP);
       D.arrow(ctx, sx, sy, sx + px * pLength, sy + py * pLength, tint.p, 1.8);
     }
     if (inc > 0) {
@@ -230,14 +248,16 @@
       ctx.lineWidth = 1.25; ctx.strokeStyle = D.c.muted; ctx.stroke();
     }
     D.ball(ctx, x, y, 3.8, D.c.field, { glow: 0.16 });
-    D.pill(ctx, 'n1 = ' + n1, w - 13, y - 8, D.c.text, 'right');
-    D.pill(ctx, 'n2 = ' + n2, 12, y + 28, D.c.text);
+    [[1, n1, w - 81, y - 14], [2, n2, 21, y + 17]].forEach(([sub, n, xx, yy]) => {
+      D.vecLabel(ctx, 'n', String(sub), xx, yy, D.c.text);
+      D.haloText(ctx, '= ' + format(n, 3), xx + 12, yy, D.c.text, 'left', 'middle');
+    });
     const labels = [
       [T('入射', 'Incident') + ' ' + format(inc, 1) + '°', 13, 27, D.c.text],
       [T('檢偏後', 'Analyzed') + ' ' + percent(state.analyzed), w - 13, 27, tint.pass]
     ];
     labels.forEach(([label, lx, ly, color], i) => D.pill(ctx, label, lx, ly, color, i ? 'right' : 'left'));
-    if (r.angleT !== null && r.reflected < 1 - 1e-10)
+    if (r.angleT !== null && powers.transmitted > 1e-10)
       D.pill(ctx, T('折射', 'Refracted') + ' ' + format(r.angleT, 1) + '°', w - 13, h - 9, tint.light, 'right');
     else D.pill(ctx, r.totalInternal ? T('全反射', 'Total internal reflection') : T('臨界角', 'Critical angle'),
       w - 13, h - 9, tint.axis, 'right');
@@ -254,8 +274,19 @@
     const py = i => bottom - (bottom - top) * i / max;
     D.grid(ctx, left, top, right, bottom, (right - left) / 6, (right - left) / 18, left, bottom);
     const traces = [[], []];
-    for (let j = 0; j <= 180; j++) {
-      const theta = maxAngle * j / 180;
+    const samples = Array.from({ length: 181 }, (_, j) => maxAngle * j / 180);
+    if (reflection) {
+      samples.push(state.inc);
+      if (state.brewster !== null) samples.push(state.brewster);
+      if (state.critical !== null) {
+        samples.push(state.critical);
+        for (const delta of [1, 0.5, 0.25, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.0001]) {
+          if (state.critical > delta) samples.push(state.critical - delta);
+        }
+      }
+      samples.sort((a, b) => a - b);
+    }
+    for (const theta of samples) {
       if (reflection) {
         const { rs, rp } = C.fresnel(state.n1, state.n2, theta);
         traces[0].push([px(theta), py(rs)]);
@@ -282,6 +313,11 @@
     } else {
       line(ctx, tint.s, 2.25, traces[0]);
       line(ctx, tint.p, 2.25, traces[1], [5, 3]);
+      if (state.critical !== null) {
+        const x = px(state.critical);
+        line(ctx, D.c.equi, 1.4, [[x, top], [x, bottom]], [7, 3]);
+        D.vecLabel(ctx, 'θ', 'c', x, top - 13, D.c.equi);
+      }
       if (state.brewster !== null && $('brewsterMark').checked) {
         const x = px(state.brewster);
         line(ctx, tint.pass, 1.3, [[x, top], [x, bottom]], [3, 4]);
@@ -298,13 +334,17 @@
       D.haloText(ctx, angle + '°', px(angle), bottom + 14, D.c.muted, 'center');
     }
     const xLabel = reflection ? T('入射角', 'Incidence angle') : scanB ? T('中間片 B 角度', 'Middle filter B angle') : T('檢偏片 C 角度', 'Analyzer C angle');
-    D.haloText(ctx, reflection ? 'R (%)' : 'I / I0 (%)', left, 17, D.c.muted);
+    if (reflection) D.haloText(ctx, 'R (%)', left, 17, D.c.muted);
+    else {
+      D.vecLabel(ctx, 'I / I', '0', left + 14, 13, D.c.muted);
+      D.haloText(ctx, '(%)', left + 34, 17, D.c.muted);
+    }
     D.haloText(ctx, xLabel, w / 2, h - 3, D.c.muted, 'center');
   }
 
   function onCanvas(canvas, draw) {
     const { width, height } = canvas.getBoundingClientRect();
-    if (!width || !height) return;
+    if (width <= 56 || height <= 58) return;
     const dpr = Math.min(devicePixelRatio || 1, 2);
     const w = Math.round(width * dpr), h = Math.round(height * dpr);
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -319,7 +359,15 @@
     canvas.width = 320; canvas.height = 64;
     const ctx = canvas.getContext('2d');
     const font = '600 23px ' + D.FONT;
-    const box = D.pill(ctx, text, 12, 42, color, 'left', font);
+    const index = /^n([12]) = /.exec(text);
+    const box = D.pill(ctx, index ? '    ' + text.slice(2) : text, 12, 42, color, 'left', font);
+    if (index) {
+      ctx.save();
+      ctx.translate(box.x + 18, box.y + box.h / 2);
+      ctx.scale(1.55, 1.55);
+      D.vecLabel(ctx, 'n', index[1], 0, 0, color);
+      ctx.restore();
+    }
     // 裁到標籤本身，讓標籤中心與指定座標重合。
     const crop = document.createElement('canvas');
     crop.width = Math.ceil(box.w + 4); crop.height = Math.ceil(box.h + 4);
@@ -328,7 +376,7 @@
     texture.colorSpace = THREE.SRGBColorSpace;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
     sprite.position.set(x, y, z);
-    const height = 0.31;
+    const height = Math.min(0.62, Math.max(0.32, 209 / Math.max(1, $('view3').clientWidth)));
     sprite.scale.set(height * crop.width / crop.height, height, 1);
     sprite.renderOrder = 5;
     group.add(sprite);
@@ -360,9 +408,9 @@
     }
 
     if (mode === 'reflection') {
-      const { inc, r } = state;
-      const medium = mesh(new THREE.BoxGeometry(7.6, 0.72, 3.1), tint.s, { transparent: true, opacity: 0.22, depthWrite: false });
-      medium.position.y = -0.37;
+      const { inc, r, powers } = state;
+      const medium = mesh(new THREE.BoxGeometry(7.6, 2.0, 3.1), tint.s, { transparent: true, opacity: 0.22, depthWrite: false });
+      medium.position.y = -1;
       mesh(new THREE.PlaneGeometry(6.7, 4.8), tint.s, { transparent: true, opacity: 0.073, side: THREE.DoubleSide, depthWrite: false });
       poly([V(0, -1.03, 0), V(0, 2.3, 0)], D.c.muted, 0.60);
       poly([V(-3.35, 0, 0), V(3.35, 0, 0)], D.c.muted, 0.60);
@@ -378,19 +426,42 @@
       filter.quaternion.setFromUnitVectors(V(0, 0, 1), direction);
       filter.position.copy(analyzer);
       poly([analyzer.clone().addScaledVector(axis, -0.37), analyzer.clone().addScaledVector(axis, 0.37)], tint.pass);
-      arrow(incoming, incoming.clone().negate(), tint.light);
-      if (r.reflected > 1e-9) arrow(origin, analyzer, tint.axis);
-      if (state.analyzed > 1e-9) arrow(analyzer, reflected.clone().sub(analyzer), tint.pass);
-      else poly([analyzer, reflected], D.c.muted, 0.24);
-      if (r.angleT !== null && r.reflected < 1 - 1e-10) {
+      // 光束截面與透明度隨光強變化，光路端點由幾何決定。
+      function rayBeam(start, end, power, tone) {
+        if (power <= 1e-9) return;
+        const delta = end.clone().sub(start), length = delta.length();
+        const u = delta.normalize(), amplitude = Math.sqrt(power);
+        const radius = 0.014 + 0.056 * amplitude, head = 0.18 + 0.12 * amplitude;
+        const material = { emissive: tone, emissiveIntensity: 0.4, transparent: true, opacity: 0.38 + 0.60 * amplitude };
+        const shaft = mesh(new THREE.CylinderGeometry(radius, radius, length - head, 14), tone, material);
+        shaft.quaternion.setFromUnitVectors(V(0, 1, 0), u);
+        shaft.position.copy(start).addScaledVector(u, (length - head) / 2);
+        const tip = mesh(new THREE.ConeGeometry(radius * 2.4, head, 14), tone, material);
+        tip.quaternion.copy(shaft.quaternion); tip.position.copy(end).addScaledVector(u, -head / 2);
+      }
+      rayBeam(incoming, origin, 1, tint.light);
+      rayBeam(origin, analyzer, powers.reflected, tint.axis);
+      rayBeam(analyzer, reflected, state.analyzed, tint.pass);
+      if (r.angleT !== null && powers.transmitted > 1e-10) {
         const rt = r.angleT * rad;
-        arrow(origin, V(Math.sin(rt), -Math.cos(rt), 0).multiplyScalar(1.8), tint.light);
+        rayBeam(origin, V(Math.sin(rt), -Math.cos(rt), 0).multiplyScalar(1.8), powers.transmitted, tint.light);
       }
-      if (r.reflected > 1e-10) {
-        const point = reflected.clone().multiplyScalar(0.38);
-        arrow(point, V(0, 0, Math.sqrt(r.rs / 2) * 1.35), tint.s);
-        arrow(point, normal.multiplyScalar(Math.sqrt(r.rp / 2) * 1.35), tint.p);
-      }
+      const point = reflected.clone().multiplyScalar(0.38);
+      arrow(point, V(0, 0, Math.sqrt(powers.reflectedS) * 1.35), tint.s);
+      arrow(point, normal.clone().multiplyScalar(Math.sqrt(powers.reflectedP) * 1.35), tint.p);
+      // 將基底標在光束旁，分量消光時仍能辨別 s、p 方向。
+      const basis = V(-2.45, 0.64, 0.78);
+      const sEnd = basis.clone().add(V(0, 0, 0.82)), pEnd = basis.clone().addScaledVector(normal, 0.82);
+      arrow(basis, sEnd.clone().sub(basis), tint.s);
+      arrow(basis, pEnd.clone().sub(basis), tint.p);
+      const tag = (name, tone, pos) => label3D(THREE, group, name, tone, pos.x, pos.y, pos.z);
+      tag('s', tint.s, sEnd.add(V(-0.24, 0.1, 0.2)));
+      tag('p', tint.p, pEnd.add(V(0.15, -0.12, 0)));
+      tag(T('入射面', 'Plane of incidence'), D.c.text, V(-2.55, 2.04, 0));
+      tag(T('法線', 'Normal'), D.c.muted, V(0, 2.55, 0));
+      tag('n1 = ' + format(state.n1, 3), D.c.text, V(2.9, 0.37, -0.7));
+      tag('n2 = ' + format(state.n2, 3), tint.s, V(-2.7, -1.05, 1.5));
+      tag(T('檢偏片', 'Analyzer'), tint.pass, analyzer.clone().add(V(0.52, 0.44, 0.16)));
       return;
     }
 
@@ -403,7 +474,7 @@
       const points = Array.from({ length: 39 }, (_, i) => {
         const x = a + i * (b - a) / 38;
         const amplitude = 0.86 * Math.cos(4.7 * (x - start) + phase);
-        return V(x, field.y * amplitude, field.x * amplitude);
+        return V(x, field.y * amplitude, -field.x * amplitude);
       });
       poly(points, color);
     };
@@ -420,7 +491,7 @@
     if (sourceAngle === null) {
       sampleDirections.forEach((field, i) => {
         const x = start + 0.39 + (at(0) - start - 0.5) * i / (sampleDirections.length - 1);
-        arrow(V(x, 0, 0), V(0, 0.57 * field.y, 0.57 * field.x), tint.light);
+        arrow(V(x, 0, 0), V(0, 0.57 * field.y, -0.57 * field.x), tint.light);
       });
     } else wave(C.axis(sourceAngle), start + 0.3, at(0), tint.light);
     stages.forEach((stage, i) => {
@@ -433,9 +504,9 @@
       const foot = mesh(new THREE.BoxGeometry(0.22, 0.1, 0.8), D.c.muted);
       foot.position.set(x, -1.01, 0);
       const { axis, field, rejected } = stage;
-      poly([V(x + 0.012, -axis.y, -axis.x), V(x + 0.012, axis.y, axis.x)], tint.axis);
-      arrow(V(x + 0.1, 0, 0), V(0, 1.25 * field.y, 1.25 * field.x), tint.pass);
-      if ($('components').checked) arrow(V(x - 0.1, 0, 0), V(0, 1.25 * rejected.y, 1.25 * rejected.x), tint.stop);
+      poly([V(x + 0.012, -axis.y, axis.x), V(x + 0.012, axis.y, -axis.x)], tint.axis);
+      arrow(V(x + 0.1, 0, 0), V(0, 1.25 * field.y, -1.25 * field.x), tint.pass);
+      if ($('components').checked) arrow(V(x - 0.1, 0, 0), V(0, 1.25 * rejected.y, -1.25 * rejected.x), tint.stop);
       wave(field, x, i + 1 === stages.length ? end - 0.29 : at(i + 1), tint.pass);
     });
   }
@@ -447,7 +518,7 @@
       ? T('入射角從法線量起。藍色為 s 電場，紅色為 p 電場，綠色光束通過檢偏片。可點圖調入射角。', 'Measure incidence from the normal. Blue marks the s field and red marks the p field. The green beam passes through the analyzer. Tap the graph to set incidence.')
       : view && view.active
         ? T('沿途短箭頭與波形表示電場。透光軸為紫色，綠色分量通過，紅色分量被擋下。', 'Small arrows and waves show the field. Purple marks the transmission axes, with passed components in green and blocked components in red.')
-        : T('光束越寬，光強越大。沿途短箭頭表示電場方向。透光軸為紫色，綠色分量通過，紅色分量被擋下。', 'Beam width scales with intensity. Small arrows show field directions. Purple marks the transmission axes, with passed components in green and blocked components in red.');
+        : T('光束越寬，光強越大。沿途短箭頭表示電場方向。透光軸為紫色，綠色分量通過，紅色分量被擋下。', 'Brighter beams are drawn wider. Small arrows show field directions. Purple marks the transmission axes, with passed components in green and blocked components in red.');
     const keys = mode === 'reflection' ? [[tint.s, 's'], [tint.p, 'p']]
       : [[tint.axis, T('透光軸', 'Transmission axis')], [tint.pass, T('通過', 'Passed')], [tint.stop, T('被擋', 'Blocked')]];
     $('legend').replaceChildren(...keys.map(([color, label]) => {
@@ -469,23 +540,45 @@
     onCanvas(graph, drawChart);
   }
 
-  function reportMission(event) {
+  function reportMission(event, modeEntry = false) {
     if (!window.LabMission || (window.LabShare && window.LabShare.restoring)) return;
-    window.LabMission.emit(event, { mode, ...state });
+    window.LabMission.emit(event, { mode, ...state, modeEntry });
   }
 
-  graph.addEventListener('click', event => {
+  const angleControl = () => $(mode === 'reflection' ? 'incident' : mode === 'three' ? 'angleB' : 'angleC');
+  function setGraphAngle(event) {
     const { width, left } = graph.getBoundingClientRect();
+    if (width <= 56) return;
     const u = Math.max(0, Math.min(1, (event.clientX - left - 38) / (width - 56)));
-    const id = mode === 'reflection' ? 'incident' : mode === 'three' ? 'angleB' : 'angleC';
-    N.set($(id), u * (mode === 'reflection' ? 90 : 180));
+    N.set(angleControl(), u * (mode === 'reflection' ? 90 : 180));
+  }
+  graph.addEventListener('pointerdown', e => {
+    if (!e.isPrimary || e.button !== 0) return;
+    graphPointer = e.pointerId; graph.setPointerCapture(graphPointer); setGraphAngle(e);
+  });
+  graph.addEventListener('pointermove', e => { if (graphPointer === e.pointerId) setGraphAngle(e); });
+  graph.addEventListener('pointerup', e => {
+    if (graphPointer !== e.pointerId) return;
+    setGraphAngle(e); graphPointer = null; reportMission('state-changed');
+  });
+  graph.addEventListener('lostpointercapture', () => { graphPointer = null; });
+  LabKeys.attach(graph, {
+    label: T('角度曲線圖，使用方向鍵調整角度。', 'Angle graph. Use arrow keys to change the angle.'),
+    items: [{ name: T('角度游標', 'Angle cursor'), describe: () => val(angleControl().id) + '°',
+      move(dx, dy, big) { const slider = angleControl(); N.set(slider, val(slider.id) + (dx || dy) * (big ? 5 : 0.1)); return true; } }]
   });
 
+  for (const button of $('reflectionSource').children) button.addEventListener('click', () => {
+    if (incidentPol === button.dataset.pol) return;
+    incidentPol = button.dataset.pol;
+    update(); reportMission('state-changed');
+  });
   modeButtons.forEach(b => b.addEventListener('click', () => {
     if (mode === b.dataset.mode) return;
     mode = b.dataset.mode;
+    if (view.active) view.resetCamera();
     update();
-    reportMission('state-changed');
+    reportMission('state-changed', true);
   }));
   [['sourceUnpolarized', true], ['sourceLinear', false]].forEach(([id, next]) => {
     $(id).addEventListener('click', () => {
@@ -498,13 +591,13 @@
   ['angleA', 'angleB', 'angleC', 'sourceAngle', 'n1', 'n2', 'incident', 'reflectionAnalyzer'].forEach(id => {
     $(id).addEventListener('input', update);
     $(id).addEventListener('change', () => {
-      // The two values of a media preset represent one committed setting.
-      if (!applyingPreset) reportMission('state-changed');
+      // 預設介質同時改兩個折射率，只送一次完整設定。
+      if (!applyingPreset && graphPointer === null) reportMission('state-changed');
     });
   });
   ['components', 'brewsterMark'].forEach(id => $(id).addEventListener('input', update));
   let applyingPreset = false;
-  [['airGlass', 1, 1.5], ['glassAir', 1.5, 1]].forEach(([id, n1, n2]) => {
+  [['airGlass', 1, 1.5], ['glassAir', 1.5, 1], ['airWater', 1, 1.333], ['waterAir', 1.333, 1], ['airDiamond', 1, 2.417]].forEach(([id, n1, n2]) => {
     $(id).addEventListener('click', () => {
       if (val('n1') === n1 && val('n2') === n2) return;
       applyingPreset = true;
@@ -518,9 +611,31 @@
     });
   });
   $('record').addEventListener('click', () => {
-    $('recordNote').textContent = T('已記錄目前讀數。', 'Current readings recorded.');
+    const row = $('recordRows').insertRow();
+    const name = modeButtons.find(b => b.dataset.mode === mode).textContent;
+    const setup = mode === 'reflection' ? polName(incidentPol) + ' · ' + format(state.n1, 3) + ' → ' + format(state.n2, 3) +
+      ' · θi ' + format(state.inc) + '° · φ ' + format(state.analyzer) + '°' :
+      (state.sourceAngle === null ? polName('unpolarized') : T('線偏振 ', 'Linear ') + format(state.sourceAngle) + '°') +
+      ' · ' + state.ids.join('/') + ' ' + state.angles.map(a => format(a) + '°').join(' / ');
+    const outcome = mode === 'reflection' ? 'θt ' + (state.r.angleT === null ? '—' : format(state.r.angleT) + '°') +
+      ' · Rs/Rp ' + percent(state.r.rs) + ' / ' + percent(state.r.rp) + ' · R/T ' + percent(state.powers.reflected) + ' / ' +
+      percent(state.powers.transmitted) + ' · ' + T('反射偏振度 ', 'Reflected polarization ') +
+      (state.powers.reflectedDegree === null ? '—' : percent(state.powers.reflectedDegree)) + ' · ' + T('檢偏後 ', 'Analyzed ') + percent(state.analyzed)
+      : state.ids.map((id, i) => id + ' ' + percent(state.stages[i].intensity)).join(' · ') +
+        (mode === 'three' ? ' · ' + T('抽掉 B ', 'Without B ') + percent(state.noMiddle) : '');
+    for (const value of [++recordNumber, name + ' · ' + setup, outcome]) row.insertCell().textContent = value;
+    if ($('recordRows').rows.length > 20) $('recordRows').deleteRow(0);
+    $('recordSheet').hidden = false; $('clearRecords').disabled = false;
+    $('recordNote').textContent = T('已記錄第 ', 'Saved reading #') + recordNumber + T(' 筆。', '.');
     $('recordNote').hidden = false;
     reportMission('recorded');
+  });
+  $('clearRecords').addEventListener('click', () => {
+    $('recordRows').replaceChildren(); recordNumber = 0;
+    $('recordSheet').hidden = true; $('clearRecords').disabled = true;
+    $('recordNote').textContent = T('量測紀錄已清除。', 'All readings cleared.');
+    $('recordNote').hidden = false;
+    reportMission('records-cleared');
   });
   function drawScene2D() {
     const width = scene.clientWidth;
@@ -553,7 +668,8 @@
       controls.dampingFactor = 0.13;
       controls.minDistance = 6;
       controls.maxDistance = 31;
-      scene.add(new THREE.HemisphereLight(D.c.surface, D.c.muted, 2.1));
+      const ambient = new THREE.HemisphereLight(0xffffff, D.c.muted, 2.1);
+      scene.add(ambient);
       const light = new THREE.DirectionalLight(D.shade(D.c.surface, D.dark ? 0.83 : 0), 2.5);
       light.position.set(-3, 7, 5);
       light.castShadow = true;
@@ -624,9 +740,12 @@
         if (canvas.isConnected) switchTo2D(T('3D 連線中斷，已回到平面檢視。', 'The 3D context was lost. The 2D view is active.'));
       });
       cameraAt('default');
+      resize();
       return {
         cameraAt,
         draw() {
+          ambient.groundColor.set(D.c.muted);
+          light.color.set(D.shade(D.c.surface, D.dark ? 0.83 : 0));
           clear();
           drawScene(THREE, group, cameraKey);
           const bounds = new THREE.Box3().setFromObject(group);
@@ -678,9 +797,9 @@
           import('../vendor/three/three.module.min.js'), import('../vendor/three/OrbitControls.js')
         ]);
         if (generation !== token) return;
-        view = makeView(THREE, orbit.OrbitControls);
-        $('view2').hidden = true;
         host.hidden = false;
+        $('view2').hidden = true;
+        view = makeView(THREE, orbit.OrbitControls);
         $('cameraOptions').hidden = false;
         $('view2d').setAttribute('aria-pressed', 'false');
         $('view3d').setAttribute('aria-pressed', 'true');
@@ -696,13 +815,16 @@
 
     return {
       get active() { return view !== null; },
+      resetCamera() { if (view) view.cameraAt('default'); },
       draw() { if (view) view.draw(); }
     };
   }
 
   view = installView(scene3D,
     T('立體檢視：偏振片、電場與光線。拖曳旋轉，兩指縮放。', '3D view of the polarizing filters, electric field and rays. Drag to orbit or pinch to zoom.'),
-    key => ({ face: [10, 1.2, 0.3], side: [0, 1.8, 13.4], default: [2.8, 3.0, 12.1] })[key],
+    key => mode === 'reflection'
+      ? ({ face: [0, 0.1, 12], side: [4.3, 3.6, 10.9], default: [3.1, 2.9, 11.2] })[key]
+      : ({ face: [11, 0.1, 0], side: [0, 1.8, 13.4], default: [2.8, 3.0, 12.1] })[key],
     render
   );
   update();

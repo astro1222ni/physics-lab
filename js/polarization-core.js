@@ -44,6 +44,10 @@
     return n1 === n2 ? null : degrees(Math.atan2(n2, n1));
   }
 
+  function criticalAngle(n1, n2) {
+    return n1 > n2 ? degrees(Math.asin(n2 / n1)) : null;
+  }
+
   function fresnel(n1, n2, angleDeg) {
     if (n1 === n2) {
       return { angleT: angleDeg, rs: 0, rp: 0, ts: 1, tp: 1, reflected: 0, polarization: null, totalInternal: false };
@@ -67,12 +71,22 @@
       polarization: reflected > 0 ? (rs - rp) / (rs + rp) : null, totalInternal: false };
   }
 
-  // Unpolarized incidence leaves mutually incoherent reflected s and p components.
-  // The analyzer angle is measured from s, so projected intensities add.
-  function reflectedThroughAnalyzer(reflection, angle) {
-    const { x, y } = axis(angle);
-    return (reflection.rs * y ** 2 + reflection.rp * x ** 2) / 2;
+  // s、p 純態或無偏振光的兩分量互不干涉。所有能流均以入射光強為單位。
+  function beamPowers(r, source = 'unpolarized') {
+    const s = source === 's' ? 1 : source === 'p' ? 0 : 0.5;
+    const reflectedS = s * r.rs, reflectedP = (1 - s) * r.rp;
+    const transmittedS = s * r.ts, transmittedP = (1 - s) * r.tp;
+    const reflected = reflectedS + reflectedP, transmitted = transmittedS + transmittedP;
+    const degree = (a, b) => a + b > 1e-14 ? Math.abs(a - b) / (a + b) : null;
+    return { reflectedS, reflectedP, reflected, transmitted,
+      reflectedDegree: degree(reflectedS, reflectedP), transmittedDegree: degree(transmittedS, transmittedP) };
   }
 
-  return { axis, angleBetween, transmit, brewsterAngle, fresnel, reflectedThroughAnalyzer };
+  function reflectedThroughAnalyzer(reflection, angle, source = 'unpolarized') {
+    const { reflectedS, reflectedP } = beamPowers(reflection, source);
+    const { x, y } = axis(angle);
+    return reflectedS * y ** 2 + reflectedP * x ** 2;
+  }
+
+  return { axis, angleBetween, transmit, brewsterAngle, criticalAngle, fresnel, beamPowers, reflectedThroughAnalyzer };
 });

@@ -48,4 +48,40 @@ for (const [n1, n2] of [[1, 1.5], [1.5, 1], [1.4, 1.4]]) {
       r.reflected, 1e-13, '互相垂直的兩個檢偏方向加總等於反射光強');
   }
 }
+assert.equal(C.criticalAngle(1, 1.5), null);
+assert.equal(C.criticalAngle(1.5, 1.5), null);
+near(C.criticalAngle(1.5, 1), 41.810314896, 1e-8, '玻璃射向空氣的臨界角');
+for (const [n1, n2] of [[1,1.333],[1.333,1],[1,2.417],[1,1.5],[1.5,1],[1.5,1.5]]) {
+  const b = C.brewsterAngle(n1,n2), c = C.criticalAngle(n1,n2);
+  for (const angle of [0,25, ...(b === null ? [] : [b]), ...(c === null ? [] : [c-0.01,c,c+0.01]), 89.9]) {
+    const r = C.fresnel(n1,n2,angle);
+    for (const source of ['s', 'p', 'unpolarized']) {
+      const beam = C.beamPowers(r,source);
+      near(beam.reflected + beam.transmitted, 1, 1e-12, '各種入射偏振態的能流守恆');
+      near(C.reflectedThroughAnalyzer(r,45,source) + C.reflectedThroughAnalyzer(r,135,source),
+        beam.reflected, 1e-12, '對角檢偏分量加總');
+      if (r.totalInternal) assert.equal(beam.transmittedDegree, null);
+    }
+  }
+}
+{
+  const r = C.fresnel(1,1.5,C.brewsterAngle(1,1.5));
+  const p = C.beamPowers(r,'p'), un = C.beamPowers(r);
+  near(p.transmitted, 1, 1e-12, '純 p 的布魯斯特窗');
+  assert.equal(p.reflectedDegree, null, '消光時不定義偏振度');
+  near(un.reflectedDegree, 1, 1e-12);
+  assert.ok(un.transmittedDegree > 0 && un.transmittedDegree < 1, '無偏振入射的折射光僅部分偏振');
+}
+{
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '../polarization.html'), 'utf8');
+  const katex = require('../vendor/katex/katex.min.js');
+  assert.doesNotMatch(html, /[\x08\x0c]/, '原始頁面不得混入控制字元');
+  const blocks = Array.from(html.matchAll(/<div class="formula">([\s\S]*?)<\/div>/g), m => m[1].trim());
+  assert.equal(blocks.length, 5);
+  for (const block of blocks) {
+    assert.doesNotMatch(block, /[\x00-\x1f]/);
+    assert.match(block, /^\\\[.+\\\]$/);
+    assert.doesNotThrow(() => katex.renderToString(block.slice(2, -2), { displayMode: true, throwOnError: true }));
+  }
+}
 console.log('光的偏振：馬呂斯定律、三片偏振片、菲涅耳公式、全反射與能流守恆均通過');

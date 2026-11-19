@@ -69,4 +69,40 @@ for (const mode of ['series', 'parallel']) {
   assert.equal(C.expansion('aluminum', 'steel', 0.3, 0.0015, 0).tip.y, 0, '零溫差不彎');
 }
 
+for (const field of ['length', 'area', 'fraction']) {
+  for (const value of [0, -1, NaN, Infinity]) assert.throws(() => C.steady({ ...rod, [field]: value }), RangeError);
+}
+assert.throws(() => C.createRun({ ...rod, fraction: 1 }), RangeError);
+for (const mode of ['series', 'parallel']) {
+  const run = C.createRun({ ...rod, mode });
+  C.advance(run, 8);
+  run.paths.forEach((path, i) => {
+    const p = C.sample(run, i), last = path.faceX.length - 1;
+    near(C.interpolate(path.faceX, p.flows, -1e-12), p.flows[0], 0, '探針左端');
+    near(C.interpolate(path.faceX, p.flows, rod.length + 1e-12), p.flows[last], 0, '末端浮點尾差');
+    near(C.interpolate(path.faceX, p.flows, (path.faceX[1] + path.faceX[2]) / 2),
+      (p.flows[1] + p.flows[2]) / 2, 1e-9, '兩截面間內插熱流率');
+    near(C.interpolate(p.x, p.temperatures, rod.length / 2), p.temperatures[p.x.length >> 1], 1e-8, '接面溫度');
+  });
+}
+{
+  const run = C.createRun({ ...rod, left: 80 });
+  C.advance(run, 80);
+  const d = C.measureConduction(run);
+  assert.ok(d.junction - d.currentJunction > 25, '30 cm 棒於 20× 播放逾 4 秒仍能記下暫態');
+  const hot = C.expansion('aluminum', 'steel', 0.6, 0.0008, 150);
+  assert.ok(hot.curvature * hot.arcLength > Math.PI / 2 && hot.tip.y > 0, '大彎角仍量向下垂直位移');
+}
+{
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '../heat-conduction.html'), 'utf8');
+  const katex = require('../vendor/katex/katex.min.js');
+  assert.doesNotMatch(html, /[\x08\x0c]/, '原始頁面不得混入控制字元');
+  const blocks = Array.from(html.matchAll(/<div class="formula">([\s\S]*?)<\/div>/g), m => m[1].trim());
+  assert.equal(blocks.length, 6);
+  for (const block of blocks) {
+    assert.doesNotMatch(block, /[\x00-\x1f]/);
+    assert.match(block, /^\\\[.+\\\]$/);
+    assert.doesNotThrow(() => katex.renderToString(block.slice(2, -2), { displayMode: true, throwOnError: true }));
+  }
+}
 console.log('熱傳導與熱膨脹：串並聯、暫態解析解、熱量守恆、穩態和雙金屬片均通過');
