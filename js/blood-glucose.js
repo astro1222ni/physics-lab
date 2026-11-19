@@ -1,6 +1,12 @@
 /* blood-glucose.js — 「血糖調節」的畫面與互動（計算全部在 blood-glucose-core.js；3D 在 blood-glucose-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const B = window.GlucoseCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -104,8 +110,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -116,7 +121,10 @@
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
   function small(g, s, x, y, col, align, base, size) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (size || 11) + 'px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   function chipHTML(map, attr, cur) {
     return Object.keys(map).map(function (k) {
       return '<button type="button" ' + attr + '="' + k + '" aria-pressed="' + (k === cur) + '">' + T(map[k].zh, map[k].en) + '</button>';
@@ -267,7 +275,7 @@
 
   // ---------- 版面 ----------
   function layout1() {
-    const w = cv.clientWidth || 360;
+    const w = drawingWidth(cv) || 360;
     const wide = w >= 700;
     let L;
     if (wide) {
@@ -569,6 +577,11 @@
 
   // ---------- 指標 ----------
   let dragging = false;
+  function moveCursor(minutes) {
+    if (st1.playing) stopPlay();
+    setCursor(st1.cur + minutes);
+    sndGlu(st1.r.G[st1.cur]);
+  }
   function onPointer(ev) {
     const p = evPos(cv, ev), L = st1.L;
     if (p[0] < L.g.x0 - 6 || p[0] > L.g.x1 + 6 || p[1] > L.ax + 8) return false;
@@ -591,7 +604,7 @@
     label: T('一天的血糖：左右鍵移動時間游標（Shift 一次 1 小時），空白鍵播放或暫停。', 'A day of blood sugar: left and right move the time cursor (Shift for an hour); Space plays or pauses.'),
     items: [{
       name: T('時間游標', 'Time cursor'),
-      move: function (dx, dy, big) { const d = dx || -dy; if (d) { if (st1.playing) stopPlay(); setCursor(st1.cur + d * (big ? 60 : 10)); sndGlu(st1.r.G[st1.cur]); } return !!d; },
+      move: function (dx, dy, big) { const d = dx || -dy; if (d) { moveCursor(d * (big ? 60 : 10)); } return !!d; },
       describe: function () { return T(hhmm(st1.cur) + '，血糖 ' + num(st1.r.G[st1.cur], 0) + ' mg/dL，胰島素 ' + num(st1.r.I[st1.cur], 1) + ' mU/L。', hhmm(st1.cur) + ', glucose ' + num(st1.r.G[st1.cur], 0) + ' mg/dL, insulin ' + num(st1.r.I[st1.cur], 1) + ' mU/L.'); }
     }]
   });
@@ -762,7 +775,7 @@
 
   // ---------- 版面與繪圖 ----------
   function layout2() {
-    const w = cv2.clientWidth || 360;
+    const w = drawingWidth(cv2) || 360;
     const wide = w >= 700;
     let L;
     if (wide) {
@@ -937,6 +950,10 @@
 
   // ---------- 地圖上點選病人 ----------
   let drag2 = false;
+  function movePatient(dx, dy) {
+    if (dx) LabNum.set(el2.b2, Math.max(0, Math.min(BMAX, val(el2.b2) + dx)));
+    if (dy) LabNum.set(el2.s2, Math.max(SMIN, Math.min(SMAX, val(el2.s2) + dy)));
+  }
   function onMap(ev) {
     const q = evPos(cv2, ev), M = st2.L.m;
     if (q[0] < M.x0 - 8 || q[0] > M.x0 + M.s + 8 || q[1] < M.y0 - 8 || q[1] > M.y0 + M.s + 8) return false;
@@ -959,10 +976,7 @@
       move: function (dx, dy, big) {
         if (!dx && !dy) return false;
         const s = big ? 0.25 : 0.05;
-        if (window.LabNum) {
-          if (dx) window.LabNum.set(el2.b2, Math.max(0, Math.min(BMAX, val(el2.b2) + dx * s)));
-          if (dy) window.LabNum.set(el2.s2, Math.max(SMIN, Math.min(SMAX, val(el2.s2) - dy * s)));
-        }
+        movePatient(dx * s, dy * s);
         return true;
       },
       describe: function () { return T('β 細胞功能 ' + num(st2.beta, 2) + '，敏感度 ' + num(st2.si, 2) + '，空腹血糖 ' + num(st2.res.G[0], 0) + '。', 'β-cell function ' + num(st2.beta, 2) + ', sensitivity ' + num(st2.si, 2) + ', fasting glucose ' + num(st2.res.G[0], 0) + '.'); }
@@ -1143,7 +1157,7 @@
   });
   setStatus('status2', T('選一位病人，或在地圖上點一個位置，再按「喝下 75 g、開始試驗」。', 'Choose a patient, or tap a point on the map, then press “Drink 75 g and test”.'));
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
 
@@ -1160,4 +1174,91 @@
     setView: setView, redraw: function () { request1(); request2(); },
     data: eventData
   };
+
+  $('momentPrev').addEventListener('click', function () { moveCursor(-10); });
+  $('momentNext').addEventListener('click', function () { moveCursor(10); });
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
+
+  function mountKeypad() {
+    const canvas = cv2, name = T('病人點', 'Patient marker');
+    function point() {
+      return mapXY(st2.beta, st2.si);
+    }
+    function screenPoint() {
+      const rect = canvas.getBoundingClientRect();
+      if (!(st2.L)) return { x: rect.left, y: rect.top };
+      const [x, y] = point(), scale = rect.width / drawingWidth(canvas);
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    }
+    const activate = () => $('testBtn').click();
+    const pad = LabVPad.mount({
+      id: 'blood-glucose', canvas, step: 0.05, steps: [0.05],
+      objects: ['point'], selected: () => 'point', select: activate, record: activate,
+      move: movePatient, point: screenPoint, reading: () => 'β ' + num(st2.beta, 2) + ' · ' + T('敏感度 ', 'Sensitivity ') + num(st2.si, 2),
+      visible: () => {
+        const r = canvas.getBoundingClientRect();
+        return st2.L && r.width > 0 && r.bottom > 32 && r.top < innerHeight - 32;
+      },
+      home: (w, h) => {
+        const r = canvas.getBoundingClientRect();
+        const left = screenPoint().x > r.left + r.width / 2;
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+      }
+    });
+    // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。
+    pad.element.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', name + ' ' + b.textContent));
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部放大', ' close-up'));
+    const center = document.createElement('button');
+    center.type = 'button';
+    center.className = 'vpad-select';
+    center.style.gridArea = '2 / 2';
+    center.textContent = T('試驗', 'Test');
+    center.setAttribute('aria-label', T('試驗', 'Test'));
+    center.addEventListener('click', activate);
+    pad.element.querySelector('.vpad-select').replaceWith(center);
+    pad.element.querySelector('.vpad-footer').textContent = T('每軸 0.05', '0.05 per axis');
+    try { if (!localStorage.getItem('lab-vpad:blood-glucose')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();
