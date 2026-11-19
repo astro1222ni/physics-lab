@@ -1,9 +1,7 @@
 /* pitch-frequency.js — 「音高與頻率：從振動到音名」的畫面與互動
  * （數學在 pitch-frequency-core.js；聲音一律用 music-audio.js；2D 繪圖工具 LabDraw 在 drawkit.js；3D 在 pitch-frequency-3d.js，切到 3D 時才載入）
  *
- * 畫面：上面的畫布是 10 ms 的波形（色帶是一個個週期）、放大一個週期的小窗、像調音器的音名與偏差；
- *       中間（可左右捲動的容器）是 88 鍵鋼琴與各樂器、聲部的大致音域，共用同一條對數頻率軸，紅線是目前的頻率；
- *       下面的小圖是同樣的八度畫在線性軸與對數軸上。
+ * 檢視：10 ms 波形與調音表、可左右滑動的 88 鍵與音域、線性和對數頻率尺、3D 頻率之梯共用同一個音高。
  * 聲音：只有學生按了「▶ 播放」、點琴鍵、「先 A 後 B」才發聲；播放中拖曳滑桿或按按鈕，持續音跟著改變。
  *       音效關閉時畫面照跑，狀態列顯示提示並讓音效開關閃一下（不會自己打開音效）。
  * 任務事件：'pitch'（學生改了頻率、標準音或寫法）、'play'、'compare'；格式寫在 js/missions/pitch-frequency.js 的開頭。 */
@@ -53,7 +51,7 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (Math.max(11, px) * fs).toFixed(1) + 'px ' + FONT; }
 
   // ---------- 數字與音名 ----------
   function fx(v, d) { if (v == null || !isFinite(v)) return '—'; let s = v.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
@@ -407,16 +405,10 @@
         zoom: { x: 8, y: head + waveH + 10, w: hw, h: rowH }, two: two, stack: true };
     }
   }
-  function panel(r, title) {
+  function panel(r) {
     D.roundRect(ctx, r.x, r.y, r.w, r.h, 10);
     ctx.fillStyle = alpha(C.surface, D.dark ? 0.32 : 0.62); ctx.fill();
     ctx.strokeStyle = alpha(C.text, 0.08); ctx.lineWidth = 1; ctx.stroke();
-    if (title) {
-      ctx.font = fnt(11, 600);
-      const tw = ctx.measureText(title).width;
-      if (tw > r.w - 16) ctx.font = fnt(11 * (r.w - 16) / tw, 600);   // 窄畫面：標題縮小到放得下
-      ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(title, r.x + 8, r.y + 5);
-    }
   }
   /** 播放中的波形慢慢往左流動（示意，已大幅放慢）；減少動態時不動 */
   function phaseNow(now) {
@@ -426,7 +418,7 @@
   }
   function drawWave(now) {
     const a = cur(), r = L.wave;
-    panel(r, null);
+    panel(r);
     const x0 = r.x + 34 * fs, x1 = r.x + r.w - 10, yc = r.y + r.h / 2 + 6 * fs, amp = r.h / 2 - 22 * fs;
     const msPx = (x1 - x0) / WIN_MS, Tms = a.T, cycPx = Tms * msPx;
     // 時間軸
@@ -470,7 +462,7 @@
       const g = ctx.createLinearGradient(0, yc - amp, 0, yc + amp);
       g.addColorStop(0, alpha(C['pf-wave'], 0.55)); g.addColorStop(0.5, alpha(C['pf-wave'], 0.2)); g.addColorStop(1, alpha(C['pf-wave'], 0.55));
       ctx.fillStyle = g; ctx.fillRect(x0, yc - amp, x1 - x0, 2 * amp);
-      D.pill(ctx, T('太密了，畫不出每一個波：看右邊的放大', 'Too dense to draw each wave: see the close-up'), (x0 + x1) / 2, yc + 8 * fs, C['pf-wave'], 'center', fnt(11, 600));
+      D.pill(ctx, T('波形太密，請看單一週期放大圖', 'Dense waveform: see the one-period close-up'), (x0 + x1) / 2, yc + 8 * fs, C['pf-wave'], 'center', fnt(11, 600));
     }
     ctx.restore();
     // 週期 T 的標示（第一個週期）
@@ -496,7 +488,10 @@
   }
   function drawZoom() {
     const a = cur(), r = L.zoom;
-    panel(r, T('放大 1 個週期', 'One period, enlarged'));
+    panel(r);
+    ctx.font = fnt(11, 600); ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const title = T('放大 1 個週期', 'One period, enlarged');
+    ctx.fillText(ctx.measureText(title).width <= r.w - 16 ? title : T('1 個週期', 'One period'), r.x + 8, r.y + 5);
     const x0 = r.x + 12, x1 = r.x + r.w - 12, yc = r.y + r.h / 2 + 7 * fs, amp = Math.max(8, r.h / 2 - 20 * fs);
     ctx.strokeStyle = alpha(C.text, 0.12); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x0, yc); ctx.lineTo(x1, yc); ctx.stroke();
@@ -511,7 +506,7 @@
   }
   function drawTuner() {
     const a = cur(), r = L.tuner;
-    panel(r, null);
+    panel(r);
     const big = state.solfege ? PC.label(a.midi, { flat: state.flat, solfege: true, octave: false }) : letter(a.midi);
     const sub = state.solfege ? letter(a.midi) : '';
     const inTune = Math.abs(a.cents) <= 5;
@@ -564,17 +559,22 @@
   const kbwrap = $('kbwrap'), cvK = $('cvKeys'), kx = cvK.getContext('2d');
   let KW = 800, KH = 420, K = null;
   const coarse = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+  const shortLandscape = window.matchMedia('(orientation: landscape) and (max-height: 600px)');
   function layoutKeys() {
     const wrapW = kbwrap.clientWidth || 600;
     const minWW = coarse && coarse.matches ? 26 : 15;
     const pad = 12;
     const ww = Math.max(minWW, (wrapW - 2 * pad) / PC.WHITE_COUNT);
     KW = Math.round(ww * PC.WHITE_COUNT + 2 * pad);
-    const top = Math.round(26 * fs + 6), keyH = Math.round(118 + 10 * (fs - 1)), axisH = Math.round(24 * fs + 6);
-    const rowH = Math.round(17 * fs + 5), gap = 8;
+    // 矮橫屏收短琴鍵與音域列的間距，保留琴鍵的寬度、所有聲部與原字級。
+    const compact = shortLandscape.matches;
+    const top = Math.round(26 * fs + 6);
+    const keyH = Math.round((compact ? 74 : 118) + 10 * (fs - 1));
+    const axisH = Math.round((compact ? 17 : 24) * fs + 6);
+    const rowH = Math.round(compact ? 12 * fs + 4 : 17 * fs + 5), gap = compact ? 6 : 8;
     const nInst = PC.INSTRUMENTS.filter(function (x) { return x.group === 'inst'; }).length, nVoice = PC.INSTRUMENTS.length - nInst;
     const chartY = top + keyH + axisH;
-    KH = chartY + (nInst + nVoice) * rowH + gap + 10;
+    KH = chartY + (nInst + nVoice) * rowH + gap + (compact ? 4 : 10);
     K = { pad: pad, ww: ww, top: top, keyH: keyH, axisY: top + keyH, axisH: axisH, chartY: chartY, rowH: rowH, gap: gap, nInst: nInst };
   }
   const X = function (xk) { return K.pad + xk * K.ww; };
@@ -582,6 +582,9 @@
   function rowY(i) { return K.chartY + i * K.rowH + (i >= K.nInst ? K.gap : 0); }
   function drawKeys(now) {
     const c = kx, a = cur();
+    const vis0 = kbwrap.scrollLeft, vis1 = vis0 + kbwrap.clientWidth;
+    // 琴鍵的座標一直以整架鋼琴為準；畫布只繪出捲動容器看得到的一段。
+    c.save(); c.translate(-vis0, 0);
     c.fillStyle = C['canvas-bg']; c.fillRect(0, 0, KW, KH);
     const g0 = c.createLinearGradient(0, 0, 0, KH);
     g0.addColorStop(0, alpha(C.text, D.dark ? 0 : 0.015)); g0.addColorStop(1, D.dark ? 'rgba(0,0,0,0.18)' : alpha(C.text, 0.04));
@@ -651,8 +654,9 @@
       const txt = fx(PC.etFreq(m, state.a4), PC.etFreq(m, state.a4) < 100 ? 1 : 0) + ' Hz';
       const half = c.measureText(txt).width / 2 + 2;
       const x = Math.max(X(0) + half, Math.min(X(PC.WHITE_COUNT) - half, X(PC.keyCenter(m))));
+      if (x - half < vis0 || x + half > vis1) continue;
       c.fillStyle = C.muted;
-      c.fillText(txt, x, ay + 14 * fs);
+      c.fillText(txt, x, ay + K.axisH - 16 * fs);
     }
     // 音域長條
     const mf = a.mf;
@@ -669,7 +673,6 @@
       if (on) c.restore();
       c.strokeStyle = alpha(col, on ? 0.9 : 0.45); c.lineWidth = 1; c.stroke();
       // 名稱：放在長條目前看得到的部分的左邊
-      const vis0 = kbwrap.scrollLeft, vis1 = vis0 + (kbwrap.clientWidth || KW);
       const label = instName(ins) + ' ' + letter(ins.lo) + '–' + letter(ins.hi);
       c.font = fnt(10.5, on ? 700 : 600);
       const tw = c.measureText(label).width;
@@ -703,7 +706,6 @@
     const pillTxt = nameOf(near) + ' ' + (Math.abs(a.cents) < 0.05 ? T('（準）', '(in tune)') : sg(a.cents, 1) + T(' 音分', '¢'));
     c.font = fnt(11.5, 700);
     const pw = c.measureText(pillTxt).width + 12;
-    const vis0 = kbwrap.scrollLeft, vis1 = vis0 + (kbwrap.clientWidth || KW);
     const px = Math.max(vis0 + pw / 2 + 4, Math.min(vis1 - pw / 2 - 4, x));
     D.pill(c, pillTxt, px, K.top - 12, C['pf-cur'], 'center', fnt(11.5, 700));
     // 鍵盤焦點框（鍵盤操作時）
@@ -717,6 +719,7 @@
       const which = el < CMP_DUR + CMP_GAP / 2 ? mA : mB, col = el < CMP_DUR + CMP_GAP / 2 ? C['pf-memA'] : C['pf-memB'];
       if (which != null) D.ripple(c, xOfMf(which), y0 + kh * 0.62 + (kh * 0.38 - 16) / 2, 10, (el % 0.6) / 0.6, col);
     }
+    c.restore();
   }
 
   // =====================================================================
@@ -734,8 +737,10 @@
   function drawAxis() {
     const c = ax, a = cur();
     D.backdrop(c, AW, AH);
-    const lx0 = 14 + 78 * fs, lx1 = AW - 16;
     const rows = [{ y: AL.y1, kind: 'lin', title: T('線性（Hz）', 'Linear (Hz)'), col: C['pf-lin'] }, { y: AL.y2, kind: 'log', title: T('對數（八度）', 'Log (octaves)'), col: C['pf-log'] }];
+    c.font = fnt(11, 700);
+    const labelWidth = Math.max(c.measureText(rows[0].title).width, c.measureText(rows[1].title).width);
+    const lx0 = Math.ceil(Math.max(14 + 78 * fs, 18 + labelWidth)), lx1 = AW - 16;
     const fTop = PC.F_MAX, edges = PC.octaveEdges(27.5, fTop).concat([fTop]);
     c.font = fnt(12, 700); c.fillStyle = C.text; c.textAlign = 'left'; c.textBaseline = 'top';
     c.fillText(T('同樣的八度，畫在兩把尺上', 'The same octaves on two rulers'), 10, 6);
@@ -757,21 +762,24 @@
       }
       // 八度邊界的標籤（A1…A7），太擠的不寫
       c.font = fnt(9.5, 600); c.fillStyle = C.muted; c.textAlign = 'center'; c.textBaseline = 'top';
-      let lastX = -1e9;
+      const firstLabel = r.kind === 'lin' ? '0' : 'A0';
+      const lastLabel = r.kind === 'lin' ? fx(fTop, 0) + ' Hz' : 'C8';
+      const space = 4 * fs, leftLimit = lx0 + c.measureText(firstLabel).width + space;
+      let rightLimit = lx1 - c.measureText(lastLabel).width - space;
       for (let i = edges.length - 2; i >= 1; i--) {
-        const x = P(edges[i]);
-        if (lastX - x < 20 * fs) continue;
-        c.fillText('A' + i, x, r.y + 12); lastX = x;
+        const label = 'A' + i, x = P(edges[i]), half = c.measureText(label).width / 2;
+        if (x - half < leftLimit || x + half > rightLimit) continue;
+        c.fillText(label, x, r.y + 12);
+        rightLimit = x - half - space;
       }
       c.textAlign = 'left';
-      c.fillText(r.kind === 'lin' ? '0' : 'A0', lx0, r.y + 12);
-      if (r.kind === 'lin') { c.textAlign = 'right'; c.fillText(fx(fTop, 0) + ' Hz', lx1, r.y + 12); }
-      else { c.textAlign = 'right'; c.fillText('C8', lx1, r.y + 12); }
+      c.fillText(firstLabel, lx0, r.y + 12);
+      c.textAlign = 'right'; c.fillText(lastLabel, lx1, r.y + 12);
       // 中央 C 與目前的頻率
-      const xc = P(PC.etFreq(60, state.a4));
+      const xc = P(PC.etFreq(60, state.a4)), xf = P(a.f);
       c.strokeStyle = alpha(C.text, 0.45); c.lineWidth = 1; c.beginPath(); c.moveTo(xc, r.y - 3); c.lineTo(xc, r.y + 13); c.stroke();
-      D.haloText(c, 'C4', xc + 3, r.y - 2, C.muted, 'left', 'bottom', fnt(9.5, 600));
-      const xf = P(a.f);
+      const labelOnLeft = xf >= xc;
+      D.haloText(c, 'C4', xc + (labelOnLeft ? -7 : 7), r.y - 2, C.muted, labelOnLeft ? 'right' : 'left', 'bottom', fnt(11, 600));
       c.beginPath(); c.moveTo(xf, r.y - 1); c.lineTo(xf - 5, r.y - 9); c.lineTo(xf + 5, r.y - 9); c.closePath();
       c.fillStyle = C['pf-cur']; c.fill();
       c.beginPath(); c.moveTo(xf, r.y - 1); c.lineTo(xf, r.y + 11); c.strokeStyle = C['pf-cur']; c.lineWidth = 2; c.stroke();
@@ -788,7 +796,8 @@
     if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 10) { downAt = null; return; }
     downAt = null;
     const rect = cvK.getBoundingClientRect();
-    const px = (e.clientX - rect.left) * KW / rect.width, py = (e.clientY - rect.top) * KH / rect.height;
+    const px = kbwrap.scrollLeft + (e.clientX - rect.left) * cvK.clientWidth / rect.width;
+    const py = (e.clientY - rect.top) * KH / rect.height;
     if (py < K.top - 2 || py > K.top + K.keyH) return;
     const m = PC.keyAt((px - K.pad) / K.ww, (py - K.top) / K.keyH);
     if (m == null) return;
@@ -843,8 +852,10 @@
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     layoutKeys();
-    cvK.style.width = KW + 'px'; cvK.style.height = KH + 'px';
-    cvK.width = Math.round(KW * dpr); cvK.height = Math.round(KH * dpr);
+    const keyWidth = kbwrap.clientWidth || W;
+    cvK.parentElement.style.width = KW + 'px';
+    cvK.style.width = keyWidth + 'px'; cvK.style.height = KH + 'px';
+    cvK.width = Math.round(keyWidth * dpr); cvK.height = Math.round(KH * dpr);
     kx.setTransform(dpr, 0, 0, dpr, 0, 0);
     AW = cvA.clientWidth || W;
     layoutAxis();
@@ -867,10 +878,12 @@
       if ((now - state.cmp.t0) / 1000 > 2 * CMP_DUR + CMP_GAP + 0.3) { state.cmp = null; updateStop(); }
       else more = true;
     }
-    const is3 = view3 && view3.active;
-    if (!is3) { drawMain(now); drawAxis(); }
-    drawKeys(now);
-    if (is3) view3.frame();
+    switch (stage.dataset.plot) {
+      case '2d': drawMain(now); break;
+      case 'keys': drawKeys(now); break;
+      case 'axis': drawAxis(); break;
+      case '3d': if (view3 && view3.active) view3.frame(); break;
+    }
     if (more) requestDraw();
   }
 
@@ -879,6 +892,7 @@
   // =====================================================================
   let view3 = null, threeLib = null, loadToken = 0;
   const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  const viewButtons = stage.querySelectorAll('.pf-views [data-view]');
   const bridge = {
     PC: PC, T: T, D: D,
     colors: function () { return C; },
@@ -916,8 +930,8 @@
     });
   }
   function setPressed(mode) {
-    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
-    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+    stage.dataset.plot = mode;
+    viewButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(button.dataset.view === mode)); });
   }
   function setView(mode) {
     if (mode === '3d') {
@@ -940,12 +954,13 @@
       });
     } else {
       loadToken++;
-      setPressed('2d');
+      setPressed(mode);
       if (view3) { view3.dispose(); view3 = null; }
       stage.classList.remove('is3d');
       $('resetCam').hidden = true;
-      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      viewMsg.textContent = '';
       resize();
+      if (mode === 'keys') scrollToCurrent(true);
     }
   }
   function fail3D() {
@@ -957,8 +972,9 @@
       'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D wave is kept.');
     resize();
   }
-  $('view2d').addEventListener('click', function () { setView('2d'); });
-  $('view3d').addEventListener('click', function () { setView('3d'); });
+  viewButtons.forEach(function (button) {
+    button.addEventListener('click', function () { setView(button.dataset.view); });
+  });
   $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
   document.querySelectorAll('[data-hmode]').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -1003,7 +1019,7 @@
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({
         ...pitchSettings(), timbre: state.timbre, flat: state.flat, solfege: state.solfege,
         recs: state.recs, hmode: state.hmode,
-        view: $('view3d').getAttribute('aria-pressed') === 'true' ? '3d' : '2d'
+        view: stage.dataset.plot
       }));
     } catch (e) { /* 瀏覽器不允許暫存時仍可操作。 */ }
   }
@@ -1033,11 +1049,12 @@
     view3: function () { return view3; },
     // 測試用：某個鍵（白鍵靠下、黑鍵靠上）在畫面上的位置；先把它捲進可見範圍
     keyPoint: function (m) {
+      if (stage.dataset.plot !== 'keys') setView('keys');
       const xk = PC.keyCenter(m), x = X(xk), w = kbwrap.clientWidth || KW;
       if (x < kbwrap.scrollLeft + 20 || x > kbwrap.scrollLeft + w - 20) kbwrap.scrollLeft = Math.max(0, Math.min(KW - w, x - w / 2));
-      const r = cvK.getBoundingClientRect(), sx = r.width / KW;
+      const r = cvK.getBoundingClientRect(), sx = r.width / cvK.clientWidth;
       const y = K.top + K.keyH * (PC.isBlack(m) ? 0.35 : 0.85);
-      return { x: r.left + x * sx, y: r.top + y * (r.height / KH) };
+      return { x: r.left + (x - kbwrap.scrollLeft) * sx, y: r.top + y * (r.height / KH) };
     }
   };
 
@@ -1072,13 +1089,17 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  shortLandscape.addEventListener('change', resize);
   if (window.ResizeObserver) {
-    let lastW = 0, lastK = 0;
-    new ResizeObserver(function () {
-      if (cv.clientWidth !== lastW || kbwrap.clientWidth !== lastK) { lastW = cv.clientWidth; lastK = kbwrap.clientWidth; resize(); scrollToCurrent(true); }
+    let lastWidth = 0;
+    new ResizeObserver(function (entries) {
+      const width = entries[0].contentRect.width;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      resize(); scrollToCurrent(true);
     }).observe(stage);
   } else window.addEventListener('resize', resize);
   resize();
   scrollToCurrent(true);
-  if (saved && saved.view === '3d') setView('3d');
+  if (saved && ['keys', 'axis', '3d'].includes(saved.view)) setView(saved.view);
 })();

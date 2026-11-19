@@ -44,37 +44,42 @@
 
     /* 畫布高度由程式依寬度決定；波形與軸的畫布不攔觸控（手機照常捲動） */
     #cv, #cvAxis { aspect-ratio: auto; height: 240px; touch-action: auto; cursor: default; }
-    #cvAxis { height: 150px; margin-top: 10px; }
+    #cvAxis { height: 150px; }
     .pf [hidden] { display: none !important; }
     .pf button { min-height: 44px; }
     /* 鍵盤與音域圖：手機上在容器裡左右捲動，整頁不捲 */
-    .kbwrap { position: relative; margin: 10px 0 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border-radius: 8px;
+    .kbwrap { position: relative; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border-radius: 8px;
       background: var(--canvas-bg); overscroll-behavior-x: contain; }
-    .kbwrap canvas#cvKeys { display: block; aspect-ratio: auto; height: 420px; touch-action: pan-x pan-y; cursor: pointer; border-radius: 0; }
+    .kbwrap canvas#cvKeys { position: sticky; left: 0; display: block; aspect-ratio: auto; height: 420px; touch-action: pan-x pan-y; cursor: pointer; border-radius: 0; }
     .kbwrap canvas#cvKeys:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
-    .pf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
-    .pf .playbar > button { flex: 1 1 auto; }
-    .pf .playbar .seg { flex: 1 1 auto; }
-    .pf .playbar .seg button { flex: 1 1 auto; white-space: nowrap; }
+    .pf-frequency .playbar { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+    .pf-frequency .playbar button { min-height: 44px; padding-inline: 6px; }
     .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
-    .pf #stop:disabled { opacity: .5; cursor: default; }
+    #stop:disabled { opacity: .5; cursor: default; }
     .pf .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pf .stage .status:empty { min-height: 0; }
+    .pf .pf-readings { margin-top: 12px; }
     .pf .panel { grid-template-columns: minmax(0, 1fr); }
     .pf .panel > .card { min-width: 0; }
     .pf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .stage .hint.warn { color: var(--pf-voice); }
 
-    /* 2D／3D 檢視切換 */
+    /* 同一個頻率的四種檢視 */
     .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
     .seg button + button { border-left: 1px solid var(--border); }
     .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
-    .stage.is3d #cv, .stage.is3d #cvAxis, .stage.is3d .only2d { display: none; }
+    .pf-views { max-width: 100%; flex-wrap: wrap; gap: 1px; background: var(--border); }
+    .pf-views button { flex: 1 1 auto; padding-inline: 8px; line-height: 1.3; white-space: nowrap; }
+    .pf-views button + button { border: 0; }
+    .pf-timbre { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; }
+    .pf-timbre > span { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .stage:not([data-plot="2d"]) #cv, .stage:not([data-plot="keys"]) .pf-keys, .stage:not([data-plot="axis"]) .pf-axis { display: none; }
     .stage:not(.is3d) .l3 { display: none !important; }
     #view3 canvas {
       display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 16 / 9;
@@ -82,6 +87,19 @@
       background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
     }
     @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    .labdeck-tabs button { min-width: max(24%, calc(72px * var(--fs, 1))); }
+    @media (orientation: landscape) and (max-height: 600px) {
+      /* 留出圖內右緣，右抽屜旁的留言把手才不會遮住琴鍵與刻度。 */
+      html.labdeck-drawer .pf > .stage { padding-inline-end: 28px; }
+      #view3 canvas { aspect-ratio: 16 / 9; max-height: calc(100dvh - 72px); }
+      html.labdeck-drawer .labdeck-tabs button { min-width: max(24%, calc(72px * var(--fs, 1))); min-height: 44px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      .pf .labdeck-pane > .card { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) {
+      .pf > .stage { padding-inline-end: 16px; }
+    }
     #view3 canvas:active { cursor: grabbing; }
     .t3-wrap { position: relative; }
     .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
@@ -102,7 +120,7 @@
     .steps .wide { grid-column: 1 / -1; }
     .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .presets button { padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; font-variant-numeric: tabular-nums; }
-    .presets button small { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .presets button small { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
     .presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
     .namebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .namebar .seg { flex: 1 1 auto; }
@@ -139,55 +157,41 @@
 
     <p class="try-hint" data-en="Try it: press “Add 100 Hz” once on A1 and once on A6, and compare how far the note jumps.">試試看：在 A1 按一次「加 100 Hz」，再到 A6 按一次，比比看音各跳了多遠。</p>
     <div class="lab pf" id="lab">
-      <div class="stage" id="stage">
+      <div class="stage" id="stage" data-plot="2d">
         <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D wave">2D 波形</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D ladder">3D 頻率之梯</button>
+          <div class="seg pf-views" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" data-view="2d" aria-controls="cv" aria-pressed="true" data-en="2D wave">2D 波形</button>
+            <button type="button" id="viewKeys" data-view="keys" aria-controls="kbwrap" aria-pressed="false" data-en="Keys and ranges">琴鍵與音域</button>
+            <button type="button" id="viewAxis" data-view="axis" aria-controls="cvAxis" aria-pressed="false" data-en="Frequency rulers">頻率尺</button>
+            <button type="button" id="view3d" data-view="3d" aria-controls="view3" aria-pressed="false" data-en="3D ladder">3D 頻率之梯</button>
           </div>
-          <div class="seg l3" role="group" aria-label="柱子的高度" data-en-aria-label="Bar height">
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="波形畫布"></canvas>
+        <div id="view3"></div>
+        <div class="kbwrap pf-keys" id="kbwrap"><div class="kbtrack"><canvas id="cvKeys"></canvas></div></div>
+        <p class="hint pf-keys" data-en="Tap a key to jump to its equal-tempered frequency (on a phone, swipe the keyboard sideways). The red line is the frequency now; when it is not on a key, the needle shows how many cents it is off. The bars below the keys show roughly what each instrument and voice can reach.">點鍵盤就跳到那個鍵的平均律頻率（手機上可以左右滑動鍵盤）。紅線是目前的頻率；不在鍵上時，指針標出偏了幾音分。琴鍵下方的長條是各樂器與聲部的大致音域。</p>
+        <canvas id="cvAxis" class="pf-axis" role="img" aria-label="線性軸與對數軸"></canvas>
+        <p class="chart-cap pf-axis" data-en="The same octaves (A0 to A7) on two rulers: on the linear ruler (hertz) each octave is twice as wide as the one before; on the logarithmic ruler (what the ear hears) they are all the same width.">同樣的八度（A0 到 A7）畫在兩把尺上：線性的尺（赫茲）每個八度比前一個寬一倍；對數的尺（耳朵的感覺）每個八度一樣寬。</p>
+        <div class="view-bar l3" data-share-skip>
+          <div class="seg" role="group" aria-label="柱子的高度" data-en-aria-label="Bar height">
             <button type="button" data-hmode="lin" aria-pressed="true" data-en="Linear height">線性高度</button>
             <button type="button" data-hmode="log" aria-pressed="false" data-en="Log height">對數高度</button>
           </div>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="波形畫布"></canvas>
-        <div id="view3"></div>
-        <div class="kbwrap" id="kbwrap"><canvas id="cvKeys"></canvas></div>
-        <p class="hint" data-en="Tap a key to jump to its equal-tempered frequency (on a phone, swipe the keyboard sideways). The red line is the frequency now; when it is not on a key, the needle shows how many cents it is off. The bars below show roughly what each instrument and voice can reach.">點鍵盤就跳到那個鍵的平均律頻率（手機上可以左右滑動鍵盤）。紅線是目前的頻率；不在鍵上時，指針標出偏了幾音分。下面的長條是各樂器與聲部的大致音域。</p>
-        <canvas id="cvAxis" role="img" aria-label="線性軸與對數軸"></canvas>
-        <p class="chart-cap only2d" data-en="The same octaves (A0 to A7) on two rulers: on the linear ruler (hertz) each octave is twice as wide as the one before; on the logarithmic ruler (what the ear hears) they are all the same width.">同樣的八度（A0 到 A7）畫在兩把尺上：線性的尺（赫茲）每個八度比前一個寬一倍；對數的尺（耳朵的感覺）每個八度一樣寬。</p>
         <p class="hint l3" data-en="3D: 88 bars stand on the 88 keys; each bar’s height is the frequency of its key. Switch between “Linear height” and “Log height”, drag to rotate, scroll or pinch to zoom.">3D：88 根柱子立在 88 個鍵上，柱子的高度就是那個鍵的頻率。切換「線性高度」和「對數高度」，拖曳旋轉，滾輪或雙指縮放。</p>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
-          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+        <div class="pf-timbre">
+          <span data-en="Timbre">音色</span>
           <div class="seg" role="group" aria-label="音色" data-en-aria-label="Timbre">
             <button type="button" data-timbre="pure" aria-pressed="false" data-en="Pure tone">純音</button>
             <button type="button" data-timbre="soft" aria-pressed="true" data-en="Soft (approx.)">溫和泛音（近似）</button>
           </div>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="hint warn" data-en="High notes (above about 2 kHz) sound piercing: if you wear headphones, turn the volume down first. Phone speakers can hardly play below about 200 Hz — choose “Soft (approx.)” so the overtones carry the pitch.">高音（約 2 kHz 以上）很刺耳：戴耳機的同學先把音量調小。手機的小喇叭幾乎放不出 200 Hz 以下的聲音——選「溫和泛音（近似）」，靠泛音也聽得出音高。</p>
-      </div>
-
-      <aside class="panel">
-        <section class="card">
-          <h2 data-en="Frequency">頻率</h2>
-          <div class="slider"><label for="freq" data-en="Frequency f (Hz)">頻率 f（Hz）</label><output id="freqo"></output>
-            <input id="freq" type="range" min="0" max="8700" step="1" value="4800" data-decimals="2"></div>
-          <div class="steps">
-            <button type="button" data-step="-12" data-en="−1 octave">−1 八度</button>
-            <button type="button" data-step="12" data-en="+1 octave">＋1 八度</button>
-            <button type="button" data-step="-1" data-en="−1 semitone">−1 半音</button>
-            <button type="button" data-step="1" data-en="+1 semitone">＋1 半音</button>
-            <button type="button" id="add100" class="wide" data-en="Add 100 Hz">加 100 Hz</button>
-          </div>
-          <p class="hint" data-en="The slider is logarithmic: every notch is 1 cent, and the same distance is always the same interval. Tap the number to type a frequency to 0.01 Hz (27.5–4186.01 Hz).">滑桿是對數刻度：每一格是 1 音分，同樣的距離永遠是同樣的音程。點一下數字可以打字輸入到 0.01 Hz（27.5–4186.01 Hz）。</p>
-        </section>
-
-        <section class="card">
+        <section class="card pf-readings">
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="readout">
             <dt data-en="Nearest note">最接近的音</dt><dd class="big" id="rName">—</dd>
@@ -200,8 +204,28 @@
           </dl>
           <p class="insts" id="rInst"></p>
         </section>
+      </div>
 
-        <section class="card">
+      <aside class="panel">
+        <section class="card pf-frequency" data-deck="頻率|Frequency" data-deck-order="1">
+          <h2 data-en="Frequency">頻率</h2>
+          <div class="playbar" data-deck-top>
+            <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+            <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+          <div class="slider"><label for="freq" data-en="Frequency f (Hz)">頻率 f（Hz）</label><output id="freqo"></output>
+            <input id="freq" type="range" min="0" max="8700" step="1" value="4800" data-decimals="2"></div>
+          <div class="steps">
+            <button type="button" data-step="-12" data-en="−1 octave">−1 八度</button>
+            <button type="button" data-step="12" data-en="+1 octave">＋1 八度</button>
+            <button type="button" data-step="-1" data-en="−1 semitone">−1 半音</button>
+            <button type="button" data-step="1" data-en="+1 semitone">＋1 半音</button>
+            <button type="button" id="add100" class="wide" data-en="Add 100 Hz">加 100 Hz</button>
+          </div>
+          <p class="hint" data-en="The slider is logarithmic: every notch is 1 cent, and the same distance is always the same interval. Tap the number to type a frequency to 0.01 Hz (27.5–4186.01 Hz).">滑桿是對數刻度：每一格是 1 音分，同樣的距離永遠是同樣的音程。點一下數字可以打字輸入到 0.01 Hz（27.5–4186.01 Hz）。</p>
+        </section>
+        <section class="card" data-deck="標準音|Standard pitch" data-deck-order="2">
           <h2 data-en="Standard pitch">標準音</h2>
           <div class="slider"><label for="a4" data-en="Standard pitch A4 (Hz)">標準音 A4（Hz）</label><output id="a4o"></output>
             <input id="a4" type="range" min="400" max="466" step="1" value="440" data-decimals="2"></div>
@@ -214,7 +238,7 @@
           <p class="hint" id="a4Hint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="音名寫法|Note names" data-deck-order="3">
           <h2 data-en="Note names">音名寫法</h2>
           <div class="namebar">
             <div class="seg" role="group" aria-label="升降記號" data-en-aria-label="Sharps or flats">
@@ -226,16 +250,16 @@
           <p class="hint" data-en="Solfège here is fixed do: do is always C (do re mi fa sol la si = C D E F G A B). The number after a note name is its octave: C4 is middle C, and the number goes up at every C.">這裡的唱名是固定唱名：Do 永遠是 C（Do Re Mi Fa Sol La Si = C D E F G A B）。音名後面的數字是第幾個八度：C4 是中央 C，每到 C 數字就加 1。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="比較兩個音|Compare two notes" data-deck-order="4">
           <h2 data-en="Compare two notes">比較兩個音</h2>
           <div class="membtns">
             <button type="button" id="storeA" data-en="Store as A">存成 A</button>
             <button type="button" id="storeB" data-en="Store as B">存成 B</button>
             <button type="button" id="cmp" class="wide" data-en="A then B">先 A 後 B</button>
+            <button type="button" id="clear" class="wide" data-en="Clear all" title="清掉 A、B 與比較紀錄；頻率、標準音與寫法不變" data-en-title="Clear A, B and the comparison log; the frequency, standard pitch and spelling are kept">全部清除</button>
           </div>
           <div class="mem" id="mem"></div>
           <div class="tablewrap" id="recWrap"></div>
-          <div class="membtns" style="margin-top:8px"><button type="button" id="clear" class="wide" data-en="Clear all" title="清掉 A、B 與比較紀錄；頻率、標準音與寫法不變" data-en-title="Clear A, B and the comparison log; the frequency, standard pitch and spelling are kept">全部清除</button></div>
         </section>
       </aside>
     </div>
