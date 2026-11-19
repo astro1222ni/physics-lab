@@ -525,6 +525,7 @@
       panel.hidden = !on;
       tab.setAttribute('aria-expanded', String(on));
       document.documentElement.classList.toggle('fb-open', on);
+      if (!on) setPeek(false);
       if (on) {
         last = document.activeElement;
         const n = window.LabComments ? LabComments.count() : null;
@@ -532,7 +533,23 @@
         goC.focus();
       } else if (last && last.focus && document.contains(last)) last.focus({ preventScroll: true });
     }
-    tab.addEventListener('click', function () { toggle(panel.hidden); });
+    // 11/20 站長選 A：平板橫放、電腦、手機橫放時，留言浮籤會蓋住操作台的讀數，所以平常只露出右緣細把手（閃三下提示）。
+    // 點一下先展開成原本的標籤，再點一下才打開留言側板；4 秒沒動作就縮回。手機直放照舊。收進側標籤列（labside）時不受影響。
+    const slimMq = window.matchMedia ? matchMedia('(min-width: 881px), (orientation: landscape) and (max-height: 600px)') : null;
+    let peekTimer = 0;
+    function setPeek(on) {
+      clearTimeout(peekTimer);
+      tab.classList.toggle('fb-peek', on);
+      if (on) peekTimer = setTimeout(function () { if (panel.hidden) tab.classList.remove('fb-peek'); }, 4000);
+    }
+    function applySlim() { tab.classList.toggle('fb-slim', !!(slimMq && slimMq.matches)); if (!tab.classList.contains('fb-slim')) setPeek(false); }
+    applySlim();
+    if (slimMq) { if (slimMq.addEventListener) slimMq.addEventListener('change', applySlim); else if (slimMq.addListener) slimMq.addListener(applySlim); }
+    tab.addEventListener('click', function () {
+      const slim = tab.classList.contains('fb-slim') && tab.parentNode === document.body;
+      if (slim && panel.hidden && !tab.classList.contains('fb-peek')) { setPeek(true); return; }
+      toggle(panel.hidden);
+    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) toggle(false); });
     document.addEventListener('pointerdown', function (e) { if (!panel.hidden && !panel.contains(e.target) && !tab.contains(e.target)) toggle(false); });
   }
