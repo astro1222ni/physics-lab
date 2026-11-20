@@ -517,7 +517,8 @@
       drawHist();
       drawPV();
     }
-    updateReadout(false);
+    // 操作重繪不受動畫讀數的節流限制，暫停時也會顯示最新狀態。
+    updateReadout(force !== false);
   }
 
   const order = [];
@@ -1965,6 +1966,7 @@
     gas.piston.target = val(elV) / AREA;
     reportLater();
     if (!state.running) setStatus(T('按「播放」讓活塞移動。', 'Press Play to move the piston.'));
+    requestDraw();
   });
   elP.addEventListener('input', function (ev) {
     refreshOutputs();
@@ -1974,6 +1976,7 @@
     gas.piston.Pset = fromKPa(state.Pset);
     markChange();
     reportLater();
+    requestDraw();
   });
   elN.addEventListener('input', function (ev) {
     refreshOutputs();

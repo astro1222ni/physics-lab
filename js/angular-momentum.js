@@ -103,7 +103,9 @@
   function resize() {
     const w = cv.clientWidth;
     if (!w) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const nextDpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (Lo && w === cw && nextDpr === dpr) return;
+    dpr = nextDpr;
     cw = w;
     Lo = layout();
     ch = Lo.H;
@@ -112,6 +114,7 @@
     cv.height = Math.round(ch * dpr);
     bgKey = '';
     draw();
+    return true;
   }
 
   // ---------- 繪圖小工具 ----------
@@ -369,6 +372,67 @@
     updateButtons();
   }
 
+  const completedSectors = new WeakMap();
+  function holeSector(i0, i1, complete) {
+    const first = H.hist[i0], last = H.hist[i1];
+    const cached = complete && completedSectors.get(first);
+    if (cached && cached.last === last && cached.layout === Lo) return cached;
+    const path = new Path2D();
+    path.moveTo(MX(0), MY(0));
+    let span = 0, area = 0, gx = 0, gy = 0, prev = first;
+    let prevAngle = Math.atan2(first.y, first.x);
+    for (let i = i0; i <= i1; i++) {
+      const p = H.hist[i], angle = Math.atan2(p.y, p.x);
+      const da = angle - prevAngle;
+      span += da - 2 * Math.PI * Math.round(da / (2 * Math.PI));
+      const cross = prev.x * p.y - p.x * prev.y;
+      area += cross; gx += (prev.x + p.x) * cross; gy += (prev.y + p.y) * cross;
+      path.lineTo(MX(p.x), MY(p.y));
+      prev = p; prevAngle = angle;
+    }
+    path.closePath();
+    const sector = { last, layout: Lo, path, span, area, gx, gy };
+    if (complete) completedSectors.set(first, sector);
+    return sector;
+  }
+
+  function drawHoleTrail(st, dark, free) {
+    const period = free ? 30 : 2 * Math.PI / Math.max(1e-6, Math.abs(st.om));
+    const span = Math.min(10, Math.max(1.5, period));
+    const t0 = st.t - span;
+    const start = H.hist.findIndex(function (p) { return p.t >= t0 || (free && p.t >= st.free.t0 - 0.2); });
+    if (start < 0 || start >= H.hist.length - 1) return;
+    const hi = shade(col.accent, dark ? 0.45 : 0.6);
+    // 保留所有路徑點，把相近的透明度與線寬合為一筆，避免逐小線段描邊。
+    const bands = 20;
+    const styles = [
+      { color: col.accent, base: 0, fade: dark ? 0.16 : 0.1, width: 3, grow: 6 },
+      { color: col.accent, base: 0.08, fade: 0.62, width: 1, grow: 3 },
+      { color: hi, base: 0, fade: 0.55, width: 0.6, grow: 0.8, min: 0.35 }
+    ];
+    styles.forEach(function (style) {
+      let band = -1;
+      for (let i = start + 1; i < H.hist.length; i++) {
+        const p = H.hist[i];
+        let fade = Math.max(0, Math.min(1, (p.t - t0) / span));
+        if (free && p.t >= st.free.t0) fade = Math.max(fade, 0.85);
+        if (fade < (style.min || 0)) continue;
+        const next = Math.round(fade * bands);
+        if (next !== band) {
+          if (band >= 0) ctx.stroke();
+          band = next;
+          const u = band / bands, prev = H.hist[i - 1];
+          ctx.strokeStyle = alpha(style.color, style.base + style.fade * u * u);
+          ctx.lineWidth = style.width + style.grow * u;
+          ctx.beginPath();
+          ctx.moveTo(MX(prev.x), MY(prev.y));
+        }
+        ctx.lineTo(MX(p.x), MY(p.y));
+      }
+      if (band >= 0) ctx.stroke();
+    });
+  }
+
   function drawHoleMain() {
     const M = Lo.main, k = mk(), st = H.st, kin = C.holeKin(st), dark = col.dark;
     const hx = MX(0), hy = MY(0);
@@ -403,59 +467,25 @@
         const i0 = marks[j], i1 = j + 1 < marks.length ? marks[j + 1] : H.hist.length - 1;
         if (i1 - i0 < 1) continue;
         const complete = j + 1 < marks.length;
-        const poly = [[0, 0]];
-        let span = 0, prevA = Math.atan2(H.hist[i0].y, H.hist[i0].x);
-        for (let i = i0; i <= i1; i++) {
-          poly.push([H.hist[i].x, H.hist[i].y]);
-          const a = Math.atan2(H.hist[i].y, H.hist[i].x);
-          let da = a - prevA; da -= 2 * Math.PI * Math.round(da / (2 * Math.PI)); span += da; prevA = a;
-        }
-        if (span > 5.6) continue; // 轉超過一圈的扇形會自己重疊，不畫
+        const sector = holeSector(i0, i1, complete);
+        if (sector.span > 5.6) continue; // 轉超過一圈的扇形會自己重疊，不畫
         const age = (marks.length - 1 - j) / 6;
         const cc = (H.markIdx - (marks.length - 1 - j)) % 2 ? col.equi : col.accent;
-        ctx.beginPath();
-        ctx.moveTo(MX(0), MY(0));
-        for (let i = 1; i < poly.length; i++) ctx.lineTo(MX(poly[i][0]), MY(poly[i][1]));
-        ctx.closePath();
         ctx.fillStyle = alpha(cc, (dark ? 0.2 : 0.15) * (1 - 0.55 * age) * (complete ? 1 : 0.7));
-        ctx.fill();
+        ctx.fill(sector.path);
         ctx.strokeStyle = alpha(cc, (dark ? 0.5 : 0.45) * (1 - 0.5 * age));
         ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.stroke(sector.path);
         if (complete && marks.length - 1 - j <= 2) {
           // 標籤放在扇形的形心附近
-          let gx = 0, gy = 0, A = 0;
-          for (let i = 0; i < poly.length; i++) {
-            const p = poly[i], q = poly[(i + 1) % poly.length], cr = p[0] * q[1] - q[0] * p[1];
-            A += cr; gx += (p[0] + q[0]) * cr; gy += (p[1] + q[1]) * cr;
-          }
+          const { gx, gy, area: A } = sector;
           if (Math.abs(A) > 1e-9) areaLabels.push({ x: gx / (3 * A), y: gy / (3 * A), A: Math.abs(A / 2), c: cc });
         }
       }
     }
 
     // 漸淡的軌跡
-    if (H.show.trail && H.hist.length > 1) {
-      const per = st.phase === 'free' ? 30 : 2 * Math.PI / Math.max(1e-6, Math.abs(st.om));
-      const span = Math.min(10, Math.max(1.5, per));
-      const t0 = st.t - span;
-      const pts = [];
-      for (let i = 0; i < H.hist.length; i++) if (H.hist[i].t >= t0 || (free && H.hist[i].t >= st.free.t0 - 0.2)) pts.push(H.hist[i]);
-      const N = pts.length;
-      if (N > 1) {
-        const hi = shade(col.accent, dark ? 0.45 : 0.6);
-        for (let pass = 0; pass < 3; pass++) {
-          for (let i = 1; i < N; i++) {
-            let u = (pts[i].t - t0) / span; u = Math.max(0, Math.min(1, u));
-            if (free && pts[i].t >= st.free.t0) u = Math.max(u, 0.85);
-            if (pass === 0) { ctx.strokeStyle = alpha(col.accent, (dark ? 0.16 : 0.1) * u * u); ctx.lineWidth = 3 + 6 * u; }
-            else if (pass === 1) { ctx.strokeStyle = alpha(col.accent, 0.08 + 0.62 * u * u); ctx.lineWidth = 1 + 3 * u; }
-            else { if (u < 0.35) continue; ctx.strokeStyle = alpha(hi, 0.55 * u * u); ctx.lineWidth = 0.6 + 0.8 * u; }
-            ctx.beginPath(); ctx.moveTo(MX(pts[i - 1].x), MY(pts[i - 1].y)); ctx.lineTo(MX(pts[i].x), MY(pts[i].y)); ctx.stroke();
-          }
-        }
-      }
-    }
+    if (H.show.trail && H.hist.length > 1) drawHoleTrail(st, dark, free);
 
     // 鬆手後：直線的延長（虛線）與力臂 r⊥
     if (free) {
@@ -1682,27 +1712,41 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
 
   // ---------- 動畫 ----------
-  let lastT = 0, loopOn = false;
+  let lastT = null, frame = 0, frozen = false;
   function tick(tNow) {
-    if (!S.running) { loopOn = false; stopHum(); return; }
-    const dt = Math.min((tNow - lastT) / 1000, 1 / 30) * (S.slow ? SLOW : 1);
+    frame = 0;
+    if (!S.running || document.hidden || frozen) return;
+    // 從背景或凍結恢復的第一幀只重畫，下一幀才以新的時間基準繼續。
+    const dt = lastT === null ? 0 : Math.max(0, Math.min((tNow - lastT) / 1000, 1 / 30)) * (S.slow ? SLOW : 1);
     lastT = tNow;
-    if (S.mode === 'hole') holeStep(dt);
-    else if (S.mode === 'plat') platStep(dt);
-    else diskStep(dt);
+    if (dt > 0) {
+      if (S.mode === 'hole') holeStep(dt);
+      else if (S.mode === 'plat') platStep(dt);
+      else diskStep(dt);
+    }
     updateHum();
     updateButtons();
     draw();
-    if (S.running) requestAnimationFrame(tick); else { loopOn = false; stopHum(); }
+    if (S.running) startLoop();
+    else stopLoop();
   }
   function startLoop() {
-    if (loopOn) return;
-    loopOn = true;
-    lastT = performance.now();
-    requestAnimationFrame(tick);
+    if (!frame && S.running && !document.hidden && !frozen) frame = requestAnimationFrame(tick);
+  }
+  function stopLoop() {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    lastT = null;
+    stopHum();
   }
   function play() { S.running = true; updateButtons(); startLoop(); }
-  function pause() { S.running = false; stopHum(); updateButtons(); requestDraw(); }
+  function pause() { S.running = false; stopLoop(); updateButtons(); requestDraw(); }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stopLoop();
+    else startLoop();
+  });
+  document.addEventListener('freeze', function () { frozen = true; stopLoop(); });
+  document.addEventListener('resume', function () { frozen = false; startLoop(); });
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
   function setBtn(id, zh, en, html) {
@@ -1926,7 +1970,7 @@
       stage.classList.remove('is3d');
       $('resetCam').hidden = true;
       if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
-      resize();
+      if (!resize()) requestDraw();
     }
   }
   function fail3D() {
@@ -1936,7 +1980,7 @@
     $('resetCam').hidden = true;
     viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。',
       'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
-    resize();
+    if (!resize()) requestDraw();
   }
   $('view2d').addEventListener('click', function () { setView('2d'); });
   $('view3d').addEventListener('click', function () { setView('3d'); });

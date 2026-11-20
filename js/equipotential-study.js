@@ -4,11 +4,46 @@
   const U=EquipotentialStudyData,S=EquipotentialStudyCore,C=EquipotentialCore,L=EquipotentialLab,P=LabPanel,D=LabDraw;
   const T=(a,b)=>LabSettings.t(a,b),tr=P.tr,E=P.element,B=P.button,rich=P.rich,$=id=>document.getElementById(id);
   const KEY='eqp-study:run:v1';
+  const POSITION_KEY='lab-study-pos:equipotential';
   const empty=()=>({answers:{},first:{},submitted:{},quizFirst:{},sections:Array(8).fill(false),cards:[],flags:{},project:null,exampleChecks:{}});
   let run=empty();try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.sections)&&s.sections.length===8)run=Object.assign(empty(),s);}catch(e){}
   let message='',classRun,flow,currentExample=0,settingExample=false,reference=0,lastFrame=0,elapsed=0,playing=false,startedAt=0,enteredAt=0,raf=0,header,caption,tools,nav,menu;
   const image=new Image();image.src='img/study/usgs-contours.jpg';image.onload=()=>L.redraw();
   const save=()=>{if(flow?.state.teaching)return;try{localStorage.setItem(KEY,JSON.stringify(run));}catch(e){}};
+  const query=new URLSearchParams(location.search);
+  const classEntry=query.get('class')==='1';
+  function validPosition(n,i){
+    return Number.isInteger(n)&&Number.isInteger(i)&&i>=1&&i<=U.sections[n-1]?.steps.length;
+  }
+  function readPosition(){
+    try{
+      const pos=JSON.parse(localStorage.getItem(POSITION_KEY));
+      if(pos&&validPosition(pos.section,pos.step))return pos;
+    }catch(e){/* 儲存空間不可用或格式已失效，照常開啟課程。 */}
+    return null;
+  }
+  function savePosition(n,i){
+    if(!isStudy()||classEntry||flow.state.teaching)return;
+    try{localStorage.setItem(POSITION_KEY,JSON.stringify({section:n,step:i}));}
+    catch(e){/* 瀏覽器停用儲存時，仍可在本頁自學。 */}
+  }
+  function beginStudy(){
+    if(own(L.snapshot())>=6)project();
+    const pos=readPosition();
+    if(!pos){flow.start(1,1);return;}
+    const dialog=$('eq-resume-study');
+    if(dialog.open)return;
+    $('eq-resume-step').textContent=T(
+      '接續上次（第 '+pos.section+' 段第 '+pos.step+' 步）',
+      'Resume (Section '+pos.section+', Step '+pos.step+')'
+    );
+    dialog.returnValue='resume';
+    dialog.addEventListener('close',()=>{
+      if(dialog.returnValue==='restart')flow.start(1,1);
+      else flow.start(pos.section,pos.step);
+    },{once:true});
+    dialog.showModal();
+  }
   const stage=()=>$('stage'),isStudy=()=>!!flow?.state.active,section=()=>flow?.state.section||0;
   const own=s=>s.records.filter(r=>!r.given).length;
   function tell(text){message=text;document.querySelectorAll('#eq-study-message,#lp-pane-'+P.tab+' .eq-course-message').forEach(p=>rich(p,text));}
@@ -24,6 +59,9 @@
     if(n!==4){LabSteps.setActive(false);window.LabStepGuide?.hide();}L.redraw();
   }
   function step(n,i){if(n!==4)window.LabStepGuide?.hide();message='';document.querySelectorAll('#eq-study-message,.eq-course-message').forEach(p=>p.replaceChildren());enteredAt=performance.now();
+    // 第 4 段的共用操作指引另有索引，接續及直接連結都要同步選取該步。
+    if(n===4&&LabSteps.index!==i-1)document.querySelectorAll('#lp-pane-steps .lp-steps > li > button:first-child')[i-1]?.click();
+    savePosition(n,i);
     if(n===1&&i===2)L.view('rig');else if(n===1)L.view('2d');
     if(n===3){L.preset({showTheory:i>=2,showStream:i===4});}
     if(n===5&&i===3){L.preset({medium:'water',noise:true,ac:false,meter:'dmm',clip:true,n2:{x:15,y:10},showTheory:true});}
@@ -147,7 +185,7 @@
       L.label(wide?name+' ('+x+', '+y+')':name,x,y,D.c.equi);});}
   function boot(){P.mount({onChange:()=>L.redraw(),onTab(tab){if(tab!=='examples'||!flow)return;if(isStudy()&&section()!==6)flow.go(6,currentExample||1);else if(!currentExample)applyExample(1);}});const bar=$('eq-study-shell');header=bar;caption=$('eq-study-caption');tools=$('eq-study-tools');nav=$('eq-study-nav');menu=$('eq-study-progress');
     flow=StudyFlow.embed({id:'equipotential',sections:U.sections,onClass(on){if(on)classRun=JSON.parse(JSON.stringify(run));else if(classRun){run=classRun;classRun=null;}},enter,step,canAdvance,finish,render,save,start(){window.LabSide?.instance?.close();const b=document.querySelector('.ms-toggle');if(b&&!LabMission._state.on)b.click();document.querySelector('.ms-dock-close')?.click();scrollTo({top:0,behavior:'instant'});if(innerWidth>=1240||[2,3,5,7,8].includes(section())){P.open('concept');}lastFrame=0;if(!raf)raf=requestAnimationFrame(animate);},close(){currentExample=0;LabSteps.setActive(false);L.discardGiven();L.redraw();}});
-    const begin=()=>{if(own(L.snapshot())>=6)project();flow.start(1,1);};$('studyBtn').onclick=begin;$('studyInvite').onclick=begin;$('eq-study-close').onclick=()=>{if(window.LabModeGate){location.href=LabModeGate.url({mode:'lab'});return;}flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
+    $('studyBtn').onclick=beginStudy;$('studyInvite').onclick=beginStudy;$('eq-study-close').onclick=()=>{if(window.LabModeGate){location.href=LabModeGate.url({mode:'lab'});return;}flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
     LabMission.on('complete',m=>{if(m?.study){StudyFlow.cue('star');renderMissions();finishUnit();}});
     // 站長 11/16 回報：已登入仍顯示「回頁首登入」——側板在登入狀態讀回前就畫好，之後沒重畫。
     // 登入完成（ready）、星星同步（synced）、改暱稱（profile）都重畫；登出或換帳號沒有事件，另外每秒比對一次帳號與完成數。
@@ -157,7 +195,16 @@
       if(section()===4&&!D.reducedMotion()&&!raf)raf=requestAnimationFrame(animate);
       if(section()===1&&s.view==='rig'&&s.ready3D&&!run.flags.intro){run.flags.intro=true;emit('intro-viewed',1,{kind:'rig',ready:true});}
     },250);
-    const q=new URLSearchParams(location.search);if(q.get('study')==='1'){const seg=+q.get('seg')||(q.has('ex')?6:1);flow.start(seg,+q.get('step')||(seg===6?+q.get('ex')||1:1));if(q.get('class')==='1'&&!flow.state.teaching)flow.classMode(true);}else if(!q.has('ex'))P.close();renderMissions();
+    if(query.get('study')==='1'){
+      if(classEntry||['seg','step','ex'].some(key=>query.has(key))){
+        const n=+query.get('seg')||(query.has('ex')?6:1);
+        const i=+query.get('step')||(n===6?+query.get('ex')||1:1);
+        if(validPosition(n,i))flow.start(n,i);
+        else flow.start(1,1);
+        if(classEntry)flow.classMode(true);
+      }else beginStudy();
+    }else if(!query.has('ex'))P.close();
+    renderMissions();
   }
   window.EquipotentialStudy={get active(){return isStudy();},get observing(){return isStudy()||!!currentExample;},get state(){return flow?.state;},get progress(){return JSON.parse(JSON.stringify(run));},get flow(){return flow;},get theoryFractions(){return isStudy()&&section()===7&&flow.state.step===1?[1/6,2/6,3/6,4/6,5/6]:null;},drawIntro:intro,drawOverlay:overlay,notify:tell,exported(method){const s=L.snapshot();if(own(s)>=6){run.flags.card=true;emit('card-exported',8,{ownPoints:own(s),method,exported:true});render();}},shareProject(){return L.snapshot();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
