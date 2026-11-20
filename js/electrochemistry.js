@@ -83,7 +83,7 @@
   // ======================= 狀態 =======================
   const SPEEDS = [1, 100, 1e4, 1e6];
   const state = { mode: 'cell', running: !reducedMotion, speed: 1, tab: 'time', L: 'Zn', R: 'Cu', elec: 'C' };
-  let cell = null, elx = null, elecOff = false;
+  let cell = null, elx = null, elecOff = false, elecRevision = 0;
   let histC = [], histE = [], rowsC = [], rowsE = [], segId = 0, rowSeq = 0;
   let unkC = null, unkE = null, unkSeq = 0;
   let userActed = false, syncing = false;
@@ -128,6 +128,7 @@
   }
   function elecMetal() { return unkE ? unkE.metal : 'Cu'; }
   function newElectro() {
+    elecRevision++;
     elx = C.createElectro({ metal: elecMetal(), c: val(elCE), V: val(elVE) / 1000, elec: unkE ? 'C' : state.elec, I: val(elAmp) });
     elecOff = timerOn() && elx.t >= val(elTimer);
     lastDepTick = 0;
@@ -1249,7 +1250,11 @@
   function onElecSlider(el) {
     if (syncing) return;
     acted();
-    if (el === elAmp) { elx.I = val(elAmp); }
+    if (el === elAmp) {
+      const I = val(elAmp);
+      if (I !== elx.I) elecRevision++;
+      elx.I = I;
+    }
     else if (el === elTimer) {
       elecOff = timerOn() && elx.t >= val(elTimer) - 1e-9;
       if (!elecOff && statusOverride) statusOverride = '';
@@ -1384,7 +1389,7 @@
       mode: state.mode, running: state.running,
       cell: { L: h(cell.L), R: h(cell.R), bridge: cell.bridge, load: cell.load, Rload: cell.Rload, E: reading(), emf: emfNow(), E0: cell.E0,
         I: curNow(), q: cell.q, qAbs: cell.qAbs, t: cell.t, unk: !!unkC },
-      elec: { elec: elx.elec, metal: elx.metal, unk: !!unkE, c: elx.c, c0: elx.c0, V: elx.V, I: elx.I, q: elx.q, t: elx.t, dep: elx.dep,
+      elec: { elec: elx.elec, metal: elx.metal, unk: !!unkE, c: elx.c, c0: elx.c0, V: elx.V, I: elx.I, q: elx.q, t: elx.t, dep: elx.dep, revision: elecRevision,
         mCath: elx.mCath, mAnode: elx.mAnode, base: elx.base, H2: elx.nH2 * C.VM * 1000, O2: elx.nO2 * C.VM * 1000, off: elecOff || !!elx.spent,
         paused: !state.running || elecOff || !!elx.spent }
     };

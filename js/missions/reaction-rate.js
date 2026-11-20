@@ -109,12 +109,20 @@
     {
       id: 'reaction-rate-h1', level: 3, hidden: true,
       riddle: { zh: '千次擦肩，沒有一次回頭。', en: 'A thousand brushes past, and not one turned back.' },
-      check: function (ev) { const r = ev.data.run; return isT(ev) && r.collAB >= 1000 && r.fwd === 0; }
+      check: function (ev) {
+        const r = isT(ev);
+        return !!r && !r.mys && r.collAB >= 1000 && r.fwd === 0 &&
+          ev.data.runs.some(function (row) { return !row.mys && row.key === r.key && row.T > r.T && row.fwd >= 1; });
+      }
     },
     {
       id: 'reaction-rate-h2', level: 4, hidden: true,
       riddle: { zh: '每一次相遇，都是最後一次。', en: 'Every meeting was the last.' },
-      check: function (ev) { const r = ev.data.run; return isT(ev) && !r.mys && !r.steric && r.EaF === 0 && r.collAB >= 50 && r.fwd === r.collAB; }
+      check: function (ev) {
+        const r = isT(ev);
+        return !!r && !r.mys && !r.steric && r.EaF === 0 && r.collAB >= 50 &&
+          r.fwd === r.collAB && r.rev === 0 && r.conv >= 0.95 && r.dH <= -30;
+      }
     },
     {
       id: 'reaction-rate-h3', level: 6, hidden: true,

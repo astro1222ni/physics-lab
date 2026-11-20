@@ -101,7 +101,16 @@
     {
       id: 'electrochemistry-h1', level: 3, hidden: true,
       riddle: { zh: '指針也有不服氣的時候。', en: 'Sometimes the needle just disagrees.' },
-      check: function (ev) { const c = cellT(ev); return !!c && c.bridge && c.load === 'V' && c.E <= -1.0; }
+      check: function (ev, mem) {
+        const c = cellT(ev);
+        // 11/20 改嚴：兩組不同的金屬配對，各自都看過指針往正、往負兩邊打（|E| ≥ 1.0 V）
+        if (!c || c.unk || !c.bridge || c.load !== 'V' || !(Math.abs(c.E) >= 1.0)) return false;
+        const pair = [c.L.metal, c.R.metal].sort().join('|');
+        const seen = mem.seen || (mem.seen = {});
+        const s = seen[pair] || (seen[pair] = {});
+        if (c.E > 0) s.pos = true; else s.neg = true;
+        return Object.keys(seen).filter(function (k) { return seen[k].pos && seen[k].neg; }).length >= 2 && c.E <= -1.0;
+      }
     },
     {
       id: 'electrochemistry-h2', level: 4, hidden: true,
@@ -111,7 +120,24 @@
     {
       id: 'electrochemistry-h3', level: 5, hidden: true,
       riddle: { zh: '主角離場以後，配角冒了出來。', en: 'When the star leaves the stage, an extra rises up.' },
-      check: function (ev) { const e = elecT(ev); return !!e && e.elec === 'C' && e.H2 >= 1; }
+      check: function (ev, mem) {
+        const e = elecT(ev);
+        if (!e) return false;
+        const prev = mem.last;
+        // 電解重設或電流來回變動，都可能發生在兩次回報之間。
+        const restarted = !prev || e.revision !== prev.revision || e.t < prev.t ||
+          e.c0 !== prev.c0 || e.I !== prev.I || e.elec !== prev.elec;
+        if (restarted) mem.copperTicks = 0;
+        mem.last = e;
+        if (e.elec !== 'C') return false;
+        if (e.I > 0 && !e.off && !e.paused && e.H2 < 0.01 && e.dep > 0 && (restarted || e.t > prev.t)) {
+          mem.copperTicks++;
+        }
+        if (e.dep > (mem.copperMax || 0) && e.H2 < 0.01) mem.copperMax = e.dep;
+        if (restarted) mem.copperMax = e.H2 < 0.01 ? e.dep : 0;
+        // 11/20 再加嚴：主角要先演夠（看著銅析出至少 6 次回報、約 3 秒，而且析出 1 g 以上），配角才算登場
+        return mem.copperTicks >= 6 && (mem.copperMax || 0) >= 1 && e.H2 >= 1;
+      }
     },
     {
       id: 'electrochemistry-h4', level: 6, hidden: true,

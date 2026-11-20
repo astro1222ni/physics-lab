@@ -6,6 +6,7 @@
 'use strict';
 const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 const K = require(__ROOT + 'js/reaction-rate-core.js');
+const assert = require('node:assert/strict');
 let missions = [];
 global.LabMission = { register: (m, l) => { missions = l.map(x => Object.assign({ mem: {} }, x)); } };
 global.window = { LabMission: global.LabMission };
@@ -64,9 +65,9 @@ function tickData(P) {
   return { run: rows[rows.length - 1], runs: rows, eq: eqWindow(P.cur), arr, speed: P.speed };
 }
 /** 前進：每一幀 0.5 ps，每 10 ps 送一次 tick；until(P) 成立或到 maxT（ps）就停。傳回這段時間完成的任務代號 */
-function run(P, maxT, until) {
+function run(P, maxT, until, tickPs = 10) {
   const r = P.cur, s = r.sim, hits = [];
-  let nextTick = s.t + 10;
+  let nextTick = s.t + tickPs;
   while (s.t < maxT) {
     K.advance(s, 0.5);
     for (const e of s.ev) if (e.kind === 2 && P.speed === 0) r.slowFwd++;
@@ -74,7 +75,7 @@ function run(P, maxT, until) {
     r.Tgas = K.kineticTemp(s);
     if (s.t > 2) r.TgasMax = Math.max(r.TgasMax, r.Tgas);
     while (s.t >= r.nextEq) { r.eqS.push({ t: s.t, f: s.stats.fwd, r: s.stats.rev }); r.nextEq += 5; if (r.eqS.length > 400) r.eqS.splice(1, 1); }
-    if (s.t >= nextTick) { nextTick += 10; hits.push.apply(hits, fire(P, 'tick', tickData(P))); }
+    if (s.t + 1e-8 >= nextTick) { nextTick += tickPs; hits.push.apply(hits, fire(P, 'tick', tickData(P))); }
     if (until && until(P)) { hits.push.apply(hits, fire(P, 'tick', tickData(P))); break; }
   }
   return hits;
@@ -220,22 +221,6 @@ for (let k = 0; k < 6; k++) {
   ok(ID(11), n11 > 0, '8 個隨機未知反應中 ' + n11 + ' 個達 4%（誤差 ' + errs.join('、') + '）');
   results[ID(10)].rate = n10 / N; results[ID(11)].rate = n11 / N;
 }
-// h1. 千次擦肩：Ea 40、200 K
-{
-  only = [ID('h1')];
-  const P = newPage(); set(P, { T: 200, Ea: 40, nA: 200, nB: 200 });
-  const hits = run(P, 2000, Q => Q.cur.sim.stats.collAB >= 1000);
-  ok(ID('h1'), has(hits, ID('h1')), '碰撞 ' + P.cur.sim.stats.collAB + ' 次、反應 ' + P.cur.sim.stats.fwd + ' 次');
-  only = null;
-}
-// h2. 每次相遇都反應：Ea 0
-{
-  only = [ID('h2')];
-  const P = newPage(); set(P, { Ea: 0 });
-  const hits = run(P, 300, Q => Q.cur.sim.stats.collAB >= 60);
-  ok(ID('h2'), has(hits, ID('h2')), '碰撞 ' + P.cur.sim.stats.collAB + '、反應 ' + P.cur.sim.stats.fwd);
-  only = null;
-}
 // h3. 自我加熱：反應熱留在氣體裡、ΔH −40、Ea 2、200 K、各 200 個
 {
   only = [ID('h3')];
@@ -304,6 +289,97 @@ only = null;
 
 
 // ---------- 報告 ----------
+// 最快播放速度為 200 ps／秒，對應每 100 ps 送一次任務回報。
+function runFast(P, maxT, finished) {
+  const hits = [];
+  P.speed = 2;
+  while (P.cur.sim.t < maxT - 1e-8) {
+    hits.push(...run(P, P.cur.sim.t + 100 - 1e-8, null, 100));
+    if (finished(P.cur.sim.stats)) break;
+  }
+  return hits;
+}
+const trials = 60;
+function secondsRange(times) {
+  return (Math.min(...times) / 200).toFixed(1) + '～' + (Math.max(...times) / 200).toFixed(1) + ' 秒';
+}
+
+// h1：保留同一反應的高溫紀錄，降溫後等到 1000 次無效碰撞。
+{
+  const id = ID('h1'), times = [];
+  for (let i = 0; i < trials; i++) {
+    const P = newPage({ T: 1000, Ea: 35, nA: 200, nB: 200 });
+    const hits = runFast(P, 2000, st => st.fwd >= 1);
+    const hotTime = P.cur.sim.t;
+    set(P, { T: 200 });
+    hits.push(...runFast(P, 2000, st => st.collAB >= 1000));
+    hidOk('h1', hits, i ? '' : 'Ea 35 kJ/mol、A、B 各 200，1000 K 先反應，再降到 200 K');
+    if (has(hits, id)) times.push(hotTime + P.cur.sim.t);
+  }
+  assert.ok(results[id].pass >= trials * 0.9, 'h1 成功率須達 90%');
+  console.log('✓ h1：' + results[id].pass + '/' + trials + '，實驗等待 ' + secondsRange(times));
+
+  for (const change of [{ Ea: 40 }, { T: 200 }]) {
+    const P = newPage();
+    // 事先用核心找出只降溫也能重現舊條件的種子。
+    if (change.T) seedBase = 3;
+    set(P, change);
+    const hits = runFast(P, 2000, st => st.collAB >= 1000);
+    const row = summary(P.cur);
+    assert.ok(row.collAB >= 1000 && row.fwd === 0 && !has(hits, id), '達到舊條件也不能完成');
+    console.log('✓ 舊做法 h1：只調 ' + Object.keys(change)[0] + ' 到 ' + Object.values(change)[0] +
+      '，碰撞 ' + row.collAB + ' 次、正反應 ' + row.fwd + ' 次，未完成');
+  }
+
+  const check = missions.find(m => m.id === id).check;
+  const cold = { key: '35|-10|0|0', mys: 0, T: 200, collAB: 1000, fwd: 0 };
+  const hot = { ...cold, T: 1000, fwd: 1 };
+  for (const row of [{ ...hot, key: '40|-10|0|0' }, { ...hot, T: 200 }, { ...hot, mys: 1 }, { ...hot, fwd: 0 }]) {
+    assert.equal(check({ type: 'tick', data: { run: cold, runs: [row, cold] } }), false);
+  }
+}
+
+// h2：先量測預設反應熱，再用相同的 60 個種子驗證強放熱的做法。
+{
+  const id = ID('h2'), times = [], reverse = [], conversion = [];
+  let reached = 0, oldHits = 0;
+  for (let seed = 1; seed <= trials; seed++) {
+    seedBase = seed;
+    const P = newPage({ Ea: 0 });
+    const hits = runFast(P, 1000, st => st.fwd - st.rev >= 95);
+    const row = summary(P.cur);
+    if (row.conv >= 0.95) reached++;
+    if (row.collAB >= 50 && row.fwd === row.collAB) oldHits++;
+    reverse.push(row.rev);
+    conversion.push(Math.round(100 * row.conv));
+    assert.ok(!has(hits, id));
+  }
+  assert.equal(oldHits, trials);
+  console.log('✓ 舊做法 h2：只調 Ea 到 0，400 K、ΔH −10 kJ/mol，' + trials + ' 次均未完成。' +
+    '在 1000 ps 內達 95% 轉化 ' + reached + '/' + trials + '，轉化率 ' + Math.min(...conversion) + '～' +
+    Math.max(...conversion) + '%，逆反應 ' + Math.min(...reverse) + '～' + Math.max(...reverse) + ' 次。');
+  // 11/20 試玩種子 7 的亂按條件（Ea 0、ΔH −17、A 80、B 190）：放熱不夠大，不算
+  {
+    let hit17 = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      seedBase = seed;
+      const P = newPage({ Ea: 0, dH: -17, nA: 80, nB: 190 });
+      if (has(runFast(P, 1000, st => st.fwd - st.rev >= 76), id)) hit17++;
+    }
+    assert.equal(hit17, 0, 'ΔH −17 不可完成 h2');
+    console.log('✓ 亂按條件 Ea 0、ΔH −17、A 80、B 190：20 次均未完成 h2');
+  }
+  for (let seed = 1; seed <= trials; seed++) {
+    seedBase = seed;
+    const P = newPage({ Ea: 0, dH: -40 });
+    const hits = runFast(P, 2000, st => st.fwd - st.rev >= 95);
+    hidOk('h2', hits, seed > 1 ? '' : '400 K、Ea 0、ΔH −40 kJ/mol，A、B 各 100');
+    if (has(hits, id)) times.push(P.cur.sim.t);
+  }
+  assert.ok(results[id].pass >= trials * 0.9, 'h2 成功率須達 90%');
+  console.log('✓ h2：' + results[id].pass + '/' + trials + '，實驗等待 ' + secondsRange(times));
+}
+
 let fail = 0, stars = 0, hstars = 0;
 missions.forEach(m => {
   const r = results[m.id];
