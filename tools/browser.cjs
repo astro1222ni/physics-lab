@@ -93,7 +93,8 @@ async function takeSlot() {
   const waitDir = SLOT_BASE + '.wait';
   try { fs.mkdirSync(waitDir, { recursive: true }); } catch (e) { /* 忽略 */ }
   const t0 = Date.now();
-  const ticketName = String(t0).padStart(15, '0') + '-' + process.pid + '-' + Math.random().toString(36).slice(2, 8) + '.txt';
+  // 11/20 站長：龍騰串最高優先。設 LAB_BROWSER_PRIORITY 時號碼牌以 ! 開頭，排在所有一般號碼牌前面。
+  const ticketName = (process.env.LAB_BROWSER_PRIORITY ? '!' : '') + String(t0).padStart(15, '0') + '-' + process.pid + '-' + Math.random().toString(36).slice(2, 8) + '.txt';
   const ticket = path.join(waitDir, ticketName);
   const label = process.argv.slice(1).join(' ');
   const touch = () => {
