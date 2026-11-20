@@ -14,6 +14,21 @@
   const P = function (ev) { return ev.type === 'params' && ev.data.src !== 'preset'; };
   /** 切口類型「變成」某一種（從別的類型調過來） */
   const becomes = function (ev, type) { return P(ev) && ev.data.type === type && ev.data.prevType !== type; };
+  /** 固定切法方向，從三個逐漸縮小的非退化截面走到錐頂。 */
+  function shrinkToTip(ev, mem, family, limit) {
+    if (ev.type !== 'params') return false;
+    const d = ev.data, prev = mem.cut;
+    const shrinking = P(ev) && prev && d.alpha === prev.alpha && d.beta === prev.beta && prev.d - d.d >= 0.1 - 1e-9;
+    const complete = shrinking && mem.steps >= 2 && becomes(ev, limit) && d.d === 0;
+    if (d.family !== family || d.d <= 0) {
+      mem.cut = null;
+      mem.steps = 0;
+    } else if (!P(ev) || !prev || d.alpha !== prev.alpha || d.beta !== prev.beta || d.d !== prev.d) {
+      mem.cut = d;
+      mem.steps = shrinking ? mem.steps + 1 : 0;
+    }
+    return !!complete;
+  }
   const near = function (v, want, tol) { return isFinite(v) && Math.abs(v - want) <= tol; };
   /** P 看兩個焦點的夾角（度）；量不到時 NaN */
   const focalAngle = function (d) {
@@ -124,12 +139,12 @@
     {
       id: 'conic-sections-h1', level: 3, hidden: true,
       riddle: { zh: '所有的路都在這裡相遇，也在這裡結束。', en: 'Every road meets here — and ends here.' },
-      check: function (ev) { return becomes(ev, 'point'); }
+      check: function (ev, mem) { return shrinkToTip(ev, mem, 'ellipse', 'point'); }
     },
     {
       id: 'conic-sections-h2', level: 4, hidden: true,
       riddle: { zh: '兩條路在一個點交會，從此分道揚鑣，再也不轉彎。', en: 'Two roads cross at a single point, then part for good and never turn again.' },
-      check: function (ev) { return becomes(ev, 'lines'); }
+      check: function (ev, mem) { return shrinkToTip(ev, mem, 'hyperbola', 'lines'); }
     },
     {
       id: 'conic-sections-h3', level: 6, hidden: true,

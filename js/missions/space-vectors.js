@@ -137,7 +137,9 @@
       riddle: { zh: '背對背出發的兩個旅人，走得再遠也圍不出一塊地。', en: 'Two travellers who set off back to back can walk forever and never fence in a field.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'vec' && ab(d) && !d.chal && norm(d.a) > EPS && norm(d.b) > EPS && d.area <= 1e-9 && d.dot < 0;
+        if (ev.type !== 'vec' || !ab(d) || d.chal) return false;
+        const a = norm(d.a), b = norm(d.b);
+        return a > EPS && b > EPS && Math.abs(a - b) > 0.1 && d.area <= 1e-9 && d.dot < 0;
       }
     },
     {
@@ -155,9 +157,18 @@
     {
       id: 'space-vectors-h3', level: 5, hidden: true,
       riddle: { zh: '一個量影子，一個量地盤，兩個人量出同一個數。', en: 'One measures the shadow, one measures the land, and both come up with the same number.' },
-      check: function (ev) {
+      check: function (ev, mem) {
         const d = ev.data;
-        return ev.type === 'vec' && ab(d) && !d.chal && d.dot > 0.1 && near(d.area, d.dot, 0.01);
+        if (ev.type !== 'vec' || !ab(d) || d.chal) return false;
+        if (!mem.a || d.a.some(function (x, i) { return x !== mem.a[i]; })) {
+          mem.a = d.a.slice();
+          mem.b = null;
+        }
+        if (nz(d.a) < 2 || nz(d.b) < 2 || !d.a.every(function (x, i) { return Math.abs(x) > EPS || Math.abs(d.b[i]) > EPS; })) return false;
+        if (d.dot <= 0.1 || !near(d.area, d.dot, 0.01)) return false;
+        // 保持方向，改變 b 的長度，驗證面積與內積同比例改變。
+        if (!mem.b) { mem.b = d.b.slice(); return false; }
+        return dot(d.b, mem.b) > 0 && par(d.b, mem.b) && Math.abs(norm(d.b) - norm(mem.b)) > 0.1;
       }
     },
     // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------

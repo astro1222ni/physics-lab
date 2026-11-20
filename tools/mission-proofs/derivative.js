@@ -19,7 +19,8 @@ function stateEv(fn, a, h, k, opt) {
   return { type: 'state', data: {
     fn: fn, k: Object.assign({}, k), x: a, h: h, fa: DC.inDomain(fn, a) ? DC.f(fn, a, k) : null, dq: dq, sq: sq, sym: !!opt.sym,
     d1: d1, d2: DC.d2(fn, a, k), err: d1 != null && dq != null ? Math.abs(dq - d1) : null, errSym: d1 != null && sq != null ? Math.abs(sq - d1) : null,
-    chal: chal, tan: showTan && !chal, b: tan ? tan.b : null, xi: tan ? tan.xInt : null, roots: fn === 'cubic' ? DC.cubicRoots(k) : null } };
+    chal: chal, tan: showTan && !chal, b: tan ? tan.b : null, xi: tan ? tan.xInt : null, roots: fn === 'cubic' ? DC.cubicRoots(k) : null,
+    deriv: !!opt.deriv } };
 }
 /** 沿著曲線走：和頁面一樣把 a 的範圍切成格子，走過的格子記下來 */
 function traceEv(fn, from, to, k) {
@@ -94,19 +95,26 @@ expect('11', [stateEv('ln', 2.718, 0.5)], true, '打字 a = 2.718');
 expect('12', [{ type: 'challenge', data: { fn: 'sin', m: 0.5, time: 14, streak: 3, last3: 40 } }], true, '連續三題共 40 秒');
 expect('12', [{ type: 'challenge', data: { fn: 'sin', m: 0.5, time: 14, streak: 3, last3: 46 } }], false, '共 46 秒');
 expect('12', [{ type: 'challenge', data: { fn: 'sin', m: 0.5, time: 5, streak: 2, last3: null } }], false, '只有兩題');
-expect('h1', [traceEv('exp', -Infinity, Infinity)], true, '沿著 eˣ 走完');
+const expTrace = traceEv('exp', -Infinity, Infinity);
+const expCompare = [-1, 0, 1].map(x => stateEv('exp', x, 0.5, null, { deriv: true }));
+expect('h1', expCompare.concat(expTrace), true, '選 exp 並顯示導函數和切線，在 x = −1、0、1 比較斜率及函數值，再沿曲線描完');
+expect('h1', [stateEv('exp', 2.2, 0.5), expTrace], false, '只選 exp 並自動描完');
+expect('h1', [expCompare[0], expCompare[0], expTrace], false, '在同一點反覆看不能當成不同位置的比較');
 expect('h1', [traceEv('sin', -Infinity, Infinity)], false, 'sin x 不算');
 expect('h2', [stateEv('abs', 0, 0.3, null, { sym: true })], true, '|x| 在 0、勾對稱差商：算出 ' + DC.symQuot('abs', 0, 0.3));
 expect('h2', [stateEv('abs', 0.01, 0.3, null, { sym: true })], false, 'a = 0.01');
 {
   const k = { a: 1, b: 0, c: -1, d: 0 };   // x³ − x：根 −1、0、1
-  expect('h3', [stateEv('cubic', -0.5, 0.5, k)], true, 'x³ − x 在 −1、0 的中點 −0.5（切線通過 1）');
-  expect('h3', [stateEv('cubic', 0, 0.5, k)], true, 'x³ − x 在 −1、1 的中點 0（切線 y = −x 通過 0）');
-  expect('h3', [stateEv('cubic', -0.5, 0.5, k, { tan: false })], false, '切線沒有顯示');
-  expect('h3', [stateEv('cubic', -0.52, 0.5, k)], false, 'a = −0.52');
+  const root = stateEv('cubic', -1, 0.5, k);
+  expect('h3', [root, stateEv('cubic', -0.5, 0.5, k)], true, '調成 x³ − x，先把切點移到根 −1，再到 −1、0 的中點 −0.5（切線通過 1）');
+  expect('h3', [root, stateEv('cubic', 0, 0.5, k)], true, '改看 −1、1 的中點 0（切線也通過 0）');
+  expect('h3', [root, stateEv('cubic', -0.5, 0.5, k, { tan: false })], false, '切線沒有顯示');
+  expect('h3', [root, stateEv('cubic', -0.52, 0.5, k)], false, 'a = −0.52');
   // 預設的三次函數：根 (1 − √17)/2、1、(1 + √17)/2，中點 0.5 剛好在格點上
   const r = DC.cubicRoots(DC.DEFAULT_COEF);
-  expect('h3', [stateEv('cubic', grid((r[0] + r[2]) / 2, 0.01), 0.5)], true, '預設三次函數，兩個無理根的中點 ' + grid((r[0] + r[2]) / 2, 0.01).toFixed(2));
+  expect('h3', [stateEv('cubic', grid((r[0] + r[2]) / 2, 0.01), 0.5)], false, '預設三次函數，只把切點設到兩個無理根的中點 0.5');
+  expect('h3', [stateEv('cubic', 1, 0.5), stateEv('cubic', 0.5, 0.5)], false, '預設三次函數，即使先去根再去中點也不算');
+  expect('h3', [stateEv('cubic', 0, 0.5, k), stateEv('cubic', 0, 0.5, k)], false, '根和中點同在 0 時，重複停在原地不算');
 }
 
 // ---------- 挑戰題：每一題都在 0.01 的格點上做得到 ----------
@@ -184,7 +192,7 @@ expect('h2', [stateEv('abs', 0.01, 0.3, null, { sym: true })], false, 'a = 0.01'
 {
   const rand = DC.rng(1113);
   const ri = n => Math.floor(rand() * n);
-  const hid = missions.filter(m => /-h(4|5|6|7|8|9|10)$/.test(m.id));
+  const hid = missions.filter(m => /-h(3|4|5|6|7|8|9|10)$/.test(m.id));
   const all = missions.filter(m => !/-(1|2|5|10|12)$/.test(m.id) && !/-h1$/.test(m.id));
   const runs = 2000, steps = 150, cnt = {};
   for (let r = 0; r < runs; r++) {
@@ -211,6 +219,35 @@ expect('h2', [stateEv('abs', 0.01, 0.3, null, { sym: true })], false, 'a = 0.01'
   const ok = worst <= runs * 0.015;
   if (!ok) fail++;
   console.log((ok ? '  ✓ ' : '  ✗ ') + '亂按 ' + runs + ' 回（每回 ' + steps + ' 步）：' + (lines.join('、') || '都沒有完成') + '（新的隱藏任務每回都不到 1.5%）');
+}
+
+// 原亂按沒有描圖。補測換函數、勾選導函數、移切點及自動描圖。
+{
+  const rand = DC.rng(1114), mission = byId('h1');
+  let hits = 0;
+  for (let run = 0; run < 2000; run++) {
+    const mem = {};
+    let fn = 'cubic', x = 2.2, deriv = false, got = false;
+    for (let step = 0; step < 150; step++) {
+      const u = rand();
+      let event;
+      if (u < 0.12) {
+        fn = DC.IDS[Math.floor(rand() * DC.IDS.length)];
+        const [lo, hi] = DC.FUNCS[fn].aRange;
+        x = Math.min(hi, Math.max(lo, x));
+      } else if (u < 0.16) {
+        deriv = !deriv;
+      } else if (u < 0.23) {
+        const [lo, hi] = DC.FUNCS[fn].aRange;
+        x = grid(lo + rand() * (hi - lo), 0.01);
+      } else if (u < 0.25 && fn === 'exp') {
+        event = expTrace;
+      } else continue;
+      if (!got && mission.check(event || stateEv(fn, x, 0.5, null, { deriv }), mem)) { hits++; got = true; }
+    }
+  }
+  console.log('  ・補測亂按 2000 回（每回 150 步，含自動描圖）：h1 ' + hits + ' 次');
+  if (hits > 30) fail++;
 }
 
 // 做法交叉檢查：每個新隱藏任務的做法只完成它自己

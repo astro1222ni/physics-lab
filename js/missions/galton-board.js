@@ -108,7 +108,24 @@
     {
       id: 'galton-board-h1', level: 3, hidden: true,
       riddle: { zh: '一千條路，只有一條有人走。', en: 'A thousand roads, and only one of them is ever walked.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'drop' && !d.hidden && d.n >= 10 && (d.p === 0 || d.p === 1) && d.N >= 10; }
+      check: function (ev, mem) {
+        const d = ev.data;
+        if ((ev.type === 'board' || ev.type === 'drop') && d.n !== mem.n) {
+          mem.n = d.n;
+          mem.spread = false;
+          mem.edge = null;
+        }
+        if (ev.type !== 'drop' || d.hidden || d.n < 10) return false;
+        // 先看到同一塊板上的分散，再比較兩種確定走法。
+        if (d.p > 0 && d.p < 1) {
+          if (d.N >= 20 && d.variance > 0) { mem.spread = true; mem.edge = null; }
+          return false;
+        }
+        if (!mem.spread || d.N < 10) return false;
+        const opposite = mem.edge != null && mem.edge !== d.p;
+        mem.edge = d.p;
+        return opposite;
+      }
     },
     {
       id: 'galton-board-h2', level: 6, hidden: true,

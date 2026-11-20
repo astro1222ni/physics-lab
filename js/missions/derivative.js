@@ -3,7 +3,7 @@
  *   'state'：切點、間隔、函數或勾選項改完之後（拖曳放開、滑桿放開、按鍵、按鈕）。
  *            { fn（'cubic' | 'sin' | 'exp' | 'ln' | 'abs'）, k（三次函數係數 {a, b, c, d}）, x（切點 a）, h（有正負）,
  *              fa（f(a)）, dq（差商）, sq（對稱差商）, sym（有沒有勾對稱差商）, d1（f′(a)，不可微時 null）, d2（f″(a)）,
- *              err（|差商 − f′(a)|）, errSym（|對稱差商 − f′(a)|）, chal（挑戰中）, tan（切線有顯示）,
+ *              err（|差商 − f′(a)|）, errSym（|對稱差商 − f′(a)|）, chal（挑戰中）, tan（切線有顯示）, deriv（導函數有顯示）,
  *              b（切線的 y 截距，沒有切線時 null）, xi（切線的 x 截距，水平或沒有切線時 null）, roots（三次函數的相異實根，其他函數 null） }
  *   'shrink'：「讓 h → 0」動畫跑完。{ fn, from（開始的 |h|）, to（結束的 |h|） }
  *   'trace'：沿著曲線走完、或拖曳放開後。{ fn, k, coverage（導函數描出來的比例 0–1） }
@@ -119,7 +119,18 @@
     {
       id: 'derivative-h1', level: 4, hidden: true,
       riddle: { zh: '描出來的影子，和本人一模一樣。', en: 'The shadow it traces is the very image of itself.' },
-      check: function (ev) { return ev.type === 'trace' && ev.data.fn === 'exp' && ev.data.coverage >= 0.9; }
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'state' && ev.type !== 'trace') return false;
+        if (d.fn !== 'exp') { mem.left = mem.origin = mem.right = false; return false; }
+        if (ev.type === 'trace') return !!(mem.left && mem.origin && mem.right) && d.coverage >= 0.9;
+        if (!d.deriv || !d.tan || !near(d.d1, d.fa, 1e-9)) return false;
+        // 比較 f(0) = f′(0) = 1，以及原點兩側大小不同的函數值和斜率。
+        if (d.x <= -1) mem.left = true;
+        if (Math.abs(d.x) <= 0.01) mem.origin = true;
+        if (d.x >= 1) mem.right = true;
+        return false;
+      }
     },
     {
       id: 'derivative-h2', level: 5, hidden: true,
@@ -129,12 +140,27 @@
     {
       id: 'derivative-h3', level: 7, hidden: true,
       riddle: { zh: '站在兩個朋友的正中間，伸手一指，正好指向第三個朋友。', en: 'Stand exactly halfway between two friends, point straight ahead, and you point at the third.' },
-      check: function (ev) {
+      check: function (ev, mem) {
         const d = ev.data;
-        if (ev.type !== 'state' || d.fn !== 'cubic' || !d.tan || !d.roots || d.roots.length !== 3) return false;
+        if (ev.type !== 'state') return false;
+        if (d.fn !== 'cubic' || !d.roots || d.roots.length !== 3) { mem.roots = null; mem.rootX = null; return false; }
         const r = d.roots;
+        // 預設式除以首項係數為 x³ − 2x² − 3x + 4；只倍乘原式不會改變根。
+        const k = d.k;
+        if (near(k.b, -2 * k.a, 1e-9) && near(k.c, -3 * k.a, 1e-9) && near(k.d, 4 * k.a, 1e-9)) {
+          mem.roots = null; mem.rootX = null; return false;
+        }
+        if (!mem.roots || r.some(function (x, i) { return !near(x, mem.roots[i], 1e-9); })) {
+          mem.roots = r;
+          mem.rootX = null;
+        }
         if (r[1] - r[0] < 0.3 || r[2] - r[1] < 0.3) return false;
-        return [[0, 1], [0, 2], [1, 2]].some(function (p) { return Math.abs(d.x - (r[p[0]] + r[p[1]]) / 2) <= 0.01; });
+        if (!d.tan) return false;
+        const atRoot = r.some(function (x) { return near(d.x, x, 0.01); });
+        const atMidpoint = [[0, 1], [0, 2], [1, 2]].some(function (p) { return near(d.x, (r[p[0]] + r[p[1]]) / 2, 0.01); });
+        const complete = mem.rootX != null && Math.abs(d.x - mem.rootX) >= 0.1 && atMidpoint;
+        if (atRoot) mem.rootX = d.x;
+        return complete;
       }
     },
     // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------

@@ -1130,7 +1130,10 @@
     cursor: function () { return cursorX(); },
     num: num, radShort: radShort,
     onRotate: function () { emit('rotate3d', { mode: state.mode }); },
-    onAxis: function (ang) { emit('axis3d', { angle: ang, mode: state.mode }); },
+    onAxis: function (ang) {
+      const p = state.p;
+      emit('axis3d', { angle: ang, mode: state.mode, A: p.A, w: p.w, phi: p.phi, k: p.k });
+    },
     onContextLost: function () {
       setView('2d');
       viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');

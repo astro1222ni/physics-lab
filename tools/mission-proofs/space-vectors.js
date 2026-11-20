@@ -92,9 +92,14 @@ expect(3, [vecEv('inner', { a: [1, 1, 0], b: [0, 1, 1] }, { chal: true })], fals
 
 // ---------- 隱藏任務 ----------
 reach('h1', 'inner', { a: [1, 2, 0.5], b: [-2, -4, -1] }, 'b = −2a（反方向平行）');
+expect('h1', [vecEv('inner', { a: [1, 2, 0.5], b: [-1, -2, -0.5] })], false, '按反向產生 b = −a，長度一樣');
 expect('h1', [vecEv('inner', { a: [1, 2, 0.5], b: [2, 4, 1] })], false, '同方向平行不算');
 reach('h2', 'volume', { a: [2, 2, 1], b: [-2, 1, 2], c: [1, -2, 2] }, '(2, 2, 1)、(−2, 1, 2)、(1, −2, 2) 兩兩垂直、長度都是 3');
-reach('h3', 'cross', { a: [1, 1, 0], b: [0, 1, 0] }, 'a = (1, 1, 0)、b = (0, 1, 0)：夾角 45°，|a × b| = a · b = 1');
+const a45 = [0, 1, 1], b45 = [-2, 1, 2], doubled45 = [-4, 2, 4];
+const scaled45 = [b45, [-4, 1, 2], [-4, 2, 2], doubled45].map(b => vecEv('cross', { a: a45, b: b }));
+expect('h3', scaled45, true, '固定 a = (0, 1, 1)，把 b 從 (−2, 1, 2) 改成 (−4, 2, 4)：面積和內積從 3 同時變成 6');
+expect('h3', [vecEv('cross', { a: [2, 0, 0], b: [1, 1, 0] })], false, '課本常見的座標平面例子 (2, 0, 0)、(1, 1, 0)');
+expect('h3', [vecEv('cross', { a: a45, b: b45 }), vecEv('cross', { a: a45, b: b45 })], false, '同一組立體向量重複觀察，長度沒變');
 
 // ---------- 11/13 新增的隱藏任務 h4–h10 ----------
 /** 學生打數字：在 −4 到 4 之間、最多小數第 2 位 */
@@ -173,7 +178,7 @@ expect('h10', [vecEv('volume', { a: [1, 1, 1], b: [1, 2, 1], c: [1, 1, 3] })], f
   const ri = n => Math.floor(rand() * n);
   const grid = () => (ri(17) - 8) / 2;
   const tabsOf = mode => mode === 'plane' ? ['n', 'q'] : mode === 'volume' ? ['a', 'b', 'c'] : ['a', 'b'];
-  const hid = missions.filter(m => /-h(4|5|6|7|8|9|10)$/.test(m.id));
+  const hid = missions.filter(m => /-h(1|3|4|5|6|7|8|9|10)$/.test(m.id));
   const all = missions.filter(m => m.id !== 'space-vectors-1' && !/-(11|12)$/.test(m.id));
   const runs = 2000, steps = 150, cnt = {};
   for (let r = 0; r < runs; r++) {

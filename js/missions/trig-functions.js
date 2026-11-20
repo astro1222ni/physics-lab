@@ -5,7 +5,8 @@
  *   'wave'：波形模式改變 A、ω、φ、k 之後。{ src, A, w, phi（度）, k, amp, period, max, min, firstMax }
  *   'sum'：疊合模式改變 a、b 之後。{ src, a, b, r, phi（度） }
  *   'match'：挑戰時對準了目標曲線。{ streak（連續對準幾題）, secs（這一題用了幾秒）, last3（最近三題的總秒數，連續不到三題時 NaN）, A, w, phi, k }
- *   'rotate3d'：在 3D 檢視拖曳轉動了視角。'axis3d'：在 3D 檢視轉到順著螺旋線的軸看過去（夾角 < 6°）。
+ *   'rotate3d'：在 3D 檢視拖曳轉動了視角。
+ *   'axis3d'：在 3D 檢視轉到順著螺旋線的軸看過去（夾角 < 6°）。{ angle, mode, A, w, phi, k }
  */
 (function () {
   'use strict';
@@ -122,7 +123,17 @@
     {
       id: 'trig-functions-h1', level: 3, hidden: true,
       riddle: { zh: '海面沒有一絲波紋，卻比岸邊高出一截。', en: 'Not a ripple on the sea, and yet it stands above the shore.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'wave' && Math.abs(d.A) < 1e-9 && Math.abs(d.k) >= 0.5; }
+      check: function (ev, mem) {
+        if (ev.type !== 'wave') return false;
+        const d = ev.data, prev = mem.wave;
+        if (prev && d.A === prev.A && d.k === prev.k && d.w === prev.w && d.phi === prev.phi) return false;
+        const closing = prev && d.k >= 0.5 && d.k === prev.k && d.w === prev.w && d.phi === prev.phi &&
+          d.A * prev.A >= 0 && Math.abs(prev.A) - Math.abs(d.A) >= 0.1 - 1e-9;
+        const flat = !!closing && mem.closing && d.A === 0;
+        mem.wave = d;
+        mem.closing = !!closing;
+        return flat;
+      }
     },
     {
       id: 'trig-functions-h2', level: 5, hidden: true,
@@ -132,7 +143,15 @@
     {
       id: 'trig-functions-h3', level: 6, hidden: true,
       riddle: { zh: '從盡頭望過去，所有的起伏都只是在原地打轉。', en: 'Seen from the very end, every rise and fall is only going round in circles.' },
-      check: function (ev) { return ev.type === 'axis3d'; }
+      check: function (ev, mem) {
+        if (ev.type !== 'axis3d') return false;
+        const d = ev.data;
+        if (d.mode !== 'wave' || Math.abs(d.A) < 0.5) { mem.view = null; return false; }
+        const prev = mem.view;
+        // 同一半徑和螺距，相位差半圈時點在圓的對側，投影的圓不變。
+        if (!prev || d.A !== prev.A || d.w !== prev.w || d.k !== prev.k) { mem.view = d; return false; }
+        return Math.cos((d.phi - prev.phi) * PI / 180) <= Math.cos(175 * PI / 180) + 1e-9;
+      }
     },
     // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------
     {

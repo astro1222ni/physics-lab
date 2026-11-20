@@ -89,7 +89,13 @@ expect('9', [guessEv(10, 0.37, 0.36, 300)], true, '猜 0.36（差 0.01）');
 expect('9', [guessEv(10, 0.37, 0.34, 300)], false, '猜 0.34（差 0.03）');
 expect('12', [guessEv(16, 0.37, 0.36, 50)], true, '50 顆球、猜差 0.01');
 expect('12', [guessEv(16, 0.37, 0.37, 51)], false, '用了 51 顆球');
-expect('h1', dropSeq(G.rng(2), 10, 1, 10), true, 'n = 10、p = 1：10 顆球全部落在最右格');
+const spread = dropSeq(G.rng(2), 10, 0.5, 20).slice(-1);
+const left = dropSeq(G.rng(2), 10, 0, 10), right = dropSeq(G.rng(2), 10, 1, 10);
+const edgeComparison = spread.concat([boardEv(10, 0)], left, [boardEv(10, 1)], right);
+expect('h1', edgeComparison, true, '固定 10 層，p = 0.5 放至少 20 顆看分散，再到 p = 0、1 各放 10 顆');
+expect('h1', [boardEv(10, 1)].concat(right), false, '直接把 p 拉到端點再放 10 顆不算');
+expect('h1', spread.concat(left, left), false, '分散後只看同一端的集中不算');
+expect('h1', spread.concat(left, [boardEv(11, 0), boardEv(10, 1)], right), false, '中途換了層數，不能沿用先前的對照');
 expect('h1', dropSeq(G.rng(2), 10, 0.95, 10), false, 'p = 0.95 不算');
 expect('h2', [dropEv(3, 0.5, [1, 3, 3, 1])], true, 'n = 3、8 顆球恰好排成 1、3、3、1');
 expect('h2', [dropEv(3, 0.5, [1, 3, 3, 2])], false, '9 顆球不算');
@@ -196,12 +202,39 @@ expect('h10', [sel(6, 0.9, 0), sel(5, 0.9, 1), sel(5, 0.9, 2), sel(4, 0.9, 2), s
   console.log((ok ? '  ✓ ' : '  ✗ ') + '亂按 2000 回（每回 150 步：20% 換層數、20% 換 p、60% 點格子）：' + (list.length ? list.join('、') + '（每回都不到 1.5%）' : '一次都沒有觸發'));
 }
 
+// 原亂按只換釘板和選格。另用同樣回數和步數，補測換板與快速放球。
+{
+  const rand = G.rng(1113), mission = byId('h1');
+  let hits = 0;
+  for (let run = 0; run < 2000; run++) {
+    const mem = {};
+    let n = 10, p = 0.5, counts = G.zeros(n + 1), got = false;
+    for (let step = 0; step < 150; step++) {
+      const u = rand();
+      if (u < 0.2) {
+        const next = 1 + Math.floor(rand() * 16);
+        if (next !== n) { n = next; counts = G.zeros(n + 1); }
+        mission.check(boardEv(n, p), mem);
+      } else if (u < 0.4) {
+        const next = Math.round(rand() * 20) / 20;
+        if (next !== p) { p = next; counts = G.zeros(n + 1); }
+        mission.check(boardEv(n, p), mem);
+      } else if (u < 0.6) {
+        G.dropMany(rand, n, p, u < 0.55 ? 10 : 100, counts);
+        if (!got && mission.check(dropEv(n, p, counts), mem)) { hits++; got = true; }
+      }
+    }
+  }
+  console.log('  ・補測亂按 2000 回（每回 150 步，含落球）：h1 ' + hits + ' 次');
+  if (hits > 30) fail++;
+}
+
 // ---------- 任務之間不互相連帶 ----------
 {
   const recipes = {
     2: [sel(10, 0.5, 5)], 4: [sel(5, 0.75, 0)], 5: [sel(10, 0.5, 3)], 6: [boardEv(10, 0.6)], 7: [boardEv(14, 0.5)],
     8: [boardEv(9, 0.3), boardEv(4, 0.2)],
-    h1: dropSeq(G.rng(2), 10, 1, 10), h2: [dropEv(3, 0.5, [1, 3, 3, 1])],
+    h1: edgeComparison, h2: [dropEv(3, 0.5, [1, 3, 3, 1])],
     h4: [sel(10, 0.2, 1), boardEv(10, 0.8), sel(10, 0.8, 9)], h5: [boardEv(4, 0.75), boardEv(5, 0.6), boardEv(10, 0.3), boardEv(12, 0.25)],
     h6: [sel(8, 0.5, 2), sel(8, 0.5, 3), boardEv(9, 0.5), sel(9, 0.5, 3)], h7: [boardEv(12, 0.08), sel(12, 0.08, 0)],
     h8: [boardEv(14, 0.3), sel(14, 0.3, 6), boardEv(15, 0.3), sel(15, 0.3, 5)],

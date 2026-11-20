@@ -21,6 +21,9 @@ function wave(A, w, phi, k, src) {
   const i = TC.waveInfo({ A: A, w: w, phi: phi, k: k });
   return { type: 'wave', data: { src: src || 'slider', A: i.A, w: i.w, phi: i.phi, k: i.k, amp: i.amp, period: i.period, max: i.max, min: i.min, firstMax: i.firstMax } };
 }
+function axis(phi, mode) {
+  return { type: 'axis3d', data: { angle: 3, mode: mode || 'wave', A: 1, w: 1, phi: phi, k: 0 } };
+}
 function sum(a, b, src) {
   const s = TC.superpose(a, b);
   return { type: 'sum', data: { src: src || 'slider', a: s.a, b: s.b, r: s.r, phi: s.phi } };
@@ -92,11 +95,18 @@ expect('12', matches([{ secs: 35 }, { secs: 40 }, { secs: 38 }]), true, '連續�
 expect('12', matches([{ secs: 35 }, { secs: 40 }, { skip: true }, { secs: 30 }]), false, '中間換題：連勝中斷');
 expect('12', matches([{ secs: 50 }, { secs: 45 }, { secs: 40 }]), false, '三題共 135 秒，超過 120 秒');
 expect('12', matches([{ secs: 90 }, { secs: 30 }, { secs: 35 }, { secs: 40 }]), true, '連續四題，最近三題共 105 秒');
-expect('h1', [wave(0, 1, 0, 1)], true, 'A = 0、k = 1：一條水平線');
+expect('h1', [1, 0.5, 0].map(A => wave(A, 1, 0, 1)), true, '把 k 設成 1，再把 A 從 1 改成 0.5、0，振幅縮到零但中線仍在上方');
+expect('h1', [wave(0, 1, 0, 0), wave(0, 1, 0, 1)], false, '先把 A 拉到 0 再把 k 調高');
+expect('h1', [1, 0.5, 0].map(A => wave(A, 1, 0, -1)), false, '中線低於 x 軸');
+expect('h1', [wave(1, 1, 0, 1), wave(0, 1, 0, 1), wave(0, 1, 0, 1)], false, '直接拉到零後重複送出同一狀態');
 expect('h1', [wave(0, 1, 0, 0)], false, 'A = 0、k = 0：就是 x 軸');
 expect('h2', [angle(57.3)], true, 'θ = 57.3°（≈ 1 弧度，打字）');
 expect('h2', [angle(57)], false, 'θ = 57°：差 0.3°');
-expect('h3', [{ type: 'axis3d', data: { angle: 3 } }], true, '3D 轉到順著 x 軸看過去');
+expect('h3', [axis(0), wave(1, 1, 180, 0), axis(180)], true, '波形模式下從螺旋軸端看，將相位從 0° 調到 180°，再轉回軸向看同一個圓的對側');
+expect('h3', [{ type: 'rotate3d', data: { mode: 'wave' } }, axis(0)], false, '做一般任務時只看一次正面');
+expect('h3', [axis(0), axis(0)], false, '相位不變，重複轉向正面');
+expect('h3', [axis(0), axis(90)], false, '只差四分之一圈，還沒到圓的對側');
+expect('h3', [axis(0), axis(180, 'unit')], false, '換到單位圓模式不算同一條波形螺旋');
 
 // ---------- 挑戰題一定調得出來：目標的 A、ω、φ、k 都在滑桿的格點上 ----------
 {
@@ -168,7 +178,7 @@ expect('h10', [angle(257), angle(443), angle(625)], false, '滑桿整數角：ta
   const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   const pick = (lo, hi, step) => lo + Math.round(rand() * (hi - lo) / step) * step;
   const round = (v, n) => Math.round(v * Math.pow(10, n)) / Math.pow(10, n);
-  const NEW = ['h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10'];
+  const NEW = ['h1', 'h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10'];
   const hits = {};
   for (let run = 0; run < 2000; run++) {
     missions.forEach(m => { m.mem = {}; m.got = false; });
@@ -195,6 +205,26 @@ expect('h10', [angle(257), angle(443), angle(625)], false, '滑桿整數角：ta
   const worst = NEW.filter(id => (hits[id] || 0) > 30);
   console.log((worst.length ? '  ✗ ' : '  ✓ ') + '亂按 2000 回（每回 150 步）：' + Object.keys(hits).map(k => k + ' ' + hits[k] + ' 次').join('、') + '（新的隱藏任務每個都不到 1.5%）');
   if (worst.length) fail++;
+}
+
+// 原亂按沒有軸向事件。補測切換模式、改相位與轉視角。
+{
+  let seed = 1114;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const mission = byId('h3');
+  let hits = 0;
+  for (let run = 0; run < 2000; run++) {
+    const mem = {};
+    let mode = 'unit', phi = 0, got = false;
+    for (let step = 0; step < 150; step++) {
+      const u = rand();
+      if (u < 0.1) mode = ['unit', 'wave', 'sum'][Math.floor(rand() * 3)];
+      else if (u < 0.15 && mode === 'wave') phi = 5 * Math.round((rand() * 360 - 180) / 5);
+      else if (!got && u >= 0.15 && u < 0.16 && mission.check(axis(phi, mode), mem)) { hits++; got = true; }
+    }
+  }
+  console.log('  ・補測亂按 2000 回（每回 150 步，含 3D 軸向視角）：h3 ' + hits + ' 次');
+  if (hits > 30) fail++;
 }
 
 // ---------- 做法交叉檢查：每個新任務的做法只完成它自己 ----------

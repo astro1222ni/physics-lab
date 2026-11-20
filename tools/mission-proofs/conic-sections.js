@@ -203,8 +203,12 @@ reset(); expect(7, [params(60, 44, 2)], false, 'α 60°、β 44°：b／a = ' + 
   reset(); expect(12, [params(45, 66, 1.6)], false, 'β 66° → c ' + f3(CC.section(45, 66, 1.6).c) + '、b ' + f3(CC.section(45, 66, 1.6).b));
 }
 // 隱藏任務：平面通過頂點（d = 0）的三種退化
-reset(); expect('h1', [params(30, 55, 0)], true, 'd 拉到 0，β > α → 一點');
-reset(); expect('h2', [params(30, 20, 0)], true, 'd = 0，β < α → 兩條相交直線');
+reset(); expect('h1', [2, 1, 0.5, 0].map(d => params(30, 55, d)), true, 'α = 30°、β = 55° 固定，依序設 d = 2、1、0.5、0：橢圓縮成一點');
+reset(); expect('h2', [2, 1, 0.5, 0].map(d => params(30, 20, d)), true, 'α = 30°、β = 20° 固定，依序設 d = 2、1、0.5、0：雙曲線趨近兩條相交直線');
+reset(); expect('h1', [params(30, 55, 0)], false, '從預設直接把 d 拖到零');
+reset(); expect('h2', [params(30, 55, 0), params(30, 20, 0)], false, '先把 d 拖到零才調 β');
+reset(); expect('h1', [2, 1, 1, 0].map(d => params(30, 55, d)), false, '重複同一個非零 d 不算縮小');
+reset(); expect('h2', [params(30, 20, 2), params(30, 21, 1), params(30, 21, 0.5), params(30, 21, 0)], false, '縮小時改了平面的傾角');
 reset(); expect('h3', [params(30, 30, 0)], true, 'd = 0，β = α → 一條直線（平面與圓錐相切於一條母線）');
 reset('point'); expect('h1', [params(30, 60, 0)], false, '已經是一點，只改 β');
 reset(); expect('h2', [params(30, 20, 0.05)], false, 'd = 0.05（還是雙曲線）');
@@ -303,7 +307,7 @@ function findE(lo, hi) {
 {
   let seed = 1113; const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
   const ri = n => Math.floor(rand() * n);
-  const hid = missions.filter(m => /-h(4|5|6|7|8|9|10)$/.test(m.id));
+  const hid = missions.filter(m => /-h(1|2|4|5|6|7|8|9|10)$/.test(m.id));
   const all = missions.filter(m => !/-(2)$/.test(m.id));
   const runs = 2000, steps = 150, cnt = {};
   for (let r = 0; r < runs; r++) {
