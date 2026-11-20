@@ -585,7 +585,8 @@
   function ptRect(Z) {
     const q = E.pos(Z), row = q.row <= 7 ? q.row - 1 : q.row - 2;
     const y = PL.pad + row * PL.cellH + (q.row > 7 ? PL.gap : 0);
-    return { x: PL.x0 + (q.col - 1) * PL.cell + 0.75, y: y + 0.75, w: PL.cell - 1.5, h: PL.cellH - 1.5 };
+    const m = PL.cell >= 20 ? 1.5 : 0.75; // 11/20 試玩串：電腦版兩字母符號相鄰格幾乎相連，格距加大
+    return { x: PL.x0 + (q.col - 1) * PL.cell + m, y: y + m, w: PL.cell - 2 * m, h: PL.cellH - 2 * m };
   }
   function drawPT() {
     if (!PL) return;
@@ -602,7 +603,7 @@
       if (PL.cell >= 14) {
         g.fillStyle = inkOn(bg); g.font = font(Math.max(8.5, Math.min(15, PL.cell * 0.65)), sel ? '800' : '600');
         g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(E.SYM[Z - 1], r.x + r.w / 2, r.y + r.h / 2 + 0.5);
+        g.fillText(E.SYM[Z - 1], r.x + r.w / 2, r.y + r.h / 2 + 0.5, r.w - 3); // 字不超出格子
       }
       if (E.isException(Z)) {
         g.fillStyle = col.dark ? '#ffffff' : '#1d2228';
