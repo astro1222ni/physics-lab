@@ -204,6 +204,7 @@
     if (window.LabDeck?.mode === 'drawer' && (y < off || y > L.hm - off)) {
       x = at.x + off; y = Math.max(off, Math.min(L.hm - off, at.y));
     }
+    y = Math.max(off, Math.min(L.hm - off, y));
     D.haloText(c, text, x, y, color, 'center', 'middle', fnt(px || 15, 700, italic !== false));
   }
   function poly(c, pts, fill, stroke, width, dash) {
@@ -348,10 +349,8 @@
         const pts = arcPts(SV.unit(a), SV.unit(b), r, 28);
         poly(c, [[0, 0, 0]].concat(pts), alpha(C.accent, 0.13), null);
         strokePath(c, pts, alpha(C.accent, 0.9), 1.6);
-        const pm = P(SV.scale(pts[14], 1.9));
         const text = hide ? 'θ' : 'θ = ' + num(ang, 1) + '°';
-        if (window.LabDeck?.mode === 'drawer') D.pill(c, text, 8, 25, C.accent, 'left', fnt(12, 700));
-        else D.haloText(c, text, pm.x, pm.y, C.accent, 'center', 'middle', hide ? fnt(13, 700, true) : fnt(12.5, 700));
+        D.pill(c, text, 8, 25, C.accent, 'left', fnt(12, 700));
       }
     }
     const items = [vecItem('a', a, C['sv-a']), vecItem('b', b, C['sv-b'])];

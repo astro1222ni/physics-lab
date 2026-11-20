@@ -240,13 +240,16 @@
     c.beginPath(); c.moveTo(b.x, snap(Y(0))); c.lineTo(b.x + b.w, snap(Y(0))); c.moveTo(snap(X(0)), b.y); c.lineTo(snap(X(0)), b.y + b.h); c.stroke();
     c.font = fnt(10.5); c.fillStyle = alpha(C.muted, 0.95);
     const yAx = clampv(Y(0), b.y + 12, b.y + b.h - 4), xAx = clampv(X(0), b.x + 4, b.x + b.w - 24);
+    const axisVertices = R.empty ? [] : R.vertices;
     for (let g = Math.ceil(vb[0] / st) * st; g <= vb[1]; g += st) {
       if (Math.abs(g) < 1e-9) continue;
-      c.textAlign = 'center'; c.textBaseline = 'top'; D.haloText(c, fmt(r6(g)), X(g), Math.min(yAx + 3, b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
+      const near = axisVertices.some(function (v) { return Math.hypot(X(v[0]) - X(g), Y(v[1]) - yAx) < 12; });
+      c.textAlign = 'center'; c.textBaseline = 'top'; D.haloText(c, fmt(r6(g)), X(g), Math.min(yAx + (near ? 14 : 3), b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
     }
     for (let g = Math.ceil(vb[2] / st) * st; g <= vb[3]; g += st) {
       if (Math.abs(g) < 1e-9) continue;
-      D.haloText(c, fmt(r6(g)), xAx + 4, Y(g), C.muted, 'left', 'middle', fnt(10.5));
+      const near = axisVertices.some(function (v) { return Math.hypot(X(v[0]) - xAx, Y(v[1]) - Y(g)) < 12; });
+      D.haloText(c, fmt(r6(g)), xAx + (near ? -8 : 4), Y(g), C.muted, near ? 'right' : 'left', 'middle', fnt(10.5));
     }
     D.haloText(c, 'x', b.x + b.w - 10, yAx - 8, C.text, 'right', 'bottom', fnt(13, 'italic 600'));
     D.haloText(c, 'y', xAx + 8, b.y + 14, C.text, 'left', 'middle', fnt(13, 'italic 600'));
@@ -321,7 +324,7 @@
         c.beginPath(); c.arc(X(v[0]), Y(v[1]), 4.5, 0, Math.PI * 2); c.fill(); c.stroke();
       }
     });
-    const boxes = [];
+    const boxes = [{ x: xAx + 5, y: b.y + 3, w: 22, h: 22 }];
     const drawer = window.LabDeck?.mode === 'drawer';
     const gridLabel = T('格線間距 ', 'Grid spacing ') + fmt(st) + T(' 單位', ' unit' + (st === 1 ? '' : 's'));
     if (drawer) {

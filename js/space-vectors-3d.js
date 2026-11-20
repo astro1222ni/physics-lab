@@ -267,7 +267,6 @@
         const pts = arcPts(SV.unit(a), SV.unit(b), r, 32);
         polygon(world, [[0, 0, 0]].concat(pts), col('accent'), 0.22);
         line(world, pts, col('accent'));
-        sprite(world, hide ? 'θ' : 'θ = ' + B.num(q.angle, 1) + '°', SV.scale(pts[16], 1.6), C.accent, 0.38, hide);
       }
     }
     function buildCross(q, hide) {
@@ -365,7 +364,7 @@
     }
     function resetCamera() {
       const e = SV.viewBasis(B.yaw0, B.pitch0).e;
-      const dist = Math.max(G, R) * (camera.aspect < 1 ? 3.9 : 3.2);
+      const dist = Math.max(G, R) * (camera.aspect < 1 ? 4.6 : 4.2);
       camera.position.set(e[0] * dist, e[1] * dist, e[2] * dist + 0.5);
       controls.target.set(0, 0, Math.min(1.5, R * 0.2));
       camera.updateProjectionMatrix();

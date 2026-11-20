@@ -180,22 +180,36 @@
   function lbl(labels, p, text, col, pri, opts) { const q = XY(p); labels.push(Object.assign({ x: q[0], y: q[1], text: text, col: col, pri: pri || 0 }, opts || {})); }
   function placeLabels(c, labels) {
     const boxes = [];
+    const centres = labels.filter(function (L) { return L.centreMark; });
     labels.sort(function (a, b2) { return b2.pri - a.pri; }).forEach(function (L) {
       c.font = L.font || fnt(11.5, 700);
       const w = c.measureText(L.text).width + 12, h = 18;
       const dx = L.dx || 0, dy = L.dy || 0;
       const cands = L.center ? [[-w / 2, -h / 2], [-w / 2, -h / 2 - 16], [-w / 2, -h / 2 + 16], [-w / 2 - 20, -h / 2], [-w / 2 + 20, -h / 2]]
         : [[10, -10 - h], [10, 8], [-10 - w, -10 - h], [-10 - w, 8], [-w / 2, -16 - h], [-w / 2, 14], [16, -h / 2], [-16 - w, -h / 2]];
+      if (L.centreMark) {
+        [40, 64, 88, 112].forEach(function (r) {
+          for (let i = 0; i < 8; i++) {
+            const a = i * Math.PI / 4;
+            cands.push([Math.cos(a) * r - w / 2, Math.sin(a) * r - h / 2]);
+          }
+        });
+      }
       let pos = null;
       for (let k = 0; k < cands.length; k++) {
         const bx = L.x + dx + cands[k][0], by = L.y + dy + cands[k][1];
         if (bx < PR.x + 2 || by < PR.y + 2 || bx + w > PR.x + PR.w - 2 || by + h > PR.y + PR.h - 2) continue;
         if (boxes.some(function (o) { return bx < o.x + o.w && bx + w > o.x && by < o.y + o.h && by + h > o.y; })) continue;
+        if (L.centreMark && centres.some(function (p) { return bx < p.x + 8 && bx + w > p.x - 8 && by < p.y + 8 && by + h > p.y - 8; })) continue;
         pos = { x: bx, y: by }; break;
       }
       if (!pos) {
         if (L.pri < 2) return;
         pos = { x: clampv(L.x + dx + 10, PR.x + 4, PR.x + PR.w - w - 4), y: clampv(L.y + dy - 10 - h, PR.y + 4, PR.y + PR.h - h - 4) };
+      }
+      if (L.centreMark && Math.hypot(pos.x + w / 2 - L.x, pos.y + h / 2 - L.y) > 35) {
+        c.save(); c.strokeStyle = alpha(L.col, 0.75); c.lineWidth = 1;
+        c.beginPath(); c.moveTo(L.x, L.y); c.lineTo(pos.x + w / 2, pos.y + h / 2); c.stroke(); c.restore();
       }
       boxes.push(D.pill(c, L.text, pos.x + w / 2, pos.y + h, L.col, 'center', L.font || fnt(11.5, 700)));
     });
@@ -244,7 +258,7 @@
     const col = KCOL(k);
     if (faint) { D.ball(c, X(p[0]), Y(p[1]), 3.5, alpha(col, 0.45), { glow: 0 }); return; }
     D.ball(c, X(p[0]), Y(p[1]), 6, col, { glow: 0.45 });
-    lbl(labels, p, text || k, col, 4, { font: fnt(12.5, 800) });
+    lbl(labels, p, text || k, col, 4, { font: fnt(12.5, 800), centreMark: true });
   }
 
   function drawAll(c, cur, labels) {
