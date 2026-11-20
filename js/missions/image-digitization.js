@@ -162,10 +162,11 @@
     {
       id: 'image-digitization-10', level: 6,
       need: progress(d => [scene(d, 'sunset', '山景日落', 'Mountain sunset'), color(d), item(d.h >= 120, '高度至少 120 列', 'Use at least 120 rows', d.h),
-        item(d.band === 1 && d.bandPrev > 1, '將最長色帶縮至一列，少一位元時仍超過一列', 'Reduce the longest band to one row, with more than one row at one bit less', d.band ?? '—')]),
+        item(d.band === 1 && d.bandPrev > 1, '將最長色帶縮至一列，少一位元時仍超過一列', 'Reduce the longest band to one row, with more than one row at one bit less', d.band ?? '—'), item(!!d.prev && d.prev.b === d.b - 1 && d.prev.w === d.w && d.prev.h === d.h, '從少 1 位元加 1 位元，比較色帶的變化', 'Step up from one bit fewer to compare the banding', d.prev ? d.prev.b + ' → ' + d.b : '—')]),
       title: { zh: '色帶消失', en: 'No more banding' },
-      desc: { zh: '在「山景日落」用「彩色」、「高 h」至少 120：找出讓天空最長的色帶只剩 1 列的最少位元數（少 1 位元就會出現色帶）。', en: 'In “Mountain sunset” with “Color” and “Height h” at least 120, find the fewest bits that bring the longest band in the sky down to 1 row (one bit fewer and banding appears).' },
-      check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'sunset' && d.mode === 'color' && d.h >= 120 && d.band === 1 && d.bandPrev > 1; }
+      desc: { zh: '在「山景日落」用「彩色」、「高 h」至少 120：找出讓天空最長的色帶只剩 1 列的最少位元數：先看少 1 位元時出現的色帶，再加 1 位元讓它消失。', en: 'In “Mountain sunset” with “Color” and “Height h” at least 120, find the fewest bits that bring the longest band in the sky down to 1 row: first see the banding at one bit fewer, then add one bit to make it vanish.' },
+      // 11/20 改嚴（站長選「改嚴」）：要在同一張圖、同樣大小下，從少 1 位元（有色帶）加到這個位元數，親眼比較過才算
+      check: function (ev) { const d = ev.data, p = d.prev; return isImg(ev) && d.scene === 'sunset' && d.mode === 'color' && d.h >= 120 && d.band === 1 && d.bandPrev > 1 && !!p && p.scene === d.scene && p.mode === d.mode && p.w === d.w && p.h === d.h && p.b === d.b - 1; }
     },
     {
       id: 'image-digitization-11', level: 6,

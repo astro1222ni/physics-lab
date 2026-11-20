@@ -515,6 +515,9 @@
       src: src, set: this.set, base: this.base, edited: this.set === 'custom', n: n, counts: c, nClasses: nClasses,
       majority: majUnique ? majority : -1,
       userAll: n > 0 && pts.every(function (p) { return p.user; }),
+      // knn-8：自己放了哪幾類；平手各類的票是否全部來自自己放的點
+      userCls: [0, 1, 2].map(function (c) { return pts.filter(function (p) { return p.user && p.c === c; }).length; }),
+      tiedUser: (qa.tied || []).length > 1 && qa.list.slice(0, qa.kEff).every(function (e) { return qa.tied.indexOf(pts[e.i].c) < 0 || pts[e.i].user; }),
       added: this.edits.added, removed: this.edits.removed, moved: this.edits.moved,
       k: cfg.k, kEff: qa.kEff, metric: cfg.metric, scale: cfg.scale, std: cfg.std,
       qx: this.q.gx, qy: this.q.gy, onPoint: this.indexAt(this.q.gx, this.q.gy) >= 0,

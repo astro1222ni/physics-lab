@@ -161,7 +161,8 @@ expect('6', new Sim().preset('convoy').nTo(5).algoTo('rr').qTo(4).toEnd().ev, tr
 expect('7', new Sim().sheet([[0, 8, 5], [1, 5, 3], [2, 2, 1]]).algoTo('pp').toEnd().ev, true, '優先權 5、3、1 依序晚 1 到：P1 被 P2 搶、P2 被 P3 搶');
 expect('7', new Sim().algoTo('pp').toEnd().ev, false, '預設工作表只被搶先 1 次');
 expect('8', new Sim().algoTo('rr').qTo(1).csTo(1).toEnd().ev, true, '預設工作表 RR q = 1、切換成本 1');
-expect('9', new Sim().preset('equal').algoTo('rr').qTo(1).toEnd().ev, true, '範例「五個一樣長、同時到達」RR q = 1：回應 2（其他 8），周轉 18（其他 12）');
+expect('9', new Sim().preset('equal').cell(0, 'burst', 5).cell(1, 'burst', 5).cell(2, 'burst', 5).cell(3, 'burst', 5).cell(4, 'burst', 5).algoTo('rr').qTo(1).toEnd().ev, true, '從範例「五個一樣長」親手把五個執行時間都改成 5，RR q = 1：回應最短、周轉最長');
+expect('9', new Sim().preset('equal').algoTo('rr').qTo(1).toEnd().ev, false, '11/20 改嚴：範例「五個一樣長」原封不動跑 RR q = 1（試玩亂按會碰到）不算');
 expect('9', new Sim().preset('convoy').algoTo('rr').qTo(4).toEnd().ev, false, '24、3、3 的 RR 回應比 SJF 慢');
 {
   // 第 10 個：找一張表，RR 在某個 q 比 q = 1 和 FCFS 都少而且是最少

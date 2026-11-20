@@ -228,11 +228,14 @@ const sol = {};
   const s10 = new Sim().setW(160);
   let found = null;
   for (let b = 8; b >= 2; b--) { const st = Object.assign({}, s10.s, { b: b }); const r = bandOf(st); if (r.band === 1 && r.bandPrev > 1) found = b; }
-  s10.bits(found);
+  s10.bits(found - 1).bits(found);
   sol[10] = s10;
   const r10 = bandOf(s10.s);
   expect('10', s10, true, '山景日落、彩色、160 × 120：' + found + ' 位元時最長色帶 ' + r10.band + ' 列、' + (found - 1) + ' 位元時 ' + r10.bandPrev + ' 列（320 × 240 要 8 位元）');
 
+  // 11/20 改嚴：直接從 8 位元拉到答案（沒看過少 1 位元的色帶）不算；從多 1 位元降下來也不算
+  { const t = new Sim().setW(160); t.bits(found); expect('10', t, false, '從 8 位元直接拉到 ' + found + ' 位元（沒看過 ' + (found - 1) + ' 位元的色帶）不算'); }
+  { const t = new Sim().setW(160); t.bits(found + 1).bits(found); expect('10', t, false, '從 ' + (found + 1) + ' 位元降到 ' + found + ' 位元不算'); }
   sol[11] = new Sim().scene('eyechart').setW(100).mode('gray').bits(1);
   expect('11', sol[11], true, '視力表、100 × 75（第三列筆畫 = 200 ÷ 5 ÷ 4000 × 100 = 1 像素）、灰階 1 位元 = 7,500 位元 = 938 位元組');
 

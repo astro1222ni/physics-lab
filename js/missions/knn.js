@@ -145,11 +145,12 @@
     },
     {
       id: 'knn-8', level: 6,
-      need: progress(d => [item(d.kEff === d.k, '有足夠的鄰居投票', 'Have enough neighbours for k', d.kEff + '/' + d.k), item(d.tie !== 'none' && d.pred >= 0, '讓最高票平手，觀察平手判定', 'Produce a tie for the most votes', d.votes.join(' / '))]),
+      need: progress(d => [item(d.kEff === d.k, '有足夠的鄰居投票', 'Have enough neighbours for k', d.kEff + '/' + d.k), item((d.userCls || []).every(v => v > 0), '三類的點都自己放', 'Place points of all three classes yourself', (d.userCls || []).join(' / ')), item(d.tie !== 'none' && d.pred >= 0 && d.tiedUser, '用自己放的點讓最高票平手', 'Make a tie for the most votes with your own points', d.votes.join(' / '))]),
       title: { zh: '票數平手', en: 'A tied vote' },
       desc: { zh: '放三類的點，讓查詢點的投票出現平手：票數最多的類別不只一個。', en: 'Use points of three classes and make the vote at the query point a tie: more than one class has the most votes.' },
       // k 是奇數；只有兩類時奇數票不會平手，所以 kEff = k 的平手一定用到三類（點數少於 k 時的偶數票平手不算）
-      check: function (ev) { const d = ev.data; return isState(ev) && d.tie !== 'none' && d.pred >= 0 && d.kEff === d.k; }
+      // 11/20 改嚴（站長選「改嚴」）：三類的點都要自己放，平手各類的票都要來自自己放的點，亂按預設資料碰巧平手不算
+      check: function (ev) { const d = ev.data; return isState(ev) && d.tie !== 'none' && d.pred >= 0 && d.kEff === d.k && (d.userCls || []).every(function (v) { return v > 0; }) && d.tiedUser === true; }
     },
     {
       id: 'knn-9', level: 7,

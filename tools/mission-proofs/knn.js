@@ -143,6 +143,14 @@ expect('2', page().step(5).ev, true, '按「單步」5 次（留一法走了 5 �
   expect('8', S.ev, true, '清空後放 A(−0.25, 0)、B(0.35, 0)、C(0, 0.45)，查詢點 (0, 0)，k = 3：票數 ' + d.votes.join(':') + '，靠距離總和判 ' + 'ABC'[d.pred]);
   const T = page(); T.clear(); T.put([[-5, 0, A], [7, 0, B]]).go(0, 0);
   expect('8', T.ev, false, '只有兩個點、k = 5（實際只問 2 個）的 1:1 不算');
+  // 11/20 改嚴：預設「三團」只移動查詢點造成的平手（試玩亂按會碰到）不算
+  const U = page(); U.loadPreset('three'); let tieAt = null;
+  for (let x = -20; x <= 20 && !tieAt; x++) for (let y = -20; y <= 20 && !tieAt; y++) { if (U.moveQuery(x, y)) { const d = last(U); if (d.tie !== 'none' && d.pred >= 0 && d.kEff === d.k) tieAt = [x, y]; } }
+  if (!tieAt) { console.log('✗ knn-8 反例：「三團」找不到平手的查詢點'); fail++; }
+  else expect('8', U.ev, false, '預設「三團」把查詢點移到 (' + tieAt.join(', ') + ') 平手：點不是自己放的，不算');
+  const V = page(); V.loadPreset('three'); V.put([[-20, -20, A], [20, -20, B], [-20, 20, C]]);
+  for (let x = -20; x <= 20; x++) for (let y = -20; y <= 20; y++) V.moveQuery(x, y);
+  expect('8', V.ev, false, '「三團」再自己補三類各一點，掃遍查詢點：平手的票裡混著預設的點，不算');
 }
 // knn-9、knn-10：「兩團」的單位陷阱與標準化
 {

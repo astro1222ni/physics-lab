@@ -80,10 +80,11 @@
     {
       id: 'cpu-scheduling-9', level: 6,
       title: { zh: '回應快、完成慢', en: 'Quick to answer, slow to finish' },
-      desc: { zh: '選「RR」跑到最後，讓它的平均回應時間是六種方法中最短的，平均周轉時間卻是最長的（都不能平手）。', en: 'Choose “RR” and run to the end so that its average response time is the shortest of all six algorithms while its average turnaround time is the longest (no ties).' },
+      desc: { zh: '親手編行程表（可以從範例改起），選「RR」跑到最後，讓它的平均回應時間是六種方法中最短的，平均周轉時間卻是最長的（都不能平手）。', en: 'Edit the process table yourself (you may start from an example), choose “RR” and run to the end so that its average response time is the shortest of all six algorithms while its average turnaround time is the longest (no ties).' },
       check: function (ev) {
         const d = ev.data;
-        if (!isRun(ev) || d.algo !== 'rr') return false;
+        // 11/20 改嚴（站長選「改嚴」）：行程表要親手編過（可以從範例改起），直接用範例或隨機表剛好成立不算
+        if (!isRun(ev) || d.algo !== 'rr' || d.sheet !== 'hand') return false;
         return ALGOS.every(function (a) { return a === 'rr' || (less(d.avgR, d.all[a].avgR) && less(d.all[a].avgT, d.avgT)); });
       }
     },
