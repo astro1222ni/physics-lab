@@ -224,10 +224,10 @@
       }
     }
     // 函數名稱與數值
-    const fx = F.X(c1) - 8, fy = F.Y(f(c1 - (c1 - c0) * 0.02));
-    const ly = Math.max(r.y0 + 34, Math.min(r.y1 - 12, fy - 14));
+    const fx = r.x1 - 6;
+    const ly = r.y0 + 58;
     if (state.key === 'exp') D.supText(c, 'y = e', 'x', Math.min(fx, r.x1 - 6), ly + 4, C['rs-curve'], fnt(13, 700, true), 'right');
-    else D.haloText(c, 'y = ' + fname(), Math.min(fx, r.x1 - 6), ly, C['rs-curve'], 'right', 'middle', fnt(13, 700, true));
+    else D.pill(c, 'y = ' + fname(), fx, ly + 8, C['rs-curve'], 'right', fnt(13, 700, true));
     if (state.chal) {
       const ch2 = state.chal;
       D.pill(c, T('目標面積 ', 'target area ') + tr(ch2.T, 2) + T('　每格 ', '   one square = ') + tr(sx * sy, 4), r.x0 + 8, r.y0 + 44, C.accent, 'left', fnt(12.5, 700));

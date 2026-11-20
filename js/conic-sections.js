@@ -92,14 +92,15 @@
   let dpr = 1, cw = 300, ch = 300, L = null;
   const RAD = 9;
   function layout() {
-    const narrow = cw < 600;
+    const landscape = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const narrow = cw < 600 && !landscape;
     const gap = narrow ? 8 : 10;
     if (narrow) {
       const h1 = Math.round(cw * 0.9), h2 = Math.round(cw * 0.86);
       return { narrow: narrow, gap: gap, side: { x: 0, y: 0, w: cw, h: h1 }, shape: { x: 0, y: h1 + gap, w: cw, h: h2 }, H: h1 + gap + h2 };
     }
     const pw = Math.floor((cw - gap) / 2);
-    const h = Math.round(Math.min(pw * 1.04, 560));
+    const h = Math.round(Math.min(pw * 1.04, 560, landscape ? window.innerHeight - 16 : 560));
     return { narrow: narrow, gap: gap, side: { x: 0, y: 0, w: pw, h: h }, shape: { x: pw + gap, y: 0, w: cw - pw - gap, h: h }, H: h };
   }
   function resize() {
@@ -392,7 +393,8 @@
       const w = o.pill ? tw + 14 : tw + 4, h = o.pill ? o.px * 1.45 + 4 : o.px * 1.25 + 2;
       let best = null, bestCost = Infinity, bestHard = 0;
       o.cands(w, h).forEach(function (c, i) {
-        const b = { x: c.x - w / 2, y: c.y - h / 2, w: w, h: h };
+        const b = { x: Math.max(R.x + M, Math.min(R.x + R.w - M - w, c.x - w / 2)),
+          y: Math.max(R.y + M, Math.min(R.y + R.h - M - h, c.y - h / 2)), w: w, h: h };
         let hard = 0;
         const ox = Math.max(0, R.x + M - b.x) + Math.max(0, b.x + w - (R.x + R.w - M));
         const oy = Math.max(0, R.y + M - b.y) + Math.max(0, b.y + h - (R.y + R.h - M));

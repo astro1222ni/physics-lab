@@ -306,9 +306,9 @@
       const tw = ctx.measureText('sin θ').width;
       // 預設放在線段外側；放不下（會超出這一格）就放到內側
       let right = u.cos >= 0;
-      if (right && P.x + 7 + tw > L.circ.x + L.circ.w - 4) right = false;
-      if (!right && P.x - 7 - tw < L.circ.x + 4) right = true;
-      D.haloText(ctx, 'sin θ', P.x + (right ? 7 : -7), (ccy + P.y) / 2, C['tf-sin'], right ? 'left' : 'right', 'middle', f);
+      if (right && P.x + 7 + tw + 12 > L.circ.x + L.circ.w - 4) right = false;
+      if (!right && P.x - 7 - tw - 12 < L.circ.x + 4) right = true;
+      D.pill(ctx, 'sin θ', P.x + (right ? 7 : -7), (ccy + P.y) / 2 + 8, C['tf-sin'], right ? 'left' : 'right', f);
     }
     // 坐標軸與圓的交點刻度 1、−1
     ctx.save();
@@ -425,8 +425,12 @@
       if (Math.abs(x) < 1e-9) continue;
       const px = X(x);
       if (px < gx0() + 6 || px > R.x + R.w - 6) continue;
-      ctx.fillText(TC.piText(x / DEG), px, bot + 4);
-      if (state.mode === 'unit' && !L.narrow) { ctx.fillStyle = alpha(C.muted, 0.75); ctx.fillText(trimN(x / DEG, 0) + '°', px, bot + 4 + fz + 3); ctx.fillStyle = C.muted; }
+      const piText = TC.piText(x / DEG), piX = Math.min(px, R.x + R.w - 4 - ctx.measureText(piText).width / 2);
+      ctx.fillText(piText, piX, bot + 4);
+      if (state.mode === 'unit' && !L.narrow) {
+        const degText = trimN(x / DEG, 0) + '°', degX = Math.min(px, R.x + R.w - 4 - ctx.measureText(degText).width / 2);
+        ctx.fillStyle = alpha(C.muted, 0.75); ctx.fillText(degText, degX, bot + 4 + fz + 3); ctx.fillStyle = C.muted;
+      }
     }
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     for (let y = -Math.floor(viewR / st) * st; y <= viewR + 1e-9; y += st) {

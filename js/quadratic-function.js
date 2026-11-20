@@ -193,7 +193,7 @@
       if (!inView(r, 0)) return;
       D.ball(c, X(r), Y(0), q.roots.length === 1 ? 7.5 : 6.5, C['qf-root'], { glow: q.roots.length === 1 ? 0.5 : 0.25 });
       const lab = q.roots.length === 1 ? T('二重根 ', 'double root ') + fmt(r, 3) : fmt(r, 3);
-      const labelY = window.LabDeck?.mode === 'drawer' ? -10 : a > 0 ? 22 : -16;
+      const labelY = -10;
       D.pill(c, lab, X(r), Y(0) + labelY, C['qf-root'], q.roots.length === 2 ? (i === 0 ? 'right' : 'left') : 'center', fnt(11.5, 700));
     });
     // 區間上的最大最小

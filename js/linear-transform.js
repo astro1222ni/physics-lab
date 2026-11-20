@@ -190,6 +190,13 @@
   }
   /** 在向量尖端外側寫標籤 */
   function tipLabel(c, v, text, color, size) {
+    if (text === 'j' || text.startsWith('j ')) {
+      const font = fnt(size || 12.5, 700); c.font = font;
+      const width = c.measureText(text).width + 12;
+      const x = Math.max(F.r.x0 + width + 3, Math.min(F.r.x1 - 3, F.X(v[0]) - 12));
+      const y = Math.max(F.r.y0 + 20, Math.min(F.r.y1 - 3, F.Y(v[1]) - 4));
+      D.pill(c, text, x, y, color, 'right', font); return;
+    }
     const n = Math.hypot(v[0], v[1]);
     const u = n > 1e-6 ? [v[0] / n, v[1] / n] : [0.7, 0.7];
     let x = F.X(v[0]) + u[0] * 16, y = F.Y(v[1]) - u[1] * 16;

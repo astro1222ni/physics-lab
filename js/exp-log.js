@@ -266,7 +266,7 @@
       for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 17) labs[i].y = labs[i - 1].y + 17;
       const over = labs[labs.length - 1].y - (L.b1 - 10);
       if (over > 0) labs.forEach(function (o) { o.y -= over; });
-      labs.forEach(function (o) { o.y = Math.max(L.t1 + 8, o.y); D.haloText(c, o.t, ex, o.y, o.col, 'right', 'middle', o.f); });
+      labs.forEach(function (o) { o.y = Math.max(L.t1 + 8, o.y); D.pill(c, o.t, ex, o.y + 8, o.col, 'right', o.f); });
     }
 
     // 下圖：總額對 n（對數橫軸）
@@ -283,7 +283,10 @@
       powLabel(c, e, px, G.r.y1 + 12, 'center', C.muted);
     }
     c.restore();
-    [lo, hi].forEach(function (v) { D.haloText(c, num(v, 4), G.r.x0 - 6, G.Y(v), C.muted, 'right', 'middle', fnt(10.5)); });
+    [lo, hi].forEach(function (v, i) {
+      const nearPoint = i === 0 && !q.cont && Math.log10(q.n) < 0.15 && Math.abs(G.Y(q.An) - G.Y(v)) < 14;
+      D.haloText(c, num(v, 4), G.r.x0 - 8, G.Y(v) + (nearPoint ? 12 : 0), C.muted, 'right', 'middle', fnt(10.5));
+    });
     D.haloText(c, T('一年複利 n 次，' + tr(q.t, 2) + ' 年後的總額', 'total after ' + tr(q.t, 2) + ' years, compounding n times a year'), L.left, L.t2 - 12, C.muted, 'left', 'middle', fnt(11.5, 600));
     D.haloText(c, 'n', L.right, L.b2 + 24, C.muted, 'right', 'middle', fnt(11.5, 700, true));
     // 上限 e^{rt}
