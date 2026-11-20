@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const K = window.CellCore;
   const D = window.LabDraw;
@@ -365,10 +365,11 @@
   // =====================================================================
   function layout1() {
     const w = drawingWidth(cv) || 360;
-    const h = w < 520 ? Math.round(Math.max(300, Math.min(380, w * 0.95))) : 470;
+    const short = shortLandscape.matches && w < 700;
+    const h = short ? 306 : w < 520 ? Math.round(Math.max(300, Math.min(380, w * 0.95))) : 470;
     const s = fit(cv, ctx, h);
     st1.W = s.w; st1.H = s.h;
-    const hg = w < 520 ? 270 : 250;
+    const hg = !short && w < 520 ? 270 : 250;
     const sg = fit(cvg, gtx, hg);
     st1.G = { w: sg.w, h: sg.h };
   }
@@ -386,8 +387,9 @@
     g.clearRect(0, 0, w, h);
     D.backdrop(g, w, h);
     const fr = K.frame(st1.rec, st1.tau);
-    const S = Math.min((w - 16) / 3.75, (h - 54) / 2.4);
-    const ox = w / 2, oy = 34 + (h - 34) / 2;
+    const short = shortLandscape.matches && w < 700;
+    const S = Math.min((w - 16) / 3.75, (h - (short ? 76 : 54)) / 2.4);
+    const ox = w / 2, oy = short ? h / 2 : 34 + (h - 34) / 2;
     const P = function (x, y) { return [ox + x * S, oy + y * S]; };
     // 細胞
     drawCells(g, fr.cells, P, S);
@@ -440,10 +442,10 @@
     pill(g, title, 10, 8, D.c.text, 13);
     const c = countsNow();
     const sub = T('每個細胞 ', 'Per cell: ') + c.cells.map(function (x) { return x.chrom + T(' 條', ''); }).join(T('、', ', ')) + T('；DNA ', T('', '; DNA '), '; DNA ') + c.cells.map(function (x) { return num(x.dna, x.dna % 1 ? 1 : 0) + 'C'; }).join(T('、', ', '));
-    if (w >= 520) pill(g, sub, w - 10, 8, D.c.muted, 12, 'right');
+    if (!short && w >= 520) pill(g, sub, w - 10, 8, D.c.muted, 12, 'right');
     else pill(g, sub, 10, h - 30, D.c.muted, 11.5);
     if (st1.mode === 'meiosis' && w >= 420) {
-      small(g, T('示意圖（未依比例）', 'Schematic (not to scale)'), w - 10, h - 12, D.c.muted, 'right', 'middle', 10.5);
+      small(g, T('示意圖（未依比例）', 'Schematic (not to scale)'), w - 10, short ? 19 : h - 12, D.c.muted, 'right', 'middle', short ? 11 : 10.5);
     }
   }
   function drawCells(g, cells, P, S) {
