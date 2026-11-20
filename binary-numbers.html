@@ -107,6 +107,8 @@
     .legend .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
     .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
     .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    /* 操作台分頁「十進位／轉二進位」只在標題裡的零寬空格斷行 */
+    .labdeck-tabs button { word-break: keep-all; }
   </style>
 </head>
 <body data-en-ready>
@@ -180,7 +182,7 @@
         </section>
 
         <section class="card noquiz">
-          <h2 data-en="Decimal to binary">十進位轉二進位</h2>
+          <h2 data-en="Decimal to binary">十進位&#8203;轉二進位</h2>
           <p class="hint" data-en="Keep dividing by 2. The remainders, read from the bottom up, are the binary digits.">一直除以 2，把餘數由下往上讀，就是二進位。</p>
           <div class="lad-btns">
             <button id="ladStep" type="button" data-en="Next step">下一步</button>
