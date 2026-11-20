@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const B = window.BioMimCore;
   const D = window.LabDraw;
@@ -399,6 +399,12 @@
 
   // ---------- 版面 ----------
   function layout1() {
+    if (shortLandscape.matches && W1 < 700) {
+      const pw = Math.round(W1 * 0.27), sc = pw / PLATE.W, px = 12;
+      const sideX = px + pw + 34;
+      return { short: true, narrow: false, px, py: 35, pw, ph: PLATE.L * sc, sc,
+        side: { x: sideX, y: 4, w: W1 - sideX - 6, h: H1 - 8 } };
+    }
     const narrow = W1 < 640;
     if (narrow) {
       const ph = 360, pw = Math.min(W1 - 40, ph * PLATE.W / PLATE.L);
@@ -413,7 +419,7 @@
   }
   function resize1() {
     W1 = drawingWidth(cv) || 300;
-    H1 = W1 < 640 ? 400 + 330 : 470;
+    H1 = shortLandscape.matches && W1 < 700 ? 316 : W1 < 640 ? 400 + 330 : 470;
     fit(cv, ctx, H1);
     L1 = layout1();
     request();
@@ -490,7 +496,7 @@
     g.beginPath(); g.moveTo(L.px, by); g.lineTo(L.px + sb, by); g.stroke();
     small(g, '5 mm', L.px + sb + 6, by, D.c.text);
     // 傾斜角小圖
-    const ix = L.px + L.pw - 70, iy = by;
+    const ix = L.px + L.pw - 70, iy = by + (L.short ? 23 : 0);
     g.strokeStyle = D.alpha(D.c.text, 0.6); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(ix, iy); g.lineTo(ix + 56, iy); g.stroke();
     const tr = tilt * B.DEG;
@@ -540,10 +546,10 @@
     panel(g, R.x, R.y, R.w, R.h);
     const top = { x: R.x, y: R.y, w: R.w, h: R.h * 0.5 }, bot = { x: R.x, y: R.y + R.h * 0.5, w: R.w, h: R.h * 0.5 };
     title(g, T('水珠的側面', 'Side view of the drop'), top.x + 12, top.y + 16);
-    small(g, st1.focus ? (st1.focusIsRain ? T('最近一滴雨', 'latest rain drop') : T('最近放的水珠', 'latest drop')) : T('還沒放水珠：照目前設定', 'no drop yet: current settings'), top.x + top.w - 12, top.y + 16, D.c.muted, 'right');
+    small(g, st1.focus ? (st1.focusIsRain ? T('最近一滴雨', 'latest rain drop') : T('最近放的水珠', 'latest drop')) : T('還沒放水珠：照目前設定', 'no drop yet: current settings'), top.x + top.w - 12, top.y + (L1.short ? 32 : 16), D.c.muted, 'right');
     // 地面
     const gy = top.y + top.h - 26, cx = top.x + top.w / 2;
-    const scale = Math.min((top.w - 50) / 2 / Math.max(s.c * 1e3, 0.6), (top.h - 60) / Math.max(s.H * 1e3, 0.4), 140);
+    const scale = Math.min((top.w - 50) / 2 / Math.max(s.c * 1e3, 0.6), (top.h - (L1.short ? 72 : 60)) / Math.max(s.H * 1e3, 0.4), 140);
     g.fillStyle = D.alpha(C['bm-leaf2'], 0.8);
     g.fillRect(top.x + 14, gy, top.w - 28, 8);
     if (!s.smooth) {   // 示意的細紋（不按比例）
@@ -600,7 +606,7 @@
     title(g, T('放大到微米：柱子按比例', 'Zoom to micrometres: pillars to scale'), R.x + 12, R.y + 16);
     const a = val(el.pa), b = val(el.pb), h = val(el.ph);
     const x0 = R.x + 14, x1 = R.x + R.w - 14, base = R.y + R.h - 34;
-    const wTop = R.y + 54;                 // 水的上緣（標題與說明列在上面）
+    const wTop = R.y + (L1.short ? 67 : 54);                 // 水的上緣（標題與說明列在上面）
     const avail = base - wTop - 14;
     const wetTxt = s.smooth ? T('平滑表面：水直接貼著固體', 'Smooth: water touches the solid') :
       (s.mode === 'wenzel' || s.mode === 'spread') ? T('水填滿縫隙', 'water fills the gaps') : T('水架在柱頂', 'water rests on the tips');
@@ -608,8 +614,8 @@
     // 壓力：水往下壓的壓力 ÷ 刺穿空氣墊需要的壓力
     if (!s.smooth && s.thAY > 90) {
       const Pc = s.Pcrit, Pr = Math.max(s.Plap, s.Pdyn), fr = Pc > 0 ? Math.min(1, Pr / Pc) : 1;
-      const bw = Math.min(110, R.w * 0.3), bx = x1 - bw, byy = R.y + 42;
-      small(g, T('壓力 ', 'pressure ') + fmtP(Pr) + T('／刺穿 ', ' / breaks at ') + fmtP(Pc), x1, R.y + 34, Pr > Pc ? C['bm-bad'] : D.c.muted, 'right');
+      const bw = Math.min(110, R.w * 0.3), bx = x1 - bw, byy = R.y + (L1.short ? 58 : 42);
+      small(g, T('壓力 ', 'pressure ') + fmtP(Pr) + T('／刺穿 ', ' / breaks at ') + fmtP(Pc), x1, R.y + (L1.short ? 49 : 34), Pr > Pc ? C['bm-bad'] : D.c.muted, 'right');
       D.roundRect(g, bx, byy, bw, 6, 3); g.fillStyle = D.alpha(D.c.text, 0.1); g.fill();
       D.roundRect(g, bx, byy, Math.max(4, bw * fr), 6, 3); g.fillStyle = Pr > Pc ? C['bm-bad'] : C['bm-good']; g.fill();
     }
@@ -1507,6 +1513,7 @@
       },
       home: (w, h) => {
         const r = canvas.getBoundingClientRect();
+        if (L1 && L1.short) return { x: r.left + 4, y: Math.max(4, Math.min(innerHeight - h - 4, r.bottom - h - 3)) };
         const left = screenPoint().x > r.left + r.width / 2;
         // 停在畫布底部：頂端右上角是「水珠的側面」的說明字（試玩：圓鈕蓋住說明）
         return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.bottom - h - 8)) };
