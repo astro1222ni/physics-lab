@@ -242,5 +242,12 @@ html.learn-class {--teaching:1.4}
   .lesson-text:focus-within {scroll-behavior:auto}
 }
 
-.exam-entries {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.exam-entries {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:10px}
+@media(max-width:600px){.exam-entries {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.exam-entries .study-link {min-height:58px;padding:6px 8px;gap:4px;font-size:calc(14px * var(--fs,1));line-height:1.3}.exam-entries .study-link b {padding:4px 6px 4px 0;font-size:21px}.exam-entries .study-link i {display:none}}
 .exam-entries .study-link b {padding:8px;color:var(--accent);font:700 24px Georgia,serif}
+/* 學測年度分頁（11/21 站長：「再增加 114 跟 113 的分頁入口」） */
+#exam-years{display:flex;gap:6px;margin:4px 0 12px;border-bottom:1px solid var(--border)}
+#exam-years button{min-height:44px;padding:0 16px;border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:none;color:var(--muted);font-weight:750;font-size:calc(16px * var(--fs,1))}
+#exam-years button[aria-selected=true]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.exam-year-note{margin:0 0 10px;color:var(--muted);font-size:calc(14px * var(--fs,1))}
+.exam-soon{padding:18px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}

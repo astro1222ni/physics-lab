@@ -98,7 +98,7 @@
       const bar=by('unit-progress');
       function show(p){bar.max=n;bar.value=p;by('unit-count').textContent=T('第 '+p+'/'+n+' 頁',p+'/'+n+' pages');const resume=pages[Math.max(0,p-1)].id.split('-');by('unit-link').href='learn-phy-5-1.html?seg='+resume[0]+'&p='+resume[1];by('unit-stars').textContent='★ '+stars()+' / '+baseMissions().reduce((a,m)=>a+m.level,0);}
       const pr=progress(U.id,n,show);show(pr.get());LabMission.on('ready',()=>show(pr.get()));
-      by('lobby-tabs').addEventListener('click',e=>{const tab=e.target.closest('[data-tab]');if(!tab)return;for(const b of by('lobby-tabs').children){const active=b===tab;b.setAttribute('aria-selected',active);by(b.dataset.tab).hidden=!active;}});return;
+      by('lobby-tabs').addEventListener('click',e=>{const tab=e.target.closest('[data-tab]');if(!tab)return;for(const b of by('lobby-tabs').children){const active=b===tab;b.setAttribute('aria-selected',active);by(b.dataset.tab).hidden=!active;}});by('exam-years')?.addEventListener('click',e=>{const tab=e.target.closest('[data-year]');if(!tab)return;for(const b of by('exam-years').children){const active=b===tab;b.setAttribute('aria-selected',active);by('exam-'+b.dataset.year).hidden=!active;}});return;
     }
     if(!by('learn-unit'))return;
     const params=new URLSearchParams(location.search), klass=params.get('class')==='1',review=params.has('review');
@@ -110,7 +110,7 @@
     const language=en?'en':'zh', recordings=window.LearnTimings.audio?.[language]||{};
     const estimatedClock=Object.fromEntries(pages.map(p=>[p.id,estimate(p.speech[en?1:0],language)]));
     let heardFromStart=false,failedRecording=false,trackClock=null,audibleUntil=0,tail=0,loadTimer=0,last=0,raf=0,held=false,frameModel=null,coverage=0,voice=null,voiceReady=false,voiceEpoch=0;
-    let sideTab='concept',sideOpen=innerWidth>=1100,showClass=false,haptic=false,stamp='',lastSoundWork=0;
+    let sideTab='concept',sideOpen=!presentation?.ownSide&&innerWidth>=1100,showClass=false,haptic=false,stamp='',lastSoundWork=0;
     let lockedAnswer=false,attemptEpoch=0,shownSolutions=new Set();
     const stateKey=()=> 'learn-activity:'+U.id+':'+(LabMission._state.user?.uid||'guest');
     const fresh=()=>({first:{},correct:{},viewed:{},heard:{},steps:{},examples:{},shared:false});
@@ -467,8 +467,8 @@
       u?.outbound?T('按「掉頭」後按住「拉」，回到原點。','Turn, then hold Pull to return to the origin.'):T('在粗糙地面以 4:3 拉至 5 m，再掉頭。','Pull 5 m on the rough floor at 4:3, then turn.')
     ][i];}
     const tabNames={concept:['觀念','Concept'],steps:['步驟','Steps'],examples:['範例','Examples'],missions:['任務','Missions'],comments:['留言','Comments']};
-    function setPanel(k,open=true){sideTab=k;sideOpen=open;by('study-side').hidden=!open;by('edge').setAttribute('aria-expanded',String(open));if(open){panel();if(k==='comments'&&review&&!by('comment-mount').querySelector('textarea')?.value)by('side-body').querySelector('button')?.click();}}
-    const sideHead=by('side-tabs');for(const [k,title] of Object.entries(tabNames)){if(presentation && !presentation.tabs.includes(k))continue;const b=button(tr(title),()=>setPanel(k));b.dataset.tab=k;b.setAttribute('role','tab');sideHead.append(b);}
+    function setPanel(k,open=true){if(presentation?.ownSide)return;sideTab=k;sideOpen=open;by('study-side').hidden=!open;by('edge').setAttribute('aria-expanded',String(open));if(open){panel();if(k==='comments'&&review&&!by('comment-mount').querySelector('textarea')?.value)by('side-body').querySelector('button')?.click();}}
+    const sideHead=by('side-tabs');if(!presentation?.ownSide)for(const [k,title] of Object.entries(tabNames)){if(presentation && !presentation.tabs.includes(k))continue;const b=button(tr(title),()=>setPanel(k));b.dataset.tab=k;b.setAttribute('role','tab');sideHead.append(b);}
     function panel(){
       const body=by('side-body'),p=page();body.replaceChildren();body.dataset.tab=sideTab;by('side-title').textContent=tr(tabNames[sideTab]);for(const b of sideHead.children)b.setAttribute('aria-selected',String(b.dataset.tab===sideTab));
       if(sideTab==='concept'){

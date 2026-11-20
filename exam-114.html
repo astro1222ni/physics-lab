@@ -49,19 +49,19 @@
           <div class="transport-buttons"><button id="previous" type="button" aria-label="上一句" data-en-aria-label="Previous sentence" title="上一句" data-en-title="Previous sentence">◀</button><button id="play" type="button"></button><button id="next" type="button" aria-label="下一句" data-en-aria-label="Next sentence" title="下一句" data-en-title="Next sentence">▶</button><button id="replay" type="button" aria-label="重播本句" data-en-aria-label="Replay sentence" title="重播本句" data-en-title="Replay sentence">↺</button><button id="speed" type="button" aria-label="播放速度" data-en-aria-label="Playback speed"></button><button id="sound" type="button" aria-label="音效與旁白" data-en-aria-label="Sound and narration"></button><label class="auto-next"><input id="auto" type="checkbox"><span data-en="Auto next">自動下一句</span></label></div>
         </footer>
           </article>
-      <aside id="study-side" class="learn-side" hidden>
-        <div id="side-header"><h2 id="side-title"></h2><button id="side-close" type="button" data-en="Close">收起</button></div>
-        <nav id="side-tabs" role="tablist" aria-label="學習側板" data-en-aria-label="Learning side panel"></nav>
-        <div id="side-body"></div><div id="comment-mount" hidden></div>
-      </aside>
         </div>
-    <button type="button" id="edge" aria-controls="study-side" aria-label="開合學習側板" data-en-aria-label="Toggle study panel"><span aria-hidden="true">‹</span></button>
       </section>
       <details id="experiment" class="exam-block"><summary></summary><div class="experiment-body" id="experiment-body"></div></details>
       <a class="learn-link" id="lab-link"></a>
     </main><footer id="credit"></footer>
+    <aside id="study-side" class="learn-side" hidden>
+      <div id="side-header"><h2 id="side-title"></h2><button id="side-close" type="button" data-en="Close ›">收起 ›</button></div>
+      <nav id="side-tabs" role="tablist" aria-label="學習側板" data-en-aria-label="Learning side panel"></nav>
+      <div id="side-body"></div><div id="comment-mount" hidden></div>
+    </aside>
+    <button type="button" id="edge" aria-controls="study-side" aria-expanded="false" aria-label="開合步驟與任務側板" data-en-aria-label="Toggle steps and missions panel"><span aria-hidden="true">‹</span><b data-en="Steps · Missions">步驟・任務</b><i id="edge-count"></i></button>
   </div>
-  <script src="vendor/katex/katex.min.js"></script><script src="js/sound.js?v=202611210243"></script>
+  <script src="vendor/katex/katex.min.js"></script><script src="js/sound.js?v=202611210243"></script><script src="js/stepguide.js?v=202611210243"></script>
   <script src="js/firebase-config.js?v=202611210243"></script><script src="js/missions/index.js?v=202611210243"></script>
   <script src="js/exam/114.js?v=202611210243"></script>
   <script>document.write('<script src="js/missions.js?v=202611210243" data-module="exam-114-'+Exam114.number+'"><\/script>');</script>

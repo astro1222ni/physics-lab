@@ -45,7 +45,7 @@ html.ms-docked body.exam-page{padding-right:0}
 .stat-row.correct i{background:#2b9a76}.stat-row.mistake i{background:#ce6256}
 .stat-row small{color:var(--muted)}
 #national-body{max-width:780px}
-.exam-page .learn-layout{display:flex;align-items:flex-start;justify-content:start;margin-bottom:12px}.exam-page #workpad{flex:1;min-width:0;display:block}.exam-page #study-side{flex:0 0 280px}
+.exam-page .learn-layout{display:flex;align-items:flex-start;justify-content:start;margin-bottom:12px}.exam-page #workpad{flex:1;min-width:0;display:block}
 .exam-page #scene{min-height:0;aspect-ratio:460/250;max-height:340px}
 .exam-page #lesson-art{border-radius:0}
 .exam-page .board-panel{display:block;padding:8px 14px;font-size:calc(20px * var(--lesson-fs))}
@@ -67,7 +67,7 @@ body[data-q="49"] .experiment-body canvas,body[data-q="23"] .experiment-body can
 @media(max-width:800px){.problem-grid,.experiment-body{grid-template-columns:1fr}.response-column{border-left:0;border-top:1px solid var(--border)}.exam-source,.response-column,.exam-heading{padding:10px 13px}
 #opening-art{display:none}.exam-heading h1{font-size:calc(22px * var(--lesson-fs))}
 .exam-source p{font-size:calc(16px * var(--lesson-fs));line-height:1.48}
-.exam-page #learn-unit{padding:0 9px 12px}.exam-page .learn-mast{height:auto;min-height:48px}
+.exam-page #learn-unit{padding:0 9px 12px}.exam-page .learn-mast{height:auto;min-height:66px}
 #exam-nav{margin-bottom:8px}.exam-page #scene{max-height:none}
 #figures{grid-template-columns:minmax(82px,.42fr) minmax(0,1.58fr)}.exam-page figure figcaption{font-size:calc(12px * var(--fs,1))}
 #figures:has(:focus){outline:1px solid var(--accent)}.stat-row{grid-template-columns:1.4em minmax(35px,.8fr) 2.8em minmax(100px,1.1fr);gap:5px}
@@ -86,3 +86,36 @@ body[data-q="49"] .experiment-body canvas,body[data-q="23"] .experiment-body can
 html.learn-class:has(body.exam-page){scroll-behavior:auto}
 .learn-class .exam-page .side-equations{display:block;font-size:calc(18px * var(--fs,1))}
 .learn-class .exam-page .side-equations .equation{justify-content:flex-start}
+
+/* 步驟・任務側板（11/21 站長：「一樣要做步驟，還有任務的側板。」）：蓋在畫面上，寬螢幕停靠在右邊並讓出空間 */
+.exam-page #study-side{position:fixed;right:0;top:64px;width:min(340px,88vw);max-height:calc(100dvh - 76px);z-index:15;box-shadow:0 12px 60px #10242666;overflow:auto}
+.exam-page #edge{width:34px;height:auto;min-height:132px;top:38%;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0;border-width:3px 0 3px 3px;border-color:#e0b04f;font-size:calc(14px * var(--fs,1))}
+.exam-page #edge b{writing-mode:vertical-rl;letter-spacing:.08em;font-weight:800}
+.exam-page #edge span{font-size:18px;line-height:1}
+@media(max-width:600px){.exam-page #edge{width:24px;min-height:112px;padding:6px 0;font-size:calc(12px * var(--fs,1));top:44%}.exam-page #edge span{font-size:14px}.exam-page #edge i{font-size:10px;padding:0 2px}}
+.exam-page #edge i{font-style:normal;font-size:calc(12px * var(--fs,1));color:#fff;background:#c9772d;border-radius:9px;padding:1px 4px;writing-mode:horizontal-tb}
+.exam-page #edge i:empty{display:none}
+#side-body .step-card button.step-go{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 4px;font-weight:750;font-size:calc(16px * var(--lesson-fs));min-height:44px}
+#side-body .step-card.done button.step-go{color:var(--muted)}
+#side-body .ms-need-mark[data-ok=false]{color:#d0584b}#side-body .ms-need-mark[data-ok=null]{color:var(--accent)}
+#side-body .step-card{padding:0 8px;margin:6px 0}
+#side-body .step-card>summary{list-style:none;display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer}
+#side-body .step-card>summary::-webkit-details-marker{display:none}
+#side-body .step-card>summary span{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:calc(14px * var(--fs,1));border:2px solid var(--border);color:var(--muted)}
+#side-body .step-card.now>summary span{border-color:var(--accent);background:var(--accent);color:var(--bg)}
+#side-body .step-card.done>summary span{border-color:#2b9a76;color:#2b9a76}
+#side-body .step-card>summary strong{flex:1;font-size:calc(16px * var(--lesson-fs))}#side-body .step-card.done>summary strong{color:var(--muted);font-weight:600}
+#side-body .step-card>summary small{color:var(--accent);font-size:calc(12px * var(--fs,1));white-space:nowrap}
+#side-body .step-card>ul{list-style:none;margin:0 0 6px 35px;padding:0;display:grid;gap:3px;font-size:calc(14px * var(--fs,1))}
+#side-body .step-card>ul li{display:flex;gap:6px;line-height:1.4}
+#side-body .step-card .sg-show{margin:2px 0 8px 35px;min-height:40px}
+#side-body .ms-item{list-style:none;border:1px solid var(--border);border-radius:9px;margin:7px 0;padding:8px}
+#side-body .ms-item.done{border-color:var(--star,#de9a31);box-shadow:inset 0 0 0 1px var(--star,#de9a31)}
+#side-body .ms-head{display:flex;gap:7px;align-items:baseline}#side-body .ms-check{margin-left:auto;color:#2b9a76;font-weight:800}
+#side-body .ms-desc{margin:4px 0;color:var(--muted)}
+#side-body .side-note{color:var(--muted);line-height:1.6}
+#side-body .side-sum{font-weight:750;margin:0 0 8px}
+@media(min-width:1240px){
+  body.exam-page.side-open{padding-right:356px}
+  .exam-page #study-side{top:68px;right:10px;width:336px;max-height:calc(100dvh - 80px);border-radius:14px}
+}

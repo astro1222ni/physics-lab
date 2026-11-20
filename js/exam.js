@@ -44,7 +44,7 @@
   function emit(){
     LabMission.emit('exam-progress',{unit,first:state.first===true,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment});
   }
-  function save(){try{localStorage.setItem(storageKey(),JSON.stringify(state));}catch{}emit();}
+  function save(){try{localStorage.setItem(storageKey(),JSON.stringify(state));}catch{}emit();refreshSide();}
   function milestone(key){if(!state[key]){state[key]=true;save();}}
   function circuit(){
     const host=by('circuit');
@@ -146,9 +146,9 @@
       });
       const select=by('sentence');for(const [i,p] of pages.entries()){
         const opt=make('option',(i+1)+' · '+tr(p.title));opt.value=i;select.append(opt);}
-      const presentation={tabs:['concept','missions','comments'],bindNavigation(go){select.onchange=()=>go(+select.value);},
-        show(p,i){select.value=i;by('folio').textContent=(i+1)+' / '+pages.length;if(p.row===Q.mid)by('experiment').open=true;},
-        viewed(all){if(all)milestone('viewed');}
+      const presentation={ownSide:true,tabs:[],bindNavigation(go){select.onchange=()=>go(+select.value);},
+        show(p,i){select.value=i;by('folio').textContent=(i+1)+' / '+pages.length;if(p.row===Q.mid)by('experiment').open=true;side.page=p;refreshSide();},
+        viewed(all){if(all)milestone('viewed');refreshSide();}
       };
       window.LearnUnit={id:unit,slug:'exam-114',pages,presentation,reveal:{},board:id=>{
         const p=pages.find(page=>page.id===id),formula=specific[id]||formulas[p.row];
@@ -160,8 +160,93 @@
     }
     if(scroll)by('explanation').scrollIntoView({block:'start'});
   }
+  // 步驟・觀念・任務・留言側板（11/21 站長：「一樣要做步驟，還有任務的側板。」）。
+  // 一進題目就有，不必等看解答；學習引擎的側板在學測頁關掉（presentation.ownSide）。
+  const side={tab:'steps',open:false,page:null,opened:new Set(),closed:new Set()};
+  const tabNames={steps:['步驟','Steps'],concept:['觀念','Concept'],missions:['任務','Missions'],comments:['留言','Comments']};
+  const SIDE_KEY='exam-side-open',wide=()=>innerWidth>=1240;
+  function heard(){try{const a=JSON.parse(localStorage.getItem('learn-activity:'+unit+':'+(LabMission._state.user?.uid||'guest')))||{};const v=a.viewed||{};return tracks.filter(r=>v[r.id]).length;}catch{return 0;}}
+  function filled(){return Q.key?document.querySelectorAll('[name=choice]:checked').length:[0,1].filter(i=>by('value-'+i)?.value.trim()&&by('unit-'+i)?.value).length;}
+  const solvable=()=>!!(state.correct||state.attempts>=2||params.get('class')==='1');
+  const handsGoal=()=>{const m=(LabMission.all()[unit]||[]).find(x=>x.id===unit+'-4');return m?[m.desc.zh,m.desc.en]:Q.hands;};
+  function steps(){
+    const n=tracks.length,h=heard(),c=filled(),att=state.attempts||0;
+    return [
+      {goal:Q.key?['勾選你的答案','Choose your answer']:['填數值和單位','Enter values and units'],target:'#answer-fields',
+        hint:Q.key?['多選題：每個你認為對的選項都勾','Multiple response: tick every statement you think is true']:['兩格都要填數值，並選單位','Fill both values and choose a unit for each'],
+        done:att>0||(Q.key?c>0:c===2),
+        need:Q.key?[[c>0||att>0,'已勾選 '+c+' 個選項',c+' option(s) ticked']]
+          :[[!!(by('value-0')?.value.trim()&&by('unit-0')?.value)||att>0,'(a) 平衡電壓：數值＋單位','(a) Voltage: value and unit'],[!!(by('value-1')?.value.trim()&&by('unit-1')?.value)||att>0,'(b) 電阻值：數值＋單位','(b) Resistance: value and unit']]},
+      {goal:['送出作答','Submit'],target:'#send-answer',hint:['按「送出作答」看得分','Press Submit answer to see your score'],done:att>0,
+        need:[[att>0,'已送出 '+att+' 次',att+' submission(s)']]},
+      {goal:['對照全國資料','Compare with the nation'],target:()=>by('national').querySelector('summary'),hint:['打開「全國資料」，看全國怎麼選','Open National results'],done:!!state.national,
+        need:[[att>0?true:null,'先送出作答，才會出現全國資料','Submit first to unlock the national data'],[!!state.national,'打開「全國資料」','Open National results']]},
+      {goal:['聽完逐句解題','Play the whole solution'],target:()=>mounted?by('play'):by('explain'),hint:mounted?['按 ▶ 播放，開「自動下一句」可以一路聽完','Press play; turn on Auto next to hear it all']:['按「看解答」','Press Show solution'],done:!!state.viewed,
+        need:[[solvable()?true:(att>0?false:null),'答對，或作答兩次後出現「看解答」','Show solution appears after a correct answer or two attempts'],[h===n?true:mounted?null:false,'已聽完 '+h+' / '+n+' 句',h+' / '+n+' sentences played']]},
+      {goal:['動手驗證','Test the model'],target:()=>by('experiment').open?by('experiment-body').querySelector('canvas'):by('experiment').querySelector('summary'),hint:handsGoal(),done:!!state.experiment,
+        need:[[by('experiment').open?true:null,'打開「能動手的圖」','Open the hands-on graph'],[!!state.experiment,...handsGoal()]]}
+    ];
+  }
+  function needList(items){const ul=make('ul');for(const [ok,zh,en] of items){const li=make('li'),mark=make('span',ok===true?'✓':ok===false?'✗':'→');mark.className='ms-need-mark';if(ok===true)li.className='ms-need-ok';else mark.dataset.ok=String(ok);li.append(mark,make('span',T(zh,en)));ul.append(li);}return ul;}
+  function missionNeed(m){const flag=['correct','first','viewed','experiment'][+m.id.split('-').pop()-1],att=state.attempts||0;
+    if(flag==='first')return [att?[state.first===true,state.first?'第一次送出就拿滿分':'第一次送出沒拿到滿分，這顆星錯過了',state.first?'Full credit on the first try':'The first submission was not full credit']:[null,'還沒送出：第一次送出就要全對','Not submitted yet: get it fully right the first time']];
+    if(flag==='correct')return [[state.correct?true:att?false:null,state.correct?'已拿到滿分':'已送出 '+att+' 次，還沒拿到滿分',state.correct?'Full credit earned':att+' submission(s), no full credit yet']];
+    if(flag==='viewed'){const h=heard();return [[solvable()?true:null,'打開「看解答」','Open the solution'],[h===tracks.length?true:null,'已聽完 '+h+' / '+tracks.length+' 句',h+' / '+tracks.length+' sentences played']];}
+    return [[!!state.experiment,...handsGoal()]];}
+  function current(){const list=steps(),i=list.findIndex(s=>!s.done);return i<0?list.length:i;}
+  function guide(i){LabStepGuide.define(steps().map(s=>({target:s.target,action:s.goal,hint:s.hint})),{key:'exam'});
+    const s=steps()[i];if(s.target==='#answer-fields'||i===1)by('exam-answer').scrollIntoView({block:'center',behavior:'smooth'});
+    if(!wide())setSide(side.tab,false);LabStepGuide.show(i,{key:'exam'});}
+  function render(){
+    const body=by('side-body');body.replaceChildren();body.dataset.tab=side.tab;by('side-title').textContent=tr(tabNames[side.tab]);
+    for(const b of by('side-tabs').children)b.setAttribute('aria-selected',String(b.dataset.tab===side.tab));
+    if(side.tab==='steps'){const list=steps(),now=current();
+      body.append(make('p',now<list.length?T('第 '+(now+1)+' 步，共 '+list.length+' 步','Step '+(now+1)+' of '+list.length):T('五步都完成了！','All five steps done!')));body.lastChild.className='side-sum';
+      // 每步一行（站長 11/21：「要優化你的版面」）：點一下展開「還差什麼？」與「指給我看」，目前這一步自動展開。
+      list.forEach((s,i)=>{const card=make('details');card.className='step-card'+(i===now?' now':'')+(s.done?' done':'');card.open=i===now&&!side.closed.has(i)||side.opened.has(i);
+        const head=make('summary');head.append(make('span',s.done?'✓':String(i+1)),make('strong',tr(s.goal)));if(!s.done&&i!==now)head.append(make('small',T('還差什麼？','What’s missing?')));card.append(head);
+        head.addEventListener('click',()=>{const open=!card.open;(open?side.closed:side.opened).delete(i);(open?side.opened:side.closed).add(i);});
+        card.append(needList(s.need));const b=make('button',T('👆 指給我看','👆 Show me'));b.type='button';b.className='sg-show';b.onclick=()=>guide(i);if(!s.done)card.append(b);body.append(card);});
+    }else if(side.tab==='concept'){
+      if(!mounted||!side.page){body.append(make('p',T('看解答之後，這裡會跟著目前這一句，列出講解和公式。','After you open the solution, this tab follows the current sentence with its explanation and formula.')));body.lastChild.className='side-note';
+        if(!solvable())body.append(make('p',T('先作答：答對，或作答兩次後就能看解答。','Answer first: the solution opens after a correct answer or two attempts.')));}
+      else{const p=side.page,speech=make('p');speech.className='speech';rich(speech,tr(p.speech));body.append(speech);
+        const eq=make('div');eq.className='side-equations';for(const [,line] of window.LearnUnit.board(p.id)){const d=make('div');d.className='equation';katex.render(line,d,{throwOnError:false,displayMode:false});eq.append(d);}body.append(eq);}
+    }else if(side.tab==='missions'){
+      const gate=LabMission.statusBox?.();if(gate)body.append(gate);
+      const list=make('ol');list.className='ms-list';
+      for(const m of LabMission.all()[unit]||[]){const done=!!LabMission._state.done[m.id],li=make('li');li.className='ms-item'+(done?' done':'');li.dataset.mid=m.id;
+        const head=make('div');head.className='ms-head';const st=make('span','★ '+LabMission.starsOf(m));st.className='ms-stars';const ti=make('strong',T(m.title.zh,m.title.en));ti.className='ms-title';head.append(st,ti);
+        if(done){const ck=make('span','✓');ck.className='ms-check';head.append(ck);}li.append(head);
+        const d=make('p',T(m.desc.zh,m.desc.en));d.className='ms-desc';li.append(d);
+        if(!done){const det=make('details');det.className='ms-need';det.append(make('summary',T('還差什麼？','What’s missing?')),needList(missionNeed(m)));li.append(det);}list.append(li);}
+      body.append(list);
+    }else{
+      const compose=text=>{const sec=by('comments');if(sec){by('comment-mount').append(sec);sec.hidden=false;}if(window.LabComments)LabComments.compose(text);};
+      for(const [zh,en,pre] of [['寫留言','Write a comment',''],['回報畫面問題','Report a display issue',T('【Bug 回報】','[Bug report] ')]]){const b=make('button',T(zh,en));b.type='button';b.onclick=()=>compose(T('第 '+q+' 題：','Question '+q+': ')+pre);body.append(b);}
+    }
+    by('comment-mount').hidden=side.tab!=='comments';
+  }
+  function badge(){const n=current(),all=steps().length;by('edge-count').textContent=n<all?(n+1)+'/'+all:'✓';}
+  function refreshSide(){if(!by('side-tabs')?.childElementCount)return;badge();if(side.open)render();}
+  function setSide(tab,open=true,remember=true){side.tab=tab;side.open=open;by('study-side').hidden=!open;by('edge').setAttribute('aria-expanded',String(open));
+    document.body.classList.toggle('side-open',open);if(remember){try{localStorage.setItem(SIDE_KEY,open?'1':'0');}catch{}}if(open)render();}
+  function buildSide(){
+    for(const [k,pair] of Object.entries(tabNames)){const b=make('button',tr(pair));b.type='button';b.dataset.tab=k;b.setAttribute('role','tab');b.onclick=()=>setSide(k);by('side-tabs').append(b);}
+    by('edge').onclick=()=>setSide(side.tab,!side.open);by('side-close').onclick=()=>setSide(side.tab,false);
+    let x0=0;by('edge').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('edge').addEventListener('touchend',e=>{if(x0-e.changedTouches[0].clientX>16)setSide(side.tab,true);},{passive:true});
+    by('side-header').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-x0>35)setSide(side.tab,false);},{passive:true});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&side.open)setSide(side.tab,false);});
+    by('answer-fields').addEventListener('input',refreshSide);by('answer-fields').addEventListener('change',refreshSide);
+    by('national').addEventListener('toggle',()=>{if(by('national').open)milestone('national');});
+    by('experiment').addEventListener('toggle',refreshSide);
+    LabMission.on('complete',refreshSide);LabMission.on('ready',refreshSide);
+    addEventListener('lab:themechange',refreshSide);
+    let saved=null;try{saved=localStorage.getItem(SIDE_KEY);}catch{}
+    setSide('steps',wide()&&saved!=='0',false);badge(); // 手機、窄螢幕一律先收成把手，不蓋題目
+  }
   document.addEventListener('DOMContentLoaded',()=>{
-    buildProblem();feedback(true);
+    buildProblem();feedback(true);buildSide();
     by('exam-answer').onsubmit=check;by('explain').onclick=()=>openSolution(true);
     by('class-mode').onclick=()=>{const url=new URL(location.href);if(params.get('class')==='1')url.searchParams.delete('class');else url.searchParams.set('class','1');location.assign(url.href);};
     by('class-mode').setAttribute('aria-pressed',String(params.get('class')==='1'));
