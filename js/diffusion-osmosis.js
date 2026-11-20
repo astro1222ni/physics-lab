@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const K = window.DiffOsmoCore;
   const D = window.LabDraw;
@@ -89,6 +89,7 @@
   let mainSize = { w: 300, h: 300 }, plotSize = { w: 300, h: 220 };
   function mainHeight(w) {
     if (S.mode === 'diff') return layoutDiff(w).H;
+    if (shortLandscape.matches && w < 700) return 316;
     if (S.mode === 'osmo') return Math.round(clamp(w * 0.62, 400, 520));
     return w >= 560 ? Math.round(clamp(w * 0.5, 340, 420)) : 560;
   }
@@ -100,6 +101,11 @@
   // =====================================================================
   function layoutDiff(w) {
     const box = K.BOX;
+    if (shortLandscape.matches && w < 700) {
+      const bw = Math.min(w - 32, 470), bx = (w - bw) / 2, by = 29;
+      const sc = bw / box.Lx, bh = box.Ly * sc, hy = by + bh + 24;
+      return { short: true, bx, by, bw, bh, hx: bx, hy, hw: bw, hh: 54, H: hy + 78, sc };
+    }
     const bw = Math.round(Math.min(w - 28, 780));
     const bx = Math.round((w - bw) / 2);
     const by = 40;
@@ -231,8 +237,8 @@
       const x = x0 + um * L.sc;
       D.haloText(g, k === 4 ? '200 μm' : String(um), x, y0 + hh + 13, C.muted, k === 0 ? 'left' : k === 4 ? 'right' : 'center', 'middle', f);
     });
-    D.haloText(g, T('粒子數（每格）', 'Particles per slice'), x0 + 4, y0 + 9, C.muted, 'left', 'middle', '600 11px ' + FONT);
-    D.haloText(g, T('虛線：均勻分布', 'Dashed: even spread'), x0 + w - 4, yu - 8, C.muted, 'right', 'middle', f);
+    D.haloText(g, T('粒子數（每格）', 'Particles per slice'), x0 + 4, L.short ? y0 - 9 : y0 + 9, C.muted, 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('虛線：均勻分布', 'Dashed: even spread'), x0 + w - 4, L.short ? y0 - 9 : yu - 8, C.muted, 'right', 'middle', f);
   }
 
   // =====================================================================
@@ -437,9 +443,9 @@
   (function () { let s = 7; for (let k = 0; k < 160; k++) { s = (s * 16807) % 2147483647; const a = s / 2147483647; s = (s * 16807) % 2147483647; solDots.push([a, s / 2147483647, 0, 0]); } })();
   function layoutCell(W, H) {
     const pad = 10;
-    if (W >= 560) {
-      const pw = (W - 3 * pad) / 2;
-      return { a: { x: pad, y: 34, w: pw, h: H - 44 }, b: { x: 2 * pad + pw, y: 34, w: pw, h: H - 44 } };
+    if (W >= 560 || shortLandscape.matches) {
+      const pw = (W - 3 * pad) / 2, top = shortLandscape.matches && W < 700 ? 55 : 34;
+      return { a: { x: pad, y: top, w: pw, h: H - top - pad }, b: { x: 2 * pad + pw, y: top, w: pw, h: H - top - pad } };
     }
     const ph = (H - 34 - 3 * pad) / 2;
     return { a: { x: pad, y: 34, w: W - 2 * pad, h: ph }, b: { x: pad, y: 34 + ph + pad, w: W - 2 * pad, h: ph } };
@@ -666,8 +672,9 @@
     D.backdrop(g, W, H);
     const Lc = layoutCell(W, H), osm = osmOut();
     const pctTxt = num(K.percentWV(CS.C, SOL[CS.sol].M), 2) + '%';
-    D.pill(g, T('外液：', 'Solution: ') + (CS.C <= 0 ? T('清水', 'pure water') : shortSol(CS.sol) + ' ' + num(CS.C, 0) + ' mmol/L = ' + num(osm, 0) + ' mOsm/L' + T('（', ' (') + pctTxt + T('）', ')')), 10, 24, C.text, 'left', '600 12px ' + FONT);
-    if (W >= 520) D.pill(g, 't = ' + fmtTime(CS.t) + T('（已放慢）', ' (slowed)'), W - 10, 24, C.muted, 'right', '600 11px ' + FONT);
+    const short = shortLandscape.matches && W < 700;
+    D.pill(g, T('外液：', 'Solution: ') + (CS.C <= 0 ? T('清水', 'pure water') : shortSol(CS.sol) + ' ' + num(CS.C, 0) + ' mmol/L = ' + num(osm, 0) + ' mOsm/L' + T('（', ' (') + pctTxt + T('）', ')')), 10, short ? 15 : 24, C.text, 'left', '600 12px ' + FONT);
+    if (short || W >= 520) D.pill(g, 't = ' + fmtTime(CS.t) + T('（已放慢）', ' (slowed)'), W - 10, short ? 40 : 24, C.muted, 'right', '600 11px ' + FONT);
     // ---- 紅血球
     const A = Lc.a;
     panelBg(g, A, osm);
