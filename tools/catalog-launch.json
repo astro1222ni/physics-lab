@@ -7,6 +7,14 @@
       "subject": "civ",
       "path": "supply-demand.html"
     },
+    "sir-epidemic": {
+      "subject": "health",
+      "path": "sir-epidemic.html"
+    },
+    "basketball-shot": {
+      "subject": "pe",
+      "path": "basketball-shot.html"
+    },
     "perspective-drawing": {
       "subject": "art",
       "path": "perspective-drawing.html"

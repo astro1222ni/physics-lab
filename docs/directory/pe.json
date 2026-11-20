@@ -1,0 +1,15 @@
+{
+  "subject": "pe",
+  "updated": "11/20",
+  "branches": [
+    {
+      "id": "sport-skills", "zh": "運動技能與原理", "en": "Sports Skills and Principles",
+      "chapters": [
+        { "id": "ch-shooting-throwing", "zh": "投籃與投擲動作", "en": "Shooting and Throwing Techniques",
+          "modules": ["basketball-shot"] },
+        { "id": "ch-running-technique", "zh": "跑步動作", "en": "Running Technique",
+          "modules": [] }
+      ]
+    }
+  ]
+}

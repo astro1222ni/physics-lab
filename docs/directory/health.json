@@ -1,0 +1,15 @@
+{
+  "subject": "health",
+  "updated": "11/20",
+  "branches": [
+    {
+      "id": "prevention", "zh": "健康促進與疾病預防", "en": "Health Promotion and Disease Prevention",
+      "chapters": [
+        { "id": "ch-communicable-disease", "zh": "傳染病防治", "en": "Preventing Infectious Diseases",
+          "modules": ["sir-epidemic"] },
+        { "id": "ch-chronic-disease", "zh": "慢性病預防", "en": "Preventing Chronic Disease",
+          "modules": [] }
+      ]
+    }
+  ]
+}

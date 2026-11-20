@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+<meta name="lab-updated" content="2026-11-21 02:43">
+  <script src="js/settings.js?v=202611210243"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Basketball Shots and Throwing for Distance | Astro Ni Lab">投籃與擲遠｜讓倪動手⚡高中全科模擬實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="改變出手高度、速度與角度，比較籃球進框時的軌跡，再找出讓壘球飛得最遠的出手方式。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/basketball-shot.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/basketball-shot.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/basketball-shot.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/basketball-shot.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="投籃與擲遠｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="改變出手高度、速度與角度，比較籃球進框時的軌跡，再找出讓壘球飛得最遠的出手方式。">
+  <meta property="og:url" content="https://lab.astroni.org/basketball-shot.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/basketball-shot.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="投籃與擲遠的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"投籃與擲遠","alternateName":"Basketball Shots and Throwing for Distance","description":"改變出手高度、速度與角度，比較籃球進框時的軌跡，再找出讓壘球飛得最遠的出手方式。","url":"https://lab.astroni.org/basketball-shot.html","image":"https://lab.astroni.org/img/og/basketball-shot.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["運動技能與原理（Sports Skills and Principles）","投籃與投擲動作（Shooting and Throwing Techniques）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"體育","url":"https://lab.astroni.org/physical-education.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"體育","item":"https://lab.astroni.org/physical-education.html"},{"@type":"ListItem","position":3,"name":"運動技能與原理","item":"https://lab.astroni.org/physical-education.html#sport-skills"},{"@type":"ListItem","position":4,"name":"投籃與投擲動作","item":"https://lab.astroni.org/physical-education.html#ch-shooting-throwing"},{"@type":"ListItem","position":5,"name":"投籃與擲遠","item":"https://lab.astroni.org/basketball-shot.html"}]}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611210243">
+  <style>
+    .shot-lab { --court:var(--b-mech); --flight:var(--b-wave); }
+    .shot-lab .stage { min-width:0; }
+    .shot-bar,.shot-actions,.shot-cameras,.shot-legend { display:flex; flex-wrap:wrap; align-items:center; gap:6px 9px; }
+    .shot-bar { justify-content:space-between; margin-bottom:8px; }
+    .shot-bar .lab-seg,.shot-cameras { flex-wrap:wrap; }
+    .shot-lab button,.shot-lab summary,.shot-lab .checks label,.shot-model summary { min-height:44px; }
+    .shot-lab button {min-width:44px;}
+    .shot-lab .slider input[type=range] { min-height:44px; }
+    .shot-lab output.lab-num { display:inline-flex; min-width:44px; min-height:44px; align-items:center; justify-content:flex-end; }
+    .shot-lab output[hidden],.shot-lab [hidden] { display:none!important; }
+    .shot-lab .stage #cv,.shot-lab #view3 { width:100%; height:auto; aspect-ratio:1.86; border-radius:12px; overflow:hidden; display:block; }
+    .shot-lab #view2,.shot-lab #view3 { position:relative; }
+    .shot-lab #view3 canvas { display:block; width:100%;height:100%; }
+    .shot-lab #aim {position:absolute;transform:translate(-50%,-50%);width:48px;height:48px;min-width:48px;padding:0;cursor:grab;touch-action:none;background:none;border:0;box-shadow:none;border-radius:50%;}
+    .shot-lab #aim:active {cursor:grabbing;}
+    .shot-actions { margin:9px 0; }
+    .shot-lab .shot-actions #play { background:var(--b-mech); color:var(--surface); font-weight:750; }
+    .shot-lab button:disabled {color:var(--muted);background:var(--bg);cursor:default;}
+    .shot-log {padding-inline-start:1.7em;font-size:max(15px,calc(15px * var(--fs,1)));font-variant-numeric:tabular-nums;}
+    .shot-legend { gap:4px 14px; font-size:calc(13px * var(--fs,1)); color:var(--muted); }
+    .shot-legend i { display:inline-block; vertical-align:middle; width:22px; border-top:3px solid; margin-inline-end:5px; }
+    .shot-lab .stage .hint { margin:7px 0; }
+    .shot-lab .card h2 {font-size:calc(16px * var(--fs,1));}
+    .court-strip { display:flex; flex-wrap:wrap; border-block:1px solid var(--border); margin:12px 0 5px; }
+    .court-stat { flex:1 1 95px; padding:7px 9px 8px; font-variant-numeric:tabular-nums; }
+    .court-stat span { display:block; color:var(--muted); font-size:calc(13px * var(--fs,1)); }
+    .court-stat strong {font-size:calc(18px * var(--fs,1)); color:var(--text); }
+    .court-stat:first-child strong {color:var(--b-mech);}
+    #readout,#comparison {font-variant-numeric:tabular-nums;}
+    #readout dd,#comparison dd,#speedo,#angleo,#heighto,#distanceo,#refStatus {font-size:max(15px,calc(15px * var(--fs,1)));}
+    .shot-model { margin:16px 0; }
+    .shot-model summary {cursor:pointer;font-weight:700;line-height:1.5;padding-block:10px;}
+    .shot-model p {max-width:76ch;}
+    .shot-model .formula {overflow-x:auto;overflow-y:hidden;}
+    .shot-cameras {margin-bottom:7px;}
+    .shot-navigation .v3nav {position:static;flex-wrap:wrap;margin:5px 0;}
+    .shot-navigation .v3nav-hint {font-size:calc(13px * var(--fs,1));}
+    @media(max-width:600px) and (orientation:portrait) {
+      .shot-lab .stage #cv,.shot-lab #view3 {aspect-ratio:1.22;}
+    }
+    @media(orientation:landscape) and (max-height:600px) {
+      .shot-lab .stage #cv,.shot-lab #view3 {aspect-ratio:2.08;}
+      .shot-lab .shot-bar {margin:0;}
+    }
+    .shot-instruments {display:flex;align-items:center;gap:clamp(10px,2vw,24px);padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:6px 0;}
+    .shot-instruments figure {display:grid;justify-items:center;align-self:stretch;margin:0;gap:4px;}
+    .shot-instruments figcaption,.shot-gap>span {font-size:calc(15px * var(--fs,1));font-weight:650;color:var(--text);line-height:1.2;}
+    .shot-instruments figure canvas {display:block;width:130px;height:79px;border-radius:6px;}
+    .shot-instruments figure:nth-child(2) canvas {width:98px;}
+    .shot-gap {display:grid;gap:3px;max-width:28em;}
+    .shot-gap strong {font-size:calc(20px * var(--fs,1));font-variant-numeric:tabular-nums;color:var(--b-mech);}
+    .shot-gap small {color:var(--muted);font-size:calc(13px * var(--fs,1));line-height:1.3;}
+    .court-strip {margin:0 0 5px;flex-wrap:nowrap;}
+    .court-stat {min-width:0;}
+    .shot-model [hidden] {display:none!important;}
+    .shot-secondary {margin-bottom:4px;}
+    html[lang=en] .lab-set-group button[data-set=lang] {white-space:normal;line-height:1.2;}
+    @media(min-width:1400px){html:not(.labside-docked) .wrap{max-width:1480px;}}
+    @media(max-width:600px) and (orientation:portrait){
+      .shot-instruments {padding:8px 5px;gap:6px;}
+      .shot-instruments figure canvas {width:115px;height:75px;}
+      .shot-instruments figure:nth-child(2) canvas {width:78px;}
+      .shot-instruments figcaption {font-size:calc(13px * var(--fs,1));}
+      .shot-gap {flex:1;min-width:0;}
+      .shot-gap strong {font-size:calc(17px * var(--fs,1));}
+      .court-stat {padding:5px 4px;}
+      html[lang=en] .shot-instruments {display:grid;grid-template-columns:115px minmax(0,1fr);align-items:start;gap:6px;}
+      html[lang=en] .shot-instruments figure {min-width:0;}
+      html[lang=en] .shot-instruments figcaption {text-align:center;}
+      html[lang=en] .shot-instruments .shot-gap {grid-column:1/-1;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;}
+      html[lang=en] .shot-gap small {flex-basis:100%;}
+
+    }
+    @media(orientation:landscape) and (max-height:600px){
+      .shot-lab .stage {padding-block:4px;}
+      .shot-lab .stage #cv,.shot-lab #view3 {height:clamp(110px,38dvh,180px);aspect-ratio:auto;max-height:none!important;}
+      .shot-bar,.shot-actions,.shot-cameras {gap:4px;margin:2px 0;}
+      .court-stat {padding:2px 5px;line-height:1.15;}
+      .court-stat strong {font-size:max(15px,calc(16px * var(--fs,1)));}
+      .labdeck-drawer .labdeck .slider {margin:0;grid-template-columns:minmax(0,1fr) auto;gap:0 9px;}
+      .labdeck-drawer .labdeck .slider label {grid-column:1;grid-row:1;}
+      .labdeck-drawer .labdeck .slider input {grid-column:1;grid-row:2;min-height:44px;}
+      .labdeck-drawer .labdeck .slider output {grid-column:2;grid-row:1/3;min-width:44px;min-height:44px;display:grid;align-content:center;}
+      .labdeck-drawer .labdeck .checks label {min-height:44px;display:flex;align-items:center;gap:4px;}
+    }
+  </style>
+</head>
+<body data-en-ready>
+<div class="wrap">
+  <header class="top">
+    <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physical-education.html&quot;&gt;Physical Education&lt;/a&gt; / &lt;a href=&quot;physical-education.html#sport-skills&quot;&gt;Sports Skills and Principles&lt;/a&gt; / &lt;a href=&quot;physical-education.html#ch-shooting-throwing&quot;&gt;Shooting and Throwing Techniques&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physical-education.html">體育</a> / <a href="physical-education.html#sport-skills">運動技能與原理</a> / <a href="physical-education.html#ch-shooting-throwing">投籃與投擲動作</a></nav>
+    <h1 data-en="Basketball Shots and Throwing for Distance">投籃與擲遠</h1>
+    <p data-en="Why does one shot aimed at the hoop’s centre hit the rim while another swishes? See how a higher arc changes the available space.">同樣瞄準框心，為什麼一球碰框，另一球卻空心入網？把弧線拉高，看看球多了多少空間。</p>
+  </header>
+  <div class="lab shot-lab">
+    <div class="stage">
+      <div class="shot-bar">
+        <div id="modes" class="lab-seg" role="group" aria-label="運動項目" data-en-aria-label="Sport">
+          <button type="button" data-mode="shot" aria-pressed="true" data-en="Basketball">籃球投籃</button>
+          <button type="button" data-mode="throw" aria-pressed="false" data-en="Softball throw">壘球擲遠</button>
+        </div>
+        <div class="lab-seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+          <button type="button" id="view2d" aria-pressed="true" data-en="2D">2D</button>
+          <button type="button" id="view3d" aria-pressed="false" data-en="3D">3D</button>
+        </div>
+      </div>
+      <div class="shot-cameras" id="cameraControls" role="group" aria-label="觀察位置" data-en-aria-label="Camera views" hidden>
+        <button type="button" id="resetCam" aria-pressed="true" data-en="Side view of arc">側面看弧線</button>
+        <button type="button" id="backCam" aria-pressed="false" data-en="Behind the player">球員背後</button>
+        <button type="button" id="ballCam" aria-pressed="false" data-en="Ball view">球的視角</button>
+      </div>
+      <div id="strip" class="court-strip" aria-live="off"></div>
+      <div id="view2"><canvas id="cv" role="img" aria-label="側面球場。拖箭頭可調出手方向與速度，也可使用下方滑桿。" data-en-aria-label="Court in side view. Drag the arrow to aim or use the release controls."></canvas><button type="button" id="aim" aria-label="拖動出手箭頭。方向鍵可調角度與速率。" data-en-aria-label="Drag the release arrow. Arrow keys adjust angle and speed."></button></div>
+      <div id="view3" hidden></div>
+      <p id="viewMsg" class="hint" role="status" hidden></p>
+      <div class="shot-actions">
+        <button type="button" id="play" class="primary" data-en="Release">出手</button>
+        <button type="button" id="record" data-en="Record result" disabled>記錄結果</button>
+        <button type="button" id="reference" data-en="Shoot reference">投基準球</button>
+        <button type="button" id="compare" disabled data-en="Compare">比較兩球</button>
+      </div>
+      <div id="navigation3d" class="shot-navigation"></div>
+      <div id="instruments" class="shot-instruments">
+        <figure><figcaption data-en="Rim close-up">籃框特寫</figcaption><canvas id="closeCam" role="img" aria-label="籃框與球的側面放大圖" data-en-aria-label="Side close-up of rim and ball"></canvas></figure>
+        <figure><figcaption data-en="Along the descent">沿下降方向看</figcaption><canvas id="projection" role="img" aria-label="球心與框心的投影偏移" data-en-aria-label="Ball-centre offset on the projected rim"></canvas></figure>
+        <div class="shot-gap"><span data-en="Closest clearance">最小間隙</span><strong id="gapValue"></strong><small id="lensNote"></small></div>
+      </div>
+      <div class="shot-actions shot-secondary">
+        <button type="button" id="replay" hidden data-en="Replay once">播放這球</button>
+        <button type="button" id="clearAll" data-en="Clear all" disabled>全部清除</button>
+        <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false"></button>
+      </div>
+      <div id="legend" class="shot-legend"></div>
+      <p class="hint" id="stageHint"></p>
+      <p class="status" id="feedback" role="status"></p>
+      <div data-deck-anchor hidden></div>
+    </div>
+    <aside class="panel">
+      <section class="card" data-deck="出手|Release" data-deck-order="0">
+        <h2 data-en="Release">出手設定</h2>
+        <div class="slider" id="speedRow"><label for="speed" data-en="Release speed">出手速率</label><output for="speed" id="speedo"></output>
+          <input type="range" id="speed" min="3" max="18" step="0.1" value="7.3" data-decimals="3"></div>
+        <div class="slider" id="angleRow"><label for="angle" data-en="Release angle">出手角</label><output for="angle" id="angleo"></output>
+          <input type="range" id="angle" min="10" max="80" step="1" value="55" data-decimals="2"></div>
+        <div class="slider" id="heightRow"><label for="height" data-en="Release height">出手高度</label><output for="height" id="heighto"></output>
+          <input type="range" id="height" min="0" max="3" step="0.1" value="2" data-decimals="2"></div>
+        <div class="slider" id="distanceRow"><label for="distance" data-en="Distance to hoop centre">距籃框中心</label><output for="distance" id="distanceo"></output>
+          <input type="range" id="distance" min="2" max="9" step="0.01" value="4.23" data-decimals="2"></div>
+        <div class="checks"><label><input type="checkbox" id="drag"> <span data-en="Air resistance">空氣阻力</span></label></div>
+        <p class="status" data-en="Tap a number to enter a precise value.">點選數字可輸入精確值。</p>
+      </section>
+      <section class="card" data-deck="兩球比較|Compare" data-deck-order="1">
+        <h2 data-en="Compare two releases">兩球比較</h2>
+        <p data-en="For one measurement, release and record the result. For a comparison, shoot a reference first, change a condition, release again, then compare. Clear the reference to return to single trials.">單球觀察可在出手後記錄結果。要比較兩球，先按「投基準球」，改變一項條件再出手，便能比較。清除基準後可回到單球觀察。</p>
+        <div class="btns"><button type="button" id="clearReference" disabled data-en="Clear reference">清除基準</button></div>
+        <p class="status" id="refStatus"></p>
+        <dl class="readout" id="comparison"></dl>
+        <div id="recentBox" hidden><h3 data-en="Recent releases">最近出手</h3><ol class="shot-log" id="recent"></ol></div>
+      </section>
+      <section class="card" data-deck="讀數|Readings" data-deck-order="2">
+        <h2 data-en="Flight readings">飛行讀數</h2>
+        <dl class="readout" id="readout"></dl>
+      </section>
+    </aside>
+  </div>
+  <section class="notes shot-model">
+    <h2 data-en="What does the ball see?">球看得見多大的框？</h2>
+    <p data-en="The entry angle is the angle between the ball’s instantaneous velocity and the floor as it crosses hoop height on the way down. Viewed along that velocity, the hoop projects to an ellipse. Its short diameter is the effective opening. A steeper entry makes the opening wider.">球心下降到框高的那一刻，速度方向與水平面的夾角稱為入框角。沿球落下的方向看，籃框投影成橢圓，短徑就是有效開口。入框角越大，開口越寬。</p>
+    <details><summary data-en="Court measurements and the scoring model">球場尺寸與進框判定</summary>
+      <p data-en="The hoop is 3.05 m high with a 45 cm inside diameter. Along the centre line, the free-throw line is about 4.23 m from the hoop and 4.60 m from the board. The three-point arc is 6.75 m from the hoop. The board is 1.80 m wide and 1.05 m high.">框高 3.05 m，內徑 45 cm。沿球場中線量，罰球線到框心約 4.23 m，到籃板約 4.60 m。三分線圓弧距框心 6.75 m。籃板寬 1.80 m、高 1.05 m。</p>
+      <div class="formula">\[\beta=\operatorname{atan2}(-v_y,|v_x|)\]</div>
+      <div class="formula">\[w_{\rm eff}\approx D_{\rm rim}\sin\beta\]</div>
+      <p data-en="This projection neglects the thickness of the rim tube. The ball view looks along the descending velocity at hoop height and uses parallel projection to compare the opening with the ball diameter. A player standing still sees the same hoop shape for every arc.">有效開口的公式忽略框管粗度。「球的視角」沿球心抵達框高時的下降速度做平行投影，方便比較開口與球徑。球員站在原處時，眼中的籃框形狀保持相同。</p>
+      <p data-en="For a basket the entire ball must pass through the rim on the way down. The simulation checks both edges along the path and stops at the first rim contact. After contact, the dashed marker shows where the centre would cross hoop height without the rim.">整顆球要在下降時穿過框口才算進球。程式沿路檢查前、後框緣，首次碰框就停止。碰框時，虛線球心標記顯示若沒碰框會穿越框高的位置。</p>
+      <p data-en="Both views use the same vertical flight path. The front of the ball meets the board when its centre is one ball radius from the face. The centre must also be at least one radius inside the top and bottom edges, between 3.0225 m and 3.8275 m high. Horizontal velocity reverses and retains 75% of its magnitude. Vertical velocity stays the same. Edge collisions, rim rebounds, sideways motion, wind and spin are omitted.">兩個視圖共用同一條鉛直平面內的軌跡。球心距板面一個球半徑、距上緣和下緣也都至少一個球半徑時，才計入正面打板。球心的有效高度為 3.0225 至 3.8275 m。打板後水平速度反向，大小保留 75%，鉛直速度維持原值。模型忽略板緣碰撞、碰框後的反彈、左右偏移、風與旋轉。</p>
+      <p data-en="Measure horizontal position from the release point. The hoop centre is at distance d, and the board face is 0.375 m beyond it. The ball radius is r.">水平位置從出手點量起。框心距離記為 d，板面在框心後方 0.375 m，球半徑記為 r。</p>
+      <div class="formula">\[x_{\rm hit}=d+0.375\,\mathrm{m}-r\]</div>
+      <p><a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2024-v10a.pdf" data-en="FIBA court rules, article 2.5">FIBA 球場規則第 2.5 條</a> · <a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2024-official-basketball-rules-and-basketball-equipment.pdf" data-en="FIBA basketball equipment, section 1">FIBA 籃球設備規格第 1 節</a></p>
+    </details>
+    <details><summary data-en="Air resistance and the two balls">兩種球的空氣阻力</summary>
+      <div class="formula">\[\frac{k}{m}=\frac{\rho C_{\rm d}\pi r^2}{2m}\]</div>
+      <div class="formula">\[\vec a_{\rm drag}=-(k/m)|\vec v|\vec v\]</div>
+      <p data-en="Air density is 1.2 kg per cubic metre. The radius sets the frontal area. Each ball has its own mass and drag coefficient. We integrate its flight using the unrounded result.">空氣密度取每立方公尺 1.2 kg，迎風面積由半徑決定。每種球有自己的質量與阻力係數，軌跡計算採用公式的未捨入值。</p>
+      <p data-en="The basketball has a mass of 0.62 kg, a diameter of 24.5 cm and a drag coefficient of 0.50. These give about 0.02281 per metre. The softball has a mass of 0.19 kg, a diameter of 9.7 cm and a coefficient of 0.35, giving about 0.00817 per metre.">籃球質量 0.62 kg、直徑 24.5 cm，阻力係數取 0.50，算得每公尺約 0.02281。壘球質量 0.19 kg、直徑 9.7 cm，阻力係數取 0.35，算得每公尺約 0.00817。</p>
+      <p><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" data-en="NASA Glenn drag equation">NASA Glenn 阻力方程式</a></p>
+    </details>
+    <p id="formulaHint" data-en="Compare two throws at the same speed and height, or two drag-free shots at the same spot, to open the corresponding formula.">把同速同高的兩次試擲，或同站位的兩次無阻力投籃作比較，可查看對應的推導。</p>
+    <details id="resultFormula" hidden><summary data-en="Minimum speed and maximum range">最小出手速率與最遠射程</summary>
+      <div id="shotFormula"><p data-en="In still air with drag switched off, the slowest release that reaches the hoop centre has the angle below. The height difference is hoop height minus release height. A finite ball can still clip the rim.">關閉阻力時，要讓球心到達框心，所需速率最小的出手角如下。高度差是框高減去出手高度。球有大小，這條軌跡仍可能碰框。</p>
+      <div class="formula">\[\theta_{\min}=45^\circ+\tfrac12\arctan(\Delta h/d)\]</div>
+      <div class="formula">\[v_{\min}=\sqrt{g(\sqrt{d^2+\Delta h^2}+\Delta h)}\]</div>
+      </div><div id="throwFormula"><p data-en="For throws, release height and landing height refer to the ball centre. The throw ends at height zero. Equal heights and no drag give equal ranges for complementary angles and a maximum at 45°. A higher release or air resistance moves the optimum below 45°.">擲遠的高度以球心為準，下降到零高度便結束。出手與落地等高又沒有阻力時，互補角射程相同，45° 擲得最遠。提高出手點或加入阻力，最佳角就會低於 45°。</p>
+      <div class="formula">\[R=\frac{v_0^2\sin(2\theta)}{g}\]</div>
+      <div class="formula">\[h_0=0,\quad k=0,\quad g=9.8\ \mathrm{m/s^2}\]</div>
+      </div>
+    </details>
+  </section>
+  <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer>
+</div>
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/contrib/auto-render.min.js"></script>
+<script src="js/math.js?v=202611210243"></script>
+<script src="js/projectile-core.js?v=202611210243"></script>
+<script src="js/basketball-shot-core.js?v=202611210243"></script>
+<script src="js/sound.js?v=202611210243"></script>
+<script src="js/numinput.js?v=202611210243"></script>
+<script src="js/labdeck.js?v=202611210243"></script>
+<script src="js/drawkit.js?v=202611210243"></script>
+<script src="js/view3d-nav.js?v=202611210243"></script>
+<script src="js/stepguide.js?v=202611210243"></script>
+<script src="js/labside.js?v=202611210243"></script>
+<script src="js/basketball-shot.js?v=202611210243"></script>
+<script src="js/firebase-config.js?v=202611210243"></script>
+<script src="js/missions.js?v=202611210243" data-module="basketball-shot"></script>
+<script src="js/missions/basketball-shot.js?v=202611210243"></script>
+<script src="js/stats.js?v=202611210243" data-module="basketball-shot"></script>
+<script src="js/comments.js?v=202611210243"></script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+<meta name="lab-updated" content="2026-11-21 02:43">
+  <script src="js/settings.js?v=202611210243"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="How Infections Spread | Astro Ni Lab">傳染病的傳播｜讓倪動手⚡高中全科模擬實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="在虛構校園裡調整口罩與通風條件，對照每天的感染人數，看看哪一組的高峰較晚、較低。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sir-epidemic.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sir-epidemic.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/sir-epidemic.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sir-epidemic.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="傳染病的傳播｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="在虛構校園裡調整口罩與通風條件，對照每天的感染人數，看看哪一組的高峰較晚、較低。">
+  <meta property="og:url" content="https://lab.astroni.org/sir-epidemic.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/sir-epidemic.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="傳染病的傳播的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"傳染病的傳播","alternateName":"How Infections Spread","description":"在虛構校園裡調整口罩與通風條件，對照每天的感染人數，看看哪一組的高峰較晚、較低。","url":"https://lab.astroni.org/sir-epidemic.html","image":"https://lab.astroni.org/img/og/sir-epidemic.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["健康促進與疾病預防（Health Promotion and Disease Prevention）","傳染病防治（Preventing Infectious Diseases）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"健康與護理","url":"https://lab.astroni.org/health.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"健康與護理","item":"https://lab.astroni.org/health.html"},{"@type":"ListItem","position":3,"name":"健康促進與疾病預防","item":"https://lab.astroni.org/health.html#prevention"},{"@type":"ListItem","position":4,"name":"傳染病防治","item":"https://lab.astroni.org/health.html#ch-communicable-disease"},{"@type":"ListItem","position":5,"name":"傳染病的傳播","item":"https://lab.astroni.org/sir-epidemic.html"}]}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611210243">
+  <style>
+    .sir .stage { min-width: 0; padding: clamp(8px,1.25vw,16px); container-type: inline-size; }
+    .sir .instruments { display: grid; gap: 8px; }
+    .sir button, .sir .slider output, .sir .slider input { min-height: 44px; }
+    .sir .slider output { display: inline-grid; min-width: 44px; place-items: center; }
+    .sir .slider { align-items: center; margin-block: 3px; gap: 0 8px; }
+    .sir .slider input { margin: -5px 0 0; }
+    .sir .slider label { line-height: 1.35; }
+    .sir .card h2, .sir h3, .sir .labdeck-tabs button { font-size: calc(16px * var(--fs,1)); }
+    .sir .view-bar, .sir .sheet-head, .sir .runbar, .sir .roster, .sir .key { display: flex; align-items: center; }
+    .sir .view-bar { flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+    .sir .view-bar #soundBtn { margin-inline-start: auto; }
+    .sir #cameraControls { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sir [hidden] { display: none !important; }
+    .sir .sheet { overflow: hidden; background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 14px; }
+    .sir .sheet-head { justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 14px 4px; }
+    .sir h2, .sir h3 { margin: 0; line-height: 1.35; }
+    .sir .sheet h2, .sir .roster h2 { font-size: calc(18px * var(--fs,1)); }
+    .sir .day-stamp { color: var(--accent); font-weight: 750; }
+    .sir .key { flex-wrap: wrap; gap: 2px 13px; padding: 0 14px 6px; font-size: calc(13px * var(--fs,1)); }
+    .sir .key span { white-space: normal; }
+    .sir #spanBtn { margin: 0; color: var(--accent); background: transparent; font-size: calc(13px * var(--fs,1)); padding: 2px 7px; }
+    .sir .key b { display: inline-block; width: 17px; vertical-align: middle; margin-right: 4px; border-top: 3px solid; }
+    .sir .key .sk { color: var(--neg); }.sir .key .ik { color: var(--pos); }
+    .sir .key .rk { color: var(--probe); border-top-style: dashed; }
+    .sir .key .ek { color: var(--equi); border-top-style: dotted; }
+    .sir .key .refk { color: var(--muted); border-top-style: dotted; }
+    .sir .sheet-caption { margin: 0; padding: 3px 12px 8px; color: var(--muted); font-size: calc(13px * var(--fs,1)); line-height: 1.45; }
+    .sir #cv { width: 100%; height: clamp(202px,24vw,290px); aspect-ratio: auto; border: 0; border-radius: 0; touch-action: pan-y; cursor: ew-resize; }
+    .sir #cv:active { cursor: grabbing; }
+    .sir #view3 { position: relative; overflow: hidden; }
+    .sir #view3:not([hidden]) { display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "scene scene" "legend nav"; align-items: center; background: var(--canvas-bg); }
+    .sir .court-key { grid-area: legend; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 12px; margin: 0; padding: 5px 10px; list-style: none; color: var(--text); font-size: calc(13px * var(--fs,1)); line-height: 1.35; }
+    .sir .court-key li { display: inline-flex; align-items: center; gap: 4px; }
+    .sir .court-key i { display: inline-block; flex: none; width: .75em; height: .75em; }
+    .sir .court-key .sk { background: var(--neg); border-radius: 50%; }
+    .sir .court-key .ik { background: var(--pos); clip-path: polygon(50% 0,100% 100%,0 100%); }
+    .sir .court-key .rk { background: var(--probe); }
+    .sir #view3 .v3nav { position: static; grid-area: nav; justify-self: end; padding: 2px 4px; }
+    .sir #view3 .v3nav-hint { display: none; }
+    .sir #view3 .v3nav-seg { box-shadow: none; background: var(--canvas-bg); }
+    .sir #view3 canvas { grid-area: scene; display: block; width: 100%; height: clamp(290px,38vw,475px); aspect-ratio: auto; border: none; border-radius: 0; }
+    .sir .runbar { flex-wrap: wrap; gap: 5px 8px; margin: 7px 0; }
+    .sir .runbar .slider { flex: 1 1 138px; display: grid; grid-template-columns: 1fr auto; min-width: 110px; margin: 0 0 0 4px; }
+    .sir .runbar .slider label { font-size: calc(13px * var(--fs,1)); color: var(--muted); }
+    .sir .runbar .slider input { margin-top: -12px; }
+    .sir .runbar .slider output { font-size: calc(15px * var(--fs,1)); }
+    .sir .roster { gap: clamp(10px,2.2vw,28px); margin: 6px 0 0; padding: clamp(8px,1.2vw,15px); border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(120deg,var(--accent-soft),var(--canvas-bg) 78%); }
+    .sir #roll { flex: 0 0 auto; width: clamp(124px,23vw,222px); height: auto; aspect-ratio: 1.22; border: 0; background: transparent; cursor: default; touch-action: pan-y; }
+    .sir .roll-data { flex: 1; min-width: 0; }
+    .sir .roll-data h2 { color: var(--accent); }
+    .sir .totals { padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+    .sir .totals div { display: flex; justify-content: space-between; gap: 5px; border-bottom: 1px solid var(--border); align-items: baseline; }
+    .sir .totals dt, .sir .totals dd { font-size: calc(15px * var(--fs,1)); line-height: 1.35; margin: 0; }
+    .sir .totals dd, .sir .day-stamp, .sir .readout, .sir .meter, .sir .totals dt b { font-variant-numeric: tabular-nums; }
+    .sir .totals dd { font-weight: 700; white-space: nowrap; }
+    .sir .totals dt b { display: inline-block; min-width: 1.1em; }
+    .sir .s-color { color: var(--neg); }.sir .i-color { color: var(--pos); }.sir .r-color { color: var(--probe); }
+    .sir .meter { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border-top: 1px solid var(--border); }
+    .sir .meter div { padding: 7px 12px; line-height: 1.4; }
+    .sir .meter div + div { border-left: 1px solid var(--border); }
+    .sir .meter small { display: block; color: var(--muted); font-size: calc(13px * var(--fs,1)); }
+    .sir .meter strong { font-size: calc(17px * var(--fs,1)); }
+    .sir .card .readout { grid-template-columns: minmax(0,1fr) auto; gap: 5px 8px; font-size: calc(15px * var(--fs,1)); margin: 8px 0 12px; }
+    .sir .card p, .sir .roster p { margin: 6px 0 0; color: var(--muted); font-size: calc(13px * var(--fs,1)); }
+    .sir .notes summary { cursor: pointer; font-weight: 700; min-height: 44px; padding-block: 8px; }
+    .sir .notes p { margin: 6px 0; }
+    @media (max-width: 470px) {
+      .sir .sheet-head { padding: 8px 10px 3px; }.sir .key { padding-inline: 10px; gap: 2px 9px; }
+      .sir .roster h2 { font-size: calc(16px * var(--fs,1)); }
+      .sir .runbar button, .sir .view-bar button { padding-inline: 9px; }
+      .sir .meter div { padding-inline: 9px; }
+    }
+    .sir .instruments { grid-template-columns: minmax(0,1fr); grid-template-areas: "sheet" "message" "time" "capture" "deck" "roll"; gap: 6px; align-items: start; }
+    .sir .instruments > .sheet { grid-area: sheet; min-width: 0; }
+    .sir #viewMsg { grid-area: message; margin: 0; }
+    .sir #actions { grid-area: time; margin-block: 0; }
+    .sir #recordBar { grid-area: capture; }
+    .sir [data-deck-anchor] { grid-area: deck; }
+    .sir .instruments > .labdeck { grid-area: deck; }
+    .sir #feedback { margin: 3px 0 0; font-size: calc(15px * var(--fs,1)); }
+    .sir #feedback:empty { display: none; }
+    .sir .key { gap: 2px 10px; line-height: 1.45; }
+    .sir .key > span { min-width: 0; max-width: 100%; }
+    .sir .key b { width: 21px; height: 3px; border: 0; background: currentColor; }
+    .sir .key .ik { background: repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px); }
+    .sir .key .rk { background: repeating-linear-gradient(90deg,currentColor 0 10px,transparent 10px 14px); }
+    .sir .key .ek, .sir .key .refk { background: repeating-linear-gradient(90deg,currentColor 0 2px,transparent 2px 5px); }
+    .sir .roster { grid-area: roll; display: block; padding: 0; margin: 0; overflow: hidden; min-width: 0; }
+    .sir .roster summary { display: flex; align-items: center; gap: 8px; padding: 6px 12px; min-height: 44px; font-weight: 750; cursor: pointer; }
+    .sir .roster summary::before { content: "▸"; color: var(--accent); }
+    .sir .roster[open] summary::before { content: "▾"; }
+    .sir .roster-size { margin-left: auto; color: var(--muted); font-size: calc(14px * var(--fs,1)); }
+    .sir .roll-data { padding: 0 8px 9px; }
+    .sir .totals { margin: 0 2px 8px; }
+    .sir .totals dt b { min-width: 2.35em; }
+    .sir .class-pick { display: flex; gap: 5px; align-items: center; justify-content: space-between; font-size: calc(13px * var(--fs,1)); }
+    .sir .class-pick select { min-height: 44px; max-width: 75%; padding: 3px; color: var(--text); background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 7px; font: inherit; }
+    .sir #roll { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1.04; margin: 5px 0; border-radius: 8px; }
+    .sir #roll.class-detail { height: 198px; aspect-ratio: auto; }
+    .sir .card .readout dd { align-self: start; }
+    .sir .roster-size, .sir .roster #classCount, .sir .slider output, .sir .slider .num-edit, .sir .class-pick select, .sir .day-stamp { font-size: calc(15px * var(--fs,1)); }
+    .sir #record[data-ready] { outline: 2px solid var(--equi); outline-offset: 2px; }
+    @media (max-width: 600px) {
+      .sir #view3:not([hidden]) { grid-template-columns: minmax(0,1fr); grid-template-areas: "scene" "legend" "nav"; }
+      .sir #view3 .v3nav { justify-self: start; padding-inline-start: 8px; }
+    }
+    .sir .crumbs > a, .sir .crumbs > span { display: inline-block; white-space: nowrap; }
+    .sir #todayRe { font-size: calc(16px * var(--fs,1)); }
+    @container (min-width: 635px) {
+      .sir .instruments:has(#view3[hidden]) { grid-template-columns: minmax(0,1fr) minmax(198px,29%); grid-template-areas: "sheet roll" "message roll" "time roll" "capture roll" "deck roll"; }
+    }
+    @media (max-width: 470px) {
+      .sir .roster { width: calc(100vw - 12px); margin-inline-start: calc((100% - 100vw + 12px) / 2); }
+      .sir .view-bar #soundBtn { margin-inline-start: 0; }
+      .sir .sheet-head { justify-content: flex-start; }
+      html.labside-active:not(.labside-railed) .sir .roll-data,
+      html.labside-active:not(.labside-railed) .sir .roster summary { padding-inline-end: 42px; }
+      html.labside-active:not(.labside-railed) .sir .key { padding-inline-end: 26px; }
+    }
+    /* Leave slider outputs clear of the floating tabs without shifting the page. */
+    @media (min-width: 881px) and (max-width: 1239px) {
+      html.labside-active:not(.labside-railed) .sir .panel :is(.slider,.readout) { padding-inline-end: 34px; }
+    }
+    html.labside-docked:not(.labside-railed) .sir .panel :is(.slider,.readout) { padding-inline-end: 42px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .sir .wrap { display: flex; flex-direction: column; padding: 0; }
+      .sir .wrap > .lab { order: -1; width: 100%; margin: 0; }
+      .sir .stage { padding: 3px 6px; }
+      .sir .instruments { gap: 1px; }
+      .sir .view-bar, .sir .runbar { margin: 0; gap: 4px; }
+      .sir .sheet-head { padding: 2px 8px; }
+      .sir .sheet h2 { font-size: calc(16px * var(--fs,1)); }
+      .sir .key { padding: 0 7px; gap: 0 7px; }
+      .sir #spanBtn { min-height: 44px; padding: 0 4px; }
+      .sir #cv { height: clamp(108px,31vh,145px); }
+      .sir .sheet-head { justify-content: flex-start; gap: 14px; }
+      .sir .view-bar #spanBtn, .sir .view-bar #soundBtn { margin: 0; }
+      html.labside-active.labdeck-drawer .sir .labside-rail { flex-direction: row; top: auto; bottom: 2px; right: calc(var(--deck-w) + 4px); width: auto; gap: 2px; }
+      html.labside-active.labdeck-drawer .sir .labside-rail > button,
+      html.labside-active.labdeck-drawer .sir .labside-rail > .fb-tab { writing-mode: horizontal-tb; width: auto; min-width: 44px; min-height: 44px; height: 44px; padding: 2px 4px; font-size: 13px; }
+      html.labside-railed.labdeck-drawer .sir .labside-rail { visibility: hidden; }
+      .sir #view3 canvas { height: clamp(100px,28vh,155px); }
+      .sir .court-key { padding: 2px 5px; gap: 1px 6px; }
+      .sir #view3 .v3nav { gap: 3px; padding: 0 2px; }
+      .sir #view3 .v3nav button { padding-inline: 4px; }
+      .sir .sheet-caption { display: none; }
+      .sir .meter div { padding: 1px 6px; }
+      .sir .meter small { font-size: calc(13px * var(--fs,1)); }
+      .sir .meter strong { font-size: calc(15px * var(--fs,1)); }
+      .sir .runbar .slider { display: flex; flex-wrap: nowrap; gap: 4px; }
+      .sir .runbar .slider label, .sir .runbar .slider output { flex: none; }
+      .sir .runbar .slider input { min-width: 40px; width: 100%; margin: 0; }
+      .sir .capture-actions { margin: 0; gap: 4px; }
+      .sir .labdeck .slider { margin-block: 0; }
+      .sir .labdeck .card > p { margin: 0; }
+    }
+  </style>
+</head>
+<body class="sir" data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;health.html&quot;&gt;Health and Nursing&lt;/a&gt; / &lt;a href=&quot;health.html#prevention&quot;&gt;Health Promotion and Disease Prevention&lt;/a&gt; / &lt;a href=&quot;health.html#ch-communicable-disease&quot;&gt;Preventing Infectious Diseases&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="health.html">健康與護理</a> / <a href="health.html#prevention">健康促進與疾病預防</a> / <a href="health.html#ch-communicable-disease">傳染病防治</a></nav>
+      <h1 data-en="How Infections Spread">傳染病的傳播</h1>
+      <p data-en="In a school of 400, new infections are still happening. So why does the number of infectious students start to fall? Drag the day cursor to find the turning point.">400 人的校園裡還有人剛被感染，為什麼具有傳染力的人數卻開始下降？拖動日期，找出轉折的那一天。</p>
+    </header>
+    <main class="lab">
+      <section class="stage">
+        <div class="btns view-bar">
+          <div class="lab-seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" data-en="2D curves" aria-pressed="true">2D 曲線</button>
+            <button type="button" id="view3d" data-en="3D courtyard" aria-pressed="false">3D 中庭</button>
+          </div>
+          <button type="button" id="spanBtn"></button>
+          <div id="cameraControls" hidden>
+            <button type="button" id="resetCam" data-en="Overview">校園全景</button>
+            <button type="button" id="closeCam" data-en="By the classroom">教室窗前</button>
+          </div>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false"><span id="soundLabel" data-en="Sound off">音效關</span></button>
+        </div>
+        <div class="instruments">
+        <div class="sheet">
+          <div class="sheet-head"><h2 id="sceneTitle" data-en="Transmission curves">校園傳播曲線</h2><span class="day-stamp" id="dayStamp"></span></div>
+          <div id="view2">
+            <div class="key" id="legend">
+              <span><b class="sk"></b><strong>S</strong> <span data-en="Can still be infected">尚可被感染</span></span>
+              <span><b class="ik"></b><strong>I</strong> <span data-en="Currently infectious">目前有傳染力</span></span>
+              <span><b class="rk"></b><strong>R</strong> <span data-en="Initially immune, recovered or isolated and no longer transmitting">起初免疫、已康復或隔離，已不會傳染</span></span>
+              <span><b class="ek"></b><span data-en="Effective reproduction">有效再生數</span> R<sub>e</sub></span>
+              <span id="refKey" hidden><b class="refk"></b><span data-en="Reference I">基準 I</span></span>
+            </div>
+            <canvas id="cv" role="slider" tabindex="0" aria-label="拖曳日期游標" data-en-aria-label="Drag the day cursor" aria-describedby="reDef" aria-valuemin="0" aria-valuemax="180" aria-valuenow="0"></canvas>
+            <p class="sheet-caption" id="reDef" data-en-html="Gold line, right axis. R<sub>e</sub> is how many others one infectious person would infect on average under today’s conditions.">金線讀右軸。有效再生數 R<sub>e</sub> 是在當天條件下，一位具傳染力者平均會再傳給幾人。</p>
+          </div>
+          <div id="view3" hidden>
+            <ul class="court-key" aria-label="中庭人物圖例" data-en-aria-label="Courtyard student key">
+              <li><i class="sk" aria-hidden="true"></i><b>S</b><span data-en="Susceptible">易感</span></li>
+              <li><i class="ik" aria-hidden="true"></i><b>I</b><span data-en="Infectious">有傳染力</span></li>
+              <li><i class="rk" aria-hidden="true"></i><b>R</b><span data-en="Immune or removed">免疫或已移出</span></li>
+            </ul>
+          </div>
+          <div class="meter"><div><small data-en-html="Today’s effective reproduction number R<sub>e</sub>">當天有效再生數 R<sub>e</sub></small><strong id="todayRe"></strong></div><div><small data-en="Peak infectious share">具傳染力比例高峰</small><strong id="peakText"></strong></div></div>
+        </div>
+        <p id="viewMsg" class="hint" role="status" hidden></p>
+        <div class="runbar" id="actions">
+          <button type="button" id="play" class="primary" aria-pressed="false">播放</button>
+          <button type="button" id="restart" data-en="Day zero">回第零天</button>
+          <div class="slider" id="dayRow"><label for="day" data-en="Day shown">觀察日期</label><output id="dayo" for="day"></output><input type="range" id="day" min="0" max="180" step="1" value="0" data-decimals="0"></div>
+        </div>
+        <div id="recordBar"><div class="btns capture-actions"><button type="button" id="record" class="primary" data-en="Record readings">記錄讀數</button><button type="button" id="reference" data-en="Keep as reference">保留為基準</button><button type="button" id="clearReference" data-en="Clear all">全部清除</button></div><p class="status" id="feedback" role="status"></p></div>
+        <div data-deck-anchor></div>
+        <details class="roster" open>
+          <summary><span data-en="School roll call">校園點名簿</span><span class="roster-size" data-en="School · 400 students">全校 400 人</span></summary>
+          <div class="roll-data">
+            <dl class="totals">
+              <div><dt><b class="s-color">● S</b> <span data-en="Susceptible">易感</span></dt><dd id="countS"></dd></div>
+              <div><dt><b class="i-color">▲ I</b> <span data-en="Infectious">具傳染力</span></dt><dd id="countI"></dd></div>
+              <div><dt><b class="r-color">■ R</b> <span data-en="Immune or removed">免疫或已移出</span></dt><dd id="countR"></dd></div>
+            </dl>
+            <label class="class-pick"><span data-en="Roll call view">點名視野</span><select id="rollClass"></select></label>
+            <canvas id="roll" role="img"></canvas>
+            <p id="classCount" hidden></p>
+            <p id="rollNote" data-en="Headcounts round the model’s continuous shares to whole people. Zero on the register can still mean a small positive infectious share. The formation does not show who infected whom.">點名人數由模型的連續比例分配取整。點名為 0 人時，具傳染力比例仍可能大於零。隊形只表示人數，看不出誰傳給誰。</p>
+          </div>
+        </details>
+        </div>
+      </section>
+      <aside class="panel">
+        <section class="card" data-deck="情境設定|Scenario"><h2 data-en="Scenario">情境設定</h2>
+          <div class="slider" id="basicRow"><label for="basic" data-en-html="Basic reproduction number R<sub>0</sub>">基本再生數 R<sub>0</sub></label><output id="basico" for="basic"></output><input type="range" id="basic" min="0.5" max="5" step="0.01" value="2.5" data-decimals="3"></div>
+          <p data-en="In a fully susceptible school with no controls, this is how many others one infectious person would infect on average.">全校都易感且沒有防治時，一位具傳染力者平均會再傳給這麼多人。</p>
+          <div class="slider" id="immuneRow"><label for="immune" data-en="Initially immune">初始免疫比例</label><output id="immuneo" for="immune"></output><input type="range" id="immune" min="0" max="90" step="1" value="0" data-decimals="1"></div>
+          <div class="slider" id="maskRow"><label for="mask" data-en="Reduction from masks">口罩減幅</label><output id="masko" for="mask"></output><input type="range" id="mask" min="0" max="80" step="1" value="0" data-decimals="1"></div>
+          <div class="slider" id="airRow"><label for="air" data-en="Reduction from ventilation">通風減幅</label><output id="airo" for="air"></output><input type="range" id="air" min="0" max="80" step="1" value="0" data-decimals="1"></div>
+        </section>
+        <section class="card" data-deck="觀察紀錄|Observations"><h2 data-en="Observations">觀察紀錄</h2>
+          <p data-en="Keep a reference to save that day’s readings and its entire infectious curve. Compare it with another date or scenario. Each setup counts toward one mission. To investigate another, change a scenario control.">保留基準會留下該日讀數與整條 I 曲線。換一天或換一組設定，就能和它比較。每組設定可以完成一題任務。要觀察另一題，請改變一項情境設定。</p>
+          <dl class="readout" id="readout"></dl>
+          <p data-en="The long-term projection can include infections after day 180. The four initial cases count as ever infected and are excluded from cumulative new infections.">模型的長期預測可涵蓋第 180 天以後的感染。起初的 4 人計入「曾感染」，累計新增只計算起點之後的新感染。</p>
+        </section>
+      </aside>
+    </main>
+    <section class="notes">
+      <h2 data-en="Find the turning point">找一找轉折點</h2>
+      <p data-en="If the wave grows at first, the gold diamond marks the instant new infections and removals balance. The infectious share peaks then. If the gold line starts at or below one, the peak is on day zero and there is no downward crossing.">疫情若從起點擴大，金色菱形標示新增感染速率等於移出速率的時刻，具傳染力比例也在此達峰。若金線起點已在 1 或以下，高峰就在第零天，沒有向下穿越的交點。</p>
+      <p id="stageHint" data-en="Drag the day cursor or use the arrow keys. Playback advances five model days per second. With sound on, faster transmission makes the taps closer together. A falling tone marks the downward crossing of one.">拖動日期游標或按方向鍵可逐日觀察。播放每秒前進五個模型天。開啟音效後，當下新增感染的速率愈高，敲擊愈密。金線往下穿過 1 時會響一聲降調。</p>
+      <details><summary data-en="Model and assumptions">模型與假設</summary>
+        <p data-en="This fictional school has a fixed population. Four of its 400 students are initially infectious. Mixing is uniform, and immunity lasts for the simulation. The class formations show proportions; they do not represent chains of infection.">虛構校園人數固定，400 人中起初有 4 人具傳染力。每個人接觸其他人的機會相同，免疫力持續整場模擬。班級隊形只顯示人口組成，看不出誰傳給誰。</p>
+        <div class="formula">\[R_{\mathrm{eff}}=R_0(1-m)(1-v)\]\[R_e(t)=R_{\mathrm{eff}}S(t),\quad \beta=\gamma R_{\mathrm{eff}}\]\[\dot S=-\beta SI,\quad \dot R=\gamma I\]\[\dot I=\gamma I(R_e-1)\]</div>
+        <p data-en="S, I and R are population fractions. The model assumes a mean infectious period of five days (a fictional choice), so γ = 1/5 per day. Mask and ventilation reductions multiply the remaining transmission.">S、I、R 都是全校人口的比例。平均具傳染力 5 天（虛構設定），因此每日移出率 γ = 1/5。口罩與通風分別作用在剩下的傳播機會上，兩項效果以乘法合併。</p>
+        <p data-en-html="R<sub>eff</sub> is the reproduction number with the chosen controls if everyone is susceptible. The baseline immunity threshold uses R<sub>0</sub>. The threshold with controls uses R<sub>eff</sub>. At or below one, no additional immunity is needed to prevent growth.">防治後再生數 R<sub>eff</sub> 指採取目前措施、全校仍易感時，一位具傳染力者平均會再傳給幾人。基準門檻使用 R<sub>0</sub>，有效門檻使用 R<sub>eff</sub>。各自的再生數小於或等於 1 時，阻止疫情成長所需的免疫比例為零。</p>
+        <div class="formula">\[H(q)=\begin{cases}0,&amp;0\le q\le1,\\1-1/q,&amp;q&gt;1.\end{cases}\]\[H_0=H(R_0),\quad H_{\mathrm{eff}}=H(R_{\mathrm{eff}})\]</div>
+        <p data-en="In a growing wave, people can still be infected after the peak. Overshoot is the amount by which the final non-susceptible share, 1 − S(∞), exceeds the threshold with controls. It includes those immune at the start and everyone infected during the wave, including the four initial cases.">成長中的疫情過峰後，仍會有易感者被感染。最終非易感比例 1 − S(∞) 超出有效門檻的部分稱為「過衝」。這個比例包含起初已有免疫力的人，以及這波曾感染的人（含最初的 4 人）。</p>
+        <p data-en="The current infection rate βSI is the fraction newly infected per model day at this instant. The past 24-hour total is the fall in S since yesterday. Cumulative new infections equal the fall in S since day zero and exclude the four initial cases.">當下新增感染速率 βSI，是這一刻每個模型天新增感染占全校的比例。過去 24 小時的新增量是昨天到今天的 S 減量。自起點累計新增量是第零天至今的 S 減量，最初具傳染力的 4 人另計。</p>
+        <p data-en="The curves use fourth-order Runge–Kutta steps of 0.1 day. Within a step we locate the infectious peak and the downward crossing of one separately. Both times are continuous. Sampling only whole days can put the two events on different dates. The final-size equation gives the end of the wave. Both views allocate whole people by largest remainder, with ties in S, I, R order.">曲線以四階 Runge–Kutta 法每次前進 0.1 天，在步長內分別求出具傳染力比例達峰和金線向下穿過 1 的連續時刻。若只取整天，讀出的兩個日期可能差一天。最終比例由最終規模方程求得。兩個畫面均以最大餘數法分配整數人數，同餘數依 S、I、R 排序。</p>
+        <p><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10698490/" target="_blank" rel="noopener" data-en="Further reading on the SIR immunity threshold">延伸閱讀：SIR 模型的群體免疫門檻</a></p>
+      </details>
+    </section>
+    <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer>
+  </div>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611210243"></script>
+  <script src="js/sir-epidemic-core.js?v=202611210243"></script>
+  <script src="js/sound.js?v=202611210243"></script>
+  <script src="js/numinput.js?v=202611210243"></script>
+  <script src="js/labdeck.js?v=202611210243"></script>
+  <script src="js/drawkit.js?v=202611210243"></script>
+  <script src="js/view3d-nav.js?v=202611210243"></script>
+  <script src="js/stepguide.js?v=202611210243"></script>
+  <script src="js/labside.js?v=202611210243"></script>
+  <script src="js/firebase-config.js?v=202611210243"></script>
+  <script src="js/missions.js?v=202611210243" data-module="sir-epidemic"></script>
+  <script src="js/missions/sir-epidemic.js?v=202611210243"></script>
+  <script src="js/stats.js?v=202611210243" data-module="sir-epidemic"></script>
+  <script src="js/comments.js?v=202611210243"></script>
+  <script src="js/sir-epidemic.js?v=202611210243"></script>
+</body>
+</html>

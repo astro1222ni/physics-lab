@@ -6,6 +6,8 @@ const launch = require('../tools/catalog-launch.json');
 const firstDay = '2026-11-14', lastBadgeDay = '2026-11-20';
 const firstLabs = [
   { s: 'supply-demand', d: 'civ', l: firstDay },
+  { s: 'sir-epidemic', d: 'health', l: firstDay },
+  { s: 'basketball-shot', d: 'pe', l: firstDay },
   { s: 'perspective-drawing', d: 'art', l: firstDay }
 ];
 const subjects = new Set(firstLabs.map(lab => lab.d));
@@ -56,16 +58,16 @@ assert.deepEqual(Object.keys(first).sort(), ['path', 'subject'], '首站清單�
 assert.equal(subjectLaunches['supply-demand'].date, firstDay, '首站上架日取自 HEAD 歷史');
 assert.throws(() => verifyEntry('supply-demand', { ...first, path: 'wrong.html' }), /路徑不符/);
 // 還沒 commit（HEAD 歷史沒有）：上架日算今天，仍免計比例並顯示徽章。
-const preHistory = { ...history }; delete preHistory['perspective-drawing'];
+const preHistory = { ...history }; delete preHistory['sir-epidemic'];
 const pre = launchCohorts(manifest, [original], catalog, preHistory).subjectLaunches;
-assert.equal(pre['perspective-drawing'].date, null);
+assert.equal(pre['sir-epidemic'].date, null);
 const today = lastBadgeDay, launchDay = [{ ...firstLabs[1], l: today }];
-const preWeek = checkFresh(launchDay, today, siteDates, pre).art;
-assert.deepEqual(preWeek.incremental, ['perspective-drawing'], '上線當天起顯示新徽章');
+const preWeek = checkFresh(launchDay, today, siteDates, pre).health;
+assert.deepEqual(preWeek.incremental, ['sir-epidemic'], '上線當天起顯示新徽章');
 assert.deepEqual(preWeek.counted, [], '上線當天首站仍免計比例');
-assert.deepEqual(checkFresh([...launchDay, { s: 'second-lab', d: 'art', l: today }], today, siteDates, pre).art.counted, ['second-lab'], '首站與第二站同日上線可以通過');
+assert.deepEqual(checkFresh([...launchDay, { s: 'second-lab', d: 'health', l: today }], today, siteDates, pre).health.counted, ['second-lab'], '首站與第二站同日上線可以通過');
 assert.throws(() => verifyEntry('supply-demand', { ...first, subject: 'art' }), /科目目錄不符/);
 assert.throws(() => verifyEntry('missing', first), /科目目錄不符/);
 assert.throws(() => verifyEntry('projectile', { ...history.projectile, subject: 'physics' }), /科目目錄不符/);
 assert.throws(() => launchCohorts({ modules: { 'supply-demand': first } }, [original], catalog, history), /首次建站批次/);
-console.log('首批科目的 Git 證據、七日徽章、建站舊站與後續新增的 30% 門檻全部通過。');
+console.log('四科首批的 Git 證據、七日徽章、建站舊站與後續新增的 30% 門檻全部通過。');
