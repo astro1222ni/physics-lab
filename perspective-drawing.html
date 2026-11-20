@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+<meta name="lab-updated" content="2026-11-20 10:17">
+  <script src="js/settings.js?v=202611201017"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="One-, Two- and Three-Point Perspective | Astro Ni Lab">一點、兩點與三點透視｜讓倪動手⚡高中全科模擬實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="轉向街角，再抬頭看屋頂。沿著屋簷與牆角找消失點，觀察什麼時候會出現第三個消失點。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/perspective-drawing.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/perspective-drawing.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/perspective-drawing.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/perspective-drawing.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="一點、兩點與三點透視｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="轉向街角，再抬頭看屋頂。沿著屋簷與牆角找消失點，觀察什麼時候會出現第三個消失點。">
+  <meta property="og:url" content="https://lab.astroni.org/perspective-drawing.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/perspective-drawing.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="一點、兩點與三點透視的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"一點、兩點與三點透視","alternateName":"One-, Two- and Three-Point Perspective","description":"轉向街角，再抬頭看屋頂。沿著屋簷與牆角找消失點，觀察什麼時候會出現第三個消失點。","url":"https://lab.astroni.org/perspective-drawing.html","image":"https://lab.astroni.org/img/og/perspective-drawing.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["造形與視覺表現（Form and Visual Expression）","空間與透視（Space and Perspective）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"美術","url":"https://lab.astroni.org/visual-arts.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"美術","item":"https://lab.astroni.org/visual-arts.html"},{"@type":"ListItem","position":3,"name":"造形與視覺表現","item":"https://lab.astroni.org/visual-arts.html#visual-expression"},{"@type":"ListItem","position":4,"name":"空間與透視","item":"https://lab.astroni.org/visual-arts.html#ch-spatial-perspective"},{"@type":"ListItem","position":5,"name":"一點、兩點與三點透視","item":"https://lab.astroni.org/perspective-drawing.html"}]}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <style>
+    .persp { --ink: var(--accent); --rule: color-mix(in srgb,var(--equi) 26%,var(--border)); }
+    .persp [hidden] { display:none !important }
+    .persp .stage,.persp .panel,.persp .card { min-width:0 }
+    .persp .stage { padding:clamp(8px,1.4vw,16px); border-color:var(--rule); }
+    .persp .stage-bar,.persp .paper-tools,.persp .opt-row,.persp .cam-row { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px }
+    .persp .stage-bar { justify-content:space-between; margin:0 0 9px }
+    .persp h2,.persp .card h2 { font-size:calc(16px * var(--fs,1)); margin:0 }
+    .persp .labdeck-pane > .card > h2 { display:block; margin:0 0 4px; font-size:calc(16px * var(--fs,1)) }
+    .persp .stage-bar h2 { letter-spacing:.035em }
+    .persp .stage button,.persp #modes button { min-width:44px }
+    .persp button,.persp select,.persp .opt-row label { min-height:44px; line-height:1.22 }
+    .persp button { font:inherit; font-size:calc(14px * var(--fs,1)); padding:6px 12px; font-weight:600; }
+    .persp .seg { display:inline-flex; flex-wrap:wrap; gap:2px; padding:2px; border:1px solid var(--border); border-radius:12px; background:var(--bg) }
+    .persp .seg button { border:0; border-radius:9px; background:transparent; box-shadow:none; color:var(--muted) }
+    .persp .seg button[aria-pressed=true],.persp .paper-tools button[aria-pressed=true] { color:var(--accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent) }
+    .persp #paper { position:relative; width:100%; height:auto; aspect-ratio:1.60; isolation:isolate; border-radius:7px; overflow:hidden; background:var(--canvas-bg); box-shadow:0 0 0 1px var(--rule) }
+    .persp #view2,.persp #view3 { position:absolute; inset:0; }
+    .persp #paper canvas { display:block; width:100%; height:100%; max-height:none; aspect-ratio:auto; border:0; border-radius:0; touch-action:none }
+    .persp #cv { cursor:grab }
+    .persp #cv[data-drag] { cursor:grabbing }
+    .persp #cv[data-trace] { cursor:crosshair }
+    .persp .paper-tools { margin:9px 0 0 }
+    .persp .opt-row label,.persp .paper-tools label { display:inline-flex; align-items:center; gap:5px; min-height:44px; font-size:calc(14px * var(--fs,1)); cursor:pointer }
+    .persp .paper-tools input { width:18px; height:18px; accent-color:var(--ink) }
+    .persp #overlayControl { min-height:44px; font-size:calc(14px * var(--fs,1)); cursor:pointer }
+    .persp #overlayControl input { width:18px; height:18px; accent-color:var(--ink) }
+    .persp #rigControls { margin:6px 0; gap:5px 8px }
+    .persp #rigStatus { color:var(--text); font-size:calc(15px * var(--fs,1)); font-variant-numeric:tabular-nums }
+    .persp .sound { margin-inline-start:auto }
+    .persp .stage .hint,.persp .card .hint { margin:6px 0 9px; line-height:1.5; color:var(--muted); font-size:calc(13px * var(--fs,1)) }
+    .persp .strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:9px; overflow:hidden; margin:10px 0 }
+    .persp .strip > div { padding:8px clamp(5px,1.2vw,15px); background:var(--surface); min-width:0 }
+    .persp .strip dt { font-size:calc(15px * var(--fs,1)); color:var(--muted) }
+    .persp .strip dd { margin:2px 0 0; font-size:calc(17px * var(--fs,1)); font-weight:700; color:var(--text); font-variant-numeric:tabular-nums }
+    .persp .slider { align-items:center; margin:0; gap:0 8px }
+    .persp .slider output,.persp .lab-num,.persp .readout dd { font-size:calc(15px * var(--fs,1)); font-variant-numeric:tabular-nums }
+    .persp .slider output,.persp .lab-num { min-height:44px; display:inline-flex; align-items:center }
+    .persp input[type=range] { height:44px; margin:-6px 0 0 }
+    .persp .labdeck .slider input[type=range],.persp .labdeck .slider .lab-num { min-height:44px !important; height:44px !important }
+    .persp .slider .lab-num { min-width:44px; justify-content:flex-end }
+    .persp .slider .lab-num::after { inset:0; width:auto; transform:none }
+    html.labdeck-drawer .persp .labdeck-tabs button { min-height:44px }
+    .persp .slider label { line-height:1.3 }
+    .persp .actions { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 }
+    .persp .actions button { flex:1 1 auto }
+    .persp .primary { background:var(--accent-soft); color:var(--ink); border-color:var(--ink) }
+    .persp .readout { grid-template-columns:minmax(0,1fr) auto; font-size:calc(15px * var(--fs,1)) }
+    .persp .readout dd { text-align:right }
+    .persp #historyBox summary { min-height:44px; padding:10px 0; cursor:pointer }
+    .persp #history { max-height:12em; overflow:auto; padding-inline-start:2em; font-variant-numeric:tabular-nums }
+    .persp #traceBox { border-inline-start:3px solid var(--ink); padding:2px 0 3px 10px; margin:8px 0 }
+    .persp #traceBox select { max-width:100%; min-width:0; flex:1 1 8em; color:var(--text); background:var(--surface); font:inherit; border:1px solid var(--border); border-radius:8px; }
+    .persp .notes { border-top:2px solid var(--rule) }
+    .persp .notes summary { font-weight:650; cursor:pointer; padding:10px 0; min-height:44px; }
+    .persp .notes p { max-width:78ch; margin:6px 0 12px }
+    .persp #navRow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px }
+    .persp #navRow[hidden] { display:none }
+    .persp #rigNav .v3nav { position:static; display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin:5px 0 }
+    .persp #rigNav .v3nav-seg { display:inline-flex; flex:0 0 auto }
+    .persp #rigNav .v3nav button { min-width:44px; min-height:44px; width:auto; white-space:nowrap; padding:3px 8px }
+    .persp #rigNav .v3nav-lbl { display:inline }
+    .persp #rigNav .v3nav-hint { font-size:calc(13px * var(--fs,1)) }
+    .persp #traceStatus,.persp #sheetNotice,.persp #feedback,.persp #history { font-size:calc(15px * var(--fs,1)) }
+    .persp .formula { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:4px 1.4em; min-width:0 }
+    .persp .formula .katex-display { margin:.32em 0 }
+    @media (max-width:600px) {
+      .persp #paper { aspect-ratio:1.22 }
+      .persp .stage-bar { gap:4px }
+      .persp .stage-bar button,.persp .paper-tools button { padding:6px 8px }
+      .persp .strip dd { font-size:calc(15px * var(--fs,1)) }
+      /* 操作與打點排在一起；手機 3D 的數字和說明仍可在操作台下方閱讀。 */
+      html.labdeck-on .persp .stage:has(#view3:not([hidden])) { display:flex; flex-direction:column }
+      html.labdeck-on .persp .stage:has(#view3:not([hidden])) #stageHint { order:1 }
+      html.labdeck-on .persp .stage:has(#view3:not([hidden])) #meters { order:2 }
+    }
+    @media (orientation:landscape) and (max-height:600px) {
+      .persp #paper { height:min(60vh,300px); width:min(100%,96vh); margin-inline:auto; aspect-ratio:auto }
+      .persp .stage-bar { margin-bottom:4px }
+    }
+    .persp .ms-stars { color:var(--star) }
+    .persp #markNotice { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; font-size:calc(13px * var(--fs,1)) }
+    .persp #markedSheets { max-width:100%; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:6px; font:inherit }
+    .persp .confirm-clear { border-inline-start:3px solid var(--accent); padding-inline-start:10px }
+    .persp #paper canvas.rig-ink { position:absolute; inset:0; pointer-events:none; background:transparent; box-shadow:none }
+    .persp .desk-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px }
+    .persp #ratio[data-status] { font-size:calc(15px * var(--fs,1)) }
+    @media (orientation:landscape) and (max-height:600px) {
+      html.labdeck-drawer .persp .wrap { padding-top:0; display:flex; flex-direction:column }
+      html.labdeck-drawer .persp .wrap>.lab { order:-1; width:100%; margin-top:0 }
+      html.labdeck-drawer .persp header.top { display:flex; align-items:center; gap:8px; padding:2px 6px; margin:0; min-height:0 }
+      html.labdeck-drawer .persp header.top h1 { font-size:calc(14px * var(--fs,1)); margin:0 }
+      html.labdeck-drawer .persp header.top .crumbs { margin:0; font-size:calc(11px * var(--fs,1)); }
+      html.labdeck-drawer .persp header.top>p { display:none }
+      html.labdeck-drawer .persp .stage { display:grid; grid-template-columns:minmax(120px,28%) minmax(0,1fr); grid-template-rows:auto auto min-content auto auto; align-content:start; align-items:center; gap:2px 7px; padding:2px 6px }
+      html.labdeck-drawer .persp .stage>* { grid-column:1 / -1; min-width:0 }
+      html.labdeck-drawer .persp .stage-bar { grid-row:1 }
+      html.labdeck-drawer .persp .stage #paper { grid-row:2; height:auto; width:min(100%,94vh); aspect-ratio:1.6 }
+      html.labdeck-drawer .persp .stage:has(#traceBox:not([hidden])) #paper,
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { grid-column:2; width:100% }
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { width:min(100%,82vh) }
+      html.labdeck-drawer .persp .stage[data-compact-type]:has(#cameraBank:not([hidden])) #paper { width:min(100%,76vh) }
+      html.labdeck-drawer .persp .stage[data-compact-type] #rigNav [data-m] svg { display:none }
+      html.labdeck-drawer .persp .stage[data-compact-type] .seg button,
+      html.labdeck-drawer .persp .stage[data-compact-type] #cameraBank button { padding:2px 5px }
+      html.labdeck-drawer .persp #traceBox,html.labdeck-drawer .persp #cameraBank { grid-area:2 / 1 / 4 / 2; align-self:center; padding:0; margin:0; border:0 }
+      html.labdeck-drawer .persp #traceBox { display:contents }
+      html.labdeck-drawer .persp #traceBox .opt-row { grid-area:2 / 1 / 3 / 2 }
+      html.labdeck-drawer .persp #traceStatus { grid-area:3 / 1 / 4 / 3 }
+      html.labdeck-drawer .persp #traceBox .opt-row { order:-1; display:grid; grid-template-columns:1fr; gap:2px }
+      html.labdeck-drawer .persp #traceBox select { width:100% }
+      html.labdeck-drawer .persp #traceStatus { font-size:calc(15px * var(--fs,1)); line-height:1.21; margin:2px 0; overflow-wrap:anywhere }
+      html.labdeck-drawer .persp #navRow { grid-area:3 / 2; align-self:start; flex-wrap:nowrap; justify-content:center; gap:3px }
+      html.labdeck-drawer .persp #navRow button { padding:3px 6px }
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) { grid-template-rows:auto auto 46px auto auto }
+      html.labdeck-drawer .persp #rigNav .v3nav { margin:0; justify-content:center }
+      html.labdeck-drawer .persp #rigNav .v3nav-hint { display:none }
+      html.labdeck-drawer .persp #cameraControls,html.labdeck-drawer .persp #rigControls { display:flex; flex-direction:column; align-items:stretch; gap:2px; margin:0 0 2px }
+      html.labdeck-drawer .persp #cameraControls .seg { display:grid; gap:0; padding:0 }
+      html.labdeck-drawer .persp #rigStatus { line-height:1.2; text-align:center }
+      html.labdeck-drawer .persp .stage #meters { grid-row:4 }
+      html.labdeck-drawer .persp .stage .paper-tools { grid-area:5 / 1 / 6 / 3; justify-self:start }
+      html.labdeck-drawer .persp .stage .desk-actions { grid-area:5 / 2; justify-self:center }
+      html.labdeck-drawer .persp .stage .sound { margin:0 }
+      html.labdeck-drawer .persp .stage .desk-actions button,html.labdeck-drawer .persp .stage .paper-tools button { padding:3px 7px }
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) .paper-tools { display:none }
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) .desk-actions { grid-area:5 / 1 / 6 / 3; justify-self:start }
+      html.labdeck-drawer .persp .stage-bar { margin:0; justify-content:flex-start; gap:12px }
+      html.labdeck-drawer .persp .stage-bar button { min-height:44px; padding:2px 8px }
+      html.labdeck-drawer .persp .stage #stageHint { display:none }
+      html.labdeck-drawer .persp .stage .paper-tools,html.labdeck-drawer .persp .desk-actions { margin:0; gap:4px }
+      html.labdeck-drawer .persp #meters { margin:0; border-width:0 }
+      html.labdeck-drawer .persp #meters>div { display:flex; justify-content:center; align-items:center; gap:4px; padding:2px }
+      html.labdeck-drawer .persp #meters dd { margin:0; font-size:calc(15px * var(--fs,1)) }
+      html.labdeck-drawer .persp .card .hint { margin:1px 0; }
+      html.labdeck-drawer .persp .labdeck-pane .card > h2,html.labdeck-drawer .persp .labdeck-pane .card > .hint { display:none }
+      html.labdeck-drawer .persp .labdeck-pane .slider { display:grid; grid-template-columns:minmax(80px,1fr) minmax(64px,1fr) auto; grid-template-rows:48px; align-items:center; margin:0; gap:4px }
+      html.labdeck-drawer .persp .labdeck-pane .slider label { grid-column:1; grid-row:1 }
+      html.labdeck-drawer .persp .labdeck-pane .slider input { grid-column:2; grid-row:1; margin:0 }
+      html.labdeck-drawer .persp .labdeck-pane .slider output { grid-column:3; grid-row:1 }
+      html.labdeck-drawer .persp [hidden] { display:none !important }
+    }
+    @media (prefers-reduced-motion:reduce) { .persp * { scroll-behavior:auto; transition:none } }
+  </style>
+</head>
+<body data-en-ready class="persp">
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;visual-arts.html&quot;&gt;Visual Arts&lt;/a&gt; / &lt;a href=&quot;visual-arts.html#visual-expression&quot;&gt;Form and Visual Expression&lt;/a&gt; / &lt;a href=&quot;visual-arts.html#ch-spatial-perspective&quot;&gt;Space and Perspective&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="visual-arts.html">美術</a> / <a href="visual-arts.html#visual-expression">造形與視覺表現</a> / <a href="visual-arts.html#ch-spatial-perspective">空間與透視</a></nav>
+      <h1 data-en="One-, Two- and Three-Point Perspective">一點、兩點與三點透視</h1>
+      <p data-en="Follow the two curbs into the distance. Where would they meet on paper? That meeting place is a vanishing point.">沿著街道兩旁的路緣往遠處看。在紙上延長它們，會在哪裡相遇？那個交會的位置叫作消失點。</p>
+    </header>
+    <main class="lab">
+      <section class="stage">
+        <div class="stage-bar">
+          <h2 id="stageTitle" data-en="Street sketch">街角寫生</h2>
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" data-en="2D paper" aria-pressed="true">2D 畫紙</button>
+            <button type="button" id="view3d" data-en="3D frame" aria-pressed="false">3D 畫框</button>
+          </div>
+        </div>
+        <div id="paper">
+          <div id="view2"><canvas id="cv" role="img" aria-label="街角素描，可拖曳畫室或選邊描線" data-en-aria-label="Street sketch. Drag the studio or select edges to trace."></canvas></div>
+          <div id="view3" hidden></div>
+        </div>
+        <p id="viewMsg" class="hint" role="status" hidden></p>
+        <div id="navRow" hidden><div id="rigNav" hidden></div>
+          <button type="button" id="resetCam" data-en="Reset view">重設視角</button></div>
+        <div id="cameraBank" hidden>
+        <div id="cameraControls" class="cam-row" hidden>
+          <div class="seg" role="group" aria-label="觀察位置" data-en-aria-label="Observation point">
+            <button type="button" id="sideCam" aria-pressed="true" data-en="From the side">從旁邊看</button>
+            <button type="button" id="eyeCam" aria-pressed="false" data-en="From the eye">從眼睛看</button>
+          </div>
+          <label id="overlayControl" class="opt-row" hidden><input type="checkbox" id="sketchOverlay"><span data-en="Sketch overlay · 40%">疊上素描 · 40%</span></label>
+        </div>
+        <div class="opt-row" id="rigControls" aria-describedby="stageHint" hidden>
+          <button type="button" id="nextCorner" data-en="Next corner">換一個牆角</button>
+          <button type="button" id="foldBoard" aria-pressed="false" data-en="Close and mark">闔板打點</button>
+          <output id="rigStatus" aria-live="polite"></output>
+        </div>
+        </div>
+        <div id="markNotice" hidden><output id="sheetNotice" aria-live="polite"></output><select id="markedSheets" aria-label="有留點的構圖" data-en-aria-label="Previously marked compositions" hidden></select><button type="button" id="recoverSheet" data-en="Return to a marked sketch">回到有留點的構圖</button></div>
+        <div class="paper-tools">
+          <button type="button" id="trace" aria-pressed="false" data-en="Trace edges">描圖模式</button>
+          <label><input type="checkbox" id="guides" checked><span data-en="Guides">輔助線</span></label>
+          <button type="button" id="soundBtn" class="sound" aria-pressed="false" data-en="Sound off">音效關</button>
+        </div>
+        <p class="hint" id="stageHint"></p>
+        <div id="traceBox" hidden>
+          <p id="traceStatus" role="status"></p>
+          <div class="opt-row"><select id="edgeList" aria-label="畫紙上的邊" data-en-aria-label="Edge on the paper"></select>
+            <button type="button" id="pickEdge" data-en="Trace this edge">描這條邊</button>
+            <button type="button" id="newTrace" data-en="New pair">重描兩線</button></div>
+        </div>
+        <dl class="strip" id="meters">
+          <div><dt data-en="Vanishing points">消失點數</dt><dd id="count"></dd></div>
+          <div><dt data-en="A / B on paper">紙上樓高 A／B</dt><dd id="ratio"></dd></div>
+          <div><dt data-en="View angle">水平視野</dt><dd id="lens"></dd></div>
+        </dl>
+        <div class="desk-actions"><button type="button" id="reference" data-en="Save reference">保留基準</button><button type="button" id="record" class="primary" data-en="Record readings">記錄讀數</button></div>
+        <div data-deck-anchor hidden></div>
+      </section>
+      <aside class="panel">
+        <section class="card" data-deck="取景|View" data-deck-order="1"><h2 data-en="Where do the eaves meet?">屋簷會在哪裡相遇？</h2>
+          <p class="hint" data-en="Start with a view, then turn or tilt it. Widen the field of view to fit more on the paper.">選一種取景，再轉頭或抬頭。拉寬視野，畫紙就能容納更多景物。</p>
+          <div class="seg" id="modes" role="group" aria-label="取景範例" data-en-aria-label="Example views">
+            <button type="button" data-mode="one" aria-pressed="true" data-en="One point">一點</button>
+            <button type="button" data-mode="two" aria-pressed="false" data-en="Two points">兩點</button>
+            <button type="button" data-mode="three" aria-pressed="false" data-en="Three points">三點</button>
+          </div>
+          <div class="slider" id="yawRow"><label for="yaw" data-en="Turn left / right">左右轉向</label><output id="yawo" for="yaw"></output><input type="range" id="yaw" min="-65" max="65" step="1" value="0" data-decimals="1"></div>
+          <div class="slider" id="pitchRow"><label for="pitch" data-en="Tilt down / up">低頭／抬頭</label><output id="pitcho" for="pitch"></output><input type="range" id="pitch" min="-90" max="90" step="1" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="fov" data-en="Horizontal field of view">水平視野</label><output id="fovo" for="fov"></output><input type="range" id="fov" min="46" max="128" step="1" value="68" data-decimals="1"></div>
+        </section>
+        <section class="card" data-deck="建築|Buildings" data-deck-order="2"><h2 data-en="Can the smaller house look taller?">小房子能看起來比較高嗎？</h2>
+          <p class="hint" data-en="Move studio A. Bookshop B stays in place and is 4.55 m tall. Measure the exposed portions of the nearest visible front upright of each building.">移動畫室 A。書店 B 固定在原地，牆高 4.55 m。各取可見且靠近眼點的前牆直稜，只量未被前棟遮住的部分。</p>
+          <div class="slider" id="xRow"><label for="x" data-en="A · lateral position">A 橫向位置</label><output id="xo" for="x"></output><input type="range" id="x" min="-6" max="6" step=".05" value="-2.35" data-decimals="2"></div>
+          <div class="slider" id="zRow"><label for="z" data-en="A · street depth">A 街道縱深</label><output id="zo" for="z"></output><input type="range" id="z" min="4" max="19" step=".1" value="7.8" data-decimals="2"></div>
+          <div class="slider" id="sizeRow"><label for="size" data-en="A · base width">A 底邊寬</label><output id="sizeo" for="size"></output><input type="range" id="size" min=".8" max="3.8" step=".1" value="2.6" data-decimals="2"></div>
+        </section>
+        <section class="card" data-deck="比較|Compare" data-deck-order="3"><h2 data-en="Compare two sketches">比對兩張畫</h2>
+          <p class="hint" data-en="Save the first sketch as a reference. Its dashed outline and hollow vanishing points stay on the paper while you change the scene. Record the new readings to test your prediction.">先保留第一張當基準。改動街景時，基準輪廓和空心消失點會以虛線留在紙上。記錄新的讀數，檢驗你的預測。</p>
+          <dl class="readout" id="readout"></dl>
+          <div class="actions"><button type="button" id="dropRef" data-en="Remove reference">移除基準</button><button type="button" id="undoClear" data-en="Undo clear" hidden>復原清除</button></div>
+          <button type="button" id="clearReference" data-en="Clear all…">全部清除…</button>
+          <div id="clearPrompt" class="confirm-clear" hidden><p id="clearSummary"></p><button type="button" id="confirmClear" data-en="Confirm clear">確定清除</button> <button type="button" id="cancelClear" data-en="Cancel">取消</button></div>
+          <p class="hint" id="feedback" role="status"></p>
+          <details id="historyBox" hidden><summary data-en="Recorded sketches">已記錄的構圖</summary><ol id="history"></ol></details>
+        </section>
+      </aside>
+    </main>
+    <section class="notes">
+      <h2 data-en="Looking along a taut thread">沿著一條繃緊的線看</h2>
+      <p data-en="In Drawing a Lute, a woodcut from Dürer’s 1525 Manual of Measurement, an eyelet in the wall stands for the eye. A taut thread runs from the eyelet to a point on the lute. Two sliding cords in an open wooden frame meet the thread. The artists release the thread, swing the hinged drawing board shut and mark the crossing. Each dot records one point on the instrument.">杜勒在 1525 年《量度指南》的木刻〈畫魯特琴〉裡，用牆上的釘環代表眼點。一條拉緊的細線從釘環連到琴身上的一點。兩位繪圖者移動中空木框裡的兩條滑線，讓交點對準這條細線。鬆開拉線，闔上側開的畫板，就能把交點記在板上。一個點對應琴身的一個位置。</p>
+      <p data-en="The same edition shows a glass pane for tracing a seated sitter in Drawing a Portrait. The gridded frame in Drawing a Reclining Woman appeared in the expanded 1538 edition. Here a 1:16 street model on a 1.20 × 2.00 m worktable takes the place of the lute.">同書的〈畫肖像〉用玻璃板描坐像。〈畫斜倚女子〉用方格窗觀察人體，收在 1538 年增補版。這裡把街角做成 1 比 16 的模型，放在 1.20 × 2.00 m 的畫桌上代替魯特琴，你也可以逐點取樣。</p>
+      <p><a href="https://www.metmuseum.org/art/collection/search/387741" target="_blank" rel="noopener" data-en="Drawing a Lute · The Met">大都會藝術博物館〈畫魯特琴〉</a> · <a href="https://www.ngv.vic.gov.au/explore/collection/work/77613/" target="_blank" rel="noopener" data-en="Drawing a Portrait · NGV">維多利亞國立美術館〈畫肖像〉</a> · <a href="https://www.metmuseum.org/art/collection/search/366555" target="_blank" rel="noopener" data-en="Drawing a Reclining Woman · The Met">大都會藝術博物館〈畫斜倚女子〉</a></p>
+      <details><summary data-en="How the model and measurements work">模型與量測方法</summary>
+        <p data-en="The street represents an eye height of 1.60 m, or 10 cm on the model. In the right-handed world, x points right, y points up and the initial view looks along negative z. The street-depth control shows positive distance along the street.">實景眼高 1.60 m，在桌上模型對應為釘環高出模型地面 10 cm。世界採右手座標，x 軸正向朝右、y 軸正向朝上，初始視線沿 z 軸負向。街道縱深滑桿顯示沿街向前的正距離。</p>
+        <div class="formula">\[u=f\frac{X}{-Z}\] \[v=f\frac{Y}{-Z}\] \[f=1\] \[\tan\frac{\beta}{2}=\frac{\tan(\alpha/2)}{a}\]</div>
+        <p data-en="X, Y and Z are camera coordinates. Both views use a unit focal length f, a horizontal field of view α and the same paper aspect ratio a (width divided by height). These determine the vertical field of view β. In street coordinates the wooden frame is 1.90 m from the eyelet (11.9 cm in the model) and has the same angular size as the paper. Segments crossing the near plane are cut at 0.045 m in front of the eye.">X、Y、Z 是相機座標。兩種畫面共用單位焦距 f、水平視野 α 和紙幅寬高比 a，由此算出垂直視野 β。木框中心距釘環相當於實景的 1.90 m，模型上約 11.9 cm，開口與畫紙涵蓋相同的視角。線段穿過眼前 0.045 m 的近平面時，保留平面前方朝向街景的那一段。</p>
+        <p data-en="The horizon is the line of vanishing points for horizontal directions. It moves when you tilt. Looking straight up or down puts the horizon at infinity. Uprights stay parallel in a level view. Both horizontal points fit strictly inside the sheet only with a horizontal field of view greater than 90°.">視平線是各個水平方向的消失點連成的線，仰俯時會移動。垂直向上或向下看時，視平線在無限遠。平視時，直立牆角在紙上保持平行。要讓兩個水平消失點都進入紙張內部，水平視野必須大於 90°。</p>
+        <div class="formula">\[v_{\mathrm h}=-f\tan\theta\] \[v_{\mathrm V}=f\cot\theta\] \[|\theta|\geq 90^\circ-\frac{\beta}{2}\]</div>
+        <p data-en="Positive tilt θ means looking up. The last inequality puts the vertical vanishing point on the sheet or its edge. A wider vertical field of view lets you find it with less tilt.">仰俯角 θ 以抬頭為正。滿足最後一個不等式時，垂直消失點會落在紙內或紙邊。垂直視野愈寬，找到第三點所需的仰俯角就愈小。</p>
+        <p data-en="A and B have the same proportions. Wall height is 1.4 times base width. For each building, measure the nearest front upright that appears on the paper. Sum its exposed lengths, including portions beyond the paper edge. An occlusion label means both front uprights are hidden; an off-paper label means neither enters the sheet.">A、B 兩棟牆高都是底寬的 1.4 倍。各取出現在紙上且較靠近眼點的前牆直稜，加總未受遮擋的投影長度，含延伸到紙外的部分。兩條前稜都被前棟擋住時標示「被遮住」；都沒進入畫紙時標示「在紙外」。</p>
+        <p data-en="Save a level view. Halve the studio’s size, its depth and its sideways offset from the eyelet. If it starts on the centerline, keep it there. With the same lens and bearing, the projected wall height stays the same. The wall foot can shift vertically because the eyelet stays above the ground. Moving the studio sideways alone preserves its vanishing points.">平視時保留基準，把畫室大小、街道縱深及它到眼點的橫向距離都減半。若原本就在中線上，讓它留在中線上。取景方位與視野相同時，紙上牆高會保持不變。釘環固定在地面上方，牆腳在紙上的高低仍可能改變。若只橫移畫室，同方向的邊仍指向原來的消失點。</p>
+      </details>
+    </section>
+    <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer>
+  </div>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611201017"></script>
+  <script src="js/perspective-drawing-core.js?v=202611201017"></script>
+  <script src="js/sound.js?v=202611201017"></script>
+  <script src="js/numinput.js?v=202611201017"></script>
+  <script src="js/labdeck.js?v=202611201017"></script>
+  <script src="js/drawkit.js?v=202611201017"></script>
+  <script src="js/view3d-nav.js?v=202611201017"></script>
+  <script src="js/stepguide.js?v=202611201017"></script>
+  <script src="js/labside.js?v=202611201017"></script>
+  <script src="js/perspective-drawing.js?v=202611201017"></script>
+  <script src="js/firebase-config.js?v=202611201017"></script>
+  <script src="js/missions.js?v=202611201017" data-module="perspective-drawing"></script>
+  <script src="js/missions/perspective-drawing.js?v=202611201017"></script>
+  <script src="js/stats.js?v=202611201017" data-module="perspective-drawing"></script>
+  <script src="js/comments.js?v=202611201017"></script>
+</body>
+</html>

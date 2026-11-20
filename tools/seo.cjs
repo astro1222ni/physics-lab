@@ -214,7 +214,7 @@ if (NO_OG) process.exit(0);
     const color = (read('lab.css').match(new RegExp(colorName + ':\\s*([^;]+)')) || [])[1] || '#196558';
     const v = crypto.createHash('sha1').update(s.zh + s.en + own.length + a.icon + '|subject-v1').digest('hex').slice(0, 10);
     if (!FORCE && vers[s.page] === v && fs.existsSync(path.join(outDir, s.page + '.jpg'))) continue;
-    await page.setContent(`<style>${CSS}.text{width:650px;top:160px}.subject-icon{position:absolute;right:100px;top:170px;color:var(--c)}.subject-icon svg{width:250px;height:250px}h1{font-size:72px}</style><div class="card" style="--c:${color}"><div class="brand">ASTRO NI LAB・讓倪動手</div><div class="text"><span class="tag">${own.length} 個互動實驗</span><h1>${esc(s.zh)}</h1><h2>${esc(s.en)} · ${own.length} interactive labs</h2></div><div class="subject-icon">${a.icon}</div><div class="foot">lab.astroni.org · 動手試，親眼看。</div></div>`, { waitUntil: 'load' });
+    await page.setContent(`<style>${CSS}.text{width:650px;top:160px}.subject-icon{position:absolute;right:100px;top:170px;color:var(--c)}.subject-icon svg{width:250px;height:250px}h1{font-size:72px}</style><div class="card" style="--c:${color}"><div class="brand">ASTRO NI LAB・讓倪動手</div><div class="text"><span class="tag">${own.length} 個互動實驗</span><h1>${esc(s.zh)}</h1><h2>${esc(s.en)} · ${own.length} interactive lab${own.length === 1 ? '' : 's'}</h2></div><div class="subject-icon">${a.icon}</div><div class="foot">lab.astroni.org · 動手試，親眼看。</div></div>`, { waitUntil: 'load' });
     await shot({ path: path.join(outDir, s.page + '.jpg'), type: 'jpeg', quality: 86 }); vers[s.page] = v; made++;
   }
   for (const l of labs) {

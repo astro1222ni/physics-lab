@@ -10,7 +10,9 @@ async function playPage(browser, base, slug, opts) {
       await page.goto(base + slug + '.html'); await H.ready(page, slug); const r = await H.inspect(page);
       check(r.sw <= r.vw, slug + ' ' + lang + ' 390 px 沒有橫向溢出'); check(!r.cjk.length, slug + ' ' + lang + ' 語言完整'); check(!errors.length, slug + ' 沒有頁面錯誤');
       if (slug === 'index') {
-        check(r.cards.length === 8 && r.cards.every(c => Math.abs(c.w - r.cards[0].w) < 1 && c.h === r.cards[0].h && c.font === r.cards[0].font), '八科大卡尺寸與字級一致');
+        const links = new Set(r.cards.map(c => c.href));
+        check(r.cards.length === H.subjects.length && H.subjects.every(s => links.has(s.page + '.html')), '每科都有一張入口卡');
+        check(r.cards.every(c => Math.abs(c.w - r.cards[0].w) < 1 && c.h === r.cards[0].h && c.font === r.cards[0].font), '各科大卡尺寸與字級一致');
         check(r.recs.length === 4, '冷啟動推薦四個實驗'); check(!r.account.length && !r.privilege.length, '訪客不讀帳號資料');
         await page.locator('#q').fill('momentum'); await page.waitForFunction(() => document.querySelectorAll('#search-results a').length > 0);
         check(await page.locator('.search-subject').count() > 0, '搜尋結果顯示科目標籤');

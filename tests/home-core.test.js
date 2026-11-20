@@ -11,8 +11,9 @@ assert.equal(new Set(cold.items.map(x => x.lab.d)).size, 4);
 assert.deepEqual(ids(cold), ids(C.recommend(labs, {}, {}, now)));
 for (const x of cold.items) { const first = labs.find(p => p.d === x.lab.d); assert.equal(x.lab.b, first.b); assert.equal(x.lab.c, first.c); }
 const rotation = new Set();
-for (let i = 0; i < 8; i++) C.recommend(labs, {}, {}, now + i * 86400000).items.forEach(x => rotation.add(x.lab.d));
-assert.equal(rotation.size, 8, '各科在日期輪替中都有機會');
+const catalogSubjects = new Set(labs.map(x => x.d));
+for (let i = 0; i < catalogSubjects.size; i++) C.recommend(labs, {}, {}, now + i * 86400000).items.forEach(x => rotation.add(x.lab.d));
+assert.deepEqual(rotation, catalogSubjects, '一輪推薦涵蓋目錄裡的每一科');
 const hist = { 'newton-second': { v: 8, s: 900, o: 20, t: now }, projectile: { v: 6, s: 1200, o: 16, t: now - 86400000 } };
 const done = C.doneCounts(labs, { 'projectile-1': {}, 'projectile-2': {}, 'newton-second-h1': {}, 'not-a-lab-1': {} });
 assert.equal(done.projectile, 2); assert.equal(done['newton-second'], 1);
@@ -48,9 +49,11 @@ assert(!binary || binary.reason.type!=='cross','二分搜尋不能因為拋體�
 const artificial = [{s:'projectile',d:'phy',c:'ch-p',b:'p',r:['binary-search'],rs:{'binary-search':.03}}, {s:'binary-search',d:'info',b:'i',c:'ch-b'}];
 assert.notEqual(C.recommend(artificial,{projectile:{v:1,t:now}},{},now).items[0].reason.type,'cross');
 const {checkFresh}=require('../tools/catalog-dates.cjs');
-assert.throws(()=>checkFresh([{s:'x',d:'info',l:'2026-11-15'}],'2026-11-15'),/30%.*\ninfo 1\/1：x/);
+const two=[{s:'x',d:'info',l:'2026-11-15'},{s:'y',d:'info',l:'2026-11-15'}];
+assert.throws(()=>checkFresh(two,'2026-11-15'),/30%.*\ninfo 2\/2：x, y/);
+assert.equal(checkFresh([two[0]],'2026-11-15').info.counted.length,1,'小科每七日至少可加 1 站');
 assert.equal(checkFresh([{s:'x',d:'info',l:'2026-11-15'}],'2026-11-15',{x:'2026-11-15'}).info.incremental.length,0);
-assert.throws(()=>checkFresh([{s:'x',d:'info',l:'2026-11-15'}],'2026-11-15',{x:'2026-11-14'}),/30%/,'日期不符不能冒充初建站批次');
+assert.throws(()=>checkFresh(two,'2026-11-15',{x:'2026-11-14'}),/30%/,'日期不符不能冒充初建站批次');
 const dates=Array.from({length:10},(_,i)=>({s:'lab-'+i,d:'info',l:i<3?'2026-11-15':'2026-11-08'}));
 assert.equal(checkFresh(dates,'2026-11-15').info.incremental.length,3,'剛好30%可通過，七天前不算新');
 assert.throws(()=>checkFresh(dates.map((x,i)=>i===3?{...x,l:'2026-11-15'}:x),'2026-11-15'),/info 4\/10/);
