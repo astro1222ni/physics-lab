@@ -205,12 +205,12 @@
   /** 產率：生成的酯 ÷ 限量的反應物（酸或醇，含後來加的）；沒有反應物時 null */
   function yieldOf(run) {
     const base = Math.min(inTotal(run, 'A'), inTotal(run, 'B'));
-    return base > 1e-9 ? run.xi / base : null;
+    return base > 1e-9 ? Math.max(0, Math.min(1, run.xi / base)) : null;   // 極小量的捨入誤差不可出現負產率
   }
   /** 水解百分率：水解掉的酯 ÷ 加入的酯 */
   function hydrolysisOf(run) {
     const e = inTotal(run, 'E');
-    return e > 1e-9 ? -run.xi / e : null;
+    return e > 1e-9 ? Math.max(0, Math.min(1, -run.xi / e)) : null;
   }
   /** 是否已達平衡：四種都存在、|ln(Q/K)| < 0.01，而且分子篩不再吸水 */
   function atEquilibrium(run) {

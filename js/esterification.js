@@ -1113,10 +1113,13 @@
 
   // ======================= 讀數與卡片 =======================
   function yieldText(extent, limiting, esterAdded) {
-    if (esterAdded > 1e-9 && (extent < 0 || limiting <= 1e-9)) {
-      return T('水解 ', 'hydrolysed ') + pct(Math.max(0, -extent) / esterAdded, 1);
+    // 11/20 試玩：反應物只有 1e-9 mol 這種極小量時，加的酯剛好落在門檻上、全部水解，
+    // 分母又很小，會算出 −0.4% 之類的負產率。有加酯就照水解算，結果一律夾在 0～100%。
+    const cl = function (v) { return Math.max(0, Math.min(1, v)); };
+    if (esterAdded > 0 && (extent < 0 || limiting <= 1e-9)) {
+      return T('水解 ', 'hydrolysed ') + pct(cl(-extent / esterAdded), 1);
     }
-    return limiting > 1e-9 ? pct(extent / limiting, 1) : '—';
+    return limiting > 1e-9 ? pct(cl(extent / limiting), 1) : '—';
   }
   function updateReadouts() {
     if (!run) return;
