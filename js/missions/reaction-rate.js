@@ -79,10 +79,14 @@
     {
       id: 'reaction-rate-8', level: 6,
       title: { zh: '動態平衡', en: 'Dynamic equilibrium' },
-      desc: { zh: '讓逆反應也發生：在最近 500 ps 內，正反應與逆反應各發生 50 次以上，而且次數相差不到 20 %。', en: 'Let the reverse reaction happen too: in the last 500 ps, at least 50 forward and 50 reverse reactions, and the two counts within 20 % of each other.' },
-      check: function (ev) {
-        const q = ev.data.eq;
-        return isT(ev) && q && q.span >= 500 - E && q.f >= 50 && q.r >= 50 && Math.abs(q.f - q.r) <= 0.2 * Math.max(q.f, q.r) + E;
+      desc: { zh: '讓逆反應也發生：有效活化能至少 5 kJ/mol，最近 500 ps 內正反應與逆反應各發生 50 次以上、次數相差不到 20 %，而且這樣的平衡再維持 500 ps。', en: 'Let the reverse reaction happen too: with an effective activation energy of at least 5 kJ/mol, get at least 50 forward and 50 reverse reactions in the last 500 ps, within 20 % of each other, and keep that balance for another 500 ps.' },
+      // 11/20 改嚴：活化能拉到 0 隨手就會平衡；改成要有能障，而且平衡要再維持 500 ps
+      check: function (ev, mem) {
+        const r = isT(ev), q = ev.data.eq;
+        const ok = !!r && !!q && !r.mys && r.EaF >= 5 - E && q.span >= 500 - E && q.f >= 50 && q.r >= 50 && Math.abs(q.f - q.r) <= 0.2 * Math.max(q.f, q.r) + E;
+        if (!ok) { if (r) mem.t0 = null; return false; }
+        if (mem.id !== r.id || mem.t0 == null) { mem.id = r.id; mem.t0 = r.t; }
+        return r.t - mem.t0 >= 500 - E;
       }
     },
     {

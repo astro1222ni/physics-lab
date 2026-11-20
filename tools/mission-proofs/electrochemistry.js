@@ -196,9 +196,21 @@ console.log('    （0.05 M 時：陰極 +' + (P.elx.mCath - 10).toFixed(4) + ' g
 
 freshMissions();
 P = newPage(); P.mode = 'elec'; P.acted = true;
-set(P, 'cE', 0.1); set(P, 'I', 2); P.speed = 2;
+set(P, 'cE', 0.1); set(P, 'I', 2); set(P, 'timer', 1975); P.speed = 1;
 w = run(P, 120, Q => Q.events.includes('electrochemistry-9'));
-report('石墨、0.10 M、2 A、×10⁴（真實 ' + w.toFixed(1) + ' s）', P, ['electrochemistry-9']);
+report('石墨、0.10 M、2 A、定時 1975 s、×100（真實 ' + w.toFixed(1) + ' s，停在 c = ' + P.elx.c.toFixed(4) + ' M）', P, ['electrochemistry-9']);
+// 11/20 改嚴的反例：×10^6 一路電解到底（c 掉到 0.005 M 以下）、或在 0.010 M 以上就停，都不算
+for (const [lab, setup] of [
+  ['預設 0.5 M、×10^6 一路電解', Q => { Q.speed = 3; }],
+  ['0.10 M、2 A、定時 1800 s（還沒降到 0.010 M）', Q => { set(Q, 'cE', 0.1); set(Q, 'I', 2); set(Q, 'timer', 1800); Q.speed = 2; }],
+  ['0.10 M、2 A、定時 2200 s（已低於 0.005 M）', Q => { set(Q, 'cE', 0.1); set(Q, 'I', 2); set(Q, 'timer', 2200); Q.speed = 2; }]
+]) {
+  freshMissions();
+  P = newPage(); P.mode = 'elec'; P.acted = true; setup(P);
+  run(P, 5);
+  if (P.events.includes('electrochemistry-9')) { console.log('  ✗ ' + lab + ' 不該完成任務 9'); bad++; }
+  else console.log('  ✓ ' + lab + '：c = ' + P.elx.c.toFixed(4) + ' M，任務 9 未完成');
+}
 
 const h3 = 'electrochemistry-h3';
 freshMissions();

@@ -94,7 +94,8 @@ function fitFromTable(P) {
 }
 
 // ---------- 任務判定（每次用乾淨的任務記憶） ----------
-let only = null;   // 只判定某些任務（null = 全部）
+let only = null;
+let fail8 = false;   // 只判定某些任務（null = 全部）
 function fire(P, type, data) {
   return missions.filter(m => (!only || only.indexOf(m.id) >= 0) && m.check({ type, data }, m.mem)).map(m => m.id);
 }
@@ -180,14 +181,26 @@ for (let k = 0; k < 10; k++) {
   ok(ID(7), has(hits, ID(7)), k ? null : '理論 ' + K.fracAbove(9.5, 500).toFixed(4) + '，模擬 ' + (st.enoughAB / st.collAB).toFixed(4) + '（' + st.collAB + ' 次）');
   only = null;
 }
-// 8. 動態平衡：ΔH −3、Ea 2、800 K、各 100 個，跑 1500 ps
-for (let k = 0; k < 5; k++) {
+// 8. 動態平衡（11/20 改嚴：有效活化能 ≥ 5，平衡再維持 500 ps）：ΔH −3、Ea 5、1000 K、各 100 個，跑 2500 ps
+for (let k = 0; k < 20; k++) {
   only = [ID(8)];
-  const P = newPage(); set(P, { T: 800, Ea: 2, dH: -3 });
-  const hits = run(P, 1500);
+  const P = newPage(); set(P, { T: 1000, Ea: 5, dH: -3 });
+  const hits = run(P, 2500, () => false);
   const q = eqWindow(P.cur);
-  ok(ID(8), has(hits, ID(8)), k ? null : '最後 500 ps：正 ' + q.f + '、逆 ' + q.r);
+  ok(ID(8), has(hits, ID(8)), k ? null : '1000 K、Ea 5、ΔH −3：最後 500 ps 正 ' + q.f + '、逆 ' + q.r);
   only = null;
+}
+// 8 的反例：活化能拉到 0（試玩種子 2026：Ea 0、ΔH −10、400 K、A 200、B 20）、或舊證明的 Ea 2，都不算
+{
+  let hit = 0;
+  for (let k = 0; k < 10; k++) {
+    only = [ID(8)];
+    const P = newPage(); set(P, k % 2 ? { T: 800, Ea: 2, dH: -3 } : { Ea: 0, nA: 200, nB: 20 });
+    if (has(run(P, 2500, () => false), ID(8))) hit++;
+    only = null;
+  }
+  if (hit) { console.log('✗ 8：活化能 0 或 2 時仍完成 ' + hit + ' 次'); fail8 = true; }
+  else console.log('✓ 8 的反例：活化能 0（A 200、B 20）與 Ea 2、800 K 各 5 次，都不完成');
 }
 // 9. 阿瑞尼斯圖：Ea 10，在 400、600、800 K 各跑到 120 次反應（各 200 個）
 for (let k = 0; k < 6; k++) {
@@ -256,11 +269,15 @@ only = null;
   hidOk('h6', hits, 'A 20 個、B 200 個、400 K：A 用掉 ' + (100 * convOf(P)).toFixed(0) + '%（' + num(P.cur.sim.t) + ' ps）'); }
 { const P = newPage(); set(P, { T: 1000, Ea: 2, dH: 0 }); const hits = untilHit(P, ID('h7'), 20000);
   hidOk('h7', hits, '1000 K、Ea 2、ΔH 0：轉化率 ' + convOf(P).toFixed(3) + '（' + num(P.cur.sim.t) + ' ps）'); }
-{ const P = newPage(); const all = [];
-  set(P, { Ea: 20, cat: true, nA: 200, nB: 200 });
-  [500, 700, 900].forEach(Tk => { set(P, { T: Tk }); all.push.apply(all, run(P, 20000, Q => Q.cur.sim.stats.fwd >= 120)); });
-  const a = tickData(P).arr;
-  hidOk('h8', all, 'Ea 20、有催化劑（實際 ' + P.cur.sim.EaF.toFixed(1) + '）、500／700／900 K 各 120 次反應：擬合 ' + (a ? a.Ea.toFixed(2) : '—') + '，應得 ' + (a ? a.EaApp.toFixed(2) : '—') + ' kJ/mol'); }
+{ // 統計擾動：學生一次沒對準就整組重做（最多 5 組），記下第幾組成功
+  let P, all, a, tries = 0;
+  do {
+    tries++; P = newPage(); all = [];
+    set(P, { Ea: 20, cat: true, nA: 200, nB: 200 });
+    [500, 700, 900].forEach(Tk => { set(P, { T: Tk }); all.push.apply(all, run(P, 20000, Q => Q.cur.sim.stats.fwd >= 120)); });
+    a = tickData(P).arr;
+  } while (!has(all, ID('h8')) && tries < 5);
+  hidOk('h8', all, 'Ea 20、有催化劑（實際 ' + P.cur.sim.EaF.toFixed(1) + '）、500／700／900 K 各 120 次反應（第 ' + tries + ' 組）：擬合 ' + (a ? a.Ea.toFixed(2) : '—') + '，應得 ' + (a ? a.EaApp.toFixed(2) : '—') + ' kJ/mol'); }
 { let n9 = 0; const N9 = 6, rs = [];
   for (let k = 0; k < N9; k++) {
     const P = newPage(); set(P, { T: 1000, Ea: 5, dH: -10, steric: true, nA: 200, nB: 200 });
@@ -380,7 +397,7 @@ function secondsRange(times) {
   console.log('✓ h2：' + results[id].pass + '/' + trials + '，實驗等待 ' + secondsRange(times));
 }
 
-let fail = 0, stars = 0, hstars = 0;
+let fail = fail8 ? 1 : 0, stars = 0, hstars = 0;
 missions.forEach(m => {
   const r = results[m.id];
   const pass = r && r.pass > 0;

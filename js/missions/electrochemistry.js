@@ -73,8 +73,9 @@
     {
       id: 'electrochemistry-9', level: 7,
       title: { zh: '藍色褪去', en: 'The blue fades away' },
-      desc: { zh: '用石墨電極電解 0.10 M 以上的硫酸銅溶液，直到銅離子剩下 0.010 M 以下。', en: 'With graphite electrodes, electrolyse copper(II) sulfate solution of 0.10 M or more until the copper(II) ions are down to 0.010 M or less.' },
-      check: function (ev) { const e = elecT(ev); return !!e && !e.unk && e.elec === 'C' && e.metal === 'Cu' && e.c0 >= 0.1 - 1e-9 && e.c <= 0.01; }
+      desc: { zh: '用石墨電極電解 0.10 M 以上的硫酸銅溶液，在銅離子剩下 0.005～0.010 M 時停下電解（按暫停或用定時）。', en: 'With graphite electrodes, electrolyse copper(II) sulfate solution of 0.10 M or more and stop (pause or use the timer) when the copper(II) ions are between 0.005 and 0.010 M.' },
+      // 11/20 改嚴：原本「剩 0.010 M 以下」在 ×10^6 一切到電解就完成；改成要在 0.005～0.010 M 這段停下來
+      check: function (ev) { const e = elecT(ev); return !!e && !e.unk && e.elec === 'C' && e.metal === 'Cu' && e.c0 >= 0.1 - 1e-9 && e.paused && e.c <= 0.01 && e.c >= 0.005; }
     },
     {
       id: 'electrochemistry-10', level: 7,
