@@ -73,7 +73,8 @@
     .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
     .chal-msg.ok { color: var(--lp-ok); font-weight: 600; }
     .chal-msg.bad { color: var(--lp-bad); }
-    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout { grid-template-columns: minmax(5em, auto) minmax(0, 1fr); }
+    dl.readout dd { min-width: 0; overflow-wrap: anywhere; }
     dl.readout dt { min-width: 0; }
     dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
     .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }

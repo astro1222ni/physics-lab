@@ -567,6 +567,45 @@
   // =====================================================================
   // 讀數與算式
   // =====================================================================
+  // 讀數算式：先整行排；放不下才在「,\quad」「\\」處分段；再放不下才把每段第二個以後的「=」「≈」換行（左式＝右式保持同一行）
+  function splitReadoutMath(tex, level) {
+    if (tex.startsWith('\\begin{gathered}') && tex.endsWith('\\end{gathered}')) tex = tex.slice('\\begin{gathered}'.length, -'\\end{gathered}'.length);
+    let depth = 0, env = 0, start = 0, eq = false;
+    const parts = [];
+    const cut = function (i, skip) { parts.push(tex.slice(start, i)); start = i + skip; eq = false; };
+    for (let i = 0; i < tex.length; i++) {
+      if (tex.startsWith('\\begin{', i)) env++;
+      if (tex.startsWith('\\end{', i)) env--;
+      const c = tex[i];
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+      if (depth || env) continue;
+      if (tex.startsWith('\\\\', i)) { cut(i, 2); i++; }
+      else if (c === ',' && tex.startsWith('\\quad ', i + 1)) { cut(i, 7); i += 6; }
+      else if ((c === '=' && tex[i - 1] !== '\\') || tex.startsWith('\\approx ', i)) {
+        if (i <= start) continue;
+        if (!eq) { eq = true; continue; }
+        if (level >= 2) { parts.push(tex.slice(start, i)); start = i; }
+      }
+    }
+    parts.push(tex.slice(start));
+    const p = parts.map(function (s) { return s.trim(); }).filter(Boolean);
+    return p.length > 1 ? '\\begin{gathered}' + p.join('\\\\') + '\\end{gathered}' : tex;
+  }
+  const fitBoxes = new Map();
+  function renderReadoutMath(el, tex) {
+    fitBoxes.set(el, tex);
+    for (let level = 0; level <= 2; level++) {
+      window.katex.render(level ? splitReadoutMath(tex, level) : tex, el, { throwOnError: false, displayMode: true });
+      if (!el.clientWidth || el.scrollWidth <= el.clientWidth + 1) return;
+    }
+  }
+  let fitTimer = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(function () { fitBoxes.forEach(function (tex, el) { try { renderReadoutMath(el, tex); } catch (e) { /* 保留上一版 */ } }); }, 150);
+  });
+
   const lastHTML = {};
   function setHTML(id, h) { if (lastHTML[id] !== h) { lastHTML[id] = h; $(id).innerHTML = h; } }
   let eqKey = '';
@@ -574,7 +613,7 @@
     if (eqKey === tex) return;
     eqKey = tex;
     const el = $('rEq');
-    if (window.katex) { try { window.katex.render(tex, el, { throwOnError: false, displayMode: true }); } catch (e) { el.textContent = tex; } }
+    if (window.katex) { try { renderReadoutMath(el, tex); } catch (e) { el.textContent = tex; } }
     else el.textContent = tex;
   }
   const HID = '？';
