@@ -186,7 +186,7 @@
         x=5*(go-back);distance=5*(go+back);dir=elapsed<.69?1:-1;
       }
       if(user){angle=user.angle;dir=user.direction;x=user.state.x;distance=user.state.distance;if(page.id==='7-1'){const glide=C.advance(C.initial(),user,t);distance=glide.distance;x=5*(1-Math.exp(-glide.x/30));}}
-      return {x,angle,dir,distance,ice:user?.surface==='ice',id:page.id};
+      return {x,angle,dir,distance,ice:user?.surface==='ice',id:page.id,user:!!user};
     }
     function render(page,t,timing,user,lang=false,cls=false) {
       last=[page,t,timing,user,lang,cls];classMode=cls;const id=page.id,threePage=suitcasePages.has(id);
@@ -300,7 +300,7 @@
           const ax=x+23*.73,ay=y-68*.73,bx=ax+92,by=ay-69;arrow(ax,ay,bx,by,colors.F);label('F',bx+22,by-5,colors.F);
           const sy=id==='3-4'?ay:ay+38;arrow(ax,sy,bx+27,sy,colors.S);if(id==='3-4')label('S',ax+66,sy+26,colors.S,'',' = 10 m');else label('S',bx+50,sy,colors.S);
           if(id==='3-3'){
-            at(m('split'),()=>{c.setLineDash([3,4]);line(c,[[ax,by],[bx,by],[bx,ay],[ax,ay]],colors.perp,1);c.setLineDash([]);label(T('水平 4','Run 4'),ax+42,by-16,colors.parallel);label(T('鉛直 3','Rise 3'),ax-84,ay-5,colors.perp);label(T('斜邊 5','Side 5'),ax+64,ay-24,colors.F);});
+            at(m('split'),()=>{c.setLineDash([3,4]);line(c,[[ax,by],[bx,by],[bx,ay],[ax,ay]],colors.perp,1);c.setLineDash([]);label(T('水平 4','Run 4'),ax+42,by-16,colors.parallel);label(T('鉛直 3','Rise 3'),ax-46,ay-22,colors.perp);label(T('斜邊 5','Side 5'),ax+64,ay-24,colors.F);});
             at(m('par'),p=>{arrow(ax,ay,ax+92*p,ay,colors.parallel);label('F',ax+59,ay+20,colors.parallel,'∥');});
             at(m('perp'),p=>{arrow(ax,ay,ax,ay-69*p,colors.perp,[4,3]);label('F',ax-25,by+18,colors.perp,'⊥');line(c,[[ax-5,by+10],[ax+5,by+19]],colors.negative,2);line(c,[[ax+5,by+10],[ax-5,by+19]],colors.negative,2);});
           }else at(m('sp'),()=>{const end=ax+119,px=ax+119*.64,py=ay-119*.48;arrow(ax,ay,px,py,colors.S);arrow(px,py,end,ay,colors.perp,[4,3]);label('S',ax+8,ay-55,colors.S,'∥',' = 8 m');label('S',end+28,ay-29,colors.perp,'⊥',' = 6 m');label(T('✓ 兩種算法一樣','✓ Same work'),ax+50,163,colors.positive);const mx=(px+end)/2,my=(py+ay)/2;line(c,[[mx-4,my-4],[mx+4,my+4]],colors.negative,2);line(c,[[mx-4,my+4],[mx+4,my-4]],colors.negative,2);});
@@ -506,7 +506,7 @@
       if(w!==sw||h!==sh){sw=w;sh=h;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
       scene.background=new TH.Color(isDark?0x526568:0xdfdfd2);scene.fog=new TH.Fog(scene.background,6.3,16);
       floorMat.color.setHex(frame.ice?0xa6d9e4:isDark?0x9da7a2:0xffffff);floorMat.roughness=frame.ice?.22:.86;
-      bagRoot.position.x=(frame.id==='1-2'?-.96:-.32)+Math.max(-.88,Math.min(1.24,frame.x*.16));bagRoot.rotation.y=frame.dir<0?Math.PI:0;
+      bagRoot.position.x=(frame.id==='1-2'?-.96:-.32)+Math.max(-.88,Math.min(1.24,frame.x*(frame.user?.124:.16)));bagRoot.rotation.y=frame.dir<0?Math.PI:0;
       handle.rotation.z=rad(frame.angle);for(const wheel of wheels)wheel.rotation.z=-frame.distance/.104;
       actor.visible=frame.id==='1-2';
       if(actor.visible){

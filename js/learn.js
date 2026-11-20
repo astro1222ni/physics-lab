@@ -401,7 +401,9 @@
     function resetTrial(surface,angle){
       release();const u=frameModel;Object.assign(u,{surface,angle,state:C.initial(),direction:1,turned:false,outbound:false,invalid:false});lastSoundWork=0;render();
     }
-    function startPull(){if(!step()||!frameModel.state.v)return;held=true;last=0;by('pull').setAttribute('aria-pressed','true');schedule();}
+    const HALL=[-5,10],room=u=>u.state.v>0?HALL[1]-u.state.x:u.state.x-HALL[0];
+    function hallEnd(){feedback(T('行李箱走到走廊盡頭了（'+(frameModel.state.v>0?'10 m':'−5 m')+'）：按「掉頭」往回拉，或按「起步」重來。','The suitcase has reached the end of the corridor ('+(frameModel.state.v>0?'10 m':'−5 m')+'). Press Turn to pull it back, or Start to begin again.'));}
+    function startPull(){if(!step()||!frameModel.state.v)return;if(room(frameModel)<=1e-7){hallEnd();return;}held=true;last=0;by('pull').setAttribute('aria-pressed','true');schedule();}
     function release(){if(frameModel)frameModel.balancedDistance=0;held=false;by('pull')?.setAttribute('aria-pressed','false');}
     function advanceHand(dt){
       const u=frameModel,i=step();if(!u||!i||!dt)return;
@@ -409,8 +411,8 @@
       const balanced=u.angle===C.angle43&&u.surface==='rough';
       if((i===2||i===4)&&(!balanced||(!u.turned&&u.direction!==1)))u.invalid=true;
       const stopAt=i===2?10:i===4?(u.turned?10:5):Infinity;
-      const limit=C.timeToDistance(s,u,Math.max(0,stopAt-s.distance));
-      u.state=C.advance(s,u,Math.min(dt,limit));const q=u.state;
+      const limit=C.timeToDistance(s,u,Math.max(0,stopAt-s.distance)),wall=C.timeToDistance(s,u,Math.max(0,room(u)));
+      u.state=C.advance(s,u,Math.min(dt,limit,wall));const q=u.state;
       if(q.distance-lastSoundWork>=1){const delta=q.WF-s.WF;if(Math.abs(delta)>1e-9)soundFx(delta>0?'up':'down');lastSoundWork=q.distance;}
       const a=C.forces(u.angle,u.surface,u.direction,s.v).a;
       const qualifies=held&&u.surface==='rough'&&Math.abs(u.angle-C.angle125)<=.5&&Math.abs(a)<.01;
@@ -422,7 +424,8 @@
       if(i===2&&q.distance>=10-1e-8&&!u.invalid&&Math.abs(q.WF-400)<1e-6&&Math.abs(q.Wf+400)<1e-6)completeStep(2);
       if(i===4&&!u.invalid&&q.distance>=5-1e-8&&!u.turned&&Math.abs(q.x-5)<1e-7){u.outbound=true;by('step-status').textContent=T('已到 5 m，請掉頭。','At 5 m. Turn back.');}
       if(i===4&&u.outbound&&u.turned&&!u.invalid&&q.distance>=10-1e-8&&Math.abs(q.x)<1e-7&&Math.abs(q.Wf+400)<1e-6&&Math.abs(q.WF-400)<1e-6)completeStep(4);
-      if(limit<=dt||!q.v)release();
+      if(wall<=dt&&wall<limit){release();hallEnd();}
+      else if(limit<=dt||!q.v)release();
     }
     if(!presentation){
       by('angle').addEventListener('input',e=>setAngle(+e.target.value));
@@ -506,7 +509,7 @@
     by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-edgeStart>35)setPanel(sideTab,false);},{passive:true});
     by('previous').onclick=()=>go(index-1);by('next').onclick=()=>go(index+1);
     by('replay').onclick=()=>go(index,0,true);by('play').onclick=()=>{if(t>=clock().dur)go(index,0,true);else setPlaying(!playing);};
-    by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').onclick=()=>{const speeds=[1,1.25,1.5];speed=speeds[(speeds.indexOf(speed)+1)%3];if(voice)voice.playbackRate=speed;controlLabels();};
+    by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').onclick=()=>{const speeds=[1,1.25,1.5,0.5,0.75];speed=speeds[(speeds.indexOf(speed)+1)%speeds.length];if(voice)voice.playbackRate=speed;controlLabels();};
     by('auto').onchange=e=>{auto=e.target.checked;write('learn-auto',auto);};
     by('sound').onclick=()=>LabSettings.set('sound',!sound);
     addEventListener('lab:settingschange',e=>{if(e.detail?.name==='sound'){sound=LabSettings.get('sound');if(voice)voice.muted=!sound;if(playing&&!sound)heardFromStart=false;controlLabels();}});

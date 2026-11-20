@@ -12,7 +12,7 @@
     {
       id: "1-1",
       title: ["舉著書包站半小時","Holding a schoolbag"],
-      speech: ["上課前先問你一件事哈。你把一個四公斤的書包穩穩舉在胸前，一動也不動，在走廊上站了半小時，手痠到快斷掉了。[[zero]]結果物理老師跟你說——這半小時裡，你對書包，一焦耳的功都沒作。很不公平，對不對？","Let me ask you something before class. You hold a four-kilogram schoolbag steady in front of your chest and stand motionless in the corridor for half an hour. Your arms are about to give out. [[zero]]Then your physics teacher says that, in that whole half hour, you did not do a single joule of work on the bag. Feels unfair, doesn’t it?"],
+      speech: ["上課前先問你一件事哈。你把一個{{ 4 公斤|四公斤}}的書包穩穩舉在胸前，一動也不動，在走廊上站了半小時，手痠到快斷掉了。[[zero]]結果物理老師跟你說——這半小時裡，你對書包，{{1 焦耳|一焦耳}}的功都沒作。很不公平，對不對？","Let me ask you something before class. You hold a four-kilogram schoolbag steady in front of your chest and stand motionless in the corridor for half an hour. Your arms are about to give out. [[zero]]Then your physics teacher says that, in that whole half hour, you did not do a single joule of work on the bag. Feels unfair, doesn’t it?"],
       caption: ["手很痠，物理卻說：**作功＝0**？","Sore arms, yet physics says **zero work**?"]
     },
     {
@@ -25,14 +25,14 @@
     {
       id: "2-1",
       title: ["預測一","First prediction"],
-      speech: ["先猜猜看，不用怕猜錯。你提著一桶水，在水平的走廊上，水桶高度不變，等速走了十公尺。[[ask]]這段路上，你的手對水桶作了多少功？","Take a guess. It’s fine to get it wrong. You carry a bucket of water ten metres down a level corridor at a constant speed and keep the bucket at the same height. [[ask]]How much work does your hand do on the bucket along the way?"],
+      speech: ["先猜猜看，不用怕猜錯。你提著一桶水，在水平的走廊上，水桶高度不變，等速走了{{ 10 公尺|十公尺}}。[[ask]]這段路上，你的手對水桶作了多少功？","Take a guess. It’s fine to get it wrong. You carry a bucket of water ten metres down a level corridor at a constant speed and keep the bucket at the same height. [[ask]]How much work does your hand do on the bucket along the way?"],
       caption: ["提水桶**水平等速**走 10 m，手作了**多少功**？","Carry a bucket 10 m **horizontally at constant speed**. How much **work** does your hand do?"],
       prompt: ["這段路上，你的手對水桶作了多少功？","How much work does your hand do on the bucket?"]
     },
     {
       id: "2-2",
       title: ["預測二","Second prediction"],
-      speech: ["第二題。行李箱在粗糙的水平地面上，你把它往右拉過去五公尺，再拉回原來的地方。[[back]]來回一趟，總位移是零。那地面的摩擦力，這一趟對行李箱作的是正功、負功，還是零？","Second question. On a rough, level floor, you pull a suitcase five metres to the right, then pull it back to where it started. [[back]]The displacement for the round trip is zero. Does friction from the floor do positive, negative or zero work on the suitcase over the whole trip?"],
+      speech: ["第二題。行李箱在粗糙的水平地面上，你把它往右拉過去{{ 5 公尺|五公尺}}，再拉回原來的地方。[[back]]來回一趟，總位移是零。那地面的摩擦力，這一趟對行李箱作的是正功、負功，還是零？","Second question. On a rough, level floor, you pull a suitcase five metres to the right, then pull it back to where it started. [[back]]The displacement for the round trip is zero. Does friction from the floor do positive, negative or zero work on the suitcase over the whole trip?"],
       caption: ["拉去又拉回，摩擦力作功是**正、負還是零**？","Out and back: is the work by friction **positive, negative or zero**?"],
       prompt: ["那地面的摩擦力，這一趟對行李箱作的是正功、負功，還是零？","Does friction from the floor do positive, negative or zero work on the suitcase over the whole trip?"]
     },
@@ -52,7 +52,7 @@
     {
       id: "3-3",
       title: ["有夾角：分解力","Resolving the force"],
-      speech: ["可是拖行李箱的時候，力是斜的。假設拉力是五十牛頓，拉桿的方向是水平四格、往上三格，往右拉了十公尺。我們把拉力[[split]]拆成兩個互相垂直的分量，剛好是國中學過的三、四、五直角三角形：一個跟位移[[par]]平行，四十牛頓；一個跟位移[[perp]]垂直，三十牛頓。垂直的那個，對作功沒有效果；[[eff]]只有平行的那個才算數。所以 W 等於 F 平行乘以 S，四十乘十，四百焦耳。","When you tow a suitcase, the pull is tilted. Suppose it is fifty newtons, the handle rises three squares for every four across, and you pull the case ten metres to the right. [[split]]Resolve the pull into two perpendicular components. It’s that familiar three-four-five right triangle. One component is [[par]]parallel to the displacement: forty newtons. The other is [[perp]]perpendicular: thirty newtons. The perpendicular part does nothing for the work. [[eff]]Only the parallel component counts. W equals the parallel component times S: forty times ten, four hundred joules."],
+      speech: ["可是拖行李箱的時候，力是斜的。假設拉力是{{ 50 牛頓|五十牛頓}}，拉桿的方向是{{水平 4 格、往上 3 格|水平四格、往上三格}}，往右拉了{{ 10 公尺|十公尺}}。我們把拉力[[split]]拆成兩個互相垂直的分量，剛好是國中學過的{{ 3、4、5 直角|三、四、五直角}}三角形：一個跟位移[[par]]平行，{{40 牛頓|四十牛頓}}；一個跟位移[[perp]]垂直，{{30 牛頓|三十牛頓}}。垂直的那個，對作功沒有效果；[[eff]]只有平行的那個才算數。所以 W 等於 F 平行乘以 S，{{40 × 10，400 焦耳|四十乘十，四百焦耳}}。","When you tow a suitcase, the pull is tilted. Suppose it is fifty newtons, the handle rises three squares for every four across, and you pull the case ten metres to the right. [[split]]Resolve the pull into two perpendicular components. It’s that familiar three-four-five right triangle. One component is [[par]]parallel to the displacement: forty newtons. The other is [[perp]]perpendicular: thirty newtons. The perpendicular part does nothing for the work. [[eff]]Only the parallel component counts. W equals the parallel component times S: forty times ten, four hundred joules."],
       caption: ["只有**和位移平行**的分力才作功","Only the force **parallel to the displacement** does work"],
       video: [26,264],
       note: ["之後數學學了三角比，平行分力可寫成 \\(F\\cos\\theta\\)，所以 \\(W=FS\\cos\\theta\\)。","When you learn trigonometric ratios, the parallel component can be written \\(F\\cos\\theta\\), so \\(W=FS\\cos\\theta\\)."]
@@ -60,7 +60,7 @@
     {
       id: "3-4",
       title: ["另一種拆法：分解位移","Resolving the displacement"],
-      speech: ["也可以反過來，不拆力，[[sp]]改拆位移：把十公尺拆成沿著拉力方向的那一段，用同樣三、四、五的比例，剛好是八公尺。五十牛頓乘八公尺，一樣是四百焦耳。講義和課本常寫「力乘以沿施力方向的位移」，就是這一種。我習慣在下標加平行的符號，提醒自己：互相平行的那一段才有效。","We can do it the other way around. Keep the force whole and [[sp]]split the displacement. With the same three-four-five ratio, the part of the ten metres along the pull is eight metres. Fifty newtons times eight metres still gives four hundred joules. That’s what books mean by force times displacement along the force. I put a parallel sign in the subscript to remind myself that only the parallel part counts."],
+      speech: ["也可以反過來，不拆力，[[sp]]改拆位移：把{{ 10 公尺|十公尺}}拆成沿著拉力方向的那一段，用同樣{{ 3、4、5 的比例|三、四、五的比例}}，剛好是{{ 8 公尺。|八公尺。}}{{50 牛頓 × 8 公尺|五十牛頓乘八公尺}}，一樣是{{ 400 焦耳|四百焦耳}}。講義和課本常寫「力乘以沿施力方向的位移」，就是這一種。我習慣在下標加平行的符號，提醒自己：互相平行的那一段才有效。","We can do it the other way around. Keep the force whole and [[sp]]split the displacement. With the same three-four-five ratio, the part of the ten metres along the pull is eight metres. Fifty newtons times eight metres still gives four hundred joules. That’s what books mean by force times displacement along the force. I put a parallel sign in the subscript to remind myself that only the parallel part counts."],
       caption: ["拆力或拆位移，**答案一樣**","Resolve force or displacement. **Same answer**."]
     },
     {
@@ -80,14 +80,14 @@
     {
       id: "3-7",
       title: ["位移為零，作功不一定為零","Back where you started"],
-      speech: ["最危險的想法來了。把行李箱等速拉過去五公尺，再拉回原點，總位移是零，所以拉力不作功？你中途換邊拉，力的方向變了，我們分段看。[[go]]去程，水平的分力四十牛頓和位移同方向，四十乘五，正兩百焦耳；[[come]]回程你換邊拉，水平分力還是和位移同方向，又是正兩百焦耳。正功加正功，[[waste]]結果告訴我一個功都沒作？那真的是做白工了。力的方向會變，作功就不可以結果論，[[sum]]要分段計算，再全部加起來，正四百焦耳。","Here’s the tricky one. Pull a suitcase five metres at a constant speed and return to the start. Zero displacement, so zero work by the pull? You change sides to pull it back. The force changes direction. Take each leg separately. [[go]]On the way out, the forty-newton horizontal component points along the displacement. Forty times five is positive two hundred joules. [[come]]On the way back, the horizontal component still points along the displacement: another positive two hundred. Positive plus positive, [[waste]]and you tell me no work was done? Now that would be wasted work! When the force changes direction, the endpoint can’t tell the whole story. [[sum]]Calculate each leg and add: positive four hundred joules."],
+      speech: ["最危險的想法來了。把行李箱等速拉過去{{ 5 公尺|五公尺}}，再拉回原點，總位移是零，所以拉力不作功？你中途換邊拉，力的方向變了，我們分段看。[[go]]去程，水平的分力{{ 40 牛頓|四十牛頓}}和位移同方向，{{40 × 5，+200 焦耳|四十乘五，正兩百焦耳}}；[[come]]回程你換邊拉，水平分力還是和位移同方向，{{又是 +200 焦耳|又是正兩百焦耳}}。正功加正功，[[waste]]結果告訴我一個功都沒作？那真的是做白工了。力的方向會變，作功就不可以結果論，[[sum]]要分段計算，再全部加起來，{{+400 焦耳|正四百焦耳}}。","Here’s the tricky one. Pull a suitcase five metres at a constant speed and return to the start. Zero displacement, so zero work by the pull? You change sides to pull it back. The force changes direction. Take each leg separately. [[go]]On the way out, the forty-newton horizontal component points along the displacement. Forty times five is positive two hundred joules. [[come]]On the way back, the horizontal component still points along the displacement: another positive two hundred. Positive plus positive, [[waste]]and you tell me no work was done? Now that would be wasted work! When the force changes direction, the endpoint can’t tell the whole story. [[sum]]Calculate each leg and add: positive four hundred joules."],
       caption: ["作功**要分段算再累加**，不可結果論","**Add the work on each leg** of the trip"],
       video: [26,1159]
     },
     {
       id: "3-8",
       title: ["摩擦力和重力","Friction and gravity"],
-      speech: ["那摩擦力呢？行李箱是等速的，所以摩擦力跟水平分力一樣大，也是四十牛頓。去程，摩擦力和位移相反，負兩百焦耳；回程，還是相反，又是負兩百焦耳。[[fric]]所以一趟下來，摩擦力作了負四百焦耳，不是零。重力呢？地面是水平的，重力一直垂直位移，[[grav]]不作功。如果是把板擦沿著黑板推上去，再推回原來的高度，重力先作負功、再作正功，加起來剛好是零——重力只看高度差，這個特權，5-3 再講。","What about friction? The suitcase travels at constant speed, so friction matches the horizontal component: forty newtons. On the way out, friction opposes displacement: negative two hundred joules. On the way back, it still opposes displacement: another negative two hundred. [[fric]]For the round trip that makes negative four hundred joules, not zero. And gravity? On a level floor it stays perpendicular to displacement and does [[grav]]zero work. Push a chalkboard eraser up the board and then back to its original height. Gravity does negative work and then positive work, which cancel. Gravity only cares about the height difference. We’ll see why in section five-three."],
+      speech: ["那摩擦力呢？行李箱是等速的，所以摩擦力跟水平分力一樣大，也是{{ 40 牛頓|四十牛頓}}。去程，摩擦力和位移相反，{{−200 焦耳；|負兩百焦耳；}}回程，還是相反，{{又是 −200 焦耳|又是負兩百焦耳}}。[[fric]]所以一趟下來，摩擦力作了{{ −400 焦耳|負四百焦耳}}，不是零。重力呢？地面是水平的，重力一直垂直位移，[[grav]]不作功。如果是把板擦沿著黑板推上去，再推回原來的高度，重力先作負功、再作正功，加起來剛好是零——重力只看高度差，這個特權，5-3 再講。","What about friction? The suitcase travels at constant speed, so friction matches the horizontal component: forty newtons. On the way out, friction opposes displacement: negative two hundred joules. On the way back, it still opposes displacement: another negative two hundred. [[fric]]For the round trip that makes negative four hundred joules, not zero. And gravity? On a level floor it stays perpendicular to displacement and does [[grav]]zero work. Push a chalkboard eraser up the board and then back to its original height. Gravity does negative work and then positive work, which cancel. Gravity only cares about the height difference. We’ll see why in section five-three."],
       caption: ["摩擦力去回都**作負功**；水平地面上重力**不作功**","Friction does **negative work both ways**. On level ground gravity **does no work**."]
     },
     {
@@ -99,7 +99,7 @@
     {
       id: "4-2",
       title: ["動能","Kinetic energy"],
-      speech: ["東西[[move]]在動，就有動能，K 等於二分之一 m v 平方，m 是質量，用公斤；v 是速率，用公尺每秒。動能只看速率大小，不管往哪裡跑，[[nonneg]]所以它沒有方向，也不會是負的。[[double]]同一個物體，速率變兩倍，動能變幾倍？是四倍，不是兩倍。","When something [[move]]moves, it has kinetic energy. K equals one half m v squared. Use kilograms for mass m and metres per second for speed v. Kinetic energy depends on how fast something moves, regardless of its direction. [[nonneg]]It has no direction and cannot be negative. [[double]]For the same object, double the speed. What happens to the kinetic energy? Four times as much, not twice as much."],
+      speech: ["東西[[move]]在動，就有動能，K 等於{{ \\(\\frac12 mv^2\\)|二分之一 m v 平方}}，m 是質量，用公斤；v 是速率，用公尺每秒。動能只看速率大小，不管往哪裡跑，[[nonneg]]所以它沒有方向，也不會是負的。[[double]]同一個物體，速率變{{ 2 倍，動能|兩倍，動能}}變幾倍？{{是 4 倍，不是 2 倍|是四倍，不是兩倍}}。","When something [[move]]moves, it has kinetic energy. K equals one half m v squared. Use kilograms for mass m and metres per second for speed v. Kinetic energy depends on how fast something moves, regardless of its direction. [[nonneg]]It has no direction and cannot be negative. [[double]]For the same object, double the speed. What happens to the kinetic energy? Four times as much, not twice as much."],
       caption: ["\\(K=\\tfrac12mv^2\\)：同一物體**速率兩倍，動能四倍**","\\(K=\\tfrac12mv^2\\): for the same object, **double the speed, quadruple the energy**."],
       video: [27,0]
     },
@@ -125,7 +125,7 @@
     {
       id: "4-6",
       title: ["加碼：為什麼是 \\(\\tfrac12mv^2\\)","Bonus: why one half m v squared?"],
-      speech: ["這頁是加碼，推導講義沒有，考試大概不會考，但結論很好用。可是我跟你說，[[exam]]考試不會考的，才是人生的決勝點。物體沿直線、受固定的合力，用合力等於 m a，加上等加速度公式，[[derive]]推一推就會發現：合力作的功，剛好等於二分之一 m v 平方的變化。所以動能才要這樣定義。","This is an extra. The derivation isn’t in the handout and probably won’t be on the exam, but the result is very useful. Let me tell you: [[exam]]what won’t be on the exam can be what makes the difference in life. For an object moving in a straight line under a constant net force, combine net force equals mass times acceleration with the constant-acceleration equation. [[derive]]A little algebra shows that net work equals the change in one half m v squared. That’s why we define kinetic energy this way."],
+      speech: ["這頁是加碼，推導講義沒有，考試大概不會考，但結論很好用。可是我跟你說，[[exam]]考試不會考的，才是人生的決勝點。物體沿直線、受固定的合力，用合力等於 m a，加上等加速度公式，[[derive]]推一推就會發現：合力作的功，剛好等於{{ \\(\\frac12 mv^2\\)|二分之一 m v 平方}}的變化。所以動能才要這樣定義。","This is an extra. The derivation isn’t in the handout and probably won’t be on the exam, but the result is very useful. Let me tell you: [[exam]]what won’t be on the exam can be what makes the difference in life. For an object moving in a straight line under a constant net force, combine net force equals mass times acceleration with the constant-acceleration equation. [[derive]]A little algebra shows that net work equals the change in one half m v squared. That’s why we define kinetic energy this way."],
       caption: ["**合力**作功＝**動能變化**","Work by the **net force** = **change in kinetic energy**"],
       video: [27,446]
     },
@@ -156,14 +156,14 @@
     {
       id: "6-1",
       title: ["範例一","Worked example 1"],
-      speech: ["等速，代表[[eq]]合力是零，所以手往上托的力，大小等於重力，三乘十，三十牛頓。[[a1]]手往上、位移往上，作正功，三十乘二，正六十焦耳。[[a2]]重力往下、位移往上，反方向，負三十乘二，負六十焦耳。[[a3]]合力是零，作功當然是零；你也可以把前面兩個加起來，六十加負六十，一樣是零。","Constant speed means [[eq]]zero net force, so the hand balances the weight: thirty newtons. [[a1]]The hand pushes up and the displacement is up. Positive work: thirty times two, plus sixty joules. [[a2]]Gravity points down and displacement up: minus sixty joules. [[a3]]The net force is zero, so its work is zero. Or add the two answers: sixty minus sixty is still zero."],
+      speech: ["等速，代表[[eq]]合力是零，所以手往上托的力，大小等於重力，{{3 × 10，30 牛頓|三乘十，三十牛頓}}。[[a1]]手往上、位移往上，作正功，{{30 × 2，+60 焦耳|三十乘二，正六十焦耳}}。[[a2]]重力往下、位移往上，反方向，{{−30 × 2，−60 焦耳|負三十乘二，負六十焦耳}}。[[a3]]合力是零，作功當然是零；你也可以把前面兩個加起來，{{60 +（−60）|六十加負六十}}，一樣是零。","Constant speed means [[eq]]zero net force, so the hand balances the weight: thirty newtons. [[a1]]The hand pushes up and the displacement is up. Positive work: thirty times two, plus sixty joules. [[a2]]Gravity points down and displacement up: minus sixty joules. [[a3]]The net force is zero, so its work is zero. Or add the two answers: sixty minus sixty is still zero."],
       caption: ["範例一","Worked example 1"],
       prompt: ["手托一個 3 kg 的物體，讓它鉛直等速度緩緩上升 2 m（忽略空氣阻力，g 取 10 \\(\\mathrm{m/s^2}\\)）。求：(1) 手對物體作的功 (2) 重力對物體作的功 (3) 合力對物體作的功。","A hand raises a 3 kg object vertically through 2 m at constant speed. Ignore air resistance and take g = 10 \\(\\mathrm{m/s^2}\\). Find the work on the object by (1) the hand, (2) gravity and (3) the net force."]
     },
     {
       id: "6-2",
       title: ["範例二","Worked example 2"],
-      speech: ["[[k]]動能，二分之一乘五乘一點二的平方，三點六焦耳。[[wg]]重力要分段：鉛直提起來那段，重力五十牛頓和位移相反，負五十乘零點八，負四十焦耳；水平走那段，重力和位移垂直，零。加起來負四十焦耳。[[du]]重力位能的變化是 m g 乘高度差，五乘十乘零點八，增加四十焦耳。你看，重力作的功，剛好是位能變化的負值。","[[k]]Kinetic energy is one half times five times one point two squared: three point six joules. [[wg]]For gravity, take it in stages. In the vertical lift, the fifty-newton weight opposes displacement: minus fifty times zero point eight, or minus forty joules. In the horizontal walk, gravity is perpendicular to displacement and does zero work. The total is minus forty joules. [[du]]The change in gravitational potential energy is m g times the height change. Five times ten times zero point eight is a gain of forty joules. The work by gravity is the negative of the change in potential energy."],
+      speech: ["[[k]]動能，{{\\(\\frac12\\times 5\\times 1.2^2\\)，3.6 焦耳|二分之一乘五乘一點二的平方，三點六焦耳}}。[[wg]]重力要分段：鉛直提起來那段，重力{{ 50 牛頓|五十牛頓}}和位移相反，{{−50 × 0.8，−40 焦耳|負五十乘零點八，負四十焦耳}}；水平走那段，重力和位移{{垂直，0。|垂直，零。}}{{加起來 −40 焦耳|加起來負四十焦耳}}。[[du]]重力位能的變化是 m g 乘高度差，{{5 × 10 × 0.8，增加 40 焦耳|五乘十乘零點八，增加四十焦耳}}。你看，重力作的功，剛好是位能變化的負值。","[[k]]Kinetic energy is one half times five times one point two squared: three point six joules. [[wg]]For gravity, take it in stages. In the vertical lift, the fifty-newton weight opposes displacement: minus fifty times zero point eight, or minus forty joules. In the horizontal walk, gravity is perpendicular to displacement and does zero work. The total is minus forty joules. [[du]]The change in gravitational potential energy is m g times the height change. Five times ten times zero point eight is a gain of forty joules. The work by gravity is the negative of the change in potential energy."],
       caption: ["範例二","Worked example 2"],
       prompt: ["5 kg 的背包，先從地面鉛直提到 0.8 m 高，再以 1.2 m/s 的速度等速水平走 15 m；水平走時背包一直維持 0.8 m 高（g 取 10 \\(\\mathrm{m/s^2}\\)）。求：(1) 水平走時背包的動能 (2) 整段過程重力對背包作的功 (3) 背包的重力位能變化。","A 5 kg backpack is first lifted vertically from the floor to 0.8 m. It is then carried horizontally for 15 m at a constant speed of 1.2 m/s, staying 0.8 m above the floor. Take g = 10 \\(\\mathrm{m/s^2}\\). Find (1) its kinetic energy during the walk, (2) the work by gravity over the whole trip and (3) its change in gravitational potential energy."]
     },
@@ -203,7 +203,7 @@
     {
       id: "8-1",
       title: ["三句帶走","Three things to take away"],
-      speech: ["三句話帶走。第一，只有和位移平行的分力才作功，同方向是正的 F 平行乘 S，反方向要加負號。第二，力的方向會變，作功要分段算再累加，位移為零，作功不一定為零。第三，能量是作功的本領，動能二分之一 m v 平方，重力位能 m g h，作功可以讓能量搬家、換形態。","Three things to take away. First, only the component parallel to the displacement does work. In the same direction, work is positive F parallel times S. In the opposite direction, add a minus sign. Second, if the force changes direction, calculate work in stages and add. Zero displacement does not guarantee zero work. Third, energy is the ability to do work. Kinetic energy is one half m v squared and gravitational potential energy is m g h. Doing work can transfer energy or change its form."],
+      speech: ["三句話帶走。第一，只有和位移平行的分力才作功，同方向是正的 F 平行乘 S，反方向要加負號。第二，力的方向會變，作功要分段算再累加，位移為零，作功不一定為零。第三，能量是作功的本領，動能{{ \\(\\frac12 mv^2\\)|二分之一 m v 平方}}，重力位能 m g h，作功可以讓能量搬家、換形態。","Three things to take away. First, only the component parallel to the displacement does work. In the same direction, work is positive F parallel times S. In the opposite direction, add a minus sign. Second, if the force changes direction, calculate work in stages and add. Zero displacement does not guarantee zero work. Third, energy is the ability to do work. Kinetic energy is one half m v squared and gravitational potential energy is m g h. Doing work can transfer energy or change its form."],
       caption: ["平行分力才作功・**分段累加**・\\(K=\\tfrac12mv^2\\)、\\(U=mgh\\)","Parallel component · **add work in stages** · \\(K=\\tfrac12mv^2\\), \\(U=mgh\\)"]
     },
     {
