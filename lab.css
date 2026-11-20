@@ -2037,17 +2037,27 @@ a.ms-near-more { display: flex; align-items: center; justify-content: center; mi
 /* 手機橫放（labdeck-drawer）：操作台固定在右側一整條，左邊主畫布那一塊照螢幕高度縮窄。
    規則包在和 labdeck.js 同一個媒體查詢裡：轉成直放的那一瞬間（js 還沒換 class）就不再套用，畫布不會被擠成一條縫 */
 @media (orientation: landscape) and (max-height: 600px) {
-html.labdeck-drawer { --deck-w: clamp(260px, 38vw, 360px); }
+html.labdeck-drawer { --deck-w: clamp(260px, 38vw, 360px); --deck-gap: 16px; --deck-grip: 28px; } /* 把手（見下方 11/20 說明）：--deck-gap 落在左欄與操作台之間的空隙（＝.wrap 右內距），--deck-grip 伸進操作台，兩者合計 44 px；把空隙改小的頁面要一起改這兩個值 */
 html.labdeck-drawer body { padding-right: var(--deck-w); } /* 側標籤蓋在畫面上，不另外留一條空白（站長 11/16：「整個畫面要滿版，然後那個側板會蓋到畫面上來」） */
 html.labdeck-drawer .labdeck { position: fixed; top: 0; right: 0; bottom: 0; z-index: 35; width: var(--deck-w); margin: 0; border-width: 0 0 0 1px; border-radius: 0;
   overflow-y: auto; overscroll-behavior: contain; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0;
   box-shadow: -4px 0 14px color-mix(in srgb, var(--text) 10%, transparent); }
-html.labdeck-drawer .labdeck-tabs { position: sticky; top: 0; z-index: 1; }
-html.labdeck-drawer .labdeck-tabs button { min-width: 32%; min-height: 40px; font-size: calc(13px * var(--fs, 1)); }
+html.labdeck-drawer .labdeck-tabs { position: sticky; top: 0; z-index: 1; padding-left: var(--deck-grip); }
+html.labdeck-drawer .labdeck-tabs[hidden] { display: flex; } /* 只有一張卡時也留分頁列當標題：分頁列黏在頂端，操作台捲動時內容從它底下過，不會從把手底下過 */
+html.labdeck-drawer .labdeck > :first-child:not(.labdeck-tabs) { margin-left: var(--deck-grip) !important; } /* 頁面自己放到操作台最上面的東西（數學的模式選擇、供需的記錄列）也讓出把手的位置；頁面常自訂這塊的 margin，所以要 !important */
+html.labdeck-drawer .labdeck-tabs button { min-width: 32%; min-height: 44px; font-size: calc(13px * var(--fs, 1)); }
 html.labdeck-drawer .lab { display: block; margin-left: auto; margin-right: auto; }
 html.labdeck-drawer .lab > * + * { margin-top: 16px; }
 html.labdeck-drawer .fb-tab, html.labdeck-drawer .lp-dock-tab { right: var(--deck-w); }
-html.labdeck-drawer .fb-tab { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); } /* 橫放螢幕矮，留言標籤放到底，不和「學習說明」疊在一起 */
+/* 11/20 資訊科、物理回報：橫放時「留言・回報」把手掛在操作台左緣，看不見的觸控區伸進左欄 14 px，壓到按鈕、畫布右緣與小鍵盤，觸控只有 30 px 寬。
+   改成掛在操作台左上角、跨在操作台邊框上：左 16 px（--deck-gap）落在左欄與操作台之間本來就有的空隙，右 28 px（--deck-grip）落在分頁列左側，
+   觸控 44×44，不壓任何按鈕或畫布，頁面照樣滿版、不另外留空白。點一下展開的完整標籤往左伸出，4 秒後縮回。
+   看得見的 15 px 拉把貼在操作台邊框左側；空隙不到 15 px 的頁面，拉把往操作台裡挪，不蓋左欄。 */
+html.labdeck-drawer { --grip-bar-r: calc(var(--deck-grip) - max(0px, 15px - var(--deck-gap))); } /* 看得見的拉把離觸控區右緣多遠 */
+html.labdeck-drawer body > .fb-tab { top: env(safe-area-inset-top, 0px); bottom: auto; z-index: 36; }
+html.labdeck-drawer body > .fb-tab.fb-slim:not(.fb-peek) { right: calc(var(--deck-w) - var(--deck-grip)); width: calc(var(--deck-gap) + var(--deck-grip)); height: 44px; min-height: 44px; }
+html.labdeck-drawer body > .fb-tab.fb-slim:not(.fb-peek)::after { right: var(--grip-bar-r); }
+html.labdeck-drawer .lab-tools { margin: 2px 0 4px; } /* 橫放螢幕矮：投影、分享這排上下少留一點，捲到主畫布時這排不會只剩半截 */
 html.labdeck-drawer .lp-strip { left: calc((100% - var(--deck-w)) / 2); width: min(calc(100% - var(--deck-w)), 720px); }
 }
 /* 平板橫放與電腦（labdeck-panel）：操作台在右欄最上面，右欄黏住螢幕、自己捲動（站長 11/16：電腦版與平板橫放雷同） */

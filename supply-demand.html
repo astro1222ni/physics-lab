@@ -119,6 +119,7 @@
       html.labside-active .market .lab { grid-template-columns:minmax(0,1fr) minmax(265px,31%); }
     }
     html.labdeck-drawer .market .wrap { display:flex; flex-direction:column; padding:3px 5px; }
+    html.labdeck-drawer:has(.market) { --deck-gap:5px; --deck-grip:39px; } /* 左欄右內距只有 5 px：右上角的把手多伸進操作台一點，不蓋畫布（lab.css 11/20） */
     html.labdeck-drawer .market .lab { order:-1; margin:0; }
     html.labdeck-drawer .market .stage { padding:3px; }
     html.labdeck-drawer .market .view-bar { margin:0 0 2px; }

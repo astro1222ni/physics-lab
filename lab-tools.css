@@ -93,6 +93,8 @@ html.labside-railed .labside-edge{display:block}
 .labside-edge[hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){.labside-rail{transition:none}.labside-edge::before{animation:none}}
 @media(orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-edge{right:var(--deck-w)}}
+/* 11/20：橫放時側標籤收起的把手和「留言・回報」一樣，掛在操作台左上角、跨在操作台邊框上（--deck-gap 在左欄與操作台的空隙、--deck-grip 在分頁列左側，變數在 lab.css），觸控 44×44，不壓左欄的按鈕、畫布與電子秤讀數 */
+@media(orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-edge{top:env(safe-area-inset-top,0px);right:calc(var(--deck-w) - var(--deck-grip,28px));width:calc(var(--deck-gap,16px) + var(--deck-grip,28px));height:44px}html.labside-active.labdeck-drawer .labside-edge::after{right:var(--grip-bar-r,28px)}html.labside-active.labdeck-drawer .labside-edge::before{right:calc(var(--grip-bar-r,28px) + 15px);height:28px;margin-top:-14px}}
 @media(min-width:1240px){html.labside-docked .labside-edge{right:380px}}
 html.labside-pulling .labside-edge{opacity:0}
 .labside-rail>.labside-fold{border:2px solid var(--accent)!important;border-right:0!important;color:var(--accent);font-weight:800;background:var(--surface)}
