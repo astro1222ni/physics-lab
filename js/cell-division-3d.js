@@ -49,7 +49,8 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
+    canvas.tabIndex = 0;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 2, T });
     controls.minDistance = 2.2;
     controls.maxDistance = 14;
 
@@ -254,7 +255,7 @@
       const info = BR.info();
       setHud('s', (info.mode === 'mitosis' ? T('有絲分裂', 'Mitosis') : T('減數分裂', 'Meiosis')) + T('・', ' · ') + info.stage);
       setHud('c', T('每個細胞：', 'Per cell: ') + info.cells.map(function (c) { return c.chrom + T(' 條／', ' chr / ') + (Math.round(c.dna * 10) / 10) + 'C'; }).join(T('，', ', ')));
-      setHud('note', T('示意圖（未依比例）・拖曳旋轉', 'Schematic (not to scale) · drag to rotate'));
+      setHud('note', T('示意圖（未依比例）', 'Schematic (not to scale)'));
     }
 
     function themeColors() {
@@ -276,6 +277,7 @@
       controls.target.set(0, 0, 0);
       camera.updateProjectionMatrix();
       controls.update();
+      nav.home();
     }
     function renderNow() {
       if (!api.active) return;
@@ -289,7 +291,7 @@
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
-      const h = sizeOf(w);
+      const h = Math.min(sizeOf(w), Math.max(160, window.innerHeight - 96));
       if (canvas.style.height !== h + 'px') canvas.style.height = h + 'px';
       const nw = w < 520;
       if (nw !== narrow) { narrow = nw; lastAspect = 0; }
@@ -324,6 +326,7 @@
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         clearChroms();
         disposeObject(scene);

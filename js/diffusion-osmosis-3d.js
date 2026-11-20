@@ -74,7 +74,8 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
+    canvas.tabIndex = 0;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 8, T });
     controls.minDistance = 3;
     controls.maxDistance = 90;
 
@@ -924,6 +925,7 @@
       camera.position.copy(f.c).add(f.dir.clone().normalize().multiplyScalar(dist));
       camera.lookAt(f.c);
       controls.update();
+      nav.home();
       requestRender();
     }
 
@@ -952,7 +954,7 @@
       const w = wrap.clientWidth;
       if (!w) return;
       const nar = w < 560;
-      const h = sizeOf(w);
+      const h = Math.min(sizeOf(w), Math.max(160, window.innerHeight - 96));
       if (canvas.style.height !== h + 'px') canvas.style.height = h + 'px';
       cw = w; ch = h;
       renderer.setSize(w, h, false);
@@ -1010,6 +1012,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         renderer.dispose();

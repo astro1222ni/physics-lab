@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201034"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Enzyme Kinetics: Temperature, pH and Inhibitors | Astro Ni Lab">酵素動力學：溫度、pH 與抑制劑｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"細胞與分子","item":"https://lab.astroni.org/biology.html#cell"},{"@type":"ListItem","position":4,"name":"酵素與代謝","item":"https://lab.astroni.org/biology.html#ch-enzyme"},{"@type":"ListItem","position":5,"name":"酵素動力學：溫度、pH 與抑制劑","item":"https://lab.astroni.org/enzyme-kinetics.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201034">
   <style>
     /* 酵素動力學頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -119,9 +119,24 @@
     .ek3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .ek3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .ek3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .ek3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ek3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .ek3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .ek3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -135,7 +150,7 @@
     <p class="try-hint" data-en="Try it: press “Start” to warm the five tubes, then tap a tube and change its temperature or pH.">試試看：按「開始反應」，再點一支試管，改它的溫度或 pH，看哪一支最快變色。</p>
 
     <h2 class="lab-title" data-en-html="1 · Five test tubes<small>Temperature, pH and time (the iodine test for starch, the egg-white test for protein)</small>">一・五支試管<small>溫度、pH 與時間（碘液檢驗澱粉、蛋白液檢驗蛋白質）</small></h2>
-    <div class="lab ek" id="lab1">
+    <div class="lab ek" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -145,7 +160,9 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="五支試管放在各自的水浴裡，旁邊是受質剩下多少隨時間變化的圖，以及溫度掃描圖；點一支試管就能改它的溫度與 pH，或點選畫布後用左右鍵換試管、上下鍵改溫度" data-en-aria-label="Five test tubes, each in its own water bath, with a graph of how much substrate is left over time and a temperature scan; tap a tube to change its temperature and pH, or focus the canvas, choose a tube with the left and right keys and change its temperature with up and down"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="五支試管放在各自的水浴裡，旁邊是受質剩下多少隨時間變化的圖，以及溫度掃描圖；點一支試管就能改它的溫度與 pH，或點選畫布後用左右鍵換試管、上下鍵改溫度" data-en-aria-label="Five test tubes, each in its own water bath, with a graph of how much substrate is left over time and a temperature scan; tap a tube to change its temperature and pH, or focus the canvas, choose a tube with the left and right keys and change its temperature with up and down"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="runBtn" type="button" class="primary" data-en="Start">開始反應</button>
@@ -154,6 +171,7 @@
           <button id="clear1" type="button" data-en="Clear all" title="清除反應、溫度掃描與紀錄表；試管的設定不變" data-en-title="Clear the reaction, the temperature scans and the table; the tube settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -161,12 +179,12 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="酵素|Enzyme" data-deck-order="1" data-section="lab1">
           <h2 data-en="Enzyme">酵素</h2>
           <div class="chips" id="enzs" role="group" aria-label="酵素" data-en-aria-label="Enzyme"></div>
           <p class="hint" id="enzHint"></p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="試管|Test tube" data-deck-order="2" data-section="lab1">
           <h2 id="tubeTitle">第 1 支試管</h2>
           <div class="slider"><label for="tT" data-en="Temperature (°C)">溫度（°C）</label><output id="tTo"></output>
             <input id="tT" type="range" min="0" max="90" step="1" value="37" data-decimals="1"></div>
@@ -174,7 +192,7 @@
             <input id="tpH" type="range" min="1" max="12" step="0.1" value="6.8" data-decimals="1"></div>
           <p class="hint" data-en="Tap a tube in the picture to choose it. Changing a tube during a run starts the run again.">點畫面上的試管選擇要改哪一支。反應進行中改設定，會從頭開始。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="溫度掃描|Temperature scan" data-deck-order="3" data-section="lab1">
           <h2 data-en="Temperature scan">溫度掃描</h2>
           <div class="slider"><label for="ta" data-en="Measuring time for each point (min)">每一點的測量時間（分鐘）</label><output id="tao"></output>
             <input id="ta" type="range" min="1" max="60" step="1" value="10" data-decimals="1"></div>
@@ -188,15 +206,18 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · The mystery enzyme<small>Initial rates, the Michaelis–Menten curve and the Lineweaver–Burk plot</small>">二・神秘酵素<small>初速度、Michaelis–Menten 曲線與 Lineweaver–Burk 雙倒數圖</small></h2>
-    <div class="lab ek" id="lab2">
+    <div class="lab ek" id="lab2" data-no-spill>
       <div class="stage">
-        <canvas id="cv2" tabindex="0" aria-label="左邊是初速度對受質濃度的圖，右邊是雙倒數圖；每量一次就多一個點，同一種抑制劑條件的點會擬合成一條直線。點選畫布後，左右鍵改受質濃度、Enter 量一次" data-en-aria-label="On the left, initial rate against substrate concentration; on the right, the double-reciprocal plot. Each measurement adds a point, and the points for each inhibitor condition are fitted with a straight line. Focus the canvas, change the substrate concentration with the left and right keys and press Enter to measure"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="左邊是初速度對受質濃度的圖，右邊是雙倒數圖；每量一次就多一個點，同一種抑制劑條件的點會擬合成一條直線。點選畫布後，左右鍵改受質濃度、Enter 量一次" data-en-aria-label="On the left, initial rate against substrate concentration; on the right, the double-reciprocal plot. Each measurement adds a point, and the points for each inhibitor condition are fitted with a straight line. Focus the canvas, change the substrate concentration with the left and right keys and press Enter to measure"></canvas>
+        </div>
         <div class="playbar">
           <button id="measBtn" type="button" class="primary" data-en="Measure the initial rate">量一次初速度</button>
           <button id="newEnz" type="button" data-en="New mystery enzyme" title="換一個 Km、Vmax 不知道的酵素，清掉所有的點" data-en-title="Switch to another enzyme with unknown Km and Vmax and clear all points">換一個酵素</button>
           <button id="revealBtn" type="button" aria-pressed="false" data-en="Show the answer">揭曉答案</button>
           <button id="clear2" type="button" data-en="Clear all" title="清掉所有量過的點與紀錄表；酵素與設定不變" data-en-title="Clear every measured point and the table; the enzyme and settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <div class="guess" id="guessBox" hidden>
           <p id="guessText"></p>
           <div class="chips" id="guessChips" role="group" aria-label="猜猜看是哪一種抑制劑" data-en-aria-label="Guess the kind of inhibitor"></div>
@@ -206,13 +227,13 @@
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="抑制劑|Inhibitor" data-deck-order="1" data-section="lab2">
           <h2 data-en="Inhibitor">抑制劑</h2>
           <div class="chips five" id="inhs" role="group" aria-label="抑制劑" data-en-aria-label="Inhibitor"></div>
           <div class="slider"><label for="cI" data-en-html="Inhibitor concentration [I] (mM)">抑制劑濃度 [I]（mM）</label><output id="cIo"></output>
             <input id="cI" type="range" min="0" max="5" step="0.1" value="0" data-decimals="2"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="測量|Measurement" data-deck-order="2" data-section="lab2">
           <h2 data-en="Measurement">測量</h2>
           <div class="slider"><label for="cS" data-en-html="Substrate concentration [S] (mM)">受質濃度 [S]（mM）</label><output id="cSo"></output>
             <input id="cS" type="range" min="0" max="600" step="1" value="300" data-decimals="3"></div>
@@ -286,18 +307,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/enzyme-kinetics-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/enzyme-kinetics.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="enzyme-kinetics"></script>
-  <script src="js/missions/enzyme-kinetics.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="enzyme-kinetics"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201034"></script>
+  <script src="js/enzyme-kinetics-core.js?v=202611201034"></script>
+  <script src="js/sound.js?v=202611201034"></script>
+  <script src="js/numinput.js?v=202611201034"></script>
+  <script src="js/labdeck.js?v=202611201034"></script>
+  <script src="js/view3d-nav.js?v=202611201034"></script>
+  <script src="js/drawkit.js?v=202611201034"></script>
+  <script src="js/keys.js?v=202611201034"></script>
+  <script src="js/enzyme-kinetics.js?v=202611201034"></script>
+  <script src="js/firebase-config.js?v=202611201034"></script>
+  <script src="js/missions.js?v=202611201034" data-module="enzyme-kinetics"></script>
+  <script src="js/missions/enzyme-kinetics.js?v=202611201034"></script>
+  <script src="js/stats.js?v=202611201034" data-module="enzyme-kinetics"></script>
+  <script src="js/comments.js?v=202611201034"></script>
 </body>
 </html>

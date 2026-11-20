@@ -1,6 +1,12 @@
 /* gene-expression.js — 「DNA 複製、轉錄與轉譯」的畫面與互動（計算全部在 gene-expression-core.js；3D 在 gene-expression-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const G = window.GeneCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -92,8 +98,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -105,7 +110,10 @@
   }
   function title(g, s, x, y, col, align) { D.haloText(g, s, x, y, col || D.c.text, align || 'left', 'middle', '600 12px ' + FONT); }
   function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   /** 依寬度斷行（中文逐字、英文逐詞） */
   function wrapLines(g, s, maxW, font) {
     g.font = font;
@@ -273,7 +281,7 @@
     return Math.round(L.pTop + 10 + chainH(f.pRef.length, true) + 8 + chainH(f.pMut.length, true) + 10 + vl.length * 18 + 16);
   }
   function resize1() {
-    W1 = cv.clientWidth || 300;
+    W1 = drawingWidth(cv) || 300;
     layout1();
     H1 = Math.max(L.narrow ? 420 : 400, neededH());
     fit(cv, ctx, H1);
@@ -806,7 +814,7 @@
     if (narrow) L2 = { narrow: true, m: { x: 8, y: 8, w: W2 - 16, h: 210 }, t: { x: 8, y: 228, w: W2 - 16, h: H2 - 236 } };
     else { const mw = Math.round(W2 * 0.42); L2 = { narrow: false, m: { x: 8, y: 8, w: mw - 12, h: H2 - 16 }, t: { x: mw + 4, y: 8, w: W2 - mw - 12, h: H2 - 16 } }; }
   }
-  function resize2() { W2 = cv2.clientWidth || 300; H2 = W2 < 640 ? 560 : 440; fit(cv2, ctx2, H2); layout2(); request(); }
+  function resize2() { W2 = drawingWidth(cv2) || 300; H2 = W2 < 640 ? 560 : 440; fit(cv2, ctx2, H2); layout2(); request(); }
   /** 依假說畫出第 n 代的分子 */
   function strandsOf(model, n) {
     const N = Math.pow(2, n), mols = [];
@@ -1195,7 +1203,7 @@
   setStatus('status', T('β 血紅素基因的開頭已經選好第 7 個密碼子 GAG 中間的 A。按「轉錄＋轉譯」看蛋白質怎麼做出來，或直接把它換掉。', 'The β-globin gene is loaded with the A in the middle of codon 7 (GAG) selected. Press “Transcribe and translate” to watch the protein being made, or change the base right away.'));
   setStatus('status2', T('選一個代數，按「離心一次」，看 DNA 停在哪裡；再和三種假說的預測比較。', 'Choose a generation and press “Spin the sample” to see where the DNA settles, then compare with the three hypotheses.'));
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   resize1(); resize2();
@@ -1215,4 +1223,45 @@
     view: function (k) { st2.view = k; renderHyps(); renderRo2(); request(); },
     elim: eliminate, setView: setView, redraw: request
   };
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
 })();

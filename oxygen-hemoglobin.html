@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201034"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Oxygen and Haemoglobin | Astro Ni Lab">氧氣與血紅素｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生理","item":"https://lab.astroni.org/biology.html#physiology"},{"@type":"ListItem","position":4,"name":"循環與呼吸","item":"https://lab.astroni.org/biology.html#ch-circulation"},{"@type":"ListItem","position":5,"name":"氧氣與血紅素","item":"https://lab.astroni.org/oxygen-hemoglobin.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201034">
   <style>
     /* 氧氣與血紅素頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -108,9 +108,24 @@
     .oh3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .oh3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .oh3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .oh3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .oh3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .oh3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .oh3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -124,15 +139,20 @@
     <p class="try-hint" data-en="Try it: choose “Marathon”, then raise the temperature or the carbon dioxide and watch the venous point.">試試看：按「馬拉松」，再把體溫或二氧化碳調高，看靜脈那一點怎麼移動。</p>
 
     <h2 class="lab-title" data-en-html="1 · The oxygen dissociation curve<small>Lungs, tissues, the Bohr effect, altitude and carbon monoxide</small>">一・氧解離曲線<small>肺、組織、波耳效應、高山與一氧化碳</small></h2>
-    <div class="lab oh" id="lab1">
+    <div class="lab oh" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
-        <canvas id="cv" tabindex="0" aria-label="氧解離曲線：橫軸是氧分壓、縱軸是血紅素的氧飽和度；灰色虛線是標準曲線，A 是動脈、V 是靜脈；右邊是每 100 mL 血的含氧量。點或拖曳圖上任何地方移動探針；點選畫布後，左右鍵移動探針" data-en-aria-label="Oxygen dissociation curve: oxygen partial pressure across, haemoglobin oxygen saturation up; the grey dashed line is the standard curve, A is arterial and V venous blood; on the right, the oxygen content of 100 mL of blood. Tap or drag anywhere on the graph to move the probe; with the canvas focused, move it with the left and right keys"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="氧解離曲線：橫軸是氧分壓、縱軸是血紅素的氧飽和度；灰色虛線是標準曲線，A 是動脈、V 是靜脈；右邊是每 100 mL 血的含氧量。點或拖曳圖上任何地方移動探針；點選畫布後，左右鍵移動探針" data-en-aria-label="Oxygen dissociation curve: oxygen partial pressure across, haemoglobin oxygen saturation up; the grey dashed line is the standard curve, A is arterial and V venous blood; on the right, the oxygen content of 100 mL of blood. Tap or drag anywhere on the graph to move the probe; with the canvas focused, move it with the left and right keys"></canvas>
+        </div>
         <div class="playbar">
+          <button type="button" id="probePrev" data-en="Probe −0.5 mmHg">探針 −0.5 mmHg</button>
+          <button type="button" id="probeNext" data-en="Probe +0.5 mmHg">探針 +0.5 mmHg</button>
           <button id="stdBtn" type="button" class="primary" data-en="Back to normal">回到標準狀態</button>
           <button id="clear1" type="button" data-en="Clear all" title="清除比較用的舊曲線與紀錄表；設定不變" data-en-title="Clear the saved curves and the table; the settings stay">全部清除</button>
           <button id="keepBtn" type="button" data-en="Keep this curve" title="把目前的曲線留下來和之後比較（最多 4 條）" data-en-title="Keep the current curve for comparison (up to 4)">留下這條曲線</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -140,17 +160,17 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="情境|Scenario" data-deck-order="1" data-section="lab1">
           <h2 data-en="Scenario">情境</h2>
           <div class="chips" id="scens" role="group" aria-label="情境" data-en-aria-label="Scenario"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="攜氧蛋白|Oxygen carrier" data-deck-order="2" data-section="lab1">
           <h2 data-en="Oxygen carrier">攜氧蛋白</h2>
           <div class="chips" id="prots" role="group" aria-label="攜氧蛋白" data-en-aria-label="Oxygen carrier"></div>
           <div class="slider"><label for="probe" data-en-html="Probe P<sub>O<sub>2</sub></sub> (mmHg)">探針 P<sub>O<sub>2</sub></sub>（mmHg）</label><output id="probeo"></output>
             <input id="probe" type="range" min="0" max="150" step="0.5" value="40" data-decimals="1"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="肺與空氣|Lungs and air" data-deck-order="3" data-section="lab1">
           <h2 data-en="Lungs and air">肺與空氣</h2>
           <div class="slider"><label for="alt" data-en="Altitude (m)">海拔（m）</label><output id="alto"></output>
             <input id="alt" type="range" min="0" max="8848" step="1" value="0" data-decimals="0"></div>
@@ -159,7 +179,7 @@
           <div class="slider"><label for="ppm" data-en="Carbon monoxide in the air (ppm)">空氣中的一氧化碳（ppm）</label><output id="ppmo"></output>
             <input id="ppm" type="range" min="0" max="1000" step="5" value="0" data-decimals="0"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="血液|Blood" data-deck-order="4" data-section="lab1">
           <h2 data-en="Blood">血液</h2>
           <div class="slider"><label for="hco3" data-en-html="Bicarbonate [HCO<sub>3</sub><sup>−</sup>] (mM)">碳酸氫根 [HCO<sub>3</sub><sup>−</sup>]（mM）</label><output id="hco3o"></output>
             <input id="hco3" type="range" min="8" max="40" step="0.5" value="24" data-decimals="1"></div>
@@ -170,7 +190,7 @@
           <div class="slider"><label for="hb" data-en="Haemoglobin (g/dL)">血紅素濃度（g/dL）</label><output id="hbo"></output>
             <input id="hb" type="range" min="5" max="22" step="0.1" value="15" data-decimals="1"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="組織|Tissues" data-deck-order="5" data-section="lab1">
           <h2 data-en="Tissues">組織</h2>
           <div class="slider"><label for="dem" data-en="Oxygen handed over by each 100 mL of blood (mL)">每 100 mL 血要交出的氧（mL）</label><output id="demo"></output>
             <input id="dem" type="range" min="1" max="18" step="0.1" value="5" data-decimals="1"></div>
@@ -184,7 +204,7 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · Four subunits working together<small>The MWC model of cooperative binding</small>">二・四個亞基一起合作<small>協同結合的 MWC 模型</small></h2>
-    <div class="lab oh" id="lab2">
+    <div class="lab oh" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -194,24 +214,27 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv2" tabindex="0" aria-label="左邊是 48 個血紅素分子，方形是 T 狀態、圓形是 R 狀態，紅色的格子結合了氧；右邊上圖是飽和度曲線與量到的點，下圖是 Hill 圖。點選畫布後，左右鍵改氧分壓、Enter 量一次" data-en-aria-label="On the left, 48 haemoglobin molecules: squares are in the T state, circles in the R state, red subunits carry oxygen. On the right, the saturation curve with your measurements and, below, the Hill plot. Focus the canvas, change the oxygen pressure with the left and right keys and press Enter to measure"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="左邊是 48 個血紅素分子，方形是 T 狀態、圓形是 R 狀態，紅色的格子結合了氧；右邊上圖是飽和度曲線與量到的點，下圖是 Hill 圖。點選畫布後，左右鍵改氧分壓、Enter 量一次" data-en-aria-label="On the left, 48 haemoglobin molecules: squares are in the T state, circles in the R state, red subunits carry oxygen. On the right, the saturation curve with your measurements and, below, the Hill plot. Focus the canvas, change the oxygen pressure with the left and right keys and press Enter to measure"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="measBtn" type="button" class="primary" data-en="Measure (2 s average)">量一次（平均 2 秒）</button>
           <button id="hbBtn" type="button" data-en="Haemoglobin values">回到血紅素的值</button>
           <button id="clear2" type="button" data-en="Clear all" title="清掉量過的點；設定不變" data-en-title="Clear the measured points; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="氧氣|Oxygen" data-deck-order="1" data-section="lab2">
           <h2 data-en="Oxygen">氧氣</h2>
           <div class="slider"><label for="p2" data-en-html="P<sub>O<sub>2</sub></sub> (mmHg)">P<sub>O<sub>2</sub></sub>（mmHg）</label><output id="p2o"></output>
             <input id="p2" type="range" min="0" max="400" step="1" value="243" data-decimals="2"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="兩種形狀|Two shapes" data-deck-order="2" data-section="lab2">
           <h2 data-en="Two shapes">兩種形狀</h2>
           <div class="slider"><label for="lL" data-en-html="L = [T<sub>0</sub>]/[R<sub>0</sub>]: how much the empty molecule prefers T">L = [T<sub>0</sub>]/[R<sub>0</sub>]：空分子有多偏愛 T</label><output id="lLo"></output>
             <input id="lL" type="range" min="0" max="800" step="1" value="395" data-decimals="0"></div>
@@ -285,18 +308,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/oxygen-hemoglobin-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/oxygen-hemoglobin.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="oxygen-hemoglobin"></script>
-  <script src="js/missions/oxygen-hemoglobin.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="oxygen-hemoglobin"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201034"></script>
+  <script src="js/oxygen-hemoglobin-core.js?v=202611201034"></script>
+  <script src="js/sound.js?v=202611201034"></script>
+  <script src="js/numinput.js?v=202611201034"></script>
+  <script src="js/labdeck.js?v=202611201034"></script>
+  <script src="js/view3d-nav.js?v=202611201034"></script>
+  <script src="js/drawkit.js?v=202611201034"></script>
+  <script src="js/keys.js?v=202611201034"></script>
+  <script src="js/oxygen-hemoglobin.js?v=202611201034"></script>
+  <script src="js/firebase-config.js?v=202611201034"></script>
+  <script src="js/missions.js?v=202611201034" data-module="oxygen-hemoglobin"></script>
+  <script src="js/missions/oxygen-hemoglobin.js?v=202611201034"></script>
+  <script src="js/stats.js?v=202611201034" data-module="oxygen-hemoglobin"></script>
+  <script src="js/comments.js?v=202611201034"></script>
 </body>
 </html>

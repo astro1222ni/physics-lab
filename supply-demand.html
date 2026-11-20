@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:34">
+  <script src="js/settings.js?v=202611201034"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Supply, Demand and Market Equilibrium | Astro Ni Lab">供需與市場均衡｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"公民與社會","item":"https://lab.astroni.org/civics.html"},{"@type":"ListItem","position":3,"name":"市場與經濟生活","item":"https://lab.astroni.org/civics.html#markets"},{"@type":"ListItem","position":4,"name":"市場機能與價格管制","item":"https://lab.astroni.org/civics.html#ch-market-prices"},{"@type":"ListItem","position":5,"name":"供需與市場均衡","item":"https://lab.astroni.org/supply-demand.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201034">
   <style>
     .market { --ink: var(--accent); --tea: var(--b-economy, var(--equi)); }
     .market [hidden] { display: none !important; }
@@ -122,7 +122,9 @@
     html.labdeck-drawer .market .lab { order:-1; margin:0; }
     html.labdeck-drawer .market .stage { padding:3px; }
     html.labdeck-drawer .market .view-bar { margin:0 0 2px; }
-    html.labdeck-drawer .market .view-bar { justify-content:flex-start; }
+    html.labdeck-drawer .market .view-bar { justify-content:flex-start; padding-right:var(--head-reserve,150px); }
+    /* 橫放時實驗區排在頁頂：齒輪與登入鈕上移，收在第一列右側，不壓到下面的剩餘讀數（11/20 試玩） */
+    html.labdeck-drawer .market .lab-gear, html.labdeck-drawer .market .lab-account { top:5px; }
     html.labdeck-drawer .market .stall-sign { display:none; }
     html.labdeck-drawer .market #compactQuote { display:inline; font-size:calc(15px * var(--fs,1)); font-weight:700; }
     html.labdeck-drawer .market #cv { height:clamp(127px,calc(100dvh - 204px),357px); }
@@ -268,20 +270,20 @@
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/supply-demand-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/view3d-nav.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/stepguide.js?v=202611201021"></script>
-  <script src="js/labside.js?v=202611201021"></script>
-  <script src="js/supply-demand.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="supply-demand"></script>
-  <script src="js/missions/supply-demand.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="supply-demand"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201034"></script>
+  <script src="js/supply-demand-core.js?v=202611201034"></script>
+  <script src="js/sound.js?v=202611201034"></script>
+  <script src="js/numinput.js?v=202611201034"></script>
+  <script src="js/labdeck.js?v=202611201034"></script>
+  <script src="js/view3d-nav.js?v=202611201034"></script>
+  <script src="js/drawkit.js?v=202611201034"></script>
+  <script src="js/stepguide.js?v=202611201034"></script>
+  <script src="js/labside.js?v=202611201034"></script>
+  <script src="js/supply-demand.js?v=202611201034"></script>
+  <script src="js/firebase-config.js?v=202611201034"></script>
+  <script src="js/missions.js?v=202611201034" data-module="supply-demand"></script>
+  <script src="js/missions/supply-demand.js?v=202611201034"></script>
+  <script src="js/stats.js?v=202611201034" data-module="supply-demand"></script>
+  <script src="js/comments.js?v=202611201034"></script>
 </body>
 </html>

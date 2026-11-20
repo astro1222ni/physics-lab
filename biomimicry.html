@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201034"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Biomimicry: the Lotus Effect and the Gecko’s Foot | Astro Ni Lab">仿生學：蓮葉效應與壁虎的腳｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,8 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生物與科技","item":"https://lab.astroni.org/biology.html#biotech"},{"@type":"ListItem","position":4,"name":"仿生與生物運算","item":"https://lab.astroni.org/biology.html#ch-bioinspired"},{"@type":"ListItem","position":5,"name":"仿生學：蓮葉效應與壁虎的腳","item":"https://lab.astroni.org/biomimicry.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201034">
+  <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 仿生學頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -119,9 +120,25 @@
     .bm3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .bm3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .bm3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .bm3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .bm3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .bm3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .bm3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2, #cv3) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2, #cv3) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
+    .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
   </style>
 </head>
 <body data-en-ready>
@@ -135,7 +152,7 @@
     <p class="try-hint" data-en="Try it: tap the leaf to place a drop, then tilt it a little. Switch the surface to “Smooth” and try again.">試試看：點一下葉面放一顆水珠，再把葉子稍微傾斜；然後把表面換成「平面」再試一次。</p>
 
     <h2 class="lab-title" data-en-html="1 · The lotus effect<small>Micro-pillars, trapped air and self-cleaning (Barthlott and Neinhuis 1997)</small>">一・蓮葉效應<small>微結構、墊在底下的空氣與自我清潔（Barthlott 與 Neinhuis 1997）</small></h2>
-    <div class="lab bm" id="lab1">
+    <div class="lab bm" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -145,7 +162,9 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="傾斜的葉面（俯視）：咖啡色小點是灰塵，藍色圓點是水珠；點一下葉面就放一顆水珠，或點選畫布後用方向鍵移動滴水位置、按「滴一滴」。旁邊是最近一顆水珠的側面與微結構放大圖" data-en-aria-label="A tilted leaf seen from above: brown specks are dust, blue circles are water drops; tap the leaf to place a drop, or focus the canvas, move the dropper with the arrow keys and press “Add a drop”. Beside it, a side view of the latest drop and a close-up of the microstructure"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="傾斜的葉面（俯視）：咖啡色小點是灰塵，藍色圓點是水珠；點一下葉面就放一顆水珠，或點選畫布後用方向鍵移動滴水位置、按「滴一滴」。旁邊是最近一顆水珠的側面與微結構放大圖" data-en-aria-label="A tilted leaf seen from above: brown specks are dust, blue circles are water drops; tap the leaf to place a drop, or focus the canvas, move the dropper with the arrow keys and press “Add a drop”. Beside it, a side view of the latest drop and a close-up of the microstructure"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="dropBtn" type="button" class="primary" data-en="Add a drop">滴一滴</button>
@@ -154,6 +173,7 @@
           <button id="clear1" type="button" data-en="Clear all" title="擦掉水珠、重新撒灰塵，並清除紀錄表；設定不變" data-en-title="Wipe the drops, sprinkle new dust and clear the table; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -161,16 +181,19 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="表面的材料|The material" data-deck-order="1" data-section="lab1">
           <h2 data-en="The material">表面的材料</h2>
           <div class="chips" id="mats" role="group" aria-label="材料" data-en-aria-label="Material"></div>
+        </section>
+        <section class="card" data-deck="接觸角與遲滯|Contact angle and hysteresis" data-deck-order="2" data-section="lab1">
+          <h2 data-en="Contact angle and hysteresis">接觸角與遲滯</h2>
           <div class="slider"><label for="thY" data-en-html="Contact angle on the flat material θ<sub>Y</sub>">平面上的接觸角 θ<sub>Y</sub></label><output id="thYo"></output>
             <input id="thY" type="range" min="0" max="120" step="1" value="109" data-decimals="0"></div>
           <div class="slider"><label for="hyst" data-en="Hysteresis of the material (advancing − receding)">材料本身的遲滯（前進角 − 後退角）</label><output id="hysto"></output>
             <input id="hyst" type="range" min="0" max="30" step="1" value="10" data-decimals="0"></div>
           <p class="hint" data-en-html="θ<sub>Y</sub> is set by the chemistry of the surface (Young’s equation). Wax and Teflon are water-repelling (hydrophobic, above 90°); glass is water-loving (hydrophilic).">θ<sub>Y</sub> 由表面的化學性質決定（Young 方程）。蠟和鐵氟龍疏水（大於 90°），玻璃親水。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="微結構（方柱）|Microstructure (square pillars)" data-deck-order="3" data-section="lab1">
           <h2 data-en="Microstructure (square pillars)">微結構（方柱）</h2>
           <div class="chips three" id="texs" role="group" aria-label="微結構" data-en-aria-label="Microstructure"></div>
           <div class="slider"><label for="pa" data-en="Pillar width a (µm)">柱寬 a（µm）</label><output id="pao"></output>
@@ -181,7 +204,7 @@
             <input id="ph" type="range" min="0" max="40" step="0.5" value="20" data-decimals="1"></div>
           <p class="hint" data-en="A lotus leaf has bumps about ten micrometres across, themselves covered in wax tubules about a tenth of a micrometre thick.">蓮葉的乳突大約十微米大，上面還長滿約 0.1 微米粗的蠟管。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="水珠與傾斜|Drops and tilt" data-deck-order="4" data-section="lab1">
           <h2 data-en="Drops and tilt">水珠與傾斜</h2>
           <div class="slider"><label for="vol" data-en="Drop volume (µL)">水珠體積（µL）</label><output id="volo"></output>
             <input id="vol" type="range" min="2" max="40" step="1" value="10" data-decimals="0"></div>
@@ -199,27 +222,26 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · The gecko’s foot<small>Setae, van der Waals forces, contact splitting and peeling (Autumn et al. 2000, 2002)</small>">二・壁虎的腳<small>剛毛、凡得瓦力、接觸分岔與剝離（Autumn 等 2000、2002）</small></h2>
-    <div class="lab bm" id="lab2">
+    <div class="lab bm" id="lab2" data-no-spill>
       <div class="stage">
-        <canvas id="cv2" tabindex="0" aria-label="一隻壁虎貼在可以傾斜的牆上：箭頭是體重沿牆面的分量（剪力）與把牠拉離牆面的分量；旁邊是腳趾、剛毛、匙突的放大圖與剝離力隨角度變化的圖" data-en-aria-label="A gecko on a wall that can be tilted: arrows show the part of its weight along the wall (shear) and the part pulling it off the wall; beside it, close-ups of the toe, setae and spatulae and a graph of peeling force against angle"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="一隻壁虎貼在可以傾斜的牆上：箭頭是體重沿牆面的分量（剪力）與把牠拉離牆面的分量；旁邊是腳趾、剛毛、匙突的放大圖與剝離力隨角度變化的圖" data-en-aria-label="A gecko on a wall that can be tilted: arrows show the part of its weight along the wall (shear) and the part pulling it off the wall; beside it, close-ups of the toe, setae and spatulae and a graph of peeling force against angle"></canvas>
+        </div>
         <div class="playbar">
           <button id="liftBtn" type="button" class="primary" data-en="Lift a foot">抬起一隻腳</button>
           <button id="replace2" type="button" data-en="Put the gecko back">把壁虎放回去</button>
           <button id="clear2" type="button" data-en="Clear all" title="放回壁虎並清除紀錄表；設定不變" data-en-title="Put the gecko back and clear the table; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
 
-        <canvas id="cv3" class="sub-canvas" tabindex="0" aria-label="一平方毫米的黏著墊分成 n 個尖端，下面掛著砝碼；右邊是總拉脫力和 n 的關係（對數座標）" data-en-aria-label="A one-square-millimetre pad split into n tips with a weight hanging below it; on the right, the total pull-off force against n on log scales"></canvas>
-        <div class="playbar">
-          <button id="hangBtn" type="button" class="primary" data-en="Hang the weight">掛上砝碼</button>
-        </div>
-        <p class="status" id="status3" aria-live="polite"></p>
+
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="壁虎與牆|The gecko and the wall" data-deck-order="1" data-section="lab2">
           <h2 data-en="The gecko and the wall">壁虎與牆</h2>
           <div class="slider"><label for="wall" data-en="Tilt of the wall (0 = floor, 90 = wall, 180 = ceiling)">牆的傾角（0 = 地板、90 = 牆、180 = 天花板）</label><output id="wallo"></output>
             <input id="wall" type="range" min="0" max="180" step="1" value="90" data-decimals="0"></div>
@@ -229,17 +251,34 @@
             <input id="frac" type="range" min="0" max="1000" step="1" value="600" data-decimals="3"></div>
           <p class="hint" data-en-html="A large gecko has about 6.5 million setae. Each can pull about 194 µN along the wall; straight off the wall it holds at most tan 30° of that (“frictional adhesion”).">大壁虎約有 650 萬根剛毛，每根沿牆面最多能拉約 194 µN；垂直拉離牆面最多只有它的 tan 30° 倍（「摩擦附著」）。</p>
         </section>
+
         <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h3 class="lab-title" data-en="Pull-off force of a branched adhesive pad">分岔黏著墊的拉脫力</h3>
+    <div class="lab bm" id="lab3" data-no-spill>
+      <div class="stage">
+        <div class="bio-figure">
+          <canvas id="cv3" class="sub-canvas" tabindex="0" aria-label="一平方毫米的黏著墊分成 n 個尖端，下面掛著砝碼；右邊是總拉脫力和 n 的關係（對數座標）" data-en-aria-label="A one-square-millimetre pad split into n tips with a weight hanging below it; on the right, the total pull-off force against n on log scales"></canvas>
+        </div>
+        <div class="playbar">
+          <button id="hangBtn" type="button" class="primary" data-en="Hang the weight">掛上砝碼</button>
+        </div>
+        <div data-section-anchor hidden></div>
+        <p class="status" id="status3" aria-live="polite"></p>
+      </div>
+      <aside class="panel">
+        <section class="card" data-deck="分岔的黏著墊|Splitting the contact" data-deck-order="1" data-section="lab3">
           <h2 data-en="Splitting the contact">分岔的黏著墊</h2>
           <div class="slider"><label for="nsplit" data-en="Number of tips n on 1 mm²">1 mm² 分成幾個尖端 n</label><output id="nsplito"></output>
             <input id="nsplit" type="range" min="0" max="800" step="1" value="200" data-decimals="0"></div>
           <div class="slider"><label for="load" data-en="Weight (g)">砝碼（g）</label><output id="loado"></output>
             <input id="load" type="range" min="0" max="500" step="1" value="300" data-decimals="3"></div>
           <p class="hint" data-en="The total contact area stays 1 mm²; only the number of tips changes.">總接觸面積固定 1 mm²，只改尖端的數目。</p>
-        </section>
-        <section class="card">
-          <h2 data-en="Readings">讀數</h2>
-          <dl class="readout" id="ro2"></dl>
         </section>
       </aside>
     </div>
@@ -322,18 +361,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/biomimicry-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/biomimicry.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="biomimicry"></script>
-  <script src="js/missions/biomimicry.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="biomimicry"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201034"></script>
+  <script src="js/biomimicry-core.js?v=202611201034"></script>
+  <script src="js/sound.js?v=202611201034"></script>
+  <script src="js/numinput.js?v=202611201034"></script>
+  <script src="js/labdeck.js?v=202611201034"></script>
+  <script src="js/view3d-nav.js?v=202611201034"></script>
+  <script src="js/vpad.js?v=202611201034"></script>
+  <script src="js/drawkit.js?v=202611201034"></script>
+  <script src="js/keys.js?v=202611201034"></script>
+  <script src="js/biomimicry.js?v=202611201034"></script>
+  <script src="js/firebase-config.js?v=202611201034"></script>
+  <script src="js/missions.js?v=202611201034" data-module="biomimicry"></script>
+  <script src="js/missions/biomimicry.js?v=202611201034"></script>
+  <script src="js/stats.js?v=202611201034" data-module="biomimicry"></script>
+  <script src="js/comments.js?v=202611201034"></script>
 </body>
 </html>

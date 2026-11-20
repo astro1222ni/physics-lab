@@ -737,6 +737,17 @@
             const b = button.getBoundingClientRect();
             return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
           })) return { x, y };
+          // 右端被按鈕佔住（手機橫放）時，改放模式列兩組按鈕之間最寬的空位，不蓋地圖的海岸條。
+          const br = bar.getBoundingClientRect();
+          const bs = [...bar.querySelectorAll('button')].map(b => b.getBoundingClientRect()).filter(b => b.width).sort((a, b) => a.left - b.left);
+          const gy = Math.max(2, br.top + (br.height - h) / 2);
+          let best = null;
+          for (let i = 1; i < bs.length; i++) {
+            if (Math.abs(bs[i].top - bs[i - 1].top) > 4) continue;
+            const gap = bs[i].left - bs[i - 1].right;
+            if (gap >= w + 16 && (!best || gap > best.gap)) best = { gap, x: bs[i - 1].right + (gap - w) / 2 };
+          }
+          if (best && br.bottom > 0 && gy + h <= innerHeight) return { x: best.x, y: gy };
           return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
         }
         return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,

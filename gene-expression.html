@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201034"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="DNA Replication, Transcription and Translation | Astro Ni Lab">DNA 複製、轉錄與轉譯｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"遺傳","item":"https://lab.astroni.org/biology.html#genetics"},{"@type":"ListItem","position":4,"name":"DNA 與基因表現","item":"https://lab.astroni.org/biology.html#ch-dna"},{"@type":"ListItem","position":5,"name":"DNA 複製、轉錄與轉譯","item":"https://lab.astroni.org/gene-expression.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201034">
   <style>
     /* DNA 複製、轉錄與轉譯頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -125,9 +125,24 @@
     .ge3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .ge3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .ge3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .ge3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ge3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .ge3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .ge3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -135,13 +150,13 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;biology.html&quot;&gt;Biology&lt;/a&gt; / &lt;a href=&quot;biology.html#genetics&quot;&gt;Genetics&lt;/a&gt; / &lt;a href=&quot;biology.html#ch-dna&quot;&gt;DNA and Gene Expression&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="biology.html">生物</a> / <a href="biology.html#genetics">遺傳</a> / <a href="biology.html#ch-dna">DNA 與基因表現</a></nav>
       <h1 data-en="DNA Replication, Transcription and Translation">DNA 複製、轉錄與轉譯</h1>
-      <p data-en="A gene is a run of letters — A, T, C and G — on one strand of DNA. The cell copies it into messenger RNA, and a ribosome reads the RNA three letters at a time, adding one amino acid for each three-letter codon until it reaches a stop codon. Start with the real beginning of the β-globin gene of your red blood cells, change single letters and watch what happens to the protein. Then repeat the 1958 experiment of Meselson and Stahl, which showed how DNA itself is copied.">基因是 DNA 一股上的一串字母——A、T、C、G。細胞先把它抄成傳訊 RNA，核糖體再每三個字母讀一次，每讀到一個密碼子就接上一個胺基酸，直到遇到終止密碼子。從你紅血球裡 β 血紅素基因真正的開頭出發，改一個字母，看看蛋白質會怎樣；再重做 1958 年 Meselson 與 Stahl 的實驗，看 DNA 自己是怎麼複製的。</p>
+      <p data-en="A gene is a run of letters — A, T, C and G — on one strand of DNA. The cell copies it into messenger RNA, and a ribosome reads the RNA three letters at a time, adding one amino acid for each three-letter codon until it reaches a stop codon. Explore the start of the human β-globin gene (HBB) and see how changing one letter affects the protein. Red blood cell precursors make β-globin. Mature human red blood cells have no nucleus. Then repeat the 1958 experiment of Meselson and Stahl, which showed how DNA itself is copied.">基因是 DNA 一股上的一串字母——A、T、C、G。細胞先把它抄成傳訊 RNA，核糖體再每三個字母讀一次，每讀到一個密碼子就接上一個胺基酸，直到遇到終止密碼子。以人類 β 珠蛋白 HBB 基因序列的開頭為例，改一個字母，觀察蛋白質的變化。β 珠蛋白是在紅血球的前驅細胞裡合成的，成熟的人類紅血球沒有細胞核。接著重做 1958 年 Meselson 與 Stahl 的實驗，看 DNA 自己是怎麼複製的。</p>
     </header>
 
     <p class="try-hint" data-en="Try it: press “Transcribe and translate”, then tap a letter of the DNA and change it.">試試看：按「轉錄＋轉譯」，再點 DNA 上的一個字母，把它換掉。</p>
 
     <h2 class="lab-title" data-en-html="1 · From gene to protein<small>Transcription, the genetic code, translation and mutations</small>">一・從基因到蛋白質<small>轉錄、遺傳密碼、轉譯與突變</small></h2>
-    <div class="lab ge" id="lab1">
+    <div class="lab ge" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -151,14 +166,19 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="上面是 DNA 的兩股、轉錄出的 mRNA 與讀出的胺基酸，下面比較原本和現在的蛋白質。點一個鹼基選取它，左右拖曳捲動；點選畫布後，左右鍵移動選取，按 A、T、C、G 換掉鹼基，Shift 加字母插入，Delete 刪除，Enter 轉錄＋轉譯" data-en-aria-label="At the top, the two DNA strands, the mRNA copied from them and the amino acids read from it; below, the original and the current protein. Tap a base to select it and drag sideways to scroll. With the canvas focused, move the selection with the left and right keys, press A, T, C or G to change the base, Shift with a letter to insert, Delete to remove, and Enter to transcribe and translate"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="上面是 DNA 的兩股、轉錄出的 mRNA 與讀出的胺基酸，下面比較原本和現在的蛋白質。點一個鹼基選取它，左右拖曳捲動；點選畫布後，左右鍵移動選取，按 A、T、C、G 換掉鹼基，Shift 加字母插入，Delete 刪除，Enter 轉錄＋轉譯" data-en-aria-label="At the top, the two DNA strands, the mRNA copied from them and the amino acids read from it; below, the original and the current protein. Tap a base to select it and drag sideways to scroll. With the canvas focused, move the selection with the left and right keys, press A, T, C or G to change the base, Shift with a letter to insert, Delete to remove, and Enter to transcribe and translate"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
+          <button type="button" id="prevB" data-en="◀ Previous base">◀ 前一個鹼基</button>
+          <button type="button" id="nextB" data-en="Next base ▶">後一個鹼基 ▶</button>
           <button id="runBtn" type="button" class="primary" data-en="Transcribe and translate">轉錄＋轉譯</button>
           <button id="skipBtn" type="button" data-en="Skip to the end">直接看結果</button>
           <button id="clear1" type="button" data-en="Clear all" title="清掉動畫與紀錄表；DNA 序列不變" data-en-title="Clear the animation and the table; the DNA sequence stays">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -166,21 +186,21 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="基因|Gene" data-deck-order="1" data-section="lab1">
           <h2 data-en="Gene">基因</h2>
           <div class="chips" id="genes" role="group" aria-label="基因" data-en-aria-label="Gene"></div>
           <textarea class="seqin" id="seqIn" rows="3" spellcheck="false" autocomplete="off" aria-label="自己輸入編碼股（5' 到 3'，只用 A、T、C、G）" data-en-aria-label="Type your own coding strand (5′ to 3′, using only A, T, C and G)" placeholder="自己輸入編碼股 5'→3'，例如 ATGAAATGGTAA" data-en-placeholder="Type a coding strand 5′→3′, e.g. ATGAAATGGTAA"></textarea>
           <div class="row2"><button type="button" id="applySeq" data-en="Use this DNA">使用這段 DNA</button><button type="button" id="undoBtn" data-en="Undo">復原一步</button><button type="button" id="resetSeq" data-en="Restore the gene">還原基因</button></div>
           <p class="hint" id="geneHint"></p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="改一個鹼基|Change one base" data-deck-order="2" data-section="lab1">
           <h2 data-en="Change one base">改一個鹼基</h2>
           <p class="selinfo" id="selInfo"></p>
           <div class="bases" id="subBtns"><span data-en="Change to">換成</span><button type="button" data-b="A">A</button><button type="button" data-b="T">T</button><button type="button" data-b="C">C</button><button type="button" data-b="G">G</button></div>
           <div class="bases" id="insBtns"><span data-en="Insert before">前面插入</span><button type="button" data-b="A">A</button><button type="button" data-b="T">T</button><button type="button" data-b="C">C</button><button type="button" data-b="G">G</button></div>
-          <div class="row2"><button type="button" id="delBtn" data-en="Delete base">刪除鹼基</button><button type="button" id="prevB" data-en="◀ Previous">◀ 前一個</button><button type="button" id="nextB" data-en="Next ▶">後一個 ▶</button></div>
+          <div class="row2"><button type="button" id="delBtn" data-en="Delete base">刪除鹼基</button></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="設計挑戰|Design challenge" data-deck-order="3" data-section="lab1">
           <h2 data-en="Design challenge">設計挑戰</h2>
           <p class="target" id="target"></p>
           <div class="row2"><button type="button" id="newTarget" data-en="New target">換一個目標</button><button type="button" id="codeTable" aria-pressed="false" data-en="Codon table">密碼表</button><button type="button" id="hintBtn" data-en="Hint">提示</button></div>
@@ -194,26 +214,29 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · How DNA copies itself<small>The Meselson–Stahl experiment (1958): heavy nitrogen and a density gradient</small>">二・DNA 怎麼複製自己<small>Meselson–Stahl 實驗（1958）：重氮與密度梯度離心</small></h2>
-    <div class="lab ge" id="lab2">
+    <div class="lab ge" id="lab2" data-no-spill>
       <div class="stage">
-        <canvas id="cv2" tabindex="0" aria-label="左邊是選取的假說畫出的 DNA 分子（深色是含重氮的舊股、淺色是新股），右邊是每次離心的試管，暗色條帶是 DNA 停下來的位置；試管旁的小三角形是選取的假說預測的位置。點選畫布後，左右鍵改代數、Enter 離心一次" data-en-aria-label="On the left, DNA molecules drawn by the chosen hypothesis (dark: old strands with heavy nitrogen; pale: new strands); on the right, the tube from each spin, where dark bands show where the DNA settled. Small triangles beside each tube mark where the chosen hypothesis predicts the bands. Focus the canvas, change the generation with the left and right keys and press Enter to spin"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="左邊是選取的假說畫出的 DNA 分子（深色是含重氮的舊股、淺色是新股），右邊是每次離心的試管，暗色條帶是 DNA 停下來的位置；試管旁的小三角形是選取的假說預測的位置。點選畫布後，左右鍵改代數、Enter 離心一次" data-en-aria-label="On the left, DNA molecules drawn by the chosen hypothesis (dark: old strands with heavy nitrogen; pale: new strands); on the right, the tube from each spin, where dark bands show where the DNA settled. Small triangles beside each tube mark where the chosen hypothesis predicts the bands. Focus the canvas, change the generation with the left and right keys and press Enter to spin"></canvas>
+        </div>
         <div class="playbar">
           <button id="spinBtn" type="button" class="primary" data-en="Spin the sample">離心一次</button>
           <button id="clear2" type="button" data-en="Clear all" title="清掉所有試管與排除的假說" data-en-title="Clear every tube and every ruled-out hypothesis">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="取樣|Sample" data-deck-order="1" data-section="lab2">
           <h2 data-en="Sample">取樣</h2>
           <div class="slider"><label for="gen" data-en-html="Generations in light nitrogen (<sup>14</sup>N)">移到輕氮後的代數</label><output id="geno"></output>
             <input id="gen" type="range" min="0" max="4" step="1" value="1" data-decimals="0"></div>
           <button type="button" class="tog" id="denatBtn" aria-pressed="false" data-en="Heat first: separate the strands">先加熱：把雙股分開</button>
           <p class="hint" data-en-html="The bacteria first grew for many generations with heavy nitrogen, <sup>15</sup>N, then were moved to ordinary <sup>14</sup>N. Generation 0 is the moment of the move.">細菌先在重氮 <sup>15</sup>N 中培養很多代，再移到一般的 <sup>14</sup>N 培養液。第 0 代就是剛移過去的時候。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="三種假說|Three hypotheses" data-deck-order="2" data-section="lab2">
           <h2 data-en="Three hypotheses">三種假說</h2>
           <div class="hyps" id="hyps"></div>
           <p class="hint" data-en="Tap a hypothesis to draw its molecules and its predicted bands. Rule one out only when a tube you have spun disagrees with it.">點一個假說，看它畫出的分子和預測的條帶。只有離心過的試管和它不合，才能排除它。</p>
@@ -289,18 +312,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/gene-expression-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/gene-expression.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="gene-expression"></script>
-  <script src="js/missions/gene-expression.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="gene-expression"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201034"></script>
+  <script src="js/gene-expression-core.js?v=202611201034"></script>
+  <script src="js/sound.js?v=202611201034"></script>
+  <script src="js/numinput.js?v=202611201034"></script>
+  <script src="js/labdeck.js?v=202611201034"></script>
+  <script src="js/view3d-nav.js?v=202611201034"></script>
+  <script src="js/drawkit.js?v=202611201034"></script>
+  <script src="js/keys.js?v=202611201034"></script>
+  <script src="js/gene-expression.js?v=202611201034"></script>
+  <script src="js/firebase-config.js?v=202611201034"></script>
+  <script src="js/missions.js?v=202611201034" data-module="gene-expression"></script>
+  <script src="js/missions/gene-expression.js?v=202611201034"></script>
+  <script src="js/stats.js?v=202611201034" data-module="gene-expression"></script>
+  <script src="js/comments.js?v=202611201034"></script>
 </body>
 </html>
