@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const G = window.GeneCore;
   const D = window.LabDraw;
@@ -259,16 +259,17 @@
   // ---------- 視窗與版面 ----------
   let L = null;
   function layout1() {
-    const narrow = W1 < 640;
-    const tw = narrow ? 21 : 24, lw = narrow ? 44 : 84;
-    const mapY = 10, y0 = narrow ? 50 : 54;
-    const y1 = y0 + tw + 9, y2 = y1 + tw + 32, y3 = y2 + tw + 12;
+    const short = shortLandscape.matches && W1 < 700;
+    const narrow = !short && W1 < 640;
+    const tw = short || narrow ? 21 : 24, lw = short ? 74 : narrow ? 44 : 84;
+    const mapY = 10, y0 = short ? 38 : narrow ? 50 : 54;
+    const y1 = y0 + tw + (short ? 6 : 9), y2 = y1 + tw + (short ? 27 : 32), y3 = y2 + tw + 12;
     const nWin = Math.max(6, Math.floor((W1 - lw - 10) / tw));
-    const pTop = y3 + tw + (narrow ? 22 : 26);
-    const bd = narrow ? 17 : 21, gap = 3;
-    const pX0 = narrow ? 10 : 16, pW = W1 - 2 * pX0;
+    const pTop = y3 + tw + (short ? 12 : narrow ? 22 : 26);
+    const bd = short ? 16 : narrow ? 17 : 21, gap = short ? 2 : 3;
+    const pX0 = short ? 6 : narrow ? 10 : 16, pW = W1 - 2 * pX0;
     const perRow = Math.max(8, Math.floor((pW - 12) / (bd + gap)));
-    L = { narrow: narrow, tw: tw, lw: lw, mapY: mapY, y0: y0, y1: y1, y2: y2, y3: y3, nWin: nWin, pTop: pTop, bd: bd, gap: gap, pX0: pX0, pW: pW, perRow: perRow };
+    L = { short, narrow, tw: tw, lw: lw, mapY: mapY, y0: y0, y1: y1, y2: y2, y3: y3, nWin: nWin, pTop: pTop, bd: bd, gap: gap, pX0: pX0, pW: pW, perRow: perRow };
     return L;
   }
   function chainH(n, extra) {
@@ -283,7 +284,8 @@
   function resize1() {
     W1 = drawingWidth(cv) || 300;
     layout1();
-    H1 = Math.max(L.narrow ? 420 : 400, neededH());
+    H1 = L.short ? 316 : Math.max(L.narrow ? 420 : 400, neededH());
+    renderRo1();
     fit(cv, ctx, H1);
     clampWin();
     request();
@@ -414,7 +416,7 @@
       [T('讀碼框', 'Reading frame'), o ? T('第 ' + (o.start + 1) + '–' + o.end + ' 個鹼基', 'bases ' + (o.start + 1) + '–' + o.end) + '<small>' + o.codons.length + T(' 個密碼子', ' codons') + '</small>' : T('沒有 ATG', 'No ATG')],
       [T('蛋白質', 'Protein'), f.pMut.length + T(' 個胺基酸', ' amino acids') + (o && !f.stopped ? '<small>' + T('沒有終止密碼子', 'No stop codon') + '</small>' : '')],
       [T('改了', 'Changes'), f.edits.length ? T('替換 ' + ek.sub + '、插入 ' + ek.ins + '、刪除 ' + ek.del, ek.sub + ' substituted, ' + ek.ins + ' inserted, ' + ek.del + ' deleted') : T('沒有', 'None')],
-      [T('結果', 'Effect'), kindName(f.kind), f.kind === 'none' ? '' : bad ? 'bad' : 'good'],
+      [T('結果', 'Effect'), L && L.short ? verdictText() + '<small>' + T('＊ 代表終止密碼子', '* denotes a stop codon') + '</small>' : kindName(f.kind), f.kind === 'none' ? '' : bad ? 'bad' : 'good'],
       [T('另一股', 'Other strand'), f.both.rev ? '<code>' + f.both.rev + '</code><small>' + T('反過來讀也是一個基因', 'Read backwards, it is a gene too') + '</small>' : '—']
     ]);
   }
@@ -494,13 +496,14 @@
       g.beginPath();
       for (let k = 0; k < 8; k++) { const t = Math.PI / 8 + k * Math.PI / 4; g.lineTo(x + Math.cos(t) * d / 2, y + Math.sin(t) * d / 2); }
       g.closePath(); g.fillStyle = col; g.fill();
-      g.font = '700 ' + Math.round(d * 0.34) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-      g.fillText('STOP', x, y + 0.5);
+      const short = g === ctx && L.short;
+      g.font = '700 ' + (short ? 14 : Math.round(d * 0.34)) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+      g.fillText(short ? '*' : 'STOP', x, y + (short ? 2 : 0.5));
       return;
     }
     D.ball(g, x, y, d / 2, col);
     if (opt && opt.ring) { g.beginPath(); g.arc(x, y, d / 2 + 2.5, 0, Math.PI * 2); g.strokeStyle = opt.ring; g.lineWidth = 2.2; g.stroke(); }
-    g.font = '700 ' + Math.round(d * 0.52) + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '700 ' + (g === ctx && L.short ? Math.max(11, Math.round(d * 0.52)) : Math.round(d * 0.52)) + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
     // 淺色珠（疏水的黃色等）配白字對比太低（試玩回報）：底色亮就改深色字
     const light = lum(col) > 0.3;
     g.fillStyle = light ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.3)'; g.fillText(a, x + 0.5, y + 1.3);
@@ -665,6 +668,7 @@
     y += chainH(f.pRef.length, true) + 8;
     const upto = anim.phase === 'tx' ? 0 : anim.phase === 'tl' ? Math.floor(anim.codon) : Infinity;
     drawChain(g, T('現在的蛋白質（' + f.pMut.length + ' 個）', 'Current protein (' + f.pMut.length + ')') + (anim.phase === 'tl' ? T('・轉譯中…', ' · translating…') : ''), f.pMut, f.pRef, y, upto, f.stopped, !!f.orf);
+    if (L.short) return; // 完整的突變判讀顯示在操作台讀數。
     y += chainH(f.pMut.length, true) + 10;
     const k = f.kind;
     const col = k === 'none' ? D.c.muted : (k === 'silent' || k === 'noncoding') ? C['ge-good'] : C['ge-bad'];
