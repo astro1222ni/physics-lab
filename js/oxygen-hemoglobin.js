@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const O = window.OxyCore;
   const D = window.LabDraw;
@@ -114,7 +114,7 @@
   /** 下標文字：parts = [[文字, 是否下標], …]；回傳寬度 */
   function subText(g, parts, x, y, color, size, weight, align) {
     size = size || 12; weight = weight || '';
-    const f0 = (weight ? weight + ' ' : '') + size + 'px ' + FONT, f1 = (weight ? weight + ' ' : '') + Math.round(size * 0.74) + 'px ' + FONT;
+    const f0 = (weight ? weight + ' ' : '') + size + 'px ' + FONT, f1 = (weight ? weight + ' ' : '') + (g === ctx && L1.short ? 11 : Math.round(size * 0.74)) + 'px ' + FONT;
     let w = 0;
     parts.forEach(function (p) { g.font = p[1] ? f1 : f0; w += g.measureText(p[0]).width; });
     let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
@@ -236,9 +236,13 @@
   function layout1() {
     W1 = drawingWidth(cv) || 300;
     const narrow = W1 < 640;
-    H1 = narrow ? 580 : 480;
+    const short = shortLandscape.matches && W1 < 700;
+    H1 = short ? 316 : narrow ? 580 : 480;
     fit(cv, ctx, H1);
-    if (narrow) {
+    if (short) {
+      const PL = { x: 56, y: 107, w: W1 - 205, h: H1 - 153 };
+      L1 = { short, narrow: false, PL, BR: { x: W1 - 119, y: 94, w: 23, h: H1 - 142 } };
+    } else if (narrow) {
       const PL = { x: 44, y: 84, w: W1 - 44 - 12, h: H1 - 84 - 46 - 104 };
       L1 = { narrow: true, PL: PL, BR: { x: 44, y: H1 - 70, w: W1 - 56, h: 24 } };
     } else {
@@ -279,7 +283,8 @@
     const longInfo = T('海拔 ' + num(o.alt, 0) + ' m・大氣壓 ' + num(s.Pb, 0) + ' mmHg・肺泡氧分壓 ' + num(s.PAO2, 1) + ' mmHg・' + num(o.T, 1) + ' °C',
       'Altitude ' + num(o.alt, 0) + ' m · air ' + num(s.Pb, 0) + ' mmHg · alveolar oxygen ' + num(s.PAO2, 1) + ' mmHg · ' + num(o.T, 1) + ' °C');
     g.font = '11px ' + FONT;
-    const info = g.measureText(longInfo).width < W1 - 24 ? longInfo :
+    const info = L1.short ? T('海拔 ', 'Alt. ') + num(o.alt, 0) + ' m · ' + T('氣壓 ', 'Air ') + num(s.Pb, 0) + ' mmHg · ' +
+      T('肺泡 ', 'Alveolar ') + num(s.PAO2, 1) + ' mmHg · ' + num(o.T, 1) + ' °C' : g.measureText(longInfo).width < W1 - 24 ? longInfo :
       T(num(o.alt, 0) + ' m・氣壓 ' + num(s.Pb, 0) + '・肺泡 ' + num(s.PAO2, 1) + ' mmHg', num(o.alt, 0) + ' m · air ' + num(s.Pb, 0) + ' · alveolar ' + num(s.PAO2, 1) + ' mmHg');
     small(g, info, 12, 37);
     // 座標區
@@ -306,7 +311,11 @@
       const x = xp(z[0]);
       g.fillStyle = D.alpha(D.c.muted, 0.8);
       g.beginPath(); g.moveTo(x - 4, PL.y - 13); g.lineTo(x + 4, PL.y - 13); g.lineTo(x, PL.y - 8); g.closePath(); g.fill();
-      small(g, T(z[1], z[2]), x, PL.y - 20, D.c.muted, z[0] === 20 ? 'right' : z[0] === 40 ? 'left' : 'center');
+      const label = T(z[1], z[2]);
+      if (L1.short && z[0] === 20) {
+        g.font = '11px ' + FONT;
+        small(g, label, Math.max(x, 4 + g.measureText(label).width), PL.y - 20, D.c.muted, 'right');
+      } else small(g, label, x, PL.y - 20, D.c.muted, z[0] === 20 ? 'right' : z[0] === 40 ? 'left' : 'center');
     });
     // 曲線
     g.save();
@@ -332,7 +341,7 @@
       if (!isFinite(k.P50) || k.P50 > XMAX) return;
       const x = xp(k.P50), y = yp(0.5);
       D.ball(g, x, y, 8, C[k.color], { glow: 0 });
-      D.haloText(g, String(k.no), x, y + 0.5, '#ffffff', 'center', 'middle', '600 10px ' + FONT);
+      D.haloText(g, String(k.no), x, y + 0.5, '#ffffff', 'center', 'middle', (L1.short ? '600 11px ' : '600 10px ') + FONT);
     });
     // P50
     if (isFinite(s.P50) && s.P50 <= XMAX) {
@@ -352,9 +361,10 @@
     g.font = '600 12px ' + FONT;
     const pw = g.measureText(pl).width + 16;
     let bx = Math.max(PL.x + 2, Math.min(PL.x + PL.w - pw - 2, xp(Pp) - pw / 2));
-    D.roundRect(g, bx, PL.y + 4, pw, 22, 7);
+    const probeY = L1.short ? 49 : PL.y + 4;
+    D.roundRect(g, bx, probeY, pw, 22, 7);
     g.fillStyle = D.alpha(D.c.surface, 0.92); g.fill(); g.strokeStyle = D.alpha(D.c.accent, 0.7); g.lineWidth = 1; g.stroke();
-    D.haloText(g, pl, bx + pw / 2, PL.y + 15.5, D.c.accent, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, pl, bx + pw / 2, probeY + 11.5, D.c.accent, 'center', 'middle', '600 12px ' + FONT);
     // 動脈、靜脈點
     const ax = xp(s.Pa), ay = yp(s.Sa);
     if (!s.deficit) {
@@ -379,7 +389,7 @@
     }
     // 警告
     if (s.PAO2 <= 0 || s.deficit) {
-      const msg = s.PAO2 <= 0 ? T('肺泡裡沒有氧了！', 'There is no oxygen left in the alveoli!') : T('動脈血的氧不夠交給組織！', 'The arterial blood cannot supply what the tissues need!');
+      const msg = s.PAO2 <= 0 ? T('肺泡裡沒有氧了！', L1.short ? 'No alveolar oxygen' : 'There is no oxygen left in the alveoli!') : T('動脈血的氧不夠交給組織！', L1.short ? 'Insufficient oxygen delivery' : 'The arterial blood cannot supply what the tissues need!');
       const wf = L1.narrow ? '700 12px ' : '700 14px ';
       g.font = wf + FONT;
       const mw = Math.min(PL.w - 8, g.measureText(msg).width + 24);
@@ -399,7 +409,7 @@
     if (!L1.narrow) {
       const by = function (v) { return B.y + B.h * (1 - v / CAP); };
       D.haloText(g, T('含氧量', 'O2 content'), B.x + B.w / 2, B.y - 30, D.c.text, 'center', 'middle', '600 12px ' + FONT);
-      small(g, T('每 100 mL 血（mL）', 'mL per 100 mL'), B.x + B.w / 2, B.y - 14, D.c.muted, 'center');
+      small(g, (L1.short ? 'mL / 100 mL' : T('每 100 mL 血（mL）', 'mL per 100 mL')), B.x + B.w / 2, B.y - 14, D.c.muted, 'center');
       // 外框（上限）
       D.roundRect(g, B.x, by(cap), B.w, B.y + B.h - by(cap), 6);
       g.fillStyle = D.alpha(D.c.surface, 0.6); g.fill();
