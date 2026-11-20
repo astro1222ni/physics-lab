@@ -51,12 +51,12 @@
   // 累計操作時間：多少天、多少小時、多少分鐘（11/15 站長要求）；不到 1 分鐘才顯示秒
   function fmtTime(sec) {
     sec = Math.round(sec || 0);
-    if (sec < 60) return sec + (EN ? ' s' : ' 秒');
+    if (sec < 60) return sec + (EN ? ' s' : ' 秒');
     const m = Math.floor(sec / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
     const parts = [];
-    if (d > 0) parts.push(fmtInt(d) + (EN ? ' d' : ' 天'));
-    if (h > 0) parts.push((h % 24) + (EN ? ' h' : ' 小時'));
-    parts.push((m % 60) + (EN ? ' min' : ' 分鐘'));
+    if (d > 0) parts.push(fmtInt(d) + (EN ? ' d' : ' 天'));
+    if (h > 0) parts.push((h % 24) + (EN ? ' h' : ' 小時'));
+    parts.push((m % 60) + (EN ? ' min' : ' 分鐘'));
     return parts.join(' ');
   }
 

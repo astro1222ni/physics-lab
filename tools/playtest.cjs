@@ -117,7 +117,8 @@ function extractTerms(missions) {
         if (!s) return;
         const rx = lang === 'zh' ? /「([^「」]{1,40})」/g : /[“"]([^“”"]{1,60})[”"]|‘([^‘’]{1,40})’/g;
         for (const mm of s.matchAll(rx)) {
-          const term = (mm[1] || mm[2] || '').trim();
+          // 任務文字可含 <sub>/<sup>（11/20 起化學式上下標）；比對元件名稱時去掉標籤，只比使用者看到的字
+          const term = (mm[1] || mm[2] || '').replace(/<\/?su[bp]>/gi, '').trim();
           if (!term) continue;
           const before = s.slice(Math.max(0, mm.index - 60), mm.index), after = s.slice(mm.index + mm[0].length, mm.index + mm[0].length + 12);
           const ui = lang === 'zh' ? (ZH_B.test(before.slice(-12)) && !/^的/.test(after)) || ZH_A.test(after) : EN_B.test(before) || EN_A.test(after);
