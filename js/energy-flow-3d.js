@@ -53,7 +53,8 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
+    canvas.tabIndex = 0;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 4, T });
     controls.minDistance = 3;
     controls.maxDistance = 18;
     controls.maxPolarAngle = Math.PI * 0.49;
@@ -180,7 +181,6 @@
       const d = build();
       setHud('t', d.title);
       setHud('s', d.scale === 'lin' ? T('底面積 ∝ 數量（真實比例）', 'footprint area ∝ amount (true proportion)') : T('邊長同 2D 長條（對數刻度）', 'side = 2D bar length (log scale)'));
-      setHud('note', T('拖曳旋轉・捏合縮放', 'Drag to rotate · pinch to zoom'));
     }
     function themeColors() {
       C = BR.colors();
@@ -201,6 +201,7 @@
       controls.target.set(0.4, cy, 0);
       camera.updateProjectionMatrix();
       controls.update();
+      nav.home();
     }
     function renderNow() {
       if (!api.active) return;
@@ -214,7 +215,7 @@
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
-      const h = sizeOf(w);
+      const h = Math.min(sizeOf(w), Math.max(160, window.innerHeight - 96));
       if (canvas.style.height !== h + 'px') canvas.style.height = h + 'px';
       ch = h;
       const nw = w < 520;
@@ -250,6 +251,7 @@
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         renderer.dispose();

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201028"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Population Growth: Exponential, Logistic, Predator and Prey | Astro Ni Lab">族群成長：指數、邏輯斯與掠食者–獵物｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,8 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生態","item":"https://lab.astroni.org/biology.html#ecology"},{"@type":"ListItem","position":4,"name":"族群與群集","item":"https://lab.astroni.org/biology.html#ch-population"},{"@type":"ListItem","position":5,"name":"族群成長：指數、邏輯斯與掠食者–獵物","item":"https://lab.astroni.org/population-growth.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201028">
+  <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 族群成長頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -109,9 +110,25 @@
     .pg3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .pg3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .pg3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .pg3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .pg3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .pg3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .pg3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
+    .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
   </style>
 </head>
 <body data-en-ready>
@@ -125,15 +142,20 @@
     <p class="try-hint" data-en="Try it: press “Grow”, then switch from Exponential to Logistic and compare the J and the S.">試試看：按「開始培養」，再把「指數」切換成「邏輯斯」，比較 J 型與 S 型曲線。</p>
 
     <h2 class="lab-title" data-en-html="1 · One population in a dish<small>A culture of paramecia: births and deaths, food and space</small>">一・培養皿裡的一個族群<small>草履蟲的培養：出生、死亡、食物與空間</small></h2>
-    <div class="lab pg" id="lab1">
+    <div class="lab pg" id="lab1" data-no-spill>
       <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="培養皿中的草履蟲，旁邊是族群數量隨時間的變化與成長速率對族群數量的圖。點一下圖可以檢視某一刻" data-en-aria-label="Paramecia in a dish, with the population against time and the growth rate against population size. Tap a graph to inspect a moment"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="培養皿中的草履蟲，旁邊是族群數量隨時間的變化與成長速率對族群數量的圖。點一下圖可以檢視某一刻" data-en-aria-label="Paramecia in a dish, with the population against time and the growth rate against population size. Tap a graph to inspect a moment"></canvas>
+        </div>
         <div class="playbar">
+          <button type="button" id="momentPrev" data-en="Earlier">前一刻</button>
+          <button type="button" id="momentNext" data-en="Later">後一刻</button>
           <button id="grow" type="button" class="primary" data-en="Grow">開始培養</button>
           <button id="pause" type="button" data-en="Pause">暫停</button>
           <button id="clearAll" type="button" data-en="Clear all" title="清除保留的曲線與紀錄表，設定不變" data-en-title="Clear the kept curves and the table; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
@@ -141,7 +163,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="成長模型|Growth model" data-deck-order="1" data-section="lab1">
           <h2 data-en="Growth model">成長模型</h2>
           <div class="seg2" role="group" aria-label="成長模型" data-en-aria-label="Growth model" id="modelSeg">
             <button type="button" data-model="expo" aria-pressed="true" data-en="Exponential (J)">指數（J 型）</button>
@@ -150,17 +172,23 @@
           <div class="checks">
             <label><input id="stoch" type="checkbox"><span data-en="Count individuals (random births and deaths)">一隻一隻數（出生死亡有隨機性）</span></label>
           </div>
+        </section>
+        <section class="card" data-deck="成長條件|Growth conditions" data-deck-order="2" data-section="lab1">
+          <h2 data-en="Growth conditions">成長條件</h2>
           <div class="slider"><label for="r" data-en="Intrinsic growth rate r (per day)">內在成長率 r（每天）</label><output id="ro"></output>
             <input id="r" type="range" min="0.05" max="2" step="0.005" value="0.5" data-decimals="3"></div>
           <div class="slider" id="rowK"><label for="K" data-en="Carrying capacity K (individuals)">負荷量 K（個體）</label><output id="Ko"></output>
             <input id="K" type="range" min="10" max="1000" step="10" value="500" data-decimals="0"></div>
+        </section>
+        <section class="card" data-deck="起始數量與天數|Initial size and duration" data-deck-order="3" data-section="lab1">
+          <h2 data-en="Initial size and duration">起始數量與天數</h2>
           <div class="slider"><label for="N0" data-en-html="Starting population N<sub>0</sub>">起始數量 N<sub>0</sub></label><output id="N0o"></output>
             <input id="N0" type="range" min="1" max="500" step="1" value="10" data-decimals="0"></div>
           <div class="slider"><label for="tEnd" data-en="Days to watch">觀察天數</label><output id="tEndo"></output>
             <input id="tEnd" type="range" min="5" max="200" step="1" value="30" data-decimals="0"></div>
           <p class="hint" data-en="Tap a number to type an exact value. Tap or drag on a graph to read the population at that moment.">點一下數字可直接輸入精確數值。在圖上點一下或拖曳，可以讀出那一刻的族群數量。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="4" data-section="lab1">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="logY" type="checkbox"><span data-en="Logarithmic population axis">縱軸用對數刻度</span></label>
@@ -175,7 +203,7 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · Two species<small>Predator and prey (Lotka–Volterra), or two competitors for the same food</small>">二・兩個物種<small>掠食者與獵物（Lotka–Volterra），或爭奪同一種資源的兩個競爭者</small></h2>
-    <div class="lab pg" id="lab2">
+    <div class="lab pg" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -185,19 +213,22 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv2" tabindex="0" aria-label="兩個物種的數量隨時間的變化，以及相平面上的軌跡。可拖曳起點，或點選畫布後用方向鍵移動起點" data-en-aria-label="The two populations against time, and the path in the phase plane. Drag the starting point, or focus the canvas and move it with the arrow keys"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="兩個物種的數量隨時間的變化，以及相平面上的軌跡。可拖曳起點，或點選畫布後用方向鍵移動起點" data-en-aria-label="The two populations against time, and the path in the phase plane. Drag the starting point, or focus the canvas and move it with the arrow keys"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="run2" type="button" class="primary" data-en="Run">開始</button>
           <button id="clear2" type="button" data-en="Clear all" title="清除保留的軌跡與紀錄表，設定不變" data-en-title="Clear the kept paths and the table; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="交互作用|Interaction" data-deck-order="1" data-section="lab2">
           <h2 data-en="Interaction">交互作用</h2>
           <div class="seg2" role="group" aria-label="交互作用" data-en-aria-label="Interaction" id="modeSeg">
             <button type="button" data-mode="pp" aria-pressed="true" data-en="Predator and prey">掠食者與獵物</button>
@@ -235,7 +266,7 @@
               <input id="a21" type="range" min="0" max="2" step="0.01" value="0.82" data-decimals="3"></div>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="起點與時間|Start and time" data-deck-order="2" data-section="lab2">
           <h2 data-en="Start and time">起點與時間</h2>
           <div class="slider"><label for="x0" id="x0Label" data-en="Starting prey">起始獵物數量</label><output id="x0o"></output>
             <input id="x0" type="range" min="1" max="1000" step="1" value="40" data-decimals="1"></div>
@@ -331,18 +362,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/population-growth-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/population-growth.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="population-growth"></script>
-  <script src="js/missions/population-growth.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="population-growth"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201028"></script>
+  <script src="js/population-growth-core.js?v=202611201028"></script>
+  <script src="js/sound.js?v=202611201028"></script>
+  <script src="js/numinput.js?v=202611201028"></script>
+  <script src="js/labdeck.js?v=202611201028"></script>
+  <script src="js/view3d-nav.js?v=202611201028"></script>
+  <script src="js/vpad.js?v=202611201028"></script>
+  <script src="js/drawkit.js?v=202611201028"></script>
+  <script src="js/keys.js?v=202611201028"></script>
+  <script src="js/population-growth.js?v=202611201028"></script>
+  <script src="js/firebase-config.js?v=202611201028"></script>
+  <script src="js/missions.js?v=202611201028" data-module="population-growth"></script>
+  <script src="js/missions/population-growth.js?v=202611201028"></script>
+  <script src="js/stats.js?v=202611201028" data-module="population-growth"></script>
+  <script src="js/comments.js?v=202611201028"></script>
 </body>
 </html>

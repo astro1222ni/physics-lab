@@ -1,6 +1,12 @@
 /* mendelian-inheritance.js — 「孟德爾遺傳：豌豆雜交與卡方檢定」的畫面與互動（遺傳與統計的計算在 mendelian-inheritance-core.js） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const MC = window.MendelCore;
   const LD = window.LabDraw; // 共用繪圖工具（js/drawkit.js）
   const $ = function (id) { return document.getElementById(id); };
@@ -450,18 +456,16 @@
   }
 
   function resize() {
-    const w = cv.clientWidth;
+    const w = drawingWidth(cv);
     if (!w || !cr) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     W = w;
     const oldCap = S ? S.cap : -1;
     S = sceneLayout();
-    if (cv.style.height !== H + 'px') cv.style.height = H + 'px';
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     if (S.cap !== oldCap) remapTray();
-    W2 = cv2.clientWidth || W;
+    W2 = drawingWidth(cv2) || W;
     Q = chartLayout();
-    if (cv2.style.height !== H2 + 'px') cv2.style.height = H2 + 'px';
     cv2.width = Math.round(W2 * dpr); cv2.height = Math.round(H2 * dpr);
     draw();
   }
@@ -1398,7 +1402,7 @@
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
     let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (drawingWidth(cv) !== lastW) { lastW = drawingWidth(cv); resize(); } }).observe(cv.parentElement);
   } else window.addEventListener('resize', resize);
   resize();
 })();

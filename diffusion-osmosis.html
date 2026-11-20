@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201028"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Diffusion and Osmosis: Brownian Motion, Membranes and Cells | Astro Ni Lab">擴散與滲透：布朗運動、半透膜與細胞的漲縮｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"細胞與分子","item":"https://lab.astroni.org/biology.html#cell"},{"@type":"ListItem","position":4,"name":"細胞膜與物質運輸","item":"https://lab.astroni.org/biology.html#ch-membrane"},{"@type":"ListItem","position":5,"name":"擴散與滲透：布朗運動、半透膜與細胞的漲縮","item":"https://lab.astroni.org/diffusion-osmosis.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201028">
   <style>
     /* 擴散與滲透頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -70,9 +70,9 @@
     .dos .panel { grid-template-columns: minmax(0, 1fr); }
     .dos .panel > .card { min-width: 0; }
     /* 依實驗模式顯示：data-for 列出適用的模式 */
-    .dos[data-mode="diff"] [data-for]:not([data-for~="diff"]),
-    .dos[data-mode="osmo"] [data-for]:not([data-for~="osmo"]),
-    .dos[data-mode="cell"] [data-for]:not([data-for~="cell"]) { display: none !important; }
+    body:has(.dos[data-mode="diff"]) [data-for]:not([data-for~="diff"]),
+    body:has(.dos[data-mode="osmo"]) [data-for]:not([data-for~="osmo"]),
+    body:has(.dos[data-mode="cell"]) [data-for]:not([data-for~="cell"]) { display: none !important; }
     .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
     .dos .sol-row { display: grid; grid-template-columns: minmax(4.2em, auto) minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 8px; }
@@ -123,7 +123,7 @@
     .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
     .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
     .t3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
-    .t3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .t3-hud .br { right: 8px; bottom: 59px; align-items: flex-end; max-width: calc(100% - 16px); }
     .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
       background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
     .t3-hud span.m { color: var(--muted); font-weight: 500; }
@@ -134,6 +134,21 @@
     .notes table.cmp th, .notes table.cmp td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
     .notes table.cmp th { background: var(--accent-soft); }
     .notes .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #plot) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #plot) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -160,11 +175,16 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" aria-label="擴散與滲透的模擬畫面" data-en-aria-label="Diffusion and osmosis simulation"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" aria-label="擴散與滲透的模擬畫面" data-en-aria-label="Diffusion and osmosis simulation"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="play" class="primary" type="button">暫停</button>
           <button id="partBtn" type="button" data-for="diff">移除隔板</button>
+          <button type="button" id="trackNext" data-for="diff" data-en="Follow another particle">換一顆追蹤的粒子</button>
+          <button type="button" id="pistonPrev" data-en="−0.05 kPa" data-for="osmo">減壓 0.05 kPa</button>
+          <button type="button" id="pistonNext" data-en="+0.05 kPa" data-for="osmo">加壓 0.05 kPa</button>
           <button id="osmoReset" type="button" data-for="osmo" data-en="Level the liquids" title="倒掉重裝：兩管液面回到一樣高，換上目前設定的溶液" data-en-title="Refill: both levels back to the same height, with the solutions now set">液面歸零</button>
           <button id="cellReset" type="button" data-for="cell" data-en="Fresh cells" title="換上新的紅血球與植物細胞（外液不變）" data-en-title="Put in a fresh red blood cell and plant cell (the solution is kept)">換新細胞</button>
           <button id="clear" type="button" data-en="Clear all" title="清除下方曲線圖的所有紀錄（含比較用的舊紀錄），滑桿設定不變" data-en-title="Clear every record in the graph below (including the old ones kept for comparison); slider settings are kept">全部清除</button>
@@ -193,7 +213,9 @@
         <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. Everything in 3D comes from the same calculation as the 2D picture; change it with the controls.">拖曳旋轉，滾輪或雙指縮放。3D 畫面與 2D 是同一份計算；用控制項改變它。</p>
 
         <figure class="plotfig">
-          <canvas id="plot" role="img" aria-label="隨時間變化的曲線" data-en-aria-label="Graph against time"></canvas>
+          <div class="bio-figure">
+            <canvas id="plot" role="img" aria-label="隨時間變化的曲線" data-en-aria-label="Graph against time"></canvas>
+          </div>
           <figcaption id="plotCap"></figcaption>
         </figure>
       </div>
@@ -217,7 +239,6 @@
             <button type="button" data-r="0.47" data-en="Sucrose 0.47 nm">蔗糖 0.47 nm</button>
             <button type="button" data-r="3.1" data-en="Haemoglobin 3.1 nm">血紅素 3.1 nm</button>
           </div>
-          <button type="button" id="trackNext" style="width:100%;margin-top:8px" data-en="Follow another particle">換一顆追蹤的粒子</button>
           <p class="hint" data-en-html="The radius is the molecule’s effective (Stokes) radius in water. Changing the temperature or the radius during a run is allowed: the theory line then uses \(\int D\,dt\), but that run no longer counts for comparing \(D\).">半徑是分子在水中的等效（斯托克斯）半徑。擴散途中也可以改溫度或半徑：理論線會改用 \(\int D\,dt\)，但這一次就不能拿來比較 \(D\)。</p>
         </section>
 
@@ -395,18 +416,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/diffusion-osmosis-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/diffusion-osmosis.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="diffusion-osmosis"></script>
-  <script src="js/missions/diffusion-osmosis.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="diffusion-osmosis"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201028"></script>
+  <script src="js/diffusion-osmosis-core.js?v=202611201028"></script>
+  <script src="js/sound.js?v=202611201028"></script>
+  <script src="js/numinput.js?v=202611201028"></script>
+  <script src="js/labdeck.js?v=202611201028"></script>
+  <script src="js/view3d-nav.js?v=202611201028"></script>
+  <script src="js/drawkit.js?v=202611201028"></script>
+  <script src="js/keys.js?v=202611201028"></script>
+  <script src="js/diffusion-osmosis.js?v=202611201028"></script>
+  <script src="js/firebase-config.js?v=202611201028"></script>
+  <script src="js/missions.js?v=202611201028" data-module="diffusion-osmosis"></script>
+  <script src="js/missions/diffusion-osmosis.js?v=202611201028"></script>
+  <script src="js/stats.js?v=202611201028" data-module="diffusion-osmosis"></script>
+  <script src="js/comments.js?v=202611201028"></script>
 </body>
 </html>

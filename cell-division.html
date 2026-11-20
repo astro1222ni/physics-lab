@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201028"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Cell Division | Astro Ni Lab">細胞分裂｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"細胞與分子","item":"https://lab.astroni.org/biology.html#cell"},{"@type":"ListItem","position":4,"name":"細胞分裂與週期","item":"https://lab.astroni.org/biology.html#ch-division"},{"@type":"ListItem","position":5,"name":"細胞分裂","item":"https://lab.astroni.org/cell-division.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201028">
   <style>
     /* 細胞分裂頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -109,9 +109,24 @@
     .cd3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .cd3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .cd3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .cd3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .cd3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .cd3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .cd3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cvg, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cvg, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -125,7 +140,7 @@
     <p class="try-hint" data-en="Try it: choose “Meiosis”, press play, and pause when the matching chromosomes line up in pairs — look for the yellow crossing points.">試試看：按「減數分裂」再播放，等同源染色體兩兩排在中間時暫停——找找黃色的交叉點。</p>
 
     <h2 class="lab-title" data-en-html="1 · Watch a cell divide<small>Chromosomes, spindle and DNA, stage by stage</small>">一・看細胞分裂<small>一期一期看染色體、紡錘體與 DNA</small></h2>
-    <div class="lab cd" id="lab1">
+    <div class="lab cd" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -135,7 +150,9 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="細胞的剖面：紅色是來自母方的染色體，藍色是來自父方的；綠色細線是紡錘絲，橘色是中心體；黃色圓點是交叉。點選畫布後，左右鍵前後移動時間，空白鍵播放或暫停" data-en-aria-label="A section through the cell: red chromosomes come from the mother, blue from the father; thin green lines are spindle fibres, orange dots the centrosomes and yellow dots the crossing points. With the canvas focused, the left and right keys move through time and Space plays or pauses"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="細胞的剖面：紅色是來自母方的染色體，藍色是來自父方的；綠色細線是紡錘絲，橘色是中心體；黃色圓點是交叉。點選畫布後，左右鍵前後移動時間，空白鍵播放或暫停" data-en-aria-label="A section through the cell: red chromosomes come from the mother, blue from the father; thin green lines are spindle fibres, orange dots the centrosomes and yellow dots the crossing points. With the canvas focused, the left and right keys move through time and Space plays or pauses"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="playBtn" type="button" class="primary" data-en="Play">播放</button>
@@ -144,7 +161,14 @@
           <button id="clear1" type="button" data-en="Clear all" title="清除配子紀錄表；設定不變" data-en-title="Clear the table of gametes; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <canvas id="cvg" tabindex="0" aria-label="上面是每個細胞的染色體數，下面是每個細胞的 DNA 量（C 是一套單倍體的量），橫軸是時間與各期；最下面是分裂完成的細胞或配子。點或拖曳圖移動時間；點選畫布後，左右鍵移動時間" data-en-aria-label="Top: chromosomes per cell; bottom: DNA per cell (C is the amount in one haploid set), against time and stage. Underneath, the finished daughter cells or gametes. Tap or drag the graph to move in time; with the canvas focused, the left and right keys move in time"></canvas>
+        <div data-section-anchor data-deck-anchor hidden></div>
+        <div class="bio-figure">
+          <canvas id="cvg" tabindex="0" aria-label="上面是每個細胞的染色體數，下面是每個細胞的 DNA 量（C 是一套單倍體的量），橫軸是時間與各期；最下面是分裂完成的細胞或配子。點或拖曳圖移動時間；點選畫布後，左右鍵移動時間" data-en-aria-label="Top: chromosomes per cell; bottom: DNA per cell (C is the amount in one haploid set), against time and stage. Underneath, the finished daughter cells or gametes. Tap or drag the graph to move in time; with the canvas focused, the left and right keys move in time"></canvas>
+        </div>
+        <div class="playbar">
+          <button type="button" id="timePrev" data-en="Time back">時間微退</button>
+          <button type="button" id="timeNext" data-en="Time forward">時間微進</button>
+        </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -152,7 +176,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="分裂方式|Division" data-deck-order="1" data-section="lab1">
           <h2 data-en="Division">分裂方式</h2>
           <div class="chips" id="modes" role="group" aria-label="分裂方式" data-en-aria-label="Division"></div>
           <div class="slider"><label for="n" data-en="Pairs of chromosomes n (2n = 2–8)">染色體對數 n（2n = 2–8）</label><output id="no"></output>
@@ -171,20 +195,23 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · A thousand meioses<small>Measure recombination and count the gametes of independent assortment</small>">二・一千次減數分裂<small>量出重組率，數一數獨立分配能做出幾種配子</small></h2>
-    <div class="lab cd" id="lab2">
+    <div class="lab cd" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
-        <canvas id="cv2" tabindex="0" aria-label="一邊是四種配子 AB、Ab、aB、ab 的數目，重組型用黃色；另一邊是重組率對兩個基因距離的圖，曲線是 Haldane 作圖函數，點是量到的重組率與 95% 信賴區間；下面是配子的來源組合看過幾種。點選畫布後，左右鍵改變距離、Enter 再做 1000 次" data-en-aria-label="On one side, the numbers of AB, Ab, aB and ab gametes, with the recombinants in yellow; on the other, recombination frequency against the distance between the genes, with Haldane's mapping function as a curve and the measured values with 95% confidence intervals as points; underneath, how many origin patterns have been seen. With the canvas focused, left and right change the distance and Enter runs 1000 more"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="一邊是四種配子 AB、Ab、aB、ab 的數目，重組型用黃色；另一邊是重組率對兩個基因距離的圖，曲線是 Haldane 作圖函數，點是量到的重組率與 95% 信賴區間；下面是配子的來源組合看過幾種。點選畫布後，左右鍵改變距離、Enter 再做 1000 次" data-en-aria-label="On one side, the numbers of AB, Ab, aB and ab gametes, with the recombinants in yellow; on the other, recombination frequency against the distance between the genes, with Haldane's mapping function as a curve and the measured values with 95% confidence intervals as points; underneath, how many origin patterns have been seen. With the canvas focused, left and right change the distance and Enter runs 1000 more"></canvas>
+        </div>
         <div class="playbar">
           <button id="run100" type="button" data-en="Run 100 meioses">做 100 次</button>
           <button id="run1000" type="button" class="primary" data-en="Run 1000 meioses">做 1000 次</button>
           <button id="clear2" type="button" data-en="Clear all" title="清掉所有統計；設定不變" data-en-title="Clear all the counts; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="設定|Settings" data-deck-order="1" data-section="lab2">
           <h2 data-en="Settings">設定</h2>
           <div class="slider"><label for="d" data-en="Distance between A and B (cM)">A 與 B 的距離（cM）</label><output id="do"></output>
             <input id="d" type="range" min="0" max="200" step="1" value="20" data-decimals="1"></div>
@@ -252,18 +279,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/cell-division-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/cell-division.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="cell-division"></script>
-  <script src="js/missions/cell-division.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="cell-division"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201028"></script>
+  <script src="js/cell-division-core.js?v=202611201028"></script>
+  <script src="js/sound.js?v=202611201028"></script>
+  <script src="js/numinput.js?v=202611201028"></script>
+  <script src="js/labdeck.js?v=202611201028"></script>
+  <script src="js/view3d-nav.js?v=202611201028"></script>
+  <script src="js/drawkit.js?v=202611201028"></script>
+  <script src="js/keys.js?v=202611201028"></script>
+  <script src="js/cell-division.js?v=202611201028"></script>
+  <script src="js/firebase-config.js?v=202611201028"></script>
+  <script src="js/missions.js?v=202611201028" data-module="cell-division"></script>
+  <script src="js/missions/cell-division.js?v=202611201028"></script>
+  <script src="js/stats.js?v=202611201028" data-module="cell-division"></script>
+  <script src="js/comments.js?v=202611201028"></script>
 </body>
 </html>

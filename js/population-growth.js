@@ -1,6 +1,12 @@
 /* population-growth.js — 「族群成長」的畫面與互動（族群模型全部在 population-growth-core.js；3D 在 population-growth-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const P = window.PopCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -126,8 +132,7 @@
   // =====================================================================
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -191,7 +196,10 @@
     if (stepwise && prevY != null) { const xe = Math.round(xOf(tMax) * 2) / 2; if (xe > px) g.lineTo(xe, prevY); }
     g.stroke();
   }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
 
   // =====================================================================
   // 一・單一族群
@@ -293,7 +301,7 @@
   }
 
   function resize1() {
-    const w = cv.clientWidth || 300;
+    const w = drawingWidth(cv) || 300;
     const narrow = w < 640;
     let h, dish, pN, pR;
     if (!narrow) {
@@ -618,16 +626,17 @@
   });
   const end1 = function () { if (drag1) { drag1 = false; setInspect(inspectT, 'now'); } };
   cv.addEventListener('pointerup', end1); cv.addEventListener('pointercancel', end1);
+  function moveMoment(direction, big) {
+    if (!run || !direction) return false;
+    const step = run.tEnd / (big ? 20 : 200);
+    setInspect((inspectT == null ? run.head / 2 : inspectT) + direction * step, true);
+    return true;
+  }
   const kb1 = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('族群成長圖：左右方向鍵移動檢視的時刻（加 Shift 一次移動比較多）。', 'Population graph: left/right arrows move the inspected moment (Shift for bigger steps).'),
     items: [{
       name: function () { return T('檢視的時刻', 'Inspected moment'); },
-      move: function (dx, dy, big) {
-        if (!run || !dx) return false;
-        const step = run.tEnd / (big ? 20 : 200);
-        setInspect((inspectT == null ? run.head / 2 : inspectT) + dx * step, true);
-        return true;
-      },
+      move: function (dx, dy, big) { return moveMoment(dx, big); },
       describe: function () {
         if (!run || inspectT == null) return T('尚未選擇時刻', 'No moment chosen');
         const t = Math.min(inspectT, run.head);
@@ -812,7 +821,7 @@
   // ---------- 版面與繪圖 ----------
   function resize2() {
     if (stage.classList.contains('is3d')) return;
-    const w = cv2.clientWidth || 300;
+    const w = drawingWidth(cv2) || 300;
     const narrow = w < 640;
     let h, pT, pP;
     if (!narrow) {
@@ -1047,7 +1056,7 @@
       move: function (dx, dy, big) {
         if (!run2) return false;
         const sx = run2.xM / (big ? 10 : 100), sy = run2.yM / (big ? 10 : 100);
-        setStart(run2.x0 + dx * Math.max(1, sx), run2.y0 - dy * Math.max(1, sy), false);
+        setStart(run2.x0 + dx * Math.max(1, sx), run2.y0 + dy * Math.max(1, sy), false);
         return true;
       },
       describe: function () { return run2 ? T('起點：', 'Start: ') + nameX(true) + ' ' + fmtN(run2.x0) + T('，', ', ') + nameY(true) + ' ' + fmtN(run2.y0) : ''; }
@@ -1306,7 +1315,7 @@
   setStatus(T('先按「開始培養」，看 10 隻草履蟲在資源無限時怎麼成長。', 'Press “Grow” and watch 10 paramecia multiply with unlimited food.'));
   if (reducedMotion) $('status2').textContent += T('（已偵測到「減少動態效果」：直接顯示結果。）', ' (Reduced motion is on: results are shown at once.)');
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   resize1(); resize2();
@@ -1320,4 +1329,92 @@
     setModel: setModel, setMode2: setMode2, setView: setView, setInspect: function (t) { setInspect(t, 'now'); },
     setStart: function (x, y) { setStart(x, y, false); }
   };
+
+  $('momentPrev').addEventListener('click', function () { moveMoment(-1); });
+  $('momentNext').addEventListener('click', function () { moveMoment(1); });
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
+
+  function mountKeypad() {
+    const canvas = cv2, name = T('起點', 'Starting point');
+    function point() {
+      const map = ppMap(run2);
+      return [map.X(run2.x0), map.Y(run2.y0)];
+    }
+    function screenPoint() {
+      const rect = canvas.getBoundingClientRect();
+      if (!(L2 && run2)) return { x: rect.left, y: rect.top };
+      const [x, y] = point(), scale = rect.width / drawingWidth(canvas);
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    }
+    const activate = () => $('run2').click();
+    const pad = LabVPad.mount({
+      id: 'population-growth', canvas, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: activate, record: activate,
+      move: (dx, dy) => setStart(run2.x0 + dx, run2.y0 + dy, false), point: screenPoint, reading: () => '(' + fmtN(run2.x0) + ', ' + fmtN(run2.y0) + ')',
+      visible: () => {
+        const r = canvas.getBoundingClientRect();
+        return L2 && run2 && r.width > 0 && r.bottom > 32 && r.top < innerHeight - 32;
+      },
+      home: (w, h) => {
+        const r = canvas.getBoundingClientRect();
+        const left = screenPoint().x > r.left + r.width / 2;
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+      }
+    });
+    // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。
+    pad.element.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', name + ' ' + b.textContent));
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部放大', ' close-up'));
+    const center = document.createElement('button');
+    center.type = 'button';
+    center.className = 'vpad-select';
+    center.style.gridArea = '2 / 2';
+    center.textContent = T('開始', 'Run');
+    center.setAttribute('aria-label', T('開始', 'Run'));
+    center.addEventListener('click', activate);
+    pad.element.querySelector('.vpad-select').replaceWith(center);
+    pad.element.querySelector('.vpad-footer').textContent = T('每軸 1 個體', '1 individual per axis');
+    try { if (!localStorage.getItem('lab-vpad:population-growth')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();

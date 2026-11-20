@@ -1,6 +1,12 @@
 /* hardy-weinberg.js — 「哈溫平衡、遺傳漂變與天擇」的畫面與互動（模型全部在 hardy-weinberg-core.js；3D 在 hardy-weinberg-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const H = window.HWCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -108,8 +114,7 @@
   // =====================================================================
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -146,7 +151,10 @@
     }
   }
   function title(g, s, x, y, col) { D.haloText(g, s, x, y, col || D.c.text, 'left', 'middle', '600 12px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   function ease(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
 
   // =====================================================================
@@ -224,7 +232,7 @@
   }
 
   function resize1() {
-    const w = cv.clientWidth || 300;
+    const w = drawingWidth(cv) || 300;
     const wide = w >= 700;
     let h, garden, tri, bars, sq;
     if (wide) {
@@ -542,18 +550,20 @@
   });
   const end1 = function () { if (drag1) { drag1 = false; reset1(); } };
   cv.addEventListener('pointerup', end1); cv.addEventListener('pointercancel', end1);
+  function moveStart(dx, dy) {
+    const start = s1.start, t = L1.tri;
+    const q = Math.max(0, Math.min(1, start[1] / 2 + start[2] + dx));
+    const pink = Math.max(0, Math.min(1, start[1] + dy));
+    setStart(triToG(t.xL + (t.xR - t.xL) * q, t.yB - (t.yB - t.yT) * pink), true);
+    return true;
+  }
   const kb1 = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('基因型三角圖：方向鍵移動起點（左右改變 p，上下改變粉紅花的比例；加 Shift 一次移比較多）。', 'Genotype triangle: arrow keys move the starting point (left/right change p, up/down the share of pink; Shift for bigger steps).'),
     items: [{
       name: function () { return T('起點', 'Starting point'); },
       move: function (dx, dy, big) {
-        const st = big ? 0.05 : 0.01;
-        const g0 = s1.start;
-        const q = g0[1] / 2 + g0[2] + dx * st, hh = Math.max(0, Math.min(1, g0[1] - dy * st));
-        const t = L1.tri;
-        const gg = triToG(t.xL + (t.xR - t.xL) * Math.max(0, Math.min(1, q)), t.yB - (t.yB - t.yT) * hh);
-        setStart(gg, true);
-        return true;
+        const step = big ? 0.05 : 0.01;
+        return moveStart(dx * step, dy * step);
       },
       describe: function () { const g0 = s1.start; return T('起點：紅 ', 'Start: red ') + pct(g0[0], 0) + T('，粉紅 ', ', pink ') + pct(g0[1], 0) + T('，白 ', ', white ') + pct(g0[2], 0); }
     }],
@@ -581,7 +591,7 @@
     });
   }
   function resize2() {
-    const w = cv2.clientWidth || 300;
+    const w = drawingWidth(cv2) || 300;
     const wide = w >= 640;
     let h, pT, pH, pZ;
     if (wide) {
@@ -1022,7 +1032,7 @@
   setStatus2(T('先用預設值按「開始演化」：30 個各有 50 株的中性族群，看 A 的頻率怎麼因為運氣而漂開。', 'Press “Evolve” with the defaults: 30 neutral populations of 50 plants each. Watch the frequency of A drift apart by chance.'));
   if (reducedMotion) $('status2').textContent += T('（已偵測到「減少動態效果」：直接顯示結果。）', ' (Reduced motion is on: results are shown at once.)');
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   resize1(); resize2();
@@ -1036,4 +1046,91 @@
     start2: start2, finish2: function () { finish2(); }, setView: setView, setInspect: setInspect,
     preset: function (k) { const b = document.querySelector('#selSeg [data-sel="' + k + '"]'); if (b) b.click(); }
   };
+
+  $('genPrev').addEventListener('click', function () { if (run2) setInspect(curG() - 1); });
+  $('genNext').addEventListener('click', function () { if (run2) setInspect(curG() + 1); });
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
+
+  function mountKeypad() {
+    const canvas = cv, name = T('三角圖起點', 'Triangle starting point');
+    function point() {
+      return triPt(s1.start);
+    }
+    function screenPoint() {
+      const rect = canvas.getBoundingClientRect();
+      if (!(L1)) return { x: rect.left, y: rect.top };
+      const [x, y] = point(), scale = rect.width / drawingWidth(canvas);
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    }
+    const activate = () => $('next1').click();
+    const pad = LabVPad.mount({
+      id: 'hardy-weinberg', canvas, step: 0.01, steps: [0.01],
+      objects: ['point'], selected: () => 'point', select: activate, record: activate,
+      move: moveStart, point: screenPoint, reading: () => 'AA ' + pct(s1.start[0], 0) + ' · Aa ' + pct(s1.start[1], 0) + ' · aa ' + pct(s1.start[2], 0),
+      visible: () => {
+        const r = canvas.getBoundingClientRect();
+        return L1 && r.width > 0 && r.bottom > 32 && r.top < innerHeight - 32;
+      },
+      home: (w, h) => {
+        const r = canvas.getBoundingClientRect();
+        const left = screenPoint().x > r.left + r.width / 2;
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+      }
+    });
+    // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。
+    pad.element.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', name + ' ' + b.textContent));
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部放大', ' close-up'));
+    const center = document.createElement('button');
+    center.type = 'button';
+    center.className = 'vpad-select';
+    center.style.gridArea = '2 / 2';
+    center.textContent = T('繁殖', 'Breed');
+    center.setAttribute('aria-label', T('繁殖', 'Breed'));
+    center.addEventListener('click', activate);
+    pad.element.querySelector('.vpad-select').replaceWith(center);
+    pad.element.querySelector('.vpad-footer').textContent = T('每軸 0.01', '0.01 per axis');
+    try { if (!localStorage.getItem('lab-vpad:hardy-weinberg')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();

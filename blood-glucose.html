@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:21">
-  <script src="js/settings.js?v=202611201021"></script>
+<meta name="lab-updated" content="2026-11-20 10:23">
+  <script src="js/settings.js?v=202611201028"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Blood Sugar Control | Astro Ni Lab">血糖調節｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,8 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生理","item":"https://lab.astroni.org/biology.html#physiology"},{"@type":"ListItem","position":4,"name":"恆定","item":"https://lab.astroni.org/biology.html#ch-homeostasis"},{"@type":"ListItem","position":5,"name":"血糖調節","item":"https://lab.astroni.org/blood-glucose.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611201028">
+  <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 血糖調節頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -113,9 +114,25 @@
     .gl3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .gl3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .gl3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .gl3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .gl3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .gl3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .gl3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
+    .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
   </style>
 </head>
 <body data-en-ready>
@@ -129,15 +146,20 @@
     <p class="try-hint" data-en="Try it: choose “Type 1”, then raise the long-acting insulin until the night-time line sits between 80 and 130.">試試看：按「第一型」，再把長效胰島素慢慢加上去，直到半夜的血糖停在 80–130 之間。</p>
 
     <h2 class="lab-title" data-en-html="1 · A day of blood sugar<small>Meals, exercise, insulin and the feedback loop that keeps glucose in range</small>">一・一天的血糖<small>三餐、運動、胰島素，以及把血糖拉回範圍的負回饋</small></h2>
-    <div class="lab gl" id="lab1">
+    <div class="lab gl" id="lab1" data-no-spill>
       <div class="stage" id="stage1">
-        <canvas id="cv" tabindex="0" aria-label="上圖是一天 24 小時的血糖，綠色帶是目標範圍 70–180 mg/dL，紅色是低血糖，灰色虛線是腎閾；中間是血漿胰島素；另一格是游標那一刻葡萄糖在腸道、肝臟、血液、肌肉與腎臟之間流動的速率。點或拖曳圖移動時間游標；點選畫布後，左右鍵移動游標" data-en-aria-label="Top: blood glucose over 24 hours; the green band is the target range 70–180 mg/dL, red is low and the grey dashed line is the kidney threshold. Middle: plasma insulin. The other panel shows how fast glucose flows between gut, liver, blood, muscle and kidney at the cursor time. Tap or drag the graph to move the time cursor; with the canvas focused, move it with the left and right keys"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="上圖是一天 24 小時的血糖，綠色帶是目標範圍 70–180 mg/dL，紅色是低血糖，灰色虛線是腎閾；中間是血漿胰島素；另一格是游標那一刻葡萄糖在腸道、肝臟、血液、肌肉與腎臟之間流動的速率。點或拖曳圖移動時間游標；點選畫布後，左右鍵移動游標" data-en-aria-label="Top: blood glucose over 24 hours; the green band is the target range 70–180 mg/dL, red is low and the grey dashed line is the kidney threshold. Middle: plasma insulin. The other panel shows how fast glucose flows between gut, liver, blood, muscle and kidney at the cursor time. Tap or drag the graph to move the time cursor; with the canvas focused, move it with the left and right keys"></canvas>
+        </div>
         <div class="playbar">
+          <button type="button" id="momentPrev" data-en="Back 10 min">前 10 分鐘</button>
+          <button type="button" id="momentNext" data-en="Forward 10 min">後 10 分鐘</button>
           <button id="playBtn" type="button" class="primary" data-en="Play the day">播放這一天</button>
           <button id="keepBtn" type="button" data-en="Keep this curve" title="把目前的曲線留下來和之後比較（最多 3 條）" data-en-title="Keep the current curve for comparison (up to 3)">留下這條曲線</button>
           <button id="clear1" type="button" data-en="Clear all" title="清除留下的曲線與紀錄表；設定不變" data-en-title="Clear the kept curves and the table; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend1"></div>
@@ -145,7 +167,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="這個人|Person" data-deck-order="1" data-section="lab1">
           <h2 data-en="Person">這個人</h2>
           <div class="chips" id="types" role="group" aria-label="這個人" data-en-aria-label="Person"></div>
           <div class="slider"><label for="beta" data-en="β-cell function (× normal)">β 細胞功能（× 正常）</label><output id="betao"></output>
@@ -154,7 +176,7 @@
             <input id="si" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="2"></div>
           <p class="hint" data-en="A 60 kg adult. β cells make insulin; sensitivity is how strongly the body answers each unit of it.">體重 60 kg 的成人。β 細胞負責製造胰島素；敏感度是身體對同樣的胰島素反應有多強。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="飲食（醣類公克數）|Food (grams of carbohydrate)" data-deck-order="2" data-section="lab1">
           <h2 data-en="Food (grams of carbohydrate)">飲食（醣類公克數）</h2>
           <div class="slider"><label for="m1" data-en="Breakfast 07:00 (g)">早餐 07:00（g）</label><output id="m1o"></output>
             <input id="m1" type="range" min="0" max="200" step="5" value="60" data-decimals="0"></div>
@@ -166,7 +188,7 @@
             <input id="m4" type="range" min="0" max="200" step="5" value="0" data-decimals="0"></div>
           <p class="hint" data-en="A bowl of rice is about 55 g, a bubble tea 50–70 g, a slice of toast 15 g.">一碗白飯約 55 g、一杯珍珠奶茶 50–70 g、一片吐司約 15 g。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="注射胰島素|Insulin injections" data-deck-order="3" data-section="lab1">
           <h2 data-en="Insulin injections">注射胰島素</h2>
           <div class="slider"><label for="basal" data-en="Long-acting (basal), units per day">長效（基礎）：一天幾單位</label><output id="basalo"></output>
             <input id="basal" type="range" min="0" max="40" step="0.5" value="0" data-decimals="1"></div>
@@ -175,7 +197,7 @@
           <div class="slider"><label for="lead" data-en="Inject how many minutes before eating (negative = after)">飯前幾分鐘打（負的是飯後才打）</label><output id="leado"></output>
             <input id="lead" type="range" min="-30" max="60" step="5" value="0" data-decimals="0"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="運動|Exercise" data-deck-order="4" data-section="lab1">
           <h2 data-en="Exercise">運動</h2>
           <div class="slider"><label for="exT" data-en="Start (hour of the day)">開始時間（幾點）</label><output id="exTo"></output>
             <input id="exT" type="range" min="0" max="23.5" step="0.5" value="17" data-decimals="1"></div>
@@ -192,7 +214,7 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · The glucose tolerance test<small>Drink 75 g, take blood at 0, 30, 60, 90 and 120 minutes, and read the diagnosis</small>">二・口服葡萄糖耐受試驗<small>喝下 75 g，在 0、30、60、90、120 分鐘抽血，判讀結果</small></h2>
-    <div class="lab gl" id="lab2">
+    <div class="lab gl" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -202,18 +224,21 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv2" tabindex="0" aria-label="一邊是試驗的血糖與胰島素曲線和抽血點，虛線是診斷門檻；另一邊是 β 細胞功能 × 胰島素敏感度的地圖，綠色正常、黃色前期、紅色糖尿病，曲線是處置指數相同的雙曲線。點地圖選病人；點選畫布後，方向鍵移動病人、Enter 開始試驗" data-en-aria-label="On one side, the glucose and insulin curves of the test with the blood samples and the diagnostic thresholds; on the other, a map of β-cell function against insulin sensitivity — green normal, yellow prediabetes, red diabetes — with hyperbolas of equal disposition index. Tap the map to choose a patient; with the canvas focused, the arrow keys move the patient and Enter starts the test"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="一邊是試驗的血糖與胰島素曲線和抽血點，虛線是診斷門檻；另一邊是 β 細胞功能 × 胰島素敏感度的地圖，綠色正常、黃色前期、紅色糖尿病，曲線是處置指數相同的雙曲線。點地圖選病人；點選畫布後，方向鍵移動病人、Enter 開始試驗" data-en-aria-label="On one side, the glucose and insulin curves of the test with the blood samples and the diagnostic thresholds; on the other, a map of β-cell function against insulin sensitivity — green normal, yellow prediabetes, red diabetes — with hyperbolas of equal disposition index. Tap the map to choose a patient; with the canvas focused, the arrow keys move the patient and Enter starts the test"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="testBtn" type="button" class="primary" data-en="Drink 75 g and test">喝下 75 g、開始試驗</button>
           <button id="clear2" type="button" data-en="Clear all" title="清掉做過的試驗紀錄；設定不變" data-en-title="Clear the tests done; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="病人|Patient" data-deck-order="1" data-section="lab2">
           <h2 data-en="Patient">病人</h2>
           <div class="chips" id="pats" role="group" aria-label="病人" data-en-aria-label="Patient"></div>
           <div class="slider"><label for="b2" data-en="β-cell function (× normal)">β 細胞功能（× 正常）</label><output id="b2o"></output>
@@ -283,18 +308,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/blood-glucose-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/blood-glucose.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="blood-glucose"></script>
-  <script src="js/missions/blood-glucose.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="blood-glucose"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611201028"></script>
+  <script src="js/blood-glucose-core.js?v=202611201028"></script>
+  <script src="js/sound.js?v=202611201028"></script>
+  <script src="js/numinput.js?v=202611201028"></script>
+  <script src="js/labdeck.js?v=202611201028"></script>
+  <script src="js/view3d-nav.js?v=202611201028"></script>
+  <script src="js/vpad.js?v=202611201028"></script>
+  <script src="js/drawkit.js?v=202611201028"></script>
+  <script src="js/keys.js?v=202611201028"></script>
+  <script src="js/blood-glucose.js?v=202611201028"></script>
+  <script src="js/firebase-config.js?v=202611201028"></script>
+  <script src="js/missions.js?v=202611201028" data-module="blood-glucose"></script>
+  <script src="js/missions/blood-glucose.js?v=202611201028"></script>
+  <script src="js/stats.js?v=202611201028" data-module="blood-glucose"></script>
+  <script src="js/comments.js?v=202611201028"></script>
 </body>
 </html>

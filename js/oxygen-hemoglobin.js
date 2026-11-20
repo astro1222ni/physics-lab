@@ -1,6 +1,12 @@
 /* oxygen-hemoglobin.js — 「氧氣與血紅素」的畫面與互動（計算全部在 oxygen-hemoglobin-core.js；3D 在 oxygen-hemoglobin-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const O = window.OxyCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -94,8 +100,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -120,7 +125,10 @@
     });
     return w;
   }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
 
   // =====================================================================
   // 一・氧解離曲線
@@ -226,7 +234,7 @@
 
   // ---------- 版面 ----------
   function layout1() {
-    W1 = cv.clientWidth || 300;
+    W1 = drawingWidth(cv) || 300;
     const narrow = W1 < 640;
     H1 = narrow ? 580 : 480;
     fit(cv, ctx, H1);
@@ -500,6 +508,10 @@
     }[t];
     setStatus('status', T(tip[0], tip[1]));
   }
+  function moveProbe(delta) {
+    setProbe(val(el.probe) + delta);
+    sndProbe(st1.Sp);
+  }
   function setProbe(P) {
     P = Math.round(Math.max(0, Math.min(XMAX, P)) * 10) / 10;
     if (window.LabNum) window.LabNum.set(el.probe, P);
@@ -530,7 +542,7 @@
     label: T('氧解離曲線：左右鍵移動探針（Shift 一次 5 mmHg），讀出那個氧分壓下的飽和度。', 'Oxygen dissociation curve: left and right move the probe (Shift for 5 mmHg) and read the saturation at that oxygen pressure.'),
     items: [{
       name: T('探針', 'Probe'),
-      move: function (dx, dy, big) { const d = dx || -dy; if (d) { setProbe(val(el.probe) + d * (big ? 5 : 0.5)); sndProbe(st1.Sp); } return !!d; },
+      move: function (dx, dy, big) { const d = dx || -dy; if (d) { moveProbe(d * (big ? 5 : 0.5)); } return !!d; },
       describe: function () { return T('探針 ' + num(val(el.probe), 1) + ' mmHg，飽和度 ' + pct(st1.Sp) + '。', 'Probe ' + num(val(el.probe), 1) + ' mmHg, saturation ' + pct(st1.Sp) + '.'); }
     }]
   });
@@ -665,7 +677,7 @@
   // ---------- 版面 ----------
   let W2 = 300, H2 = 460, L2 = null;
   function layout2() {
-    W2 = cv2.clientWidth || 300;
+    W2 = drawingWidth(cv2) || 300;
     const narrow = W2 < 640;
     if (narrow) {
       const gw = W2 - 16, cell = gw / 8;
@@ -1046,7 +1058,7 @@
   setStatus('status', T('灰色虛線是標準狀態的成人血紅素。A 是離開肺的動脈血，V 是離開組織的靜脈血。點圖或拖曳移動探針，或選一個情境。', 'The grey dashed line is adult haemoglobin under standard conditions. A is arterial blood leaving the lungs, V is venous blood leaving the tissues. Tap or drag the graph to move the probe, or choose a scenario.'));
   setStatus('status2', T('每個分子不停地結合、放開氧，也在 T 和 R 之間切換。改氧分壓，按「量一次」記下族群的平均飽和度。', 'Each molecule keeps binding and releasing oxygen and switching between T and R. Change the oxygen pressure and press “Measure” to record the average saturation of the population.'));
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   if (window.IntersectionObserver) {
@@ -1074,4 +1086,48 @@
     setView: setView, redraw: function () { request1(); request2(true); },
     state: function () { return st1.s; }
   };
+
+  $('probePrev').addEventListener('click', function () { moveProbe(-0.5); });
+  $('probeNext').addEventListener('click', function () { moveProbe(0.5); });
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
 })();
