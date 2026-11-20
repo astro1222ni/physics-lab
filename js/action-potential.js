@@ -609,8 +609,9 @@
       [[P.ENa, C['ap-na'], 'Na'], [P.EK, C['ap-k'], 'K']].forEach(function (q) {
         if (q[0] < vLo || q[0] > vHi) return;
         const y = yV(q[0]);
-        const w = subLabel(ctx, 'E', q[2], pV.x1 - 4 - 46, y - 8, q[1], 'left');
-        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, y - 8, q[1], 'left', 'middle', '600 11px ' + FONT);
+        // 下標會往下伸：整組再往上 3 px，不壓在虛線上（試玩回報）
+        const w = subLabel(ctx, 'E', q[2], pV.x1 - 4 - 46, y - 11, q[1], 'left');
+        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, y - 11, q[1], 'left', 'middle', '600 11px ' + FONT);
       });
     }
     // 保留的波形

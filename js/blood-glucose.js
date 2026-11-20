@@ -522,7 +522,8 @@
     D.haloText(g, T('血液', 'Blood'), cx, cy - r * 0.42, D.c.text, 'center', 'middle', '600 11px ' + FONT);
     D.haloText(g, num(Gv, 0), cx, cy + 1, D.c.text, 'center', 'middle', '700 ' + Math.round(Math.max(14, r * 0.45)) + 'px ' + FONT);
     D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', '10.5px ' + FONT);
-    small(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, cy + r + 13, C['gl-ins'], 'center', 'middle', 10.5);
+    // 往肌肉、腎臟的箭頭會從這裡經過：用有底色的膠囊標籤蓋在箭頭上，字不被穿過
+    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, cy + r + 21, C['gl-ins'], 'center', '600 10.5px ' + FONT);
     const gp = function (v) { return num(v, v < 10 ? 1 : 0) + ' g/h'; };
     const up = function (v) { return num(v, v < 1 ? 2 : 1) + ' U/h'; };
     node(g, pos.gut[0], pos.gut[1], nw, nh, T('腸道吸收', 'Gut'), gp(ug), C['gl-meal']);

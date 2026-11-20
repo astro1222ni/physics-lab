@@ -570,7 +570,11 @@
       const tx = -Math.cos(th), ty = -Math.sin(th);
       g.beginPath(); g.moveTo(ex, gy); g.lineTo(ex + tx * rArc * 1.6, gy + ty * rArc * 1.6); g.stroke();
       g.beginPath(); g.arc(ex, gy, rArc, Math.PI, Math.PI + th, false); g.strokeStyle = D.c.accent; g.lineWidth = 2; g.stroke();
-      D.haloText(g, 'θ = ' + deg(s.theta), ex + 10, gy - rArc - 10, D.c.accent, 'left', 'middle', '600 13px ' + FONT);
+      // θ > 90° 時水珠往外鼓、蓋過接觸點：標籤放到水珠最右緣外側（試玩：「θ =」壓在水珠邊上）
+      const lx = Math.max(ex + 10, cx + Rr + 6), rightEdge = top.x + top.w - 6;
+      g.font = '600 13px ' + FONT;
+      const lw = g.measureText('θ = ' + deg(s.theta)).width;
+      D.haloText(g, 'θ = ' + deg(s.theta), Math.min(lx, rightEdge - lw), gy - rArc - 10, D.c.accent, 'left', 'middle', '600 13px ' + FONT);
     } else D.haloText(g, T('攤成水膜：θ ≈ 0°', 'spread into a film: θ ≈ 0°'), cx, gy - 18, D.c.accent, 'center', 'middle', '600 13px ' + FONT);
     // 比例尺 1 mm
     const mm = scale;
@@ -1504,7 +1508,8 @@
       home: (w, h) => {
         const r = canvas.getBoundingClientRect();
         const left = screenPoint().x > r.left + r.width / 2;
-        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+        // 停在畫布底部：頂端右上角是「水珠的側面」的說明字（試玩：圓鈕蓋住說明）
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.bottom - h - 8)) };
       }
     });
     // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。

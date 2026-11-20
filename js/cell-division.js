@@ -625,7 +625,7 @@
     const i = Math.round(st1.tau / S.T * S.N);
     D.ball(g, xc, yOf(L.A, S.ch[i], maxCh), 4.5, C['cd-chrom'], { glow: 0.3 });
     D.ball(g, xc, yOf(L.B, S.dna[i], maxD), 4.5, C['cd-dna'], { glow: 0.3 });
-    small(g, T('追蹤左（上）方的細胞', 'Following the left (top) cell'), L.x1, L.A[0] - 8, D.c.muted, 'right', 'middle', 10);
+    small(g, T('追蹤左（上）方的細胞', 'Following the left (top) cell'), L.x1, L.A[0] - 13, D.c.muted, 'right', 'middle', 10);
     // 子細胞或配子
     drawStrip(g, L);
   }
@@ -635,7 +635,7 @@
     ticks().forEach(function (q) {
       const y = Math.round(yOf(R, q[0], mx)) + 0.5;
       g.beginPath(); g.moveTo(L.x0, y); g.lineTo(L.x1, y); g.strokeStyle = D.alpha(D.c.border, q[0] ? 0.55 : 0.9); g.stroke();
-      small(g, q[1], L.x0 - 5, y, D.c.muted, 'right', 'middle', 10);
+      small(g, q[1], L.x0 - 9, y, D.c.muted, 'right', 'middle', 10);   // 離開軸上的圓點（半徑約 4）
     });
     g.save();
     g.beginPath();

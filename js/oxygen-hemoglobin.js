@@ -338,7 +338,9 @@
     if (isFinite(s.P50) && s.P50 <= XMAX) {
       g.save(); g.setLineDash([2, 3]); g.strokeStyle = D.alpha(pc, 0.8); g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(PL.x, yp(0.5)); g.lineTo(xp(s.P50), yp(0.5)); g.lineTo(xp(s.P50), yp(0)); g.stroke(); g.restore();
-      subText(g, [['P', 0], ['50', 1], [' ' + num(s.P50, 1), 0]], xp(s.P50) + 5, yp(0) - 12, pc, 11, '600', 'left');
+      // 左邊有空間就放在虛線左側：右側常有探針的綠色虛線（試玩：「8」壓在綠線上）
+      const pLeft = xp(s.P50) - PL.x > 64;
+      subText(g, [['P', 0], ['50', 1], [' ' + num(s.P50, 1), 0]], xp(s.P50) + (pLeft ? -5 : 5), yp(0) - 12, pc, 11, '600', pLeft ? 'right' : 'left');
     }
     // 探針
     const Pp = val(el.probe), Sp = st1.Sp;
