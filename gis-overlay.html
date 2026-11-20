@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:28">
-  <script src="js/settings.js?v=202611201034"></script>
+<meta name="lab-updated" content="2026-11-20 11:11">
+  <script src="js/settings.js?v=202611201111"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Map Overlay and Site Selection: How GIS Helps Decide | Astro Ni Lab">圖層疊合與選址：GIS 怎麼幫忙做決定｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"空間資訊科技","item":"https://lab.astroni.org/geography.html#gis"},{"@type":"ListItem","position":4,"name":"空間分析","item":"https://lab.astroni.org/geography.html#ch-spatial-analysis"},{"@type":"ListItem","position":5,"name":"圖層疊合與選址：GIS 怎麼幫忙做決定","item":"https://lab.astroni.org/gis-overlay.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201034">
+  <link rel="stylesheet" href="lab.css?v=202611201111">
   <style>
     /* 圖層疊合頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -65,6 +65,10 @@
     .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
     .segw button + button { border-left: 1px solid var(--border); }
     .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .pad-slot { display: none; }
+    @media (max-width: 480px) and (orientation: portrait) {
+      .pad-slot { display: flex; align-items: center; min-height: 52px; margin: 6px 0 0; padding: 0 64px 0 2px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); line-height: 1.35; }
+    }
     .layers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 0; }
     .layers button { min-height: 44px; padding: 4px 6px; font-size: calc(13px * var(--fs, 1)); }
     .layers button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
@@ -127,6 +131,7 @@
           </div>
         </div>
         <canvas id="cv" aria-label="虛構縣的地圖：目前顯示的圖層與選址結果；點一格看那一格的資料" data-en-aria-label="Map of the invented county showing the current layer and the result; tap a cell to read it"></canvas>
+        <div class="pad-slot view-msg" id="padSlot" data-en="Tap the map to pick a cell, or nudge it with 🎮 on the right.">點地圖選一格，或用右邊的 🎮 微調。</div>
         <div class="layers" role="group" aria-label="顯示的圖層" data-en-aria-label="Layer shown" id="layerSeg">
           <button type="button" data-layer="result" aria-pressed="true" data-en="Result">結果</button>
           <button type="button" data-layer="z" aria-pressed="false" data-en="Elevation">高程</button>
@@ -265,18 +270,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201034"></script>
-  <script src="js/gis-overlay-core.js?v=202611201034"></script>
-  <script src="js/numinput.js?v=202611201034"></script>
-  <script src="js/labdeck.js?v=202611201034"></script>
-  <script src="js/drawkit.js?v=202611201034"></script>
-  <script src="js/keys.js?v=202611201034"></script>
-  <script src="js/vpad.js?v=202611201034"></script>
-  <script src="js/gis-overlay.js?v=202611201034"></script>
-  <script src="js/firebase-config.js?v=202611201034"></script>
-  <script src="js/missions.js?v=202611201034" data-module="gis-overlay"></script>
-  <script src="js/missions/gis-overlay.js?v=202611201034"></script>
-  <script src="js/stats.js?v=202611201034" data-module="gis-overlay"></script>
-  <script src="js/comments.js?v=202611201034"></script>
+  <script src="js/math.js?v=202611201111"></script>
+  <script src="js/gis-overlay-core.js?v=202611201111"></script>
+  <script src="js/numinput.js?v=202611201111"></script>
+  <script src="js/labdeck.js?v=202611201111"></script>
+  <script src="js/drawkit.js?v=202611201111"></script>
+  <script src="js/keys.js?v=202611201111"></script>
+  <script src="js/vpad.js?v=202611201111"></script>
+  <script src="js/gis-overlay.js?v=202611201111"></script>
+  <script src="js/firebase-config.js?v=202611201111"></script>
+  <script src="js/missions.js?v=202611201111" data-module="gis-overlay"></script>
+  <script src="js/missions/gis-overlay.js?v=202611201111"></script>
+  <script src="js/stats.js?v=202611201111" data-module="gis-overlay"></script>
+  <script src="js/comments.js?v=202611201111"></script>
 </body>
 </html>

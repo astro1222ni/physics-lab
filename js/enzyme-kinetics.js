@@ -467,7 +467,8 @@
       const lab = num(q.ta / 60, 0) + T(' 分：', ' min: ') + num(q.Topt, 1) + '°';
       small(g, lab, xo + (xo > p.x1 - 90 ? -8 : 8), yo - 10 - 0 * k, col, xo > p.x1 - 90 ? 'right' : 'left');
     });
-    if (!scans.length) small(g, T('按「溫度掃描」', 'Press “Temperature scan”'), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, D.c.muted, 'center');
+    // 選取試管的溫度虛線會穿過這裡：用有底色的膠囊蓋在線上
+    if (!scans.length) D.pill(g, T('按「溫度掃描」', 'Press “Temperature scan”'), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2 + 9, D.c.muted, 'center', '11px ' + FONT);
     else small(g, enzName(scans[scans.length - 1].enz) + '・pH ' + num(scans[scans.length - 1].pH, 1), p.x1, R.y + 16, D.c.muted, 'right');
   }
   function draw1() {
@@ -899,7 +900,7 @@
     $('legend1').innerHTML =
       '<span><i class="dot" style="background:' + C['ek-starch'] + '"></i>' + T('澱粉＋碘液', 'Starch + iodine') + '</span>' +
       '<span><i class="dot" style="background:' + C['ek-iodine'] + '"></i>' + T('澱粉分解了', 'Starch digested') + '</span>' +
-      '<span><i class="dot" style="background:' + C['ek-protein'] + ';border:1px solid ' + D.c.border + '"></i>' + T('蛋白液（混濁）', 'Egg white (cloudy)') + '</span>' +
+      '<span><i class="dot" style="background:' + C['ek-protein'] + ';border:1px solid ' + D.alpha(D.c.text, 0.45) + '"></i>' + T('蛋白液（混濁）', 'Egg white (cloudy)') + '</span>' +
       '<span><i class="dot" style="background:' + C['ek-cold'] + '"></i>' + T('冷水浴', 'Cold bath') + '</span>' +
       '<span><i class="dot" style="background:' + C['ek-hot'] + '"></i>' + T('熱水浴', 'Hot bath') + '</span>';
     void sub;

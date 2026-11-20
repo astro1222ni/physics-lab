@@ -501,8 +501,17 @@
     D.ball(g, x, y, d / 2, col);
     if (opt && opt.ring) { g.beginPath(); g.arc(x, y, d / 2 + 2.5, 0, Math.PI * 2); g.strokeStyle = opt.ring; g.lineWidth = 2.2; g.stroke(); }
     g.font = '700 ' + Math.round(d * 0.52) + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillText(a, x + 0.5, y + 1.3);
-    g.fillStyle = '#ffffff'; g.fillText(a, x, y + 0.8);
+    // 淺色珠（疏水的黃色等）配白字對比太低（試玩回報）：底色亮就改深色字
+    const light = lum(col) > 0.3;
+    g.fillStyle = light ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.3)'; g.fillText(a, x + 0.5, y + 1.3);
+    g.fillStyle = light ? '#2b2105' : '#ffffff'; g.fillText(a, x, y + 0.8);
+  }
+  /** #rrggbb 的相對亮度（0–1）；讀不出來當成深色 */
+  function lum(hex) {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex).trim());
+    if (!m) return 0;
+    const f = function (h) { const c = parseInt(h, 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(m[1]) + 0.7152 * f(m[2]) + 0.0722 * f(m[3]);
   }
   function drawMap() {
     const g = ctx, x0 = L.lw, x1 = W1 - 8, y = L.mapY, h = 12, n = st.seq.length;
@@ -524,7 +533,8 @@
   }
   function drawStrands() {
     const g = ctx, tw = L.tw, lw = L.lw, n = st.seq.length, f = st.info, o = f.orf;
-    const xL = lw, xR = W1 - 8;
+    // 裁切範圍剛好 nWin 格：視窗停在整數格時右緣不會露出半格（試玩：最後一格被切）
+    const xL = lw, xR = Math.min(W1 - 8, lw + L.nWin * tw);
     const X = function (i) { return lw + (i - st.win) * tw; };
     const i0 = Math.max(0, Math.floor(st.win) - 1), i1 = Math.min(n, Math.ceil(st.win + L.nWin) + 1);
     // 列名

@@ -61,6 +61,8 @@
     controls.minDistance = 2.5;
     controls.maxDistance = 40;
     controls.maxPolarAngle = Math.PI * 0.62;
+    // 站長 11/16：3D 也要能上下左右、斜向拖曳平移，朝游標放大（共用 js/view3d-nav.js）
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE: THREE, controls: controls, canvas: canvas, host: wrap, radius: HALF * 0.9, T: T }) : null;
 
     const hemi = new THREE.HemisphereLight(0xffffff, 0x556070, 0.9);
     scene.add(hemi);
@@ -316,6 +318,7 @@
       controls.target.set(0, 0.3, 0);
       camera.position.set(Math.sin(az) * Math.cos(el) * dist, 0.3 + Math.sin(el) * dist, Math.cos(az) * Math.cos(el) * dist);
       controls.update();
+      if (nav) nav.home();
     }
     let raf = 0, moving = false;
     function renderNow() {
@@ -375,6 +378,7 @@
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         renderer.dispose();

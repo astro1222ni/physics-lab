@@ -467,13 +467,15 @@
     paths.push({ pts: beam, col: C['ef-sun'], w: 7, v: r.GPP, sun: true });
     // 日照的文字放在太陽上方或右邊
     const ix = L1.narrow ? 8 : sx - rs * 1.4, iy = L1.narrow ? syy - rs * 2.6 : syy + rs * 2.6;
-    small(g, T('日照 I', 'Sunlight I'), ix, iy - 7, C['ef-sun'], 'left', L1.narrow ? 10.5 : 11.5, 600);
+    // 太陽光暈上淺橘字對比太低（試玩回報）：淺色模式用深一點的橘
+    small(g, T('日照 I', 'Sunlight I'), ix, iy - 7, D.dark ? C['ef-sun'] : D.shade(C['ef-sun'], -0.35), 'left', L1.narrow ? 10.5 : 11.5, 600);
     drawNum(g, st.p.I, ix, iy + 7, D.c.muted, 'left', L1.narrow ? 10.5 : 11, null);
 
     // ---- 熱（每階往右的波浪箭頭）----
     for (let n = 0; n < N; n++) {
       const y = G.ys[n] - bh * 0.12, wh = wOf(r.R[n], vmax, WM);
-      const pts = wavyPath(G.x1 + 2, y, G.xh - 6, Math.min(5, 2 + wh * 0.15), 3);
+      // 箭頭尖端會超出終點約 0.78 倍粗細：終點往左收，尖端停在 G.xh − 6，不壓到右邊的「熱 R」與數字
+      const pts = wavyPath(G.x1 + 2, y, G.xh - 6 - Math.max(4.2, wh * 0.78), Math.min(5, 2 + wh * 0.15), 3);
       strokePts(g, pts, C['ef-heat'], wh, 0.8);
       headAt(g, pts, C['ef-heat'], wh);
       paths.push({ pts: pts, col: C['ef-heat'], w: wh, v: r.R[n], heat: true });
@@ -533,7 +535,7 @@
     drawNum(g, r.D, G.decX0 + 12 + g.measureText(T('碎屑 D', 'Detritus D')).width + 5, dy + 9, D.c.text, 'left', L1.narrow ? 10.5 : 11, 600);
     // 分解者的熱
     const wdh = wOf(r.Rd, vmax, WM);
-    const ptsd = wavyPath(G.decX1 + 2, dy - 4, G.xh - 6, Math.min(5, 2 + wdh * 0.15), 3);
+    const ptsd = wavyPath(G.decX1 + 2, dy - 4, G.xh - 6 - Math.max(4.2, wdh * 0.78), Math.min(5, 2 + wdh * 0.15), 3);
     strokePts(g, ptsd, C['ef-heat'], wdh, 0.8); headAt(g, ptsd, C['ef-heat'], wdh);
     paths.push({ pts: ptsd, col: C['ef-heat'], w: wdh, v: r.Rd, heat: true });
     drawNum(g, r.Rd, L1.narrow ? G.xh - 2 : G.xh + 4, dy - 4 - (L1.narrow ? Math.max(12, wdh / 2 + 12) : 0), L1.narrow ? C['ef-heat'] : D.c.muted, L1.narrow ? 'right' : 'left', L1.narrow ? 10.5 : 11, L1.narrow ? 600 : null);
