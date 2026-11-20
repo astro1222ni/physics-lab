@@ -101,6 +101,9 @@
     .s3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
     .s3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
     .s3-wrap:has(.v3nav) .s3-hud .bl { bottom: 62px; } /* 左下角讓給「旋轉｜平移」鈕 */
+    .v3nav button { white-space: nowrap; }
+    .v3nav-hint { min-width: 0; }
+    @media (orientation: landscape) and (max-height: 600px) { .v3nav-hint { display: none; } }
     .s3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
       background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
     .s3-hud span.m { color: var(--muted); font-weight: 500; }
