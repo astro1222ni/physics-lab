@@ -299,20 +299,25 @@
     $('sheetNotice').textContent=other?T('新構圖另開一張；之前的留點已存入畫冊。','A new composition uses a new sheet. Earlier marks are in your sketchbook.'):
       T('留點已存入畫冊；改構圖會另開一張。','Marks are saved in your sketchbook. Changing the composition starts another sheet.');
   }
+  // 牆角的白話名稱，例如「A 樓右屋簷角」（corner 0–3 是牆腳、4–7 是屋簷；0、3 在左）
+  function cornerName(t,lang){
+    const en=lang?lang==='en':window.LabSettings.lang==='en';
+    const left=[0,3].includes(t.corner%4),eave=t.corner>=4;
+    return en?'building '+t.owner+' '+(left?'left ':'right ')+(eave?'eave corner':'wall foot')
+      :t.owner+' 樓'+(left?'左':'右')+(eave?'屋簷角':'牆腳');
+  }
   function updateRig(state){
     rigState=state;
     $('nextCorner').disabled=state.available<2 || state.closed;
     $('foldBoard').disabled=!state.available;
-    const boardLabel=state.closed?T('翻開畫板','Open the board'):T('闔板打點','Close and mark');
+    const boardLabel=state.closed?T('翻開畫板','Open the board'):T('蓋上畫板打點','Close board and mark');
     $('foldBoard').setAttribute('aria-label',boardLabel);
-    $('foldBoard').textContent=compactType()?(state.closed?T('翻開畫板','Open board'):T('闔板打點','Mark board')):boardLabel;
+    $('foldBoard').textContent=compactType()?(state.closed?T('翻開畫板','Open board'):T('蓋板打點','Mark board')):boardLabel;
     setPressed($('foldBoard'),state.closed);
     const t=state.target;
     let status=T('框內沒有牆角。請轉頭或調整視野。','No corner is inside the frame. Turn or change the field of view.');
     if(t){
-      const side=[0,3].includes(t.corner%4)?T('左','left'):T('右','right');
-      const level=t.corner<4?T('牆腳','wall foot'):T('屋簷','eave');
-      status=t.owner+' · '+side+' '+level+' · '+T('已打點','Marks')+' '+state.dots;
+        status=cornerName(t)+' · '+T('已打 ','Marks: ')+state.dots+T(' 點','');
     }
     $('rigStatus').textContent=status;feedback();
   }
@@ -324,7 +329,7 @@
     $('overlayControl').hidden=!viewer || !eye;
     $('rigControls').hidden=!viewer || eye;
     $('stageHint').textContent=viewer?(eye?T('從釘環看桌上街景。可疊上四成濃度的素描，比對路緣、門窗與屋簷。','Look through the eyelet at the tabletop street. Overlay the sketch at 40% opacity to compare curbs, windows and eaves.'):
-      T('桌上街景為 1 比 16。選牆角，兩條滑線會對準拉線穿過木框的位置。闔板留點，再翻開看。','The tabletop street is at 1:16 scale. Choose a corner to bring the two sliding cords to the sight thread. Close the board to mark it, then open it to see the dot.')):
+      T('桌上街景為 1 比 16。拉線從牆角連到眼睛，十字滑線會停在拉線穿過木框的位置。按「蓋上畫板打點」把這個位置記在畫板上，再按「翻開畫板」看點落在哪裡。','The tabletop street is at 1:16 scale. A thread runs from the corner to the eye, and the cross cords stop where it passes through the frame. Press Close board and mark to record that spot, then Open the board to see where the dot lands.')):
       (tracing?T('點兩條邊，把它們延長。箭頭指向紙外的交點。','Select two edges to extend them. An arrow points toward an off-paper crossing.'):
       T('拖畫室 A 換位置。拖空白處左右轉頭、上下仰俯。','Drag studio A to move it. Drag the background to turn or tilt your head.'));
     const sound=window.LabSound.enabled();setPressed($('soundBtn'),sound);
@@ -516,7 +521,7 @@
     ['換一個取景，觀察消失點。','Change the view and watch the vanishing points.'],
     ['描兩條街景邊線，檢查它們的交點。','Trace two street edges and inspect their crossing.'],
     ['保留基準，改動街景再記錄。','Save a reference, change the scene and record.'],
-    ['在立體畫框選牆角，闔板留點，再翻開查看。','Choose a corner in the 3D frame, close the board to mark it, then open it to inspect the dot.']
+    ['在 3D 畫框按「蓋上畫板打點」，再按「翻開畫板」看點落在哪裡。','In the 3D frame, press Close board and mark, then Open the board to see where the dot lands.']
   ];
   function targetFor(i){
     const target=(id,zh,en)=>({el:$(id),zh,en});
@@ -541,8 +546,8 @@
     if(rigState.closed)return target('foldBoard','翻開畫板','Open the board');
     const marks=pages.get(activeKey)?.marks,marked=marks?.has(rigState.target.owner+rigState.target.corner);
     if(progress.every(Boolean)&&marks?.size>=rigState.available)return target('yaw','左右轉向，換一張畫紙','Turn to start a new sketch');
-    if((!cornerChosen||marked)&&rigState.available>1)return target('nextCorner','換一個牆角','Next corner');
-    return target('foldBoard','闔板打點','Close and mark');
+    if(marked&&rigState.available>1)return target('nextCorner','換一個牆角，再打一點','Next corner, then mark again');
+    return target('foldBoard','按「蓋上畫板打點」','Press Close board and mark');
   }
   function checklist(i){
     const counts=(label,en,value)=>[label+' · '+value,en+' · '+value];
@@ -561,8 +566,8 @@
     }
     if(i===3)conditions=[
       [!!viewer&&!eye,'從旁邊觀察畫框','Observe the frame from the side'],
-      [!!viewer&&!eye&&(cornerChosen||rigState.available===1),...counts('選擇框內牆角','Choose a corner inside the frame',rigState.target?rigState.target.owner+' · '+(rigState.target.corner+1):'—')],
-      [rigState.dots>0,...counts('闔板打點','Close the board and mark it',rigState.dots)],
+      [!!viewer&&!eye&&!!rigState.target,rigState.target?'十字滑線對準 · '+cornerName(rigState.target,'zh'):'框內沒有牆角 · 轉頭或拉寬視野',rigState.target?'Cross cords on · '+cornerName(rigState.target,'en'):'No corner in the frame · turn or widen the view'],
+      [rigState.dots>0,...counts('蓋上畫板打點','Close the board and mark it',rigState.dots)],
       [progress[3],'翻開畫板查看留點','Open the board to inspect the mark']
     ];
     const next=targetFor(i);return [...conditions,[null,next.zh,next.en]];

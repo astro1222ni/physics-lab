@@ -196,9 +196,13 @@
           <div id="view3" hidden></div>
         </div>
         <p id="viewMsg" class="hint" role="status" hidden></p>
-        <div id="navRow" hidden><div id="rigNav" hidden></div>
-          <button type="button" id="resetCam" data-en="Reset view">重設視角</button></div>
         <div id="cameraBank" hidden>
+        <!-- 11/20 站長：「這一步完全看不懂……也不知道點哪裏」：打點的兩顆鈕放在畫布正下方第一列 -->
+        <div class="opt-row" id="rigControls" aria-describedby="stageHint" hidden>
+          <button type="button" id="foldBoard" class="primary" aria-pressed="false" data-en="Close board and mark">蓋上畫板打點</button>
+          <button type="button" id="nextCorner" data-en="Next corner">換一個牆角</button>
+          <output id="rigStatus" aria-live="polite"></output>
+        </div>
         <div id="cameraControls" class="cam-row" hidden>
           <div class="seg" role="group" aria-label="觀察位置" data-en-aria-label="Observation point">
             <button type="button" id="sideCam" aria-pressed="true" data-en="From the side">從旁邊看</button>
@@ -206,12 +210,9 @@
           </div>
           <label id="overlayControl" class="opt-row" hidden><input type="checkbox" id="sketchOverlay"><span data-en="Sketch overlay · 40%">疊上素描 · 40%</span></label>
         </div>
-        <div class="opt-row" id="rigControls" aria-describedby="stageHint" hidden>
-          <button type="button" id="nextCorner" data-en="Next corner">換一個牆角</button>
-          <button type="button" id="foldBoard" aria-pressed="false" data-en="Close and mark">闔板打點</button>
-          <output id="rigStatus" aria-live="polite"></output>
         </div>
-        </div>
+        <div id="navRow" hidden><div id="rigNav" hidden></div>
+          <button type="button" id="resetCam" data-en="Reset view">重設視角</button></div>
         <div id="markNotice" hidden><output id="sheetNotice" aria-live="polite"></output><select id="markedSheets" aria-label="有留點的構圖" data-en-aria-label="Previously marked compositions" hidden></select><button type="button" id="recoverSheet" data-en="Return to a marked sketch">回到有留點的構圖</button></div>
         <div class="paper-tools">
           <button type="button" id="trace" aria-pressed="false" data-en="Trace edges">描圖模式</button>
