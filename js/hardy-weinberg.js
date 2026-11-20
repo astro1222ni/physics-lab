@@ -5,7 +5,9 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    // 手機橫放：第一段用 520 寬的緊湊版面（縮小約 0.83，字約 9.5 px），不再用 720 寬整張縮小到 7 px；
+    // 第二段的三張圖維持 720 寬的並排版面（窄版會疊成約 690 高）
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 520 : 720, width) : width;
   }
   const H = window.HWCore;
   const D = window.LabDraw;
@@ -235,7 +237,19 @@
     const w = drawingWidth(cv) || 300;
     const wide = w >= 700;
     let h, garden, tri, bars, sq;
-    if (wide) {
+    const short = shortLandscape.matches && w < 700;
+    if (short) {
+      // 花圃＋長條圖在左、三角圖在中、配子方格在右；三角圖說明留在下方 .notes
+      h = 320;
+      const gs = 140, sqS = 96;
+      garden = { x: 14, y: 34, w: gs, h: gs };
+      bars = { x0: 22, x1: 14 + gs, y0: 34 + gs + 46, y1: h - 26 };
+      sq = { x: w - 14 - sqS, y: 58, s: sqS };
+      const tx0 = 14 + gs + 44;
+      const side = Math.max(140, Math.min(sq.x - 36 - tx0, (h - 120) / 0.866));
+      tri = { xL: tx0 + 4, xR: tx0 + 4 + side, yT: 58, yB: 58 + side * 0.866 };
+      tri.xM = (tri.xL + tri.xR) / 2;
+    } else if (wide) {
       h = 470;
       const gs = Math.min(250, Math.round(w * 0.3));
       garden = { x: 14, y: 34, w: gs, h: gs };
@@ -261,7 +275,7 @@
     }
     const s = fit(cv, ctx, h);
     W1 = s.w; H1 = s.h;
-    L1 = { wide: wide, garden: garden, tri: tri, bars: bars, sq: sq };
+    L1 = { wide: wide, short: short, garden: garden, tri: tri, bars: bars, sq: sq };
     draw1();
   }
 
@@ -1113,6 +1127,8 @@
       },
       home: (w, h) => {
         const r = canvas.getBoundingClientRect();
+        // 手機橫放：配子方格下方是空的，圓鈕停右下角，不蓋花圃標題
+        if (L1 && L1.short) return { x: r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.bottom - h - 8)) };
         const left = screenPoint().x > r.left + r.width / 2;
         return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
       }

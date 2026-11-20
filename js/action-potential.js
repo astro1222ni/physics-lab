@@ -131,18 +131,22 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
   }
+  // 手機橫放（高 ≤ 600 px）：畫布高度寫死、抽屜模式縮不了，改用壓矮的版面（照實際寬度 1:1 畫，字不縮小），一屏放得下
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function resize1() {
     const w = cv.clientWidth || 300;
-    const narrow = w < 560;
-    const h = narrow ? 596 : 590;
+    const narrow = w < 560, short = shortLandscape.matches;
+    const memH = short ? 104 : narrow ? 160 : 168;
+    const hV = short ? 96 : narrow ? 178 : 180, hS = short ? 40 : 92, hI = short ? 18 : 38;
+    const gV = short ? 24 : 30, gS = short ? 22 : 32, gI = short ? 20 : 28;
+    const h = short ? memH + gV + hV + gS + hS + gI + hI + 18 : narrow ? 596 : 590;
     const s = fit(cv, ctx, h);
     W1 = s.w; H1 = s.h;
-    const memH = narrow ? 160 : 168;
     const x0 = narrow ? 42 : 50, x1 = W1 - 12;
-    const pV = { x0: x0, x1: x1, y0: memH + 30, y1: memH + 30 + (narrow ? 178 : 180) };
-    const pS = { x0: x0, x1: x1, y0: pV.y1 + 32, y1: pV.y1 + 32 + 92 };
-    const pI = { x0: x0, x1: x1, y0: pS.y1 + 28, y1: pS.y1 + 28 + 38 };
-    L1 = { narrow: narrow, memH: memH, yc: memH * 0.54, pV: pV, pS: pS, pI: pI };
+    const pV = { x0: x0, x1: x1, y0: memH + gV, y1: memH + gV + hV };
+    const pS = { x0: x0, x1: x1, y0: pV.y1 + gS, y1: pV.y1 + gS + hS };
+    const pI = { x0: x0, x1: x1, y0: pS.y1 + gI, y1: pS.y1 + gI + hI };
+    L1 = { narrow: narrow, short: short, memH: memH, yc: memH * 0.54, pV: pV, pS: pS, pI: pI };
     layoutMembrane();
     request();
   }
@@ -581,7 +585,7 @@
     plotFrame(ctx, pV);
     const vLo = -100, vHi = 60;
     const yV = function (v) { return pV.y1 - (pV.y1 - pV.y0) * (v - vLo) / (vHi - vLo); };
-    yTicks(ctx, pV, vLo, vHi, 20, function (v) { return num(v, 0); }, yV);
+    yTicks(ctx, pV, vLo, vHi, L1.short ? 40 : 20, function (v) { return num(v, 0); }, yV);
     // 時間格線
     const tStep = niceStep(tMax, L1.narrow ? 5 : 8);
     [pV, pS, pI].forEach(function (p) {

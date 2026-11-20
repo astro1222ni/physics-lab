@@ -5,7 +5,8 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    // 手機橫放：最小 600 寬（整張縮小約 0.73，原本 720 寬約 0.61），親本卡片小字另放大 1.2 倍
+    return shortLandscape.matches ? Math.max(600, width) : width;
   }
   const MC = window.MendelCore;
   const LD = window.LabDraw; // 共用繪圖工具（js/drawkit.js）
@@ -503,20 +504,21 @@
     g.restore();
     let y = top + 26 * k + 17 * k;
     const bits = MC.phenoBits(MC.phenoIndex(gg), state.L);
+    const sl = shortLandscape.matches ? 1.2 : 1;
     traitsOn().forEach(function (t, i) {
       const w = bits[i] ? MC.TRAITS[t].dom : MC.TRAITS[t].rec;
-      txt(g, T(w[0], w[1]), tx + 2, y, { size: 12.5, color: LD.c.text, maxW: tw, haloColor: face });
+      txt(g, T(w[0], w[1]), tx + 2, y, { size: 12.5 * sl, color: LD.c.text, maxW: tw, haloColor: face });
       y += 17 * k;
     });
     // 基因型的名稱（同型合子／異型合子）
     const kindTxt = who === 1 && hidden() ? T('基因型未知', 'genotype unknown')
       : state.L === 1 ? genoWord(gg[0]) : gg.every(function (x) { return x === 1; }) ? T('雙異型合子', 'double heterozygote') : gg.every(function (x) { return x !== 1; }) ? T('同型合子', 'homozygous') : T('一對同型、一對異型', 'partly heterozygous');
     // 手機上卡片窄：放不下就拆成兩行，不要縮成看不清楚的小字
-    const kl = wrap2(g, kindTxt, 11.5, tw), lh = Math.round(13 * k);
+    const ks = 11.5 * sl, kl = wrap2(g, kindTxt, ks, tw), lh = Math.round(13 * k * sl);
     if (kl.length === 2 && y + lh <= r.y + r.h - 4) {
-      txt(g, kl[0], tx + 2, y, { size: 11.5, color: LD.c.muted, maxW: tw, haloColor: face });
-      txt(g, kl[1], tx + 2, y + lh, { size: 11.5, color: LD.c.muted, maxW: tw, haloColor: face });
-    } else txt(g, kindTxt, tx + 2, y, { size: 11.5, color: LD.c.muted, maxW: tw, haloColor: face });
+      txt(g, kl[0], tx + 2, y, { size: ks, color: LD.c.muted, maxW: tw, haloColor: face });
+      txt(g, kl[1], tx + 2, y + lh, { size: ks, color: LD.c.muted, maxW: tw, haloColor: face });
+    } else txt(g, kindTxt, tx + 2, y, { size: ks, color: LD.c.muted, maxW: tw, haloColor: face });
   }
   function wrap2(g, s, size, maxW) {
     if (measure(g, s, size) <= maxW) return [s];
