@@ -77,7 +77,13 @@
   function layout() {
     const narrow = cw < 560;
     const n = state.values.length;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     if (state.mode === 'race') {
+      if (landscape) {
+        // 每列保留名稱、名次、步數、計數與長條，五列可以一起看。
+        const gap = 4, ph = Math.max(43, Math.min(72, Math.floor((innerHeight - 134) / 5)));
+        return { race: true, compact: true, narrow: narrow, cols: 1, gap: gap, pw: cw - 16, ph: ph, H: 16 + 5 * ph + 4 * gap };
+      }
       const cols = cw >= 620 ? 2 : 1, gap = 8;
       const pw = (cw - 16 - gap * (cols - 1)) / cols;
       const ph = cols === 2 ? 150 : 116;
@@ -88,12 +94,12 @@
     const left = padL, right = cw - padR, bw = (right - left) / Math.max(1, n);
     const hudH = 34, markH = 22;
     const barsTop = hudH + markH;
-    const barsH = narrow ? 168 : 212;
+    const barsH = landscape ? Math.max(68, Math.min(168, innerHeight - (state.algo === 'merge' ? 263 : 174))) : narrow ? 168 : 212;
     const base = barsTop + barsH;
     const idxH = 16, ptrH = 22;
     const isMerge = state.algo === 'merge';
     const auxTop = base + idxH + ptrH + 30;   // 留空間給區段括號與「暫存區」標題，不重疊
-    const auxH = isMerge ? (narrow ? 64 : 82) : 0;
+    const auxH = isMerge ? (landscape ? 40 : narrow ? 64 : 82) : 0;
     const H = isMerge ? auxTop + auxH + 30 : base + idxH + ptrH + 12;
     return { race: false, narrow: narrow, left: left, right: right, bw: bw, hudH: hudH, barsTop: barsTop, barsH: barsH, base: base,
       idxY: base + 4, ptrY: base + idxH + 4, auxTop: auxTop, auxH: auxH, H: Math.round(H) };
@@ -634,7 +640,7 @@
     ctx.strokeStyle = done ? alpha(ac, 0.85) : alpha(C.text, 0.1); ctx.lineWidth = done ? 2 : 1;
     D.roundRect(ctx, b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 10); ctx.stroke();
     ctx.restore();
-    const nar = b.w < 330;
+    const nar = b.w < 330 || L.compact;
     const title = MK[r.algo] + ' ' + (nar ? sn(r.algo) : nm(r.algo));
     D.haloText(ctx, title, b.x + 10, b.y + 16, ac, 'left', 'middle', fnt(nar ? 12.5 : 13.5, 700));
     // 計數放不下（窄的面板、英文）就改用短寫法
@@ -647,8 +653,8 @@
     ctx.restore();
     D.haloText(ctx, cnt, b.x + b.w - 10, b.y + 16, C.text, 'right', 'middle', cf);
     // 小長條圖
-    const top = b.y + 30, bottom = b.y + b.h - 18, H = bottom - top;
-    const left = b.x + 10, right = b.x + b.w - 10, bw = (right - left) / n;
+    const top = b.y + (L.compact ? 24 : 30), bottom = b.y + b.h - (L.compact ? 11 : 18), H = bottom - top;
+    const left = b.x + (L.compact ? Math.min(136, b.w * 0.38) : 10), right = b.x + b.w - 10, bw = (right - left) / n;
     const gapw = Math.max(0.6, Math.min(2, bw * 0.16)), w = Math.max(1, bw - gapw);
     for (let p = 0; p < n; p++) {
       const id = st.arr[p], v = vals[id];
@@ -662,15 +668,19 @@
     ctx.beginPath(); ctx.moveTo(left, bottom + 0.5); ctx.lineTo(right, bottom + 0.5); ctx.stroke();
     ctx.restore();
     // 進度條
-    const py = b.y + b.h - 10, frac = r.res.steps ? st.k / r.res.steps : 1;
+    const py = b.y + b.h - (L.compact ? 5 : 10), frac = r.res.steps ? st.k / r.res.steps : 1;
     ctx.save();
     ctx.fillStyle = alpha(C.text, 0.1);
     D.roundRect(ctx, left, py - 2.5, right - left, 5, 2.5); ctx.fill();
     ctx.fillStyle = ac;
     D.roundRect(ctx, left, py - 2.5, Math.max(5, (right - left) * frac), 5, 2.5); ctx.fill();
     ctx.restore();
-    if (done) D.pill(ctx, T('第 ' + r.place + ' 名', ['1st', '2nd', '3rd', '4th', '5th'][r.place - 1] || r.place + 'th') + T('・', ' · ') + fmtInt(r.res.steps) + T(' 步', ' steps'),
-      b.x + b.w / 2, top + 22, r.place === 1 ? C['so-done'] : C.text, 'center', fnt(nar ? 11.5 : 12.5, 700));
+    const place = done ? T('第 ' + r.place + ' 名・', ['1st', '2nd', '3rd', '4th', '5th'][r.place - 1] + ' · ') : '';
+    if (done || L.compact) {
+      const label = place + fmtInt(st.k) + T(' 步', ' steps');
+      if (L.compact) D.haloText(ctx, label, b.x + 10, b.y + b.h - 13, C.text, 'left', 'middle', fnt(12, 650));
+      else D.pill(ctx, label, b.x + b.w / 2, top + 22, r.place === 1 ? C['so-done'] : C.text, 'center', fnt(nar ? 11.5 : 12.5, 700));
+    }
   }
 
   function draw() {

@@ -42,21 +42,51 @@
     return e;
   }
 
+  function item(ok, zh, en, value) {
+    const suffix = value == null ? '' : ' · ' + value;
+    return [ok, zh + suffix, en + suffix];
+  }
+  function progress(read) {
+    return function (ctx) {
+      const session = window.KnnLab?.session;
+      const d = ctx.last('state') || session?.snapshot('read');
+      return d ? read(d, this.mem || {}, session) : null;
+    };
+  }
+  function scaleProgress(d, mem, standardise) {
+    const r = mem.box?.[d.key + '|' + d.k + '|' + d.metric] || {};
+    const drop = r.s1 != null && r.s100 != null ? r.s1 - r.s100 : null;
+    const rows = [item(d.n >= 10, '使用至少 10 個點', 'Use at least 10 points', d.n),
+      item(r.s1 != null, '關閉標準化，試 ×1', 'Turn standardisation off and try ×1'),
+      item(r.s100 != null, '同一份資料、k 和距離，試 ×100', 'Keep data, k and distance fixed and try ×100'),
+      item(drop != null && drop >= .2 - 1e-9, '留一法正確率下降至少 20 個百分點', 'Lose at least 20 percentage points of accuracy', drop == null ? '—' : (drop * 100).toFixed(1))];
+    if (standardise) rows.push(item(r.z100 != null && r.s1 != null && Math.abs(r.z100 - r.s1) <= .05 + 1e-9,
+      '在 ×100 開啟標準化，與原本 ×1 相差至多 5 個百分點', 'At ×100, standardise to get within 5 percentage points of the original ×1 result'));
+    return rows;
+  }
+
   LabMission.register('knn', [
     {
       id: 'knn-1', level: 1,
+      need: progress(d => [item(d.pred === 1, '移動查詢點，讓 B 類勝出', 'Move the query point until B wins', d.pred < 0 ? '—' : 'ABC'[d.pred])]),
       title: { zh: '換邊站', en: 'Changing sides' },
       desc: { zh: '拖曳星形的查詢點，讓它被判成 B 類（藍色方塊）。', en: 'Drag the star-shaped query point until it is classified as B (blue squares).' },
       check: function (ev) { return isState(ev) && ev.data.src === 'query' && ev.data.pred === 1; }
     },
     {
       id: 'knn-2', level: 2,
+      need: progress((d, mem, s) => { const n = s?.walk?.stepped || 0; return [item(n >= 5, '在同一輪按「單步」五次', 'Press Step five times in this walk-through', n + '/5')]; }),
       title: { zh: '輪流當考題', en: 'Taking turns as the test' },
       desc: { zh: '按「單步」至少 5 次，看每個點輪流被拿出來，讓其他的點來猜它。', en: 'Press “Step” at least 5 times and watch each point being taken out in turn and guessed by the others.' },
       check: function (ev) { return ev.type === 'looStep' && ev.data.stepped >= 5; }
     },
     {
       id: 'knn-3', level: 2,
+      need: progress((d, mem) => {
+        const r = mem.box?.[qKey(d) + '|' + d.metric + d.scale + d.std] || {};
+        return [item(r[1] != null, '在這個位置試 k = 1', 'Try k = 1 here'), item(r[5] != null, '留在原位試 k = 5', 'Try k = 5 at the same point'),
+          item(r[1] != null && r[5] != null && r[1] !== r[5], '兩次預測的類別不同', 'Get two different predictions')];
+      }),
       title: { zh: '問一個還是問五個', en: 'Ask one or ask five' },
       desc: { zh: '查詢點不動，讓 k = 1 和 k = 5 給出不同的答案。', en: 'Keep the query point still and make k = 1 and k = 5 give different answers.' },
       check: function (ev, mem) {
@@ -69,6 +99,11 @@
     },
     {
       id: 'knn-4', level: 3,
+      need: progress((d, mem) => {
+        const r = mem.box?.[qKey(d) + '|' + d.k + '|' + d.scale + d.std] || {};
+        return [item(r.euclid != null, '用歐氏距離選鄰居', 'Try Euclidean distance here'), item(r.manhattan != null, '在同位置與 k 改用曼哈頓距離', 'Try Manhattan distance at the same point and k'),
+          item(r.euclid != null && r.manhattan != null && r.euclid !== r.manhattan, '兩組鄰居不同', 'Find different sets of neighbours')];
+      }),
       title: { zh: '圓形與菱形', en: 'Circle and diamond' },
       desc: { zh: '查詢點和 k 都不動，在「歐氏」和「曼哈頓」之間切換，讓兩種距離選出的鄰居不完全一樣。', en: 'Keep the query point and k fixed and switch between “Euclidean” and “Manhattan” so that the two distances pick different neighbours.' },
       check: function (ev, mem) {
@@ -81,12 +116,14 @@
     },
     {
       id: 'knn-5', level: 3,
+      need: progress(d => [item(d.set === 'moons', '使用月牙資料', 'Use the Moons preset'), item(d.loo != null && d.loo >= .95, '調整 k，留一法正確率達 95%', 'Adjust k to reach 95% leave-one-out accuracy', d.loo == null ? '—' : Math.round(d.loo * 100) + '%')]),
       title: { zh: '彎彎的月牙', en: 'Crescent moons' },
       desc: { zh: '按「月牙」，再調整「鄰居數 k」，讓留一法正確率至少 95%。（一條直線分不開這兩類，鄰居卻分得開。）', en: 'Press “Moons”, then adjust “Number of neighbours k” until the leave-one-out accuracy is at least 95%. (No straight line separates these two classes, but neighbours can.)' },
       check: function (ev) { const d = ev.data; return isState(ev) && d.src === 'k' && d.set === 'moons' && d.loo != null && d.loo >= 0.95 - 1e-9; }
     },
     {
       id: 'knn-6', level: 4,
+      need: progress(d => [item(d.n >= 6, '保留至少 6 個點', 'Use at least 6 points', d.n), item(d.kEff === d.n, '所有點都參加投票', 'Include every point in the vote', d.kEff + '/' + d.n), item(d.majority >= 0 && d.nn1 !== d.majority, '把查詢點移到少數類旁，讓多數類勝出', 'Move the query point near a minority-class neighbour while the majority wins')]),
       title: { zh: '人多就贏', en: 'Strength in numbers' },
       desc: { zh: '至少 6 個點時，把「鄰居數 k」拉到不小於點數，再把查詢點拖到人數較少那一類的點旁邊：它還是被判成人數最多的那一類。', en: 'With at least 6 points, set “Number of neighbours k” to at least the number of points, then drag the query point right next to a point of a smaller class: it is still classified as the biggest class.' },
       check: function (ev) {
@@ -96,6 +133,8 @@
     },
     {
       id: 'knn-7', level: 5,
+      need: progress(d => [item(d.set === 'noisy', '使用有雜訊的資料', 'Use the Noisy preset'), item(d.k > 1 && d.bestKs.includes(d.k), '調整到正確率最高的 k', 'Select a k with the highest accuracy', d.k),
+        item(d.n > 0 && d.bestAcc - d.curve[0] / d.n >= .08 - 1e-9, '最佳正確率比 k = 1 至少高 8 個百分點', 'Find a data set where the best result beats k = 1 by 8 percentage points')]),
       title: { zh: '雜訊裡的最佳 k', en: 'The best k in the noise' },
       desc: { zh: '按「有雜訊」，把「鄰居數 k」設成留一法正確率最高的值，而且這個正確率要比 k = 1 時至少高 8 個百分點。（這一份做不到，就再按一次「有雜訊」換一份。）', en: 'Press “Noisy” and set “Number of neighbours k” to the value with the highest leave-one-out accuracy — an accuracy at least 8 percentage points above that of k = 1. (If this set cannot do it, press “Noisy” again for a new one.)' },
       check: function (ev) {
@@ -106,6 +145,7 @@
     },
     {
       id: 'knn-8', level: 6,
+      need: progress(d => [item(d.kEff === d.k, '有足夠的鄰居投票', 'Have enough neighbours for k', d.kEff + '/' + d.k), item(d.tie !== 'none' && d.pred >= 0, '讓最高票平手，觀察平手判定', 'Produce a tie for the most votes', d.votes.join(' / '))]),
       title: { zh: '票數平手', en: 'A tied vote' },
       desc: { zh: '放三類的點，讓查詢點的投票出現平手：票數最多的類別不只一個。', en: 'Use points of three classes and make the vote at the query point a tie: more than one class has the most votes.' },
       // k 是奇數；只有兩類時奇數票不會平手，所以 kEff = k 的平手一定用到三類（點數少於 k 時的偶數票平手不算）
@@ -113,6 +153,7 @@
     },
     {
       id: 'knn-9', level: 7,
+      need: progress((d, mem) => [item(d.set === 'blobs', '使用兩團資料', 'Use Two blobs'), ...scaleProgress(d, mem, false)]),
       title: { zh: '單位的陷阱', en: 'The unit trap' },
       desc: { zh: '按「兩團」，在同一個 k 與距離下，比較 x2 的單位「× 1」和「× 100」（都不勾「標準化」），讓留一法正確率至少差 20 個百分點。', en: 'Press “Two blobs” and, with the same k and distance, compare the unit of x2 at “× 1” and “× 100” (both without “Standardise”) so that the leave-one-out accuracies differ by at least 20 percentage points.' },
       check: function (ev, mem) {
@@ -124,6 +165,7 @@
     },
     {
       id: 'knn-10', level: 8,
+      need: progress((d, mem) => scaleProgress(d, mem, true)),
       title: { zh: '標準化救回來', en: 'Rescued by standardising' },
       desc: { zh: '找一份資料（至少 10 個點），x2 的單位從「× 1」改成「× 100」後留一法正確率掉了至少 20 個百分點；再勾選「標準化」，讓正確率回到和「× 1」時相差不到 5 個百分點。k 與距離都不要改。', en: 'Find data (at least 10 points) whose leave-one-out accuracy drops by at least 20 percentage points when the unit of x2 goes from “× 1” to “× 100”; then tick “Standardise” to bring it back within 5 points of the “× 1” value. Keep k and the distance the same.' },
       check: function (ev, mem) {
@@ -133,6 +175,7 @@
     },
     {
       id: 'knn-11', level: 9,
+      need: progress(d => [item(d.userAll && d.n >= 12, '自行放置至少 12 個點', 'Place at least 12 points yourself', d.n), item(twoBig(d, 4), '至少兩類各有 4 個點', 'Have at least 4 points in each of two classes', d.counts.join(' / ')), item(d.bestKs[0] >= 7, '最佳 k 的最小值至少為 7', 'Make the smallest best k at least 7', d.bestKs[0] ?? '—')]),
       title: { zh: '要問很多鄰居才準', en: 'Only many neighbours get it right' },
       desc: { zh: '按「清空資料」，自己放至少 12 個點（至少兩類各 4 個以上），讓留一法正確率最高的 k 至少是 7：也就是 k = 1、3、5 都比它差。', en: 'Press “Clear points” and place at least 12 points yourself (at least two classes with 4 or more each) so that the best leave-one-out k is at least 7: k = 1, 3 and 5 all do worse.' },
       check: function (ev) {

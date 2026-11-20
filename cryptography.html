@@ -45,7 +45,7 @@
       --cr-c1: #7aa7ff; --cr-c2: #ff8a5c; --cr-c3: #4ade80; --cr-c4: #b9a0ff; --cr-c5: #fbbf24; --cr-c6: #5eead4; }
 
     #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
-    .cr [hidden] { display: none !important; }
+    :is(.cr, .labdeck) [hidden] { display: none !important; }
     .cr .panel { grid-template-columns: minmax(0, 1fr); }
     .cr .panel > .card { min-width: 0; }
     .cr .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
@@ -78,9 +78,9 @@
     .safe strong { color: var(--cr-warn-ink); }
     /* 控制面板 */
     .cr .slider input[type="range"] { height: 28px; margin: 0; }
-    .cr .checks label { min-height: 44px; }
-    .cr .checks input { width: 17px; height: 17px; }
-    .cr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    :is(.cr, .labdeck) .checks label { min-height: 44px; }
+    :is(.cr, .labdeck) .checks input { width: 17px; height: 17px; }
+    :is(.cr, .labdeck) .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 2px 0 6px; }
     .seg2 button { min-height: 44px; padding: 6px 4px; }
     .seg2 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
@@ -111,6 +111,15 @@
     #egcdTab td { text-align: right; }
     .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
     .legend .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; margin-right: 5px; }
+    .texts[hidden], .texts [hidden] { display: none; }
+    .texts #inText { min-height: 58px; }
+    .texts .slider { margin: 0; }
+    .texts #swapBtn { justify-self: start; min-height: 44px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .texts .outbox { max-height: 4.5em; }
+    }
+    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
+    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -133,29 +142,34 @@
         <canvas id="cv" tabindex="0" aria-label="加密實驗畫布" data-en-aria-label="Encryption canvas"></canvas>
         <div class="bar">
           <button id="sampleBtn" type="button" data-tabs="caesar freq vig" data-en="Another sample">換一段範例</button>
-          <button id="swapBtn" type="button" data-tabs="caesar vig" data-en="Use the output as input" title="把輸出框的文字搬到輸入框，可以再加密一次" data-en-title="Move the output into the input box so you can encrypt it again">把輸出放回輸入</button>
           <button id="wipeBtn" type="button" data-en="Clear all" title="清掉破解紀錄、加密紀錄與畫面上的標記；設定和文字不變" data-en-title="Clear the crack log, the encryption log and the marks on the canvas; settings and text stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <div class="texts" id="texts" data-tabs="caesar freq vig">
-          <div class="lab-row"><label for="inText" data-en="Input text">輸入文字</label><span class="cnt" id="inCount"></span></div>
-          <textarea id="inText" maxlength="1500" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
-          <div class="lab-row"><span class="olab" id="outLabel">輸出</span><span class="cnt" id="outCount"></span></div>
-          <div class="outbox mono" id="outText" aria-live="off"></div>
-        </div>
+        <div data-deck-anchor hidden></div>
         <p class="safe" data-en-html="<strong>⚠ None of these ciphers is safe.</strong> Caesar and Vigenère were broken centuries ago, and the RSA here uses primes below 100, which trial division factors in a blink. Real systems use standardised algorithms such as AES (keys of 128, 192 or 256 bits) and RSA with keys of at least 2048 bits, plus random padding. Never use this page to protect real data. Your text is processed only inside your browser and is never sent or stored — still, do not type real passwords or personal details."><strong>⚠ 這一頁的密碼全都不安全。</strong>凱撒與維吉尼亞早在幾百年前就被破解，這裡的 RSA 只用 100 以內的質數，用試除法一下子就分解了。真實世界用標準化的演算法，例如 AES（金鑰 128、192 或 256 位元）與至少 2048 位元的 RSA，還要加上隨機的填充。不要用這一頁的方法保護真的資料。你輸入的文字只在你的瀏覽器裡計算，不會送出或儲存——但也不要輸入真正的密碼或個人資料。</p>
       </div>
 
       <aside class="panel">
-        <section class="card" data-tabs="caesar">
+        <section class="card texts" id="texts" data-deck="文字與位移|Text and shift" data-deck-order="1" data-tabs="caesar freq vig">
+          <h2 data-en="Text and shift">文字與位移</h2>
+          <div class="lab-row"><label for="inText" data-en="Input text">輸入文字</label><span class="cnt" id="inCount"></span></div>
+          <textarea id="inText" maxlength="1500" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <div class="slider" data-tabs="caesar"><label for="k" data-en="Shift k">位移 k</label><output id="ko"></output>
+            <input id="k" type="range" min="0" max="25" step="1" value="1" data-decimals="0"></div>
+          <div class="slider" data-tabs="freq" hidden><label for="g" data-en="Guessed shift g">猜測位移 g</label><output id="go"></output>
+            <input id="g" type="range" min="0" max="25" step="1" value="0" data-decimals="0"></div>
+          <div class="lab-row"><span class="olab" id="outLabel">輸出</span><span class="cnt" id="outCount"></span></div>
+          <div class="outbox mono" id="outText" aria-live="off"></div>
+          <button id="swapBtn" type="button" data-tabs="caesar vig" data-en="Use the output as input" title="把輸出框的文字搬到輸入框，可以再加密一次" data-en-title="Move the output into the input box so you can encrypt it again">把輸出放回輸入</button>
+        </section>
+
+        <section class="card" data-deck="凱撒密碼|Caesar" data-deck-order="2" data-tabs="caesar">
           <h2 data-en="Caesar cipher">凱撒密碼</h2>
           <div class="seg2" role="group" aria-label="方向" data-en-aria-label="Direction" id="dirC">
             <button type="button" data-dir="enc" aria-pressed="true" data-en="Encrypt">加密</button>
             <button type="button" data-dir="dec" aria-pressed="false" data-en="Decrypt">解密</button>
           </div>
-          <div class="slider"><label for="k" data-en="Shift k">位移 k</label><output id="ko"></output>
-            <input id="k" type="range" min="0" max="25" step="1" value="1" data-decimals="0"></div>
           <dl class="readout">
             <dt data-en="Mapping">對照</dt><dd id="rMapC">—</dd>
             <dt data-en="Possible keys">可能的金鑰</dt><dd id="rKeysC" data-en="26 (25 useful)">26 種（有用的 25 種）</dd>
@@ -163,10 +177,8 @@
           <p class="hint" data-en="Drag the inner ring of the wheel, or use the arrow keys on the canvas. Encrypting reads the outer ring and writes the inner ring; decrypting goes the other way.">拖曳密碼盤的內圈，或在畫布上按方向鍵轉動。加密是「外圈 → 內圈」，解密反過來。</p>
         </section>
 
-        <section class="card" data-tabs="freq" hidden>
+        <section class="card" data-deck="頻率分析|Frequency" data-deck-order="2" data-tabs="freq" hidden>
           <h2 data-en="Frequency analysis">頻率分析</h2>
-          <div class="slider"><label for="g" data-en="Guessed shift g">猜測位移 g</label><output id="go"></output>
-            <input id="g" type="range" min="0" max="25" step="1" value="0" data-decimals="0"></div>
           <div class="checks">
             <label><input id="overlay" type="checkbox" checked><span data-en="English letter frequencies">英文字母頻率</span></label>
             <label><input id="chiAll" type="checkbox"><span data-en="χ² for every shift">所有位移的 χ²</span></label>
@@ -180,7 +192,7 @@
           <p class="hint" data-en="The bars are the letters of the input text. The grey outlines are English, slid along by g. Tap a bar to guess that this letter stands for E. The smaller χ², the better the two shapes match.">實心長條是輸入文字的字母；灰色外框是英文的字母頻率，往右移了 g 格。點一根長條，等於猜「這個字母代表 E」。χ² 越小，兩組形狀越吻合。</p>
         </section>
 
-        <section class="card" data-tabs="vig" hidden>
+        <section class="card" data-deck="金鑰|Key" data-deck-order="2" data-tabs="vig" hidden>
           <h2 data-en="Vigenère cipher">維吉尼亞密碼</h2>
           <div class="keyrow"><label for="key" data-en="Key">金鑰</label><input id="key" type="text" maxlength="80" autocomplete="off" spellcheck="false" autocapitalize="characters" value="KEY"></div>
           <div class="seg2" role="group" aria-label="方向" data-en-aria-label="Direction" id="dirV">
@@ -195,7 +207,7 @@
           <p class="hint" data-en="Only letters use up the key; spaces and punctuation are skipped. The key may have up to 60 letters.">只有字母會用掉金鑰，空白和標點跳過。金鑰最多 60 個字母。</p>
         </section>
 
-        <section class="card" data-tabs="vig" hidden>
+        <section class="card" data-deck="推算金鑰|Find key" data-deck-order="3" data-tabs="vig" hidden>
           <h2 data-en="Finding the key">找出金鑰</h2>
           <div class="slider"><label for="L" data-en="Guessed key length L">猜金鑰長度 L</label><output id="Lo"></output>
             <input id="L" type="range" min="1" max="12" step="1" value="1" data-decimals="0"></div>
@@ -215,7 +227,7 @@
           <p class="hint" data-en="If the guessed length is right, every column is a plain Caesar cipher, so its bars look like English slid along. Tap a bar in the lower chart to guess that it is E.">長度猜對時，每一欄都只是一個凱撒密碼，長條會像英文一樣、只是平移了。點下方小圖的長條，等於猜「它是 E」。</p>
         </section>
 
-        <section class="card" data-tabs="caesar freq vig">
+        <section class="card" data-deck="破解挑戰|Challenge" data-deck-order="4" data-tabs="caesar freq vig">
           <h2 data-en="Code-breaking challenge">破解挑戰</h2>
           <p class="hint" data-en="Load a secret message, work out the key with any of the three tabs, then press “This is the plaintext” when the output reads as English.">載入一段祕密訊息，用前三個分頁的任何方法找出金鑰；輸出變成看得懂的英文時，按「這就是原文」。</p>
           <div class="btn-row">
@@ -230,7 +242,7 @@
           <p class="log-empty" id="logEmpty" data-en="Cracked messages are listed here.">破解成功的訊息會列在這裡。</p>
         </section>
 
-        <section class="card" data-tabs="rsa" hidden>
+        <section class="card" data-deck="金鑰|Keys" data-deck-order="1" data-tabs="rsa" hidden>
           <h2 data-en="Keys">金鑰</h2>
           <div class="selrow">
             <label><span data-en="Prime p">質數 p</span><select id="p"></select></label>
@@ -254,7 +266,7 @@
           </details>
         </section>
 
-        <section class="card" data-tabs="rsa" hidden>
+        <section class="card" data-deck="訊息|Message" data-deck-order="2" data-tabs="rsa" hidden>
           <h2 data-en="Message">訊息</h2>
           <div class="slider"><label for="M" data-en="Message M">訊息 M</label><output id="Mo"></output>
             <input id="M" type="range" min="0" max="2536" step="1" value="2026" data-decimals="0"></div>
@@ -272,7 +284,7 @@
           <div class="tablewrap"><table class="data" id="rsaLog"></table></div>
         </section>
 
-        <section class="card" data-tabs="rsa" hidden>
+        <section class="card" data-deck="竊聽者|Eavesdropper" data-deck-order="3" data-tabs="rsa" hidden>
           <h2 data-en="The eavesdropper">竊聽者</h2>
           <p class="hint" data-en="The eavesdropper sees the public key (n, e) and the ciphertext C on the wire, but not d. If she can split n into p × q, she can work out d exactly as the owner did.">竊聽者看得到公鑰 (n, e) 和線路上的密文 C，看不到 d。只要她能把 n 拆成 p × q，就能和主人一樣算出 d。</p>
           <div class="btn-col"><button id="eveBtn" type="button" data-en="Factor n">分解 n</button></div>

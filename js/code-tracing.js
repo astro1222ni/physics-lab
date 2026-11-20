@@ -975,7 +975,10 @@
   });
   function editParam(name) {
     const i = K.program(state.id).params.findIndex(function (pa) { return pa.name === name; });
-    if (i >= 0) P_EL[i].out.click();
+    if (i >= 0) {
+      if (window.LabDeck) LabDeck.reveal(P_EL[i].out);
+      P_EL[i].out.click();
+    }
   }
   $('codeC').addEventListener('click', function (e) { const p = e.target.closest('.param'); if (p) editParam(p.dataset.p); });
   $('codeC').addEventListener('keydown', function (e) { const p = e.target.closest && e.target.closest('.param'); if (p && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); editParam(p.dataset.p); } });

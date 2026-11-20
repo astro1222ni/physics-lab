@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:30">
-  <script src="js/settings.js?v=202611201318"></script>
+<meta name="lab-updated" content="2026-11-20 13:59">
+  <script src="js/settings.js?v=202611201359"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Graph Traversal: DFS and BFS in a Maze | Astro Ni Lab">圖的走訪：DFS 與 BFS 走迷宮｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"演算法","item":"https://lab.astroni.org/information-technology.html#algo"},{"@type":"ListItem","position":4,"name":"圖與最短路徑","item":"https://lab.astroni.org/information-technology.html#ch-graph"},{"@type":"ListItem","position":5,"name":"圖的走訪：DFS 與 BFS 走迷宮","item":"https://lab.astroni.org/graph-traversal.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201318">
+  <link rel="stylesheet" href="lab.css?v=202611201359">
   <style>
     /* 圖的走訪頁面專用的顏色代號（淺色＋兩組深色；由 js/graph-traversal.js 讀取） */
     :root { --gt-dfs: #e8730c; --gt-dfs-deep: #b4490a; --gt-bfs: #2f6fd6; --gt-bfs-deep: #1d4aa8; --gt-path: #c0267a; --gt-wall: #4b5a6e; --gt-floor-a: #f3f5f7; --gt-floor-b: #e6eaef; --gt-start: #0f8f63; --gt-goal: #e0a800; --gt-edge: #9aa6b6; --gt-node: #a3adbb; }
@@ -47,9 +47,17 @@
     .modes button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
     .modes button + button { border-left: 1px solid var(--border); }
     .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
-    .gt .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .gt .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 6px 0; }
     .gt .playbar button { padding: 6px 4px; line-height: 1.2; }
-    @media (max-width: 560px) { .gt .playbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .gt-edit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .gt-edit button, .labdeck button[role="tab"] { min-height: 44px !important; }
+    .labdeck .slider .lab-num { min-height: 44px !important; }
+    .gt-pad .vpad-step, .gt-pad:not(.wall-tool) .vpad-footer { display: none; }
+    .gt-pad .vpad-footer button { white-space: normal; }
+    .gt-pad .vpad-select { background: var(--accent-soft) !important; color: var(--text) !important; border: 2px solid var(--accent); }
+    .gt-pad .vpad-select[data-object="s"] { border-color: var(--gt-start); }
+    .gt-pad .vpad-select[data-object="t"] { border-color: var(--gt-goal); }
+    #reprBox[hidden] { display: none; }
     .gt .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
     .gt .playbar2 button { flex: 1 1 auto; }
     #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
@@ -87,6 +95,8 @@
     .repr { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 10px; margin: 10px 2px 0; }
     @media (max-width: 700px) { .repr { grid-template-columns: minmax(0, 1fr); } }
     .repr-box { min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); }
+    .labdeck #reprBox { grid-template-columns: minmax(0, 1fr); }
+    .labdeck #reprBox .repr-box:has(.matwrap) { order: -1; }
     .repr-box h3 { font-size: calc(14px * var(--fs, 1)); margin: 0 0 6px; }
     .adjlist { margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; font-size: calc(14px * var(--fs, 1)); }
     .adjlist li { padding: 2px 4px; border-radius: 6px; white-space: nowrap; }
@@ -103,7 +113,7 @@
     /* 面板 */
     .pick { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 0 8px; }
     .pick label { font-size: calc(14px * var(--fs, 1)); }
-    .gt select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .pick select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
     .gt .btns { margin: 8px 0 0; }
     .gt .btns button { flex: 1 1 auto; }
     #drawBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
@@ -153,6 +163,13 @@
           <button type="button" data-mode="graph" aria-pressed="false" data-en="Graph">一般圖</button>
         </div>
         <canvas id="cv" tabindex="0" aria-label="走訪的畫布：上面（或左邊）是 DFS，下面（或右邊）是 BFS，兩邊是同一座迷宮。圓形是起點、星形是終點，可以拖曳。DFS 拜訪過的格子是橘色斜線，BFS 拜訪過的格子是藍色圓點。" data-en-aria-label="Traversal canvas: DFS on the top (or left) and BFS on the bottom (or right), in the same maze. The circle is the start and the star is the goal; both can be dragged. Squares visited by DFS are orange with stripes; squares visited by BFS are blue with dots."></canvas>
+        <div class="playbar">
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
+          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
+        </div>
+        <div data-deck-anchor hidden></div>
         <div class="ds">
           <div class="ds-box">
             <p class="ds-h" id="stackHead" data-en="DFS stack (last in, first out; the top is on the right)">DFS 的堆疊（後進先出，最右邊是頂端）</p>
@@ -165,17 +182,6 @@
             <p class="ds-order" id="orderB" hidden></p>
           </div>
         </div>
-        <div class="playbar">
-          <button id="backBtn" type="button" data-en="Step back">上一步</button>
-          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
-          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
-          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
-          <button id="resetBtn" type="button" data-en="Restart">重來</button>
-        </div>
-        <div class="playbar2">
-          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉紀錄表，回到第 0 步；迷宮、牆、起點與終點都不變" data-en-title="Clear the log and go back to step 0; the maze, its walls, the start and the goal stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<span class=&quot;sw sw-dfs&quot;></span>Visited by DFS (darker: still on the stack)"><span class="sw sw-dfs"></span>DFS 拜訪過（較深：還在堆疊裡）</span>
@@ -185,7 +191,7 @@
           <span class="maze-only" style="color:var(--gt-path)" data-en-html="<i class=&quot;path&quot;></i>Path found"><i class="path"></i>找到的路</span>
           <span class="maze-only" data-en-html="<svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><circle cx=&quot;7&quot; cy=&quot;7&quot; r=&quot;6&quot; fill=&quot;var(--gt-start)&quot;/></svg>Start  <svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><path d=&quot;M7 .8l1.8 4.1 4.4.4-3.3 2.9 1 4.4L7 10.3l-3.9 2.3 1-4.4L.8 5.3l4.4-.4z&quot; fill=&quot;var(--gt-goal)&quot;/></svg>Goal"><svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="var(--gt-start)"/></svg>起點　<svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 .8l1.8 4.1 4.4.4-3.3 2.9 1 4.4L7 10.3l-3.9 2.3 1-4.4L.8 5.3l4.4-.4z" fill="var(--gt-goal)"/></svg>終點</span>
         </div>
-        <div class="repr" id="reprBox" hidden>
+        <div class="card repr" id="reprBox" data-deck="鄰接表與矩陣|Adjacency" data-deck-order="2" hidden>
           <div class="repr-box">
             <h3 data-en="Adjacency list">鄰接串列</h3>
             <ul class="adjlist" id="adjList"></ul>
@@ -202,7 +208,17 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="mazeCard">
+        <section class="card" id="mazeActions" data-deck="迷宮操作|Maze tools" data-deck-order="1">
+          <h2 data-en="Maze tools">迷宮操作</h2>
+          <div class="gt-edit">
+            <button id="drawBtn" type="button" aria-pressed="false" data-en="Draw walls">畫牆</button>
+            <button id="mazePadBtn" type="button" data-en="Maze keypad">迷宮鍵盤</button>
+            <button id="newMaze" type="button" data-en="New maze">換一個迷宮</button>
+            <button id="swapBtn" type="button" data-en="Swap start and goal">起點終點對調</button>
+          </div>
+          <p class="hint" data-en="Turn on Draw walls to lock S and G, then tap or drag a grid line. On the keypad, the centre cycles through start, goal and wall. Move W to a square, choose an edge and press Add or Remove. Coordinates show (row, column).">開啟「畫牆」會固定起點 S 和終點 G，可輕點或沿格線拖曳。小鍵盤中央依序切換起點、終點、畫牆。將 W 移到格子，選好牆邊後按「加牆」或「拆牆」。座標依序是（列，行）。</p>
+        </section>
+        <section class="card" id="mazeCard" data-deck="建造迷宮|Build maze" data-deck-order="2">
           <h2 data-en="Building the maze">建造迷宮</h2>
           <div class="slider"><label for="size" data-en="Side n">邊長 n</label><output id="sizeo"></output>
             <input id="size" type="range" min="4" max="40" step="1" value="12" data-decimals="0"></div>
@@ -214,16 +230,11 @@
             </select></div>
           <div class="slider"><label for="loops" data-en="Open up walls">打通牆</label><output id="loopso"></output>
             <input id="loops" type="range" min="0" max="40" step="1" value="0" data-decimals="0"></div>
-          <div class="btns">
-            <button id="newMaze" type="button" data-en="New maze">換一個迷宮</button>
-            <button id="drawBtn" type="button" aria-pressed="false" data-en="Draw walls">畫牆</button>
-            <button id="swapBtn" type="button" data-en="Swap start and goal">起點終點對調</button>
-          </div>
           <p class="hint" id="mazeInfo"></p>
           <p class="hint" id="drawHint" data-en="Random DFS gives long corridors, random Prim many short dead ends; both make a spanning tree (exactly one path between any two squares). “Open up walls” removes that percentage of the remaining inner walls, adding loops. With “Draw walls” on, tap or drag along a grid line to add or remove a wall; changing the side, the method or the percentage builds a new maze and the walls you drew are lost.">隨機 DFS 的走廊長、岔路少；隨機 Prim 有很多短短的死巷；兩者產生的都是生成樹（任兩格之間恰好一條路）。「打通牆」把剩下的內牆拿掉這個百分比，多出迴路。打開「畫牆」後，按在格線上或沿著格線拖曳，就能加上或拿掉牆；改邊長、產生方式或百分比會重新產生迷宮，自己畫的牆會不見。</p>
         </section>
 
-        <section class="card" id="graphCard" hidden>
+        <section class="card" id="graphCard" data-deck="建造圖|Build graph" data-deck-order="1" hidden>
           <h2 data-en="Building the graph">建造圖</h2>
           <div class="pick"><label for="presetSel" data-en="Graph">圖</label>
             <select id="presetSel">
@@ -235,11 +246,16 @@
           <div class="btns"><button id="newGraph" type="button" data-en="New graph">換一張</button></div>
           <div class="pick" style="margin-top:8px"><label for="gsSel" data-en="Start">起點</label><select id="gsSel"></select></div>
           <p class="hint" id="graphInfo"></p>
-          <p class="hint" data-en="Tap a vertex on the canvas to make it the start. Tap a cell of the adjacency matrix below the canvas to add or remove an edge (the matrix stays symmetric).">點畫布上的點，可以把它設成起點；點畫布下方鄰接矩陣的格子，可以加上或拿掉一條邊（矩陣保持對稱）。</p>
+          <p class="hint" data-en="Tap a vertex to make it the start. In the Adjacency tab, tap a matrix cell to add or remove an edge. The matrix stays symmetric.">點畫布上的點，可設為起點。在「鄰接表與矩陣」分頁點矩陣格，即可加邊或移除邊，矩陣會保持對稱。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="走法|Traversal" data-deck-order="3">
           <h2 data-en="How they walk">走法</h2>
+          <div class="btns">
+            <button id="resetBtn" type="button" data-en="Restart">重來</button>
+            <button id="wipeBtn" type="button" data-en="Clear all" title="清掉紀錄表，回到第 0 步；迷宮、牆、起點與終點都不變" data-en-title="Clear the log and go back to step 0; the maze, its walls, the start and the goal stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
           <div class="pick"><label for="orderSel" data-en="Neighbour order">鄰居順序</label><select id="orderSel"></select></div>
           <div class="checks">
             <label><input id="early" type="checkbox" checked><span data-en="Stop at the goal">找到終點就停</span></label>
@@ -330,18 +346,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201318"></script>
-  <script src="js/graph-traversal-core.js?v=202611201318"></script>
-  <script src="js/sound.js?v=202611201318"></script>
-  <script src="js/numinput.js?v=202611201318"></script>
-  <script src="js/labdeck.js?v=202611201318"></script>
-  <script src="js/drawkit.js?v=202611201318"></script>
-  <script src="js/keys.js?v=202611201318"></script>
-  <script src="js/graph-traversal.js?v=202611201318"></script>
-  <script src="js/firebase-config.js?v=202611201318"></script>
-  <script src="js/missions.js?v=202611201318" data-module="graph-traversal"></script>
-  <script src="js/missions/graph-traversal.js?v=202611201318"></script>
-  <script src="js/stats.js?v=202611201318" data-module="graph-traversal"></script>
-  <script src="js/comments.js?v=202611201318"></script>
+  <script src="js/math.js?v=202611201359"></script>
+  <script src="js/graph-traversal-core.js?v=202611201359"></script>
+  <script src="js/sound.js?v=202611201359"></script>
+  <script src="js/numinput.js?v=202611201359"></script>
+  <script src="js/labdeck.js?v=202611201359"></script>
+  <script src="js/drawkit.js?v=202611201359"></script>
+  <script src="js/keys.js?v=202611201359"></script>
+  <script src="js/vpad.js?v=202611201359"></script>
+  <script src="js/graph-traversal.js?v=202611201359"></script>
+  <script src="js/firebase-config.js?v=202611201359"></script>
+  <script src="js/missions.js?v=202611201359" data-module="graph-traversal"></script>
+  <script src="js/missions/graph-traversal.js?v=202611201359"></script>
+  <script src="js/stats.js?v=202611201359" data-module="graph-traversal"></script>
+  <script src="js/comments.js?v=202611201359"></script>
 </body>
 </html>

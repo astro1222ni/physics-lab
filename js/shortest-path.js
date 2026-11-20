@@ -23,7 +23,7 @@
     mode: 'taiwan', g: null, s: 1, t: 12, algo: 'dijkstra', early: false,
     tr: null, k: 0, st: null, playing: false, acc: 0, speed: 3,
     manual: true, done: false, result: null,
-    sel: 0, selShown: false, pick: 't', showW: true, showTree: true,
+    sel: 0, selShown: false, pick: 't', pickedRole: null, showW: true, showTree: true,
     rand: { n: 10, seed: 1 }, grid: { rows: 4, cols: 6, seed: 1 },
     log: [], fx: [], hover: null
   };
@@ -67,6 +67,8 @@
   let dpr = 1, cw = 320, ch = 520, L = null, bg = null;
   function layout() {
     const w = cw, narrow = w < 560, g = state.g, m = state.mode;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const mapHeight = Math.max(180, innerHeight - 72);
     const pos = [];
     let H, r, sc, fit;
     if (m === 'taiwan') {
@@ -75,7 +77,7 @@
       pts.forEach(function (p) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
       const mx = narrow ? 30 : 92, my = 16;
       // 寬螢幕放大一點（中部的城市才不會擠在一起），但整張地圖的高度不超過視窗
-      const maxH = Math.max(narrow ? 480 : 560, (window.innerHeight || 800) - 100);
+      const maxH = landscape ? mapHeight : Math.max(narrow ? 480 : 560, (window.innerHeight || 800) - 100);
       sc = Math.min((w - 2 * mx) / (x1 - x0), (maxH - 2 * my - 6) / (y1 - y0), narrow ? 1.7 : 2.0);
       H = Math.round((y1 - y0) * sc + 2 * my + 6);
       const ox = (w - (x1 - x0) * sc) / 2 - x0 * sc, oy = my - y0 * sc;
@@ -86,9 +88,9 @@
     }
     if (m === 'grid') {
       // 窄螢幕而且行數比列數多時，把方格轉 90°（第 1 列在最左邊），點才不會擠在一起
-      const turn = narrow && g.cols > g.rows;
+      const turn = !landscape && narrow && g.cols > g.rows;
       const pad = 32, cols = turn ? g.rows : g.cols, rows = turn ? g.cols : g.rows;
-      const sp = Math.min((w - 2 * pad) / (cols - 1), 96);
+      const sp = Math.min((w - 2 * pad) / (cols - 1), (landscape ? mapHeight - 2 * pad - 6 : Infinity) / (rows - 1), 96);
       H = Math.round(sp * (rows - 1) + 2 * pad + 6);
       const ox = (w - sp * (cols - 1)) / 2;
       g.nodes.forEach(function (n) { pos.push({ x: ox + (turn ? n.r : n.c) * sp, y: pad + 3 + (turn ? n.c : n.r) * sp }); });
@@ -98,12 +100,13 @@
     // 隨機圖與負權重：依點實際分布的範圍縮放（四周留標籤的空間）；隨機圖在窄螢幕上轉成直的
     let x0 = INF, x1 = -INF, y0 = INF, y1 = -INF;
     g.nodes.forEach(function (n) { x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y); });
-    const rot = m === 'random' && narrow && (x1 - x0) > (y1 - y0);
+    const rot = m === 'random' && narrow && !landscape && (x1 - x0) > (y1 - y0);
     const bw = Math.max(0.3, rot ? y1 - y0 : x1 - x0), bh = Math.max(0.3, rot ? x1 - x0 : y1 - y0);
     const padX = m === 'neg' ? (narrow ? 44 : 54) : 46, padY = m === 'neg' ? 52 : 46;
     const want = (w - 2 * padX) / bw * bh + 2 * padY;
     if (rot) H = Math.round(Math.min(640, want));
     else H = Math.round(Math.min(m === 'neg' ? 440 : 540, Math.max(m === 'neg' ? (narrow ? 340 : 300) : 320, want)));
+    if (landscape) H = Math.min(H, mapHeight);
     sc = Math.min((w - 2 * padX) / bw, (H - 2 * padY) / bh);
     const ox = (w - bw * sc) / 2, oy = (H - bh * sc) / 2;
     g.nodes.forEach(function (n) {
@@ -590,6 +593,8 @@
       ctx.restore();
     }
 
+    if (state.pickedRole) drawSelection(state.pickedRole);
+
     // ---- 鍵盤焦點框（用 Tab 進到畫布時） ----
     if (kb && kb.focused()) {
       const k = kb.index();
@@ -605,6 +610,50 @@
       }
       ctx.restore();
     }
+  }
+  // 把大標籤留在圖邊，以引線、空心圈與準線指出所選的節點。
+  function drawSelection(role) {
+    const i = state[role], n = state.g.nodes[i], p = L.pos[i];
+    const title = (role === 's' ? T('起點 S', 'Start S') : T('終點 G', 'Goal G')) + ' · ' + nameOf(i);
+    const position = state.mode === 'taiwan' ? n.lat.toFixed(2) + '°N  ' + n.lon.toFixed(2) + '°E' : '';
+    ctx.save();
+    ctx.font = fnt(16, 700);
+    const titleWidth = ctx.measureText(title).width;
+    ctx.font = fnt(13);
+    const width = Math.max(titleWidth, ctx.measureText(position).width) + 20;
+    const height = position ? 49 : 31;
+    // 優先找離所選節點近的圖邊空位，保留城市、指北針與比例尺。
+    const boxes = L.pos.map(q => [q.x - 15, q.y - 15, q.x + 15, q.y + 15]);
+    if (L.lab) L.lab.forEach(label => boxes.push(label.b));
+    if (state.mode === 'taiwan') boxes.push([cw - 42, 0, cw, 56], [0, ch - 38, 100, ch]);
+    let best;
+    for (const x of [5, cw - width - 5]) {
+      const edge = x < cw / 2 ? x + width : x;
+      for (const dy of [0, -height, height, -2 * height, 2 * height]) {
+        const y = Math.max(5, Math.min(ch - height - 5, p.y - height / 2 + dy));
+        const overlap = boxes.reduce((sum, b) => sum +
+          Math.max(0, Math.min(x + width, b[2]) - Math.max(x, b[0])) *
+          Math.max(0, Math.min(y + height, b[3]) - Math.max(y, b[1])), 0);
+        const score = 3 * overlap + Math.hypot(edge - p.x, y + height / 2 - p.y);
+        if (!best || score < best.score) best = { x: x, y: y, edge: edge, score: score };
+      }
+    }
+    const { x, y, edge } = best;
+    const r = L.r + 6, col = role === 's' ? C.accent : C['sp-path'];
+    ctx.beginPath(); ctx.moveTo(edge, y + height / 2); ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    for (const sign of [-1, 1]) {
+      ctx.moveTo(p.x + sign * (r - 3), p.y); ctx.lineTo(p.x + sign * (r + 4), p.y);
+      ctx.moveTo(p.x, p.y + sign * (r - 3)); ctx.lineTo(p.x, p.y + sign * (r + 4));
+    }
+    ctx.stroke();
+    D.roundRect(ctx, x, y, width, height, 8);
+    ctx.fillStyle = C.surface; ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = fnt(16, 700); ctx.fillStyle = C.text;
+    ctx.fillText(title, x + 10, y + 16);
+    if (position) { ctx.font = fnt(13); ctx.fillStyle = C.muted; ctx.fillText(position, x + 10, y + 36); }
+    ctx.restore();
   }
   function drawHead(x, y, ux, uy, color, size) {
     const nx = -uy, ny = ux;
@@ -950,6 +999,7 @@
     if (m === state.mode && state.g) return;
     if (state.g) store[state.mode] = { g: state.g, s: state.s, t: state.t };
     state.mode = m;
+    state.pickedRole = null;
     const got = store[m] || makeGraph(m);
     state.g = got.g; state.s = got.s; state.t = got.t;
     state.sel = 0; state.selShown = false; state.hover = null;
@@ -999,14 +1049,15 @@
     return edgeName(e) + '（' + (ed.closed ? T('封閉', 'closed') : num(ed.w) + unit()) + '）';
   }
   function refreshEdgeOption(e) { const o = edgeSel.options[e]; if (o) o.textContent = edgeLabel(e); }
-  function setST(s, t) {
+  function setST(s, t, role) {
+    state.pickedRole = role || null;
     state.s = s; state.t = t;
     selS.value = String(s); selT.value = String(t);
     if (state.mode === 'random') placeLabels();
     rebuild();
   }
-  selS.addEventListener('change', function () { setST(+selS.value, state.t); });
-  selT.addEventListener('change', function () { setST(state.s, +selT.value); });
+  selS.addEventListener('change', function () { setST(+selS.value, state.t, 's'); });
+  selT.addEventListener('change', function () { setST(state.s, +selT.value, 't'); });
   $('swapBtn').addEventListener('click', function () { setST(state.t, state.s); });
   Array.prototype.forEach.call(document.querySelectorAll('.seg2 button'), function (b) {
     b.addEventListener('click', function () {
@@ -1099,12 +1150,14 @@
   const elRn = $('rn'), elGr = $('gr'), elGc = $('gc');
   function newRandom() {
     state.g = S.randomGraph(state.rand.n, state.rand.seed);
+    state.pickedRole = null;
     state.s = 0; state.t = state.g.nodes.length - 1; state.sel = 0; state.selShown = false;
     $('randInfo').textContent = T('第 ' + state.rand.seed + ' 張（同一個編號每次都一樣）', 'Graph no. ' + state.rand.seed + ' (the same number always gives the same graph)');
     fillSelects(); resize(); rebuild();
   }
   function newGrid() {
     state.g = S.gridGraph(state.grid.rows, state.grid.cols, state.grid.seed);
+    state.pickedRole = null;
     state.s = 0; state.t = state.g.nodes.length - 1; state.sel = 0; state.selShown = false;
     fillSelects(); resize(); rebuild();
   }
@@ -1144,7 +1197,7 @@
     const h = hit(x, y);
     if (!h) return;
     if (h.type === 'n') {
-      if (state.pick === 's') setST(h.i, state.t); else setST(state.s, h.i);
+      if (state.pick === 's') setST(h.i, state.t, 's'); else setST(state.s, h.i, 't');
       say(T((state.pick === 's' ? '起點' : '終點') + '設為 ' + nameOf(h.i) + '。', (state.pick === 's' ? 'Start' : 'Goal') + ' set to ' + nameOf(h.i) + '.'));
     } else selectEdge(h.i);
   });
@@ -1165,10 +1218,10 @@
       label: T('最短路徑畫布。按 Enter 在「起點」「終點」「選取的邊」之間切換；左右方向鍵換起點或終點、改邊的權重（Shift 一次 10），上下方向鍵換一條邊。', 'Shortest-path canvas. Press Enter to switch between the start, the goal and the selected edge; left and right arrows change the start or goal, or the weight of the edge (Shift: 10 at a time); up and down arrows pick another edge.'),
       items: [
         { name: function () { return T('起點', 'Start'); },
-          move: function (dx, dy) { const V = state.g.nodes.length, d = dx || dy; if (!d) return false; setST((state.s + d + V) % V, state.t); return true; },
+          move: function (dx, dy) { const V = state.g.nodes.length, d = dx || dy; if (!d) return false; setST((state.s + d + V) % V, state.t, 's'); return true; },
           describe: function () { return T('起點：', 'Start: ') + nameOf(state.s); } },
         { name: function () { return T('終點', 'Goal'); },
-          move: function (dx, dy) { const V = state.g.nodes.length, d = dx || dy; if (!d) return false; setST(state.s, (state.t + d + V) % V); return true; },
+          move: function (dx, dy) { const V = state.g.nodes.length, d = dx || dy; if (!d) return false; setST(state.s, (state.t + d + V) % V, 't'); return true; },
           describe: function () { return T('終點：', 'Goal: ') + nameOf(state.t); } },
         { name: function () { return T('選取的邊', 'Selected edge'); },
           move: function (dx, dy, big) {

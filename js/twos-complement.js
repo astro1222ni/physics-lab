@@ -77,17 +77,21 @@
   let dpr = 1, cw = 320, ch = 420, cw2 = 320, ch2 = 206, L = null, W2 = null;
 
   function layout() {
-    const W = cw, wide = W >= 620, n = state.n;
-    const S = wide ? Math.min(Math.round(W * 0.5), 440) : Math.min(W, 380);
+    const W = cw, wide = W >= 620 || matchMedia('(orientation: landscape) and (max-height: 600px)').matches, n = state.n;
+    let S = wide ? Math.min(Math.round(W * 0.5), 440) : Math.min(W, 380);
+    const compactLamps = wide ? S < 285 : n > 16;
     // 燈排
     const ax = wide ? S + 8 : 8, aw = wide ? W - S - 16 : W - 16;
     const perRow = n <= 8 ? n : 8, rows = Math.ceil(n / perRow);
     const pitch = Math.min(56, (aw - 16) / perRow);
     const r = Math.max(8, Math.min(16, pitch * 0.3));
-    const headH = 24, placeH = 32, digitH = 18;
+    const headH = 24, placeH = compactLamps ? 27 : 32, digitH = compactLamps ? 14 : 18;
     const rowH = placeH + 2 * r + 8 + digitH + 6;
     const panelW = perRow * pitch + 16, panelH = rows * rowH + 8;
-    const sumH = 32, lampH = headH + panelH + sumH;
+    // 直放時先留給完整燈排及按鈕，再決定圓環大小。
+    if (!wide) S = Math.min(S, Math.max(208, innerHeight - headH - panelH - 52 - 120));
+    const smallRing = S < 285;
+    const sumH = smallRing ? 52 : 32, lampH = headH + panelH + sumH;
     const H = Math.ceil(wide ? Math.max(S, lampH + 16) : S + 6 + lampH + 8);
     const ay = wide ? Math.max(8, (H - lampH) / 2) : S + 6;
     const ring = { ox: wide ? 0 : Math.round((W - S) / 2), oy: wide ? Math.round((H - S) / 2) : 0, S: S };
@@ -98,7 +102,7 @@
     ring.cx = ring.ox + S / 2; ring.cy = ring.oy + S / 2;
     const panelX = ax + (aw - panelW) / 2;
     return {
-      wide: wide, narrow: W < 560, ring: ring, ax: ax, aw: aw, ay: ay, perRow: perRow, rows: rows, pitch: pitch, r: r,
+      wide: wide, narrow: W < 560, smallRing: smallRing, ring: ring, ax: ax, aw: aw, ay: ay, perRow: perRow, rows: rows, pitch: pitch, r: r,
       headH: headH, placeH: placeH, digitH: digitH, rowH: rowH, panelX: panelX, panelY: ay + headH, panelW: panelW, panelH: panelH,
       right: panelX + 8 + perRow * pitch, sumY: ay + headH + panelH + 22, H: H
     };
@@ -460,15 +464,20 @@
 
     // 圓盤中間：A 的值
     const u = state.u, v = K.value(u, n, rep), nz = K.isNegZero(u, n, rep);
-    const maxW = R.rc * 1.7;
+    const maxW = L.smallRing ? R.ri * 1.6 : R.rc * 1.7;
     D.haloText(ctx, T('A（' + repName(rep) + '）', 'A (' + repName(rep) + ')'), R.cx, R.cy - R.rc * 0.42, C.muted, 'center', 'middle', fnt(fitPx(T('A（' + repName(rep) + '）', 'A (' + repName(rep) + ')'), 12.5, 10, maxW * 0.9, 600), 600));
     const big = K.valText(u, n, rep);
-    const bp = fitPx(big, L.narrow ? 28 : 32, 13, maxW, 700, MONO);
-    D.haloText(ctx, big, R.cx, R.cy + 2, valColor(v, nz, true), 'center', 'middle', fnt(bp, 700, MONO));
+    const bp = fitPx(big, L.smallRing ? 23 : L.narrow ? 28 : 32, L.smallRing ? 10 : 13, maxW, 700, MONO);
+    D.haloText(ctx, big, R.cx, R.cy + (L.smallRing ? 6 : 2), valColor(v, nz, true), 'center', 'middle', fnt(bp, 700, MONO));
     const sub = T('無號 ', 'unsigned ') + it(u);
-    D.haloText(ctx, sub, R.cx, R.cy + R.rc * 0.36, C.muted, 'center', 'middle', fnt(fitPx(sub, 12, 9, maxW * 0.9, 500), 500));
     const hx = '0x' + K.hexText(u, n);
-    D.haloText(ctx, hx, R.cx, R.cy + R.rc * 0.36 + 16, alpha(C.muted, 0.9), 'center', 'middle', fnt(fitPx(hx, 11.5, 9, maxW * 0.8, 500, MONO), 500, MONO));
+    if (L.smallRing) {
+      const extra = sub + ' · ' + hx;
+      D.haloText(ctx, extra, L.panelX + L.panelW / 2, L.sumY + 17, C.muted, 'center', 'middle', fnt(fitPx(extra, 12, 9, L.aw, 500), 500));
+    } else {
+      D.haloText(ctx, sub, R.cx, R.cy + R.rc * 0.36, C.muted, 'center', 'middle', fnt(fitPx(sub, 12, 9, maxW * 0.9, 500), 500));
+      D.haloText(ctx, hx, R.cx, R.cy + R.rc * 0.36 + 16, alpha(C.muted, 0.9), 'center', 'middle', fnt(fitPx(hx, 11.5, 9, maxW * 0.8, 500, MONO), 500, MONO));
+    }
     if (nz) D.pill(ctx, T('負零', 'negative zero'), R.cx, R.cy - R.rc * 0.42 + 26 - 40, C['tc-neg'], 'center', fnt(11, 700));
 
     // 接縫閃光

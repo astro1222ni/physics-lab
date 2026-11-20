@@ -108,6 +108,12 @@
     .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 14px 4px 0; }
     .chart-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
     .chart-head span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
+    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .lab .stage .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+      .lab .stage .playbar button { min-height: 44px; padding: 4px 2px; line-height: 1.15; }
+    }
   </style>
 </head>
 <body data-en-ready>

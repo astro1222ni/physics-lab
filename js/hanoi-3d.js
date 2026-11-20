@@ -6,7 +6,7 @@
  *
  * 場景：木頭底座（上表面 y = 0），三根木柱在 x = −1、0、1（A、B、C）。盤子是有孔的漆面木盤（擠出的圓環＋圓角），
  * 每個盤的位置一律由 bridge.pose(盤, 抬高層數) 給（柱子編號可以是小數＝飛行中、第幾層），和 2D 用同一套動畫，所以兩邊永遠一致。
- * 點一根柱子（或柱子上的盤、底座靠近柱子的地方）＝ bridge.pegClick(柱)，和 2D 的點選完全相同；拖曳空白處轉動視角。
+ * 點一根柱子（或柱子上的盤、底座靠近柱子的地方）＝ bridge.pegClick(柱)，和 2D 的點選完全相同；拖曳空白處依模式旋轉或平移。
  */
 (function () {
   'use strict';
@@ -29,8 +29,8 @@
     wrap.className = 'p3-wrap';
     const canvas = document.createElement('canvas');
     canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', T('河內塔的 3D 立體檢視：木頭底座上有 A、B、C 三根柱子。點一根柱子拿起最上面的盤，再點另一根柱子放下；拖曳空白處旋轉視角，滾輪或雙指縮放。鍵盤：1、2、3（或 A、B、C）選柱子，Backspace 是上一步，方向鍵轉動視角。',
-      '3D view of the Tower of Hanoi: three pegs A, B and C on a wooden base. Tap a peg to pick up its top disc, then tap another peg to put it down; drag the background to rotate, scroll or pinch to zoom. Keyboard: 1, 2, 3 (or A, B, C) pick a peg, Backspace undoes, arrow keys turn the view.'));
+    canvas.setAttribute('aria-label', T('河內塔的 3D 立體檢視：木頭底座上有 A、B、C 三根柱子。點一根柱子拿起最上面的盤，再點另一根柱子放下；選「旋轉」或「平移」後拖曳空白處，滾輪或雙指縮放。鍵盤：1、2、3（或 A、B、C）選柱子，Backspace 是上一步，方向鍵依目前模式移動視角。',
+      '3D view of the Tower of Hanoi: three pegs A, B and C on a wooden base. Tap a peg to pick up its top disc, then tap another peg to put it down; choose Rotate or Pan and drag the background. Scroll or pinch to zoom. Keyboard: 1, 2, 3 (or A, B, C) pick a peg, Backspace undoes, arrow keys move the view in the chosen mode.'));
     wrap.appendChild(canvas);
     const hud = document.createElement('div');
     hud.className = 'p3-hud';
@@ -61,10 +61,12 @@
 
     // ---------- 視角控制 ----------
     const controls = new lib.OrbitControls(camera, canvas);
+    // OrbitControls 每次更新阻尼前先限制中心，持續拖到邊界也不會漂出場景。
+    controls.maxTargetRadius = SP + RMAX;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: controls.maxTargetRadius, T });
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.8;
-    controls.enablePan = false;
     controls.minDistance = 2;
     controls.maxDistance = 14;
     controls.minPolarAngle = 0.12;
@@ -408,7 +410,7 @@
       setHud('nx', hm ? '<span style="color:var(--hn-hint)">' + T('下一步：盤 ' + hm.disk + '：' + PEG[hm.from] + ' → ' + PEG[hm.to], 'Next: disc ' + hm.disk + ': ' + PEG[hm.from] + ' → ' + PEG[hm.to]) + '</span>' : '');
       setHud('tip', sel >= 0 && B.top(sel)
         ? T('已拿起盤 ' + B.top(sel) + '：點另一根柱子放下（點同一根放回去）', 'Holding disc ' + B.top(sel) + ': tap another peg to put it down (the same peg puts it back)')
-        : T('點柱子拿起、再點另一根放下；拖曳空白處轉動', 'Tap a peg to lift, another to drop; drag to turn'));
+        : T('點柱子拿起，再點另一根放下', 'Tap one peg to lift and another to drop'));
     }
 
     let lastRev = -1;
@@ -463,7 +465,7 @@
     canvas.addEventListener('pointercancel', function () { down = null; });
     canvas.addEventListener('pointermove', function (ev) {
       if (down || ev.pointerType === 'touch') return;
-      canvas.style.cursor = pickPeg(ev) >= 0 ? 'pointer' : '';
+      canvas.style.cursor = pickPeg(ev) >= 0 ? 'pointer' : (nav.mode() === 'pan' ? 'grab' : '');
     });
 
     // ---------- 視角 ----------
@@ -476,14 +478,20 @@
       return Math.max(hh / Math.tan(vf / 2), hw / Math.tan(hf / 2)) * (camera.aspect < 1.5 ? 0.92 : 1.1);
     }
     function resetCamera(quiet) {
+      // 清掉上一次拖曳殘留的阻尼，再設定場景的原始視角。
+      controls.enableDamping = false;
+      controls.update();
+      controls.enableDamping = true;
       const d = fitDistance();
       target.set(0, PH * 0.5 - 0.06, 0);
       controls.target.copy(target);
       camera.position.copy(target).addScaledVector(new THREE.Vector3(0.24, 0.52, 1.0).normalize(), d);
       controls.maxDistance = d * 2.6;
       controls.minDistance = d * 0.45;
+      controls.cursor.copy(controls.target);
       camera.updateProjectionMatrix();
       controls.update();
+      nav.home();
       if (!quiet) requestRender();
     }
 
@@ -524,6 +532,7 @@
     });
     // 鍵盤：1、2、3／A、B、C 選柱子，Backspace 上一步，方向鍵轉動視角
     canvas.addEventListener('keydown', function (ev) {
+      if (nav.mode() === 'pan' && ev.key.startsWith('Arrow')) return;
       const k = ev.key;
       const peg = { '1': 0, '2': 1, '3': 2, a: 0, b: 1, c: 2, A: 0, B: 1, C: 2 }[k];
       if (peg != null && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { ev.preventDefault(); B.pegClick(peg); return; }
@@ -538,12 +547,13 @@
       else if (k === 'ArrowDown') sph.phi = Math.min(controls.maxPolarAngle, sph.phi + step);
       else used = false;
       if (!used) return;
+      ev.stopImmediatePropagation();
       ev.preventDefault();
       camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sph));
       controls.update();
       requestRender();
       B.onRotate();
-    });
+    }, true);
 
     const api = {
       active: true,
@@ -568,6 +578,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         clearGroup(gDiscs); clearGroup(gHint); clearGroup(gStatic);
         if (woodTex) woodTex.dispose();

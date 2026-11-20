@@ -8,7 +8,7 @@
  *   'epoch'：每一輪結束。{ epoch, errors（這一輪分錯幾個）, converged, limit（達到 1000 輪上限）, updates, cycle }
  *   'train'：學到收斂，或達到輪數上限。
  *       { converged, limit, epochs, updates（修正次數 k）, w1, w2, b, S（整數累加器：w = w0 + (η/20)·S）, zeroInit,
- *         separable, gamma（最大間隔 γ，增廣空間）, R, bound（Novikoff 上界 (R/γ)²）, margin（學到的線的間隔）, ratio（margin/γ）,
+ *         separable, gamma（最大間隔 γ，增廣空間）, R, bound（Novikoff 上界 (R/γ)^2）, margin（學到的線的間隔）, ratio（margin/γ）,
  *         allWrong（這次學習中有一輪每個點都分錯）, maxErr, cycle, userAll（每個點都是自己放的）,
  *         added, removed, moved, removedNoise, removedClean, noiseTotal, noiseLeft, key（資料的指紋）, pts }
  */
@@ -30,51 +30,88 @@
     return mem[name][key];
   }
 
+  function item(ok, zh, en, value) {
+    const suffix = value == null ? '' : ' · ' + value;
+    return [ok, zh + suffix, en + suffix];
+  }
+  function progress(read) {
+    return function (ctx) {
+      const lab = window.PerceptronLab;
+      return lab ? read(lab.session, lab.state, ctx, this.mem || {}) : null;
+    };
+  }
+  function converged(s) { return item(s.trainer.converged, '學到整輪零錯誤', 'Finish a round with no errors', s.trainer.errs.length); }
+  function gateProgress(name) { return progress(s => [item(s.set === name, '選擇 ' + name.toUpperCase(), 'Select ' + name.toUpperCase()), converged(s)]); }
+  function classes(s, n) {
+    const counts = s.counts();
+    return item(counts.pos >= n && counts.neg >= n, '兩類各至少 ' + n + ' 點', 'Use at least ' + n + ' of each class', counts.pos + ' / ' + counts.neg);
+  }
+  function ownPoints(s, n) {
+    const own = s.points.filter(p => p.user).length;
+    return item(own === s.points.length && own >= n, '全部自行放點，至少 ' + n + ' 點', 'Place all points yourself, at least ' + n, own);
+  }
+
   LabMission.register('perceptron', [
     {
       id: 'perceptron-1', level: 1,
+      need: progress((s, ui) => [item(null, '按特徵平面旁的「單步」，直到遇到分錯的點', 'Press Step by the feature plane until a point is misclassified'),
+        item(!!ui.last?.wrong, '觀察這一步的權重修正', 'Watch the correction on this step', s.trainer.updates)]),
       title: { zh: '第一次修正', en: 'The first correction' },
       desc: { zh: '按「單步」，直到遇到一個分錯的點，看權重被修正一次。', en: 'Press “Step” until a point is misclassified and watch the weights get corrected once.' },
       check: function (ev) { return ev.type === 'step' && ev.data.wrong; }
     },
     {
       id: 'perceptron-2', level: 2,
+      need: gateProgress('and'),
       title: { zh: '學會 AND', en: 'Learning AND' },
       desc: { zh: '按「AND」，再按「學到收斂」，讓感知器有一整輪都沒有分錯。', en: 'Press “AND”, then “Learn until done”, until the perceptron gets through a whole round without a mistake.' },
       check: function (ev) { return learned(ev) && ev.data.set === 'and'; }
     },
     {
       id: 'perceptron-3', level: 2,
+      need: gateProgress('or'),
       title: { zh: '學會 OR', en: 'Learning OR' },
       desc: { zh: '按「OR」，讓感知器學到收斂。', en: 'Press “OR” and let the perceptron learn until it converges.' },
       check: function (ev) { return learned(ev) && ev.data.set === 'or'; }
     },
     {
       id: 'perceptron-4', level: 3,
+      need: gateProgress('nand'),
       title: { zh: '學會 NAND', en: 'Learning NAND' },
       desc: { zh: '按「NAND」，讓感知器學到收斂。（只用 NAND 閘就能組出任何邏輯電路。）', en: 'Press “NAND” and let the perceptron learn until it converges. (NAND gates alone can build any logic circuit.)' },
       check: function (ev) { return learned(ev) && ev.data.set === 'nand'; }
     },
     {
       id: 'perceptron-5', level: 3,
+      need: progress((s, ui) => [item(!!window.PerceptronLab.view3()?.active, '切到 3D 加權和', 'Open the 3D weighted sum'), item(ui.rotated, '選「旋轉」並拖曳斜面', 'Select Rotate and drag the sheet'), item(null, '在 3D 按「單步」', 'Press Step in 3D')]),
       title: { zh: '立體的加權和', en: 'The weighted sum in 3D' },
       desc: { zh: '按「3D 加權和」，拖曳轉動視角，再按「單步」。', en: 'Press “3D weighted sum”, drag to turn the view, then press “Step”.' },
       check: function (ev) { return ev.type === 'step' && ev.data.view3d && ev.data.rotated; }
     },
     {
       id: 'perceptron-6', level: 4,
+      need: progress(s => [ownPoints(s, 6), classes(s, 3), converged(s)]),
       title: { zh: '自己出題', en: 'Your own problem' },
       desc: { zh: '按「清空資料」，自己放點：+1 類、−1 類各至少 3 個，再讓感知器學到收斂。', en: 'Press “Clear points” and place your own: at least 3 points of class +1 and 3 of class −1, then let the perceptron learn until it converges.' },
       check: function (ev) { const d = ev.data; return learned(ev) && d.userAll && twoSides(d, 3); }
     },
     {
       id: 'perceptron-7', level: 5,
+      need: progress(s => [item(s.set === 'xor', '選擇 XOR', 'Select XOR'), item(s.trainer.errs.length >= 100, '至少學完 100 輪', 'Finish at least 100 rounds', s.trainer.errs.length), item((s.trainer.errs.at(-1) || 0) > 0, '該輪仍有錯誤', 'Still make mistakes in that round', s.trainer.errs.at(-1) ?? '—')]),
       title: { zh: 'XOR 的難題', en: 'The XOR problem' },
       desc: { zh: '按「XOR」，至少學 100 輪，看它到最後還是有點分錯。', en: 'Press “XOR”, train for at least 100 rounds, and see that some points are still wrong at the end.' },
       check: function (ev) { const d = ev.data; return ev.type === 'epoch' && d.set === 'xor' && d.epoch >= 100 && d.errors > 0; }
     },
     {
       id: 'perceptron-8', level: 5,
+      need: progress((s, ui, ctx, mem) => {
+        const key = window.PerceptronCore.dataKey(s.points, s.cfg.bias), runs = mem.runs?.[key] || {};
+        const a = Object.keys(runs.fixed || {}), b = Object.keys(runs.shuffle || {});
+        return [item(s.points.length >= 6, '同一份資料至少 6 個點', 'Use one data set of at least 6 points', s.points.length),
+          item(a.length > 0, '以固定順序學到收斂', 'Converge in fixed order', a.join(', ') || '—'),
+          item(b.length > 0, '以打亂順序學到收斂', 'Converge with shuffled order', b.join(', ') || '—'),
+          item(a.some(x => b.some(y => x !== y)), '兩種順序的修正次數不同', 'Find different correction counts')];
+      }),
       title: { zh: '順序很重要', en: 'Order matters' },
       desc: { zh: '用同一份資料（至少 6 個點），分別選「固定順序」和「每輪打亂」各學到收斂一次，讓兩次的修正次數不一樣。', en: 'With the same data (at least 6 points), learn until convergence once with “Fixed order” and once with “Shuffle each round”, so that the two runs make a different number of corrections.' },
       check: function (ev, mem) {
@@ -89,24 +126,28 @@
     },
     {
       id: 'perceptron-9', level: 6,
+      need: progress(s => [item(s.trainer.zeroInit && s.points.length >= 8, '零初始權重，至少 8 個點', 'Start from zero with at least 8 points', s.points.length), classes(s, 3), item(s.trainer.updates === 1, '只修正一次', 'Use exactly one correction', s.trainer.updates), converged(s)]),
       title: { zh: '一次就學會', en: 'Learned in one go' },
       desc: { zh: '初始權重選「零」，放至少 8 個點（兩類各至少 3 個），讓感知器只修正 1 次就收斂。', en: 'Choose “Zero” starting weights and place at least 8 points (at least 3 of each class) so that the perceptron converges after a single correction.' },
       check: function (ev) { const d = ev.data; return learned(ev) && d.zeroInit && d.n >= 8 && twoSides(d, 3) && d.updates === 1; }
     },
     {
       id: 'perceptron-10', level: 7,
+      need: progress(s => [ownPoints(s, 8), classes(s, 3), item(s.mm.gamma >= .8, '最大間隔至少 0.8', 'Make the largest margin at least 0.8', s.mm.gamma.toFixed(3)), converged(s)]),
       title: { zh: '寬寬的走廊', en: 'A wide corridor' },
       desc: { zh: '按「清空資料」，自己放至少 8 個點（兩類各至少 3 個），讓間隔 γ 至少 0.8，再學到收斂。', en: 'Press “Clear points”, place at least 8 points of your own (at least 3 of each class) so that the margin γ is at least 0.8, then learn until it converges.' },
       check: function (ev) { const d = ev.data; return learned(ev) && d.userAll && d.n >= 8 && twoSides(d, 3) && d.gamma >= 0.8; }
     },
     {
       id: 'perceptron-11', level: 8,
+      need: progress(s => [item(s.points.length >= 6, '至少 6 個點', 'Use at least 6 points', s.points.length), classes(s, 2), item(s.mm.separable && s.mm.bound >= 500, '收斂上界至少 500', 'Find a convergence bound of at least 500', s.mm.separable ? Math.round(s.mm.bound) : '—'), converged(s)]),
       title: { zh: '上界很大的資料', en: 'A very large bound' },
-      desc: { zh: '放至少 6 個點（兩類各至少 2 個），讓收斂定理的上界 (R/γ)² 至少 500，而且感知器真的學到收斂。', en: 'Place at least 6 points (at least 2 of each class) so that the convergence bound (R/γ)² is at least 500, and the perceptron still converges.' },
+      desc: { zh: '放至少 6 個點（兩類各至少 2 個），讓收斂定理的上界（R/γ 的平方）至少達到 500，而且感知器真的學到收斂。', en: 'Place at least 6 points (at least 2 of each class) so that the convergence bound (the square of R/γ) is at least 500, and the perceptron still converges.' },
       check: function (ev) { const d = ev.data; return learned(ev) && d.n >= 6 && twoSides(d, 2) && d.bound >= 500; }
     },
     {
       id: 'perceptron-12', level: 9,
+      need: progress(s => [item(s.trainer.zeroInit, '從零權重開始', 'Start with zero weights'), item(s.trainer.updates >= 100, '至少 100 次修正', 'Make at least 100 corrections', s.trainer.updates), converged(s)]),
       title: { zh: '學得很辛苦', en: 'A hard lesson' },
       desc: { zh: '初始權重選「零」，設計一份學得會的資料，讓感知器至少修正 100 次才收斂。', en: 'Choose “Zero” starting weights and design data that can be learned but needs at least 100 corrections before the perceptron converges.' },
       check: function (ev) { const d = ev.data; return learned(ev) && d.zeroInit && d.updates >= 100; }

@@ -6,13 +6,13 @@
  * 這和常見的寫法 w ← w + η(t − ŷ)x（標籤 t ∈ {0, 1}、ŷ = 1 若 z > 0 否則 0）是同一條規則：分錯時 t − ŷ = ±1，正好就是 y。
  * 一整輪（每個點都看過一次）都沒有分錯，就是「收斂」。
  *
- * 增廣向量：把偏差當成第三個權重，x̃ = (x1, x2, 1)、w̃ = (w1, w2, b)，z = w̃·x̃。不用偏差時 x̃ = (x1, x2, 0)、b 固定 0。
- * Novikoff（1962）收斂定理：若所有 ‖x̃‖ ≤ R，而且有單位向量 u 使每個點 y·(u·x̃) ≥ γ > 0，
- * 則從 w̃ = 0 出發，不論順序與學習率，更新次數 k ≤ (R/γ)²。這裡的 γ 取最大可能值：
- *     γ* = 原點到 {y·x̃} 的凸包的距離（> 0 ⇔ 線性可分；用凸包最近點求，見 maxMargin）。
+ * 增廣向量：把偏差當成第三個權重，x_aug = (x1, x2, 1)、w_aug = (w1, w2, b)，z = w_aug·x_aug。不用偏差時 x_aug = (x1, x2, 0)、b 固定 0。
+ * Novikoff（1962）收斂定理：若所有 ‖x_aug‖ ≤ R，而且有單位向量 u 使每個點 y·(u·x_aug) ≥ γ > 0，
+ * 則從 w_aug = 0 出發，不論順序與學習率，更新次數 k ≤ (R/γ)^2。這裡的 γ 取最大可能值：
+ *     γ* = 原點到 {y·x_aug} 的凸包的距離（> 0 ⇔ 線性可分；用凸包最近點求，見 maxMargin）。
  *
  * 精確計算：座標吸附在 0.05 的格點上，內部用整數 g = 20·x（增廣向量 (gx, gy, 20)）。
- * 權重寫成 w̃ = w̃0 + (η/20)·S，S 是整數累加器（每次更新加上 y·(gx, gy, 20)）。
+ * 權重寫成 w_aug = w_aug0 + (η/20)·S，S 是整數累加器（每次更新加上 y·(gx, gy, 20)）。
  * 零初始時 z 的正負只看整數 S·(gx, gy, 20)，所以「剛好在線上」「b 剛好是 0」「權重回到同一個值」都能精確判斷，不受浮點誤差影響。
  */
 (function (root) {
@@ -99,10 +99,10 @@
 
   // ---------------------------------------------------------------- 最大間隔（Novikoff 定理的 γ）
   /**
-   * 原點到 conv{ y·x̃ } 的最近點：枚舉 1、2、3 個頂點的單純形，把原點投影到它的仿射包上；
-   * 投影落在單純形內（重心座標都 ≥ 0）而且滿足最佳條件 p·z ≥ ‖p‖²（對所有點）的就是答案。
+   * 原點到 conv{ y·x_aug } 的最近點：枚舉 1、2、3 個頂點的單純形，把原點投影到它的仿射包上；
+   * 投影落在單純形內（重心座標都 ≥ 0）而且滿足最佳條件 p·z ≥ ‖p‖^2（對所有點）的就是答案。
    * 找不到 → 原點在凸包內或邊界上 → 不能用一條直線嚴格分開（不可分）。
-   * 回傳實際單位的 γ、R、上界 (R/γ)²，以及最佳方向 u（增廣空間的單位向量）。
+   * 回傳實際單位的 γ、R、上界 (R/γ)^2，以及最佳方向 u（增廣空間的單位向量）。
    */
   function maxMargin(points, bias) {
     bias = bias !== false;
@@ -146,11 +146,11 @@
     if (!best) return { separable: false, gamma: 0, R: R, bound: Infinity, u: null };
     const g = Math.sqrt(best.pp);
     const gamma = g / GRID;
-    // support／weights：最近點 = Σ weights·(y·x̃)（凸組合），是「γ 不可能更大」的證據
+    // support／weights：最近點 = Σ weights·(y·x_aug)（凸組合），是「γ 不可能更大」的證據
     return { separable: true, gamma: gamma, R: R, bound: (R / gamma) * (R / gamma), u: [best.p[0] / g, best.p[1] / g, best.p[2] / g], support: best.idx, weights: best.lam };
   }
 
-  /** 一組實際權重 w̃ = (w1, w2, b) 在增廣空間的間隔：min y·(w̃·x̃)/‖w̃‖（負數表示有點分錯） */
+  /** 一組實際權重 w_aug = (w1, w2, b) 在增廣空間的間隔：min y·(w_aug·x_aug)/‖w_aug‖（負數表示有點分錯） */
   function marginOf(w, points, bias) {
     bias = bias !== false;
     const ww = bias ? norm(w) : Math.hypot(w[0], w[1]);
@@ -166,7 +166,7 @@
     points.forEach(function (p) { if (p.c * (w[0] * p.x + w[1] * p.y + (bias ? w[2] : 0)) <= 0) k++; });
     return k;
   }
-  /** 決策線 w1·x1 + w2·x2 + b = 0 和方框 [−h, h]² 的交點（兩個端點），沒有線時回傳 null */
+  /** 決策線 w1·x1 + w2·x2 + b = 0 和方框 [−h, h]^2 的交點（兩個端點），沒有線時回傳 null */
   function clipLine(w, h) {
     h = h || 1;
     const a = w[0], b = w[1], c = w[2];

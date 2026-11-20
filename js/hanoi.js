@@ -1025,9 +1025,14 @@
         tri(x, y, s / 2, k - 1); tri(x + s / 2, y, s / 2, k - 1); tri(x + s / 4, y - s / 2 * 0.8660254, s / 2, k - 1);
       })(GL.x0, GL.y0, GL.s, 6);
     }
-    // 三個角
-    [[0, GL.x0 - 4, GL.y0 + 4, 'right'], [1, GL.x0 + GL.s / 2, GL.y0 - GL.s * 0.8660254 - 8, 'center'], [2, GL.x0 + GL.s + 4, GL.y0 + 4, 'left']].forEach(function (k) {
-      D.pill(g, T('全在 ' + PEG[k[0]], 'all on ' + PEG[k[0]]), k[1], k[2] + (k[0] === 1 ? 0 : 14), C.muted, k[3], fnt(11.5, 600));
+    // 三個角的位置用盤子所在的柱子表示。每個字母是一個盤，從最小盤開始。
+    const corners = [[GL.x0, GL.y0], [GL.x0 + GL.s / 2, GL.y0 - GL.s * Math.sqrt(3) / 2], [GL.x0 + GL.s, GL.y0]];
+    corners.forEach(function (corner, i) {
+      const [x, y] = corner, r = 6;
+      g.strokeStyle = C.text; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI);
+      g.moveTo(x - 9, y); g.lineTo(x + 9, y); g.moveTo(x, y - 9); g.lineTo(x, y + 9); g.stroke();
+      const label = PEG[i] + ' (' + PEG[i].repeat(n) + ')';
+      D.pill(g, label, x, i === 1 ? y - 10 : y + 20, C.muted, ['left', 'center', 'right'][i], fnt(11.5, 600));
     });
     graphCache = { c: c, key: n + ':' + GW + 'x' + GH + ':' + D.ver };
   }
@@ -1337,7 +1342,7 @@
         view3 = window.Hanoi3D.create(lib, host3, bridge);
         viewMsg.textContent = '';
         $('resetCam').hidden = false;
-        if (!quiet) say(T('3D：點柱子拿起最上面的盤，再點另一根柱子放下；拖曳空白處可以轉動視角。', '3D: tap a peg to pick up its top disc, then tap another peg to put it down; drag the background to turn the view.'));
+        if (!quiet) say(T('3D：點柱子拿起最上面的盤，再點另一根柱子放下。用畫布旁的「旋轉」或「平移」選擇拖曳方式。', '3D: tap a peg to pick up its top disc, then tap another peg to put it down. Choose Rotate or Pan beside the canvas to change how dragging works.'));
         requestDraw();
       }).catch(function (err) {
         if (token !== loadToken) return;
@@ -1413,8 +1418,14 @@
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopPlay(); else requestDraw(); });
   resize();
-  // 3D 是主畫面：有 WebGL 就自動切過去（使用者選過 2D 就尊重）
+  // 初訪先畫 2D。回訪者若選過 3D，才在首幀之後的空檔恢復視角。
   let pref = '';
   try { pref = localStorage.getItem('hanoi-view') || ''; } catch (e) { /* 忽略 */ }
-  if (pref !== '2d' && webglAvailable()) setView('3d', true);
+  if (pref === '3d') {
+    const restore = function () { if (!loadToken) setView('3d', true); };
+    requestAnimationFrame(function () {
+      if (window.requestIdleCallback) window.requestIdleCallback(restore, { timeout: 1800 });
+      else setTimeout(restore, 250);
+    });
+  }
 })();

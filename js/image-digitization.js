@@ -156,7 +156,8 @@
     const W = cw, narrow = W < 560;
     const pad = narrow ? 8 : 18, mat = narrow ? 6 : 11;
     const vh = window.innerHeight || 800;
-    const maxW = Math.max(240, Math.min(780, (vh * 0.68) / K.ASPECT));
+    const short = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const maxW = Math.max(200, Math.min(780, (short ? vh - 168 : vh * 0.68) / K.ASPECT));
     const imgW = Math.floor(Math.min(W - 2 * pad - 2 * mat, maxW));
     const imgH = Math.round(imgW * K.ASPECT);
     const x0 = Math.round((W - imgW) / 2), y0 = pad + mat;
@@ -390,6 +391,10 @@
     ctx.strokeRect(pcx - bw / 2, pcy - bh / 2, bw, bh);
     ctx.lineWidth = 2; ctx.strokeStyle = C['id-sel'];
     ctx.strokeRect(pcx - bw / 2, pcy - bh / 2, bw, bh);
+    const r = Math.max(5, Math.min(12, bw / 2));
+    ctx.beginPath(); ctx.arc(pcx, pcy, r, 0, Math.PI * 2);
+    ctx.moveTo(pcx - r - 4, pcy); ctx.lineTo(pcx + r + 4, pcy);
+    ctx.moveTo(pcx, pcy - r - 4); ctx.lineTo(pcx, pcy + r + 4); ctx.stroke();
     ctx.restore();
     // 放大鏡的位置：預設在右上方，碰到邊就換邊
     const R = L.narrow ? 46 : 70, n = L.narrow ? 7 : 9, gap = R + (L.narrow ? 14 : 22);
@@ -453,7 +458,7 @@
     ctx.beginPath(); ctx.arc(mx, my, R + (L.narrow ? 2 : 2.5), 0, Math.PI * 2);
     ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.stroke();
     // 下方的座標
-    D.pill(ctx, '(' + p.i + ', ' + p.j + ')', mx, my + R + (L.narrow ? 18 : 21), C['id-sel'], 'center', fnt(L.narrow ? 10.5 : 11.5, 700, MONO));
+    D.pill(ctx, 'P (' + p.i + ', ' + p.j + ')', mx, my + R + (L.narrow ? 18 : 21), C['id-sel'], 'center', fnt(L.narrow ? 10.5 : 11.5, 700, MONO));
     return { mx: mx, my: my, R: R };
   }
   function drawFocus(mag) {
@@ -480,6 +485,11 @@
     drawGridAndDots();
     drawSceneMarks();
     drawDivider();
+    const ox = L.x0 + L.imgW / (2 * cur.w), oy = L.y0 + L.imgH / (2 * cur.h);
+    ctx.save(); ctx.strokeStyle = C['id-sel']; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+    ctx.moveTo(ox - 6, oy); ctx.lineTo(ox + 6, oy); ctx.moveTo(ox, oy - 6); ctx.lineTo(ox, oy + 6); ctx.stroke(); ctx.restore();
+    D.haloText(ctx, 'O (0, 0)', ox + 7, oy, C.text, 'left', 'middle', fnt(10, 650));
     const mag = drawSelection();
     drawFocus(mag);
   }
@@ -747,7 +757,8 @@
     const info = pixelInfo(p.i, p.j), b = cur.b;
     const hex = '#' + hex2(info.rgb[0]) + hex2(info.rgb[1]) + hex2(info.rgb[2]);
     $('pxSw').style.background = hex;
-    setHTML('pxPos', T('像素', 'Pixel') + ' (' + p.i + ', ' + p.j + ')<small>' + T('左上角是 (0, 0)・', 'top-left is (0, 0) · ') + hex + '</small>');
+    const values = cur.mode === 'gray' ? 'Y ' + info.disp[0] : 'RGB ' + info.rgb.join(', ');
+    setHTML('pxPos', 'P (' + p.i + ', ' + p.j + ')<small>' + T('存下 ', 'Stored ') + values + ' · ' + hex + '</small>');
     let h = '<thead><tr><th>' + T('色版', 'Channel') + '</th><th>' + T('取樣值', 'Sampled') + '</th><th>' + T('代碼', 'Code') + '</th><th>' + T('二進位', 'Binary') + '</th><th>' + T('存下的值', 'Stored') + '</th></tr></thead><tbody>';
     const rows = cur.mode === 'gray'
       ? [{ n: T('亮度 Y', 'Brightness Y'), x: info.y, q: info.code[0], v: info.disp[0], col: '' }]
@@ -915,6 +926,22 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
 
+  function movePixel(dx, dy) {
+    flush();
+    if (!cur) return false;
+    const p = selPixel() || { i: Math.floor(cur.w / 2), j: Math.floor(cur.h / 2) };
+    const i = Math.max(0, Math.min(cur.w - 1, p.i + dx));
+    const j = Math.max(0, Math.min(cur.h - 1, p.j - dy));
+    state.sel = { u: (i + 0.5) / cur.w, v: (j + 0.5) / cur.h };
+    afterPick();
+    return true;
+  }
+  function moveDivider(dx) {
+    if (!dx || !L) return false;
+    const percent = Math.max(0, Math.min(100, Math.round(state.split * 100) + dx));
+    setSplitFromX(L.x0 + L.imgW * percent / 100);
+    return true;
+  }
   // 鍵盤：Enter 切換「分界線」與「選取的像素」，方向鍵移動
   const kb = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('圖片數位化畫布：左邊是原圖，右邊是數位化的結果。按 Enter 切換分界線或選取的像素，方向鍵移動，Shift 加方向鍵移動得更多。',
@@ -922,26 +949,13 @@
     items: [
       { name: function () { return T('分界線', 'Divider'); },
         move: function (dx, dy, big) {
-          if (!dx) return false;
-          state.split = Math.max(0, Math.min(1, Math.round((state.split + dx * (big ? 0.1 : 0.02)) * 100) / 100));
-          setRange(elSplit, Math.round(state.split * 100));
-          $('splito').textContent = String(Math.round(state.split * 100));
-          requestDraw();
-          return true;
+          return moveDivider(dx * (big ? 10 : 2));
         },
         describe: function () { return T('分界線在 ' + Math.round(state.split * 100) + '%', 'Divider at ' + Math.round(state.split * 100) + '%'); } },
       { name: function () { return T('選取的像素', 'Selected pixel'); },
         move: function (dx, dy, big) {
-          if (!cur) return false;
-          let q = selPixel();
-          if (!q) q = { i: Math.floor(cur.w / 2), j: Math.floor(cur.h / 2) };
-          else {
-            const step = big ? 8 : 1;
-            q = { i: Math.max(0, Math.min(cur.w - 1, q.i + dx * step)), j: Math.max(0, Math.min(cur.h - 1, q.j - dy * step)) };
-          }
-          state.sel = { u: (q.i + 0.5) / cur.w, v: (q.j + 0.5) / cur.h };
-          afterPick();
-          return true;
+          const step = big ? 8 : 1;
+          return selPixel() ? movePixel(dx * step, dy * step) : movePixel(0, 0);
         },
         describe: function () {
           const q = selPixel();
@@ -1128,4 +1142,50 @@
     new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== cw2) { lastW = cv.clientWidth; resize(); } }).observe(stage);
   } else window.addEventListener('resize', resize);
   resize();
+  // 方向、長按連發、拖曳與位置記憶使用共用小鍵盤；座標與動作由原實驗處理。
+  function mountKeypad() {
+    kb.select(1);
+    const canvasRect = () => cv.getBoundingClientRect();
+    const pad = LabVPad.mount({
+      id: 'image-digitization', className: 'image-digitization-pad', canvas: cv, lens: false, objects: ['pixel', 'divider'],
+      step: 1, steps: [1, 5], selected: () => kb.index() === 0 ? 'divider' : 'pixel',
+      select: id => kb.select(id === 'divider' ? 0 : 1),
+      move: (dx, dy, id) => id === 'divider' ? moveDivider(dx) : movePixel(dx, dy),
+      record: () => $('recBtn').click(),
+      point: id => {
+        const r = canvasRect();
+        if (!L) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        const p = selPixel();
+        const u = id === 'divider' ? state.split : p ? (p.i + 0.5) / cur.w : 0.5;
+        const v = id === 'pixel' && p ? (p.j + 0.5) / cur.h : 0.5;
+        return { x: r.left + L.x0 + u * L.imgW, y: r.top + L.y0 + v * L.imgH };
+      },
+      reading: () => $('pxPos').textContent,
+      visible: () => { const r = canvasRect(); return r.height > 0 && r.bottom > 0 && r.top < innerHeight; },
+      home: (w, h) => {
+        const r = canvasRect();
+        return { x: Math.min(innerWidth - w - 8, r.right - w - 8), y: Math.min(innerHeight - h - 8, Math.max(8, r.bottom - h - 8)) };
+      }
+    });
+    const center = pad.element.querySelector('.vpad-select'), step = pad.element.querySelector('.vpad-step');
+    const handle = pad.element.querySelector('.vpad-handle'), action = pad.element.querySelector('.vpad-record');
+    pad.element.setAttribute('aria-label', T('八向微調小鍵盤', 'Eight-direction keypad'));
+    for (const b of pad.element.querySelectorAll('[data-direction]')) b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent);
+    pad.lens.querySelector('canvas').setAttribute('aria-label', T('選取位置三倍放大', 'Three-times magnification of selected position'));
+    function labels() {
+      const id = pad.state.selected;
+      const name = id === 'pixel' ? T('像素', 'Pixel') : T('分界線', 'Divider');
+      center.textContent = id === 'pixel' ? 'P ⇄' : '↔ ⇄';
+      center.setAttribute('aria-label', name + T('，按一下切換對象', ', press to switch target'));
+      handle.textContent = '⠿ ' + name;
+      const unit = pad.state.step + (id === 'divider' ? '%' : T(' 格', ' px'));
+      if (step.textContent !== unit) step.textContent = unit;
+      action.textContent = T('記錄', 'Record');
+    }
+    // 共用元件在切換對象、步距與收合時一起重畫步距；此處同步該實驗的名稱與單位。
+    new MutationObserver(labels).observe(step, { childList: true });
+    try { if (!localStorage.getItem('lab-vpad:image-digitization')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+    labels();
+  }
+  mountKeypad();
 })();

@@ -40,8 +40,8 @@
 
     /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面 */
     #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: default; }
-    .sp button { min-height: 44px; }
-    .sp [hidden] { display: none !important; }
+    :is(.sp, .labdeck) button { min-height: 44px; }
+    :is(.sp, .labdeck) [hidden] { display: none !important; }
     .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
     .modes button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
     .modes button + button { border-left: 1px solid var(--border); }
@@ -64,9 +64,9 @@
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
     .sp .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
     .sp .slider input[type="range"] { height: 28px; margin: 0; }
-    .sp .checks label { min-height: 44px; }
-    .sp .checks input { width: 17px; height: 17px; }
-    .sp .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    :is(.sp, .labdeck) .checks label { min-height: 44px; }
+    :is(.sp, .labdeck) .checks input { width: 17px; height: 17px; }
+    :is(.sp, .labdeck) .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .sp .panel { grid-template-columns: minmax(0, 1fr); }
     .sp .panel > .card { min-width: 0; }
     .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
@@ -83,17 +83,17 @@
     /* 面板 */
     .pick { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 0 8px; }
     .pick label { font-size: calc(14px * var(--fs, 1)); }
-    .sp select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
-    .sp .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 8px 0 0; }
-    .sp .seg2 button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
-    .sp .seg2 button + button { border-left: 1px solid var(--border); }
-    .sp .seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    :is(.sp, .labdeck) select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    :is(.sp, .labdeck) .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 8px 0 0; }
+    :is(.sp, .labdeck) .seg2 button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    :is(.sp, .labdeck) .seg2 button + button { border-left: 1px solid var(--border); }
+    :is(.sp, .labdeck) .seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
     .seg-cap { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chips button { flex: 1 1 auto; padding: 6px 10px; }
     .chips button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
-    .sp .btns { margin: 8px 0 0; }
-    .sp .btns button { flex: 1 1 auto; }
+    :is(.sp, .labdeck) .btns { margin: 8px 0 0; }
+    :is(.sp, .labdeck) .btns button { flex: 1 1 auto; }
     .edge-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 0 0 4px; }
     .edge-row label { font-size: calc(14px * var(--fs, 1)); }
     dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
@@ -139,17 +139,17 @@
           <button type="button" data-mode="neg" aria-pressed="false" data-en="Negative weights">負權重</button>
         </div>
         <canvas id="cv" aria-label="圖的畫布：圓點是地點，連線是路，線上的數字是權重。點一下地點設成起點或終點，點一下路可以改它的權重。灰色是還沒找到的點，橘色是在佇列裡等待的點，綠色是已經確定最短距離的點，紅色粗線是最短路線。" data-en-aria-label="Graph canvas: dots are places, lines are roads and the numbers on the lines are weights. Tap a place to make it the start or the goal; tap a road to change its weight. Grey places have not been reached, orange ones are waiting in the queue, green ones have their shortest distance fixed, and the thick red line is the shortest route."></canvas>
-        <div class="pq" id="pqBox">
-          <p class="pq-h" id="pqHead">優先佇列</p>
-          <div class="pq-list" id="pq" aria-live="off"></div>
-        </div>
         <div class="playbar">
-          <button id="backBtn" type="button" data-en="Step back">上一步</button>
           <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
           <button id="nextBtn" type="button" data-en="Next node">下一個點</button>
           <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
           <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
           <button id="resetBtn" type="button" data-en="Restart">重來</button>
+        </div>
+        <div class="pq" id="pqBox">
+          <p class="pq-h" id="pqHead">優先佇列</p>
+          <div class="pq-list" id="pq" aria-live="off"></div>
         </div>
         <div class="playbar2">
           <button id="wipeBtn" type="button" data-en="Clear all" title="清掉紀錄表與畫面上的對照路線，回到第 0 步；地圖、權重、起點與終點不變" data-en-title="Clear the log and the comparison route and go back to step 0; the map, the weights, the start and the goal stay">全部清除</button>

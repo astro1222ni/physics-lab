@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:30">
-  <script src="js/settings.js?v=202611201318"></script>
+<meta name="lab-updated" content="2026-11-20 13:59">
+  <script src="js/settings.js?v=202611201359"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Digitizing Images: Sampling, Resolution and Color Depth | Astro Ni Lab">圖片數位化：取樣、解析度與色深｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"資料表示","item":"https://lab.astroni.org/information-technology.html#data"},{"@type":"ListItem","position":4,"name":"多媒體的數位化","item":"https://lab.astroni.org/information-technology.html#ch-media"},{"@type":"ListItem","position":5,"name":"圖片數位化：取樣、解析度與色深","item":"https://lab.astroni.org/image-digitization.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201318">
+  <link rel="stylesheet" href="lab.css?v=202611201359">
   <style>
     /* 圖片數位化頁面專用的顏色代號（淺色＋兩組深色；由 js/image-digitization.js 與 js/image-digitization-3d.js 讀取） */
     :root { --id-sel: #e11d48; --id-nyq: #7c3aed; --id-band: #0891b2; --id-r: #dc2626; --id-g: #16a34a; --id-b: #2563eb; --id-frame: #dfe6ee; --id-ok: #15803d; --id-warn: #c2410c; }
@@ -74,6 +74,13 @@
       background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
     }
     @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 .v3nav { position: relative; left: auto; bottom: auto; padding-top: 4px; }
+    #view3 .v3nav-hint { min-width: 0; }
+    #view3 .c3-hud { bottom: 50px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #view3 canvas { max-height: calc(100dvh - 108px); }
+      #view3 .v3nav-hint { display: none; }
+    }
     #view3 canvas:active { cursor: grabbing; }
     .c3-wrap { position: relative; }
     .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
@@ -103,6 +110,10 @@
     .eq .katex { font-size: 1.0em; }
     .units-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     /* 放大鏡 */
+    .pixel-inspector { margin: 6px 2px 0; }
+    .pixel-inspector .tablewrap { margin-top: 4px; }
+    .pixel-inspector #recBtn { min-height: 44px; flex: none; }
+    .pixel-inspector .px-head { flex-wrap: wrap; }
     .px-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 0; }
     .px-sw { width: 46px; height: 46px; border-radius: 8px; flex: none; box-shadow: 0 2px 6px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.15); background: var(--canvas-bg); }
     .px-pos { font-size: calc(14px * var(--fs, 1)); }
@@ -125,6 +136,8 @@
     #recTab td:first-child, #recTab th:first-child { text-align: left; }
     #recTab:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .image-digitization-pad.expanded { width: 164px; }
+    .image-digitization-pad .vpad-select.is-red { background: var(--text) !important; color: var(--surface) !important; }
   </style>
 </head>
 <body data-en-ready>
@@ -151,18 +164,28 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv"></canvas>
         <div id="view3"></div>
+        <section class="pixel-inspector">
+          <div class="px-head">
+            <button id="recBtn" type="button" class="primary" data-en="Record this setting">記下這一組</button>
+            <div class="px-sw" id="pxSw" aria-hidden="true"></div>
+            <div class="px-pos" id="pxPos" aria-live="polite"></div>
+          </div>
+          <div class="tablewrap"><table class="data" id="pxTab"></table></div>
+          <p class="px-empty" id="pxEmpty" data-en="Tap a pixel in the image (or focus the image and use the arrow keys) to read its values.">點一下圖上的像素（或選取畫布後用方向鍵），讀出它的數值。</p>
+        </section>
         <div class="split-row">
           <div class="slider"><label for="split" data-en="Original ◀ divider ▶ digitized (%)">原圖 ◀ 分界 ▶ 數位化（%）</label><output id="splito"></output>
             <input id="split" type="range" min="0" max="100" step="1" value="50" data-decimals="0"></div>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <canvas id="cv2" aria-label="量化的階梯圖：橫軸是原圖的值（0 到 255），縱軸是存下來的值。斜虛線是完全不失真，階梯是目前位元數能存的值；選取的像素標成圓點，圓點和斜線的距離就是量化誤差。" data-en-aria-label="Quantization staircase: the original value from 0 to 255 across, the stored value up. The dashed diagonal means no loss; the staircase shows the values the current number of bits can store. The selected pixel is shown as dots, and the gap between a dot and the diagonal is the quantization error."></canvas>
         <p class="chart-cap" data-en-html="Quantization: with b bits a channel has only 2<sup>b</sup> steps, so every value is rounded to the nearest step. Fewer bits → bigger steps → bigger errors.">量化：每個色版 b 位元只有 2<sup>b</sup> 階，每個值都被四捨五入到最近的一階。位元越少 → 階越大 → 誤差越大。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Each dot is one pixel, placed at its color (R, G, B).">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。每個點是一個像素，放在它的顏色（R, G, B）的位置。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag the cube. Scroll or pinch to zoom. Each dot is one pixel, placed at its color (R, G, B).">選「旋轉」或「平移」後拖曳色立方，用滾輪或雙指縮放。每個點是一個像素，放在它的顏色（R, G, B）的位置。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="原圖|Original picture" data-deck-order="1">
           <h2 data-en="Original picture">原圖</h2>
           <div class="scenes" role="group" aria-label="選擇原圖" data-en-aria-label="Choose the original picture">
             <button type="button" data-scene="sunset" aria-pressed="true"><span class="sw" data-thumb="sunset"></span><span data-en="Mountain sunset">山景日落</span></button>
@@ -174,7 +197,7 @@
           <p class="hint" data-en="All five pictures are drawn from mathematical formulas, so the “original” is perfectly smooth at any zoom.">五張圖都是用數學式畫出來的，所以「原圖」放到多大都是平滑的。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="取樣（解析度）|Sampling (resolution)" data-deck-order="2">
           <h2 data-en="Sampling (resolution)">取樣（解析度）</h2>
           <div class="slider"><label for="ww" data-en="Width w (pixels)">寬 w（像素）</label><output id="wwo"></output>
             <input id="ww" type="range" min="1" max="320" step="1" value="64" data-decimals="0"></div>
@@ -195,7 +218,7 @@
           <p class="hint" data-en="“Center of each pixel” keeps only the color at one point; “Average over each pixel” averages everything inside the square, like the light falling on one cell of a camera sensor. Tap a number to type it.">「取每格中心點」只留下一個點的顏色；「整格平均」把整格裡的顏色平均，像相機感光元件的一格收集整格的光。點一下數字可以直接輸入。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="量化（色深）|Quantization (color depth)" data-deck-order="3">
           <h2 data-en="Quantization (color depth)">量化（色深）</h2>
           <div class="seg full" role="group" aria-label="色彩模式" data-en-aria-label="Color mode">
             <button type="button" id="modeGray" aria-pressed="false" data-en="Grayscale">灰階</button>
@@ -229,20 +252,9 @@
           <p class="units-note" data-en="1 byte = 8 bits; 1 KB = 1000 bytes and 1 MB = 1000 KB (SI prefixes); 1 KiB = 1024 bytes and 1 MiB = 1024 KiB (binary prefixes, IEC 80000-13). Real files also have a header, and are usually compressed.">1 位元組（byte）= 8 位元；1 KB = 1000 位元組、1 MB = 1000 KB（國際單位制的字首）；1 KiB = 1024 位元組、1 MiB = 1024 KiB（二進位字首，IEC 80000-13）。真正的圖檔還有檔頭，而且通常會壓縮。</p>
         </section>
 
-        <section class="card">
-          <h2 data-en="Magnifier">放大鏡</h2>
-          <div class="px-head">
-            <div class="px-sw" id="pxSw" aria-hidden="true"></div>
-            <div class="px-pos" id="pxPos" aria-live="polite"></div>
-          </div>
-          <div class="tablewrap"><table class="data" id="pxTab"></table></div>
-          <p class="px-empty" id="pxEmpty" data-en="Tap a pixel in the image (or focus the image and use the arrow keys) to read its values.">點一下圖上的像素（或選取畫布後用方向鍵），讀出它的數值。</p>
-        </section>
-
-        <section class="card">
+        <section class="card" data-deck="記錄|Notebook" data-deck-order="4">
           <h2 data-en="Notebook">記錄</h2>
           <div class="rec-row">
-            <button id="recBtn" type="button" class="primary" data-en="Record this setting">記下這一組</button>
             <button id="wipeBtn" type="button" data-en="Clear all" title="清掉記錄表與選取的像素；解析度、色深等設定不變" data-en-title="Clear the notebook and the selected pixel; the resolution, color depth and other settings stay">全部清除</button>
           </div>
           <div class="tablewrap"><table class="data" id="recTab"></table></div>
@@ -308,18 +320,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201318"></script>
-  <script src="js/image-digitization-core.js?v=202611201318"></script>
-  <script src="js/sound.js?v=202611201318"></script>
-  <script src="js/numinput.js?v=202611201318"></script>
-  <script src="js/labdeck.js?v=202611201318"></script>
-  <script src="js/drawkit.js?v=202611201318"></script>
-  <script src="js/keys.js?v=202611201318"></script>
-  <script src="js/image-digitization.js?v=202611201318"></script>
-  <script src="js/firebase-config.js?v=202611201318"></script>
-  <script src="js/missions.js?v=202611201318" data-module="image-digitization"></script>
-  <script src="js/missions/image-digitization.js?v=202611201318"></script>
-  <script src="js/stats.js?v=202611201318" data-module="image-digitization"></script>
-  <script src="js/comments.js?v=202611201318"></script>
+  <script src="js/math.js?v=202611201359"></script>
+  <script src="js/image-digitization-core.js?v=202611201359"></script>
+  <script src="js/sound.js?v=202611201359"></script>
+  <script src="js/numinput.js?v=202611201359"></script>
+  <script src="js/labdeck.js?v=202611201359"></script>
+  <script src="js/drawkit.js?v=202611201359"></script>
+  <script src="js/vpad.js?v=202611201359"></script>
+  <script src="js/view3d-nav.js?v=202611201359"></script>
+  <script src="js/keys.js?v=202611201359"></script>
+  <script src="js/image-digitization.js?v=202611201359"></script>
+  <script src="js/firebase-config.js?v=202611201359"></script>
+  <script src="js/missions.js?v=202611201359" data-module="image-digitization"></script>
+  <script src="js/missions/image-digitization.js?v=202611201359"></script>
+  <script src="js/stats.js?v=202611201359" data-module="image-digitization"></script>
+  <script src="js/comments.js?v=202611201359"></script>
 </body>
 </html>

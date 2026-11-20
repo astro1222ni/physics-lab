@@ -60,9 +60,11 @@
     if (!wv) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = wv;
-    const narrow = cw < 560;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const narrow = cw < 560 && !landscape;
     // 窄螢幕把網路轉 90°：電腦在上、伺服器在下，路由器之間才有足夠的空間
     ch = Math.round(narrow ? Math.min(620, Math.max(430, cw * 1.45)) : Math.max(320, Math.min(480, cw * 0.56)));
+    if (landscape) ch = Math.min(ch, Math.max(170, innerHeight - 106));
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     const R = narrow ? 12.5 : Math.max(13, Math.min(21, cw / 40));
@@ -880,6 +882,9 @@
       html += '<tr' + (row.d === net.sv ? ' class="sv"' : '') + '><td>' + nodeName(row.d) + '</td><td' + c1 + '>' + row.nh + '</td><td' + (c2 ? ' class="' + c2.trim() + '"' : '') + '>' + row.cost + '</td></tr>';
     });
     tab.innerHTML = html + '</tbody>';
+    const serverRow = rows[0];
+    const hop = serverRow.inf || serverRow.nh === '—' ? T('無可用路由', 'No route') : serverRow.nh;
+    $('hopSummary').textContent = T('所選路由器 ', 'Router ') + nodeName(r) + T(' → 伺服器　下一跳：', ' → Server · Next hop: ') + hop;
     state.tableOld = rows; state.tableKey = key;
     // 改變的格子亮一下就好
     clearTimeout(state.chgTimer);

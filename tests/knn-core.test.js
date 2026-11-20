@@ -74,7 +74,7 @@ test('距離和照定義直接算的一樣（歐氏／曼哈頓 × 單位 1／10
     });
   }
 });
-test('不標準化時的鍵是精確的整數：歐氏 Δg1² + s²Δg2²、曼哈頓 |Δg1| + s|Δg2|', () => {
+test('不標準化時的鍵是精確的整數：歐氏 Δg1^2 + s^2Δg2^2、曼哈頓 |Δg1| + s|Δg2|', () => {
   const pts = [K.pt(3, -7, 0), K.pt(-20, 20, 1)];
   const E = K.prepare(pts, { metric: 'euclid', scale: 100, std: false }), M = K.prepare(pts, { metric: 'manhattan', scale: 100, std: false });
   assert.strictEqual(E.key(0, 0, 0), 9 + 10000 * 49);

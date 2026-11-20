@@ -88,7 +88,11 @@
     #chainLog:empty, #roundLog:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     /* ASCII 表 */
-    .ascii { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; margin: 10px 0 0; }
+    .ascii { display: grid; grid-template-columns: 24px repeat(4, minmax(44px, 1fr)); gap: 3px; margin: 10px 0 0; }
+    #asciiTab [hidden] { display: none; }
+    .ascii .h { align-self: center; }
+    .ascii-range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    #asciiGroup { min-width: 84px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
     .ascii .h { font-size: calc(11px * var(--fs, 1)); color: var(--muted); text-align: center; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
     .ascii button, .ascii span.c { min-height: 44px; min-width: 0; padding: 2px 0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
     .ascii button { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(16px * var(--fs, 1)); font-weight: 600; }
@@ -174,7 +178,7 @@
         </section>
 
         <section class="card">
-          <h2 data-en="Save with one encoding, open with another">用一種編碼存，用另一種打開</h2>
+          <h2 data-en="Decode as">換編碼解讀</h2>
           <p class="seg-label" data-en="Encoding to save with">存檔編碼</p>
           <div class="seg" role="group" aria-label="存檔編碼" data-en-aria-label="Encoding to save with">
             <button type="button" id="w-utf8" aria-pressed="true">UTF-8</button>
@@ -226,7 +230,13 @@
 
         <section class="card">
           <h2 data-en="The ASCII table">ASCII 表</h2>
-          <p class="hint" data-en="Columns are the high hexadecimal digit, rows the low one. Dashed squares are control characters (they print nothing). Tap a character to add it to the text.">直行是十六進位的高位數字、橫列是低位數字；虛線格是控制字元（不印出任何東西）。點一個字就加進文字裡。</p>
+          <div class="ascii-range">
+            <label for="asciiGroup" data-en="Low hex digits">十六進位低位數字</label>
+            <select id="asciiGroup" aria-controls="asciiTab">
+              <option value="0">0–3</option><option value="1">4–7</option><option value="2">8–B</option><option value="3">C–F</option>
+            </select>
+          </div>
+          <p class="hint" data-en="Rows show the high hex digit and columns show the low digit. Dashed cells are control characters. Tap a printable character to insert it.">每列是十六進位的高位，每欄是低位。虛線格是控制字元。點一下可列印的字元就能插入文字。</p>
           <div class="ascii" id="asciiTab" role="group" aria-label="ASCII 表" data-en-aria-label="ASCII table"></div>
           <p class="hint" data-en-html="An upper-case letter and its lower-case partner differ by exactly \(32 = 20_{16}\): only bit 5 (counting from 0) is different. Orange underline: upper case; blue underline: lower case.">大寫字母和對應的小寫字母剛好差 \(32 = 20_{16}\)：只有第 5 位（從 0 數起）不同。橘色底線是大寫、藍色底線是小寫。</p>
         </section>

@@ -42,10 +42,10 @@
     .bs canvas { aspect-ratio: auto; touch-action: pan-y; cursor: pointer; }
     #cv { height: 280px; }
     #tree { height: 240px; margin-top: 10px; }
-    #chart { height: 210px; margin-top: 10px; cursor: default; }
+    #chart { display: block; width: 100%; height: 210px; margin-top: 10px; border-radius: 8px; cursor: default; }
     #gcv { height: 76px; aspect-ratio: auto; display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: pan-y; margin: 10px 0 0; }
-    .bs [hidden] { display: none !important; }
-    .bs button { min-height: 44px; }
+    :is(.bs, .labdeck) [hidden] { display: none !important; }
+    :is(.bs, .labdeck) button { min-height: 44px; }
     .bs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .bs .playbar button { flex: 1 1 auto; }
     .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
@@ -55,9 +55,9 @@
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
     .bs .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
     .bs .slider input[type="range"] { height: 28px; margin: 0; }
-    .bs .checks label { min-height: 44px; }
-    .bs .checks input { width: 17px; height: 17px; }
-    .bs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    :is(.bs, .labdeck) .checks label { min-height: 44px; }
+    :is(.bs, .labdeck) .checks input { width: 17px; height: 17px; }
+    :is(.bs, .labdeck) .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .bs .panel { grid-template-columns: minmax(0, 1fr); }
     .bs .panel > .card { min-width: 0; }
     .sub-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 16px 4px 0; }
@@ -101,6 +101,16 @@
     #glog td.best { color: var(--bs-hit); font-weight: 700; }
     #glog:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
+    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .lab .stage .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+      .lab .stage .playbar button { min-height: 44px; padding: 4px 2px; line-height: 1.15; }
+    }
+    @media (orientation: landscape) and (min-width: 800px) and (max-height: 600px) {
+      .lab .stage .playbar { grid-template-columns: 1.1fr .8fr 1.3fr .8fr 1.1fr .9fr; }
+      .lab .stage .sound-btn svg { display: none; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -123,6 +133,7 @@
           <button id="clear" type="button" data-en="Clear all" title="清掉圖上所有的實驗點、平均的讀數與猜數字的紀錄；n、資料、目標等設定不變" data-en-title="Remove every point on the chart, the averages and the guessing-game log; n, the cards, the target and the other settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i class=&quot;sq&quot; style=&quot;background:var(--bs-lin)&quot;></i>Linear search: card being checked"><i class="sq" style="background:var(--bs-lin)"></i>線性搜尋：正在看的卡</span>
@@ -137,16 +148,10 @@
         <canvas id="tree" aria-label="二分搜尋的決策樹：最上面是第一次比較的卡（正中間那張），往下一層是第二次比較，左邊是比較小的一半、右邊是比較大的一半。樹有幾層，最多就比幾次。點一個節點就把它的數設成目標。" data-en-aria-label="Decision tree of binary search: the top node is the card compared first (the middle one), the next level is the second comparison, smaller half to the left and larger half to the right. The number of levels is the largest possible number of comparisons. Tap a node to make its number the target."></canvas>
         <p class="chart-cap" data-en="Level d of the tree is the d-th comparison; the lit path is the current search. Small squares are the gaps between cards, where an unsuccessful search ends (shown up to 63 cards).">第 d 層就是第 d 次比較；亮起來的路徑是目前這次搜尋。小方塊是卡片之間的空隙，找不到的搜尋停在那裡（63 張以內才畫）。</p>
 
-        <div class="sub-head">
-          <h2 data-en="Average comparisons against n">平均比較次數對 n</h2>
-          <div class="checks"><label><input id="logScale" type="checkbox"><span data-en="Log scales">對數刻度</span></label></div>
-        </div>
-        <canvas id="chart" aria-label="平均比較次數對卡片數 n 的圖：線性搜尋的理論線 (n + 1)/2 一路往上，二分搜尋的理論曲線幾乎是平的；圓點是按「每個目標都找一次」得到的實驗平均，小點是單次搜尋。" data-en-aria-label="Average number of comparisons against the number of cards n: the linear-search line (n + 1)/2 keeps rising while the binary-search curve stays almost flat; large dots are averages from “Search for every number”, small dots are single searches."></canvas>
-        <p class="chart-cap" data-en-html="Lines: theory for successful searches — linear \((n+1)/2\), binary search average (solid) and worst case \(\lfloor \log_2 n \rfloor + 1\) (dashed steps).">線：找得到時的理論值——線性搜尋 \((n+1)/2\)、二分搜尋的平均（實線）與最壞情況 \(\lfloor \log_2 n \rfloor + 1\)（虛線階梯）。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="卡片|Cards" data-deck-order="2">
           <h2 data-en="The cards">卡片</h2>
           <div class="slider"><label for="nn" data-en="Number of cards n">卡片張數 n</label><output id="nno"></output>
             <input id="nn" type="range" min="0" max="1000" step="1" value="290" data-decimals="0"></div>
@@ -162,7 +167,7 @@
           <p class="hint" data-en="“Not sorted” is the same set of numbers shuffled; switch back to “Sorted” to see them in order. Tap the number to type n exactly.">「沒排序」是同一批數字打亂順序，切回「排好的」就是它們排好的樣子。點一下 n 的數字可以直接輸入。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="目標與速度|Target and speed" data-deck-order="1">
           <h2 data-en="Target">目標</h2>
           <div class="field">
             <label for="target" data-en="Target value">目標值</label>
@@ -173,13 +178,13 @@
             <button id="rndIn" type="button" data-en="Random: in the cards">隨機挑一個有的</button>
             <button id="rndOut" type="button" data-en="Random: not in the cards">隨機挑一個沒有的</button>
           </div>
+          <div class="slider"><label for="speed" data-en="Speed: steps per second">速度：每秒幾步</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="60" step="1" value="2" data-decimals="0"></div>
           <p class="hint" data-en="Or tap a card or a node of the tree. On the search canvas, the left and right arrow keys move to the neighbouring card and the up and down keys change the target by 1.">也可以點一張卡片或樹上的節點。在搜尋畫布上，左右方向鍵換到隔壁的卡片，上下方向鍵把目標加減 1。</p>
         </section>
 
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
-          <div class="slider"><label for="speed" data-en="Speed: steps per second">速度：每秒幾步</label><output id="speedo"></output>
-            <input id="speed" type="range" min="1" max="60" step="1" value="2" data-decimals="0"></div>
           <dl class="readout">
             <dt><span class="k-lin" data-en="Linear search">線性搜尋</span><span data-en=": comparisons">：比較次數</span></dt><dd id="rLin">—</dd>
             <dt><span class="k-bin" data-en="Binary search">二分搜尋</span><span data-en=": comparisons">：比較次數</span></dt><dd id="rBin">—</dd>
@@ -193,12 +198,18 @@
           <p class="eq-note" data-en="Top: how binary search picks the card to look at. Bottom: the most comparisons it can ever need. Card positions count from 0: a[0] is the leftmost card.">上面：二分搜尋怎麼決定要看哪一張；下面：它最多可能比幾次。卡片位置從 0 數起，a[0] 是最左邊那張。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="平均比較|Averages" data-deck-order="3">
           <h2 data-en="Average comparisons">平均比較次數</h2>
           <div class="row2" style="grid-template-columns: minmax(0, 1fr)">
             <button id="sweep" type="button" class="primary" data-en="Search for every number">每個目標都找一次</button>
           </div>
           <p class="hint" data-en="Searches once for every number on the cards (and, for sorted cards without repeats, once in every gap), then puts the averages on the chart.">把卡片上的每個數都找一次（排好又不重複時，每個空隙也各找一次），平均畫在圖上。</p>
+          <div class="checks"><label><input id="logScale" type="checkbox"><span data-en="Log scales">對數刻度</span></label></div>
+          <div class="sub-head">
+            <h2 data-en="Average comparisons against n">平均比較次數對 n</h2>
+          </div>
+          <canvas id="chart" aria-label="平均比較次數對卡片數 n 的圖：線性搜尋的理論線 (n + 1)/2 一路往上，二分搜尋的理論曲線幾乎是平的；圓點是按「每個目標都找一次」得到的實驗平均，小點是單次搜尋。" data-en-aria-label="Average number of comparisons against the number of cards n: the linear-search line (n + 1)/2 keeps rising while the binary-search curve stays almost flat; large dots are averages from “Search for every number”, small dots are single searches."></canvas>
+          <p class="chart-cap" data-en-html="Lines: theory for successful searches — linear \((n+1)/2\), binary search average (solid) and worst case \(\lfloor \log_2 n \rfloor + 1\) (dashed steps).">線：找得到時的理論值——線性搜尋 \((n+1)/2\)、二分搜尋的平均（實線）與最壞情況 \(\lfloor \log_2 n \rfloor + 1\)（虛線階梯）。</p>
           <dl class="readout" id="sweepBox">
             <dt><span class="k-lin" data-en="Linear search">線性搜尋</span><span data-en=": average">：平均</span></dt><dd id="sLin">—</dd>
             <dt><span class="k-bin" data-en="Binary search">二分搜尋</span><span data-en=": average">：平均</span></dt><dd id="sBin">—</dd>
@@ -209,13 +220,12 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="猜數字|Guess" data-deck-order="4">
           <h2 data-en="Guess my number">猜數字</h2>
           <div class="slider"><label for="gN" data-en="Numbers from 1 to N">範圍 1 到 N</label><output id="gNo"></output>
             <input id="gN" type="range" min="10" max="1000" step="10" value="100" data-decimals="0"></div>
           <div class="checks"><label><input id="cheat" type="checkbox"><span data-en="Cheating computer">耍賴的電腦</span></label></div>
           <p class="hint" data-en="The cheating computer never decides on a number: after every guess it answers so that as many numbers as possible are still possible.">耍賴的電腦不先想好答案：每猜一次，它都挑讓「還可能的數」最多的那個回答。</p>
-          <canvas id="gcv" aria-label="數線：亮起來的一段是還可能的數，三角形是猜過的數。" data-en-aria-label="Number line: the bright stretch holds the numbers that are still possible, triangles mark the guesses."></canvas>
           <div class="field">
             <label for="gIn" data-en="Your guess">你猜</label>
             <input id="gIn" type="number" inputmode="numeric" step="1" min="1" max="1000">
@@ -225,6 +235,7 @@
           <div class="row2" style="grid-template-columns: minmax(0, 1fr)">
             <button id="gNew" type="button" data-en="New game">開始新的一局</button>
           </div>
+          <canvas id="gcv" aria-label="數線：亮起來的一段是還可能的數，三角形是猜過的數。" data-en-aria-label="Number line: the bright stretch holds the numbers that are still possible, triangles mark the guesses."></canvas>
           <div class="tablewrap"><table id="glog"></table></div>
           <p class="log-empty" id="glogEmpty" data-en="Finished games will be listed here.">猜中的回合會列在這裡。</p>
         </section>

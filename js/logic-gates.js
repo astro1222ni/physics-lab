@@ -300,7 +300,10 @@
     let base;
     if (m === 'adder') base = adderLayout();
     else base = compileSpec(m === 'gate' ? specGate() : m === 'build' ? specBuild() : m === 'half' ? specHalf() : specFull());
-    const maxS = m === 'adder' ? 48 : 52;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    // 六個閘並排接線時會疊成六層，橫放仍要留下播放列的位置。
+    const heightScale = landscape ? Math.max(96, innerHeight - HEAD - 68) / base.H : Infinity;
+    const maxS = Math.min(m === 'adder' ? 48 : 52, heightScale);
     const pad = cw < 500 ? 4 : 12;
     // 標籤（開關左邊的 A、Cin，燈右邊的 S、Cout）會伸出單位方框：量文字寬度，留出左右邊界再決定比例
     let s = Math.min(maxS, (cw - 2 * pad) / base.W), ov = { l: 0, r: 0 };

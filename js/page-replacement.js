@@ -126,6 +126,7 @@
   let dpr = 1, cw = 600, ch = 420, cw2 = 600, ch2 = 220, cw3 = 600, ch3 = 240, L = null;
   function layout() {
     const narrow = cw < 560;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const pad = narrow ? 8 : 12;
     const F = state.frames;
     const hudH = 30;
@@ -134,19 +135,19 @@
     if (n() * cellMin > avail) avail -= 24; // 放不下：左右各留 12 px 給「…」
     const vis = Math.max(1, Math.min(n(), Math.floor(avail / cellMin)));
     const cellW = Math.min(36, avail / vis);
-    const cellH = narrow ? 28 : 32;
-    const tapeTop = hudH + 18;
-    const labelW = narrow ? 0 : 108, rightW = narrow ? 0 : 118;
-    const fx0 = pad + (narrow ? 6 : labelW + 6), fx1 = cw - pad - (narrow ? 6 : rightW + 6);
+    const cellH = compact ? 22 : narrow ? 28 : 32;
+    const tapeTop = hudH + (compact ? 12 : 18);
+    const labelW = compact ? 75 : narrow ? 0 : 108, rightW = compact || narrow ? 0 : 118;
+    const fx0 = pad + labelW + 6, fx1 = cw - pad - rightW - 6;
     const gap = narrow ? 6 : 8;
     const bw = Math.max(26, Math.min(56, (fx1 - fx0 - (F - 1) * gap) / F));
-    const bh = narrow ? 36 : 42;
-    const headH = narrow ? 20 : 0;
-    const laneH = narrow ? headH + 10 + bh + 22 : 80;
-    const laneTop = tapeTop + cellH + 22;
-    const laneGap = 8;
+    const bh = compact ? 26 : narrow ? 36 : 42;
+    const headH = narrow && !compact ? 20 : 0;
+    const laneH = compact ? 54 : narrow ? headH + 10 + bh + 22 : 80;
+    const laneTop = tapeTop + cellH + (compact ? 15 : 22);
+    const laneGap = compact ? 4 : 8;
     const H = laneTop + 4 * laneH + 3 * laneGap + 10;
-    return { narrow: narrow, pad: pad, hudH: hudH, vis: vis, cellW: cellW, cellH: cellH, tapeTop: tapeTop, labelW: labelW, rightW: rightW,
+    return { compact: compact, narrow: narrow, pad: pad, hudH: hudH, vis: vis, cellW: cellW, cellH: cellH, tapeTop: tapeTop, labelW: labelW, rightW: rightW,
       fx0: fx0, fx1: fx1, gap: gap, bw: bw, bh: bh, headH: headH, laneH: laneH, laneTop: laneTop, laneGap: laneGap, H: Math.round(H) };
   }
   function resize() {
@@ -264,7 +265,11 @@
     const rate = k ? Math.round(100 * hits / k) : 0;
     // 標籤
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    if (L.narrow) {
+    if (L.compact) {
+      ctx.font = fnt(14, 700); ctx.fillStyle = col; ctx.fillText(NAME[a], L.pad + 10, top + 20);
+      ctx.font = fnt(12, 600); ctx.fillStyle = C['pr-fault'];
+      ctx.fillText(T('缺頁 ', 'Faults ') + faults, L.pad + 10, top + 40);
+    } else if (L.narrow) {
       ctx.font = fnt(13.5, 700); ctx.fillStyle = col;
       ctx.fillText(NAME[a], L.pad + 10, top + 16);
       const w1 = ctx.measureText(NAME[a]).width;

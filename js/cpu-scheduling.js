@@ -201,17 +201,18 @@
   let dpr = 1, cw = 600, ch = 420, cw2 = 600, ch2 = 260, cw3 = 600, ch3 = 220, L = null;
   function layout() {
     const narrow = cw < 560;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const n = state.procs.length;
     const padL = narrow ? 40 : 50, padR = narrow ? 10 : 16;
     const hudH = 30;
-    const machTop = hudH + 6, machH = narrow ? 84 : 92;
-    const arrTop = machTop + machH + 10, arrH = 20;
-    const gTop = arrTop + arrH, gH = narrow ? 36 : 44;
+    const machTop = hudH + 6, machH = compact ? 64 : narrow ? 84 : 92;
+    const arrTop = machTop + machH + (compact ? 4 : 10), arrH = compact ? 16 : 20;
+    const gTop = arrTop + arrH, gH = compact ? 26 : narrow ? 36 : 44;
     const axisY = gTop + gH + 4;
-    const tlTop = axisY + 40, rh = narrow ? 16 : 19;
-    const qTop = tlTop + n * rh + 12, qH = narrow ? 38 : 44;
-    const H = qTop + qH + 22;
-    return { narrow: narrow, padL: padL, padR: padR, x0: padL, x1: cw - padR, hudH: hudH, machTop: machTop, machH: machH,
+    const tlTop = axisY + (compact ? 33 : 40), rh = compact ? 13 : narrow ? 16 : 19;
+    const qTop = tlTop + n * rh + (compact ? 6 : 12), qH = compact ? 28 : narrow ? 38 : 44;
+    const H = qTop + qH + (compact ? 16 : 22);
+    return { compact: compact, narrow: narrow, padL: padL, padR: padR, x0: padL, x1: cw - padR, hudH: hudH, machTop: machTop, machH: machH,
       arrTop: arrTop, arrH: arrH, gTop: gTop, gH: gH, axisY: axisY, tlTop: tlTop, rh: rh, qTop: qTop, qH: qH, H: Math.round(H) };
   }
   function X(t) { return L.x0 + (L.x1 - L.x0) * t / state.Tmax; }
@@ -279,7 +280,7 @@
   }
   function drawMachine(st) {
     const top = L.machTop, H = L.machH, narrow = L.narrow;
-    const chip = narrow ? 64 : 74;
+    const chip = L.compact ? 48 : narrow ? 64 : 74;
     const cx = 10, cy = top + (H - chip) / 2 + 6;
     // CPU 晶片：針腳、立體的封裝、中間的晶粒
     ctx.save();

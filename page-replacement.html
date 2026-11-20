@@ -44,16 +44,16 @@
 
     /* 畫布高度由程式依寬度、框數與字串長度決定；手機上可以照常捲動 */
     #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
-    #cv2 { aspect-ratio: auto; height: 220px; touch-action: pan-y; cursor: default; margin-top: 6px; }
+    #cv2 { display: block; width: 100%; aspect-ratio: auto; height: 220px; border-radius: 8px; touch-action: pan-y; cursor: default; margin-top: 6px; }
     #cv3 { aspect-ratio: auto; height: 240px; touch-action: pan-y; cursor: pointer; margin-top: 6px; }
-    .pr [hidden] { display: none !important; }
+    :is(.pr, .labdeck) [hidden] { display: none !important; }
     .pr .panel { grid-template-columns: minmax(0, 1fr); }
     .pr .panel > .card { min-width: 0; }
-    .pr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    :is(.pr, .labdeck) .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .pr .slider input[type="range"] { height: 28px; margin: 0; }
-    .pr .rowline + .slider { margin-top: 14px; }
-    .pr .checks label { min-height: 44px; }
-    .pr .checks input { width: 17px; height: 17px; flex: none; }
+    :is(.pr, .labdeck) .rowline + .slider { margin-top: 14px; }
+    :is(.pr, .labdeck) .checks label { min-height: 44px; }
+    :is(.pr, .labdeck) .checks input { width: 17px; height: 17px; flex: none; }
     /* 播放列 */
     .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .playbar button { flex: 1 1 auto; padding: 7px 10px; }
@@ -104,6 +104,14 @@
     table.nums td.str { text-align: left; white-space: normal; overflow-wrap: anywhere; max-width: 11em; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
     table.nums .chip { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .lab .stage .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+      .lab .stage .playbar button { min-height: 44px; padding: 4px 2px; line-height: 1.15; }
+    }
+    @media (orientation: landscape) and (min-width: 800px) and (max-height: 600px) {
+      .lab .stage .playbar { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+      .lab .stage .sound-btn svg { display: none; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -127,6 +135,7 @@
           <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表與圖上跑過的點，回到第 0 步；參考字串與設定不變" data-en-title="Remove the records and the points you have run on the chart and go back to step 0; the reference string and the settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<span class=&quot;sym hit&quot;>✓</span>Hit: the page is already in memory"><span class="sym hit">✓</span>命中：這一頁已經在記憶體裡</span>
@@ -134,18 +143,6 @@
           <span data-en-html="<span class=&quot;sym&quot;>↗</span>Evicted page"><span class="sym">↗</span>被換出的頁</span>
           <span data-en-html="Under each frame — FIFO: step it was loaded; LRU: step it was last used; LFU: how many uses; OPT: step of its next use (∞ = never again)">框下的數字——FIFO：第幾步載入；LRU：最後在第幾步用到；LFU：用了幾次；OPT：下次在第幾步用到（∞ 表示不再用到）</span>
         </div>
-
-        <div class="chart-head">
-          <h2 data-en="Step by step, frame by frame">歷程表</h2>
-          <span id="histNote"></span>
-        </div>
-        <div class="tabs" id="tabs" role="group" aria-label="歷程表要看的方法" data-en-aria-label="Algorithm shown in the history table">
-          <button type="button" data-algo="fifo" aria-pressed="true">FIFO</button>
-          <button type="button" data-algo="lru" aria-pressed="false">LRU</button>
-          <button type="button" data-algo="lfu" aria-pressed="false">LFU</button>
-          <button type="button" data-algo="opt" aria-pressed="false">OPT</button>
-        </div>
-        <canvas id="cv2" aria-label="歷程表：課本常見的表格，一欄是一步，最上面是參考的頁，下面每一列是一個框在那一步之後放著哪一頁；缺頁的那一欄打叉、新載入的頁加粗，命中打勾，最下面一列是被換出的頁。" data-en-aria-label="History table, as in the textbooks: one column per step, the referenced page at the top, then one row per frame showing which page it holds after that step; fault columns are crossed and the newly loaded page is bold, hits are ticked, and the bottom row shows the evicted page."></canvas>
 
         <div class="chart-head">
           <h2 data-en="Frames and page faults">框數與缺頁次數</h2>
@@ -163,7 +160,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="參考字串|Reference string" data-deck-order="1">
           <h2 data-en="Reference string">參考字串</h2>
           <div class="refrow">
             <input id="refs" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="200" aria-label="參考字串：頁號 0–99，用空白或逗號分開" data-en-aria-label="Reference string: page numbers 0–99 separated by spaces or commas">
@@ -177,18 +174,23 @@
               <option value="belady" data-en="Belady’s classic string">Belady 的經典字串</option>
               <option value="loop" data-en="A loop: 1 2 3 4, three times">繞圈子：1 2 3 4 繞三圈</option>
             </select>
-            <button id="rand" type="button" data-en="Random">隨機產生</button>
             <button id="rev" type="button" data-en="Reverse">倒過來</button>
           </div>
+          <p class="hint" data-en="Enter up to 30 page numbers (0–99), separated by spaces or commas. Without separators, each digit is one page.">最多輸入 30 個頁號（0–99），用空白或逗號分隔。連續輸入數字時，每一個數字代表一頁。</p>
+        </section>
+
+        <section class="card" data-deck="隨機字串|Random string" data-deck-order="4">
+          <h2 data-en="Random reference string">隨機參考字串</h2>
+          <button id="rand" type="button" data-en="Random">隨機產生</button>
           <div class="slider"><label for="len" data-en="Length of a random string">隨機字串的長度</label><output id="leno"></output>
             <input id="len" type="range" min="6" max="30" step="1" value="20" data-decimals="0"></div>
           <div class="slider"><label for="kinds" data-en="Different pages in a random string">隨機字串的頁面種類</label><output id="kindso"></output>
             <input id="kinds" type="range" min="2" max="10" step="1" value="6" data-decimals="0"></div>
           <p class="seedinfo" id="seedInfo"></p>
-          <p class="hint" data-en="Up to 30 page numbers from 0 to 99, separated by spaces or commas; a run of digits with no separators is one page per digit. Moving the two sliders makes a new random string.">最多 30 個頁號（0–99），用空白或逗號分開；一整串沒有分隔的數字，就一個數字一頁。拉動下面兩個滑桿，會產生新的隨機字串。</p>
+          <p class="hint" data-en="Changing either slider generates a new reference string.">調整長度或頁面種類時，會產生新的參考字串。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="記憶體|Memory" data-deck-order="2">
           <h2 data-en="Memory">記憶體</h2>
           <div class="slider"><label for="frames" data-en="Frames">框數</label><output id="frameso"></output>
             <input id="frames" type="range" min="1" max="7" step="1" value="3" data-decimals="0"></div>
@@ -196,6 +198,18 @@
           <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
             <input id="speed" type="range" min="0.5" max="6" step="0.5" value="1.5" data-decimals="1"></div>
           <p class="hint" data-en="Ties: LFU and OPT evict, among equally good pages, the one used least recently. By default LFU counts the uses since the page was loaded and starts again from zero when it is evicted.">平手時：LFU 與 OPT 都在一樣差的頁之間，換出最久沒被用到的那一頁。LFU 預設從載入那一刻開始數次數，被換出就歸零。</p>
+        </section>
+
+        <section class="card" data-deck="歷程表|History" data-deck-order="3">
+          <h2 data-en="Step by step, frame by frame">歷程表</h2>
+          <div class="tabs" id="tabs" role="group" aria-label="歷程表要看的方法" data-en-aria-label="Algorithm shown in the history table">
+            <button type="button" data-algo="fifo" aria-pressed="true">FIFO</button>
+            <button type="button" data-algo="lru" aria-pressed="false">LRU</button>
+            <button type="button" data-algo="lfu" aria-pressed="false">LFU</button>
+            <button type="button" data-algo="opt" aria-pressed="false">OPT</button>
+          </div>
+          <p id="histNote" class="chart-cap"></p>
+          <canvas id="cv2" aria-label="歷程表：課本常見的表格，一欄是一步，最上面是參考的頁，下面每一列是一個框在那一步之後放著哪一頁；缺頁的那一欄打叉、新載入的頁加粗，命中打勾，最下面一列是被換出的頁。" data-en-aria-label="History table, as in the textbooks: one column per step, the referenced page at the top, then one row per frame showing which page it holds after that step; fault columns are crossed and the newly loaded page is bold, hits are ticked, and the bottom row shows the evicted page."></canvas>
         </section>
 
         <section class="card">

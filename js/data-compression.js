@@ -71,22 +71,26 @@
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   const stage = $('stage'), lab = $('lab');
   let dpr = 1, cw = 320, ch = 420, cw2 = 320, ch2 = 220, L = null;
+  let brushPad = null, touchTap = null;
+  const shortView = matchMedia('(orientation: landscape) and (max-height: 600px)');
 
   function layoutRle() {
-    const W = cw, wide = W >= 620, pad = wide ? 16 : 10;
+    const W = cw, compact = shortView.matches, wide = W >= 620 || compact, pad = W >= 620 ? 16 : 10;
     const top = 30;
     let G = wide ? Math.min(400, Math.floor((W - 3 * pad) * 0.54)) : Math.min(W - 2 * pad, 420);
+    // 橫放時格子和遊程並排，上下各保留一列給掃描方向和播放鍵。
+    if (compact) G = Math.min(G, Math.max(N16, innerHeight - 152));
     const cell = Math.floor(G / N16);
     G = cell * N16;
     const gx = wide ? pad : Math.round((W - G) / 2), gy = top;
     const tokW = state.rle.fmt === 'alt' ? 36 : 46, tokH = 24, gap = 5;
     let tx, ty, tw, th;
-    if (wide) { tx = gx + G + pad + 4; ty = gy; tw = W - tx - pad; th = G; }
+    if (wide) { tx = gx + G + pad + 4; ty = gy; tw = W - tx - pad; th = compact ? G - 68 : G; }
     else { tx = pad; ty = gy + G + 30; tw = W - 2 * pad; th = 5 * (tokH + gap) + 22; }
     const perRow = Math.max(1, Math.floor((tw + gap) / (tokW + gap)));
     const rows = Math.max(1, Math.floor((th - 22 + gap) / (tokH + gap)));
-    const barY = (wide ? gy + G : ty + th) + 22;
-    return { kind: 'rle', wide: wide, pad: pad, G: G, cell: cell, gx: gx, gy: gy, tx: tx, ty: ty, tw: tw, th: th, tokW: tokW, tokH: tokH, gap: gap, perRow: perRow, rows: rows, barY: barY, H: barY + 66 };
+    const barY = compact ? gy + G - 58 : (wide ? gy + G : ty + th) + 22;
+    return { kind: 'rle', compact: compact, wide: wide, pad: pad, G: G, cell: cell, gx: gx, gy: gy, tx: tx, ty: ty, tw: tw, th: th, tokW: tokW, tokH: tokH, gap: gap, perRow: perRow, rows: rows, barY: barY, H: compact ? gy + G + 10 : barY + 66 };
   }
   function layoutHuf() {
     const W = cw, narrow = W < 560, h = state.huf;
@@ -99,8 +103,8 @@
     const bw = Math.max(14, Math.min(46, sx - 5)), bh = narrow ? 30 : 34;
     const nr = Math.max(6, Math.min(13, sx * 0.3));
     const y0 = qH + 34;
-    const want = narrow ? 300 : 340;
-    const dy = depth ? Math.max(20, Math.min(62, want / depth)) : 0;
+    const want = shortView.matches ? Math.max(64, innerHeight - 232) : narrow ? 300 : 340;
+    const dy = depth ? Math.min(62, want / depth) : 0;
     const codeH = 22;
     const treeBottom = y0 + depth * dy + bh / 2 + codeH;
     const decY = treeBottom + 16;
@@ -544,7 +548,7 @@
     const r = state.rle, s = r.sum, cell = L.cell, G = L.G;
     // 標題：掃描順序
     D.haloText(ctx, T('掃描順序：', 'Scan order: ') + scanName(r.scan), L.gx, L.gy - 10, C.muted, 'left', 'alphabetic', fnt(12.5, 600));
-    D.haloText(ctx, T('1 格 = 1 位元', '1 square = 1 bit'), L.gx + G, L.gy - 10, alpha(C.muted, 0.85), 'right', 'alphabetic', fnt(11.5, 500));
+    if (G >= 215) D.haloText(ctx, T('1 格 = 1 位元', '1 square = 1 bit'), L.gx + G, L.gy - 10, alpha(C.muted, 0.85), 'right', 'alphabetic', fnt(11.5, 500));
     // 面板與陰影
     ctx.save();
     ctx.shadowColor = D.shadowInk(D.dark ? 0.55 : 0.2); ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
@@ -575,7 +579,18 @@
     }
     // 滑過與鍵盤游標
     if (r.hover >= 0 && !r.drag) { const p = cellXY(r.hover); D.roundRect(ctx, p.x + 0.5, p.y + 0.5, cell - 1, cell - 1, 3); ctx.strokeStyle = alpha(C.accent, 0.8); ctx.lineWidth = 1.5; ctx.stroke(); }
-    if (r.kbFocus) { const p = cellXY(r.cursor); ctx.save(); ctx.setLineDash([3, 2]); D.roundRect(ctx, p.x - 1, p.y - 1, cell + 2, cell + 2, 4); ctx.strokeStyle = C.accent; ctx.lineWidth = 2; ctx.stroke(); ctx.restore(); }
+    if (r.done || r.kbFocus || (brushPad && !brushPad.state.collapsed)) {
+      const p = cellXY(r.cursor), x = p.x + cell / 2, y = p.y + cell / 2, radius = Math.max(4, cell * 0.44);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, 2 * Math.PI);
+      ctx.moveTo(x - radius, y); ctx.lineTo(x + radius, y); ctx.moveTo(x, y - radius); ctx.lineTo(x, y + radius);
+      ctx.strokeStyle = C['dc-ink']; ctx.lineWidth = 3.5; ctx.stroke();
+      ctx.strokeStyle = C['dc-paper']; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+      const right = r.cursor % N16 < N16 / 2;
+      D.haloText(ctx, 'P (' + (Math.floor(r.cursor / N16) + 1) + ', ' + (r.cursor % N16 + 1) + ')',
+        x + (right ? 1 : -1) * (radius + 3), y, C.text, right ? 'left' : 'right', 'middle', fnt(12, 700));
+    }
     drawTokens();
     drawBitBars();
   }
@@ -710,26 +725,27 @@
   }
   function drawBitBars() {
     const r = state.rle, s = r.sum;
-    const x0 = L.pad, x1 = cw - L.pad, y = L.barY;
+    const x0 = L.compact ? L.tx : L.pad, x1 = cw - L.pad, y = L.barY + (L.compact ? 15 : 0);
     const outBits = (r.done ? s.tokens.length : r.tokIdx) * s.per;
     const lblW = L.wide ? 110 : 62, valW = L.wide ? 96 : 84;
-    const bx = x0 + lblW, bw = Math.max(40, x1 - bx - valW);
+    const bx = L.compact ? x0 : x0 + lblW, bw = L.compact ? L.tw : Math.max(40, x1 - bx - valW);
     const sc = bw / Math.max(s.raw, s.bits);
     const bar = function (yy, v, total, col, label) {
-      D.haloText(ctx, label, x0, yy + 11, C.muted, 'left', 'alphabetic', fnt(12, 600));
+      D.haloText(ctx, label, x0, L.compact ? yy - 3 : yy + 11, C.muted, 'left', 'alphabetic', fnt(12, 600));
       D.roundRect(ctx, bx, yy, Math.max(2, total * sc), 14, 7);
       ctx.fillStyle = alpha(col, D.dark ? 0.2 : 0.14); ctx.fill();
       if (v > 0) D.block(ctx, bx, yy, Math.max(4, v * sc), 14, col, { r: 7, shadow: false });
       // 數字放在整條（最終長度）的右邊，播放時不會跳來跳去
-      D.haloText(ctx, intText(v) + T(' 位元', ' bits'), bx + Math.max(v, total) * sc + 8, yy + 11.5, C.text, 'left', 'alphabetic', fnt(12, 700, MONO));
+      D.haloText(ctx, intText(v) + T(' 位元', ' bits'), L.compact ? x1 : bx + Math.max(v, total) * sc + 8,
+        L.compact ? yy - 3 : yy + 11.5, C.text, L.compact ? 'right' : 'left', 'alphabetic', fnt(12, 700, MONO));
     };
     bar(y, s.raw, s.raw, C['dc-raw'], T('原始', 'Original'));
-    bar(y + 24, outBits, s.bits, outBits > s.raw ? C['dc-warn'] : C['dc-enc'], T('編碼後', 'Encoded'));
+    bar(y + (L.compact ? 32 : 24), outBits, s.bits, outBits > s.raw ? C['dc-warn'] : C['dc-enc'], T('編碼後', 'Encoded'));
     // 原始大小的參考線
     const rx = Math.round(bx + s.raw * sc) + 0.5;
     ctx.save(); ctx.setLineDash([3, 3]);
     ctx.strokeStyle = alpha(C['dc-raw'], 0.7); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(rx, y + 16); ctx.lineTo(rx, y + 42); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rx, y + (L.compact ? 32 : 16)); ctx.lineTo(rx, y + (L.compact ? 48 : 42)); ctx.stroke();
     ctx.restore();
   }
 
@@ -1345,7 +1361,7 @@
     $('modeHuf').setAttribute('aria-pressed', String(m === 'huf'));
     document.querySelectorAll('.m-rle').forEach(function (el) { el.hidden = m !== 'rle'; });
     document.querySelectorAll('.m-huf').forEach(function (el) { el.hidden = m !== 'huf'; });
-    cv.style.touchAction = m === 'rle' ? 'pan-y' : 'pan-y';
+    touchTap = null;
     cv.style.cursor = 'default';
     $('cv2').setAttribute('aria-label', m === 'rle'
       ? T('長度欄位 k 的每一種選擇的編碼後位元數長條圖，虛線是原始的 256 位元。', 'Bar chart of the encoded size for every choice of the length field k; the dashed line is the original 256 bits.')
@@ -1354,6 +1370,7 @@
     if (m === 'huf') say(T('霍夫曼編碼：常見的字給短碼、少見的字給長碼。按「下一步」看樹一步一步長出來。', 'Huffman coding: common characters get short codes, rare ones long codes. Press “Next step” to watch the tree grow step by step.'));
     else say(T('遊程編碼：把連續同色的格子記成「一段有多長」。', 'Run-length coding: store each stretch of same-coloured squares as its length.'));
     resize();
+    if (brushPad) brushPad.refresh();
   }
   $('modeRle').addEventListener('click', function () { setMode('rle'); });
   $('modeHuf').addEventListener('click', function () { setMode('huf'); });
@@ -1463,6 +1480,65 @@
     for (let i = 0; i < t.k; i++) { const q = h.pos[i]; if (q && Math.abs(p.x - q.x) <= Math.max(L.bw / 2, 10) && Math.abs(p.y - q.y) <= L.bh / 2 + 6) return i; }
     return -1;
   }
+  function screenCell(i) {
+    const rect = cv.getBoundingClientRect();
+    if (!L || L.kind !== 'rle') return { x: rect.left, y: rect.top };
+    const p = cellXY(i);
+    return { x: rect.left + p.x + L.cell / 2, y: rect.top + p.y + L.cell / 2 };
+  }
+  function moveBrush(dx, dy) {
+    const r = state.rle;
+    const row = Math.max(0, Math.min(N16 - 1, Math.floor(r.cursor / N16) - dy));
+    const col = Math.max(0, Math.min(N16 - 1, r.cursor % N16 + dx));
+    r.cursor = row * N16 + col;
+    r.kbFocus = true;
+    requestDraw();
+  }
+  function togglePixel(i) {
+    const r = state.rle, color = 1 - r.px[i];
+    r.cursor = i;
+    setPixel(i, color);
+    sndPaint(color);
+    rleChanged('paint');
+    if (window.LabKeys) LabKeys.say(cellDesc());
+  }
+  $('brushPadBtn').addEventListener('click', function () {
+    const r = state.rle;
+    if (!brushPad) {
+      brushPad = LabVPad.mount({
+        id: 'data-compression', className: 'dc-pad', canvas: cv, objects: ['brush'], steps: [1], step: 1,
+        selected: () => 'brush', select: () => togglePixel(r.cursor), move: moveBrush, record: () => togglePixel(r.cursor),
+        point: () => screenCell(r.cursor), reading: cellDesc,
+        visible: () => state.mode === 'rle' && cv.getBoundingClientRect().bottom > 0 && cv.getBoundingClientRect().top < innerHeight,
+        viewport: () => ({ width: cv.getBoundingClientRect().right, height: innerHeight }),
+        home: (w, h) => {
+          const box = cv.getBoundingClientRect(), pt = screenCell(r.cursor);
+          return { x: pt.x < (box.left + box.right) / 2 ? box.right - w : box.left, y: Math.max(8, Math.min(box.top, innerHeight - h - 8)) };
+        }
+      });
+      const el = brushPad.element, key = el.querySelector('.vpad-select');
+      el.setAttribute('aria-label', T('八向畫筆鍵盤', 'Eight-direction brush pad'));
+      brushPad.lens.querySelector('canvas').setAttribute('aria-label', T('畫筆所在格的放大圖', 'Magnified brush square'));
+      el.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動畫筆 ', 'Move brush ') + b.textContent));
+      // 共用鍵盤在展開或定位時會重畫中央鍵，這一頁的單一畫筆用它切換黑白。
+      function labelKey() {
+        const label = T('換色', 'Flip');
+        if (key.textContent !== label) key.textContent = label;
+        key.setAttribute('aria-label', T('切換這一格的黑白', 'Toggle this square between black and white'));
+      }
+      new MutationObserver(labelKey).observe(key, { childList: true });
+      labelKey();
+    }
+    const point = screenCell(r.cursor);
+    const box = cv.getBoundingClientRect();
+    if (point.y < 32 || point.y > innerHeight - 32 || Math.min(box.bottom, innerHeight) - Math.max(0, box.top) < Math.min(264, box.height)) {
+      window.scrollBy({ top: box.height < innerHeight ? box.top - 8 : point.y - innerHeight / 2, behavior: 'instant' });
+    }
+    brushPad.collapse(false);
+    brushPad.refresh();
+    r.kbFocus = true;
+    requestDraw();
+  });
   function cellsOnLine(a, b) {
     const out = [];
     const ar = Math.floor(a / N16), ac = a % N16, br = Math.floor(b / N16), bc = b % N16;
@@ -1482,10 +1558,15 @@
     requestDraw();
   }
   cv.addEventListener('pointerdown', function (ev) {
+    if (!ev.isPrimary || ev.button !== 0) { touchTap = null; return; }
     const p = canvasXY(ev);
     if (state.mode === 'rle') {
       const i = hitCell(p);
       if (i < 0) return;
+      if (ev.pointerType !== 'mouse') {
+        touchTap = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, i: i, time: ev.timeStamp };
+        return;
+      }
       const r = state.rle;
       stopPlay();
       const color = r.px[i] ? 0 : 1;
@@ -1501,6 +1582,7 @@
     }
   });
   cv.addEventListener('pointermove', function (ev) {
+    if (touchTap && touchTap.id === ev.pointerId && Math.hypot(ev.clientX - touchTap.x, ev.clientY - touchTap.y) > 8) touchTap = null;
     const p = canvasXY(ev);
     if (state.mode === 'rle') {
       const r = state.rle, i = hitCell(p);
@@ -1519,16 +1601,18 @@
       cv.style.cursor = i >= 0 ? 'pointer' : 'default';
     }
   });
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { cv.addEventListener(t, function () { if (state.mode === 'rle') paintDone(); }); });
+  function endPointer(ev) {
+    const tap = touchTap;
+    if (tap && tap.id === ev.pointerId) {
+      touchTap = null;
+      if (ev.type === 'pointerup' && state.mode === 'rle' && ev.timeStamp - tap.time < 600 &&
+          Math.hypot(ev.clientX - tap.x, ev.clientY - tap.y) <= 8 && hitCell(canvasXY(ev)) === tap.i) togglePixel(tap.i);
+    }
+    if (state.rle.drag && state.rle.drag.id === ev.pointerId) paintDone();
+  }
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => cv.addEventListener(t, endPointer));
   cv.addEventListener('pointerleave', function () { if (state.rle.hover !== -1) { state.rle.hover = -1; requestDraw(); } });
-  // 手機：按在像素格上時不要捲動頁面
-  cv.addEventListener('touchstart', function (ev) {
-    if (state.mode !== 'rle' || !ev.touches.length) return;
-    const t = ev.touches[0];
-    if (hitCell(canvasXY(t)) >= 0) ev.preventDefault();
-  }, { passive: false });
-  cv.addEventListener('touchmove', function (ev) { if (state.mode === 'rle' && state.rle.drag) ev.preventDefault(); }, { passive: false });
-  /** 畫圖中：只更新讀數與畫面（放開手指才送任務事件） */
+  /** 滑鼠連續畫圖時先更新讀數，放開再送任務事件。 */
   function rleLiveUpdate() {
     const r = state.rle;
     r.sum = K.rleSummary(r.px, N16, N16, r.scan, r.fmt, r.k);
@@ -1552,13 +1636,7 @@
     if (state.mode !== 'rle' || (e.key !== 'Enter' && e.key !== ' ')) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    const r = state.rle, i = r.cursor;
-    stopPlay();
-    const c = r.px[i] ? 0 : 1;
-    setPixel(i, c);
-    sndPaint(c);
-    rleChanged('paint');
-    window.LabKeys.say(cellDesc());
+    togglePixel(state.rle.cursor);
   });
   function cellDesc() {
     const r = state.rle, i = r.cursor;
@@ -1572,12 +1650,7 @@
       move: function (dx, dy, big) {
         const step = big ? 4 : 1;
         if (state.mode === 'rle') {
-          const r = state.rle;
-          let row = Math.floor(r.cursor / N16), col = r.cursor % N16;
-          col = Math.max(0, Math.min(N16 - 1, col + dx * step));
-          row = Math.max(0, Math.min(N16 - 1, row - dy * step));
-          r.cursor = row * N16 + col;
-          requestDraw();
+          moveBrush(dx * step, dy * step);
           return true;
         }
         const h = state.huf, t = h.tree;
@@ -1606,6 +1679,7 @@
   // ---------- 測試用介面（Playwright 腳本使用；不影響一般操作） ----------
   window.CompressLab = {
     state: state,
+    cellXY: screenCell,
     mode: setMode,
     pattern: loadPattern,
     /** 親手畫：cells 是格子索引陣列，每一格切換成 color（預設黑），等同一次拖曳 */
@@ -1661,7 +1735,8 @@
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== cw2) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) { stopPlay(); state.dec.playing = false; updateDecButton(); } });
   say(T('遊程編碼：把連續同色的格子記成「一段有多長」。按「播放」看掃描，或在格子上自己畫。', 'Run-length coding: store each stretch of same-coloured squares as its length. Press “Play” to watch the scan, or paint on the grid.'));
   resize();

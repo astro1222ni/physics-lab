@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:30">
-  <script src="js/settings.js?v=202611201318"></script>
+<meta name="lab-updated" content="2026-11-20 13:59">
+  <script src="js/settings.js?v=202611201359"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Perceptron: One Line, Two Classes | Astro Ni Lab">感知器：一條線分兩類｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"人工智慧","item":"https://lab.astroni.org/information-technology.html#ai"},{"@type":"ListItem","position":4,"name":"機器學習","item":"https://lab.astroni.org/information-technology.html#ch-ml"},{"@type":"ListItem","position":5,"name":"感知器：一條線分兩類","item":"https://lab.astroni.org/perceptron.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201318">
+  <link rel="stylesheet" href="lab.css?v=202611201359">
   <style>
     /* 感知器頁面專用的顏色代號（淺色＋兩組深色；由 js/perceptron.js 與 js/perceptron-3d.js 讀取） */
     :root { --pc-pos: #e8590c; --pc-pos-btn: #c2410c; --pc-neg: #1d63d6; --pc-line: #6d28d9; --pc-w: #0f8a5f; --pc-wrong: #dc2626; --pc-cur: #d97706; --pc-ok: #15803d; --pc-panel: #e9eef5; --pc-band: #0e7490; }
@@ -86,6 +86,13 @@
       background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
     }
     @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 .v3nav { position: relative; left: auto; bottom: auto; padding-top: 4px; }
+    #view3 .v3nav-hint { min-width: 0; }
+    #view3 .p3-hud { bottom: 50px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #view3 canvas { max-height: calc(100dvh - 108px); }
+      #view3 .v3nav-hint { display: none; }
+    }
     #view3 canvas:active { cursor: grabbing; }
     .p3-wrap { position: relative; }
     .p3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
@@ -126,6 +133,9 @@
     #hist td.bad { color: var(--pc-wrong); font-weight: 700; }
     #hist:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .perceptron-pad.expanded { width: 164px; }
+    .perceptron-pad .vpad-select.is-red { background: var(--text) !important; color: var(--surface) !important; }
+    .pc #stepBtn { margin-inline-start: auto; min-width: 68px; }
   </style>
 </head>
 <body data-en-ready>
@@ -144,13 +154,13 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D weighted sum">3D 加權和</button>
           </div>
+          <button id="stepBtn" type="button" class="primary" title="看下一個點：分錯就修正一次" data-en-title="Look at the next point and correct the weights if it is wrong" data-en="Step">單步</button>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="特徵平面畫布：兩類資料點、目前的分界線與權重方向；右邊（窄螢幕在下方）是權重空間。點空白處放一個點，點一下已有的點把它移除，拖曳可以移動點。鍵盤：方向鍵移動游標，Enter 在游標處放點或移除，加號放 +1 類、減號放 −1 類。" data-en-aria-label="Feature-plane canvas: the two classes of points, the current dividing line and the direction of the weights; the weight space is on the right (below on narrow screens). Tap an empty spot to place a point, tap a point to remove it, drag to move it. Keyboard: arrow keys move a cursor, Enter places or removes a point there, plus places class +1 and minus places class −1."></canvas>
+        <canvas id="cv" tabindex="0" aria-label="特徵平面與權重空間。小鍵盤中央可切換放點游標或移資料點。方向鍵移動目前物件。放點時，Enter 放點或移除，正負號指定類別。移點時，點選資料點或按 Enter 換點，Delete 移除選取的點。" data-en-aria-label="Feature plane and weight space. Use the keypad centre to switch between the placing cursor and a data point. Arrow keys move the active object. With the cursor, Enter adds or removes a point and plus or minus chooses its class when adding. In Move point, tap a point to select it, press Enter for the next point, or Delete to remove the selection."></canvas>
         <div id="view3"></div>
         <div class="playbar">
-          <button id="stepBtn" type="button" class="primary" title="看下一個點：分錯就修正一次" data-en-title="Look at the next point and correct the weights if it is wrong" data-en="Step">單步</button>
           <button id="epochBtn" type="button" title="把這一輪剩下的點都看完" data-en-title="Go through the rest of this round" data-en="One round">一輪</button>
           <button id="playBtn" type="button" aria-pressed="false" data-en="Keep learning">連續學習</button>
           <button id="learnBtn" type="button" title="一直學到收斂，或學滿 1000 輪" data-en-title="Keep going until it converges or reaches 1000 rounds" data-en="Learn until done">學到收斂</button>
@@ -158,6 +168,7 @@
           <button id="wipeBtn" type="button" title="清掉學習紀錄、權重軌跡與每輪錯誤數圖，從頭學起；資料與設定不變" data-en-title="Clear the learning log, the weight trail and the mistakes chart and start again; data and settings stay" data-en="Clear all">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" aria-hidden="true">
           <span><span class="sw round" style="background:var(--pc-pos)"></span><span data-en="class +1 (circle)">+1 類（圓）</span></span>
@@ -167,11 +178,11 @@
           <span><i style="background:var(--pc-w)"></i><span data-en="weights w">權重 w</span></span>
         </div>
         <canvas id="cv2" aria-label="每輪錯誤數圖：橫軸是第幾輪，長條高度是那一輪分錯（因此修正）幾次；一整輪都沒錯就是收斂，畫成綠色。" data-en-aria-label="Mistakes per round: the horizontal axis is the round number and each bar is how many points were wrong (and so corrected) in that round; a round with no mistakes means it has converged and is drawn in green."></canvas>
-        <p class="chart-cap" data-en="Mistakes per round. A round with no mistakes means the perceptron has converged. The convergence theorem promises at most (R/γ)² corrections in total when it starts from zero.">每輪錯誤數。一整輪都沒有分錯，就是收斂了。從零出發時，收斂定理保證總共最多修正 (R/γ)² 次。</p>
+        <p class="chart-cap" data-en-html="Mistakes per round. A round with no mistakes means the perceptron has converged. The convergence theorem promises at most \((R/\gamma)^2\) corrections in total when it starts from zero.">每輪錯誤數。一整輪都沒有分錯，就是收斂了。從零出發時，收斂定理保證總共最多修正 \((R/\gamma)^2\) 次。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="資料|Data" data-deck-order="1">
           <h2 data-en="Data">資料</h2>
           <div class="presets" role="group" aria-label="預設資料" data-en-aria-label="Preset data">
             <button type="button" data-set="and" aria-pressed="true">AND</button>
@@ -181,6 +192,9 @@
             <button type="button" data-set="sep" class="wide" aria-pressed="false" data-en="Random separable">隨機可分</button>
             <button type="button" data-set="noisy" class="wide" aria-pressed="false" data-en="Noisy">有雜訊</button>
           </div>
+        </section>
+        <section class="card" data-deck="編輯資料點|Edit points" data-deck-order="2">
+          <h2 data-en="Edit points">編輯資料點</h2>
           <p class="lbl" id="clsLbl" data-en="Class of the next point you place">放點的類別</p>
           <div class="seg2" role="group" aria-labelledby="clsLbl">
             <button type="button" id="clsPos" class="cls-pos" aria-pressed="true" data-en="Place +1">放 +1 類</button>
@@ -189,7 +203,13 @@
           <div class="row2">
             <button type="button" id="clearPts" class="wide" title="拿掉所有的點，自己放" data-en-title="Remove every point and place your own" data-en="Clear points">清空資料</button>
           </div>
-          <p class="hint" data-en="Tap an empty spot to add a point, tap a point to remove it, drag to move it. Points snap to a 0.05 grid; at most 60 points. The logic gates put input 0 at −0.6 and input 1 at +0.6.">點空白處放點、點一下點把它移除、拖曳可以移動。座標吸附在 0.05 的格點上，最多 60 個點。邏輯閘的資料把輸入 0 放在 −0.6、輸入 1 放在 +0.6。</p>
+          <p class="hint" data-en="Tap an empty spot to add a point or drag a point to move it. Tapping a point removes it in Cursor mode and selects it in Move point mode. Switch modes at the centre of the keypad. Points snap to a 0.05 grid; at most 60 points. The logic gates put input 0 at −0.6 and input 1 at +0.6.">點空白處放點，也可直接拖曳資料點。小鍵盤中央可切換模式：使用「放點游標」點一下資料點會移除它；使用「移資料點」點一下即可選取。座標吸附在 0.05 的格點上，最多 60 個點。邏輯閘的資料把輸入 0 放在 −0.6、輸入 1 放在 +0.6。</p>
+        </section>
+        <section class="card" data-deck="資料特性|Data properties" data-deck-order="3">
+          <h2 data-en="Data properties">資料特性</h2>
+          <div class="checks" style="margin-top:6px">
+            <label><input id="showBand" type="checkbox"><span data-en="Widest corridor">最寬的走廊</span></label>
+          </div>
           <dl class="readout" style="margin-top:10px">
             <dt data-en="Points n (+1 / −1)">點數 n（+1／−1）</dt><dd id="rN">—</dd>
             <dt data-en="Can one line separate them?">能用一條線分開嗎</dt><dd id="rSep">—</dd>
@@ -197,12 +217,9 @@
             <dt data-en-html="Largest size <i>R</i>">最大長度 <i>R</i></dt><dd id="rR">—</dd>
             <dt data-en-html="Bound (<i>R</i>/<i>γ</i>)<sup>2</sup>">收斂上界 (<i>R</i>/<i>γ</i>)<sup>2</sup></dt><dd id="rBound">—</dd>
           </dl>
-          <div class="checks" style="margin-top:6px">
-            <label><input id="showBand" type="checkbox"><span data-en="Widest corridor">最寬的走廊</span></label>
-          </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="學習設定|Learning settings" data-deck-order="4">
           <h2 data-en="Learning settings">學習設定</h2>
           <div class="slider"><label for="eta" data-en="Learning rate η">學習率 η</label><output id="etao"></output>
             <input id="eta" type="range" min="0" max="300" step="1" value="200" data-decimals="3"></div>
@@ -211,6 +228,9 @@
             <button type="button" id="initZero" aria-pressed="true" data-en="Zero">零</button>
             <button type="button" id="initRand" aria-pressed="false" data-en="Random">隨機</button>
           </div>
+        </section>
+        <section class="card" data-deck="訓練順序|Training order" data-deck-order="5">
+          <h2 data-en="Training order">訓練順序</h2>
           <p class="lbl" id="orderLbl" data-en="Order of the points">看點的順序</p>
           <div class="seg2" role="group" aria-labelledby="orderLbl">
             <button type="button" id="orderFixed" aria-pressed="true" data-en="Fixed order">固定順序</button>
@@ -288,7 +308,7 @@
       <ul>
         <li data-en-html="Points snap to a 0.05 grid and are stored as whole numbers \(g = 20x\). The weights are kept as \(\tilde{\mathbf{w}} = \tilde{\mathbf{w}}_0 + \tfrac{\eta}{20}\,\mathbf{S}\), where \(\mathbf{S}\) is a sum of whole-number vectors \(y\,(g_1, g_2, 20)\). With zero starting weights the sign of \(z\) is decided by a whole number, so “exactly on the line”, “\(b\) is exactly 0” and “the weights came back to the same value” are judged without any rounding error.">點的座標吸附在 0.05 的格點上，存成整數 \(g = 20x\)。權重寫成 \(\tilde{\mathbf{w}} = \tilde{\mathbf{w}}_0 + \tfrac{\eta}{20}\,\mathbf{S}\)，\(\mathbf{S}\) 是整數向量 \(y\,(g_1, g_2, 20)\) 的總和。初始權重是零時，\(z\) 的正負由一個整數決定，所以「剛好在線上」「\(b\) 剛好是 0」「權重回到同一個值」都沒有捨入誤差。</li>
         <li data-en-html="The largest margin \(\gamma\) equals the distance from the origin to the convex hull of the vectors \(y\,\tilde{\mathbf{x}}\) (zero distance means the data cannot be separated). The page finds the nearest point exactly by trying every vertex, edge and triangle of the hull. The unit tests prove each answer both ways — a direction \(\mathbf{u}\) that achieves \(\gamma\), and a convex combination of length \(\gamma\) showing nothing can do better — and compare it with two independent iterative methods.">最大間隔 \(\gamma\) 等於原點到向量 \(y\,\tilde{\mathbf{x}}\) 的凸包的距離（距離是 0 表示不能用一條線分開）。頁面把凸包的每個頂點、每條邊、每個三角形都試過，精確找出最近點。單元測試把每個答案從兩個方向證明——一個方向 \(\mathbf{u}\) 做得到 \(\gamma\)，一個長度為 \(\gamma\) 的凸組合說明不可能更好——並和兩種獨立的迭代算法比對。</li>
-        <li data-en="The unit tests also check: the rule matches the (t − ŷ) form step by step; separable data always converge and the number of corrections never exceeds (R/γ)²; XOR and other inseparable data never converge; from zero, changing η scales the weights but not the line; without a bias, AND, OR and NAND become inseparable; random data and shuffles repeat exactly for the same seed.">單元測試也檢查：學習規則和 (t − ŷ) 的寫法逐步相同；可分的資料一定收斂，而且修正次數從不超過 (R/γ)²；XOR 和其他不可分的資料永遠不收斂；從零出發時改學習率只會放大權重、不改變線；拿掉偏差後 AND、OR、NAND 都變成不可分；同一個種子的隨機資料與打亂順序完全重現。</li>
+        <li data-en-html="The unit tests also check: the rule matches the (t − ŷ) form step by step; separable data always converge and the number of corrections never exceeds \((R/\gamma)^2\); XOR and other inseparable data never converge; from zero, changing η scales the weights but not the line; without a bias, AND, OR and NAND become inseparable; random data and shuffles repeat exactly for the same seed.">單元測試也檢查：學習規則和 (t − ŷ) 的寫法逐步相同；可分的資料一定收斂，而且修正次數從不超過 \((R/\gamma)^2\)；XOR 和其他不可分的資料永遠不收斂；從零出發時改學習率只會放大權重、不改變線；拿掉偏差後 AND、OR、NAND 都變成不可分；同一個種子的隨機資料與打亂順序完全重現。</li>
         <li data-en-html="The 3D sheet is the same \(z\) drawn as height. Because \(z\) can grow large, all heights share one vertical scale chosen so that the highest corner of the sheet is a fixed height; that scale is written on the 3D view. The posts use the same scale, so their lengths are exactly proportional to \(z\).">3D 的斜面就是同一個 \(z\) 畫成高度。因為 \(z\) 可能變得很大，所有高度共用一個縮放比例，讓斜面最高的角維持固定高度；比例寫在 3D 畫面上。柱子用同一個比例，所以柱子長度和 \(z\) 精確成正比。</li>
       </ul>
 
@@ -308,18 +328,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201318"></script>
-  <script src="js/perceptron-core.js?v=202611201318"></script>
-  <script src="js/sound.js?v=202611201318"></script>
-  <script src="js/numinput.js?v=202611201318"></script>
-  <script src="js/labdeck.js?v=202611201318"></script>
-  <script src="js/drawkit.js?v=202611201318"></script>
-  <script src="js/keys.js?v=202611201318"></script>
-  <script src="js/perceptron.js?v=202611201318"></script>
-  <script src="js/firebase-config.js?v=202611201318"></script>
-  <script src="js/missions.js?v=202611201318" data-module="perceptron"></script>
-  <script src="js/missions/perceptron.js?v=202611201318"></script>
-  <script src="js/stats.js?v=202611201318" data-module="perceptron"></script>
-  <script src="js/comments.js?v=202611201318"></script>
+  <script src="js/math.js?v=202611201359"></script>
+  <script src="js/perceptron-core.js?v=202611201359"></script>
+  <script src="js/sound.js?v=202611201359"></script>
+  <script src="js/numinput.js?v=202611201359"></script>
+  <script src="js/labdeck.js?v=202611201359"></script>
+  <script src="js/drawkit.js?v=202611201359"></script>
+  <script src="js/vpad.js?v=202611201359"></script>
+  <script src="js/view3d-nav.js?v=202611201359"></script>
+  <script src="js/keys.js?v=202611201359"></script>
+  <script src="js/perceptron.js?v=202611201359"></script>
+  <script src="js/firebase-config.js?v=202611201359"></script>
+  <script src="js/missions.js?v=202611201359" data-module="perceptron"></script>
+  <script src="js/missions/perceptron.js?v=202611201359"></script>
+  <script src="js/stats.js?v=202611201359" data-module="perceptron"></script>
+  <script src="js/comments.js?v=202611201359"></script>
 </body>
 </html>

@@ -83,7 +83,7 @@
       id: 'stack-queue-8', level: 5,
       title: { zh: '繞了一圈還是滿的', en: 'Full after going round' },
       desc: { zh: '在「環狀佇列」裡，讓佇列在 front 不是 0 的時候滿了（這時 rear 一定已經繞回陣列的開頭）。', en: 'In “Circular queue”, make the queue full while front is not 0 (by then rear must have wrapped round to the start of the array).' },
-      check: function (ev) { const d = ev.data; return ring(ev) && d.wrap && d.op === 'enq' && d.err === 'full' && d.front !== 0; }
+      check: function (ev) { const d = ev.data; return ring(ev) && d.wrap && d.op === 'enq' && d.ok && d.front !== 0 && d.size === d.cap; }
     },
     {
       id: 'stack-queue-9', level: 6,

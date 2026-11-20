@@ -62,6 +62,7 @@
   // =====================================================================
   function layoutMain(W) {
     const n = state.n, narrow = W < 600;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const padL = narrow ? 10 : 34, padR = narrow ? 10 : 12;
     const inner = W - padL - padR;
     let mode = 'bars', rows = 1, cols = n, gap = 0, cwid = 0, chgt = 0, rowGap = 0, slot, bodyH;
@@ -70,7 +71,7 @@
       const minW = narrow ? 27 : 20;
       const maxCols = Math.max(1, Math.floor((inner + gap) / (minW + gap)));
       rows = Math.ceil(n / maxCols);
-      if (rows <= (narrow ? 3 : 4)) { mode = 'cards'; cols = Math.ceil(n / rows); }
+      if (rows <= (landscape ? 1 : narrow ? 3 : 4)) { mode = 'cards'; cols = Math.ceil(n / rows); }
       else rows = 1;
     }
     const th = textH(ctx, 12, 650);
@@ -84,7 +85,7 @@
     } else {
       cols = n;
       slot = inner / n;
-      bodyH = narrow ? 76 : 96;
+      bodyH = landscape ? 46 : narrow ? 76 : 96;
     }
     const topBar = Math.round(pillH + 10), head = Math.round(pillH + 10), ptr = Math.round(pillH + 10);
     const lanes = [];

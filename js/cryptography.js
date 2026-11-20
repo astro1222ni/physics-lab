@@ -98,7 +98,13 @@
   function measure(text, font) { ctx.font = font; return ctx.measureText(text).width; }
   function layout() {
     const W = cw, t = state.tab, narrow = W < 560;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     if (t === 'caesar') {
+      if (landscape) {
+        const R = Math.min(W * 0.24, (innerHeight - 94) / 2, 150), tx = 2 * R + 25;
+        return { wide: false, compact: true, H: Math.ceil(Math.max(2 * R + 34, 178)), disc: { cx: R + 9, cy: R + 18, R: R },
+          table: { x: tx, y: 24, w: W - tx - 8 } };
+      }
       if (W >= 600) {
         const R = Math.min(178, W * 0.25);
         const cx = 18 + R, cy = 22 + R;
@@ -112,7 +118,7 @@
       return { wide: false, H: Math.round(ty + 22 + 2 * (2 * th + 18) + 18), disc: { cx: W / 2, cy: cy, R: R }, table: { x: 10 + (tw - 13 * cwid) / 2, y: ty, w: 13 * cwid } };
     }
     if (t === 'freq') {
-      const top = 36, mainH = narrow ? 180 : 220, x0 = 38;
+      const top = 36, mainH = landscape ? Math.min(148, Math.max(72, innerHeight - 260)) : narrow ? 180 : 220, x0 = 38;
       const lab = 42;
       const chiTop = top + mainH + lab + 30;
       const chiH = 84;
@@ -127,11 +133,20 @@
       const nCells = Math.max(1, Math.floor(avail / cell));
       const th = cell - 3, rowH = th + 5;
       const rowsY = 28;
-      const bT = rowsY + 3 * rowH + 8 + 36, bB = bT + (narrow ? 88 : 100);
-      const cT = bB + 22 + 34, cB = cT + (narrow ? 84 : 96);
+      const bT = rowsY + 3 * rowH + 8 + 36, bB = bT + (landscape ? 48 : narrow ? 88 : 100);
+      const cT = bB + 22 + 34, cB = cT + (landscape ? 46 : narrow ? 84 : 96);
       return { H: Math.round(cB + 26), labW: labW, cell: cell, nCells: nCells, th: th, rowH: rowH, rowsY: rowsY, bT: bT, bB: bB, cT: cT, cB: cB, x0: 38, x1: W - 10 };
     }
     // rsa
+    if (landscape) {
+      const H = Math.min(350, innerHeight - 12), bw = Math.min(228, W - 44);
+      const wire = Math.round(H * 0.42), feet = wire + 36, eveFeet = H - 76;
+      return { H: H, narrow: false, s: 0.73, wireY: wire,
+        board: { x: (W - bw) / 2, y: 5, w: bw, h: 50 },
+        snd: { x: 35, feet: feet }, rcv: { x: W - 35, feet: feet }, eve: { x: W / 2, feet: eveFeet },
+        boxNone: 85, boxLocked: W / 2, boxOpen: W - 85, boxEve: { x: W / 2 - 54, yb: eveFeet },
+        formula: { x: 10, y: H - 30 } };
+    }
     if (!narrow) {
       const H = 398, bw = Math.min(330, W * 0.46);
       return {
@@ -320,7 +335,8 @@
       D.haloText(c, T('只有 26 種位移：最多試 25 次一定破解。', 'Only 26 shifts: 25 tries always break it.'), x, Math.min(L.H - 12, y + 30), C.muted, 'left', 'alphabetic', fnt(12, 500));
     } else {
       const tb = L.table;
-      D.haloText(c, tTitle, cw / 2, tb.y + 4, C.muted, 'center', 'alphabetic', fnt(12, 600));
+      const caption = L.compact ? (enc ? T('明文 → 密文', 'Plain → Cipher') : T('密文 → 明文', 'Cipher → Plain')) : tTitle;
+      D.haloText(c, caption, tb.x + tb.w / 2, tb.y + 4, C.muted, 'center', 'alphabetic', fnt(12, 600));
       drawTable(c, tb.x, tb.y + 14, tb.w, used);
     }
   }
@@ -959,7 +975,8 @@
   // 分頁
   // =====================================================================
   function applyTabVisibility() {
-    document.querySelectorAll('#lab [data-tabs]').forEach(function (el) {
+    // 手機橫放時，操作台會把分頁搬到實驗欄以外。
+    document.querySelectorAll('[data-tabs]').forEach(function (el) {
       el.hidden = el.getAttribute('data-tabs').split(' ').indexOf(state.tab) < 0;
     });
     tabBtns.forEach(function (b) {

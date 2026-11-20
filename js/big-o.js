@@ -186,12 +186,13 @@
 
   function layoutRace(W) {
     const narrow = W < 560;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const pad = narrow ? 6 : 10;
     const th = textH(rctx, 13, 650);
     const top = Math.round(th + 16);
-    const head = Math.round(th + 12), vis = narrow ? 30 : 34, track = 20;
+    const head = Math.round(th + (compact ? 5 : 12)), vis = compact ? 21 : narrow ? 30 : 34, track = compact ? 15 : 20;
     const laneH = head + vis + track;
-    const gap = narrow ? 7 : 8;
+    const gap = compact ? 3 : narrow ? 7 : 8;
     return { W: W, narrow: narrow, pad: pad, th: th, top: top, head: head, vis: vis, track: track, laneH: laneH, gap: gap,
       H: Math.round(top + ORDER.length * (laneH + gap) + 2) };
   }

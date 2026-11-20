@@ -139,15 +139,16 @@
   function cur() { return its[state.sel] || null; }
   function layoutA() {
     const W = cw, narrow = W < 560;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const pad = narrow ? 10 : 18, gap = narrow ? 6 : 10;
     const avail = W - 2 * pad;
     let perRow = 4, cell = Math.min(22, (avail - 3 * gap) / 32);
-    if (cell < 12.5) { perRow = 2; cell = Math.min(22, (avail - gap) / 16); }
+    if (cell < (compact ? 9 : 12.5)) { perRow = 2; cell = Math.min(22, (avail - gap) / 16); }
     cell = Math.floor(cell * 2) / 2;
-    const cellH = Math.max(20, Math.min(26, Math.round(cell * 1.15)));
+    const cellH = compact ? 19 : Math.max(20, Math.min(26, Math.round(cell * 1.15)));
     const rowW = perRow * 8 * cell + (perRow - 1) * gap;
     const x0 = Math.round((W - rowW) / 2);
-    const G = narrow ? 60 : 74;
+    const G = compact ? 50 : narrow ? 60 : 74;
     const it = cur();
     const o = { narrow: narrow, pad: pad, gap: gap, perRow: perRow, cell: cell, cellH: cellH, x0: x0, rowW: rowW, G: G, cells: [], it: it };
     let y = pad;
@@ -937,13 +938,29 @@
   // =====================================================================
   // ASCII 表
   // =====================================================================
-  const asciiCells = [];
+  const asciiCells = [], asciiHeads = [];
+  const asciiGroup = $('asciiGroup');
+  function showAsciiGroup() {
+    const first = Number(asciiGroup.value) * 4;
+    asciiHeads.forEach(function (h, column) { h.textContent = '_' + K.hex(first + column, 1); });
+    asciiCells.forEach(function (cell, code) {
+      const low = code % 16;
+      cell.hidden = low < first || low >= first + 4;
+    });
+  }
   (function buildAscii() {
     const box = $('asciiTab');
-    for (let col = 0; col < 8; col++) { const h = document.createElement('div'); h.className = 'h'; h.textContent = K.hex(col, 1) + '_'; box.appendChild(h); }
-    for (let row = 0; row < 16; row++) {
-      for (let col = 0; col < 8; col++) {
-        const code = col * 16 + row;
+    function header(row, column, label) {
+      const h = document.createElement('div');
+      h.className = 'h'; h.textContent = label;
+      h.style.gridRow = String(row); h.style.gridColumn = String(column);
+      box.appendChild(h); return h;
+    }
+    for (let col = 0; col < 4; col++) asciiHeads.push(header(1, col + 2, ''));
+    for (let high = 0; high < 8; high++) {
+      header(high + 2, 1, K.hex(high, 1) + '_');
+      for (let low = 0; low < 16; low++) {
+        const code = high * 16 + low;
         let el;
         if (code < 0x20 || code === 0x7F) {
           el = document.createElement('span'); el.className = 'c';
@@ -964,12 +981,14 @@
             say(describeSel());
           });
         }
-        el.style.gridColumn = String(col + 1);
-        el.style.gridRow = String(row + 2);
+        el.style.gridColumn = String(low % 4 + 2);
+        el.style.gridRow = String(high + 2);
         box.appendChild(el);
         asciiCells[code] = el;
       }
     }
+    showAsciiGroup();
+    asciiGroup.addEventListener('change', showAsciiGroup);
   })();
   let lastAscii = -1;
   function markAscii() {
@@ -977,7 +996,11 @@
     const code = it && it.cp < 128 ? it.cp : -1;
     if (code === lastAscii) return;
     if (lastAscii >= 0 && asciiCells[lastAscii]) asciiCells[lastAscii].classList.remove('cur');
-    if (code >= 0 && asciiCells[code]) asciiCells[code].classList.add('cur');
+    if (code >= 0 && asciiCells[code]) {
+      asciiCells[code].classList.add('cur');
+      asciiGroup.value = String(Math.floor((code % 16) / 4));
+      showAsciiGroup();
+    }
     lastAscii = code;
   }
 

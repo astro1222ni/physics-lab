@@ -115,6 +115,8 @@
     .quiz-stat b { color: var(--text); }
     #roundLog td, #roundLog th { text-align: right; }
     .tc.quizzing .noquiz { display: none !important; }
+    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
+    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -173,7 +175,7 @@
         </section>
 
         <section class="card noquiz">
-          <h2 data-en="Adding and subtracting">加法與減法</h2>
+          <h2 data-en="Arithmetic">加法與減法</h2>
           <div class="fields">
             <label for="inB" data-en="B (decimal)">B（十進位）</label><input id="inB" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="bMsg">
           </div>

@@ -5,7 +5,7 @@
  * 用法：window.Perceptron3D.create({ THREE, OrbitControls }, 容器, bridge) → { active, frame, onTheme, resetCamera, dispose }
  *
  * 場景座標：地面就是特徵平面，X = x1、Z = −x2（x2 往畫面裡面），Y 是高度。
- * 斜面的高度 = 加權和 z = w1·x1 + w2·x2 + b 乘上一個共同的比例 hs（讓斜面在 [−1, 1]² 最高的角固定在 0.85）。
+ * 斜面的高度 = 加權和 z = w1·x1 + w2·x2 + b 乘上一個共同的比例 hs（讓斜面在 [−1, 1]^2 最高的角固定在 0.85）。
  * 每個資料點有一根柱子從地面連到斜面，長度 = hs·z（同一個比例）：分對的 +1 點柱子朝上、分對的 −1 點朝下，分錯的柱子是紅色。
  * 斜面與地面 z = 0 的交線就是 2D 的分界線。權重、點、分錯與否都直接取自 2D 的 Session（bridge），兩邊永遠一致。
  */
@@ -13,8 +13,8 @@
   'use strict';
   const FONT = 'system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif';
   const PI = Math.PI, DEG = PI / 180;
-  const HALF = 1.2;       // 地面半寬（資料在 [−1, 1]²）
-  const TOP = 0.85;       // 斜面在 [−1, 1]² 最高的角的高度
+  const HALF = 1.2;       // 地面半寬（資料在 [−1, 1]^2）
+  const TOP = 0.85;       // 斜面在 [−1, 1]^2 最高的角的高度
 
   function create(lib, host, B) {
     const THREE = lib.THREE;
@@ -28,8 +28,8 @@
     wrap.className = 'p3-wrap';
     const canvas = document.createElement('canvas');
     canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', T('加權和的 3D 立體檢視：地面是特徵平面，半透明的斜面高度是加權和 z，斜面切過地面的地方就是分界線；每個點有一根柱子連到斜面。拖曳旋轉，滾輪或雙指縮放，方向鍵也可以轉動。',
-      '3D view of the weighted sum: the ground is the feature plane, the height of the translucent sheet is the weighted sum z, and where the sheet cuts the ground is the dividing line; each point has a post up (or down) to the sheet. Drag to rotate, scroll or pinch to zoom, or use the arrow keys.'));
+    canvas.setAttribute('aria-label', T('加權和的 3D 立體檢視：地面是特徵平面，半透明的斜面高度是加權和 z，斜面切過地面的地方就是分界線；每個點有一根柱子連到斜面。選「旋轉」或「平移」後拖曳，方向鍵也能操作。滾輪朝游標縮放，也可雙指縮放。',
+      '3D view of the weighted sum: the ground is the feature plane, the height of the translucent sheet is the weighted sum z, and where the sheet cuts the ground is the dividing line; each point has a post up (or down) to the sheet. Choose Rotate or Pan, then drag or use the arrow keys. Scroll to zoom towards the pointer, or pinch to zoom.'));
     wrap.appendChild(canvas);
     const hud = document.createElement('div');
     hud.className = 'p3-hud';
@@ -55,6 +55,9 @@
 
     // ---------- 視角控制 ----------
     const controls = new lib.OrbitControls(camera, canvas);
+    // OrbitControls 每次更新阻尼前先限制中心，持續拖到邊界也不會漂出場景。
+    controls.maxTargetRadius = HALF;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: controls.maxTargetRadius, T });
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
@@ -369,12 +372,18 @@
       return Math.max(1.7 / Math.tan(vf / 2), 1.45 / Math.tan(hf / 2)) * 0.92;
     }
     function resetCamera() {
+      // 清掉上一次拖曳殘留的阻尼，再設定場景的原始視角。
+      controls.enableDamping = false;
+      controls.update();
+      controls.enableDamping = true;
       const d = fitDistance();
       controls.target.copy(target);
       camera.position.copy(target).addScaledVector(new THREE.Vector3(0.66, 0.46, 1.0).normalize(), d);
       controls.maxDistance = d * 3;
+      controls.cursor.copy(controls.target);
       camera.updateProjectionMatrix();
       controls.update();
+      nav.home();
       requestRender();
     }
 
@@ -419,6 +428,7 @@
     });
     // 鍵盤：方向鍵繞著平面轉
     canvas.addEventListener('keydown', function (ev) {
+      if (nav.mode() === 'pan' && ev.key.startsWith('Arrow')) return;
       const step = (ev.shiftKey ? 15 : 5) * DEG;
       const off = camera.position.clone().sub(controls.target);
       const sph = new THREE.Spherical().setFromVector3(off);
@@ -429,12 +439,13 @@
       else if (ev.key === 'ArrowDown') sph.phi = Math.min(PI - 0.05, sph.phi + step);
       else used = false;
       if (!used) return;
+      ev.stopImmediatePropagation();
       ev.preventDefault();
       camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sph));
       controls.update();
       requestRender();
       B.onRotate();
-    });
+    }, true);
 
     const api = {
       active: true,
@@ -457,6 +468,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         clearGroup(gDyn); clearGroup(gStatic);
         Object.keys(shared).forEach(function (k) { if (shared[k].dispose) shared[k].dispose(); });

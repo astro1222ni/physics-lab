@@ -43,12 +43,19 @@
 
     /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面 */
     #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; cursor: default; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 84px); object-fit: contain; }
+    }
+    @media (orientation: landscape) and (max-width: 760px) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 104px); }
+    }
+    .labdeck-tabs button, .labdeck .slider .lab-num { min-height: 44px !important; }
     .sq button { min-height: 44px; }
     .sq [hidden] { display: none !important; }
     .modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
     .modes button { border: none; border-radius: 0; padding: 6px 4px; background: var(--bg); line-height: 1.25; }
     .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
-    @media (max-width: 560px) {
+    @media (max-width: 560px), (orientation: landscape) and (max-width: 760px) {
       .modes { grid-template-columns: repeat(6, minmax(0, 1fr)); }
       .modes button { grid-column: span 2; }
       .modes button:nth-child(n+4) { grid-column: span 3; }
@@ -58,15 +65,20 @@
     .oprow { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 8px; align-items: center; }
     .opcap { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; line-height: 1.25; }
     .opbtns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    #ringOps .opbtns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .opbtns button { padding: 4px 4px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
     .opbtns button.go { border-color: var(--accent); }
-    @media (max-width: 560px) {
+    @media (max-width: 560px), (orientation: landscape) and (max-width: 760px) {
       .oprow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
       .opbtns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
+    @media (orientation: landscape) and (max-width: 760px) {
+      #ringOps .opbtns { grid-template-columns: repeat(2, minmax(0, 2fr)) minmax(44px, 1fr); }
+      .opbtns button, .sq .playbar button { overflow-wrap: anywhere; }
+    }
     .sq .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
     .sq .playbar button { padding: 6px 4px; line-height: 1.2; }
-    @media (max-width: 560px) { .sq .playbar { grid-template-columns: repeat(6, minmax(0, 1fr)); } .sq .playbar button { grid-column: span 2; } .sq .playbar button:nth-child(n+4) { grid-column: span 3; } }
+    @media (max-width: 560px), (orientation: landscape) and (max-width: 760px) { .sq .playbar { grid-template-columns: repeat(6, minmax(0, 1fr)); } .sq .playbar button { grid-column: span 2; } .sq .playbar button:nth-child(n+4) { grid-column: span 3; } }
     .sq .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
     .sq .playbar2 button { flex: 1 1 auto; }
     #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
@@ -143,7 +155,6 @@
           <button type="button" data-mode="infix" aria-pressed="false" data-en="Infix to postfix">中序轉後序</button>
         </div>
         <canvas id="cv" aria-label="堆疊與佇列的畫布" data-en-aria-label="Stacks and queues canvas"></canvas>
-        <div class="strip" id="strip" aria-live="off"></div>
 
         <!-- 模式一：堆疊與佇列 -->
         <div class="ops" id="deskOps">
@@ -205,6 +216,7 @@
           <button id="resetBtn" type="button" data-en="Restart">重來</button>
         </div>
 
+        <div class="strip" id="strip" aria-live="off"></div>
         <div class="playbar2">
           <button id="wipeBtn" type="button" data-en="Clear all" title="清掉操作紀錄與目前的內容，回到可以重新開始的狀態；滑桿與輸入的式子不變" data-en-title="Clear the log and the current contents so you can start again; the sliders and the typed expression stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>

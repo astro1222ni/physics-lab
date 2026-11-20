@@ -14,7 +14,7 @@
   const PI = Math.PI, DEG = PI / 180;
   const S = 2;                    // 立方體邊長
   const SNAP_SEC = 1.1;           // 吸附動畫的時間（秒）
-  const LATTICE_MAX_B = 4;        // 彩色時，每色版 4 位元以下才畫出格點（16³ = 4096 個）
+  const LATTICE_MAX_B = 4;        // 彩色時，每色版 4 位元以下才畫出格點（16^3 = 4096 個）
 
   /** sRGB 代碼值（0–255）→ 線性（three.js 的頂點顏色用線性值） */
   function lin(v) { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
@@ -31,8 +31,8 @@
     wrap.className = 'c3-wrap';
     const canvas = document.createElement('canvas');
     canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', T('RGB 色立方的 3D 檢視：紅、綠、藍三個軸，黑與白在相對的兩個角，灰色在兩者之間的對角線上。每個點是一個像素，降低位元數時點會吸到最近的格點。拖曳旋轉，滾輪或雙指縮放，方向鍵也可以轉動。',
-      '3D view of the RGB color cube: red, green and blue axes, black and white at opposite corners and the grays on the diagonal between them. Each dot is one pixel; with fewer bits the dots snap to the nearest lattice point. Drag to rotate, scroll or pinch to zoom, or use the arrow keys.'));
+    canvas.setAttribute('aria-label', T('RGB 色立方的 3D 檢視：紅、綠、藍三個軸，黑與白在相對的兩個角，灰色在兩者之間的對角線上。每個點是一個像素，降低位元數時點會吸到最近的格點。選「旋轉」或「平移」後拖曳，方向鍵也能操作。滾輪朝游標縮放，也可雙指縮放。',
+      '3D view of the RGB color cube: red, green and blue axes, black and white at opposite corners and the grays on the diagonal between them. Each dot is one pixel; with fewer bits the dots snap to the nearest lattice point. Choose Rotate or Pan, then drag or use the arrow keys. Scroll to zoom towards the pointer, or pinch to zoom.'));
     wrap.appendChild(canvas);
     const hud = document.createElement('div');
     hud.className = 'c3-hud';
@@ -56,6 +56,9 @@
 
     // ---------- 視角控制 ----------
     const controls = new lib.OrbitControls(camera, canvas);
+    // OrbitControls 每次更新阻尼前先限制中心，持續拖到邊界也不會漂出場景。
+    controls.maxTargetRadius = S / 2;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: controls.maxTargetRadius, T });
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
@@ -63,12 +66,12 @@
     controls.minDistance = 2.5;
     controls.maxDistance = 16;
     // 旋轉停下來（阻尼結束）以後才回報視線方向，給任務判定
-    let startPos = null, reportPending = false;
-    controls.addEventListener('start', function () { startPos = camera.position.clone(); });
+    let startDir = null, reportPending = false;
+    controls.addEventListener('start', function () { startDir = camera.position.clone().sub(controls.target).normalize(); });
     controls.addEventListener('end', function () {
-      if (!startPos) return;
-      const moved = startPos.distanceTo(camera.position) > 0.02;
-      startPos = null;
+      if (!startDir) return;
+      const moved = startDir.angleTo(camera.position.clone().sub(controls.target)) > 0.005;
+      startDir = null;
       if (moved) reportPending = true;
       requestRender();
     });
@@ -156,7 +159,7 @@
     scene.add(labelG);
     const CORNERS = [
       { c: [0, 0, 0], zh: '黑', en: 'Black' }, { c: [255, 255, 255], zh: '白', en: 'White' },
-      { c: [255, 0, 0], zh: '紅', en: 'Red' }, { c: [0, 255, 0], zh: '綠', en: 'Green' }, { c: [0, 0, 255], zh: '藍', en: 'Blue' },
+      { c: [255, 0, 0], zh: '紅', en: 'Red', mark: 'R' }, { c: [0, 255, 0], zh: '綠', en: 'Green' }, { c: [0, 0, 255], zh: '藍', en: 'Blue' },
       { c: [0, 255, 255], zh: '青', en: 'Cyan' }, { c: [255, 0, 255], zh: '洋紅', en: 'Magenta' }, { c: [255, 255, 0], zh: '黃', en: 'Yellow' }
     ];
     const V = function (c) { return new THREE.Vector3(P(c[0]), P(c[1]), P(c[2])); };
@@ -209,7 +212,13 @@
       CORNERS.forEach(function (k) {
         const p = V(k.c);
         const out = p.clone().normalize().multiplyScalar(0.24);
-        sprite(labelG, T(k.zh, k.en), p.clone().add(out), C.text, 0.125);
+        if (k.mark) {
+          // 純紅像素任務的參考點。圓圈與十字一直面向鏡頭，座標採 RGB 三軸。
+          sprite(labelG, '⊕', p, C.text, 0.22);
+          out.y -= 0.10;
+        }
+        const label = k.mark ? k.mark + ' (' + k.c.join(', ') + ')' : T(k.zh, k.en);
+        sprite(labelG, label, p.clone().add(out), C.text, 0.125);
       });
       // 三個軸：從黑色角出發的三條邊
       [['R', C['id-r'], [127.5, 0, 0]], ['G', C['id-g'], [0, 127.5, 0]], ['B', C['id-b'], [0, 0, 127.5]]].forEach(function (a) {
@@ -343,6 +352,10 @@
     // ---------- 相機 ----------
     const HOME = new THREE.Vector3(2.0, 1.0, 2.4).normalize();
     function resetCamera() {
+      // 清掉上一次拖曳殘留的阻尼，再設定場景的原始視角。
+      controls.enableDamping = false;
+      controls.update();
+      controls.enableDamping = true;
       const fitR = 2.05;
       const vfov = camera.fov * DEG, hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
       const dist = fitR / Math.sin(Math.min(vfov, hfov) / 2);
@@ -350,8 +363,10 @@
       camera.position.copy(HOME).multiplyScalar(dist).add(controls.target);
       camera.up.set(0, 1, 0);
       camera.near = 0.05; camera.far = dist * 6;
+      controls.cursor.copy(controls.target);
       camera.updateProjectionMatrix();
       controls.update();
+      nav.home();
       requestRender();
     }
 
@@ -370,7 +385,7 @@
       const moved = controls.update();
       renderer.render(scene, camera);
       if (moved) more = true;
-      else if (reportPending && !startPos) { reportPending = false; reportDir(); }
+      else if (reportPending && !startDir) { reportPending = false; reportDir(); }
       if (more || reportPending) requestRender();
     }
     function requestRender() {
@@ -398,6 +413,7 @@
     });
     // 鍵盤：方向鍵繞著立方體轉
     canvas.addEventListener('keydown', function (ev) {
+      if (nav.mode() === 'pan' && ev.key.startsWith('Arrow')) return;
       const step = (ev.shiftKey ? 15 : 5) * DEG;
       const off = camera.position.clone().sub(controls.target);
       const sph = new THREE.Spherical().setFromVector3(off);
@@ -408,12 +424,13 @@
       else if (ev.key === 'ArrowDown') sph.phi = Math.min(PI - 0.05, sph.phi + step);
       else used = false;
       if (!used) return;
+      ev.stopImmediatePropagation();
       ev.preventDefault();
       camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sph));
       controls.update();
       reportPending = true;
       requestRender();
-    });
+    }, true);
 
     const api = {
       active: true,
@@ -446,6 +463,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         dotTex.dispose();

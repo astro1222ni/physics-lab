@@ -17,7 +17,7 @@
   })();
   const alpha = D.alpha, shade = D.shade;
   const G = PC.GRID;
-  const L = 1.12;               // 特徵平面畫出 [−L, L]²（資料點只能放在 [−1, 1]²）
+  const L = 1.12;               // 特徵平面畫出 [−L, L]^2（資料點只能放在 [−1, 1]^2）
   const TRAIL_MAX = 400;        // 權重軌跡最多保留幾個點（超過就每隔一個留一個）
   const fnt = function (px, w) { return (w || 500) + ' ' + px + 'px ' + FONT; };
   const now = function () { return (window.performance && performance.now) ? performance.now() : Date.now(); };
@@ -30,6 +30,7 @@
   const state = {
     cls: 1, playing: false, rate: 6, acc: 0, lastT: 0, showBand: false, rotated: false,
     trainerRef: null, trail: [], last: null, lastAt: 0, prevW: null, prevAt: 0, lastFinish: null,
+    target: 'cursor', pointId: null, fineActive: false,
     hover: -1, drag: null, down: null, cursor: { gx: 0, gy: 0 }, sndAt: 0, boxAt: 0, boxDirty: false
   };
   let C = {};
@@ -95,10 +96,11 @@
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     W = Math.max(280, cv.clientWidth || 600);
-    wide = W >= 620;
+    const short = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    wide = W >= 620 || (short && W >= 290);
     if (wide) {
-      const side = Math.max(200, Math.min(250, W * 0.3));
-      P.s = Math.min(W - side - 28, 560);
+      const side = short ? Math.max(126, W * 0.32) : Math.max(200, Math.min(250, W * 0.3));
+      P.s = Math.min(W - side - 28, short ? Math.max(150, innerHeight - 116) : 560);
       P.x = 8; P.y = 8;
       H = P.s + 16;
       const cx = P.x + P.s + 16, cw = W - cx - 8;
@@ -132,6 +134,10 @@
   function wrongNow() { const t = S.trainer; return S.points.map(function (p) { return t.isWrong(p); }); }
   /** 任何操作之後呼叫：換了一個新的感知器（重來、改資料、改設定）就清掉頁面上的軌跡 */
   function sync() {
+    if (state.target === 'point' && !selectedPoint()) {
+      state.target = 'cursor';
+      state.pointId = null;
+    }
     if (S.trainer !== state.trainerRef) {
       state.trainerRef = S.trainer;
       state.trail = [S.trainer.weights()];
@@ -203,9 +209,9 @@
     const t = S.trainer, mm = S.mm;
     if (t.converged) {
       return T('收斂了！第 ' + t.errs.length + ' 輪一個點都沒有分錯。總共修正 k = ' + t.updates + ' 次' +
-        (t.zeroInit && mm.separable ? '，收斂定理的上界 (R/γ)² = ' + numTxt(mm.bound, mm.bound >= 100 ? 1 : 2) + '。' : '。'),
+        (t.zeroInit && mm.separable ? '，收斂定理的上界（R/γ 的平方）為 ' + numTxt(mm.bound, mm.bound >= 100 ? 1 : 2) + '。' : '。'),
       'Converged! In round ' + t.errs.length + ' no point was wrong. Corrections in total: k = ' + t.updates +
-        (t.zeroInit && mm.separable ? '; the convergence bound (R/γ)² = ' + numTxt(mm.bound, mm.bound >= 100 ? 1 : 2) + '.' : '.'));
+        (t.zeroInit && mm.separable ? '; the convergence bound (the square of R/γ) is ' + numTxt(mm.bound, mm.bound >= 100 ? 1 : 2) + '.' : '.'));
     }
     if (t.limit) {
       const cyc = t.cycle ? T('權重每 ' + t.cycle.period + ' 輪就回到同一個值，一直在繞圈。', ' The weights return to the same value every ' + t.cycle.period + ' round' + (t.cycle.period > 1 ? 's' : '') + ': it is going round in circles.') : '';
@@ -422,7 +428,7 @@
     const hm = heat(w);
     if (hm) { c.imageSmoothingEnabled = true; c.drawImage(hm, x0, y0, s, s); }
     D.grid(c, x0, y0, x0 + s, y0 + s, P.k * 0.5, P.k * 0.1, X(0), Y(0));
-    // 資料範圍 [−1, 1]² 與座標軸
+    // 資料範圍 [−1, 1]^2 與座標軸
     c.strokeStyle = alpha(C.text, D.dark ? 0.32 : 0.28); c.lineWidth = 1;
     c.beginPath(); c.moveTo(x0, Y(0) + 0.5); c.lineTo(x0 + s, Y(0) + 0.5); c.moveTo(X(0) + 0.5, y0); c.lineTo(X(0) + 0.5, y0 + s); c.stroke();
     c.save(); c.setLineDash([3, 4]); c.strokeStyle = alpha(C.text, 0.22);
@@ -508,6 +514,14 @@
       }
     }
 
+    function mark(x, y, radius) {
+      ring(c, x, y, radius, C.muted, 1);
+      c.save(); c.strokeStyle = C.text; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(x - radius - 3, y); c.lineTo(x + radius + 3, y);
+      c.moveTo(x, y - radius - 3); c.lineTo(x, y + radius + 3); c.stroke(); c.restore();
+    }
+    mark(X(0), Y(0), 5);
+    D.haloText(c, 'O (0, 0)', X(0) + 10, Y(0) - 9, C.muted, 'left', 'middle', fnt(10, 600));
     // 資料點
     const wrong = wrongNow();
     const pts = S.points, last = state.last, lastIdx = last ? pts.indexOf(last.p) : -1;
@@ -521,7 +535,13 @@
       const x = X(p.x), y = Y(p.y);
       if (wrong[i]) ring(c, x, y, r + 4.5, C.wrong, 1.8, [3.5, 3]);
       if (state.showBand && mm.separable && mm.support && mm.support.indexOf(i) >= 0) ring(c, x, y, r + 8, C.band, 1.4, null, 0.8);
-      if (p.label && !p.moved) D.haloText(c, p.label, x, y + r + 17, C.muted, 'center', 'middle', fnt(11, 600));
+      if (p.label && !p.moved) {
+        mark(x, y, r + 2);
+        const id = String.fromCharCode(65 + (p.gx > 0 ? 2 : 0) + (p.gy > 0 ? 1 : 0));
+        const lx = Math.max(P.x + 42, Math.min(P.x + P.s - 42, x));
+        D.haloText(c, id + ' (' + p.x + ', ' + p.y + ')', lx, y + r + 14, C.text, 'center', 'middle', fnt(10.5, 650));
+        D.haloText(c, T('輸入 ', 'in ') + p.label, lx, y + r + 27, C.muted, 'center', 'middle', fnt(10, 500));
+      }
     });
     if (nextIdx >= 0 && nextIdx !== lastIdx) {
       const p = pts[nextIdx];
@@ -536,8 +556,11 @@
       if (last.wrong && !reducedMotion && age < 1) D.ripple(c, x, y, r + 6, age, C.wrong);
     }
     // 鍵盤游標
-    if (kb && kb.focused()) {
-      const x = X(state.cursor.gx / G), y = Y(state.cursor.gy / G);
+    if (kb && (kb.focused() || state.fineActive)) {
+      const p = state.target === 'point' ? selectedPoint() : state.cursor;
+      const x = X(p.gx / G), y = Y(p.gy / G);
+      const tag = (state.target === 'point' ? 'P ' : 'C ') + coordTxt({ x: p.gx / G, y: p.gy / G });
+      D.pill(c, tag, Math.max(x0 + 58, Math.min(x0 + s - 58, x)), y > y0 + s - 40 ? y - 18 : y + 29, C.accent, 'center', fnt(11, 650));
       c.save(); c.strokeStyle = C.accent; c.lineWidth = 1.5; c.setLineDash([4, 3]);
       c.beginPath(); c.arc(x, y, r + 6, 0, Math.PI * 2); c.moveTo(x - r - 12, y); c.lineTo(x - r - 3, y); c.moveTo(x + r + 3, y); c.lineTo(x + r + 12, y);
       c.moveTo(x, y - r - 12); c.lineTo(x, y - r - 3); c.moveTo(x, y + r + 3); c.lineTo(x, y + r + 12); c.stroke(); c.restore();
@@ -901,6 +924,7 @@
     const i = hitPoint(q.x, q.y);
     state.down = { x: q.x, y: q.y, i: i, moved: false, id: e.pointerId };
     if (i >= 0) {
+      state.pointId = S.points[i].id;
       state.drag = { i: i, id: S.points[i].id };
       try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
       cv.style.cursor = 'grabbing';
@@ -938,7 +962,10 @@
     if (drag) {
       if (!dn.moved) {
         const i = S.points.findIndex(function (p) { return p.id === drag.id; });
-        if (i >= 0) { stopPlay(); removeIdx(i); }
+        if (i >= 0 && state.target === 'point') {
+          state.pointId = drag.id;
+          say(T('選取資料點 ', 'Selected point ') + coordTxt(S.points[i]));
+        } else if (i >= 0) { stopPlay(); removeIdx(i); }
       } else {
         const p = S.points.find(function (pp) { return pp.id === drag.id; });
         if (p) say(T('把點移到 ' + coordTxt(p) + '。', 'Moved the point to ' + coordTxt(p) + '.'));
@@ -958,7 +985,50 @@
   cv.addEventListener('pointerleave', function () { if (!state.down && state.hover !== -1) { state.hover = -1; requestDraw(); } });
 
   // ---------- 鍵盤：游標、放點、移除 ----------
+  function selectedPoint() { return S.points.find(function (p) { return p.id === state.pointId; }); }
+  function selectTarget(id) {
+    state.fineActive = true;
+    if (id === 'point') {
+      const cur = state.cursor;
+      let p = S.points[S.indexAt(cur.gx, cur.gy)] || selectedPoint();
+      if (!p) {
+        let best = Infinity;
+        for (const candidate of S.points) {
+          const distance = Math.hypot(candidate.gx - cur.gx, candidate.gy - cur.gy);
+          if (distance < best) { p = candidate; best = distance; }
+        }
+      }
+      if (!p) { say(T('先放一個資料點，再切換到移點。', 'Place a point before switching to Move point.')); return; }
+      state.pointId = p.id;
+    }
+    state.target = id;
+    requestDraw();
+  }
+  function moveTarget(dx, dy) {
+    if (state.target === 'point') {
+      const p = selectedPoint();
+      if (!p || !S.movePoint(S.points.indexOf(p), p.gx + dx, p.gy + dy)) return false;
+      stopPlay(); sync();
+    } else {
+      const cur = state.cursor;
+      cur.gx = Math.max(-G, Math.min(G, cur.gx + dx));
+      cur.gy = Math.max(-G, Math.min(G, cur.gy + dy));
+      requestDraw();
+    }
+    return true;
+  }
+  function pointAction() {
+    if (state.target === 'point' && S.points.length) {
+      const next = (S.points.indexOf(selectedPoint()) + 1) % S.points.length;
+      state.pointId = S.points[next].id;
+      requestDraw();
+    } else {
+      const cur = state.cursor, i = S.indexAt(cur.gx, cur.gy);
+      if (i >= 0) removeIdx(i); else addAt(cur.gx, cur.gy, state.cls);
+    }
+  }
   function cursorDesc() {
+    if (state.target === 'point' && selectedPoint()) return T('選取資料點 ', 'Selected point ') + coordTxt(selectedPoint());
     const i = S.indexAt(state.cursor.gx, state.cursor.gy);
     const pos = '(' + numTxt(state.cursor.gx / G, 2) + ', ' + numTxt(state.cursor.gy / G, 2) + ')';
     return i >= 0 ? T('游標在 ' + pos + '，這裡有一個 ' + clsTxt(S.points[i].c) + ' 類的點。', 'Cursor at ' + pos + ': a class ' + clsTxt(S.points[i].c) + ' point is here.')
@@ -969,24 +1039,23 @@
     const cur = state.cursor;
     let handled = true;
     if (k === 'Enter' || k === ' ') {
-      const i = S.indexAt(cur.gx, cur.gy);
-      if (i >= 0) removeIdx(i); else addAt(cur.gx, cur.gy, state.cls);
-    } else if (k === '+' || k === '=') { if (S.indexAt(cur.gx, cur.gy) < 0) addAt(cur.gx, cur.gy, 1); }
-    else if (k === '-' || k === '_') { if (S.indexAt(cur.gx, cur.gy) < 0) addAt(cur.gx, cur.gy, -1); }
-    else if (k === 'Delete' || k === 'Backspace') { const i = S.indexAt(cur.gx, cur.gy); if (i >= 0) removeIdx(i); }
-    else handled = false;
+      pointAction();
+    } else if (state.target === 'cursor' && ['+', '=', '-', '_'].includes(k)) {
+      if (S.indexAt(cur.gx, cur.gy) < 0) addAt(cur.gx, cur.gy, k === '+' || k === '=' ? 1 : -1);
+    } else if (k === 'Delete' || k === 'Backspace') {
+      const i = state.target === 'point' ? S.points.indexOf(selectedPoint()) : S.indexAt(cur.gx, cur.gy);
+      if (i >= 0) removeIdx(i);
+    } else handled = false;
     if (handled) { e.preventDefault(); e.stopImmediatePropagation(); stopPlay(); requestDraw(); }
   });
   const kb = window.LabKeys ? window.LabKeys.attach(cv, {
-    label: T('特徵平面畫布：兩類資料點、目前的分界線與權重方向；旁邊是權重空間。點空白處放一個點，點一下已有的點把它移除，拖曳可以移動點。鍵盤：方向鍵移動游標，Enter 在游標處放點或移除，加號放 +1 類、減號放 −1 類。',
-      'Feature-plane canvas: the two classes of points, the current dividing line and the direction of the weights, with the weight space beside it. Tap an empty spot to place a point, tap a point to remove it, drag to move it. Keyboard: arrow keys move a cursor, Enter places or removes a point there, plus places class +1 and minus places class −1.'),
+    label: T('特徵平面與權重空間。小鍵盤中央可切換放點游標或移資料點。方向鍵移動目前物件。放點時，Enter 放點或移除，正負號指定類別。移點時，點選資料點或按 Enter 換點，Delete 移除選取的點。',
+      'Feature plane and weight space. Use the keypad centre to switch between the placing cursor and a data point. Arrow keys move the active object. With the cursor, Enter adds or removes a point and plus or minus chooses its class when adding. In Move point, tap a point to select it, press Enter for the next point, or Delete to remove the selection.'),
     items: [{
-      name: function () { return T('游標', 'Cursor'); },
+      name: function () { return state.target === 'point' ? T('資料點', 'Data point') : T('游標', 'Cursor'); },
       move: function (dx, dy, big) {
         const st = big ? 5 : 1;
-        state.cursor.gx = Math.max(-G, Math.min(G, state.cursor.gx + dx * st));
-        state.cursor.gy = Math.max(-G, Math.min(G, state.cursor.gy + dy * st));
-        return true;
+        return moveTarget(dx * st, dy * st);
       },
       describe: cursorDesc
     }],
@@ -1175,9 +1244,53 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== cw2) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+    const observer = new ResizeObserver(function () { if (cv.clientWidth && (cv.clientWidth !== W || cv2.clientWidth !== cw2)) resize(); });
+    observer.observe(cv);
+    observer.observe(cv2);
+  }
+  window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopPlay(); });
   resize();
+  // 方向、長按連發、拖曳與位置記憶使用共用小鍵盤；座標與動作由原實驗處理。
+  function mountKeypad() {
+    const canvasRect = () => cv.getBoundingClientRect();
+    const pad = LabVPad.mount({
+      id: 'perceptron', className: 'perceptron-pad', canvas: cv, objects: ['cursor', 'point'],
+      step: 1, steps: [1, 5], selected: () => state.target,
+      select: selectTarget,
+      move: (dx, dy) => { state.fineActive = true; moveTarget(dx, dy); },
+      record: pointAction,
+      point: id => {
+        const r = canvasRect();
+        const p = id === 'point' && selectedPoint() || state.cursor;
+        return { x: r.left + X(p.gx / G), y: r.top + Y(p.gy / G) };
+      },
+      reading: cursorDesc,
+      visible: () => { const r = canvasRect(); return r.height > 0 && r.bottom > 0 && r.top < innerHeight; },
+      home: (w, h) => {
+        const r = canvasRect();
+        return { x: Math.min(innerWidth - w - 8, r.right - w - 8), y: Math.min(innerHeight - h - 8, Math.max(8, r.bottom - h - 8)) };
+      }
+    });
+    const center = pad.element.querySelector('.vpad-select'), step = pad.element.querySelector('.vpad-step');
+    const handle = pad.element.querySelector('.vpad-handle'), action = pad.element.querySelector('.vpad-record');
+    pad.element.setAttribute('aria-label', T('八向微調小鍵盤', 'Eight-direction keypad'));
+    for (const b of pad.element.querySelectorAll('[data-direction]')) b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent);
+    pad.lens.querySelector('canvas').setAttribute('aria-label', T('選取位置三倍放大', 'Three-times magnification of selected position'));
+    function labels() {
+      const id = pad.state.selected;
+      const name = id === 'point' ? T('移資料點', 'Move point') : T('放點游標', 'Cursor');
+      center.textContent = id === 'point' ? 'P ⇄' : 'C ⇄';
+      center.setAttribute('aria-label', name + T('，按一下切換對象', ', press to switch target'));
+      handle.textContent = '⠿ ' + name;
+      const unit = pad.state.step + T(' 格', pad.state.step === 1 ? ' cell' : ' cells');
+      if (step.textContent !== unit) step.textContent = unit;
+      action.textContent = id === 'point' ? T('換點', 'Next pt') : T('放／刪', 'Add/del');
+    }
+    // 共用元件在切換對象、步距與收合時一起重畫步距；此處同步該實驗的名稱與單位。
+    new MutationObserver(labels).observe(step, { childList: true });
+    try { if (!localStorage.getItem('lab-vpad:perceptron')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+    labels();
+  }
+  mountKeypad();
 })();

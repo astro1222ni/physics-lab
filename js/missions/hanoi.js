@@ -29,45 +29,85 @@
   const isSolved = function (ev) { return ev.type === 'solved' && ev.data.target !== 'custom'; };
   const handSolve = function (d, n) { return d.n === n && d.handAll && d.startPerfect !== '' && d.moves === full(n); };
 
+  function item(ok, zh, en, value) {
+    const suffix = value == null ? '' : ' · ' + value;
+    return [ok, zh + suffix, en + suffix];
+  }
+  function progress(read) {
+    return function (ctx) {
+      const lab = window.HanoiLab;
+      return lab ? read(lab.session, lab.ui, ctx) : null;
+    };
+  }
+  function destination(s) { return item(s.target.kind === 'peg' && s.solved(), '將整疊移到目標柱，剩餘步數', 'Finish on the target peg, moves remaining', s.dist()); }
+  function handTower(s, n, shortest) {
+    const rows = [item(s.n === n, '使用 ' + n + ' 個盤', 'Use ' + n + ' discs', s.n),
+      item(s.cnt.auto === 0, '每一步都親手搬', 'Make every move by hand', s.cnt.hand)];
+    if (shortest) rows.push(item(s.seg.startPerfect >= 0 && s.stack.length + s.dist() === full(n),
+      '從整疊開始，保持在最短路上', 'Start with a full tower and stay on a shortest path', s.stack.length + ' / ' + full(n)));
+    return [...rows, destination(s)];
+  }
+  function algorithm(s, n, alg) {
+    const fromPerfect = s.auto ? s.auto.fromPerfect : window.HanoiCore.perfectPeg(s.pos, s.n) >= 0;
+    return [item(s.n >= n, '至少使用 ' + n + ' 個盤', 'Use at least ' + n + ' discs', s.n),
+      item(fromPerfect, '從整疊啟動自動解', 'Start the solver from a full tower'),
+      item(s.alg === alg, alg === 'rec' ? '選擇遞迴' : '選擇最小盤輪流', alg === 'rec' ? 'Select Recursive' : 'Select Smallest disc alternates')];
+  }
+  function streak(s, kind, n) {
+    const count = s.quiz.kindStreak[kind];
+    return [item(s.quiz.kind === kind, kind === 'disk' ? '按「出題」辨認盤子' : '按「進階題」辨認起點與終點', kind === 'disk' ? 'Select New question to identify the disc' : 'Select Hard question to identify both pegs'),
+      item(count >= n, '同類題目連續答對 ' + n + ' 題', 'Answer ' + n + ' questions of this type correctly in a row', count + '/' + n)];
+  }
+
   LabMission.register('hanoi', [
     {
       id: 'hanoi-1', level: 1,
+      need: progress(s => handTower(s, 3, false)),
       title: { zh: '三層塔', en: 'A three-disc tower' },
       desc: { zh: '把「盤子數 n」設成 3，用「A 柱」「B 柱」「C 柱」（或直接拖曳盤子）親手把整疊搬到目標柱。', en: 'Set “Number of discs n” to 3 and move the whole tower to the target peg yourself with “Peg A”, “Peg B” and “Peg C” (or by dragging the discs).' },
       check: function (ev) { return isSolved(ev) && ev.data.n === 3 && ev.data.handAll; }
     },
     {
       id: 'hanoi-2', level: 2,
+      need: progress(s => [...handTower(s, 3, true), item(!s.seg.hint, '這一輪都沒有開啟最短路提示', 'Keep the shortest-path hint off for the entire run')]),
       title: { zh: '七步就好', en: 'Seven moves will do' },
       desc: { zh: '3 個盤子、從整疊開始，親手用最少的 7 步搬完（不開「顯示最短路」）。', en: 'With 3 discs, start from a full tower and finish by hand in the minimum 7 moves (without “Show shortest path”).' },
       check: function (ev) { return isSolved(ev) && handSolve(ev.data, 3) && !ev.data.hint; }
     },
     {
       id: 'hanoi-3', level: 2,
+      need: progress((s, ui) => {
+        const n = Number(document.getElementById('legNo').textContent);
+        return [item(n === 64, '將傳說的盤子數設為 64', 'Set the legend to 64 discs', n), item(ui.rate === 1, '選每秒 1 步', 'Select one move per second', ui.rate)];
+      }),
       title: { zh: '世界末日還有多久', en: 'How long until the end of the world?' },
       desc: { zh: '把「傳說的盤子數 N」設成 64，再選「每秒 1 步」。', en: 'Set “Discs in the legend N” to 64, then choose “1 move per second”.' },
       check: function (ev) { return ev.type === 'legend' && ev.data.N === 64 && ev.data.rate === 1; }
     },
     {
       id: 'hanoi-4', level: 3,
+      need: progress(s => [...algorithm(s, 4, 'rec'), destination(s)]),
       title: { zh: '看遞迴怎麼想', en: 'Watch recursion think' },
       desc: { zh: '至少 4 個盤子、從整疊開始，選「遞迴」，用「自動解」或「單步」把整疊搬完。', en: 'With at least 4 discs, start from a full tower, choose “Recursive” and let “Auto solve” or “Step” move the whole tower.' },
       check: function (ev) { const d = ev.data; return ev.type === 'auto' && d.alg === 'rec' && d.n >= 4 && d.fromPerfect; }
     },
     {
       id: 'hanoi-5', level: 3,
+      need: progress(s => [item(s.n >= 3, '至少使用 3 個盤', 'Use at least 3 discs', s.n), item(s.target.kind === 'peg' && s.dist() === full(s.n), '讓起點和目標是不同柱的整疊', 'Use full towers on two different pegs', s.dist()), item(null, '在「狀態圖」按「廣度優先搜尋」', 'Press Breadth-first search in State graph')]),
       title: { zh: '一層一層擴散', en: 'Spreading layer by layer' },
       desc: { zh: '至少 3 個盤子、從整疊開始，按「廣度優先搜尋」找出到目標的最短步數。', en: 'With at least 3 discs, start from a full tower and press “Breadth-first search” to find the shortest number of moves to the target.' },
       check: function (ev) { const d = ev.data; return ev.type === 'bfs' && d.n >= 3 && d.startPerfect !== '' && d.target !== 'custom' && d.dist === full(d.n); }
     },
     {
       id: 'hanoi-6', level: 4,
+      need: progress(s => handTower(s, 4, true)),
       title: { zh: '十五步', en: 'Fifteen moves' },
       desc: { zh: '4 個盤子、從整疊開始，親手用最少的 15 步搬完。', en: 'With 4 discs, start from a full tower and finish by hand in the minimum 15 moves.' },
       check: function (ev) { return isSolved(ev) && handSolve(ev.data, 4); }
     },
     {
       id: 'hanoi-7', level: 4,
+      need: progress(s => [...algorithm(s, 6, 'rec'), item(!s.auto || (s.auto.skips === s.auto.presses && s.auto.skips <= 3), '只用「跳過子問題」，至多三次', 'Use only Skip subproblem, at most three times', (s.auto?.skips || 0) + '/3'), destination(s)]),
       title: { zh: '三句話說完', en: 'Done in three sentences' },
       desc: { zh: '至少 6 個盤子、從整疊開始，選「遞迴」後只按「跳過子問題」，最多按 3 次就把整疊搬完。', en: 'With at least 6 discs, start from a full tower, choose “Recursive” and press only “Skip subproblem” — at most 3 presses to move the whole tower.' },
       check: function (ev) {
@@ -77,24 +117,30 @@
     },
     {
       id: 'hanoi-8', level: 5,
+      need: progress(s => streak(s, 'disk', 5)),
       title: { zh: '尺規函數', en: 'The ruler function' },
       desc: { zh: '按「出題」，連續答對 5 題：第 k 步搬的是哪一個盤。', en: 'Press “New question” and answer 5 questions in a row correctly: which disc moves at step k.' },
       check: function (ev) { return ev.type === 'quiz' && ev.data.kind === 'disk' && ev.data.ok && ev.data.streak >= 5; }
     },
     {
       id: 'hanoi-9', level: 5,
+      need: progress(s => [...algorithm(s, 6, 'iter'), item(!s.auto?.skips, '只用「自動解」或「單步」走完', 'Finish using Auto solve or Step'), destination(s)]),
       title: { zh: '不用遞迴也可以', en: 'No recursion needed' },
       desc: { zh: '至少 6 個盤子、從整疊開始，選「最小盤輪流」自動解完，看它每一步都和遞迴相同。', en: 'With at least 6 discs, start from a full tower, choose “Smallest disc alternates” and let it finish — every move matches the recursive solution.' },
       check: function (ev) { const d = ev.data; return ev.type === 'auto' && d.alg === 'iter' && d.n >= 6 && d.same && d.stepMoves === d.moves; }
     },
     {
       id: 'hanoi-10', level: 6,
+      need: progress(s => handTower(s, 5, true)),
       title: { zh: '三十一步', en: 'Thirty-one moves' },
       desc: { zh: '5 個盤子、從整疊開始，親手用最少的 31 步搬完。', en: 'With 5 discs, start from a full tower and finish by hand in the minimum 31 moves.' },
       check: function (ev) { return isSolved(ev) && handSolve(ev.data, 5); }
     },
     {
       id: 'hanoi-11', level: 8,
+      need: progress(s => [item(s.n >= 6 && s.seg.startKind === 'shuffled', '至少 6 盤後打亂', 'Shuffle at least 6 discs', s.n),
+        item(s.seg.startDist >= 20, '起點離目標至少 20 步', 'Start at least 20 moves from the goal', s.seg.startDist),
+        item(!s.seg.hint && s.cnt.auto === 0 && s.stack.length + s.dist() === s.seg.startDist, '全程親手走最短路，保持提示關閉', 'Stay on a shortest path by hand with hints off', s.stack.length + ' / ' + s.seg.startDist), destination(s)]),
       title: { zh: '從亂局回家', en: 'Home from chaos' },
       desc: { zh: '至少 6 個盤子，按「打亂」（離目標至少 20 步），再親手用最少步數搬到目標，不開「顯示最短路」。', en: 'With at least 6 discs, press “Shuffle” (at least 20 moves from the target), then reach the target by hand in the fewest moves, without “Show shortest path”.' },
       check: function (ev) {
@@ -104,6 +150,7 @@
     },
     {
       id: 'hanoi-12', level: 10,
+      need: progress(s => streak(s, 'move', 3)),
       title: { zh: '預言第 k 步', en: 'Predict move k' },
       desc: { zh: '按「進階題」，連續答對 3 題：第 k 步從哪根柱搬到哪根柱。', en: 'Press “Hard question” and answer 3 questions in a row correctly: from which peg to which peg move k goes.' },
       check: function (ev) { return ev.type === 'quiz' && ev.data.kind === 'move' && ev.data.ok && ev.data.streak >= 3; }

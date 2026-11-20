@@ -42,33 +42,64 @@
     });
   }
 
+  function item(ok, zh, en, value) {
+    const suffix = value == null ? '' : ' · ' + value;
+    return [ok, zh + suffix, en + suffix];
+  }
+  function progress(read) {
+    return function (ctx) {
+      const lab = window.ImageDigitLab;
+      if (!lab) return null;
+      const info = lab.info();
+      if (!info) return null;
+      const d = Object.assign({}, lab.state, info, { band: info.band?.band, bandPrev: info.band?.bandPrev });
+      return read(d, ctx, this.mem || {});
+    };
+  }
+  function scene(d, key, zh, en) { return item(d.scene === key, '選擇「' + zh + '」', 'Select ' + en); }
+  function color(d) { return item(d.mode === 'color', '切到彩色', 'Select Color'); }
+  function bits(d, n) { return item(d.b === n, '每色版使用 ' + n + ' 位元', 'Use ' + n + (n === 1 ? ' bit' : ' bits') + ' per channel', d.b); }
+
   LabMission.register('image-digitization', [
     {
       id: 'image-digitization-1', level: 1,
+      need: progress(d => [item(d.mode === 'gray', '切到灰階', 'Select Grayscale'), bits(d, 1)]),
       title: { zh: '只剩黑與白', en: 'Only black and white' },
       desc: { zh: '按「灰階」，把「位元數 b」調到 1：每個像素只用 1 個位元。', en: 'Choose “Grayscale” and set “Bits b” to 1: each pixel uses just 1 bit.' },
       check: function (ev) { return isImg(ev) && ev.data.mode === 'gray' && ev.data.b === 1; }
     },
     {
       id: 'image-digitization-2', level: 2,
+      need: progress((d, ctx) => {
+        const rgb = d.sel && ctx.last('probe')?.rgb;
+        return [color(d), item(!!rgb && rgb[0] === 255 && rgb[1] === 0 && rgb[2] === 0,
+          '找出存成純紅色的像素', 'Find a pixel stored as pure red', rgb ? rgb.join(', ') : '—')];
+      }),
       title: { zh: '最紅的紅', en: 'The reddest red' },
       desc: { zh: '在「彩色」模式點圖上的像素，找到一個存下的值是純紅 (R, G, B) = (255, 0, 0) 的像素。', en: 'In “Color” mode, tap pixels in the image and find one whose stored value is pure red, (R, G, B) = (255, 0, 0).' },
       check: function (ev) { const d = ev.data; return isProbe(ev) && d.mode === 'color' && d.rgb && d.rgb[0] === 255 && d.rgb[1] === 0 && d.rgb[2] === 0; }
     },
     {
       id: 'image-digitization-3', level: 2,
+      need: progress(d => [color(d), bits(d, 1), item(d.colors === 8, '圖中實際用到八種顏色', 'Use all eight colours in the image', d.colors)]),
       title: { zh: '八種顏色', en: 'Eight colors' },
       desc: { zh: '按「彩色」，把「位元數 b」調到 1，讓圖上剛好用到 8 種顏色。', en: 'Choose “Color” and set “Bits b” to 1 so that the picture uses exactly 8 colors.' },
       check: function (ev) { const d = ev.data; return isImg(ev) && d.mode === 'color' && d.b === 1 && d.colors === 8; }
     },
     {
       id: 'image-digitization-4', level: 3,
+      need: progress(d => [color(d), bits(d, 2), item(d.view === '3d', '打開 3D 色立方', 'Open the 3D colour cube')]),
       title: { zh: '立方體裡的格點', en: 'A lattice inside the cube' },
       desc: { zh: '按「3D 色立方」，在「彩色」模式把「位元數 b」調到 2，看看 4 × 4 × 4 = 64 個格點。', en: 'Open the “3D color cube” and, in “Color” mode, set “Bits b” to 2 to see the 4 × 4 × 4 = 64 lattice points.' },
       check: function (ev) { const d = ev.data; return isImg(ev) && d.view === '3d' && d.mode === 'color' && d.b === 2; }
     },
     {
       id: 'image-digitization-5', level: 3,
+      need: progress((d, ctx, mem) => {
+        const key = (d.w / 2) + '|' + (d.h / 2) + '|' + d.bpp;
+        return [item(null, '固定每像素位元數，將寬和高各加倍', 'Keep bits per pixel fixed and double both dimensions', d.w + ' × ' + d.h),
+          item(!!mem.seen?.[key], '在相同色深試過寬和高各為目前一半的設定', 'Try half the current width and height at the same depth')];
+      }),
       title: { zh: '兩倍的寬與高', en: 'Twice as wide, twice as tall' },
       desc: { zh: '色深不變，把「寬 w」和「高 h」都變成原來的 2 倍。檔案變成幾倍？', en: 'Keep the color depth and make both “Width w” and “Height h” twice as large. How many times bigger is the file?' },
       check: function (ev, mem) {
@@ -80,12 +111,15 @@
     },
     {
       id: 'image-digitization-6', level: 4,
+      need: progress(d => [item(d.bits === 8192, '調整解析度與色深，達到 8192 位元', 'Adjust resolution and depth to reach 8192 bits', d.bits + ' / 8192')]),
       title: { zh: '剛好 1 KiB', en: 'Exactly 1 KiB' },
       desc: { zh: '調整解析度與色深，讓檔案剛好是 1 KiB = 1024 位元組。（提示：可能要取消「固定 4:3」。）', en: 'Change the resolution and the color depth so that the file is exactly 1 KiB = 1024 bytes. (Hint: you may need to untick “Keep 4:3”.)' },
       check: function (ev) { return isImg(ev) && ev.data.bits === 8192; }
     },
     {
       id: 'image-digitization-7', level: 4,
+      need: progress(d => [scene(d, 'rings', '同心圓', 'Rings'), item(d.w <= 80, '寬度最多 80 像素', 'Use a width of at most 80 pixels', d.w),
+        item(null, '保持相同寬高，從「取每格中心點」切到「整格平均」', 'Keep both dimensions fixed and switch from Center of each pixel to Average over each pixel')]),
       title: { zh: '假的圓圈', en: 'Fake rings' },
       desc: { zh: '在「同心圓」用「取每格中心點」，把「寬 w」調到 80 以下，找到原圖沒有的圓圈；再按「整格平均」，看它們怎麼了。', en: 'In “Rings” with “Center of each pixel”, make “Width w” 80 or less and find rings that are not in the original; then press “Average over each pixel” and see what happens to them.' },
       check: function (ev) {
@@ -96,6 +130,11 @@
     },
     {
       id: 'image-digitization-8', level: 5,
+      need: progress((d, ctx, mem) => {
+        const r = mem.px?.[d.bits], ratio = r ? r.hi / r.lo : 1;
+        return [item(null, '保持檔案大小相同，改變解析度與色深', 'Match the file size using different resolutions and depths', d.bits + ' bit'),
+          item(ratio >= 4, '兩組的像素數至少相差 4 倍', 'Make the pixel counts differ by at least a factor of 4', ratio.toFixed(2) + '×')];
+      }),
       title: { zh: '同樣大小，不同取捨', en: 'Same size, different trade-off' },
       desc: { zh: '找出兩組檔案大小完全相同、像素數卻相差 4 倍以上的設定：一組像素多，一組每個像素的位元多。', en: 'Find two settings with exactly the same file size but at least 4 times as many pixels in one of them: one with more pixels, the other with more bits per pixel.' },
       check: function (ev, mem) {
@@ -115,24 +154,29 @@
     },
     {
       id: 'image-digitization-9', level: 5,
+      need: progress(d => [scene(d, 'rings', '同心圓', 'Rings'), item(d.nyq, '勾選奈奎斯特範圍', 'Enable Nyquist limit'), item(d.w === 256, '調整寬度，讓框的左右邊與圖像邊緣重合', 'Adjust width until the two sides of the box meet the image edges', d.w + ' px')]),
       title: { zh: '奈奎斯特範圍', en: 'The Nyquist limit' },
       desc: { zh: '在「同心圓」勾選「奈奎斯特範圍」，調整「寬 w」，讓虛線框的左右兩邊剛好碰到圖的左右邊緣。', en: 'In “Rings”, tick “Nyquist limit” and change “Width w” until the left and right sides of the dashed box just touch the left and right edges of the picture.' },
       check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'rings' && d.nyq && d.w === 256; }
     },
     {
       id: 'image-digitization-10', level: 6,
+      need: progress(d => [scene(d, 'sunset', '山景日落', 'Mountain sunset'), color(d), item(d.h >= 120, '高度至少 120 列', 'Use at least 120 rows', d.h),
+        item(d.band === 1 && d.bandPrev > 1, '將最長色帶縮至一列，少一位元時仍超過一列', 'Reduce the longest band to one row, with more than one row at one bit less', d.band ?? '—')]),
       title: { zh: '色帶消失', en: 'No more banding' },
       desc: { zh: '在「山景日落」用「彩色」、「高 h」至少 120：找出讓天空最長的色帶只剩 1 列的最少位元數（少 1 位元就會出現色帶）。', en: 'In “Mountain sunset” with “Color” and “Height h” at least 120, find the fewest bits that bring the longest band in the sky down to 1 row (one bit fewer and banding appears).' },
       check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'sunset' && d.mode === 'color' && d.h >= 120 && d.band === 1 && d.bandPrev > 1; }
     },
     {
       id: 'image-digitization-11', level: 6,
+      need: progress(d => [scene(d, 'eyechart', '視力表', 'Eye chart'), item(d.w === 100 && d.h === 75, '第三列 E 的筆畫恰好一個像素寬', 'Make each stroke in row three exactly one pixel wide', d.w + ' × ' + d.h), item(d.bpp === 1, '每像素只用一位元', 'Use one bit per pixel', d.bpp)]),
       title: { zh: '最省的清楚字', en: 'Crisp letters, fewest bytes' },
       desc: { zh: '在「視力表」讓第三列 E 的每一筆剛好 1 個像素寬、1 個像素高，再用最少的位元存成黑白圖。', en: 'In “Eye chart”, make every stroke of the E’s in the third row exactly 1 pixel wide and 1 pixel tall, then store it as a black-and-white image with the fewest bits.' },
       check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'eyechart' && d.w === 100 && d.h === 75 && d.bpp === 1; }
     },
     {
       id: 'image-digitization-12', level: 7,
+      need: progress(d => [scene(d, 'checker', '棋盤', 'Checkerboard'), item(window.ImageDigitCore.checkerFaithful(d.w, d.h), '讓像素格與每條棋盤邊界對齊', 'Align the pixel grid with every checkerboard edge', d.w + ' × ' + d.h)]),
       title: { zh: '一格不差的棋盤', en: 'A perfect checkerboard' },
       desc: { zh: '讓數位化的「棋盤」和原圖一模一樣：每個像素都只蓋住一個方格，沒有一格是灰的、也沒有一格放錯。', en: 'Make the digitized “Checkerboard” identical to the original: every pixel covers just one square, with no grey pixel and no pixel in the wrong place.' },
       check: function (ev) { return isImg(ev) && ev.data.faithful === true; }

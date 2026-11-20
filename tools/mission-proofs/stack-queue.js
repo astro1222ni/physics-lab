@@ -131,7 +131,19 @@ expect('5', new Sim().type('paren', '(1+2))').end().example('paren', 3).end().ev
 }
 expect('7', new Sim().val(1).d('push', 3).d('pop', 2).d('push', 2).d('pop', 3).ev, true, '放 1、2、3，取 3、2，放 4、5，取 5、4、1');
 expect('7', new Sim().val(1).d('push', 5).d('pop', 5).ev, false, '全部放完再取：5、4、3、2、1');
-expect('8', new Sim().setMode('ring').N(5).r('enq', 4).r('deq').r('enq', 2).ev, true, 'N = 5：排入 4 個（滿）、離開 1 個、再排入（rear 繞回 0）、再排入 → 滿，front = 1');
+{
+  const s = new Sim().setMode('ring').N(4).r('enq', 3).r('deq');
+  expect('8', s.ev, false, 'N = 4，先滿時 front = 0；離開後 front = 1，還有空位');
+  s.r('enq');
+  expect('8', s.ev.slice(-1), true, '成功排入的這一步就滿了：front = 1、rear = 0，三個可用位置都有人');
+  s.r('enq');
+  expect('8', s.ev.slice(-1), false, '再按一次排入被拒絕，沒有新增元素');
+  s.r('deq', 2).r('enq');
+  expect('8', s.ev.slice(-1), false, 'rear 已繞回且成功排入，但只有 2 個元素');
+  s.r('enq');
+  expect('8', s.ev.slice(-1), true, 'front = 3、rear = 2 也能剛好排滿');
+}
+expect('8', new Sim().setMode('ring').wrap(false).N(4).r('enq', 3).r('deq').r('enq').ev, false, '關閉繞回，rear 到達陣列尾端');
 expect('8', new Sim().setMode('ring').N(5).r('enq', 5).ev, false, '一開始就排滿（front = 0）');
 {
   const s = new Sim().type('infix', '(3 + 4) * 2 - 1').end().toEval().end();
@@ -224,7 +236,7 @@ console.log('\n十個隱藏任務的交叉檢查（列：用哪個解法；欄�
     '4': () => new Sim().type('paren', '{[(1+2)*3]-4}/5').end().ev,
     '5': () => new Sim().type('paren', '(1+2))').end().type('paren', '((1+2)').end().type('paren', '[1+2)').end().ev,
     '6': () => new Sim().type('postfix', '1 2 + 3 + 4 *').end().ev, '7': () => new Sim().val(1).d('push', 3).d('pop', 2).d('push', 2).d('pop', 3).ev,
-    '8': () => new Sim().setMode('ring').N(5).r('enq', 4).r('deq').r('enq', 2).ev, '9': () => new Sim().type('infix', '(3 + 4) * 2 - 1').end().toEval().end().ev,
+    '8': () => new Sim().setMode('ring').N(4).r('enq', 3).r('deq').r('enq').ev, '9': () => new Sim().type('infix', '(3 + 4) * 2 - 1').end().toEval().end().ev,
     '10': () => new Sim().d('enq', 5).d('toL', 5).d('toR', 5).ev,
     '11': () => new Sim().rk('stack').d('push', 3).d('toR', 3).d('popB', 2).d('push', 3).d('popB').d('toR', 3).d('popB', 3).ev,
     '12': () => new Sim().type('infix', '1 + 2 * 2 ^ 2 ^ 2').end().ev

@@ -44,7 +44,7 @@
     /* 畫布高度由程式依版面決定；手機上可以照常捲動，點到開關才算操作 */
     #cv { aspect-ratio: auto; height: 300px; touch-action: pan-y; cursor: default; }
     #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; cursor: default; margin-top: 10px; }
-    .lg [hidden] { display: none !important; }
+    :is(.lg, .labdeck) [hidden] { display: none !important; }
     .lg .panel { grid-template-columns: minmax(0, 1fr); }
     .lg .panel > .card { min-width: 0; }
     .lg .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
@@ -90,8 +90,8 @@
     .wire-row .gl i { font-style: normal; color: var(--muted); font-weight: 500; }
     .wire-row .pr { color: var(--muted); }
     .wire-row.off .gl { opacity: .55; }
-    .lg select { font: inherit; font-size: calc(15px * var(--fs, 1)); min-height: 44px; width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
-    .lg select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    :is(.lg, .labdeck) select { font: inherit; font-size: calc(15px * var(--fs, 1)); min-height: 44px; width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    :is(.lg, .labdeck) select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .tgt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; font-size: calc(14px * var(--fs, 1)); margin: 0 0 6px; }
     /* 播放列 */
     .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }

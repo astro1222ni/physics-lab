@@ -15,7 +15,7 @@
   const ASPECT = 0.75;                 // 高 ÷ 寬
   const W_MAX = 320, H_MAX = 240;
   const SCENES = ['sunset', 'checker', 'rings', 'eyechart', 'wheel'];
-  const RING_K = 256;                  // 同心圓：亮度 = ½ + ½ cos(π K r²)，r 以畫面寬為單位；局部條紋頻率 = K r（每個畫面寬幾週）
+  const RING_K = 256;                  // 同心圓：亮度 = ½ + ½ cos(π K r^2)，r 以畫面寬為單位；局部條紋頻率 = K r（每個畫面寬幾週）
   const CHECK_NX = 24, CHECK_NY = 18;  // 棋盤：橫 24 格、直 18 格，畫面邊緣各切掉半格
   const BUDGET = 260000;               // 整格平均的子取樣點總數上限
 
@@ -149,7 +149,7 @@
   function sqAvg(a, b, n) { const ta = a * n + 0.5, tb = b * n + 0.5; return (sqInt(tb) - sqInt(ta)) / (tb - ta); }
 
   // =====================================================================
-  // 原圖三：同心圓（亮度 ½ + ½ cos(π K r²)）
+  // 原圖三：同心圓（亮度 ½ + ½ cos(π K r^2)）
   // =====================================================================
   function ringsAt(dx2, v) { const dy = (v - 0.5) * ASPECT; const g = 127.5 + 127.5 * Math.cos(Math.PI * RING_K * (dx2 + dy * dy)); return [g, g, g]; }
   /** 寬 w（每個畫面寬 w 個樣本）時，不會混疊的範圍：|x − ½| < w ÷ (2K)，|y − 0.375| < (h ÷ 0.75) ÷ (2K)（以畫面寬為單位） */

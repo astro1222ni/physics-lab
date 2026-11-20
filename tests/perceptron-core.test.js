@@ -30,7 +30,7 @@ function randomSeparable(rand, n) {
     if (np > 0 && np < n && P.maxMargin(pts, true).separable) return pts;
   }
 }
-/** 獨立的對照算法：Gilbert（1966）迭代法求原點到 conv{y·x̃} 的距離（和核心的「枚舉單純形」完全不同的做法） */
+/** 獨立的對照算法：Gilbert（1966）迭代法求原點到 conv{y·x_aug} 的距離（和核心的「枚舉單純形」完全不同的做法） */
 function gilbertDistance(points, bias) {
   const Z = points.map(p => [p.c * p.x, p.c * p.y, p.c * (bias ? 1 : 0)]);
   const d3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -51,7 +51,7 @@ function gilbertDistance(points, bias) {
   return { dist: Math.sqrt(d3(x, x)), separable: ok };
 }
 
-/** 第二個對照算法：硬間隔支持向量機的對偶座標上升法（min ‖w‖²，y·(w·x̃) ≥ 1；γ = 1/‖w‖）。只在可分時使用 */
+/** 第二個對照算法：硬間隔支持向量機的對偶座標上升法（min ‖w‖^2，y·(w·x_aug) ≥ 1；γ = 1/‖w‖）。只在可分時使用 */
 function dualMargin(points, bias) {
   const Z = points.map(p => [p.c * p.x, p.c * p.y, p.c * (bias ? 1 : 0)]);
   const d3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -132,7 +132,7 @@ test('線性可分的資料一定收斂，收斂後沒有任何點分錯（300 �
     assert.strictEqual(r.errs[r.errs.length - 1], 0);
   }
 });
-test('零初始時更新次數 k ≤ (R/γ)²（Novikoff），300 組可分資料、固定與打亂順序都成立', () => {
+test('零初始時更新次數 k ≤ (R/γ)^2（Novikoff），300 組可分資料、固定與打亂順序都成立', () => {
   const rand = P.rng(1962);
   let worst = 0;
   for (let k = 0; k < 300; k++) {
@@ -144,7 +144,7 @@ test('零初始時更新次數 k ≤ (R/γ)²（Novikoff），300 組可分資�
   }
   assert.ok(worst <= 1);
 });
-test('上界剛好用完的例子：(1, 0) 是 +1、(−1, 0) 是 −1 → R = √2、γ = 1、(R/γ)² = 2，而且真的更新 2 次', () => {
+test('上界剛好用完的例子：(1, 0) 是 +1、(−1, 0) 是 −1 → R = √2、γ = 1、(R/γ)^2 = 2，而且真的更新 2 次', () => {
   const pts = [P.pt(20, 0, 1), P.pt(-20, 0, -1)];
   const mm = P.maxMargin(pts, true);
   near(mm.R, Math.SQRT2, 1e-12); near(mm.gamma, 1, 1e-12); near(mm.bound, 2, 1e-9);
@@ -175,14 +175,14 @@ test('不可分的資料永遠不收斂：隨機不可分資料 100 組，每一
 });
 
 console.log('可分性與最大間隔');
-test('AND 的最大間隔 γ = 0.6/√2.36（增廣空間，解析解），上界 (R/γ)² = 1.72/γ²', () => {
+test('AND 的最大間隔 γ = 0.6/√2.36（增廣空間，解析解），上界 (R/γ)^2 = 1.72/γ^2', () => {
   const mm = P.maxMargin(P.gate('and'), true);
   near(mm.gamma, 0.6 / Math.sqrt(2.36), 1e-12);
   near(mm.R, Math.sqrt(1.72), 1e-12);
   near(mm.bound, 1.72 * 2.36 / 0.36, 1e-9);
   for (const g of ['or', 'nand']) near(P.maxMargin(P.gate(g), true).gamma, 0.6 / Math.sqrt(2.36), 1e-12);
 });
-test('最大間隔的雙向證明：方向 u 讓每個點 y·(u·x̃) ≥ γ（γ 做得到）；凸組合 Σλ·y·x̃ 的長度 = γ（γ 不可能更大）；並與兩種迭代算法對照（300 組）', () => {
+test('最大間隔的雙向證明：方向 u 讓每個點 y·(u·x_aug) ≥ γ（γ 做得到）；凸組合 Σλ·y·x_aug 的長度 = γ（γ 不可能更大）；並與兩種迭代算法對照（300 組）', () => {
   const rand = P.rng(77);
   for (let k = 0; k < 300; k++) {
     const bias = k % 4 !== 0;
@@ -197,7 +197,7 @@ test('最大間隔的雙向證明：方向 u 讓每個點 y·(u·x̃) ≥ γ（�
       // 下界：u 是單位向量，每個點都至少有 γ
       near(Math.hypot(mm.u[0], mm.u[1], mm.u[2]), 1, 1e-12);
       pts.forEach(p => { const a = [p.x, p.y, bias ? 1 : 0]; assert.ok(p.c * (mm.u[0] * a[0] + mm.u[1] * a[1] + mm.u[2] * a[2]) >= mm.gamma - 1e-9); });
-      // 上界：凸組合的長度就是 γ（任何單位向量 v 都有 min y·(v·x̃) ≤ v·Σλ·y·x̃ ≤ ‖Σλ·y·x̃‖）
+      // 上界：凸組合的長度就是 γ（任何單位向量 v 都有 min y·(v·x_aug) ≤ v·Σλ·y·x_aug ≤ ‖Σλ·y·x_aug‖）
       const q = [0, 0, 0];
       let ls = 0;
       mm.support.forEach((i, j) => { const p = pts[i], l = mm.weights[j]; assert.ok(l >= 0); ls += l; q[0] += l * p.c * p.x; q[1] += l * p.c * p.y; q[2] += l * p.c * (bias ? 1 : 0); });

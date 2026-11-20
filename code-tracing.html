@@ -44,16 +44,16 @@
       --ct-cur: #1f3d36; --ct-bar: #5cc2a8; --ct-next: #172529; --ct-seg: #6b5310; --ct-true: #4ade80; --ct-false: #fb923c; --ct-warn: #fbbf24; --ct-bad: #f87171;
       --ct-box: #22313a; --ct-arr: #33291c; --ct-ptr: #c9a7ff; --ct-pbg: #3d3312; --ct-pbd: #d4a72c; --ct-con: #0a0f11; --ct-conf: #d6e2e2; --ct-new: #ffd166; --ct-frame: #2c2540; }
 
-    .ct [hidden] { display: none !important; }
+    :is(.ct, .labdeck) [hidden] { display: none !important; }
     .ct .mono, .ct code, .ct pre, .ct .code { font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; }
     #cv { aspect-ratio: auto; height: 260px; touch-action: pan-y; cursor: default; margin-top: 8px; }
     .ct .pickrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 2px 8px; }
     .ct .pickrow label { font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
-    .ct select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
-    .ct .seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
-    .ct .seg3 button { border: none; border-radius: 0; padding: 4px 6px; background: var(--bg); line-height: 1.2; }
-    .ct .seg3 button + button { border-left: 1px solid var(--border); }
-    .ct .seg3 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    :is(.ct, .labdeck) select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    :is(.ct, .labdeck) .seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
+    :is(.ct, .labdeck) .seg3 button { border: none; border-radius: 0; padding: 4px 6px; background: var(--bg); line-height: 1.2; }
+    :is(.ct, .labdeck) .seg3 button + button { border-left: 1px solid var(--border); }
+    :is(.ct, .labdeck) .seg3 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
     /* 程式碼：等寬字、語法上色、目前這一行亮起 */
     .codes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
     @media (min-width: 700px) { .codes.both { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
@@ -84,6 +84,8 @@
     .code .lit { color: var(--ct-kw); }
     .code .op { color: var(--muted); }
     .code .param { color: var(--ct-num-ink); background: var(--ct-pbg); border: 1px dashed var(--ct-pbd); border-radius: 4px; padding: 0 2px; margin: 0 -3px; cursor: pointer; font-weight: 700; }
+    .code .ln:has(.param) { align-items: center; min-height: 44px; }
+    .code .param[role="button"] { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; margin: 0; box-sizing: border-box; vertical-align: middle; }
     .code .param:hover, .code .param:focus-visible { border-style: solid; outline: none; }
     .ct .pynote { margin: 0; padding: 4px 10px 6px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); border-top: 1px dashed var(--border); }
     /* 輸出 */
@@ -110,9 +112,10 @@
     .ct .stage .status.bad { color: var(--ct-bad); }
     .ct .stage .status.warn { color: var(--ct-warn); }
     .ct .slider input[type="range"] { height: 28px; margin: 0; }
+    .ct .stage .slider input[type="range"] { min-height: 44px; }
     .ct .panel { grid-template-columns: minmax(0, 1fr); }
     .ct .panel > .card { min-width: 0; }
-    .ct .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    :is(.ct, .labdeck) .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     #progDesc { margin: 0; font-size: calc(14px * var(--fs, 1)); }
     /* 先猜再看 */
     #qText { margin: 0 0 6px; font-size: calc(14.5px * var(--fs, 1)); font-weight: 600; }
@@ -146,6 +149,8 @@
     .notes table.cmp th, .notes table.cmp td { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
     .notes table.cmp code { font-size: 0.95em; }
     .notes .cmpwrap { overflow-x: auto; }
+    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
+    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -177,6 +182,7 @@
           </div>
         </div>
 
+        <canvas id="cv" aria-label="變數與記憶體的畫布" data-en-aria-label="Variables and memory canvas"></canvas>
         <div class="playbar">
           <button id="backBtn" type="button" data-en="Step back">上一步</button>
           <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
@@ -187,7 +193,6 @@
         <div class="slider speedrow"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
           <input id="speed" type="range" min="1" max="30" step="1" value="3" data-decimals="0"></div>
 
-        <canvas id="cv" aria-label="變數與記憶體的畫布" data-en-aria-label="Variables and memory canvas"></canvas>
         <div class="console">
           <div class="conhead"><span data-en="Output">輸出</span><span id="outInfo"></span></div>
           <pre id="out" aria-live="off"></pre>

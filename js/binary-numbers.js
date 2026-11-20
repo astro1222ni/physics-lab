@@ -69,7 +69,7 @@
     const panelTop = 8;
     const panelW = perRow * pitch + 16;
     const panelH = rows * rowH + 8;
-    const bigH = 58;
+    const bigH = 70;
     return {
       narrow: narrow, perRow: perRow, pitch: pitch, rows: rows, r: r, placeH: placeH, digitH: digitH, hexH: hexH, octH: octH, rowH: rowH,
       panelTop: panelTop, panelW: panelW, panelH: panelH, panelX: (W - panelW) / 2,

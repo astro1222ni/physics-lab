@@ -61,22 +61,27 @@
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   const stage = $('stage');
   let dpr = 1, cw = 320, ch = 560, L = null;
+  let markerTool = 's', wallCell = state.mz.t, wallAxis = 1, mazePad = null;
+  const shortView = matchMedia('(orientation: landscape) and (max-height: 600px)');
   const HEAD = 30, PAD = 6;
   function layout() {
-    const w = cw, side = w >= 600, gap = side ? 14 : 12;
+    const w = cw, side = w >= 600 || shortView.matches, gap = side ? 12 : 8;
     const pw = side ? (w - gap) / 2 : w;
+    const footer = isMaze() ? 20 : 0;
+    const panelRoom = (innerHeight - 108 - (side ? 0 : gap)) / (side ? 1 : 2) - HEAD - 2 * PAD - footer;
+    const room = Math.min(pw - 2 * PAD, Math.max(80, panelRoom));
     if (isMaze()) {
       const n = nOf();
-      const S0 = Math.min(pw - 2 * PAD, side ? 560 : 520);
+      const S0 = Math.min(room, side ? 560 : 520);
       const cs = Math.max(2, Math.floor(S0 / n * 2) / 2), S = cs * n;
-      const ph = HEAD + S + 2 * PAD;
+      const ph = HEAD + S + 2 * PAD + footer;
       const panels = [0, 1].map(function (p) {
         const x = side ? p * (pw + gap) : 0, y = side ? 0 : p * (ph + gap);
         return { x: x, y: y, w: pw, h: ph, mx: x + (pw - S) / 2, my: y + HEAD + PAD };
       });
       return { side: side, H: side ? ph : 2 * ph + gap, panels: panels, cs: cs, S: S };
     }
-    const A = Math.min(pw - 2 * PAD, side ? 400 : 330), ph = HEAD + A + 2 * PAD;
+    const A = Math.min(room, side ? 400 : 330), ph = HEAD + A + 2 * PAD;
     const panels = [0, 1].map(function (p) {
       const x = side ? p * (pw + gap) : 0, y = side ? 0 : p * (ph + gap);
       return { x: x, y: y, w: pw, h: ph, mx: x + (pw - A) / 2, my: y + HEAD + PAD };
@@ -276,7 +281,7 @@
     ctx.restore();
     ctx.font = fnt(14, 700); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = D.dark ? col : deep;
-    const name = p === 0 ? T('DFS（堆疊）', 'DFS (stack)') : T('BFS（佇列）', 'BFS (queue)');
+    const name = pn.w < 225 ? (p === 0 ? 'DFS' : 'BFS') : (p === 0 ? T('DFS（堆疊）', 'DFS (stack)') : T('BFS（佇列）', 'BFS (queue)'));
     ctx.fillText(name, x + 22, y);
     const nameW = ctx.measureText(name).width;
     // 右側：拜訪數與結果
@@ -292,7 +297,7 @@
     const found = isMaze() && st.foundAt >= 0;
     ctx.textAlign = 'right';
     ctx.fillStyle = found ? (D.dark ? C['gt-path'] : shade(C['gt-path'], -0.1)) : C.muted;
-    ctx.fillText(msg, pn.x + pn.w - 4, y);
+    ctx.fillText(msg, pn.x + pn.w - 4, y, Math.max(40, room));
   }
 
   // ---------- 迷宮 ----------
@@ -320,6 +325,17 @@
       D.ripple(ctx, c.x, c.y, cs * 0.32, u, f.color);
     });
     drawMarkers(p);
+    if (state.draw) {
+      hiliteWall(p, cursorWall());
+      const pt = center(p, wallCell), size = Math.max(3, Math.min(9, cs * 0.32));
+      drawCross(pt, size, C.accent);
+    }
+    const z = state.mz;
+    const coords = 'S' + nameOf(z.s) + '  G' + nameOf(z.t) + (state.draw ? '  W' + nameOf(wallCell) : '');
+    ctx.save();
+    ctx.fillStyle = C.text; ctx.font = fnt(12, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(coords, pn.x + pn.w / 2, pn.my + S + 12, pn.w - 4);
+    ctx.restore();
   }
   function pathLine(p, path, w) {
     ctx.save();
@@ -375,11 +391,25 @@
     }
     ctx.closePath();
   }
+  function drawCross(pt, radius, color) {
+    const x = pt.x, y = pt.y, end = radius + 2;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.moveTo(x - end, y); ctx.lineTo(x + end, y); ctx.moveTo(x, y - end); ctx.lineTo(x, y + end);
+    ctx.strokeStyle = C['gt-floor-a']; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.restore();
+  }
   function drawMarkers(p) {
     const cs = L.cs, z = state.mz;
-    const hot = function (w) { return (state.drag && state.drag.type === w) || (state.hover && state.hover.marker === w); };
-    // 終點：金色星形
+    const hot = function (w) { return (state.drag && state.drag.type === w) || (state.hover && state.hover.marker === w) ||
+      (!state.draw && mazePad && !mazePad.state.collapsed && markerTool === w); };
     const t = center(p, z.t), R = clamp(cs * 0.46, 6.5, 15);
+    const s = center(p, z.s), r = clamp(cs * 0.36, 5, 12);
+    // 準星畫在標記後方，圓點、星形及其字母仍看得到。
+    drawCross(t, R + 1.5, C['gt-goal']);
+    drawCross(s, r + 1.5, C['gt-start']);
+    // 終點：金色星形
     if (hot('t')) { ctx.beginPath(); ctx.arc(t.x, t.y, R + 5, 0, Math.PI * 2); ctx.fillStyle = alpha(C['gt-goal'], 0.3); ctx.fill(); }
     ctx.save();
     ctx.shadowColor = D.dark ? 'rgba(0,0,0,0.55)' : alpha(C.text, 0.32); ctx.shadowBlur = 5; ctx.shadowOffsetY = 1.5;
@@ -390,13 +420,12 @@
     ctx.restore();
     starPath(t.x, t.y, R); ctx.strokeStyle = alpha(shade(C['gt-goal'], -0.55), 0.9); ctx.lineWidth = 1.1; ctx.stroke();
     // 起點：綠色立體圓
-    const s = center(p, z.s), r = clamp(cs * 0.36, 5, 12);
     if (hot('s')) { ctx.beginPath(); ctx.arc(s.x, s.y, r + 6, 0, Math.PI * 2); ctx.fillStyle = alpha(C['gt-start'], 0.28); ctx.fill(); }
     D.ball(ctx, s.x, s.y, r, C['gt-start'], { glow: D.dark ? 0.3 : 0 });
-    if (cs >= 22) {
+    if (cs >= 16) {
       ctx.font = fnt(Math.round(r * 0.95), 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#ffffff'; ctx.fillText(T('起', 'S'), s.x, s.y + 0.5);
-      ctx.fillStyle = alpha(shade(C['gt-goal'], -0.7), 0.95); ctx.font = fnt(Math.round(R * 0.62), 700); ctx.fillText(T('終', 'G'), t.x, t.y + 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillText('S', s.x, s.y + 0.5);
+      ctx.fillStyle = alpha(shade(C['gt-goal'], -0.7), 0.95); ctx.font = fnt(Math.round(R * 0.75), 700); ctx.fillText('G', t.x, t.y + 1);
     }
   }
   function hiliteWall(p, w) {
@@ -890,6 +919,7 @@
     state.hover = null; state.drag = null;
     modeBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
     $('mazeCard').hidden = m !== 'maze';
+    $('mazeActions').hidden = m !== 'maze';
     $('graphCard').hidden = m !== 'graph';
     $('reprBox').hidden = m !== 'graph';
     document.querySelectorAll('.legend .maze-only').forEach(function (e) { e.hidden = m !== 'maze'; });
@@ -900,12 +930,13 @@
     updateInfo();
     resize();
     cv.style.cursor = 'default';
+    if (mazePad) mazePad.refresh();
   }
   modeBtns.forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.mode); }); });
 
   // ---------- 迷宮 ----------
   const elSize = $('size'), elLoops = $('loops'), genSel = $('genSel');
-  function regen() { const z = state.mz; z.m = G.generate(z.n, z.gen, z.seed, z.loops); z.edits = 0; wallCv = null; }
+  function regen() { const z = state.mz; z.m = G.generate(z.n, z.gen, z.seed, z.loops); z.edits = 0; wallCell = z.t; wallCv = null; }
   function setST(s, t) {
     if (s === t) return false;
     if (isMaze()) { state.mz.s = s; state.mz.t = t; } else state.gr.s = s;
@@ -930,15 +961,96 @@
   });
   $('newMaze').addEventListener('click', function () { state.mz.seed++; regen(); rebuild(); updateInfo(); });
   $('swapBtn').addEventListener('click', function () { setST(state.mz.t, state.mz.s); });
-  $('drawBtn').addEventListener('click', function () {
-    state.draw = !state.draw;
+  function selectedTool() { return state.draw ? 'wall' : markerTool; }
+  function selectTool(tool) {
+    state.draw = tool === 'wall';
+    if (!state.draw) markerTool = tool;
+    state.hover = null;
     $('drawBtn').setAttribute('aria-pressed', String(state.draw));
-    if (!state.draw && state.hover) state.hover.wall = null;
-    say(state.draw ? T('畫牆：按在格線上（或沿著格線拖曳）加上或拿掉牆。起點和終點照樣可以拖曳。', 'Drawing walls: tap a grid line (or drag along it) to add or remove a wall. You can still drag the start and the goal.')
-      : T('不畫牆了。', 'Stopped drawing walls.'));
+    say(state.draw ? T('起終點已固定。點格線或用畫牆游標加牆、拆牆。', 'Start and goal locked. Edit an edge by tapping it or using the wall cursor.') : toolName());
+    updatePadLabels();
     requestDraw();
+  }
+  $('drawBtn').addEventListener('click', () => selectTool(state.draw ? markerTool : 'wall'));
+  function toolName() { return state.draw ? T('畫牆', 'Wall') : markerTool === 's' ? T('起點', 'Start') : T('終點', 'Goal'); }
+  // 每個游標格可選直牆或橫牆；最右、最下格改選內側，四周的外牆永遠保留。
+  function cursorWall() {
+    const n = nOf();
+    if (wallAxis === 1) return { i: wallCell % n === n - 1 ? wallCell - 1 : wallCell, d: 1 };
+    return { i: wallCell >= n * (n - 1) ? wallCell - n : wallCell, d: 2 };
+  }
+  function toolCell() { return state.draw ? wallCell : state.mz[markerTool]; }
+  function moveTool(dx, dy) {
+    const n = nOf(), i = toolCell();
+    const row = clamp(Math.floor(i / n) - dy, 0, n - 1), col = clamp(i % n + dx, 0, n - 1);
+    const next = row * n + col;
+    if (i === next) return false;
+    if (!state.draw) return markerTool === 's' ? setST(next, state.mz.t) : setST(state.mz.s, next);
+    wallCell = next;
+    updatePadLabels(); requestDraw();
+    return true;
+  }
+  function toggleCursorWall() {
+    if (!isMaze() || !state.draw) return;
+    const w = cursorWall(), open = !G.isOpen(state.mz.m, w.i, w.d);
+    applyWall(w, open);
+    say('W' + nameOf(wallCell) + (open ? T(' 已拆牆', ' · wall removed') : T(' 已加牆', ' · wall added')));
+  }
+  function toolPoint() {
+    const rect = cv.getBoundingClientRect();
+    if (!isMaze() || !L || !L.cs) return { x: rect.left, y: rect.top };
+    const pt = center(0, toolCell());
+    return { x: rect.left + pt.x, y: rect.top + pt.y };
+  }
+  function updatePadLabels() {
+    if (!mazePad) return;
+    const el = mazePad.element, key = el.querySelector('.vpad-select');
+    const label = state.draw ? 'W' : markerTool === 's' ? 'S' : 'G';
+    if (key.textContent !== label) key.textContent = label;
+    key.setAttribute('aria-label', toolName() + T('，按一下切換工具', ', press to switch tools'));
+    key.title = key.getAttribute('aria-label');
+    el.classList.toggle('wall-tool', state.draw);
+    if (state.draw) {
+      const w = cursorWall(), open = G.isOpen(state.mz.m, w.i, w.d);
+      el.querySelector('.vpad-record').textContent = open ? T('加牆', 'Add wall') : T('拆牆', 'Remove');
+      const side = el.querySelector('.gt-wall-axis');
+      side.textContent = wallAxis === 1 ? T('直牆 ↻', 'Vertical ↻') : T('橫牆 ↻', 'Horiz. ↻');
+      side.setAttribute('aria-label', T('切換直牆或橫牆', 'Switch between vertical and horizontal edges'));
+    }
+  }
+  $('mazePadBtn').addEventListener('click', function () {
+    if (!mazePad) {
+      mazePad = LabVPad.mount({
+        id: 'graph-traversal', className: 'gt-pad', canvas: cv, objects: ['s', 't', 'wall'], steps: [1], step: 1,
+        selected: selectedTool, select: selectTool, move: moveTool, record: toggleCursorWall,
+        point: toolPoint, reading: () => toolName() + ' ' + nameOf(toolCell()),
+        visible: () => isMaze() && cv.getBoundingClientRect().bottom > 0 && cv.getBoundingClientRect().top < innerHeight,
+        viewport: () => ({ width: cv.getBoundingClientRect().right, height: innerHeight }),
+        home: (w, h) => {
+          const box = cv.getBoundingClientRect();
+          return { x: toolPoint().x < (box.left + box.right) / 2 ? box.right - w : box.left, y: Math.max(8, Math.min(box.top, innerHeight - h - 8)) };
+        }
+      });
+      const el = mazePad.element;
+      el.setAttribute('aria-label', T('迷宮八向鍵盤', 'Eight-direction maze keypad'));
+      mazePad.lens.querySelector('canvas').setAttribute('aria-label', T('迷宮游標的放大圖', 'Magnified maze cursor'));
+      el.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動選取的工具 ', 'Move selected tool ') + b.textContent));
+      const side = document.createElement('button');
+      side.type = 'button'; side.className = 'gt-wall-axis';
+      el.querySelector('.vpad-footer').insertBefore(side, el.querySelector('.vpad-record'));
+      side.addEventListener('click', () => { wallAxis = wallAxis === 1 ? 2 : 1; updatePadLabels(); requestDraw(); });
+      // 共用元件重畫中央鍵後，換回迷宮的工具名稱。
+      new MutationObserver(updatePadLabels).observe(el.querySelector('.vpad-select'), { childList: true });
+    }
+    const point = toolPoint();
+    const box = cv.getBoundingClientRect();
+    if (point.y < 32 || point.y > innerHeight - 32 || Math.min(box.bottom, innerHeight) - Math.max(0, box.top) < Math.min(264, box.height)) {
+      window.scrollBy({ top: box.height < innerHeight ? box.top - 8 : point.y - innerHeight / 2, behavior: 'instant' });
+    }
+    mazePad.collapse(false); mazePad.refresh(); updatePadLabels(); requestDraw();
   });
   function updateInfo() {
+    updatePadLabels();
     const z = state.mz, f = state.info;
     if (isMaze() && f) {
       let s = T('第 ' + z.seed + ' 號（同樣的邊長、產生方式、編號，每次都是同一座迷宮）', 'Maze no. ' + z.seed + ' (the same side, method and number always give the same maze)');
@@ -1090,7 +1202,7 @@
     return null;
   }
   function markerAt(pt) {
-    if (!isMaze() || !L) return null;
+    if (!isMaze() || !L || state.draw) return null;
     const rad = Math.max(L.cs * 0.6, 20);
     let best = null, bd = Infinity;
     for (let p = 0; p < 2; p++) ['s', 't'].forEach(function (w) {
@@ -1123,6 +1235,7 @@
     if (isMaze()) {
       const mk = markerAt(pt);
       if (mk) {
+        selectTool(mk.type);
         stopPlay();
         state.drag = { type: mk.type, p: mk.p, id: ev.pointerId, moved: false };
         try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
@@ -1134,6 +1247,7 @@
         if (!w) return;
         stopPlay();
         const open = !G.isOpen(state.mz.m, w.i, w.d);
+        wallCell = w.i; wallAxis = w.d;
         state.drag = { type: 'wall', open: open, key: w.i + ':' + w.d, id: ev.pointerId, n: 0 };
         if (applyWall(w, open)) state.drag.n++;
         try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
@@ -1159,7 +1273,10 @@
         }
       } else if (dr.type === 'wall') {
         const w = wallAt(hitMaze(pt));
-        if (w && (w.i + ':' + w.d) !== dr.key) { dr.key = w.i + ':' + w.d; if (applyWall(w, dr.open)) dr.n++; }
+        if (w && (w.i + ':' + w.d) !== dr.key) {
+          dr.key = w.i + ':' + w.d; wallCell = w.i; wallAxis = w.d;
+          if (applyWall(w, dr.open)) dr.n++;
+        }
         state.hover = { p: (hitMaze(pt) || {}).p, wall: w };
         requestDraw();
       }
@@ -1198,23 +1315,25 @@
 
   // ---------- 鍵盤（LabKeys） ----------
   if (window.LabKeys) {
+    cv.addEventListener('keydown', function (e) {
+      if (!isMaze() || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (e.key === ' ' && state.draw) toggleCursorWall();
+      else {
+        const tools = ['s', 't', 'wall'];
+        selectTool(tools[(tools.indexOf(selectedTool()) + (e.shiftKey ? 2 : 1)) % tools.length]);
+      }
+      LabKeys.say(toolName() + ' ' + nameOf(toolCell()));
+    });
     window.LabKeys.attach(cv, {
-      label: T('走訪的畫布', 'Traversal canvas'),
+      label: T('走訪畫布。方向鍵移動，Enter 輪換起點、終點與牆游標，畫牆時可按空白鍵加牆或拆牆。', 'Traversal canvas. Arrow keys move. Enter cycles start, goal and wall. In wall mode, Space adds or removes the selected wall.'),
       items: [
-        { name: function () { return T('起點', 'Start'); },
+        { name: function () { return isMaze() ? toolName() : T('起點', 'Start'); },
           move: function (dx, dy) {
             if (!isMaze()) { const Vn = state.gr.g.V, d = dx || dy; if (!d) return false; state.gr.s = (state.gr.s + d + Vn) % Vn; gsSel.value = String(state.gr.s); rebuild(); renderRepr(); return true; }
-            const n = nOf(), z = state.mz, r = clamp(((z.s / n) | 0) + dy, 0, n - 1), c = clamp(z.s % n + dx, 0, n - 1);
-            return setST(r * n + c, z.t);
+            return moveTool(dx, dy);
           },
-          describe: function () { return T('起點：', 'Start: ') + nameOf(isMaze() ? state.mz.s : state.gr.s); } },
-        { name: function () { return T('終點', 'Goal'); },
-          move: function (dx, dy) {
-            if (!isMaze()) return false;
-            const n = nOf(), z = state.mz, r = clamp(((z.t / n) | 0) + dy, 0, n - 1), c = clamp(z.t % n + dx, 0, n - 1);
-            return setST(z.s, r * n + c);
-          },
-          describe: function () { return isMaze() ? T('終點：', 'Goal: ') + nameOf(state.mz.t) : T('一般圖沒有終點', 'A general graph has no goal'); } }
+          describe: function () { return isMaze() ? toolName() + ' ' + nameOf(toolCell()) : T('起點：', 'Start: ') + nameOf(state.gr.s); } }
       ],
       onChange: function () { requestDraw(); }
     });
@@ -1276,6 +1395,7 @@
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden && state.playing) { stopPlay(); updateAll(); } });
 })();
