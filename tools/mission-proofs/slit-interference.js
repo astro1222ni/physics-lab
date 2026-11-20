@@ -18,7 +18,7 @@ function ev(st) {
   const p = { N, a: s.a * UM, d: s.d * UM, lambda: (s.white ? 550 : s.lam) * NM, L: s.L };
   const pi = SC.patternInfo(p), mm = m => m / MM;
   const data = { mode: s.mode, N, white: s.white, lam: s.white ? NaN : s.lam, a: s.a, d: N > 1 ? s.d : NaN, L: s.L,
-    dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700), cursor: s.y !== null };
+    dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700), cursorPlaced: s.y !== null, cursor: s.y !== null };
   if (data.cursor) {
     const c = SC.pointInfo(p, s.y, s.white ? SPEC : null);
     Object.assign(data, { y: mm(s.y), theta: c.theta * 180 / Math.PI, pathD: c.pathD / NM, pathA: c.pathA / NM, pd: c.pd, pa: c.pa, I: c.I, R: c.R, G: c.G, B: c.B });
@@ -32,7 +32,10 @@ function yAt(pathNm, d, L, zoom, PW) {
   if (zoom) { const px = 2 * zoom * MM / PW; y = Math.round(y / px) * px; }
   return y;
 }
-function passing(st, keep) { const e = ev(st); const out = list.filter(m => m.check(e, mems[m.id])).map(m => m.id); return { e: e.data, out }; }
+function passing(st) {
+  const e = ev(st);
+  return { e: e.data, out: list.filter(m => m.check(e, mems[m.id])).map(m => m.id) };
+}
 let bad = 0;
 function expect(id, steps, note) {
   reset(); let r;
@@ -46,7 +49,8 @@ function expectNot(id, steps, note) { reset(); let r; steps.forEach(st => { r = 
 for (const st of [{}, { mode: 'single' }, { mode: 'grating' }, { white: true }, { mode: 'grating', white: true }, { mode: 'single', white: true }]) {
   reset(); const r = passing(st); console.log('預設', JSON.stringify(st), '→', JSON.stringify(r.out)); if (r.out.length) bad++;
 }
-expect('slit-interference-1', [{ mode: 'single', a: 10 }], 'a = 10 μm（滑桿）');
+expect('slit-interference-1', [{ mode: 'single', a: 5 }], '把縫寬調到最窄 5 μm');
+expect('slit-interference-1', [{ mode: 'single', a: 40, lam: 700, L: 3 }], '保持原縫寬 40 μm，改波長及屏距也可使中央亮帶超過 100 mm');
 expectNot('slit-interference-1', [{ mode: 'single', a: 10, white: true }], '白光不算');
 expect('slit-interference-2', [{ lam: 600 }], 'λ = 600 nm（滑桿）');
 expect('slit-interference-2', [{ lam: 650, d: 130 }], 'λ = 650、d = 130');
@@ -84,10 +88,12 @@ expect('slit-interference-12', [{ a: 5, d: 100, lam: 750, y: y12 }, { a: 5, d: 1
 const y12b = yAt(2400, 120, 1, 30, 700);
 expect('slit-interference-12', [{ a: 6, d: 120, lam: 600, y: y12b }, { a: 6, d: 120, lam: 480, y: y12b }, { a: 6, d: 120, lam: 400, y: y12b }], 'a = 6、d = 120：600 → 480 → 400');
 expectNot('slit-interference-12', [{ a: 20, d: 100, lam: 750, y: y12 }, { a: 20, d: 100, lam: 600, y: y12 }, { a: 20, d: 100, lam: 500, y: y12 }], 'a = 20 時高級亮紋太暗');
-expect('slit-interference-h1', [{ a: 60 }], 'a = 60、d = 120');
+expectNot('slit-interference-h1', [{ a: 60 }], '尚未放置游標');
+expect('slit-interference-h1', [{ a: 60, y: yAt(1100, 120, 1, 30, 700) }], '把游標放到消失的第二級');
 expect('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1300, 50, 1, 50, 700) }], '光柵 N = 6、a 5、d 50，游標在 d sinθ = 1300 nm');
 expect('slit-interference-h2', [{ mode: 'grating', N: 5, white: true, a: 10, d: 40, y: yAt(1200, 40, 1, 50, 700) }], '光柵 N = 5、a 10、d 40，1200 nm');
 expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(900, 50, 1, 50, 700) }], '只有第 2 級的地方不算');
 expect('slit-interference-h3', [{ white: true, a: 5, d: 400, y: yAt(5000, 400, 1, 30, 700) }], 'a = 5、d = 400，游標在 d sinθ = 5 μm（y ≈ 12.5 mm）');
 expectNot('slit-interference-h3', [{ white: true, a: 40, d: 120, y: yAt(5000, 120, 1, 50, 700) }], '預設縫寬太寬：高級條紋太暗');
 console.log(bad ? '\n有 ' + bad + ' 項不符' : '\n全部符合');
+if (bad) process.exitCode = 1;

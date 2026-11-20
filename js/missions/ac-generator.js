@@ -57,8 +57,11 @@
     {
       id: 'ac-generator-6', level: 4,
       title: { zh: '冷次定律的阻力', en: 'Lenz’s drag' },
-      desc: { zh: '發電機：接上至少 10 Ω 的燈泡，讓轉動線圈需要的外力矩峰值 τ_max 至少 5 N·m。哪些參數會讓線圈更難轉？', en: 'Generator: with a lamp of at least 10 Ω connected, make the peak driving torque τ_max at least 5 N·m. Which settings make the coil harder to turn?' },
-      check: function (ev) { const d = gen(ev); return !!d && !d.open && d.R >= 10 && d.tauMax >= 5; }
+      desc: { zh: '接上至少 10 Ω 的燈泡，調整發電機使外力矩峰值至少 5 N·m，讓線圈轉滿一圈。', en: 'Connect a lamp of at least 10 Ω, adjust the generator for a peak torque of at least 5 N·m, and let the coil complete a turn.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'gen' && !d.open && d.R >= 10 - 1e-9 && d.tauMax >= 5 - 1e-9 && d.revs >= 1 - 1e-9;
+      }
     },
     {
       id: 'ac-generator-7', level: 5,
@@ -114,7 +117,11 @@
     {
       id: 'ac-generator-h1', level: 4, hidden: true,
       riddle: { zh: '沒有人聆聽的歌，唱再久也不費力氣。', en: 'A song that no one listens to costs nothing to sing, however long it goes on.' },
-      check: function (ev) { const d = gen(ev); return !!d && d.open && d.revs >= 1 && d.epsMax >= 100; }
+      check: function (ev) {
+        const d = gen(ev);
+        // 謎語「唱再久」：開路下持續轉滿 3 圈，排除亂按瞬間經過。
+        return !!d && d.open && d.revs >= 3 - 1e-9 && d.epsMax >= 100 - 1e-9;
+      }
     },
     {
       id: 'ac-generator-h2', level: 3, hidden: true,
@@ -124,7 +131,10 @@
     {
       id: 'ac-generator-h3', level: 6, hidden: true,
       riddle: { zh: '門外與門內一樣沉重的時候，送出門的最多。', en: 'When the load outside weighs the same as the load within, the most goes out the door.' },
-      check: function (ev) { const d = gen(ev); return !!d && !d.open && d.r > 0 && near(d.R / d.r, 1, 0.02) && d.PR >= 10; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'gen' && !d.open && d.r > 0 && near(d.R / d.r, 1, 0.02 + 1e-9) && d.PR >= 10 - 1e-9 && d.revs >= 1 - 1e-9;
+      }
     }
   ]);
 })();

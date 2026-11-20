@@ -31,7 +31,7 @@ function run(c, T, cause0) {
   const sp = c.start === 'top' ? { x: 0, contact: 0 } : { x: XMAX, contact: 1 };
   let s = IC.newState(sp.x, c.v0, sp.contact);
   const evs = [];
-  const rel = snap(c, s, s.contact, { v0: c.v0 }); rel.holds = c.v0 === 0 && rel.freeHold;
+  const rel = snap(c, s, s.contact, { v0: c.v0, manual: true }); rel.holds = c.v0 === 0 && rel.freeHold;
   evs.push({ type: 'release', data: rel });
   if (c.v0 !== 0) evs.push({ type: 'motion', data: snap(c, s, s.contact, { reason: 'release' }) });
   const runI = { turns: 0, hitTop: false, gates: [[], []], slipT: c.v0 !== 0 ? 0 : null };
@@ -81,7 +81,7 @@ expect(1, run(mk({ theta: 35 }), 3).evs, true, '木頭 θ = 35°，放手 → �
   const c2 = mk({ theta: 0, start: 'bottom' }); let s2 = IC.newState(XMAX, 0, 1), slipF2 = null;
   for (let i = 0; i < 5000 && slipF2 == null; i++) { c2.F += 4.9 * 0.002; const r = IC.step(P(c2), s2, 0.002, OPT); s2 = r.s; if (r.ev.some(e => e.type === 'slip')) slipF2 = c2.F; }
   console.log('      θ = 0、起點頂端：' + (slipF == null ? '不會滑' : 'F = ' + slipF.toFixed(3)) + '；起點底端：F = ' + slipF2.toFixed(3) + ' N（μs mg = ' + (0.5 * 2 * 9.8).toFixed(3) + '）');
-  expect(2, [{ type: 'slip', data: snap(c, s, 0, { cause: 'ramp', dir: -1 }) }], true, 'θ = 0、預設起點（頂端）、慢慢加力 → 在 F ≈ μs mg 開始滑');
+  expect(2, [{ type: 'slip', data: snap(c, s, 0, { cause: 'ramp', rampFromZero: true, dir: -1 }) }], true, 'θ = 0、預設起點（頂端）、慢慢加力 → 在 F ≈ μs mg 開始滑');
 }
 // 3 臨界角：每 2 ms 抬高 0.004°
 {

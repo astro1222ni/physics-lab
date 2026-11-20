@@ -995,11 +995,12 @@
     sayParams();
   }
   /** 剪斷瞬間的資料：剪斷角 theta（度，由 +x 軸逆時針，[0, 360)）、位置與速度 */
+  let observedAngle = false;
   function cutData() {
     const c = CC.stateAt(params(), state.tCut);
     let th = CC.wrapAngle(c.theta) * 180 / Math.PI;
     if (th >= 360) th -= 360;
-    return Object.assign(setting(), { theta0: state.theta0, tCut: state.tCut, theta: th, xc: c.x, yc: c.y, vx: c.vx, vy: c.vy });
+    return Object.assign(setting(), { observedAngle: observedAngle, theta0: state.theta0, tCut: state.tCut, theta: th, xc: c.x, yc: c.y, vx: c.vx, vy: c.vy });
   }
 
   // ---------- 動畫 ----------
@@ -1090,6 +1091,7 @@
   }
 
   function reattach(play) {
+    observedAngle = false;
     state.tCut = null;
     state.theta0 = 0;
     state.t = 0;
@@ -1112,6 +1114,7 @@
       const s = now(), cut = state.tCut != null;
       let th = NaN;
       if (!cut) { th = CC.wrapAngle(s.theta) * 180 / Math.PI; if (th >= 360) th -= 360; }
+      if (!cut) observedAngle = true;
       emit('pause', Object.assign(setting(), {
         attached: !cut, t: state.t, theta: th, x: s.x, y: s.y, vx: s.vx, vy: s.vy, ax: s.ax, ay: s.ay,
         d: Math.hypot(s.x, s.y), tau: cut ? state.t - state.tCut : 0
@@ -1186,6 +1189,7 @@
     const thNow = CC.angleAt(params(), state.t);
     update();
     if (state.tCut != null) {
+      observedAngle = false;
       state.tCut = null;
       state.theta0 = 0;
       state.ended = false;

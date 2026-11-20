@@ -107,7 +107,10 @@
     {
       id: 'resonance-tube-h2', level: 6, hidden: true,
       riddle: { zh: '水將成冰的清晨，替風量一量步伐。', en: 'On a dawn when water is about to freeze, pace out the stride of the wind.' },
-      check: function (ev) { const d = ev.data; return an(ev) && known(d) && d.Tc <= 1 && Math.abs(d.errPct) <= 1; }
+      check: function (ev) {
+        const d = ev.data;
+        return an(ev) && known(d) && d.Tc <= 1 + 1e-9 && Math.abs(d.errPct) <= 1 + 1e-9;
+      }
     },
     {
       id: 'resonance-tube-h3', level: 8, hidden: true,

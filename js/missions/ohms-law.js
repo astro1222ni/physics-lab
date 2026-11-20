@@ -25,8 +25,11 @@
     {
       id: 'ohms-law-1', level: 1,
       title: { zh: '第一筆數據', en: 'The first reading' },
-      desc: { zh: '接通電源，讓兩個電表都有讀數，按「記錄」記下第一組電壓與電流。', en: 'Switch on the supply so that both meters show a reading, then press “Record” to log your first voltage and current.' },
-      check: function (ev) { const d = ev.data; return isR(ev) && d.V > 0 && d.I > 0; }
+      desc: { zh: '調整電源或電阻箱，使兩個電表都有讀數且在量程內，記錄第一組電壓與電流。', en: 'Adjust the supply or resistance box so both meters show positive readings within range, then record the voltage and current.' },
+      check: function (ev) {
+        const d = ev.data;
+        return isR(ev) && d.readingSet && d.I > 0 && d.V > 0 && d.defA <= 1 + 1e-9 && d.defV <= 1 + 1e-9;
+      }
     },
     {
       id: 'ohms-law-2', level: 2,
@@ -133,14 +136,18 @@
     {
       id: 'ohms-law-h1', level: 3, hidden: true,
       riddle: { zh: '最燦爛的一瞬，也是最後一瞬。', en: 'The brightest moment is also the last.' },
-      check: function (ev) { return ev.type === 'burnout'; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'burnout' && d.driveSet;
+      }
     },
     {
       id: 'ohms-law-h2', level: 5, hidden: true,
       riddle: { zh: '斷橋的兩岸，落差最大。', en: 'The two banks of a broken bridge stand farthest apart.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'meter' && d && d.el === 'lamp' && d.burnt && d.wasBurnt && d.emf >= 1 && d.VV >= 0.95 * d.emf && !d.overV;
+        return ev.type === 'meter' && d.el === 'lamp' && d.burnt && d.wasBurnt && d.emf >= 1 - 1e-9 &&
+          d.VV >= 0.95 * d.emf - 1e-9 && !d.overV;
       }
     },
     {

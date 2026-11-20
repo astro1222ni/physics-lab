@@ -5,6 +5,8 @@ const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 const C = require(__ROOT + 'js/thin-film-core.js');
 const NM = 1e-9, UM = 1e-6, MM = 1e-3, CM = 1e-2, DEG = Math.PI / 180;
 let list = null;
+const { mock } = require('node:test');
+mock.timers.enable({ apis: ['setTimeout'] });
 global.LabMission = { register: (m, l) => { list = l; } }; global.window = { LabMission: global.LabMission };
 require(__ROOT + 'js/missions/thin-film.js');
 const mems = {};
@@ -39,7 +41,15 @@ function newtonEv(s) {
 }
 function answerEv(kind, truth, guess, dust, n) { return { type: 'answer', data: { kind, truth, guess, err: (guess - truth) / truth, dust: !!dust, e: 0, revealed: false, n: n || 1 } }; }
 
-function passing(e) { return list.filter(m => m.check(e, mems[m.id])).map(m => m.id); }
+function passing(e) {
+  const out = list.filter(m => m.check(e, mems[m.id])).map(m => m.id);
+  LabMission.emit = (type, data) => {
+    const m = list.find(x => x.id === 'thin-film-1');
+    if (m.check({ type, data }, mems[m.id])) out.push(m.id);
+  };
+  mock.timers.tick(1000);
+  return out;
+}
 let bad = 0;
 // run 回傳最後一個事件時成立的任務；run.union 是整串事件中途成立過的所有任務（判斷「順便完成」用）
 function run(evs) { reset(); let out = []; const u = new Set(); evs.forEach(e => { out = passing(e); out.forEach(x => u.add(x)); }); run.union = [...u]; return out; }
@@ -81,16 +91,19 @@ for (const [name, e] of defaults) { const out = run([e]); console.log('預設 ' 
 { const out = run([soapEv({}), wedgeEv({}), newtonEv({}), newtonEv({ view: 'T' }), soapEv({ white: false })]); console.log('依序切換三個模式 →', JSON.stringify(out)); if (out.length) bad++; }
 
 // ---------- 1：最薄處全黑 ----------
-expect('thin-film-1', [soapEv({ z: 0 })], '游標拖到最頂端 z = 0（h = 0）');
-expect('thin-film-1', [soapEv({ z: 0.015 })], 'h = 15 nm');
+function placed(st) { const e = soapEv(st); e.data.cursorPlaced = true; e.data.placement = {}; e.data.stillHere = () => true; return e; }
+expect('thin-film-1', [placed({ z: 0 })], '游標拖到最頂端 z = 0（h = 0）');
+expect('thin-film-1', [placed({ z: 0.015 })], 'h = 15 nm');
+const fleeting = placed({ z: 0 }); fleeting.data.stillHere = () => false;
+expectNot('thin-film-1', [fleeting], '短暫經過膜最薄處不算');
 console.log('     h = 0 的顏色', JSON.stringify(soapEv({ z: 0 }).data.rgb), '；h = 15 nm', JSON.stringify(soapEv({ z: 0.015 }).data.rgb));
-expectNot('thin-film-1', [soapEv({ z: 0, white: false })], '單色光不算');
+expectNot('thin-film-1', [placed({ z: 0, white: false })], '單色光不算');
 
 // ---------- 2：鈉光第 2 條暗紋 h = 2λ/(2n) ----------
 const h2 = 2 * 589 / (2 * 1.33);
-expect('thin-film-2', [soapEv({ white: false, z: Math.round(h2 / 1000 * 370) / 370 })], 'h ≈ ' + h2.toFixed(1) + ' nm（桌機 370 像素高的膜，取最近像素）');
-expect('thin-film-2', [soapEv({ white: false, z: Math.round(h2 / 1000 * 237) / 237 })], '手機 237 像素高的膜');
-expectNot('thin-film-2', [soapEv({ white: false, lam: 590, h: h2 })], '590 nm 不算');
+expect('thin-film-2', [placed({ white: false, z: Math.round(h2 / 1000 * 370) / 370 })], 'h ≈ ' + h2.toFixed(1) + ' nm（桌機 370 像素高的膜，取最近像素）');
+expect('thin-film-2', [placed({ white: false, z: Math.round(h2 / 1000 * 237) / 237 })], '手機 237 像素高的膜');
+expectNot('thin-film-2', [placed({ white: false, lam: 590, h: h2 })], '590 nm 不算');
 
 // ---------- 3：第一道藍 ----------
 function blueRange(o) {

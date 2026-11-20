@@ -24,6 +24,7 @@
   const Y_BOT = -1.8, Y_ROOF = 30, Y_TOP = 32.8; // m：底坑、屋頂、機房頂
   const MOTOR = { acc: 1, cruise: 1, dec: 1, manual: 1, protect: 1 };
 
+  let weighingSet = false;
   const S = {
     t: 0,                    // 物理時間（s）
     running: true,
@@ -2185,7 +2186,7 @@
     const mid = E.segAt(seg, isFinite(seg.t1) ? (seg.t0 + seg.t1) / 2 : seg.t0 + 0.01);
     const Ts = E.springTension(seg.ms, seg.a);
     emit('phase', {
-      kind: seg.kind, run: run.kind, mystery: !!run.mystery,
+      weighingSet: weighingSet, kind: seg.kind, run: run.kind, mystery: !!run.mystery,
       a: seg.a, v: seg.v0, dir: Math.abs(mid.v) < 1e-9 ? 0 : Math.sign(mid.v),
       reading: r, N: E.normalForce(seg.m, seg.a), m: seg.m, ms: seg.ms,
       T: Ts, ext: E.springExtension(Ts), ext0: E.springExtension(E.springTension(seg.ms, 0)),
@@ -2599,6 +2600,7 @@
 
   // 全部清除：清掉所有圖表與紀錄、修好纜繩、小球回到手上；電梯停在最近的樓層（滑桿設定不變）
   $('reset').addEventListener('click', function () {
+    // 滑桿設定不變，學生調過的加減速度仍算數，不清 weighingSet。
     const st = cur();
     let y = st.y;
     if (busy() || S.cable === 'cut') y = E.floorY(E.floorOf(st.y).n);
@@ -2710,7 +2712,7 @@
       const Ts = E.springTension(p.ms, sg.a);
       const v = E.segAt(sg, S.t).v;
       emit('phase', {
-        kind: sg.kind, run: S.run.kind, mystery: !!S.run.mystery, a: sg.a, v: v, dir: Math.abs(v) < 1e-9 ? 0 : Math.sign(v),
+        weighingSet: weighingSet, kind: sg.kind, run: S.run.kind, mystery: !!S.run.mystery, a: sg.a, v: v, dir: Math.abs(v) < 1e-9 ? 0 : Math.sign(v),
         reading: E.reading(p.m, sg.a), N: E.normalForce(p.m, sg.a), m: p.m, ms: p.ms,
         T: Ts, ext: E.springExtension(Ts), ext0: E.springExtension(E.springTension(p.ms, 0)), ratio: (G + sg.a) / G, y: E.segAt(sg, S.t).y
       });
@@ -2719,6 +2721,7 @@
   [elA, elV, elM, elMs, elVt, elAb].forEach(function (el) {
     el.addEventListener('input', function () {
       refreshOutputs();
+      if (el === elA || el === elAb) weighingSet = true;
       if (el === elM || el === elMs) { massChanged(); updateSceneLabel(); }
       requestDraw();
     });

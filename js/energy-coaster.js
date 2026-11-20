@@ -1277,7 +1277,7 @@
   }
   function refMoved() {
     const K = C.kinematics(state.tr, state.P, state.sim), E = energiesNow();
-    emit('refmove', { from: state.run.refFrom, to: state.yref, dRef: state.yref - state.run.refFrom, moving: simActive() && K.speed > 0.05, K: E.K, U: E.U, Q: E.Q, E: E.E });
+    emit('refmove', { from: state.run.refFrom, to: state.yref, dRef: state.yref - state.run.refFrom, playing: state.running, startedByUser: !!state.run.startedByUser, moving: simActive() && K.speed > 0.05, K: E.K, U: E.U, Q: E.Q, E: E.E });
     setStatus(T('位能零點移到離地 ', 'Zero of potential energy moved to a height of ') + num(state.yref, 2) + T(' m：U 與 E 都改變了，K、Q 與小車的運動都不變。', ' m: U and E changed, but K, Q and the motion did not.'));
   }
   cv.addEventListener('pointerdown', function (e) {
@@ -1474,6 +1474,7 @@
     else {
       state.userPaused = false;
       if (!simActive()) newRun(true);
+      state.run.startedByUser = true;
       setRunning(true);
       setStatus('');
     }
@@ -1482,6 +1483,7 @@
     acted();
     state.userPaused = false;
     newRun(true);
+    state.run.startedByUser = true;
     setRunning(true);
     setStatus(T('重新出發。', 'Off again.'));
   });

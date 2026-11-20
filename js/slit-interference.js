@@ -1420,11 +1420,27 @@
 
   // ---------- 強度圖上的游標（滑鼠、觸控、鍵盤） ----------
   let dragging = false;
+  // 游標停在讀數上才回報定位。滑鼠只是穿過圖面時，可以在離開時取消。
+  let cursorTimer = 0, hovering = false;
+  function markPlacement(hover) {
+    clearTimeout(cursorTimer);
+    placedCursor = null;
+    hovering = hover;
+    const point = [state.cursorY, state.mode, state.white, state.lam, state.a, state.d, state.N, state.L];
+    cursorTimer = setTimeout(function () {
+      const current = [state.cursorY, state.mode, state.white, state.lam, state.a, state.d, state.N, state.L];
+      if (!dragging && current.every(function (v, i) { return v === point[i]; })) scheduleMission(true);
+    }, 700);
+  }
+  pat.cv.addEventListener('pointerleave', function () {
+    if (hovering) { clearTimeout(cursorTimer); placedCursor = null; }
+  });
   function setCursorFromEvent(ev) {
     if (!layout) return;
     const r = pat.cv.getBoundingClientRect();
     const x = Math.min(layout.PL + layout.PW, Math.max(layout.PL, ev.clientX - r.left));
     state.cursorY = xToY(x);
+    if (ev.isTrusted) { userActed = true; markPlacement(!dragging && ev.pointerType === 'mouse'); }
     requestDraw();
     sayCursor();
   }
@@ -1436,9 +1452,13 @@
   pat.cv.addEventListener('pointermove', function (ev) {
     if (dragging || ev.pointerType === 'mouse') setCursorFromEvent(ev);
   });
-  const endDrag = function () { if (dragging) sayCursor(true); dragging = false; scheduleMission(); };
-  pat.cv.addEventListener('pointerup', endDrag);
-  pat.cv.addEventListener('pointercancel', endDrag);
+  pat.cv.addEventListener('pointerup', function () {
+    const placed = dragging;
+    if (placed) sayCursor(true);
+    dragging = false;
+    if (placed) markPlacement(false);
+  });
+  pat.cv.addEventListener('pointercancel', function () { dragging = false; clearTimeout(cursorTimer); placedCursor = null; scheduleMission(false); });
 
   // 鍵盤（js/keys.js）：左右方向鍵移動游標，每次 1 個圖寬像素（與滑鼠拖曳的解析度相同），Shift 為 10 倍；
   // 限制與拖曳相同（不超出屏幕顯示範圍）；Home 回到中央 y = 0
@@ -1455,6 +1475,7 @@
     const y = (state.cursorY === null ? 0 : state.cursorY) + dx * stepY;
     state.cursorY = Math.max(-halfRange(), Math.min(halfRange(), y));
     requestDraw();
+    markPlacement(false);
     return true;
   }
   let kb = null;
@@ -1471,6 +1492,7 @@
     ev.preventDefault();
     state.cursorY = 0;
     requestDraw();
+    markPlacement(false);
     if (kb) kb.say(cursorDesc());
   });
 
@@ -1489,12 +1511,13 @@
 
   // ---------- 任務模式（missions.js）：設定與游標穩定下來後回報一次 ----------
   // 只在使用者親自操作之後才回報（預設狀態不會意外完成任務）；拖曳游標時不回報，放開後才回報。
-  let missionTimer = 0, userActed = false;
+  let missionTimer = 0, userActed = false, placedCursor = null;
   ['input', 'change', 'click', 'pointerdown', 'keydown'].forEach(function (t) {
     document.querySelector('.lab').addEventListener(t, function (e) { if (e.isTrusted) userActed = true; }, true);
   });
-  function scheduleMission() {
+  function scheduleMission(cursorPlaced) {
     if (!window.LabMission || !userActed) return;
+    if (cursorPlaced) placedCursor = [state.cursorY, state.mode, state.white, state.lam, state.a, state.d, state.N, state.L];
     clearTimeout(missionTimer);
     if (dragging) return;
     missionTimer = setTimeout(function () {
@@ -1503,8 +1526,12 @@
         mode: state.mode, N: p.N, white: state.white, lam: state.white ? NaN : state.lam,
         a: state.a, d: p.N > 1 ? state.d : NaN, L: state.L,
         dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700),
-        cursor: state.cursorY !== null
+        cursor: state.cursorY !== null,
+        cursorPlaced: placedCursor !== null && [state.cursorY, state.mode, state.white, state.lam, state.a, state.d, state.N, state.L].every(function (v, i) {
+          return v === placedCursor[i];
+        })
       };
+      placedCursor = null;
       if (data.cursor) {
         const c = SC.pointInfo(p, state.cursorY, state.white ? SPEC : null);
         Object.assign(data, {

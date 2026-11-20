@@ -19,6 +19,7 @@ function run(o) {
   const st = NS.strips(dots, s.N, s.freq, r.stopped && r.moves ? r.tStop : null);
   const fit = st.fit;
   return {
+    hangerSet: !!s.choseHanger || s.m !== 0.05,
     attached: s.attached, M: s.M, m: s.attached ? s.m : 0, Mtot: s.M + (s.attached ? s.m : 0), mu: s.mu, thDeg: s.thDeg,
     tanTheta: Math.tan(s.thDeg * DEG), mystery: s.mystery, mysteryId: s.mysteryId, v0: s.attached ? 0 : s.v0,
     a: d.startsFromRest || !s.attached ? d.aMove : 0, T: s.attached ? (d.startsFromRest ? d.T : d.W) : 0, W: d.W, f: d.f,
@@ -32,12 +33,12 @@ function series(exp, axis, runs) { return { exp, axis, n: runs.length, points: r
 const out = [];
 function report(id, ok, how) { out.push((ok ? 'OK  ' : 'FAIL') + ' ' + id.padEnd(18) + ' L' + defs[id].level + '  ' + how); }
 
-// 預設狀態放開：只應完成任務 1
+// 只有放開、未選吊掛物的預設狀態。
 const def = run({});
 const trig = Object.keys(defs).filter(id => { const m = defs[id]; return m.check({ type: 'run', data: def }, {}); });
 console.log('預設放開觸發：', trig.join(', '), ' a =', def.aMeas.toFixed(4), 'tEnd', def.tEnd.toFixed(3));
 
-report('newton-second-1', check('newton-second-1', 'run', def), '預設：M 0.500、m 0.050 放開 → 撞上擋板');
+report('newton-second-1', !check('newton-second-1', 'run', def) && check('newton-second-1', 'run', run({ choseHanger: true })), '先點選掛上吊掛物：M 0.500、m 0.050 放開 → 撞上擋板');
 let e = run({ freq: 50, N: 5 });
 report('newton-second-2', check('newton-second-2', 'run', e), `50 Hz、N = 5 → ${e.nStrips} 條紙條`);
 e = run({ m: 0.074, mu: 0.02, M: 0.5 });

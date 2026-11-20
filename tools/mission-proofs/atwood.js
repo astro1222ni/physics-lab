@@ -32,11 +32,11 @@ function run(mode, p, opt) {
     if (e.type === 'stop') { sawStop = true; return; }
     if (e.type === 'jerk') {
       const prev = tl.events.slice(0, k).reverse().find(q => q.type !== 'stop' && q.type !== 'jerk');
-      out.push({ type: 'jerk', data: Object.assign(flat(mode, p), { v: e.v, slackTime: prev ? e.t - prev.t : 0, n }) });
+      out.push({ type: 'jerk', data: Object.assign(flat(mode, p), { afterLanding: !!prev && prev.type === 'landB', v: e.v, slackTime: prev ? e.t - prev.t : 0, n }) });
       return;
     }
     n++;
-    out.push({ type: 'impact', data: Object.assign(flat(mode, p), { type: e.type, v: e.v, t: e.t, n, afterStop: sawStop, a0: mode === 3 ? s0.a : s0.aA }) });
+    out.push({ type: 'impact', data: Object.assign(flat(mode, p), { slackFollows: tl.events.slice(k + 1).some(next => next.type === 'jerk'), type: e.type, v: e.v, t: e.t, n, afterStop: sawStop, a0: mode === 3 ? s0.a : s0.aA }) });
     if (ms && Math.abs(e.t - ms.t) < 1e-9) {
       const method = opt.hand != null ? 'hand' : 'gate';
       const tm = method === 'gate' ? Math.round(ms.t * 1000) / 1000 : Math.round((ms.t + opt.hand) * 100) / 100;
@@ -63,7 +63,7 @@ reset();
 console.log('預設值釋放 →', feed([].concat(run(1, P1()), run(2, P2()), run(3, P3()), run(3, P3({ push: true })), run(4, P4()))));
 
 const SOL = [
-  ['atwood-1', '預設值釋放', [[1, P1()]]],
+  ['atwood-1', '按釋放後等 m1 落地', [[1, P1()]]],
   ['atwood-2', 'm1 = 0.600、m2 = 0.400 kg → a = g/5', [[1, P1({ m1: 0.6, m2: 0.4 })]]],
   ['atwood-3', '總質量 1.00 kg：(0.55, 0.45)、(0.60, 0.40)、(0.65, 0.35) 各量一次', [[1, P1({ m1: 0.55, m2: 0.45 })], [1, P1({ m1: 0.6, m2: 0.4 })], [1, P1({ m1: 0.65, m2: 0.35 })]]],
   ['atwood-4', 'M = 1 kg、μs = 0.40：m = 0.400 kg 不動、m = 0.405 kg 會動', [[2, P2({ m: 0.4 })], [2, P2({ m: 0.405 })]]],
@@ -106,3 +106,4 @@ console.log('  atwood-12 抵達擋板速率 =', tl12.events[0].v.toFixed(4), 'm/
 const tlh3 = C.timeline(1, P1({ m1: 1.3, m2: 0.5, h: 1 }));
 console.log('  atwood-h3 鬆弛時間 =', (tlh3.events[1].t - tlh3.events[0].t).toFixed(3), 's；預設值 =', (C.timeline(1, P1()).events[1].t - C.timeline(1, P1()).events[0].t).toFixed(3), 's');
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
+if (!ok) process.exitCode = 1;

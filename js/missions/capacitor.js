@@ -16,6 +16,24 @@
     return d;
   }
 
+  // 同一讀數維持一秒才完成。拖過答案、重設或離開該狀態會取消這次觀察。
+  function observe(ev, mem, id, matches) {
+    if (ev.type === 'capacitorObservation') {
+      return ev.data.id === id && ev.data.observation === mem.observation;
+    }
+    if (ev.type !== 'change' && ev.type !== 'reset') return false;
+    if (!matches) {
+      clearTimeout(mem.timer);
+      mem.observation = null;
+    } else if (!mem.observation) {
+      const observation = mem.observation = {};
+      mem.timer = setTimeout(function () {
+        LabMission.emit('capacitorObservation', { id: id, observation: observation });
+      }, 1000);
+    }
+    return false;
+  }
+
   LabMission.register('capacitor', [
     {
       id: 'capacitor-1', level: 1,
@@ -35,31 +53,41 @@
     {
       id: 'capacitor-3', level: 3,
       title: { zh: '玻璃的力量', en: 'The power of glass' },
-      desc: { zh: '接著電池，從兩板間只有空氣開始，把玻璃（κ = 5）完全推入，讓電量一次變成 5 倍。', en: 'With the battery connected and only air between the plates, put glass (κ = 5) all the way in so that the charge becomes 5 times as large in one step.' },
-      check: function (ev) {
+      desc: { zh: '接著電池，完全插入玻璃（κ = 5），觀察一秒，確認電量為相同板距與面積下空氣值的 5 倍。', en: 'With the battery connected, fully insert glass (κ = 5). Observe for one second that its charge is five times the air-only value at the same spacing and area.' },
+      check: function (ev, mem) {
         const d = ev.data;
-        return ev.type === 'change' && d.mode === 'V' && d.base && same(d.kappa, 5) && d.f === 1 &&
-          d.base.Q > 0 && near(d.Q / d.base.Q, 5, 0.01);
+        const fullGlass = ev.type === 'change' && d.mode === 'V' && same(d.kappa, 5) && same(d.f, 1) &&
+          d.Cair > 0 && near(d.Q / (d.Cair * d.Vb), 5, 0.01 + 1e-9);
+        return observe(ev, mem, 'capacitor-3', fullGlass);
       }
     },
     {
       id: 'capacitor-4', level: 4,
       title: { zh: '電壓翻倍', en: 'Double the voltage' },
-      desc: { zh: '斷開開關後，一次改變一個條件，讓兩板間的電壓變成原來的 2 倍（誤差 1% 內）。', en: 'With the switch open, change one setting so that the voltage between the plates doubles in one step (within 1%).' },
-      check: function (ev) {
-        const d = ev.data;
-        return ev.type === 'change' && d.mode === 'Q' && d.key !== 'mode' && d.key !== 'Vb' && d.base && near(d.V / d.base.V, 2, 0.01);
+      desc: { zh: '斷開開關後，調整板距、面積或介電質，讓電壓維持在剛斷開時的 2 倍一秒鐘（誤差 1% 內）。', en: 'Open the switch, then adjust the separation, area or dielectric. Keep the voltage at twice its value at disconnection for one second (within 1%).' },
+      check: function (ev, mem) {
+        const d = track(ev, mem);
+        const doubled = ev.type === 'change' && mem.disc && d.mode === 'Q' &&
+          near(d.V / mem.disc.V, 2, 0.01 + 1e-9);
+        return observe(ev, mem, 'capacitor-4', doubled);
       }
     },
     {
       id: 'capacitor-5', level: 4,
       title: { zh: '紋風不動的電場', en: 'A field that will not budge' },
-      desc: { zh: '斷開開關、兩板間只有空氣，一次把板距變為至少 2 倍（或縮為一半以下），觀察電場是否改變。', en: 'With the switch open and only air between the plates, change the separation by a factor of at least 2 (up or down) in one step, and see whether the field changes.' },
-      check: function (ev) {
-        const d = ev.data;
-        if (ev.type !== 'change' || d.key !== 'd' || d.mode !== 'Q' || !d.airOnly || !d.base) return false;
-        const r = d.d / d.base.d;
-        return (r >= 2 - 1e-9 || r <= 0.5 + 1e-9) && near(d.E, d.base.E, 1e-6);
+      desc: { zh: '斷開開關、兩板間只有空氣。把板距調到起始值的 2 倍以上或一半以下，觀察一秒，確認電場大小不變。', en: 'Disconnect the battery with only air between the plates. Change the spacing to at least twice or at most half its initial value. Observe for one second that the field strength is unchanged.' },
+      check: function (ev, mem) {
+        const d = ev.data, b = d.base;
+        if (ev.type === 'reset' || ev.type === 'change' && (d.mode !== 'Q' || !d.airOnly)) mem.gap = null;
+        if (ev.type === 'change' && d.mode === 'Q' && d.airOnly && b && b.airOnly) {
+          if (!mem.gap || !same(mem.gap.A, d.A) || !same(mem.gap.Q, d.Q)) {
+            mem.gap = { A: d.A, Q: d.Q, E: d.E, start: d.key === 'd' ? b.d : d.d };
+          }
+        }
+        const g = mem.gap;
+        const unchanged = ev.type === 'change' && g && near(d.E, g.E, 1e-6 + 1e-9) &&
+          (d.d / g.start >= 2 - 1e-9 || d.d / g.start <= 0.5 + 1e-9);
+        return observe(ev, mem, 'capacitor-5', unchanged);
       }
     },
     {
@@ -83,10 +111,13 @@
     {
       id: 'capacitor-8', level: 6,
       title: { zh: '一微牛頓的吸引', en: 'A one-micronewton pull' },
-      desc: { zh: '兩板間只有空氣，讓兩板的吸引力 F = 1.000 μN（誤差 1% 內）。', en: 'With only air between the plates, make the attraction between them F = 1.000 μN (within 1%).' },
-      check: function (ev) {
+      desc: { zh: '兩板間只有空氣，調整參數使吸引力在 1.000 μN 的 1% 內維持一秒。', en: 'With only air between the plates, adjust the attraction to within 1% of 1.000 μN and hold it there for one second.' },
+      check: function (ev, mem) {
         const d = ev.data;
-        return ev.type === 'change' && d.airOnly && d.F != null && near(d.F, 1e-6, 0.01);
+        const target = ev.type === 'change' && d.base && d.airOnly && d.F != null &&
+          near(d.F, 1e-6, 0.01 + 1e-9) && (mem.observation ||
+            ['Vb', 'A', 'd', 'f', 'kappa', 'mode'].includes(d.key) && !near(d.base.F, 1e-6, 0.01 + 1e-9));
+        return observe(ev, mem, 'capacitor-8', target);
       }
     },
     {

@@ -1017,11 +1017,12 @@
 
   // ---------- 任務模式（missions.js）：回報事件 ----------
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  let sentByUser = false;
   function pulseData() {
     const p = pA(), tm = SW.pulseTimes(p);
     let mx = 0;
     for (let i = 0; i <= 400; i++) mx = Math.max(mx, Math.abs(yAt(state.L * i / 400, state.t).sum));
-    return { end: p.end, shape: p.shape, v: p.v, L: p.L, w: p.w, A: p.A, t: state.t,
+    return { sentByUser: sentByUser, end: p.end, shape: p.shape, v: p.v, L: p.L, w: p.w, A: p.A, t: state.t,
       tHit: tm.tHit, tStart: tm.tStart, tEnd: tm.tEnd, maxAbs: mx, yEnd: yAt(state.L, state.t).sum };
   }
   /** 模式 B：每累積 10 次往返（約達穩定）回報一次駐波的狀態 */
@@ -1087,7 +1088,8 @@
   }
 
   /** 從頭開始（繩子靜止、t = 0）；play 決定是否立即播放 */
-  function restart(play) {
+  function restart(play, userSent) {
+    sentByUser = !!userSent;
     state.t = 0;
     state.auto = false;
     state.skipped = false;
@@ -1111,13 +1113,14 @@
       requestDraw();
       return;
     }
-    if (state.done) { setStatus(''); restart(true); return; }
+    if (state.done) { setStatus(''); restart(true, true); return; }
+    if (state.t === 0) sentByUser = true;
     state.running = true;
     setStatus('');
     updateButtons();
     startLoop();
   });
-  $('send').addEventListener('click', function () { setStatus(''); restart(true); });
+  $('send').addEventListener('click', function () { setStatus(''); restart(true, true); });
   $('steady').addEventListener('click', function () {
     const Tr = SW.roundTrip(pB());
     if (state.t < 40 * Tr) state.t += 40 * Tr;

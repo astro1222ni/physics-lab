@@ -143,7 +143,7 @@
       riddle: { zh: '倒立看世界，世界一點也沒變。', en: 'Stand on your head: the world has not changed at all.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'state' && d.mode === 'polar' && near(d.rx, 180, 1) && d.amp2 >= 0.8;
+        return ev.type === 'record' && d.mode === 'polar' && near(d.row.rx, 180, 1 + 1e-9) && d.row.amp2 >= 0.8 - 1e-9;
       }
     },
     {

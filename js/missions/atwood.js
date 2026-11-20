@@ -26,8 +26,12 @@
     {
       id: 'atwood-1', level: 1,
       title: { zh: '放手！', en: 'Let go!' },
-      desc: { zh: '在「阿特午機」釋放，讓 m1 落到地上。', en: 'Release the Atwood machine and let m1 land on the floor.' },
-      check: function (ev) { return ev.type === 'impact' && ev.data.mode === 1 && ev.data.type === 'landB'; }
+      desc: { zh: '在阿特午機釋放，觀察 m1 落地；若繩子鬆弛，等到它再次拉緊。', en: 'Release the Atwood machine and watch m1 land. If the string goes slack, wait until it becomes taut again.' },
+      check: function (ev) {
+        const d = ev.data;
+        return d.mode === 1 && ((ev.type === 'impact' && d.type === 'landB' && !d.slackFollows) ||
+          (ev.type === 'jerk' && d.afterLanding));
+      }
     },
     {
       id: 'atwood-2', level: 2,
@@ -162,7 +166,8 @@
       riddle: { zh: '天平從不傾斜，它卻一路走到了終點。', en: 'The scales never tip, yet it walks all the way to the end.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'impact' && d.mode === 1 && d.type === 'landB' && d.n === 1 && Math.abs(d.m1 - d.m2) < 0.0005 && d.v0 >= 0.2 - EPS;
+        return ev.type === 'impact' && d.mode === 1 && d.n === 1 && Math.abs(d.m1 - d.m2) < 0.0005 &&
+          Math.abs(d.a0) <= EPS && Math.abs(d.v0) >= 0.2 - EPS;
       }
     },
     {
@@ -170,7 +175,7 @@
       riddle: { zh: '一方安然著地，另一方才嘗到片刻的自由。', en: 'Only when one comes safely to rest does the other taste a moment of freedom.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'jerk' && d.mode === 1 && d.slackTime >= 0.6;
+        return ev.type === 'jerk' && d.mode === 1 && d.slackTime >= 0.6 - EPS;
       }
     }
   ]);

@@ -19,7 +19,7 @@ function shoot(par, start, opt) {
   const trail = [[p.x, p.y, 0]];
   const run = { cycles: 0, entered: false, entryY: 0, entryTurn: 0, passed: false, maxDev: 0 };
   const base = () => { const h = MC.helix(par.m * MC.AMU, par.q * MC.E_CHARGE, par.v * 1e5, par.B * 1e-3, par.theta);
-    return { q: par.q, m: par.m, v: par.v, B: par.B, E: par.E, theta: par.theta, ang: par.ang, region: par.region, x0: start.x, y0: start.y, r: h.r / CM, Tus: h.T * 1e6, pitch: h.pitch / CM, vd: par.B !== 0 ? Math.abs(par.E * 1e3 / (par.B * 1e-3)) : null }; };
+    return { manualLaunch: true, q: par.q, m: par.m, v: par.v, B: par.B, E: par.E, theta: par.theta, ang: par.ang, region: par.region, x0: start.x, y0: start.y, r: h.r / CM, Tus: h.T * 1e6, pitch: h.pitch / CM, vd: par.B !== 0 ? Math.abs(par.E * 1e3 / (par.B * 1e-3)) : null }; };
   const emit = (type, extra) => { const data = Object.assign(base(), extra); fired.push([type, data]);
     missions.forEach(m => { if (done[m.id]) return; let ok = false; try { ok = !!m.check({ type, data }, m.mem); } catch (e) { console.log('ERR', m.id, e); } if (ok) { done[m.id] = true; console.log('   ✔', m.id, 'L' + m.level, type, JSON.stringify(extra, (k, v) => typeof v === 'number' ? +v.toPrecision(5) : v)); } }); };
   const cyc = () => (par.region || par.q === 0 || par.B === 0) ? Infinity : MC.period(par.m * MC.AMU, par.q * MC.E_CHARGE, par.B * 1e-3);
@@ -75,5 +75,6 @@ if (require.main === module) {
   shoot(P({ theta: 0 }), S0);                                                   // h2
   shoot(P({ B: 200, v: 0, E: 20, q: -2 }), { x: 1.5, y: 7 }, { untilCycles: 2 }); // h3（與情境 drift 那發比較）
   const miss = missions.filter(m => !done[m.id]).map(m => m.id);
+  if (miss.length) process.exitCode = 1;
   console.log(miss.length ? 'NOT DONE: ' + miss.join(', ') : 'ALL ' + missions.length + ' missions achieved');
 }

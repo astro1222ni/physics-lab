@@ -41,7 +41,7 @@
       id: 'lens-mirror-4', level: 4,
       title: { zh: '路口的反光鏡', en: 'Mirror at the corner' },
       desc: { zh: '用凸面鏡成像，讓像高恰好是物高的一半（m = 0.500，誤差 ±0.005）。', en: 'With a convex mirror, make the image exactly half as tall as the object (m = 0.500 ± 0.005).' },
-      check: function (ev) { return img(ev, 'convex-mirror') && near(ev.data.m, 0.5, 0.005); }
+      check: function (ev) { return img(ev, 'convex-mirror') && near(ev.data.m, 0.5, 0.005 + 1e-9); }
     },
     {
       id: 'lens-mirror-5', level: 5,
@@ -100,7 +100,10 @@
     {
       id: 'lens-mirror-h1', level: 4, hidden: true,
       riddle: { zh: '站在它夢裡那個完整的圓的心上，你會遇見一個頭下腳上、卻和你一樣高的人。', en: 'Stand at the heart of the whole circle it dreams of, and you will meet someone upside down, yet exactly as tall as you.' },
-      check: function (ev) { return img(ev, 'concave-mirror') && ev.data.case === 'at2F'; }
+      check: function (ev) {
+        const d = ev.data;
+        return img(ev, 'concave-mirror') && d.positionSet && d.case === 'at2F';
+      }
     },
     {
       id: 'lens-mirror-h2', level: 6, hidden: true,
@@ -110,7 +113,10 @@
     {
       id: 'lens-mirror-h3', level: 8, hidden: true,
       riddle: { zh: '穿過玻璃的光，從此再也不相見。', en: 'Light that passes through the glass will never meet again.' },
-      check: function (ev) { const d = ev.data; return img(ev, 'convex-lens') && d.atInfinity && d.fan; }
+      check: function (ev) {
+        const d = ev.data;
+        return img(ev, 'convex-lens') && d.positionSet && d.atInfinity && d.fan;
+      }
     }
   ]);
 })();

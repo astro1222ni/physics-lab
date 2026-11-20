@@ -154,8 +154,8 @@ let ok = true;
 
 // ---------- 1. 每個任務的解（[天體, 依序發射的設定...]） ----------
 const SOL = {
-  'kepler-1': ['sun', {}],
-  'kepler-2': ['sun', {}],
+  'kepler-1': ['sun', { v0: 34 }],
+  'kepler-2': ['sun', { v0: 34 }],
   'kepler-3': ['sun', { snap: 'circ' }],
   'kepler-4': ['sun', { v0: 50 }],
   'kepler-5': ['earth', { r0: 7010, snap: 'circ' }],

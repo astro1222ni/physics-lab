@@ -895,7 +895,7 @@
     missionTimer = setTimeout(function () {
       const s = LM.solve(state.el, state.fAbs, state.p, state.h);
       window.LabMission.emit('image', {
-        element: state.el, kind: s.element.kind, f: s.f, fAbs: state.fAbs, p: state.p, h: state.h,
+        positionSet: positionSet, element: state.el, kind: s.element.kind, f: s.f, fAbs: state.fAbs, p: state.p, h: state.h,
         q: s.q, m: s.m, hImg: s.hImg, real: s.real, upright: s.upright, size: s.size,
         atInfinity: s.atInfinity, case: s.case, fan: state.show.fan, rays: state.show.rays
       });
@@ -904,7 +904,9 @@
 
   // ---------- 控制項 ----------
   const sF = $('f'), sP = $('p'), sH = $('h');
+  let positionSet = false;
   function readSliders() {
+    if (state.p !== val(sP) || state.fAbs !== val(sF)) positionSet = true;
     state.fAbs = val(sF);
     state.p = val(sP);
     state.h = val(sH);

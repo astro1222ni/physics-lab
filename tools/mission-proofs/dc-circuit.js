@@ -56,3 +56,5 @@ c = set(K.preset('wheatstone'), { Rx: 20 }); emit('h3: wheatstone Rx=20 (指針�
 console.log('--- 全部 ---');
 missions.forEach(m => console.log(m.id.padEnd(16), 'L' + m.level, done[m.id] ? '✓ ' + done[m.id] : '✗ 沒有完成'));
 // L9 不會因為拖曳滑桿而意外完成：只有放開時回報。另檢查：只有一次狀態時不會完成
+
+if (missions.some(m => !done[m.id])) process.exitCode = 1;

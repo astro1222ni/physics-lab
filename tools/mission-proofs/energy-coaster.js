@@ -70,7 +70,7 @@ function refmoveEvent(o, t, yTo) {
   const K = C.kinematics(tr, P, r.sim), E = C.energies(tr, P, r.sim, m, yTo);
   const base = runEvents(Object.assign({}, o, { tMax: 0.001 })).base;
   return {
-    type: 'refmove', data: Object.assign({}, base, { yref: yTo, from: from, to: yTo, dRef: yTo - from, moving: (r.sim.phase === 'track' || r.sim.phase === 'air') && K.speed > 0.05, K: E.K, U: E.U, Q: E.Q, E: E.E }), speed: K.speed
+    type: 'refmove', data: Object.assign({}, base, { yref: yTo, from: from, to: yTo, dRef: yTo - from, startedByUser: !o.auto, playing: !o.paused, moving: (r.sim.phase === 'track' || r.sim.phase === 'air') && K.speed > 0.05, K: E.K, U: E.U, Q: E.Q, E: E.E }), speed: K.speed
   };
 }
 
@@ -101,6 +101,7 @@ expect(1, runEvents({ preset: 'twin' }).events, false, '雙峰沒有迴圈');
 
 // 2 零點隨你訂
 expect(2, [refmoveEvent({ preset: 'valley' }, 1.0, 5)], true, '預設條件跑 1 s 時把零點由 0 移到 5 m');
+expect(2, [refmoveEvent({ preset: 'valley', auto: true }, 1.0, 5)], false, '自動播放時經過，不算親自出發');
 expect(2, [refmoveEvent({ preset: 'valley' }, 1.0, 4.95)], false, '只移 4.95 m');
 {
   const e = refmoveEvent({ preset: 'loop', mu: 0.06, x0: 1.6 }, 60, 6);

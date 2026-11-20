@@ -24,13 +24,16 @@
       id: 'kepler-2', level: 2,
       title: { zh: '繞一圈回來', en: 'Once around' },
       desc: { zh: '發射一條封閉軌道，讓它完整繞中心天體一圈（不可撞上中心天體）。', en: 'Launch a closed orbit and let it go all the way round once (without hitting the central body).' },
-      check: function (ev) { return ev.type === 'lap' && ev.data.laps >= 1; }
+      check: function (ev) { return ev.type === 'lap' && ev.data.laps >= 1 - 1e-9; }
     },
     {
       id: 'kepler-3', level: 2,
       title: { zh: '完美的圓', en: 'A perfect circle' },
-      desc: { zh: '發射一條離心率 e < 0.001 的圓軌道。', en: 'Launch a circular orbit with eccentricity e < 0.001.' },
-      check: function (ev) { return ev.type === 'launch' && ev.data.e < 0.001 && !ev.data.crash; }
+      desc: { zh: '發射一條離心率 e < 0.001 的圓軌道，等它繞完一圈。', en: 'Launch a circular orbit with eccentricity e < 0.001 and let it complete one revolution.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'lap' && d.e < 0.001 && !d.crash && d.laps >= 1 - 1e-9;
+      }
     },
     {
       id: 'kepler-4', level: 3,

@@ -20,7 +20,10 @@ function measure(label) { let n = 0; st.V = 0; while (!snap().zero) { n++; st.V 
   emit('stop', Object.assign(A, { Vs: rec.Vs, VsTrue: rec.VsTrue, records: stops.slice(), fits: fits() }), label + ` Vs=${rec.Vs}`); }
 // 預設狀態下的操作不應觸發
 set('V', 1.5); set('V', 1); console.log('預設附近觸發：', Object.keys(done));
-set('lambda', 600); set('lambda', 500);            // m1
+const { mock } = require('node:test');
+mock.timers.enable({ apis: ['Date'], now: 0 });
+set('lambda', 750); set('lambda', 600); mock.timers.tick(1000); set('lambda', 500);
+mock.timers.reset();            // m1
 set('lambda', 600); set('P', 100);                 // m2
 set('lambda', 400); set('P', 60); measure('Na400'); // m3
 set('V', -0.3); set('P', 20); set('P', 60);        // m4
@@ -36,3 +39,5 @@ set('metal', 'Zn'); for (const L of [280, 230, 180]) { set('lambda', L); measure
 set('metal', 'Cs'); set('lambda', 200); set('V', -5);  // h1
 set('lambda', 295);                                    // h2
 for (const m of M) console.log(m.id.padEnd(18), 'L' + m.level, done[m.id] ? '✓ ' + done[m.id] : '✗');
+
+if (M.some(m => !done[m.id])) process.exitCode = 1;

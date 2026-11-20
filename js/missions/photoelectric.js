@@ -29,10 +29,20 @@
     {
       id: 'photoelectric-1', level: 1,
       title: { zh: '越過門檻', en: 'Over the threshold' },
-      desc: { zh: '先讓光電子消失（波長調長一點），再只調整波長，讓光電子重新射出來。', en: 'First make the photoelectrons disappear (use a longer wavelength), then change only the wavelength so that photoelectrons are emitted again.' },
-      check: function (ev) {
-        const d = ev.data, b = d.base;
-        return ev.type === 'change' && d.key === 'lambda' && b && !b.emits && d.emits && b.metal === d.metal && d.P > 0 && b.P > 0;
+      desc: { zh: '保持光源開啟，調長波長並觀察一秒，確認沒有光電子射出。再縮短波長，讓光電子重新射出。', en: 'Keep the light on. Increase the wavelength and observe for one second that no photoelectrons are emitted. Shorten the wavelength until emission resumes.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'reset') mem.dark = null;
+        if (ev.type !== 'change' || !d.base) return false;
+        if (!(d.P > 0) || d.metal !== d.base.metal) { mem.dark = null; return false; }
+        if (!d.emits) {
+          if (d.key === 'lambda' && !mem.dark) mem.dark = { metal: d.metal, since: Date.now() };
+          return false;
+        }
+        const dark = mem.dark;
+        mem.dark = null;
+        return d.key === 'lambda' && !d.base.emits && dark && dark.metal === d.metal &&
+          Date.now() - dark.since >= 1000 - 1e-9;
       }
     },
     {

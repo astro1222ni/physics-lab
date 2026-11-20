@@ -248,7 +248,7 @@ REFIDS.concat(['T1000', 'T600', 'T700']).forEach(start => {
 console.log('OK   任務 11 的調溫度過程 ' + n11 + ' 組（打數字、拖曳滑桿）：沒有完成隱藏任務');
 // 4-6 一個學生依序做完全部公開任務（不清除保留的曲線）
 {
-  const all = [A.ref('body'), A.ref('body'), A.probePeak(), A.T(5800), A.T(2.898), A.T(1000), A.keep(), A.T(2000), A.keep(), A.T(3000), A.keep(),
+  const all = [A.ref('body'), A.probe(10000), A.keep(), A.ref('body'), A.probePeak(), A.T(5800), A.T(2.898), A.T(1000), A.keep(), A.T(2000), A.keep(), A.T(3000), A.keep(),
     A.rj(true), A.ref('sun'), A.probe(1e7), A.probe(100), A.probeNu(), A.T(6913), A.T(6500), A.rj(false), A.wien(true), A.T(1000), A.probe(10000), A.T(625),
     A.T(500), A.probePeak(), A.keep(), A.T(1000), A.probePeak(), A.keep(), A.T(2000), A.probePeak(), A.keep(), A.T(5000), A.probePeak(), A.keep()];
   const r = noHidden(all, '依序做完公開任務 1–12（不清除）');

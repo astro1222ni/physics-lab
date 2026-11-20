@@ -201,7 +201,8 @@
       riddle: { zh: '一整秒，連一百步都走不完。', en: 'A whole second, and not even a hundred paces.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'measure' && d.window >= 300 && (d.vrmsA < 100 || (d.vrmsB != null && d.vrmsB < 100));
+        return ev.type === 'measure' && d.window >= 300 - 1e-9 &&
+          (d.vrmsA < 100 || (d.vrmsB != null && d.vrmsB < 100));
       }
     }
   ]);

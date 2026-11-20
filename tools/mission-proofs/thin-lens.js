@@ -208,10 +208,18 @@ function pinRow(f, p, E, rangeA, rangeB, sa) {
   console.log('     （參考）同樣的誤差下單筆 pq/(p+q) 誤差 > 0.5 % 的比例：' + (100 * bad / n).toFixed(0) + ' %');
 }
 
-// h1：凸透鏡、像屏法，物距恰在焦點（±0.1 cm）
+// h1：像屏法，物體放在單片凸透鏡的焦點。
+let defs = [];
+const LM = { register: function (id, list) { defs = list; } };
+global.window = { LabMission: LM }; global.LabMission = LM;
+require(__ROOT + 'js/missions/thin-lens.js');
 {
-  const b = TL.bench({ f: 10, xO: 5, xL: 15, xS: 40 });
-  ok('h1 物在焦點', Math.abs(b.pTrue - 10) <= 0.1 && b.sol.atInfinity, 'p = ' + b.pTrue + '，q = ' + b.q);
+  const h1 = defs.find(m => m.id === 'thin-lens-h1'), mem = {};
+  const bench = (f, xL) => {
+    const b = TL.bench({ f, xO: 5, xL, xS: 40 });
+    return h1.check({ type: 'bench', data: { method: 'screen', lens: 'cx' + f, kind: 'convex', f, p: b.pTrue } }, mem);
+  };
+  ok('h1 單片凸透鏡讓光平行出射', !bench(10, 14) && bench(10, 15), '光源在 5 cm，透鏡移到 15 cm');
   let worst = 0;
   for (let k = 110; k <= 190; k++) { const f = k / 10; worst = Math.max(worst, Math.abs(r1(5 + f) - 5 - f)); }
   ok('h1 神秘凸透鏡也做得到（格點到焦點的距離 ≤ 0.1）', worst <= 0.1 + 1e-9, '最差 ' + worst.toFixed(3));
@@ -225,10 +233,6 @@ function pinRow(f, p, E, rangeA, rangeB, sa) {
       return ['screen', 'parallax', 'pin'].every(function (m) { return good.some(function (r) { return r.method === m && Math.abs(r.p - a.p) <= 0.5 + 1e-9; }); });
     });
   };
-  let defs = [];
-  const LM = { register: function (id, list) { defs = list; } };
-  global.window = { LabMission: LM }; global.LabMission = LM;
-  require(__ROOT + 'js/missions/thin-lens.js');
   const h2 = defs.find(function (m) { return m.id === 'thin-lens-h2'; });
   const fire = function (rows) { return h2.check({ type: 'record', data: { method: rows[rows.length - 1].method, methodsSameP: sameP(rows, 10) } }, {}); };
 

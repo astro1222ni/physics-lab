@@ -63,11 +63,11 @@
     {
       id: 'hydrogen-spectrum-5', level: 4,
       title: { zh: '看不見的放電管', en: 'The invisible glow' },
-      desc: { zh: '在「放電管」模式中選一個電子能量，讓管子只放出一種光子（來曼 α），並累積至少 200 個光子。想一想：為什麼管子看起來是暗的？', en: 'In discharge-tube mode, choose an electron energy so that the tube emits only one kind of photon (Lyman α), and collect at least 200 photons. Why does the tube look dark?' },
+      desc: { zh: '在放電管選定電子能量，維持同一設定放電至少 1.5 秒，累積至少 200 個光子而且全是來曼 α。想一想：為什麼管子看起來是暗的？', en: 'Choose an electron energy and run the discharge tube at that setting for at least 1.5 seconds. Collect at least 200 photons, all Lyman alpha. Why does the tube look dark?' },
       check: function (ev) {
-        if (ev.type !== 'discharge') return false;
-        const k = Object.keys(ev.data.counts || {});
-        return ev.data.ph >= 200 && k.length === 1 && k[0] === '2-1';
+        const d = ev.data;
+        return ev.type === 'discharge' && d.energySet && d.elapsed >= 1.5 - 1e-9 && d.ph >= 200 - 1e-9 &&
+          Object.keys(d.counts || {}).length === 1 && d.counts['2-1'] > 0;
       }
     },
     {
@@ -159,7 +159,7 @@
       riddle: { zh: '千軍萬馬奔過，原野依舊漆黑。', en: 'A thousand riders gallop past, and the plain stays dark.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'discharge' && d.K < gap(1, 2) && d.imp >= 1000 && d.ph === 0;
+        return ev.type === 'discharge' && d.K < gap(1, 2) && d.imp >= 1000 - 1e-9 && d.ph === 0;
       }
     }
   ]);

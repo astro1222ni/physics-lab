@@ -32,8 +32,11 @@
     {
       id: 'blackbody-2', level: 2,
       title: { zh: '綠色的峰', en: 'A green peak' },
-      desc: { zh: '調溫度，讓光譜的峰值波長 λmax 落在 500 nm（±1%）。哪一顆你很熟悉的星星差不多就是這個溫度？', en: 'Set the temperature so that the peak wavelength λmax is 500 nm (±1%). Which very familiar star has about this temperature?' },
-      check: function (ev) { return ev.type === 'temp' && near(ev.data.lamMax, 500, 0.01); }
+      desc: { zh: '自行調整溫度，讓峰值波長落在 500 nm（誤差 1% 內）。', en: 'Adjust the temperature yourself to place the peak at 500 nm (within 1%).' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'temp' && !d.preset && near(d.lamMax, 500, 0.01 + 1e-9);
+      }
     },
     {
       id: 'blackbody-3', level: 3,

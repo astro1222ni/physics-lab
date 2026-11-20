@@ -14,8 +14,11 @@
     {
       id: 'standing-waves-1', level: 1,
       title: { zh: '第一次反射', en: 'First reflection' },
-      desc: { zh: '按「送出脈波」，看脈波抵達右端並反射回來。', en: 'Press “Send a pulse” and watch it reach the right end and reflect.' },
-      check: function (ev) { return ev.type === 'pulseReflected'; }
+      desc: { zh: '調整波速、繩長或脈波寬度，送出一個脈波，等它從右端反射。', en: 'Change the wave speed, string length or pulse width, send a pulse, and watch it reflect at the right end.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'pulseReflected' && d.sentByUser && (d.v !== 2 || d.L !== 2 || d.w !== 0.4);
+      }
     },
     {
       id: 'standing-waves-2', level: 2,
@@ -30,8 +33,11 @@
     {
       id: 'standing-waves-3', level: 3,
       title: { zh: '基頻駐波', en: 'The fundamental' },
-      desc: { zh: '在駐波模式、兩端固定，讓繩子以基頻（最低的共振頻率）共振，並持續到振幅穩定（至少往返 10 次）。', en: 'In standing-wave mode with both ends fixed, make the string resonate at its fundamental (lowest resonant frequency) and keep it going until the amplitude is steady (at least 10 round trips).' },
-      check: function (ev) { return res(ev) && ev.data.end === 'fixed' && ev.data.n === 1; }
+      desc: { zh: '在駐波模式、兩端固定，讓繩子以基頻（最低的共振頻率）共振，並持續到振幅穩定（至少往返 10 次；不要按「跳到穩定狀態」，要看它自己長起來）。', en: 'In standing-wave mode with both ends fixed, make the string resonate at its fundamental (lowest resonant frequency) and keep it going until the amplitude is steady (at least 10 round trips; let it build up on its own instead of pressing “Skip to steady state”).' },
+      check: function (ev) {
+        const d = ev.data;
+        return res(ev) && d.end === 'fixed' && d.n === 1 && !d.skipped && d.roundTrips >= 10 - 1e-9;
+      }
     },
     {
       id: 'standing-waves-4', level: 4,

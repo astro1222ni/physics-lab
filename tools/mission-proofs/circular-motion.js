@@ -28,8 +28,9 @@ function cutData(o, thetaDeg, tCut) {
   let th = CC.wrapAngle(c.theta) / D2R; if (th >= 360) th -= 360;
   return Object.assign(s, { theta0: th0, tCut: tCut || 0, theta: th, xc: c.x, yc: c.y, vx: c.vx, vy: c.vy });
 }
-function exitEv(o, thetaDeg) {
-  const d = cutData(o, thetaDeg);
+function exitEv(o, thetaDeg, observedAngle = false, tCut = 0) {
+  const d = cutData(o, thetaDeg, tCut);
+  d.observedAngle = observedAngle;
   const p = { r: d.r, T: d.T, theta0: d.theta0 };
   const tau = CC.exitTime(p, 3); // 飛出畫面（大約）
   const s = CC.releasedStateAt(p, 0, tau);
@@ -68,20 +69,24 @@ missions.forEach(m => {
 console.log('  ✓ 預設狀態（未操作）不觸發任何任務');
 
 // 1 放手
-expect(1, [exitEv({ r: 1.5, T: 3 }, 37)], true, '預設條件下任意角度剪斷，飛出畫面');
+expect(1, [pauseAttached({ r: 1.5, T: 3 }, 12), exitEv({ r: 1.5, T: 3 }, 37, true)], true, '預設條件下任意角度剪斷，飛出畫面');
+expect(1, [exitEv({}, 0, false, 0.6)], true, '觀察圓周運動後直接剪繩，無須先暫停');
 // 2 a = 10
 expect(2, [params({ r: 1.6, v: 4 })], true, '固定速率：r = 1.6、v = 4 → a = ' + setting({ r: 1.6, v: 4 }).a.toFixed(4));
 expect(2, [params({ r: 1.01, T: 2 })], true, '固定週期：T = 2、r = 1.01 → a = ' + setting({ r: 1.01, T: 2 }).a.toFixed(4));
 expect(2, [params({ r: 1.5, T: 3 })], false, '預設 a = 6.58');
 // 3 兩倍的力
 committed = DEFAULT;
-expect(3, [params({ r: 1.5, T: 3, m: 1 })], true, '預設 m = 0.5 → 1.0（半徑、週期不變）F：' + DEFAULT.F.toFixed(3) + ' → ' + setting({ r: 1.5, T: 3, m: 1 }).F.toFixed(3));
+expect(3, [params({ r: 1.5, T: 3, m: 1 }), lap({ r: 1.5, T: 3, m: 1 }, 1)], true, '預設 m = 0.5 → 1.0（半徑、週期不變）F：' + DEFAULT.F.toFixed(3) + ' → ' + setting({ r: 1.5, T: 3, m: 1 }).F.toFixed(3));
 committed = DEFAULT;
 expect(3, [params({ r: 1.5, T: 2, m: 1 })], false, '同時改了週期');
+committed = DEFAULT;
+expect(3, [params({ r: 1.5, T: 3, m: 1 }), params({ r: 1.5, T: 3, m: 1.4 }),
+  params({ r: 1.5, T: 3, m: 2 }), lap({ r: 1.5, T: 3, m: 2 }, 2)], true, '從 1 kg 分段調到上限 2 kg，前面已有圈數也有效');
 // 4 筆直向上
-expect(4, [exitEv({ r: 1.5, T: 3 }, 0)], true, '在 θ = 0.0° 剪斷（暫停後按剪斷）');
-expect(4, [exitEv({ r: 1.5, T: 3 }, 359)], true, 'θ = 359.0°（誤差 1°）');
-expect(4, [exitEv({ r: 1.5, T: 3 }, 3)], false, 'θ = 3°');
+expect(4, [exitEv({ r: 1.5, T: 3 }, 0, true)], true, '在 θ = 0.0° 剪斷（暫停後按剪斷）');
+expect(4, [exitEv({ r: 1.5, T: 3 }, 359, true)], true, 'θ = 359.0°（誤差 1°）');
+expect(4, [exitEv({ r: 1.5, T: 3 }, 3, true)], false, 'θ = 3°');
 // 5 半徑不同、加速度相同
 committed = DEFAULT;
 expect(5, [params({ r: 0.5, T: 3 }), params({ r: 0.5, T: 1 }), params({ r: 2, T: 1 }), params({ r: 2, T: 2 })], true,
@@ -144,7 +149,7 @@ expect(6, [params({ r: 1, v: 2 })], true, '固定速率：r = 1.00、v = 2.00');
   console.log('      容許角度窗約 ±' + (0.03 / 1.6 / D2R).toFixed(2) + '°');
 }
 // h1 細繩呻吟 F ≥ 200 N
-expect('h1', [params({ r: 0.5, v: 8, m: 2 })], true, '固定速率 r = 0.5、v = 8、m = 2 → F = ' + setting({ r: 0.5, v: 8, m: 2 }).F.toFixed(1) + ' N');
+expect('h1', [lap({ r: 0.5, v: 8, m: 2 }, 1)], true, '固定速率 r = 0.5、v = 8、m = 2 → F = ' + setting({ r: 0.5, v: 8, m: 2 }).F.toFixed(1) + ' N');
 expect('h1', [params({ r: 2, T: 1, m: 2 })], false, '固定週期的最大值 r = 2、T = 1、m = 2 → F = ' + setting({ r: 2, T: 1, m: 2 }).F.toFixed(1) + ' N（不夠）');
 // h2 同一條路
 expect('h2', [exitEv({ r: 1.5, T: 3 }, 20), exitEv({ r: 1.5, T: 6 }, 20.5)], true, 'r = 1.5，同在 θ ≈ 20° 剪斷，T = 3 與 6（速率比 2）');

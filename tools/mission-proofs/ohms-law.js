@@ -43,15 +43,17 @@ function fire(label, type, data) {
 }
 /** 改設定（等同使用者操作控制項後放開）：重解電路、處理燒斷、回報 'meter' 事件 */
 function set(P, o, label) {
+  if (Object.keys(o).some(key => ['emf', 'box', 'zero'].includes(key))) P.readingSet = true;
   const wasBurnt = P.burnt;
+  if (Object.keys(o).some(k => ['emf', 'box', 'm'].includes(k))) P.driveSet = true;
   Object.assign(P, o);
   let s = K.bench(cfg(P)), burnNow = false;
   if (s.burn && P.el === 'lamp' && !P.burnt) { P.burnt = true; burnNow = true; s = K.bench(cfg(P)); }
   P.sol = s; reread(P);
   const hits = [];
-  if (burnNow) hits.push.apply(hits, fire((label || 'set') + ' → 燒斷', 'burnout', { el: 'lamp', emf: P.emf, box: P.box, m: P.m }));
+  if (burnNow) hits.push.apply(hits, fire((label || 'set') + ' → 燒斷', 'burnout', { driveSet: Object.keys(o).some(k => ['emf', 'box', 'm'].includes(k)) || P.driveSet, el: 'lamp', emf: P.emf, box: P.box, m: P.m }));
   if (label !== false) {
-    hits.push.apply(hits, fire(label || 'set', 'meter', { action: 'x', el: P.el, m: P.m, ideal: P.ideal, emf: P.emf, box: P.box,
+    hits.push.apply(hits, fire(label || 'set', 'meter', { action: Object.keys(o)[0], el: P.el, m: P.m, ideal: P.ideal, emf: P.emf, box: P.box,
       V: P.rd.V.reading, I: P.rd.A.reading, VV: s.VV, IA: s.IA, VR: s.VR, IR: s.IR, fsA: fsA(P), fsV: fsV(P),
       defA: P.rd.A.needle / fsA(P), defV: P.rd.V.needle / fsV(P), overA: P.rd.A.over, overV: P.rd.V.over, burnt: P.burnt, wasBurnt }));
   }
@@ -93,7 +95,7 @@ function record(P, label) {
   P.pts.push(p);
   reread(P);
   const list = series(P, p.el, p.m);
-  return fire(label || 'record', 'record', { el: p.el, m: p.m, ideal: p.ideal, zeroed: p.zeroed, V: p.V, I: p.I, fsA: fsA(P), fsV: fsV(P),
+  return fire(label || 'record', 'record', { readingSet: !!P.readingSet, el: p.el, m: p.m, ideal: p.ideal, zeroed: p.zeroed, V: p.V, I: p.I, fsA: fsA(P), fsV: fsV(P),
     defA: p.I / fsA(P), defV: p.V / fsV(P), emf: P.emf, box: P.box, Rtrue: trueR(P, p.el), VR: s.VR, IR: s.IR, n: list.length,
     revealed: P.revealed, lampCold: P.lampCold, fit: fitOf(P, list, p.el, p.m), fits: allFits(P), lamp: lampStats(P) });
 }

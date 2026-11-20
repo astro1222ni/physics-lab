@@ -97,7 +97,7 @@ class Page {
   info(tag) { const d = this.last; console.log('   ', tag, d ? `mode=${d.mode} V=${d.V.toFixed(0)} T=${d.T.toFixed(1)} P=${d.P.toFixed(2)} vrms=${d.vrmsA.toFixed(1)} win=${d.window.toFixed(0)}` : '-'); }
 }
 function fresh() { missions.forEach(m => m.mem = {}); }
-function report(p, ids) { console.log('  done:', ids.map(id => id + (p.done[id] ? ' ✓' : ' ✗')).join('  ')); }
+function report(p, ids) { if (ids.some(id => !p.done[id])) process.exitCode = 1; console.log('  done:', ids.map(id => id + (p.done[id] ? ' ✓' : ' ✗')).join('  ')); }
 
 const T0 = Date.now();
 let p;
@@ -125,10 +125,10 @@ p.setMode('isobaric'); p.setT(300); p.run(6000); p.info('A\'');
 report(p, ['ideal-gas-11']);
 console.log('任務 12：卡諾循環（N = 300，900 K ↔ 約 560 K）');
 fresh(); p = new Page(113); p.N = 300; p.newGas(300); p.setT(900); p.moveTo(4000).run(800); p.info('A 900K 4000');
-p.moveTo(6000).run(400); p.info('B 等溫膨脹');
+p.moveTo(8500).run(600); p.info('B 等溫膨脹');
 p.setMode('adiabatic'); p.moveTo(12000).run(200); p.info('C 絕熱膨脹');
-p.setMode('isothermal'); { const VD = Math.round(4000 * Math.pow(900 / p.Tset, 1.5) * 1.08 / 10) * 10; console.log('    冷等溫 Tset =', p.Tset, '，壓縮到 V_D =', VD); p.moveTo(VD).run(400); p.info('D 等溫壓縮'); }
-p.setMode('adiabatic'); { let V = 8000; while (C.temperature(p.g) < 0.985 * 900 && V > 4000) { V -= 100; p.moveTo(V); } p.run(200); p.info('E 絕熱壓縮到 T≈900'); }
+p.setMode('isothermal'); { const VD = Math.round(12000 * 4000 / 8500 / 10) * 10; console.log('    冷等溫 Tset =', p.Tset, '，壓縮到 V_D =', VD); p.moveTo(VD).run(400); p.info('D 等溫壓縮'); }
+p.setMode('adiabatic'); { let V = Math.round(p.g.Lx * AREA); while (C.temperature(p.g) < 0.985 * 900 && V > 4000) { V -= 100; p.moveTo(V); } p.run(200); p.info('E 絕熱壓縮到 T≈900'); }
 p.setMode('isothermal'); console.log('    熱等溫 Tset =', p.Tset); p.moveTo(4000).run(600); p.info("A' 回到 4000");
 report(p, ['ideal-gas-11', 'ideal-gas-12']);
 if (process.env.DBG) {

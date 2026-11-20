@@ -2133,9 +2133,11 @@
     go.textContent = label;
   }
 
+  let initialHanger = state.m, choseHanger = false;
   function snapshot() {
     const p = physParams(), d = NS.dynamics(p);
     return {
+      hangerSet: choseHanger || state.m !== initialHanger,
       attached: state.attached, M: state.M, m: state.attached ? state.m : 0, Mtot: state.M + (state.attached ? state.m : 0),
       mu: mu(), thDeg: state.thDeg, tanTheta: Math.tan(state.thDeg * DEG), mystery: state.mystery, mysteryId: state.mysteryId,
       v0: state.attached ? 0 : state.v0, a: d.startsFromRest || !state.attached ? d.aMove : 0,
@@ -2254,6 +2256,7 @@
 
   // 全部清除：紙帶、兩張圖表的數據與小車位置（滑桿設定不變）
   $('clearAll').addEventListener('click', function () {
+    initialHanger = state.m; choseHanger = false;
     backToStart(false);
     state.series = { 1: [], 2: [] };
     state.latest = { 1: -1, 2: -1 };
@@ -2379,7 +2382,7 @@
     physChanged();
     sayTheory();
   }
-  $('modeHang').addEventListener('click', function () { setMode(true); });
+  $('modeHang').addEventListener('click', function () { choseHanger = true; setMode(true); });
   $('modePush').addEventListener('click', function () { setMode(false); });
 
   $('mystery').addEventListener('change', function (ev) {

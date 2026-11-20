@@ -19,16 +19,20 @@ function pulse(type, end, shape, v, L, w, t) {
   const p = { end, shape, v, L, w, A: 3 }, tm = SW.pulseTimes(p);
   t = t == null ? tm.tHit : t;
   let mx = 0; for (let i = 0; i <= 400; i++) mx = Math.max(mx, Math.abs(SW.pulseAt(p, L * i / 400, t).sum));
-  return { type, data: { end, shape, v, L, w, A: 3, t, tHit: tm.tHit, tStart: tm.tStart, tEnd: tm.tEnd, maxAbs: mx } };
+  return { type, data: { sentByUser: true, end, shape, v, L, w, A: 3, t, tHit: tm.tHit, tStart: tm.tStart, tEnd: tm.tEnd, maxAbs: mx } };
 }
 const byId = Object.fromEntries(list.map(m => [m.id, m]));
 function run(id, evs, expect = true) {
   const m = byId[id], mem = {}; let ok = false;
   evs.forEach(e => { if (m.check(e, mem)) ok = true; });
+  if (ok !== expect) process.exitCode = 1;
   console.log((ok === expect ? 'OK  ' : 'FAIL') + ' ' + id + (expect ? '' : ' (應不通過)'));
 }
 const fh = (end, n, v, L) => SW.harmonicFreq(end, n, v, L);
-run('standing-waves-1', [pulse('pulseReflected', 'fixed', 'sine', 2, 2, 0.4)]);
+run('standing-waves-1', [pulse('pulseReflected', 'fixed', 'sine', 3, 2, 0.4)]);
+const preview = pulse('pulseReflected', 'fixed', 'sine', 3, 2, 0.4);
+preview.data.sentByUser = false;
+run('standing-waves-1', [preview], false);
 run('standing-waves-2', [pulse('pulseReflected', 'fixed', 'sine', 2, 2, 0.4), pulse('pulseReflected', 'free', 'sine', 2, 2, 0.4)]);
 run('standing-waves-3', [steady('fixed', fh('fixed', 1, 2, 2), 2, 2)]);
 run('standing-waves-3', [steady('fixed', 1.2, 2, 2)], false);

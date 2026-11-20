@@ -2187,7 +2187,7 @@
     tb.emitAcc += dt;
     if (tb.emitAcc >= EMIT_EVERY) {
       tb.emitAcc = 0;
-      emit('discharge', { K: tb.K, imp: tb.imp, exc: tb.exc, ph: tb.ph, counts: Object.assign({}, tb.counts), top: tubeTop() });
+      emit('discharge', { energySet: !!tb.energySet, elapsed: tb.imp / TUBE_RATE, K: tb.K, imp: tb.imp, exc: tb.exc, ph: tb.ph, counts: Object.assign({}, tb.counts), top: tubeTop() });
     }
     updateTube(false);
   }
@@ -2275,6 +2275,7 @@
   // ---------- 放電管 K ----------
   function refreshK() { $('tKo').textContent = trimDec(val(elK), 3, 2) + ' eV'; }
   elK.addEventListener('input', function () {
+    if (val(elK) !== state.tube.K) state.tube.energySet = true;
     refreshK();
     tubeRecompute();
     tubeReset();

@@ -3,8 +3,10 @@
 const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 // 用物理核心證明每個任務在滑桿範圍與精度內做得到
 const K = require(__ROOT + 'js/capacitor-core.js');
+const { mock } = require("node:test");
+mock.timers.enable({ apis: ["setTimeout"] });
 let defs;
-global.LabMission = { register: (m, l) => { defs = l; } }; global.window = { LabMission: global.LabMission };
+global.LabMission = { emit, register: (m, l) => { defs = l; } }; global.window = { LabMission: global.LabMission };
 require(__ROOT + 'js/missions/capacitor.js');
 const mem = {}; defs.forEach(m => mem[m.id] = {});
 function fresh() { return { A: 0.01, d: 0.002, Vb: 10, kappa: 1, f: 1, mode: 'V', Qfix: 0 }; }
@@ -22,13 +24,23 @@ function change(key, v) {
 }
 function reset() { st = fresh(); emit('reset', {}); }
 const log = (t) => console.log(t);
+change('kappa', 5); mock.timers.tick(400);
+change('f', 0.48); mock.timers.tick(1000);
+if (done.has('capacitor-3')) throw Error('短暫經過完整插入位置就完成');
+reset();
 
-log('1/4/5: 斷開 → d 2→4 mm（V 加倍、E 不變）'); change('mode', 'Q'); change('d', 0.004); reset();
+log('1/4/5: 斷開 → d 2→4 mm（V 加倍、E 不變）'); change('Vb', 12); change('mode', 'Q'); change('d', 0.0038); change('d', 0.004); mock.timers.tick(1000); reset();
 log('2: V 固定 d 2→4 mm'); change('d', 0.004); reset();
-log('3: V 固定 選玻璃 (f = 100%)'); change('kappa', 5); reset();
+log('3: V 固定 選玻璃 (f = 100%)'); change('f', 0); change('kappa', 5); change('f', 0.48); change('f', 0.50); change('f', 1); mock.timers.tick(1000); reset();
+// 不靠先做另一題：直接把面積調小即可使斷電後的電壓加倍。
+done.delete('capacitor-4');
+change('mode', 'Q'); change('A', 0.007); change('A', 0.005);
+mock.timers.tick(1000);
+if (!done.has('capacitor-4')) throw Error('用面積分段調出兩倍電壓應完成');
+reset();
 log('6: 空氣 A = 113 cm²（打字）、d = 1 mm'); change('A', 0.0113); let s = change('d', 0.001); log('   C = ' + (s.C * 1e12).toFixed(3) + ' pF'); reset();
 log('7: 紙 κ = 3.5、f = 40%'); change('kappa', 3.5); s = change('f', 0.40); log('   C/Cair = ' + (s.C / K.cAir(s.A, s.d)).toFixed(4)); reset();
-log('8: 空氣 V0 = 9.5 V（滑桿）'); s = change('Vb', 9.5); log('   F = ' + (s.F * 1e6).toFixed(4) + ' μN'); reset();
+log('8: 空氣 V0 = 9.5 V（滑桿）'); s = change('Vb', 9.5); mock.timers.tick(1000); log('   F = ' + (s.F * 1e6).toFixed(4) + ' μN'); reset();
 log('9: 斷開 → d 2→6 mm'); change('mode', 'Q'); s = change('d', 0.006); reset();
 log('10: 空氣斷開 → 玻璃 → d 2→10 mm'); change('mode', 'Q'); change('kappa', 5); s = change('d', 0.010); log('   V = ' + s.V.toFixed(4)); reset();
 log('11: V0 = 12 V、d = 5 mm、雲母 κ = 6、A = 200 cm²、f = 27%'); change('Vb', 12); change('d', 0.005); change('A', 0.02); change('f', 0.27); s = change('kappa', 6); log('   Q = ' + (s.Q * 1e9).toFixed(5) + ' nC');
@@ -41,3 +53,6 @@ log('h3: V0 = 20 V、水、d = 1 mm、A = 400 cm² → 斷開 → 空氣、d = 1
 change('Vb', 20); change('kappa', 80); change('d', 0.001); change('A', 0.04); change('mode', 'Q'); change('kappa', 1); change('d', 0.01); s = change('A', 0.005); log('   V = ' + (s.V / 1000).toFixed(1) + ' kV'); reset();
 log('預設狀態下的單一無關操作不會誤觸：'); const before = done.size; change('A', 0.011); reset();
 log('全部 ' + defs.length + ' 個任務，完成 ' + done.size + '；未完成：' + defs.filter(m => !done.has(m.id)).map(m => m.id).join(', '));
+
+mock.timers.reset();
+if (done.size !== defs.length) process.exitCode = 1;

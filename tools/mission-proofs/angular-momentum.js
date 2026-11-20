@@ -119,7 +119,9 @@ const f3 = x => x.toFixed(3), f4 = x => x.toFixed(4);
 }
 // 4 兩盤相合
 expect(4, [couple({})], true, '預設：下盤 8 rad/s、上盤靜止，放下上盤 → ωf = ' + f3(C.coupleResult(DISK0).wf));
-expect(4, [couple({ w2: 8 })], false, '兩盤本來就同轉速（沒有滑動）不算');
+expect(4, [couple({ w2: 8 })], true, '兩盤同速相合也算，沒有滑動且耗能為零');
+expect(4, [couple({ mu: 0.25 })], true, '只調整摩擦，仍能等到兩盤同速');
+expect(4, [couple({ M2: 2, w2: -8 })], false, '角動量抵銷後兩盤靜止');
 // 5 轉速 3 倍
 {
   const o = Object.assign({}, PLAT0, { rIn: 0.15, rOut: 0.81 });

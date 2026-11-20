@@ -822,6 +822,7 @@
     const q = par.q * MC.E_CHARGE, m = par.m * MC.AMU, B = par.B * 1e-3;
     const h = MC.helix(m, q, par.v * 1e5, B, par.theta);
     return {
+      manualLaunch: !!(state.run && state.run.manualLaunch),
       q: par.q, m: par.m, v: par.v, B: par.B, E: par.E, theta: par.theta, ang: par.ang, region: par.region,
       x0: state.start.x, y0: state.start.y,
       r: h.r / CM, Tus: h.T * 1e6, pitch: h.pitch / CM,            // 依滑桿計算：cm、μs、cm
@@ -950,6 +951,7 @@
       return;
     }
     if (state.ended) resetParticle();
+    state.run.manualLaunch = true;
     setRunning(true);
   });
   $('reset').addEventListener('click', function () { setRunning(false); resetParticle(); });

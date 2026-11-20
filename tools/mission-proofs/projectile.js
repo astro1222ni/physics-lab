@@ -81,13 +81,13 @@ function describe(ev) {
 
 let ok = true;
 // ---------- 0. 預設狀態 ----------
-// 不操作就沒有事件；用預設值連按兩次「發射」只完成 projectile-1（發射一次讓球落地，本來就是這樣設計）
+// 不操作就沒有事件；用預設值連按兩次「發射」仍未親自改變發射設定
 reset();
 {
   const got = feed([launch({}), launch({})]);
   const pass = got.length === 1 && got[0] === 'projectile-1';
   ok = ok && pass;
-  console.log((pass ? '✓ ' : '✗ ') + '預設值（v0 = 20、θ = 45°、h0 = 0、g = 9.8、無阻力）連發兩次 → 只完成 ' + (got.join('、') || '（無）'));
+  console.log((pass ? '✓ ' : '✗ ') + '預設值（v0 = 20、θ = 45°、h0 = 0、g = 9.8、無阻力）連發兩次，完成項目為 ' + (got.join('、') || '（無）'));
 }
 
 // ---------- 1. 每個任務的解 ----------

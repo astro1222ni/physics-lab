@@ -34,7 +34,10 @@
       id: 'doppler-4', level: 4,
       title: { zh: '撞上音障', en: 'Hit the sound barrier' },
       desc: { zh: '讓波源剛好以聲速行駛（v_s = v），並讓觀察者聽到音爆。', en: 'Drive the source at exactly the speed of sound (v_s = v) and let the listener hear the boom.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'boom' && Math.abs(d.vs - d.v) < 1e-6; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'boom' && d.clean && Math.abs(d.vs - d.v) < 1e-6;
+      }
     },
     {
       id: 'doppler-5', level: 5,

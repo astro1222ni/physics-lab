@@ -944,7 +944,12 @@
   /** 試探電荷沒有在運動時，回報目前的靜態配置（使用者放好試探電荷或改了場源之後） */
   function emitProbe(key) {
     if (!window.LabMission || state.running) return;
-    emit('probe', Object.assign(snapshot(state.probe.x, state.probe.y), { key: key }));
+    const data = snapshot(state.probe.x, state.probe.y), sig = sourceSig();
+    data.key = key;
+    data.stillHere = function () {
+      return !state.running && sourceSig() === sig && state.probe.x === data.x && state.probe.y === data.y;
+    };
+    emit('probe', data);
   }
   /** 這一趟運動中改了電量、質量或場源：能量不再守恆，這一趟不算 */
   function taint() { if (state.run && !state.ended) state.run.clean = false; }

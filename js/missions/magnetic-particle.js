@@ -28,8 +28,11 @@
     {
       id: 'magnetic-particle-1', level: 1,
       title: { zh: '繞一圈', en: 'One full turn' },
-      desc: { zh: '按「發射」，讓帶電粒子在磁場中完整繞一圈。', en: 'Press “Launch” and let the charged particle go once all the way around in the magnetic field.' },
-      check: function (ev) { return ev.type === 'lap' && ev.data.n >= 1; }
+      desc: { zh: '調整粒子或磁場設定，親自按發射或繼續，讓粒子在磁場中完整繞一圈。', en: 'Change a particle or field setting, press Launch or Resume and let it complete one full turn in the field.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'lap' && d.manualLaunch && d.n >= 1 - 1e-9 && (d.B !== 100 || d.q !== 2 || d.m !== 4 || d.v !== 3 || d.theta !== 90 || d.ang !== 0 || d.E !== 0 || d.region);
+      }
     },
     {
       id: 'magnetic-particle-2', level: 2,
@@ -143,7 +146,8 @@
       riddle: { zh: '與風同行的人，感覺不到風。', en: 'Whoever walks with the wind never feels the wind.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'exit' && d.axis === 'z' && pureB(d) && d.v > 0 && d.r === 0 && d.disp <= 0.01;
+        return ev.type === 'exit' && d.axis === 'z' && pureB(d) && d.v > 0 &&
+          Math.abs(d.r) <= 1e-9 && d.disp <= 0.01 + 1e-9;
       }
     },
     {

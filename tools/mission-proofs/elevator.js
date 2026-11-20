@@ -62,3 +62,14 @@ out('elevator-1', true, '任一趟（例：1F→2F，2√3 = ' + (2 * Math.sqrt(
 out('elevator-h2', Math.abs(E.reading(60, 9.8) / 60 - 2) < 1e-12, `ab = 9.8（最大值）：讀數 = 2 × 實重`);
 // h3：1F→10F（預設）等速 2.5 m/s 時在 y = 10 m 剪斷
 { const y = E.predictStop(10, 2.5, 5, 4.9); out('elevator-h3', y >= 0, `上行 2.5 m/s 時於 y = 10 m 剪斷：先再上升 ${(2.5 * 2.5 / 2 / g).toFixed(3)} m，最後停在 ${y.toFixed(2)} m`); }
+
+let tasks; global.LabMission = { register: (_, list) => { tasks = list; } }; global.window = { LabMission };
+require(__ROOT + 'js/missions/elevator.js');
+function verify(id, steps) { const m = tasks.find(x => x.id === 'elevator-' + id), mem = {}; if (!steps.some(([type, data]) => m.check({type, data}, mem))) throw Error(m.id); }
+verify(1, [['trip', {from:1,to:2,d:3,mConst:true}]]);
+verify(2, [['cut', {}], ['pause', {kind:'free', reading:E.reading(60,-g)}], ['brakeStop',{readMin:0}]]);
+{ const plan = E.freeFallPlan(0, 21, 0, 10, 9.8);
+  verify(2, [['cut', {}], ['brakeStop', { tFree: plan[1].t0, readMin: E.reading(60, -g) }]]);
+}
+verify('h2', [['phase', {m:60, weighingSet:true, reading:E.reading(60,g)}]]);
+verify('h3', [['cut', {v0:2.5}]]);

@@ -10,19 +10,26 @@
       id: 'radioactive-decay-1', level: 1,
       title: { zh: '第一個半衰期', en: 'The first half-life' },
       desc: { zh: '開始一次原子核衰變實驗，讓它跑完一個半衰期。', en: 'Run a decay experiment with nuclei for one full half-life.' },
-      check: function (ev) { return ev.type === 'mark' && ev.data.mode === 'nuclei' && ev.data.k >= 1; }
+      check: function (ev) { return ev.type === 'mark' && ev.data.mode === 'nuclei' && ev.data.k >= 1 - 1e-9; }
     },
     {
       id: 'radioactive-decay-2', level: 2,
       title: { zh: '骰子也有半衰期', en: 'Dice have a half-life too' },
-      desc: { zh: '在骰子比喻中用至少 400 顆骰子，擲到桌上剩下不到一半為止。看看擲了幾次？', en: 'In the dice analogy, roll at least 400 dice until fewer than half are left on the table. How many rolls did it take?' },
-      check: function (ev) { const d = ev.data; return ev.type === 'roll' && d.N0 >= 400 && d.N * 2 <= d.N0; }
+      desc: { zh: '在骰子模式使用至少 400 顆骰子，親手擲出使剩下數量降至一半或更少的一擲。', en: 'Use at least 400 dice and manually roll until half or fewer remain.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'roll' && d.manual && d.N0 >= 400 - 1e-9 && d.N * 2 <= d.N0 + 1e-9;
+      }
     },
     {
       id: 'radioactive-decay-3', level: 2,
       title: { zh: '大數法則', en: 'The law of large numbers' },
-      desc: { zh: '用 10000 個原子核做實驗：剛好經過一個半衰期時，剩下的數量與 5000 相差不超過 75 個。', en: 'With 10000 nuclei: at exactly one half-life, have no more than 75 nuclei away from 5000 left.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'mark' && d.mode === 'nuclei' && d.k === 1 && d.N0 === 10000 && Math.abs(d.N - 5000) <= 75; }
+      desc: { zh: '設定 10000 個原子核，親自開始一輪實驗。經過第一個半衰期時，剩下的數量與 5000 相差不超過 75 個。', en: 'Set 10,000 nuclei and start a run. At the first half-life, the remaining count must be within 75 of 5,000.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'mark' && d.started && d.mode === 'nuclei' && d.k === 1 && d.N0 === 10000 &&
+          Math.abs(d.N - 5000) <= 75 + 1e-9;
+      }
     },
     {
       id: 'radioactive-decay-4', level: 3,
@@ -69,7 +76,8 @@
       desc: { zh: '衰變鏈中讓子核比母核短命，用至少 1600 個原子核，等子核過了高峰（至少 2 倍的高峰時刻）後，在實測的子核／母核比例與平衡值相差 3% 以內時按暫停。', en: 'In a decay chain with a shorter-lived daughter and at least 1600 nuclei, wait until well after the daughter’s peak (at least twice the peak time), then pause when the measured daughter/parent ratio is within 3% of its equilibrium value.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'pause' && d.chain && d.eqRatio != null && d.N0 >= 1600 && d.t >= 2 * d.tmax && d.ratioDP != null && rel(d.ratioDP, d.eqRatio) <= 0.03;
+        return ev.type === 'pause' && d.chain && d.eqRatio != null && d.N0 >= 1600 - 1e-9 &&
+          d.t >= 2 * d.tmax - 1e-9 && d.ratioDP != null && rel(d.ratioDP, d.eqRatio) <= 0.03 + 1e-9;
       }
     },
     {

@@ -35,8 +35,11 @@
     {
       id: 'energy-coaster-2', level: 2,
       title: { zh: '零點隨你訂', en: 'Pick your own zero' },
-      desc: { zh: '小車在跑的時候，把位能零點移動 5 m 以上，看哪些能量變了、哪些沒變。', en: 'While the car is moving, move the zero of potential energy by 5 m or more, and see which energies change and which do not.' },
-      check: function (ev) { return ev.type === 'refmove' && ev.data.moving && Math.abs(ev.data.dRef) >= 5 - 1e-9; }
+      desc: { zh: '按播放或重新出發，在小車運動時將重力位能零點移動至少 5 m，觀察能量圖。', en: 'Press Play or Restart. While the car is moving, shift the gravitational potential energy reference by at least 5 m and observe the energy graph.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'refmove' && d.startedByUser && d.playing && d.moving && Math.abs(d.dRef) >= 5 - 1e-9;
+      }
     },
     {
       id: 'energy-coaster-3', level: 2,
@@ -164,7 +167,8 @@
       riddle: { zh: '有一整秒，世界忘了托住你；醒來時，腳下仍是原來那條路。', en: 'For one whole second the world forgot to hold you up; when you woke, the same road was still beneath you.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'attach' && d.flight >= 1 && !(d.xa != null && Math.abs(d.x - d.xa) <= d.R + 0.01);
+        return ev.type === 'attach' && d.flight >= 1 - 1e-9 &&
+          !(d.xa != null && Math.abs(d.x - d.xa) <= d.R + 0.01 + 1e-9);
       }
     }
   ]);

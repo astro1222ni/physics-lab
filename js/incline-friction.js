@@ -1804,7 +1804,7 @@
       }
       if (state.raising) stopRaise(true);
       if (state.ramping) state.rampLeft = 1.0;
-      emit('slip', snapshot({ cause: cause, dir: e.dir, ramp: cause === 'ramp' }));
+      emit('slip', snapshot({ cause: cause, dir: e.dir, ramp: cause === 'ramp', rampFromZero: !!(run && run.rampFromZero) }));
       emit('motion', snapshot({ reason: 'slip' }));
     } else if (e.type === 'stick') {
       stickSound();
@@ -1965,14 +1965,14 @@
     $('ramp').classList.toggle('on', state.ramping);
   }
 
-  function release(v0) {
+  function release(v0, manual) {
     const sp = startPos();
     state.s = IC.newState(sp.x, v0, sp.contact);
     state.phase = 'run';
     newRun(sp.x, v0);
     state.cause = 'release';
     state.lastFF = null;
-    const snap = snapshot({ v0: v0 });
+    const snap = snapshot({ v0: v0, manual: !!manual });
     snap.holds = v0 === 0 && snap.freeHold;
     emit('release', snap);
     if (v0 !== 0) emit('motion', snapshot({ reason: 'release' }));
@@ -1998,7 +1998,7 @@
   function finishGradual(silent) { refreshOutputs(); syncSliders(); if (!silent) commit(); }
 
   $('play').addEventListener('click', function () {
-    if (state.phase === 'held') { release(state.v0); return; }
+    if (state.phase === 'held') { release(state.v0, true); return; }
     if (state.phase === 'run') {
       state.phase = 'pause';
       stopScrape();
@@ -2027,6 +2027,7 @@
     if (state.F >= F_MAX) return;
     if (state.phase === 'held') release(0);
     if (state.phase === 'pause') state.phase = 'run';
+    if (state.run && Math.abs(state.F) < 1e-9) state.run.rampFromZero = true;
     state.ramping = true;
     state.rampLeft = null;
     setStatus(T('外力每秒增加 ', 'The force increases by ') + num(rampRate(), 1) + T(' N……開始滑動後再繼續 1 秒。', ' N per second… and keeps going for 1 s after the block starts to slide.'));

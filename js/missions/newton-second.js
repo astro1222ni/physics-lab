@@ -22,8 +22,8 @@
     {
       id: 'newton-second-1', level: 1,
       title: { zh: '第一條紙帶', en: 'Your first tape' },
-      desc: { zh: '掛上吊掛物、放開小車，讓它一路跑到擋板。', en: 'With the hanging mass on, release the cart and let it run all the way to the end stop.' },
-      check: function (ev) { return ran(ev) && ev.data.attached && ev.data.reachedEnd; }
+      desc: { zh: '點選掛上吊掛物或調整吊掛物質量，再放開小車，讓它跑到擋板。', en: 'Select the hanging mass or adjust its mass, then release the cart and let it reach the end stop.' },
+      check: function (ev) { return ran(ev) && ev.data.attached && ev.data.hangerSet && ev.data.reachedEnd; }
     },
     {
       id: 'newton-second-2', level: 2,
@@ -148,14 +148,17 @@
     {
       id: 'newton-second-h1', level: 3, hidden: true,
       riddle: { zh: '線拉得緊緊的，紙帶卻只記得同一個地方。', en: 'The string is taut, yet the tape remembers only one place.' },
-      check: function (ev) { return ev.type === 'run' && ev.data.attached && !ev.data.moved; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'run' && d.attached && !d.moved && d.nDots >= 10 - EPS;
+      }
     },
     {
       id: 'newton-second-h2', level: 5, hidden: true,
       riddle: { zh: '桌上的旅人忘了自己躺在桌上，幾乎跟得上窗外的雨滴。', en: 'The traveller forgets the table beneath it and almost keeps pace with the raindrops outside.' },
       check: function (ev) {
         const d = ev.data;
-        return ran(ev) && d.attached && d.reachedEnd && d.nStrips >= 3 && d.aMeas >= 0.7 * G;
+        return ran(ev) && d.attached && d.reachedEnd && d.nStrips >= 3 - EPS && d.aMeas >= 0.7 * G - EPS;
       }
     },
     {

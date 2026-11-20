@@ -19,18 +19,50 @@
   /** 反射光與折射光互相垂直（布魯斯特角） */
   const perp = function (d, tol) { return !d.tir && near(d.th1 + d.th2, 90, tol); };
 
+  // 保留同一項觀察；離開條件就取消，調整無關的顯示選項可以繼續。
+  function observed(ev, mem, id, matches) {
+    if (ev.type === 'opticsObservation') return ev.data.id === id && ev.data.token === mem.token;
+    if (ev.type !== 'setup') return false;
+    if (!matches) {
+      clearTimeout(mem.timer);
+      mem.token = null;
+    } else if (!mem.token) {
+      const token = mem.token = {};
+      mem.timer = setTimeout(function () {
+        if (ev.data.stillHere && !ev.data.stillHere()) {
+          if (mem.token === token) mem.token = null;
+          return;
+        }
+        LabMission.emit('opticsObservation', { id: id, token: token });
+      }, 1000);
+    } else if (mem.stationary && !mem.stationary()) {
+      clearTimeout(mem.timer);
+      mem.token = null;
+      return observed(ev, mem, id, matches);
+    }
+    mem.stationary = ev.data.stillHere;
+    return false;
+  }
+
   LabMission.register('refraction', [
     {
       id: 'refraction-1', level: 1,
       title: { zh: '出不去的光', en: 'Light that cannot get out' },
-      desc: { zh: '讓光從光密介質射向光疏介質，再加大入射角，直到折射光完全消失（全反射）。', en: 'Send light from a denser medium toward a less dense one and increase the angle of incidence until the refracted ray disappears completely (total internal reflection).' },
-      check: function (ev) { return flat(ev) && ev.data.tir; }
+      desc: { zh: '讓光從光密介質射向光疏介質，把入射角調到超過臨界角，觀察折射光消失一秒。', en: 'Send light from a denser to a less dense medium. Set the incidence angle above the critical angle and observe the absence of a refracted ray for one second.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        const beyond = flat(ev) && d.n1 > d.n2 && d.tir && d.th1 > d.crit + EPS;
+        return observed(ev, mem, 'refraction-1', beyond);
+      }
     },
     {
       id: 'refraction-2', level: 2,
       title: { zh: '貼著界面掠過', en: 'Grazing the surface' },
-      desc: { zh: '把入射角調到恰好等於臨界角（誤差 0.05° 內）：此時折射角是 90°，折射光貼著界面掠過。', en: 'Set the angle of incidence exactly to the critical angle (within 0.05°): the angle of refraction is then 90° and the refracted ray grazes along the interface.' },
-      check: function (ev) { const d = ev.data; return flat(ev) && d.n1 > d.n2 && near(d.th1, d.crit, 0.05); }
+      desc: { zh: '把入射角調到恰好等於臨界角（誤差 0.05° 內）：此時折射角是 90°，折射光貼著界面掠過。停在這個角度觀察一秒。', en: 'Set the angle of incidence exactly to the critical angle (within 0.05°): the angle of refraction is then 90° and the refracted ray grazes along the interface. Hold this angle for one second.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return observed(ev, mem, 'refraction-2', flat(ev) && d.n1 > d.n2 && near(d.th1, d.crit, 0.05));
+      }
     },
     {
       id: 'refraction-3', level: 3,

@@ -27,14 +27,20 @@
     {
       id: 'incline-friction-1', level: 1,
       title: { zh: '溜下去！', en: 'Down it goes!' },
-      desc: { zh: '讓木塊一路滑到底，撞上下端的擋板。', en: 'Make the block slide all the way down and hit the stop at the bottom.' },
-      check: function (ev) { return ev.type === 'hit' && ev.data.end === 'bottom' && ev.data.speed >= 0.05; }
+      desc: { zh: '放手後保持設定，讓木塊滑到底端的擋板。', en: 'Release the block and keep the settings fixed until it hits the bottom stop.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'hit' && d.sameEpoch && d.end === 'bottom' && d.speed >= 0.05 - 1e-9;
+      }
     },
     {
       id: 'incline-friction-2', level: 2,
       title: { zh: '經典摩擦力圖', en: 'The classic friction graph' },
-      desc: { zh: '在水平桌面上（θ = 0°）按「慢慢加力」，一直加到木塊開始滑動，畫出摩擦力先升後降的經典圖形。', en: 'On a level table (θ = 0°), press “Increase force” and keep going until the block starts to slide, drawing the classic rise-then-drop friction graph.' },
-      check: function (ev) { return ev.type === 'slip' && ev.data.cause === 'ramp' && Math.abs(ev.data.theta) < 1e-6; }
+      desc: { zh: '在水平桌面上，讓外力從零開始「慢慢加力」，直到木塊開始滑動，觀察摩擦力由靜摩擦轉為動摩擦。', en: 'On a level table, start with zero applied force and press “Increase force” until the block slides. Observe the transition from static to kinetic friction.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'slip' && d.cause === 'ramp' && d.rampFromZero && Math.abs(d.theta) < 1e-6;
+      }
     },
     {
       id: 'incline-friction-3', level: 2,
@@ -126,7 +132,10 @@
     {
       id: 'incline-friction-h1', level: 6, hidden: true,
       riddle: { zh: '峭壁上沒有一級台階，只憑一掌，它便不墜。', en: 'Not a single step on the sheer face — yet a single palm keeps it from falling.' },
-      check: function (ev) { const d = ev.data; return restLike(ev) && d.mode === 'horiz' && d.theta >= 89.95 && d.F > 0; }
+      check: function (ev) {
+        const d = ev.data;
+        return restLike(ev) && (ev.type === 'rest' || d.manual) && d.mode === 'horiz' && d.theta >= 89.95 - EPS && d.F > 0;
+      }
     },
     {
       id: 'incline-friction-h2', level: 7, hidden: true,

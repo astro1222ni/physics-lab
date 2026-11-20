@@ -58,8 +58,30 @@
     {
       id: 'electric-field-6', level: 5,
       title: { zh: '電場朝正上方', en: 'Field pointing straight up' },
-      desc: { zh: '兩電荷異號：找一個點，讓那裡的電場方向恰好朝正上方（90° ± 1°）。', en: 'With opposite charges, find a point where the field points straight up (90° ± 1°).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'probe' && opposite(d) && up(d, 1); }
+      desc: { zh: '把兩個場源電荷設為異號。移動試探電荷，停在電場恰好朝正上方的位置觀察一秒（90° ± 1°）。',
+        en: 'Give the two source charges opposite signs. Move the test charge to a point where the field points straight up for one second (90° ± 1°).' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'fieldObservation') return d.token === mem.token;
+        if (ev.type !== 'probe') return false;
+        if (d.key === 'probe') mem.position = [d.x, d.y];
+        const matches = mem.position && mem.position[0] === d.x && mem.position[1] === d.y && opposite(d) && up(d, 1 + EPS);
+        const reading = [d.x, d.y, d.qA, d.qB, d.xA, d.yA, d.xB, d.yB].join('/');
+        if (!matches || mem.reading !== reading) {
+          clearTimeout(mem.timer);
+          mem.token = null;
+        }
+        mem.reading = reading;
+        if (matches && !mem.token) {
+          const token = mem.token = {};
+          mem.timer = setTimeout(function () {
+            if (mem.token !== token) return;
+            if (d.stillHere()) LabMission.emit('fieldObservation', { token: token });
+            else mem.token = null;
+          }, 1000);
+        }
+        return false;
+      }
     },
     {
       id: 'electric-field-7', level: 6,

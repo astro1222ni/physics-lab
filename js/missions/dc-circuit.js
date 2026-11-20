@@ -141,9 +141,13 @@
     {
       id: 'dc-circuit-h3', level: 3, hidden: true,
       riddle: { zh: '天秤的另一頭，也有風景。', en: 'There is a view from the other end of the scales, too.' },
-      check: function (ev) {
+      check: function (ev, mem) {
         const d = ev.data;
-        return isC(ev) && d.preset === 'wheatstone' && d.allClosed && d.Ig != null && d.Ig >= 1e-3;
+        if (!isC(ev)) return false;
+        // 在惠斯登電橋下親手調過電阻即可；之後再閉合開關或調電源讓 Ig 反向也算。
+        if (d.preset !== 'wheatstone') { mem.rMoved = false; return false; }
+        if (d.action === 'R') mem.rMoved = true;
+        return !!mem.rMoved && d.allClosed && d.Ig != null && d.Ig >= 1e-3 - 1e-9;
       }
     }
   ]);

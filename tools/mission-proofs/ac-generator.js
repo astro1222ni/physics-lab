@@ -113,7 +113,7 @@ sol['ac-generator-2'] = () => ({ say: '換向器，其餘預設，轉完 1 圈',
 sol['ac-generator-3'] = () => ({ say: '交流 110 V，N1 = 200、N2 = 400', ev: [xfEv(setUI(defaults(), { xN2: 400 }))] });
 sol['ac-generator-4'] = () => ({ say: '預設，暫停在 θ = 90°', ev: [genEv(setUI(defaults(), { theta: 90, paused: true }))] });
 sol['ac-generator-5'] = () => ({ say: '電池，接通開關後等到穩定', ev: [xfEv(setUI(defaults(), { xsrc: 'dc', dcOn: true, pulsed: true, steady: true }))] });
-sol['ac-generator-6'] = () => ({ say: 'N = 300、B = 0.5 T，其餘預設', ev: [genEv(setUI(defaults(), { gN: 300, gB: 0.5 }))] });
+sol['ac-generator-6'] = () => ({ say: 'N = 300、B = 0.5 T，其餘預設', ev: [genEv(setUI(defaults(), { gN: 300, gB: 0.5, revs: 1 }))] });
 sol['ac-generator-7'] = () => {
   const u = setUI(defaults(), { gF: 60, gB: 0.25 });
   const G = C.gen(genP(u)), x = 110 / G.epsRms;           // R/(R + r) = V_R/ε_rms
@@ -141,9 +141,9 @@ sol['ac-generator-12'] = () => {
   const k2 = k2Fit(u, 220); setUI(u, { tK2: k2 });
   return { say: 'V_g = 11.5 kV、k1 = 30、R_line = 10 Ω、額定 220 V、55 MW、k2 = ' + k2, ev: [gridEv(u)] };
 };
-sol['ac-generator-h1'] = () => ({ say: '開路，N = 400、B = 0.5 T，轉完 1 圈', ev: [genEv(setUI(defaults(), { open: true, gN: 400, gB: 0.5, revs: 1 }))] });
+sol['ac-generator-h1'] = () => ({ say: '開路，N = 400、B = 0.5 T，轉滿 3 圈', ev: [genEv(setUI(defaults(), { open: true, gN: 400, gB: 0.5, revs: 3 }))] });
 sol['ac-generator-h2'] = () => ({ say: '交流 110 V，N1 = N2 = 200', ev: [xfEv(setUI(defaults(), { xN2: 200 }))] });
-sol['ac-generator-h3'] = () => ({ say: 'R = r = 2 Ω，其餘預設', ev: [genEv(setUI(defaults(), { gR: 2 }))] });
+sol['ac-generator-h3'] = () => ({ say: 'R = r = 2 Ω，其餘預設', ev: [genEv(setUI(defaults(), { gR: 2, revs: 1 }))] });
 
 let pub = 0, hid = 0;
 missions.forEach(m => {
@@ -180,6 +180,7 @@ const counter = [
   ['ac-generator-10', '只記錄一筆', (() => { const a = setUI(defaults(), { tK1: 15 }); setUI(a, { tK2: k2Fit(a, 110) }); return recordEv([a]); })()],
   ['ac-generator-12', '同樣的設定但 R_line = 5 Ω', (() => { const u = setUI(defaults(), { tVg: 11.5, tK1: 30, tRl: 5, tP: 55, vrated: 220 }); setUI(u, { tK2: k2Fit(u, 220) }); return gridEv(u); })()],
   ['ac-generator-h1', '開路但還沒轉完一圈', genEv(setUI(defaults(), { open: true, gN: 400, gB: 0.5 }))],
+  ['ac-generator-h1', '開路但只轉了 2 圈', genEv(setUI(defaults(), { open: true, gN: 400, gB: 0.5, revs: 2 }))],
   ['ac-generator-h2', '直流電源 N1 = N2', xfEv(setUI(defaults(), { xsrc: 'dc', xN2: 200, dcOn: true, pulsed: true, steady: true }))],
   ['ac-generator-h3', 'R = 2.2 Ω、r = 2 Ω（差 10%）', genEv(setUI(defaults(), { gR: 2.2 }))]
 ];

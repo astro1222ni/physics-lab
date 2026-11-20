@@ -1568,7 +1568,9 @@
       const toDeg = function (r) { return r / DEG; };
       const a = RC.interfaceInfo(state.n1, state.n2, state.th1, state.nm);
       const b = RC.fibreInfo(state.nCore, state.nClad, state.thIn, 1);
+      const observed = [state.n1, state.n2, state.th1, state.mode];
       window.LabMission.emit('setup', {
+        stillHere: function () { return state.n1 === observed[0] && state.n2 === observed[1] && state.th1 === observed[2] && state.mode === observed[3]; },
         mode: state.mode, nm: state.nm,
         n1: state.n1, n2: state.n2, th1: toDeg(state.th1), th2: toDeg(a.th2), tir: a.tir,
         crit: toDeg(a.crit), brew: toDeg(a.brew), dev: toDeg(a.dev),

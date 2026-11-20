@@ -140,7 +140,11 @@
     {
       id: 'ripple-tank-h1', level: 3, hidden: true,
       riddle: { zh: '眨眼慢了一拍，又慢了一拍；浪花卻以為你從來沒有移開視線。', en: 'Your blinking slows by a beat, and by another; yet the ripples believe you never looked away.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'strobe' && d.strobe && d.gen && d.frozen && d.frozenN >= 2; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'strobe' && d.strobe && d.gen && d.frozen && d.frozenN >= 2 - 1e-9 &&
+          d.strobeSet;
+      }
     },
     {
       id: 'ripple-tank-h2', level: 5, hidden: true,
@@ -158,7 +162,11 @@
     {
       id: 'ripple-tank-h3', level: 7, hidden: true,
       riddle: { zh: '比一步還短的石頭，攔不住遠行的人；回頭看，連影子都沒有留下。', en: 'A stone shorter than a single stride cannot stop the traveller; look back, and it has left no shadow at all.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'config' && d.part === 4 && d.diff === 'obstacle' && d.gen && d.obsL <= 0.6 * d.lam1; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'config' && d.part === 4 && d.diff === 'obstacle' && d.gen &&
+          d.diffractionSet && d.obsL <= 0.6 * d.lam1 + 1e-9;
+      }
     }
   ]);
 })();

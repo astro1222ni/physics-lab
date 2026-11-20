@@ -25,8 +25,17 @@
     {
       id: 'faraday-2', level: 2,
       title: { zh: 'S 極現身', en: 'Enter the S pole' },
-      desc: { zh: '讓線圈「面向磁鐵的那一端」感應出 S 極，且感應電流至少 1 mA。', en: 'Make the end of the coil facing the magnet become an S pole, with an induced current of at least 1 mA.' },
-      check: function (ev) { return ev.type === 'liveA' && ev.data.nearPole === 'S' && Math.abs(ev.data.I) >= 1e-3; }
+      desc: { zh: '讓線圈面向磁鐵的一端感應出 S 極，電流大小至少 1 mA。手動移動磁鐵，或讓磁鐵完整通過一次或振盪一個週期。', en: 'Make the coil end facing the magnet a south pole with at least 1 mA of induced current. Move the magnet by hand or observe a complete pass or oscillation.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'passEnd') return d.firstSign * d.dir > 0 && d.IPeak >= 0.001 - 1e-9;
+        const setup = [d.N, d.a, d.R, d.f, d.flipped].join('/');
+        if (ev.type === 'cycle') return mem.south === setup && d.IPeak >= 0.001 - 1e-9;
+        if (ev.type !== 'liveA') return false;
+        const south = d.nearPole === 'S' && Math.abs(d.I) >= 0.001 - 1e-9;
+        if (d.motion === 'osc' && south) mem.south = setup;
+        return d.motion === 'drag' && south;
+      }
     },
     {
       id: 'faraday-3', level: 3,
@@ -46,7 +55,7 @@
       desc: { zh: '導體棒「等速拉動」，讓感應電動勢 ε = 1.50 V（誤差 0.5% 內）。', en: 'Pull the rod at steady speed so that the induced emf is ε = 1.50 V (within 0.5%).' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'liveB' && d.sub === 'const' && near(Math.abs(d.eps), 1.5, 0.005);
+        return ev.type === 'liveB' && d.sub === 'const' && near(Math.abs(d.eps), 1.5, 0.005 + 1e-9);
       }
     },
     {
@@ -123,7 +132,8 @@
       riddle: { zh: '滿懷之時，反而無聲。', en: 'When it is fullest, it falls silent.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'liveA' && d.motion === 'drag' && d.centered && d.stillFor >= 1 && d.dragPeakI >= 0.005;
+        return ev.type === 'liveA' && d.motion === 'drag' && d.centered && d.stillFor >= 1 - 1e-9 &&
+          d.dragPeakI >= 0.005 - 1e-9 && Math.abs(d.I) <= 0.0005 + 1e-9;
       }
     },
     {

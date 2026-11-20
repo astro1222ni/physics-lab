@@ -2120,7 +2120,7 @@
         let rise = 0;
         const sl = state.tl.segs.find(function (s) { return !s.taut && s.t0 >= (prev ? prev.t : 0) - 1e-9 && s.t1 <= e.t + 1e-9 && s.vA === 0 && !s.restA; });
         if (sl && prev) rise = Math.abs(sl.xA - (state.mode === 1 ? state.tl.sys.bMax : 0));
-        emit('jerk', Object.assign(flatParams(), { v: e.v, slackTime: slackTime, rise: rise, n: state.impacts }));
+        emit('jerk', Object.assign(flatParams(), { afterLanding: !!prev && prev.type === 'landB', v: e.v, slackTime: slackTime, rise: rise, n: state.impacts }));
         continue;
       }
       // 撞擊（落地、擋板、終點）
@@ -2134,7 +2134,8 @@
         if (state.timing === 'gate') { if (e.type !== 'finish') beep(); record(e.t, 'gate'); }
         if (state.timing === 'gate' && pos) fxAt('beam', pos.gx != null ? pos.gx : pos.x, pos.gy != null ? pos.gy : pos.y);
       }
-      emit('impact', Object.assign(flatParams(), { type: e.type, v: e.v, t: e.t, n: state.impacts, afterStop: state.sawStop, a0: state.mode === 3 ? state.tl.segs[0].a : state.tl.segs[0].aA }));
+      emit('impact', Object.assign(flatParams(), { slackFollows: state.tl.events.slice(state.evIdx).some(function (next) { return next.type === 'jerk'; }),
+        type: e.type, v: e.v, t: e.t, n: state.impacts, afterStop: state.sawStop, a0: state.mode === 3 ? state.tl.segs[0].a : state.tl.segs[0].aA }));
     }
   }
   /** 事件發生處（畫布座標，用來放效果） */

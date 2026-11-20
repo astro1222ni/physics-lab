@@ -117,12 +117,16 @@
     {
       id: 'elevator-h2', level: 5, hidden: true,
       riddle: { zh: '那一瞬間，彷彿背著另一個自己。', en: 'For a moment you carried a second you.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'phase' && d.m > 0 && near(d.reading / d.m, 2, 0.005); }
+      check: function (ev) {
+        const d = ev.data;
+        return (ev.type === 'pause' || ev.type === 'phase' && d.weighingSet) &&
+          d.m > 0 && near(d.reading / d.m, 2, 0.005 + 1e-9);
+      }
     },
     {
       id: 'elevator-h3', level: 6, hidden: true,
       riddle: { zh: '斷了線的風箏，還想往上飛。', en: 'A kite with a broken string still climbs.' },
-      check: function (ev) { return ev.type === 'cut' && ev.data.v0 >= 1; }
+      check: function (ev) { return ev.type === 'cut' && ev.data.v0 >= 1 - 1e-9; }
     }
   ]);
 })();

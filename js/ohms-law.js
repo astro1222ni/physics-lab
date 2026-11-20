@@ -1370,7 +1370,11 @@
     };
   }
   /** 物理條件改變：重解電路、重畫一切。release = 使用者完成一次操作（回報任務事件） */
+  let driveSet = false, readingSet = false;
   function update(action, release) {
+    // 「全部清除」只清數據，電源、電阻箱與電表設定不變，所以不清 driveSet、readingSet。
+    if (['emf', 'box', 'zero'].includes(action)) readingSet = true;
+    if (['emf', 'box', 'method', 'rangeA', 'rangeV'].includes(action)) driveSet = true;
     const wasBurnt = state.burnt;
     const burnNow = solve();
     // 電源不是 0 V 時，三用電表拿開
@@ -1380,7 +1384,7 @@
     state.overPrev = over;
     if (burnNow) {
       sndBurn();
-      emit('burnout', { el: 'lamp', emf: state.emf, box: state.box, m: state.method });
+      emit('burnout', { driveSet: driveSet, el: 'lamp', emf: state.emf, box: state.box, m: state.method });
     }
     buildBench();
     renderReadouts();
@@ -1505,7 +1509,7 @@
     else if (list.length >= 2) { const f = fitOf(list, p.el, p.m); if (f) res = T('；最佳直線 R = ', '; best-fit line R = ') + fmtR(f.R, 4); }
     setStatus(T('記錄了第 ' + list.length + ' 點：V = ' + fix(p.V, p.vd) + ' V、I = ' + fix(p.I * 1000, p.ad) + ' mA', 'Point ' + list.length + ' recorded: V = ' + fix(p.V, p.vd) + ' V, I = ' + fix(p.I * 1000, p.ad) + ' mA') + res + T('。', '.'));
     emit('record', {
-      el: p.el, m: p.m, ideal: p.ideal, zeroed: p.zeroed, V: p.V, I: p.I, fsA: fsA(), fsV: fsV(),
+      readingSet: readingSet, el: p.el, m: p.m, ideal: p.ideal, zeroed: p.zeroed, V: p.V, I: p.I, fsA: fsA(), fsV: fsV(),
       defA: p.I / fsA(), defV: p.V / fsV(), emf: state.emf, box: state.box,
       Rtrue: trueR(p.el), VR: s.VR, IR: s.IR, n: list.length, revealed: state.revealed, lampCold: state.lampCold,
       fit: fitOf(list, p.el, p.m), fits: allFits(), lamp: lampStats()

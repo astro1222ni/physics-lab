@@ -195,14 +195,18 @@ console.log('\n隱藏任務');
     const n = Math.round(f / fs), drift = Math.abs(f - n * fs);
     claim(n >= 2 && n <= 4 && drift < 0.02 * n, `隱藏 1：fs = ${fs} Hz → 每 ${n} 個週期閃一次，條紋每秒移動 ${drift.toFixed(2)} 個波長（靜止）`);
   }
-  // 11/12 收緊後的隱藏 2：實際餵事件給任務判定
+  // 用頁面實際送出的物理量驗證三條隱藏任務。
+  let defs = [];
   {
-    let defs = [];
     const LM = { register: function (id, list) { defs = list; } };
     const savedW = global.window, savedL = global.LabMission;
     global.window = { LabMission: LM }; global.LabMission = LM;
     require(__ROOT + 'js/missions/ripple-tank.js');
     global.window = savedW; global.LabMission = savedL;
+    const h1 = defs.find(function (m) { return m.id === 'ripple-tank-h1'; });
+    const mem = {};
+    const alias = function (fs, frozenN) { return h1.check({ type: 'strobe', data: { strobeSet: true, strobe: true, gen: true, f, fs, frozen: true, frozenN } }, mem); };
+    claim(alias(5, 2), '隱藏 1：閃頻調到波源頻率的一半');
     const h2 = defs.find(function (m) { return m.id === 'ripple-tank-h2'; });
     const ev = function (fs, frozen) { return { type: 'strobe', data: { strobe: true, gen: true, f: 10, fs: fs, frozen: frozen, frozenN: 1 } }; };
     const run = function (seq) { const mem = {}; return seq.some(function (e) { return h2.check(e, mem); }); };
@@ -213,6 +217,11 @@ console.log('\n隱藏任務');
   claim(10.2 - 10 >= 0.05 && 10.2 - 10 <= 0.6, '隱藏 2：fs = 10.20 Hz（比 f 高 0.2 Hz）→ 每次閃光時波只走了 0.98 個波長，看起來條紋以每秒 0.2 個波長的速度往起波器倒退');
   for (const [ff, obs, long] of [[5, 0.02, 0.1], [10, 0.012, 0.08]]) {
     const lam = RC.wavelength(ff, 0.008);
+    const h3 = defs.find(function (m) { return m.id === 'ripple-tank-h3'; }), mem = {};
+    const config = function (obsL) {
+      return h3.check({ type: 'config', data: { diffractionSet: true, part: 4, diff: 'obstacle', gen: true, src: 'bar', f: ff, h: 0.008, obsL, lam1: lam } }, mem);
+    };
+    claim(!config(long) && config(0.01) && config(obs), '隱藏 3：障礙物短於波長，包含最短端點');
     const strip = { kind: 'rect', cx: 0.15, cy: H / 2, len: obs, thick: 0.006, ang: 90 * D };
     const sim = run(scene({ f: ff, solids: [strip] }), 3);
     const L = RC.createLockIn(sim); L.run(3);

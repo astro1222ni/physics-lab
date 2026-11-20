@@ -1230,7 +1230,7 @@
     updateButtons();
     requestDraw();
     emit('check', {
-      instr: 'micro', N: 0, kind: M.zeroCheck ? 'zero' : M.kind, zeroOn: M.zeroOn, zeroMm: it.zeroUm / 1000, zeroCheck: M.zeroCheck,
+      instr: 'micro', clicks: M.clicks, N: 0, kind: M.zeroCheck ? 'zero' : M.kind, zeroOn: M.zeroOn, zeroMm: it.zeroUm / 1000, zeroCheck: M.zeroCheck,
       readingMm: rUm / 1000, expectedMm: exp / 1000, sizeMm: it.sizeUm / 1000, answer: res.parsed.value, answerStr: res.parsed.str,
       ok: res.ok, valueOk: res.valueOk, formatOk: res.formatOk, exact: !!res.exact, intMm: rUm % 1000 === 0,
       runV: S.v.run.slice(), runM: S.m.run.slice(), count: Object.assign({}, S.count)

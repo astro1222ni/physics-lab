@@ -3,6 +3,11 @@
 const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 // 用物理核心證明每個任務都做得到（模擬每幀 1/60 s 的時間步進，與網頁相同）
 const DC = require(__ROOT + 'js/radioactive-decay-core.js');
+let missions;
+global.window = { LabMission: { register: (_, list) => { missions = list; } } };
+global.LabMission = window.LabMission;
+require(__ROOT + 'js/missions/radioactive-decay.js');
+const checkMission = (n, type, data, mem) => missions.find(m => m.id === 'radioactive-decay-' + n).check({ type, data }, mem);
 const FPS = 60;
 const seedRand = DC.rng(20261111);
 const seed = () => (seedRand() * 4294967296) >>> 0;
@@ -16,14 +21,45 @@ function runNuclei(o, stopFn) {
 }
 const pct = (k, n) => (100 * k / n).toFixed(1) + '%';
 const out = [];
-// 1: one half-life — trivially: custom T=3 s
-{ const s = runNuclei({ N0: 1600, half: 3, rate: 1 }, s => s.t >= 3); out.push(`M1 一個半衰期：t=${s.t.toFixed(3)} s, N=${s.nP}`); }
+// 1：以正常及加快的速度跑過一個半衰期，再暫停讀數。
+{
+  for (const speed of [1, 2]) {
+    const s = runNuclei({ N0: 1600, half: 3, rate: 0.75 * speed }, s => s.t >= 4.8);
+    const data = { mode: 'nuclei', started: true, k: Math.floor(s.t / 3), tOverT: s.t / 3, speed, N: s.nP };
+    if (!checkMission(1, 'mark', data, {})) throw Error('整數半衰期刻度應可直接完成');
+  }
+  out.push('M1 以一般或加快的速度超過一個半衰期再暫停');
+}
 // 2: dice 400 until N <= 200
 { let rolls = []; for (let k = 0; k < 500; k++) { const s = DC.createDice({ N0: 400, seed: seed() }); while (s.nP * 2 > 400) DC.roll(s); rolls.push(s.t); }
   out.push(`M2 骰子 400 顆：平均 ${(rolls.reduce((a, b) => a + b) / rolls.length).toFixed(2)} 擲剩一半（範圍 ${Math.min(...rolls)}–${Math.max(...rolls)}）`); }
+{
+  const s = DC.createDice({ N0: 400, seed: 2024 }), manual = {}, mixed = {};
+  let success = false, premature = false;
+  while (s.nP >= 200) {
+    DC.roll(s);
+    const data = { runId: 1, N0: 400, N: s.nP, rolls: s.t, manual: true };
+    success = checkMission(2, 'roll', data, manual);
+    premature = checkMission(2, 'roll', { ...data, manual: false }, mixed) || premature;
+  }
+  if (!success || premature) throw new Error('到半數時，手動擲骰應完成，自動擲骰不應完成');
+  out.push(`M2 逐次手動擲了 ${s.t} 次，剩下 ${s.nP} 顆；達到半數時若該次是自動擲骰，不會完成`);
+}
 // 3: 10000 at exactly T½ within 75
 { let ok = 0, n = 200; for (let k = 0; k < n; k++) { const s = DC.createSim({ N0: 10000, halfLife: 3, seed: seed() }); while (s.t < 3 - 1e-12) DC.step(s, Math.min(1 / 60, 3 - s.t)); if (Math.abs(s.nP - 5000) <= 75) ok++; }
   out.push(`M3 大數法則：N0=10000 在 t=T½ 時 |N−5000|≤75 的機率 ${pct(ok, n)}`); }
+{
+  const rows = [];
+  for (let id = 1; id <= 32 && rows.length < 2; id++) {
+    const s = DC.createSim({ N0: 10000, halfLife: 3, seed: id });
+    DC.step(s, 3);
+    if (Math.abs(s.nP - 5000) <= 75) rows.push({ mode: 'nuclei', preset: 'custom', half: 3, half2: null, runId: id, N0: 10000, N: s.nP, k: 1 });
+  }
+  if (rows.length !== 2) throw new Error('找不到兩個可重現的半衰期讀數');
+  const [first, second] = rows, mem = {};
+  if (!checkMission(3, 'mark', { ...first, started: true }, mem)) throw Error('親自開始的一輪符合數量就能完成');
+  out.push('M3 第一個半衰期剩下 ' + first.N + ' 個');
+}
 // 4, 1: trivial
 out.push('M4 對數座標跑滿 4 個半衰期：任何設定都可以（例如自訂 T½=3 s，跑 12 s）');
 // 5: five runs of 100 each ≥ 1 T½ — always possible
@@ -45,6 +81,22 @@ for (const [T1, T2, N0, rate, name] of [[65.94, 6.01, 10000, 65.94 / 4 * 0.25, '
   for (let k = 0; k < n; k++) { const s = DC.createSim({ N0, halfLife: T1, halfLife2: T2, seed: seed() }); const dt = rate / 60; let f = 0;
     while (s.t < 6 * T1 && s.nP > 20) { DC.step(s, dt); if (s.t >= 2 * tm && s.nP > 0 && Math.abs(s.nD / s.nP / eq - 1) <= 0.03) f++; } if (f) ok++; fr += f; }
   out.push(`M10 暫態平衡 ${name}：平衡值 ${eq.toFixed(4)}，t≥2t_max=${(2 * tm).toFixed(2)}；出現可暫停時刻的機率 ${pct(ok, n)}，平均 ${(fr / n).toFixed(0)} 幀`); }
+{
+  const N0 = 10000, half = 20, half2 = 2;
+  const tmax = DC.daughterPeakTime(half, half2), eqRatio = DC.equilibriumRatio(half, half2);
+  let success;
+  for (let runId = 1; runId <= 32 && !success; runId++) {
+    const s = DC.createSim({ N0, halfLife: half, halfLife2: half2, seed: runId });
+    const mem = {};
+    while (s.t < 3 * half && s.nP > 0 && !success) {
+      DC.step(s, 0.5 / FPS);
+      const data = { runId, N0, half, t: s.t, tmax, eqRatio, chain: true, ratioDP: s.nD / s.nP };
+      if (checkMission(10, 'pause', data, mem)) success = data;
+    }
+  }
+  if (!success) throw Error('沒有找到可以完成的暫停時刻');
+  out.push('M10 平衡時暫停一次，比例 ' + success.ratioDP);
+}
 // 11: Mo-99 tmax ±1%
 { const tm = DC.daughterPeakTime(65.94, 6.01), per = 65.94 / 4 * 0.1 / 60; out.push(`M11 鉬-99：t_max = ln(λ2/λ1)/(λ2−λ1) = ${tm.toFixed(3)} 小時，±1% 窗口 ±${(0.01 * tm).toFixed(3)} 小時；0.1× 速度每幀 ${per.toFixed(4)} 小時 → ${Math.floor(0.02 * tm / per)} 幀`); }
 // 12: mystery: strategy A = pause when N first ≤ 5000 (N0=10000) read t; strategy B = fit (guess curve) over 3 half-lives

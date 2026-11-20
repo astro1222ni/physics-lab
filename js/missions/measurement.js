@@ -143,7 +143,10 @@
     {
       id: 'measurement-h3', level: 3, hidden: true,
       riddle: { zh: '它已經說了十次「夠了」。', en: 'It has said “enough” ten times.' },
-      check: function (ev) { return ev.type === 'ratchet' && ev.data.clicks >= 10; }
+      check: function (ev) {
+        const d = ev.data;
+        return read(ev, 'micro') && d.ok && d.clicks >= 10 - 1e-9;
+      }
     }
   ]);
 })();

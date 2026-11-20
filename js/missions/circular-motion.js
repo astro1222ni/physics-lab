@@ -44,23 +44,31 @@
     {
       id: 'circular-motion-3', level: 2,
       title: { zh: '同樣的運動，兩倍的力', en: 'Same motion, twice the force' },
-      desc: { zh: '半徑與週期都不變，讓需要的向心力變成原來的 2 倍（誤差 1% 內）。', en: 'Keeping the radius and the period the same, make the required centripetal force twice as large (within 1%).' },
+      desc: { zh: '保持半徑與週期，調整質量使向心力加倍（誤差 1% 內），讓小球轉滿一圈。', en: 'Keep radius and period fixed, change the mass to double the centripetal force (within 1%), and let the ball complete a lap.' },
       check: function (ev, mem) {
-        if (ev.type !== 'params') return false;
         const d = ev.data;
-        return remember(mem, d).some(function (o) {
-          return o !== d && near(o.r, d.r) && near(o.T, d.T) && o.F > 0 && rel(d.F / o.F, 2, 0.01);
-        });
+        if (ev.type === 'params') {
+          if (!mem.reference || !near(mem.reference.r, d.r) || !near(mem.reference.T, d.T)) {
+            mem.reference = { r: d.r, T: d.T, forces: new Set() };
+          }
+          if (d.prev && near(d.prev.r, d.r) && near(d.prev.T, d.T)) mem.reference.forces.add(d.prev.F);
+          mem.reference.forces.add(d.F);
+        }
+        if (ev.type !== 'lap' || !mem.reference || !near(mem.reference.r, d.r) || !near(mem.reference.T, d.T)) return false;
+        for (const force of mem.reference.forces) {
+          if (force > 0 && rel(d.F / force, 2, 0.01 + EPS)) return true;
+        }
+        return false;
       }
     },
     {
       id: 'circular-motion-4', level: 3,
       title: { zh: '筆直向上', en: 'Straight up' },
-      desc: { zh: '剪斷繩子，讓小球朝畫面正上方（+y 方向）筆直飛出（方向誤差 2° 內）。', en: 'Cut the string so that the ball flies straight up the screen, in the +y direction (within 2°).' },
+      desc: { zh: '先暫停觀察角位置，或讓球沿圓周運動至少 0.5 秒，再剪繩，讓球筆直向上飛出畫面（方向誤差 2° 內）。', en: 'Pause to observe the angle or let the ball travel around the circle for at least 0.5 s, then cut the string so it flies straight up and out of view (within 2°).' },
       check: function (ev) {
-        if (ev.type !== 'exit') return false;
-        const dir = Math.atan2(ev.data.vy, ev.data.vx) * 180 / Math.PI;
-        return angDiff(dir, 90) <= 2;
+        const d = ev.data;
+        return ev.type === 'exit' && (d.observedAngle || d.tCut >= 0.5 - EPS) &&
+          angDiff(Math.atan2(d.vy, d.vx) * 180 / Math.PI, 90) <= 2 + EPS;
       }
     },
     {
@@ -143,7 +151,10 @@
     {
       id: 'circular-motion-h1', level: 4, hidden: true,
       riddle: { zh: '細繩在呻吟：再多一分，它就要斷了。', en: 'The string groans: one ounce more and it will snap.' },
-      check: function (ev) { return ev.type === 'params' && ev.data.F >= 200; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'lap' && d.F >= 200 - 1e-9;
+      }
     },
     {
       id: 'circular-motion-h2', level: 6, hidden: true,

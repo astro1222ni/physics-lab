@@ -515,7 +515,7 @@
     }
   }
 
-  function doRoll() {
+  function doRoll(manual) {
     const r = state.run, s = r.sim;
     if (r.ended || s.kind !== 'dice') return;
     const before = s.nP;
@@ -533,7 +533,7 @@
     }
     record(true);
     afterChange();
-    emit('roll', Object.assign({ before: before, decayed: n }, snapshot()));
+    emit('roll', Object.assign({ before: before, decayed: n, manual: !!manual }, snapshot()));
     requestDraw();
   }
 
@@ -575,7 +575,7 @@
   function snapshot() {
     const r = state.run, s = r.sim, hl = r.half, h2 = r.half2;
     const o = {
-      mode: s.kind, preset: r.preset, N0: r.N0, N: s.nP, D: s.nD, S: s.nS, t: s.t, unit: r.unit,
+      mode: s.kind, preset: r.preset, started: !!r.started, N0: r.N0, N: s.nP, D: s.nD, S: s.nS, t: s.t, unit: r.unit,
       half: hl, half2: h2, chain: h2 != null, tOverT: s.t / hl, tau: hl / Math.LN2,
       Nth: s.kind === 'dice' ? DC.diceTheory(r.N0, s.t) : DC.theoryN(r.N0, hl, s.t),
       log: state.log, speed: state.speed, mystery: r.kind === 'sec',
@@ -1225,6 +1225,7 @@
       return;
     }
     if (r.ended) { newRun(true); }
+    state.run.started = true;
     state.running = true;
     if (lastKeepMsg === '') setStatus('');
     updateButtons();
@@ -1233,13 +1234,14 @@
   $('roll').addEventListener('click', function () {
     acted();
     if (state.run.ended) newRun(true);
-    doRoll();
+    doRoll(true);
     const rr = state.run;
     if (rr.lastRoll != null) srSay(T('第 ' + rr.sim.t + ' 擲：擲出 6 點的有 ' + rr.lastRoll + ' 顆，桌上還剩 ' + rr.sim.nP + ' 顆。', 'Roll ' + rr.sim.t + ': ' + rr.lastRoll + ' sixes, ' + rr.sim.nP + ' dice left.'));
     if (!state.running) startLoop();
   });
   $('again').addEventListener('click', function () {
     newRun(true);
+    state.run.started = true;
     state.running = true;
     setStatus(T('新的一輪開始了，舊的曲線變淡保留在圖上。', 'A new run has started; the old curve stays on the graph, faded.'));
     updateButtons();

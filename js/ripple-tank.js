@@ -1169,15 +1169,21 @@
     }
     emit('record', d);
   }
-  function emitConfig() {
+  let diffractionSet = false, strobeSet = false;
+  function emitConfig(control) {
+    if (['obsL', 'f', 'h'].includes(control)) diffractionSet = true;
     const d = common();
+    d.diffractionSet = diffractionSet;
     if (state.src === 'point' && state.part === 2 && state.shape === 'concave') {
       const o = arcObj();
       d.focusDist = Math.hypot(state.pt.x - (o.vx - o.R / 2), state.pt.y - o.vy);
     }
     emit('config', d);
   }
-  function emitStrobe() { emit('strobe', common()); }
+  function emitStrobe(control) {
+    if (control === 'f' || control === 'fs') strobeSet = true;
+    emit('strobe', Object.assign(common(), { strobeSet: strobeSet }));
+  }
   function emitRuler() {
     const r = state.ruler;
     if (!r) return;
@@ -1587,9 +1593,9 @@
     const el = $(id);
     el.addEventListener('input', function () { onSliderInput(id); });
     el.addEventListener('change', function () {
-      if (id === 'fs' || id === 'f') { emitStrobe(); frozenChime(); }
+      if (id === 'fs' || id === 'f') { emitStrobe(id); frozenChime(); }
       if (id === 'tx' || id === 'ty') emit('level', common());
-      emitConfig();
+      emitConfig(id);
     });
   });
 

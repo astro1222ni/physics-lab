@@ -141,7 +141,11 @@
     {
       id: 'equipotential-h1', level: 5, hidden: true,
       riddle: { zh: '城牆的背後，一絲風也吹不進來。', en: 'Behind the city wall, not a breath of wind gets in.' },
-      check: function (ev) { const d = ev.data; return is(ev, 'record') && d.fullBars && d.behind && !d.onElectrode; }
+      check: function (ev) {
+        const d = ev.data;
+        return is(ev, 'record') && d.fullBars && d.behind && !d.onElectrode &&
+          d.Ecent > 0 && d.E2 <= 0.1 * d.Ecent + 1e-9;
+      }
     },
     {
       id: 'equipotential-h2', level: 6, hidden: true,

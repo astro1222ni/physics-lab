@@ -248,18 +248,21 @@ function assertSlider(name, v, lo, hi) { if (v < lo - 1e-9 || v > hi + 1e-9 || M
   }
   // measurement-h3：棘輪打滑 10 次（照頁面 mMove：接觸後每多轉 0.01 mm 喀一聲）
   {
-    const lim = 0.5; let s = 0.6, touching = false, push = 0, clicks = 0, done = false;
+    const it = mItem(rng, 'wire', false), lim = it.sizeUm / 1000;
+    let s = lim + 0.1, touching = false, push = 0, clicks = 0;
     const move = function (d) {
       let ns = s + d;
       if (ns < lim - 1e-12) {
         const over = lim - ns; ns = lim;
-        if (touching || Math.abs(s - lim) < 1e-9) { push += over; while (push >= 0.01 - 1e-9) { push -= 0.01; clicks++; if (fire('measurement-h3', { type: 'ratchet', data: { clicks: clicks } })) done = true; } }
+        if (touching || Math.abs(s - lim) < 1e-9) { push += over; while (push >= 0.01 - 1e-9) { push -= 0.01; clicks++; } }
       }
       s = ns; touching = Math.abs(s - lim) < 1e-9; if (!touching) { push = 0; clicks = 0; }
     };
     for (let i = 0; i < 10; i++) move(-0.01);  // 「−1 格」按 10 下：碰到物體
     for (let i = 0; i < 10; i++) move(-0.01);  // 再按 10 下：棘輪喀 10 聲
-    if (done) pass('measurement-h3', '測軸碰到後再按「−1 格」10 下（或繼續拖曳 0.10 mm）');
+    const ev = checkM(newScore(), it, ansM(it, false), false);
+    ev.data.clicks = clicks;
+    if (touching && fire('measurement-h3', ev)) pass('measurement-h3', '夾住物件，棘輪響十聲後送出正確讀數');
   }
 })();
 

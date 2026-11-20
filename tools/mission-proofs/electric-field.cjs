@@ -2,6 +2,8 @@
  * 修改物理核心或任務條件後重跑，確認每個任務仍然做得到、預設狀態不會觸發任務。 */
 const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 const FC = require(__ROOT + 'js/field-core.js');
+const { mock } = require('node:test');
+mock.timers.enable({ apis: ['setTimeout'] });
 let defs = [];
 global.LabMission = { register: (id, list) => { defs = list.map(m => Object.assign({ mem: {} }, m)); } }; global.window = { LabMission: global.LabMission };
 require(__ROOT + 'js/missions/electric-field.js');
@@ -18,12 +20,16 @@ const sig = ch => ch.map(c => [c.x, c.y, c.q].join(',')).join(';');
 function run(ch, x, y, q, m, opts) {
   opts = opts || {}; const evs = [];
   const p = { x, y, vx: 0, vy: 0, q, m };
-  const r = { x0: x, y0: y, V0: FC.potentialAt(ch, x, y), total0: FC.energy(ch, p).total, clean: true, maxD: 0, returned: false };
+  const r = { x0: x, y0: y, V0: FC.potentialAt(ch, x, y), total0: FC.energy(ch, p).total, clean: true, maxD: 0, returns: 0 };
   const data = () => { const en = FC.energy(ch, p); return Object.assign(snapshot(ch, p.x, p.y, q, m), { x0: r.x0, y0: r.y0, V0: r.V0, total0: r.total0, clean: r.clean, sig: sig(ch), v: Math.hypot(p.vx, p.vy) * 100, K: en.K, U: en.U, total: en.total }); };
   for (let f = 0; f < (opts.frames || 60 * 60); f++) {
     const stop = FC.advance(ch, p, opts.dt || 1 / 60, { bounds: VIEW, stopRadius: 0.3 });
     const dist = Math.hypot(p.x - x, p.y - y); r.maxD = Math.max(r.maxD, dist);
-    if (!r.returned && r.maxD >= 1 && dist < 0.15) { r.returned = true; evs.push({ type: 'return', data: { x0: x, y0: y, dist, maxDist: r.maxD, qA: ch[0].q, qB: ch[1].q, q, m, clean: true } }); }
+    if (r.maxD >= 1 && dist < 0.15) {
+      r.returns++;
+      evs.push({ type: 'return', data: { x0: x, y0: y, dist, maxDist: r.maxD, returns: r.returns, qA: ch[0].q, qB: ch[1].q, q, m, clean: true } });
+      r.maxD = 0;
+    }
     if (opts.pauseIf && opts.pauseIf(p)) evs.push({ type: 'pause', data: data() });
     if (stop) { evs.push({ type: 'end', data: Object.assign(data(), { reason: stop.reason, hit: stop.charge != null ? stop.charge : -1, hitQ: stop.reason === 'hit' ? ch[stop.charge].q : 0 }) }); break; }
   }
@@ -43,7 +49,22 @@ prove('2', '「單一電荷」預設（A=+3、B=0），試探 +1 nC 從 (8, 4) �
 prove('3', '電偶極 ±3、d=4，試探 −1 nC 從 (10, 4) 釋放 → 向右離開', m => feed(m, run(src(3, -3, 4), 10, 4, -1, 1)));
 prove('4', '等量同號 +3、+3、d=9，試探放在中點 (6, 4)', m => { const ch = src(3, 3, 9); console.log('  4 tol', tolerance(m, ch, 6, 4, 0.12)); return feed(m, [probeEv(ch, 6, 4)]); });
 prove('5', '不等量 +4、−2、d=4；放在零電位圓最右點 (12.0, 4)… 改用最上點 (9.33, 6.67)', m => { const ch = src(4, -2, 4); console.log('  5 tol', tolerance(m, ch, 9.333, 6.667, 0.1)); return feed(m, [probeEv(ch, 9.333, 6.667)]); });
-prove('6', '電偶極 ±3、d=4；放在 A 左上方 (3.3, 6.8)', m => { const ch = src(3, -3, 4); let best = null; for (let y = 6.6; y <= 7; y += 0.01) { const e = probeEv(ch, 3.3, y); if (m.check(e, {})) { best = y; break; } } console.log('  6 at y', best && best.toFixed(2), 'tol', tolerance(m, ch, 3.3, best + 0.03)); return best != null; });
+prove('6', '電偶極 ±3 nC、間距 4 cm；親手把試探電荷放到 A 左上方電場朝正上方的位置', m => {
+  const ch = src(3, -3, 4);
+  for (let y = 6.6; y <= 7; y += 0.01) {
+    const e = probeEv(ch, 3.3, y);
+    const mem = {};
+    let done = false;
+    e.data.stillHere = () => true;
+    LabMission.emit = (type, data) => { done = m.check({ type, data }, mem); };
+    if (m.check(e, mem)) return false;
+    mock.timers.tick(1000);
+    if (!done) continue;
+    const fromChargeChange = { type: 'probe', data: { ...e.data, key: 'sep' } };
+    return !m.check(fromChargeChange, {});
+  }
+  return false;
+});
 prove('7', '電偶極 ±3、d=4，試探 +1 nC 從 (2, 6) 釋放：m=4 g 一次、改 m=1 g 再一次 → 2 倍速率', m => { const ch = src(3, -3, 4); return !feed(m, run(ch, 2, 6, 1, 4)) && feed(m, run(ch, 2, 6, 1, 1)); });
 prove('8', '電偶極 ±3、d=4，試探 +0.1 nC、m=5 g 從 (5, 5)（V0≈+1054 V）釋放，穿越中垂線時暫停', m => {
   const ch = src(3, -3, 4); let win = 0, Kr = null;
@@ -56,7 +77,11 @@ prove('9', '+4、−2、d=2（A 在 5、B 在 7）：零電場點在 B 外側 2/
 prove('10', '電偶極 ±3、d=4，從 (3, 4) 先用 q=+1 釋放得 K1≈1.820 μJ，再改 q=+2.75 → K≈5.004 μJ', m => { const ch = src(3, -3, 4); const e1 = run(ch, 3, 4, 1, 1); console.log('  10 K1', (e1.at(-1).data.K * 1e6).toFixed(3)); const e2 = run(ch, 3, 4, 2.75, 1); console.log('  10 K2', (e2.at(-1).data.K * 1e6).toFixed(3)); return feed(m, e2); });
 prove('11', '電偶極 ±1、d=6（A 在 3、B 在 9）：放在 (2.515, 6.85)', m => { const ch = src(1, -1, 6); console.log('  11 tol', tolerance(m, ch, 2.515, 6.85, 0.08)); return feed(m, [probeEv(ch, 2.515, 6.85)]); });
 prove('12', '+4、−2、d=4：零電位圓（圓心 (9.33, 4)、半徑 2.67）最低點 (9.333, 1.333)', m => { const ch = src(4, -2, 4); console.log('  12 tol', tolerance(m, ch, 9.333, 1.333, 0.08)); return feed(m, [probeEv(ch, 9.333, 1.333)]); });
-prove('h1', '「等量同號」預設（+3、+3、d=4，試探在 (6, 6)），把 q 改成 −1 → 沿中垂線上下振盪、回到起點', m => feed(m, run(src(3, 3, 4), 6, 6, -1, 1, { frames: 600 })));
+prove('h1', '等量同號 +3 nC、間距 4 cm；−1 nC 試探電荷沿中垂線持續振盪，完整折返回到起點', m => {
+  const evs = run(src(3, 3, 4), 6, 6, -1, 1, { frames: 1200 });
+  const returns = evs.filter(e => e.type === 'return');
+  return feed(m, returns.slice(0, 1));
+});
 prove('h2', 'A=+5、B=−5、間距 1 cm（滑桿最小）', m => feed(m, [probeEv(src(5, -5, 1), 6, 6)]));
 prove('h3', '±5 nC、d=4；試探 +3 nC、m=0.2 g 從 A 右邊 0.75 cm (4.75, 4) 釋放 → 撞 B', m => { const evs = run(src(5, -5, 4), 4.75, 4, 3, 0.2); console.log('  h3 v', evs.at(-1).data.v.toFixed(1), 'cm/s'); return feed(m, evs); });
 // h3 at 30 fps too
@@ -74,3 +99,4 @@ scen.forEach(([n, ch, x, y]) => {
   const hit = defs.filter(m => feed(m, evs)).map(m => m.id.replace('electric-field-', ''));
   console.log('  ', n, '→', hit.join(',') || '（無）');
 });
+if (results.some(result => !result[2])) process.exitCode = 1;

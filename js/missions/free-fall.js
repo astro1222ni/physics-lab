@@ -163,7 +163,8 @@
       riddle: { zh: '大地的召喚，只聽見一半。', en: 'The call of the earth, only half heard.' },
       check: function (ev) {
         const d = ev.data;
-        return rec(ev) && d.mode === 'incline' && d.rows >= 4 && Math.abs(d.sin - 0.5) <= 1e-6 && Math.abs(d.aFit / (G / 2) - 1) <= 0.005;
+        return rec(ev) && d.complete && d.mode === 'incline' && d.rows >= 4 - 1e-9 &&
+          Math.abs(d.sin - 0.5) <= 1e-6 + 1e-9 && Math.abs(d.aFit / (G / 2) - 1) <= 0.005 + 1e-9;
       }
     },
     {

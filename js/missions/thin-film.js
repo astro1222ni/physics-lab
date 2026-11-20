@@ -28,14 +28,37 @@
     {
       id: 'thin-film-1', level: 1,
       title: { zh: '最薄的地方是黑的', en: 'The thinnest part is black' },
-      desc: { zh: '肥皂膜、白光：把游標移到膜上厚度不到 20 nm 的地方，看看那裡是什麼顏色。', en: 'Soap film, white light: move the cursor to a place where the film is less than 20 nm thick and see what colour it is.' },
-      check: function (ev) { const d = ev.data; return mode(ev, 'soap') && d.white && d.h <= 20; }
+      desc: { zh: '肥皂膜、白光：把游標移到膜上厚度不到 20 nm 的地方，停留一秒，觀察那裡的顏色。', en: 'Soap film, white light: move the cursor to a place where the film is less than 20 nm thick and hold it there for one second to observe its colour.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'filmObservation') return d.token === mem.token;
+        if (ev.type !== 'state') return false;
+        const matches = mode(ev, 'soap') && d.cursorPlaced && d.white && d.h < 20;
+        const reading = d.placement;
+        if (!matches || mem.reading !== reading) {
+          clearTimeout(mem.timer);
+          mem.token = null;
+        }
+        mem.reading = reading;
+        if (matches && !mem.token) {
+          const token = mem.token = {};
+          mem.timer = setTimeout(function () {
+            if (mem.token !== token) return;
+            if (d.stillHere()) LabMission.emit('filmObservation', { token: token });
+            else mem.token = null;
+          }, 1000);
+        }
+        return false;
+      }
     },
     {
       id: 'thin-film-2', level: 2,
       title: { zh: '鈉光的第二條暗紋', en: 'The second dark fringe in sodium light' },
-      desc: { zh: '肥皂膜、單色光 589 nm（鈉黃光）：把游標放在從頂端往下數的第 2 條暗紋上（頂端的黑色不算），使 2nh cosθt = 2λ（誤差 0.03λ 內）。', en: 'Soap film, 589 nm (sodium yellow): put the cursor on the 2nd dark fringe counted down from the top (the black top does not count), so that 2nh cosθt = 2λ (within 0.03λ).' },
-      check: function (ev) { const d = ev.data; return mono(ev, 'soap') && near(d.lam, 589, 0.5) && near(d.ord, 2, 0.03); }
+      desc: { zh: '肥皂膜、單色光 589 nm（鈉黃光）：把游標放在從頂端往下數的第 2 條暗紋上（頂端的黑色不算），使膜內往返光程差 2nh cosθt = 2λ（誤差 0.03λ 內）。', en: 'Soap film, 589 nm (sodium yellow): put the cursor on the 2nd dark fringe counted down from the top (the black top does not count), so that the round-trip optical path difference in the film is 2nh cosθt = 2λ (within 0.03λ).' },
+      check: function (ev) {
+        const d = ev.data;
+        return mono(ev, 'soap') && d.cursorPlaced && near(d.lam, 589, 0.5) && near(d.ord, 2, 0.03);
+      }
     },
     {
       id: 'thin-film-3', level: 3,

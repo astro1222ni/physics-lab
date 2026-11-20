@@ -162,7 +162,7 @@ function state(o) {
 const pol = (o) => { const r = polarSig(!!o.g1on, o.g1 || 0, !!o.g2on, o.g2 || 0, o.rx || 0, 55); return state(Object.assign({ mode: 'polar', amp2: r.amp * r.amp }, o)); };
 run('microwave-h1', [pol({ rx: 90, g2on: true, g2: 45 })], true, 'ρ = 90°、柵 2 = 45° → 振幅平方 ' + polarSig(false, 0, true, 45, 90, 55).amp ** 2);
 run('microwave-h1', [pol({ rx: 90 })], false);
-run('microwave-h2', [pol({ rx: 180 })]);
+run('microwave-h2', events([polarRow([], false, 0, false, 0, 180, 55)]));
 run('microwave-h2', [pol({ rx: 175 })], false);
 function shadowOf(th, psi) {
   const r = { x: -K.arm * Math.cos(psi * DEG), y: K.arm * Math.sin(psi * DEG) }, a = { x: -K.arm, y: 0 };

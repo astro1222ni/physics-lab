@@ -40,7 +40,9 @@
       id: 'angular-momentum-4', level: 3,
       title: { zh: '兩盤相合', en: 'Couple the discs' },
       desc: { zh: '在「兩盤相合」中放下上盤，等兩個圓盤一起轉動。', en: 'In “Two discs”, drop the upper disc and wait until the two discs turn together.' },
-      check: function (ev) { return ev.type === 'couple' && ev.data.loss > 1e-9; }
+      check: function (ev) {
+        return ev.type === 'couple' && Math.abs(ev.data.wf) > 1e-9;
+      }
     },
     {
       id: 'angular-momentum-5', level: 4,

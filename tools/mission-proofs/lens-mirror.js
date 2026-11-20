@@ -28,3 +28,22 @@ console.log('9 slider-grid solutions (should need typing):', c9.length);
 // 6: 確認 D=45 需 f ≤ 11.25
 const c6 = grid.filter(([f, p]) => { const s = S('convex-lens', f, p); return s.real && Math.abs(p + s.q - 45) <= 0.2; });
 console.log('6 grid pairs by f:', [...new Set(c6.map(x => x[0]))].join(','));
+
+let defs;
+global.LabMission = { register: (slug, list) => { defs = list; } };
+global.window = { LabMission: global.LabMission };
+require(__ROOT + 'js/missions/lens-mirror.js');
+function verifies(id, runs, expected, note) {
+  const mission = defs.find(m => m.id === 'lens-mirror-' + id);
+  const mem = {};
+  const hit = runs.some(([element, fAbs, p, fan, h]) => {
+    const result = S(element, fAbs, p, h);
+    return mission.check({ type: 'image', data: { ...result, element, fAbs, fan, positionSet: true } }, mem);
+  });
+  console.log((hit === expected ? '✓ ' : '✗ ') + id + '：' + note);
+  if (hit !== expected) process.exitCode = 1;
+}
+verifies('3', [['concave-mirror', 10, 10, false]], true, '物體直接放在焦點');
+verifies('4', [['convex-mirror', 10, 10, false]], true, '調出半高虛像');
+verifies('h1', [['concave-mirror', 10, 20, false]], true, '將物體放在球心');
+verifies('h3', [['convex-lens', 10, 10, true]], true, '在焦點觀察平行光束');

@@ -135,12 +135,18 @@
     {
       id: 'oscillation-h1', level: 5, hidden: true,
       riddle: { zh: '越靠近那個不可能的平衡，它就越捨不得回來。', en: 'The nearer it comes to an impossible balance, the more reluctant it is to come back.' },
-      check: function (ev) { return isPeriod(ev, 'pendulum') && ev.data.Tm >= 2.3 * ev.data.T0; }
+      check: function (ev) {
+        const d = ev.data;
+        return isPeriod(ev, 'pendulum') && d.Tm >= 2.3 * d.T0 - 1e-9;
+      }
     },
     {
       id: 'oscillation-h2', level: 4, hidden: true,
       riddle: { zh: '牽著牆的那一位，一去一回之間，茶已涼了半盞。', en: 'The one tethered to the wall: between its leaving and its return, half a cup of tea goes cold.' },
-      check: function (ev) { return ev.type === 'period' && ev.data.mode === 'spring' && ev.data.Tm >= 8.5; }
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'period' && d.mode === 'spring' && d.Tm >= 8.5 - 1e-9;
+      }
     },
     {
       id: 'oscillation-h3', level: 6, hidden: true,

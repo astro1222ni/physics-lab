@@ -1305,7 +1305,7 @@
   }
   function applyDrag(kind, x, y) {
     const o = lay;
-    if (kind === 'soap') st.soap.z = clamp((y - o.fy) / o.fh, 0, 1);
+    if (kind === 'soap') { st.soap.z = clamp((y - o.fy) / o.fh, 0, 1); markSoapCursor(); }
     else if (kind === 'micro') {
       const xa = st.wedge.x0 * CM - st.wedge.vw / 2 * MM;
       st.wedge.cx = xa + clamp((x - o.mx) / o.mw, 0, 1) * st.wedge.vw * MM;
@@ -1346,7 +1346,7 @@
       st.soap.specLam = clamp(380 + (p[0] - gl.x) / gl.gw * 400, 380, 780);
     } else {
       const v = gl.x0 + clamp((p[0] - gl.x) / gl.w, 0, 1) * (gl.x1 - gl.x0);
-      if (st.mode === 'soap') st.soap.z = clamp(v / Math.max(1e-9, st.soap.hb), 0, 1);
+      if (st.mode === 'soap') { st.soap.z = clamp(v / Math.max(1e-9, st.soap.hb), 0, 1); markSoapCursor(); }
       else if (st.mode === 'wedge') st.wedge.cx = v * MM;
       else st.newton.cx = (st.newton.cx != null && st.newton.cx < 0 ? -1 : 1) * v * MM;
     }
@@ -1365,6 +1365,7 @@
     const z0 = st.soap.z;
     st.soap.z = clamp(z0 + sgn / Math.max(50, lay && lay.fh ? lay.fh : 300) * (big ? 10 : 1), 0, 1);
     if (st.soap.z === z0) return false;
+    markSoapCursor();
     keyMoved(); return true;
   }
   /** 空氣劈十字線：一次 1/4 像素（看相對亮度讀數微調；Shift 2.5 像素），限制在顯微鏡視野內 */
@@ -1498,12 +1499,21 @@
     if (drag || gdrag) return;
     emitTimer = setTimeout(emitState, delay == null ? 300 : delay);
   }
+  let placedSoap = null;
+  function markSoapCursor() { placedSoap = { z: st.soap.z, hb: st.soap.hb }; }
   function missionData() {
     prep();
     const d = { mode: st.mode, white: isWhite(), lam: isWhite() ? NaN : lamNm(), beams: st.beams };
     if (st.mode === 'soap') {
       const s = st.soap, L = L0, h = soapCursorH(), path = L.path(h);
       const col = C.filmColor(L, h), hv = C.hsv(col.srgb);
+      d.cursorPlaced = placedSoap !== null && s.z === placedSoap.z && s.hb === placedSoap.hb;
+      const placement = placedSoap;
+      d.placement = placement;
+      d.stillHere = function () {
+        return st.mode === 'soap' && isWhite() && !drag && !gdrag && placement === placedSoap &&
+          st.soap.z === placement.z && st.soap.hb === placement.hb && soapCursorH() < 20;
+      };
       Object.assign(d, { n: s.n, ang: s.ang, hb: s.hb, t: s.t, h: h, path: path, ord: isWhite() ? NaN : path / lamNm(),
         R: isWhite() ? NaN : L.R(h, lamNm()), Rmax: L.Rmax, Rs: L.Rs(h, isWhite() ? 550 : lamNm()), Rp: L.Rp(h, isWhite() ? 550 : lamNm()),
         rgb: col.srgb, hue: hv.h, sat: hv.s, val: hv.v, brewster: Math.atan(s.n) / DEG });

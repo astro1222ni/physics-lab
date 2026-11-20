@@ -7,6 +7,15 @@ const DEG = Math.PI / 180;
 let list = null;
 global.LabMission = { register: (m, l) => { list = l; } }; global.window = { LabMission: global.LabMission };
 require(__ROOT + 'js/missions/refraction.js');
+// 用虛擬時鐘確認設定停穩後才完成，不必讓證明程式實際等候。
+const { mock } = require('node:test');
+mock.timers.enable({ apis: ['setTimeout'] });
+function settled(mission, event, mem) {
+  let completed = mission.check(event, mem);
+  LabMission.emit = (type, data) => { if (mission.check({ type, data }, mem)) completed = true; };
+  mock.timers.tick(1000);
+  return completed;
+}
 function ev(st) {
   const s = Object.assign({ mode: 'ray', n1: 1, n2: 1.5, th1: 40, nm: 532, nCore: 1.5, nClad: 1.33, thIn: 35 }, st);
   const th1 = s.th1 === 'crit' ? RC.criticalAngle(s.n1, s.n2) : s.th1 === 'brew' ? RC.brewsterAngle(s.n1, s.n2) : s.th1 * DEG;
@@ -21,7 +30,7 @@ function ev(st) {
     nCore: s.nCore, nClad: s.nClad, thIn: toDeg(thIn), thR: toDeg(b.thR), phi: toDeg(b.phi),
     fCrit: toDeg(b.crit), acc: toDeg(b.acc), NA: b.NA, guided: b.guided, entryT: b.entryT, wallR: b.wallR } };
 }
-const passing = st => { const e = ev(st); return list.filter(m => m.check(e, {})).map(m => m.id); };
+const passing = st => { const e = ev(st); return list.filter(m => settled(m, e, {})).map(m => m.id); };
 let bad = 0;
 function expect(id, st, note) {
   const p = passing(st); const e = ev(st).data;
@@ -31,7 +40,11 @@ function expect(id, st, note) {
 function expectNot(id, st, note) { const p = passing(st); const ok = !p.includes(id); if (!ok) bad++; console.log((ok ? 'OK ' : 'FAIL ') + ('not ' + id).padEnd(19), JSON.stringify(st), note || ''); }
 console.log('預設狀態通過的任務：', JSON.stringify(passing({})), JSON.stringify(passing({ mode: 'wave' })), JSON.stringify(passing({ mode: 'fibre' })));
 if (passing({}).length || passing({ mode: 'wave' }).length || passing({ mode: 'fibre' }).length) bad++;
-expect('refraction-1', { n1: 1.5, n2: 1, th1: 60 }, '對調介質、入射角 60°');
+const tir = list.find(m => m.id === 'refraction-1'), tirMem = {};
+if (tir.check(ev({ n1: 1.5, n2: 1, th1: 30 }), tirMem) || !settled(tir, ev({ n1: 1.5, n2: 1, th1: 60 }), tirMem)) bad++;
+const fastAngle = ev({ n1: 1.5, n2: 1, th1: 60 });
+if (settled(tir, ev({ n1: 1.5, n2: 1, th1: 'crit' }), {})) bad++;
+if (!settled(tir, fastAngle, {})) bad++;
 expect('refraction-2', { n1: 1.33, n2: 1, th1: 'crit' }, '水→空氣，按「臨界角」');
 expect('refraction-2', { n1: 1.5, n2: 1, th1: 41.81 }, '玻璃→空氣，打字 41.81°');
 expect('refraction-3', { mode: 'wave', n2: 1.35, nm: 405 }, '藍紫光，n2 = 1.35（滑桿）');
@@ -76,3 +89,5 @@ expect('refraction-h3', { mode: 'wave', n1: 1.33, n2: 1, th1: 48.8 }, '水→空
 expectNot('refraction-h3', { mode: 'wave', n1: 1.5, n2: 1, th1: 60 }, '深入全反射區，漸逝波很淺');
 console.log('h3 深度 41.9°：', ev({ mode: 'wave', n1: 1.5, n2: 1, th1: 41.9 }).data.depth.toFixed(3), '；60°：', ev({ mode: 'wave', n1: 1.5, n2: 1, th1: 60 }).data.depth.toFixed(3));
 console.log(bad ? '\n有 ' + bad + ' 項不符' : '\n全部符合');
+mock.timers.reset();
+if (bad) process.exitCode = 1;

@@ -27,14 +27,14 @@ const ok = (id, cond, sol) => res.push(`${cond ? 'OK ' : 'FAIL'} ${id} (L${M[id]
 // 1
 ok('faraday-1', chk('faraday-1', 'passEnd', pass({ N: 100, a: 0.03, R: 10, v: 0.5, flipped: true })), '翻轉磁鐵後等速通過');
 ok('faraday-1', !chk('faraday-1', 'passEnd', pass({ N: 100, a: 0.03, R: 10, v: 0.5, dir: -1 })), '（只反向不行）');
-// 2 由右往左，未翻轉：S 極接近
-{ let hit = false; const p = { N: 100, a: 0.03, R: 10, flipped: false };
-  for (let t = 0; t < F.passDuration(0.5); t += 0.02) { const m = F.passState(t, 0.5, -1), s = F.coilState(m.x, m.v, p);
-    if (chk('faraday-2', 'liveA', { motion: 'pass', I: s.I, nearPole: F.nearPole(s.I, m.x) })) hit = true; }
-  let def = false;
-  for (let t = 0; t < F.passDuration(0.5); t += 0.002) { const m = F.passState(t, 0.5, 1), s = F.coilState(m.x, m.v, p);
-    if (Math.abs(s.I) > 1e-6 && F.nearPole(s.I, m.x) === 'S') def = true; }
-  ok('faraday-2', hit && !def, '改成由右往左通過（S 極接近）；預設方向不會觸發');
+// 2 等速通過與手動移動都能呈現同一感應極性。
+{
+  const p = { N: 100, a: 0.03, R: 10, v: 0.5 };
+  const toward = pass({ ...p, dir: -1 }), away = pass({ ...p, dir: 1 });
+  ok('faraday-2', chk('faraday-2', 'passEnd', toward) && !chk('faraday-2', 'passEnd', away), '由右往左完整通過，磁鐵面對的線圈端為 S 極');
+  const magnet = F.passState(F.passDuration(p.v) * 0.4, p.v, -1);
+  const reading = F.coilState(magnet.x, magnet.v, p);
+  ok('faraday-2', chk('faraday-2', 'liveA', { motion: 'drag', I: reading.I, nearPole: F.nearPole(reading.I, magnet.x) }), '同方向手動移動也有效');
 }
 // 3
 chk('faraday-3', 'passEnd', pass({ N: 100, a: 0.03, R: 10, v: 0.2 }));
@@ -62,7 +62,7 @@ ok('faraday-5', chk('faraday-5', 'passEnd', pass({ N: 100, a: 0.03, R: 10, v: 0.
 // 12
 { const e = pass({ N: 100, a: 0.03, R: 31.5, v: 0.948 }); ok('faraday-12', chk('faraday-12', 'passEnd', e), `N=100, a=3 cm, R=31.5 Ω, v=0.948 → ε=${e.epsPeak.toFixed(4)} V, q=${(Math.abs(e.qHalf) * 1e3).toFixed(4)} mC`); }
 // h1
-ok('faraday-h1', chk('faraday-h1', 'liveA', { motion: 'drag', centered: true, stillFor: 1.05, dragPeakI: 0.012 }), '拖曳磁鐵產生電流後，放在線圈正中央（±4 mm）靜止 1 s');
+ok('faraday-h1', chk('faraday-h1', 'liveA', { motion: 'drag', centered: true, I: 0, stillFor: 1.05, dragPeakI: 0.012 }), '拖曳磁鐵產生電流後，放在線圈正中央（±4 mm）靜止 1 s');
 // h2
 { const r = rodRun({ sub: 'force', B: 1, L: 0.5, R: 1, m: 0.05, v0: 3, F: 0.25 }); ok('faraday-h2', r.lives.some(e => chk('faraday-h2', 'liveB', e)), `定力 F=0.25 N（vt=1）、v0=3、m=0.05 → 由上方降到終端速度, ${r.reason} t=${r.tEnd.toFixed(2)}`); }
 // h3
@@ -80,3 +80,4 @@ ok('faraday-h1', chk('faraday-h1', 'liveA', { motion: 'drag', centered: true, st
   res.push((trig.length ? 'FAIL 預設觸發: ' + trig.map(m => m.id) : 'OK  預設狀態（各模式）不觸發任何任務'));
 }
 console.log(res.join('\n'));
+if (res.some(line => line.startsWith('FAIL'))) process.exitCode = 1;
