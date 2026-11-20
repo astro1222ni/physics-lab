@@ -249,10 +249,10 @@
     for (let g = Math.ceil(vb[2] / st) * st; g <= vb[3]; g += st) {
       if (Math.abs(g) < 1e-9) continue;
       const near = axisVertices.some(function (v) { return Math.hypot(X(v[0]) - xAx, Y(v[1]) - Y(g)) < 12; });
-      D.haloText(c, fmt(r6(g)), xAx + (near ? -8 : 4), Y(g), C.muted, near ? 'right' : 'left', 'middle', fnt(10.5));
+      D.haloText(c, fmt(r6(g)), xAx + (near ? -13 : 4), Y(g), C.muted, near ? 'right' : 'left', 'middle', fnt(10.5));
     }
     D.haloText(c, 'x', b.x + b.w - 10, yAx - 8, C.text, 'right', 'bottom', fnt(13, 'italic 600'));
-    D.haloText(c, 'y', xAx + 8, b.y + 14, C.text, 'left', 'middle', fnt(13, 'italic 600'));
+    D.haloText(c, 'y', xAx - 8, b.y + 14, C.text, 'right', 'middle', fnt(13, 'italic 600')); // 放軸左側：右側常被限制線穿過
     D.haloText(c, 'O', X(0) - 4, Y(0) + 4, C.muted, 'right', 'top', fnt(11, 'italic'));
     // 限制線、排除那一側的短斜線
     const labels = [];
@@ -324,7 +324,7 @@
         c.beginPath(); c.arc(X(v[0]), Y(v[1]), 4.5, 0, Math.PI * 2); c.fill(); c.stroke();
       }
     });
-    const boxes = [{ x: xAx + 5, y: b.y + 3, w: 22, h: 22 }];
+    const boxes = [{ x: xAx - 27, y: b.y + 3, w: 22, h: 22 }];
     const drawer = window.LabDeck?.mode === 'drawer';
     const gridLabel = T('格線間距 ', 'Grid spacing ') + fmt(st) + T(' 單位', ' unit' + (st === 1 ? '' : 's'));
     if (drawer) {
@@ -442,7 +442,7 @@
     else if (!R.bounded) reg = T('無界', 'unbounded');
     else reg = T('有界的 ', 'bounded, ') + R.vertices.length + T(' 邊形', '-gon');
     setHTML('rRegion', reg);
-    setHTML('rVerts', R.empty ? '—' : R.vertices.length > 6 ? String(R.vertices.length) : R.vertices.map(function (v) { return pt(v[0], v[1]); }).join(T('、', ', ')));
+    setHTML('rVerts', R.empty ? '—' : R.vertices.length > 6 ? String(R.vertices.length) : R.vertices.map(function (v) { return '<span class="nw">' + pt(v[0], v[1]) + '</span>'; }).join(T('、', ', ')));
     setHTML('rArea', R.empty ? '—' : !R.bounded ? '∞' : fmt(R.area, 3));
     setHTML('rBestL', state.sense === 'max' ? T('最大值', 'Largest value') : T('最小值', 'Smallest value'));
     let best = '—', where = '—';
