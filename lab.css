@@ -2042,10 +2042,12 @@ html.labdeck-drawer body { padding-right: var(--deck-w); } /* 側標籤蓋在畫
 html.labdeck-drawer .labdeck { position: fixed; top: 0; right: 0; bottom: 0; z-index: 35; width: var(--deck-w); margin: 0; border-width: 0 0 0 1px; border-radius: 0;
   overflow-y: auto; overscroll-behavior: contain; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0;
   box-shadow: -4px 0 14px color-mix(in srgb, var(--text) 10%, transparent); }
-html.labdeck-drawer .labdeck-tabs { position: sticky; top: 0; z-index: 1; padding-left: var(--deck-grip); }
+html.labdeck-drawer .labdeck-tabs { position: sticky; top: 0; z-index: 1; }
+/* 把手的位置只佔第一列最左邊（不是整條分頁列的左內距）：第一列三格各讓一點，第二列以後恢復原寬，長分頁名照樣折兩行 */
+html.labdeck-drawer .labdeck-tabs::before { content: ""; flex: 0 0 var(--deck-grip); order: -1; box-shadow: inset 0 -1px var(--border); }
 html.labdeck-drawer .labdeck-tabs[hidden] { display: flex; } /* 只有一張卡時也留分頁列當標題：分頁列黏在頂端，操作台捲動時內容從它底下過，不會從把手底下過 */
 html.labdeck-drawer .labdeck > :first-child:not(.labdeck-tabs) { margin-left: var(--deck-grip) !important; } /* 頁面自己放到操作台最上面的東西（數學的模式選擇、供需的記錄列）也讓出把手的位置；頁面常自訂這塊的 margin，所以要 !important */
-html.labdeck-drawer .labdeck-tabs button { min-width: 32%; min-height: 44px; font-size: calc(13px * var(--fs, 1)); }
+html.labdeck-drawer .labdeck-tabs button { min-width: calc((100% - var(--deck-grip)) / 3 - 1px); min-height: 44px; padding: 4px 6px; font-size: calc(13px * var(--fs, 1)); } /* 每列三格（第一列扣掉把手位置）；左右各留 6 px，長分頁名照 text-wrap: balance 折兩行，不貼齊邊緣被切（11/20） */
 html.labdeck-drawer .lab { display: block; margin-left: auto; margin-right: auto; }
 html.labdeck-drawer .lab > * + * { margin-top: 16px; }
 html.labdeck-drawer .fb-tab, html.labdeck-drawer .lp-dock-tab { right: var(--deck-w); }
@@ -2057,6 +2059,7 @@ html.labdeck-drawer { --grip-bar-r: calc(var(--deck-grip) - max(0px, 15px - var(
 html.labdeck-drawer body > .fb-tab { top: env(safe-area-inset-top, 0px); bottom: auto; z-index: 36; }
 html.labdeck-drawer body > .fb-tab.fb-slim:not(.fb-peek) { right: calc(var(--deck-w) - var(--deck-grip)); width: calc(var(--deck-gap) + var(--deck-grip)); height: 44px; min-height: 44px; }
 html.labdeck-drawer body > .fb-tab.fb-slim:not(.fb-peek)::after { right: var(--grip-bar-r); }
+html.labdeck-drawer .labdeck .lab-num::after { left: auto; right: 0; transform: none; } /* 操作台的數字靠右：隱形觸控區（一樣至少 44 px 寬）改從數字右緣往左長，不再伸出操作台右緣、讓操作台能被橫向推動幾 px */
 html.labdeck-drawer .lab-tools { margin: 2px 0 4px; } /* 橫放螢幕矮：投影、分享這排上下少留一點，捲到主畫布時這排不會只剩半截 */
 html.labdeck-drawer .lp-strip { left: calc((100% - var(--deck-w)) / 2); width: min(calc(100% - var(--deck-w)), 720px); }
 }
