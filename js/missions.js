@@ -45,7 +45,11 @@
 
   /** 任務的星星數：一般任務 = 等級；隱藏任務 = 等級 × 2（要瞎猜，給得大方一點） */
   const HIDDEN_X = 2;
-  function starsOf(m) { return m ? (m.hidden ? HIDDEN_X : 1) * m.level : 0; }
+  function starsOf(m) {
+    if (!m) return 0;
+    if (m.study && m.hidden && Number.isInteger(m.studyStars) && m.studyStars > 0) return m.studyStars;
+    return (m.hidden ? HIDDEN_X : 1) * m.level;
+  }
 
   // ======================= 公開介面 =======================
   // 實驗模式／學習模式分開（站長 11/16：「同一個實驗的實驗模式跟學習模式的星星數是統一計算，但是要賺取星星，要各自到這兩個不同的界面去賺取」）
@@ -277,8 +281,12 @@
   }
   function loadAll() {
     if (!allP) allP = loadIndex().then(function () {
-      return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !registry[m.id]; })
-        .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js' + ver); }));
+      // 學習單元可以好幾個共用一個任務檔（file 欄位，例如學測三題都在 exam-114.js），同一檔只載一次
+      const files = {};
+      (window.LAB_MISSION_MODULES || []).concat(window.LAB_LEARN_UNITS || []).forEach(function (m) {
+        if (!registry[m.id]) files[m.file || m.id] = true;
+      });
+      return Promise.all(Object.keys(files).map(function (f) { return loadScript(base + 'missions/' + f + '.js' + ver); }));
     });
     return allP;
   }
@@ -325,6 +333,12 @@
             if (e && /popup-blocked|operation-not-supported|web-storage-unsupported/.test(e.code || '')) return Au.signInWithRedirect(auth, provider);
             throw e;
           });
+        },
+        advanceLearn: function (uid, unit, p, n) {
+          return D.runTransaction(r('learn/' + uid + '/' + unit), function (old) {
+            if (old && old.p >= p) return;
+            return { p: p, n: n, at: D.serverTimestamp() };
+          }, { applyLocally: false });
         },
         getProfile: function (uid) { return D.get(r('profiles/' + uid)).then(function (s) { return s.val() || {}; }); },
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },

@@ -4,3 +4,7 @@ package-lock.json
 .DS_Store
 Thumbs.db
 .editing
+
+# 學習分支：講義 PDF 與原文摘錄只留本機（11/20）
+*.pdf
+learn-src/

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-Hant" data-lab-mode="learn">
+<head>
+  <meta charset="utf-8">
+  <script>try{window.learnDefaultSound=typeof JSON.parse(localStorage.getItem('lab-settings')||'{}').sound!=='boolean';}catch{window.learnDefaultSound=true;}</script>
+  <script src="js/settings.js"></script>
+  <script>if(window.learnDefaultSound)LabSettings.set('sound',true);</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-en="Work and forms of energy · Astro Ni Lab">功與能量的形式・讓倪動手</title>
+  <link rel="stylesheet" href="lab.css">
+  <link rel="stylesheet" href="lab-tools.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="learn.css">
+</head>
+<body class="learn-page" data-en-ready data-comments-url="incline-friction.html">
+  <div id="learn-unit">
+    <header class="learn-mast">
+      <a href="learn.html" class="learn-brand"><b aria-hidden="true">Ni</b><span data-en="‹ Learning hall">‹ 學習大廳</span></a>
+      <span class="course-name" data-en="Physics 5-1 · Work and forms of energy">必修物理 5-1・功與能量的形式</span>
+      <button type="button" id="class-mode" data-en="Class mode">上課模式</button>
+    </header>
+    <nav id="segments" aria-label="八段學習進度" data-en-aria-label="Eight learning sections"></nav>
+    <main class="learn-layout">
+      <article class="lesson-card" id="workpad">
+        <header class="page-heading"><span id="page-code"></span><h1 id="page-title"></h1><span id="folio"></span></header>
+        <div class="visual-column">
+          <div class="visual-shell">
+            <div id="scene">
+              <canvas id="luggage-3d" tabindex="0" aria-label="行李箱三維場景" data-en-aria-label="3D suitcase scene" hidden></canvas>
+              <canvas id="illustration" aria-label="本頁物理圖解" data-en-aria-label="Illustration for this page"></canvas>
+              <div id="step-goal" hidden></div><div id="trip-work" hidden><span hidden></span><span hidden></span></div>
+              <div id="scalar-review" hidden>
+                <div class="scalar-cards">
+                  <section data-energy="W"><h2><span data-en="Work">功</span> <i>W</i></h2><p data-en="Scalar · no direction">純量・沒有方向</p><p data-en="Unit J">單位 J</p></section>
+                  <section data-energy="K"><h2><span data-en="Kinetic energy">動能</span> <i>K</i></h2><p data-en="Scalar · no direction">純量・沒有方向</p><p data-en="Unit J">單位 J</p></section>
+                  <section data-energy="U"><h2><span data-en="Potential energy">位能</span> <i>U</i></h2><p data-en="Scalar · no direction">純量・沒有方向</p><p data-en="Unit J">單位 J</p></section>
+                </div><div id="joule-equation"></div>
+              </div>
+              <button id="angle-handle" type="button" role="slider" aria-label="拖拉桿調角度" data-en-aria-label="Drag the handle to set its angle" aria-valuemin="0" aria-valuemax="90" aria-valuenow="25" hidden><span></span></button>
+            </div>
+            <div class="board-panel" id="board" hidden></div>
+          </div>
+          <div id="interactive" hidden>
+            <div class="angle-control"><label for="angle" data-en="Handle angle">拉桿角度</label><input id="angle" type="range" min="0" max="90" step="0.01"><output id="degrees" for="angle"></output><button id="snap-angle" type="button" aria-label="吸附至水平四、鉛直三" data-en-aria-label="Snap to four across and three up">4:3</button></div>
+            <div id="lab-buttons" hidden><button id="surface" type="button"></button><button id="launch" type="button" data-en="Start">起步</button><button id="turn" type="button" data-en="Turn">掉頭</button><button id="pull" type="button" data-en="Hold: pull" aria-pressed="false">按住拉</button></div>
+          </div>
+          <div id="readings" hidden></div>
+          <div class="work-bars" aria-hidden="true"><i><b id="positive-bar"></b></i><i><b id="negative-bar"></b></i></div>
+        </div>
+        <div class="lesson-text">
+          <div class="caption-card"><p id="caption"></p></div>
+          <div id="notes" hidden></div><div id="step-status" role="status"></div>
+          <button id="class-reveal" type="button" hidden></button><div id="prediction-result" hidden></div>
+          <div id="question" hidden></div><div id="feedback" role="status" hidden></div>
+          <section id="scorecard" hidden><div class="score-pair"><div><span data-en="Quiz score">隨堂得分</span><b id="points"></b></div><div><span data-en="Learning stars">學習星星</span><b id="star-score"></b></div></div><p id="discovery-score" hidden></p><div id="score-links"></div><button type="button" id="share" data-en="Share scorecard">分享成績卡</button></section>
+        </div>
+        <footer class="transport">
+          <div class="seek"><output id="time" for="playhead"></output><input id="playhead" type="range" min="0" step="0.01" value="0" aria-label="本頁播放進度" data-en-aria-label="Page playhead"></div>
+          <div class="transport-buttons"><button id="previous" type="button" aria-label="上一頁" data-en-aria-label="Previous page" title="上一頁" data-en-title="Previous page">◀</button><button id="play" type="button"></button><button id="next" type="button" aria-label="下一頁" data-en-aria-label="Next page" title="下一頁" data-en-title="Next page">▶</button><button id="replay" type="button" aria-label="重播本頁" data-en-aria-label="Replay page" title="重播本頁" data-en-title="Replay page">↺</button><button id="speed" type="button" aria-label="播放速度" data-en-aria-label="Playback speed"></button><button id="sound" type="button" aria-label="音效與旁白" data-en-aria-label="Sound and narration"></button><label class="auto-next"><input id="auto" type="checkbox"><span data-en="Auto next">自動下一頁</span></label></div>
+        </footer>
+      </article>
+      <aside id="study-side" class="learn-side" hidden>
+        <div id="side-header"><h2 id="side-title"></h2><button id="side-close" type="button" data-en="Close">收起</button></div>
+        <nav id="side-tabs" role="tablist" aria-label="學習側板" data-en-aria-label="Learning side panel"></nav>
+        <div id="side-body"></div><div id="comment-mount" hidden></div>
+      </aside>
+    </main>
+    <button type="button" id="edge" aria-controls="study-side" aria-label="開合學習側板" data-en-aria-label="Toggle study panel"><span aria-hidden="true">‹</span></button>
+  </div>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="js/drawkit.js"></script><script src="js/sound.js"></script>
+  <script src="js/view3d-nav.js"></script><script src="js/stepguide.js"></script>
+  <script src="js/labside.js" data-module="incline-friction"></script>
+  <script src="js/firebase-config.js"></script><script src="js/missions/index.js"></script>
+  <script src="js/missions.js" data-module="learn-phy-5-1"></script><script src="js/missions/learn-phy-5-1.js"></script>
+  <script src="js/comments.js"></script>
+  <script src="js/learn/phy-5-1-core.js"></script><script src="js/learn/phy-5-1.js"></script>
+  <script src="js/learn/phy-5-1-timings.js"></script><script src="js/learn/phy-5-1-scene.js"></script><script src="js/learn.js"></script>
+</body>
+</html>

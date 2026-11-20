@@ -46,6 +46,7 @@
   }
   let chapP = null;
   const live = function () { return window.LAB_LIVE_MODULES || []; };
+  const isLearning = function (id) { return (window.LAB_LEARN_UNITS || []).some(function (u) { return u.id === id; }); };
   const branchOf = function (m) { return (window.LAB_MODULE_BRANCH || {})[m]; };
   const subjOf = function (m) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(m) : 'phy'; };
   // 各科目（與 missions/index.js 的 LAB_SUBJECTS 相同；這裡先寫好，成就定義不必等清單載入）
@@ -425,7 +426,7 @@
     const branchMods = {}, branchFull = {};
     Object.keys(all).forEach(function (k) {
       const list = all[k];
-      if (!list.length) return;
+      if (!list.length || isLearning(k)) return;
       moduleTotal++;
       const ok = list.every(function (m) { return done[m.id]; });
       if (ok) full++;
@@ -464,6 +465,7 @@
     ids.forEach(function (id) {
       const at = done[id].at;
       const mod = id.replace(/-(h?\d+)$/, '');
+      if (isLearning(mod)) return;
       const b = branchOf(mod);
       if (typeof at === 'number' && b) {
         const k = dayKey(new Date(at));
@@ -486,8 +488,10 @@
     Object.keys(all).forEach(function (k) {
       const list = all[k], b = by[subjOf(k)];
       if (!list.length || !b) return;
-      b.moduleTotal++;
-      if (list.every(function (m) { return done[m.id]; })) b.full++;
+      if (!isLearning(k)) {
+        b.moduleTotal++;
+        if (list.every(function (m) { return done[m.id]; })) b.full++;
+      }
       list.forEach(function (m) { b.totalStars += LM.starsOf ? LM.starsOf(m) : m.level; });
     });
     ids.forEach(function (id) { const b = by[subjOf(id.replace(/-(h?\d+)$/, ''))]; if (b) { b.stars += done[id].stars || 0; b.missions++; } });
@@ -496,7 +500,7 @@
     let maxDay = 0;
     Object.keys(s.days || {}).forEach(function (k) { maxDay = Math.max(maxDay, Object.keys(s.days[k] || {}).length); });
     return {
-      ops: s.ops || 0, seconds: s.seconds || 0, comments: s.comments || 0, modules: Object.keys(mods).length, flags: s.flags || {},
+      ops: s.ops || 0, seconds: s.seconds || 0, comments: s.comments || 0, modules: Object.keys(mods).filter(function (k) { return !isLearning(k); }).length, flags: s.flags || {},
       liveCount: live().length, liveVisited: live().filter(function (m) { return mods[m]; }).length,
       missions: ids.length, hiddenDone: hidden, hiddenTotal: hiddenTotal, fullModules: full, moduleTotal: moduleTotal,
       level10: l10, level10Total: l10Total, branchDone: branchDone, branchLive: branchLive, maxDayBranches: maxDayBranches, maxDaySubjects: maxDaySubjects,
@@ -550,7 +554,7 @@
   function record(extra) {
     if (!api || !uid) return;
     const map = {};
-    const mod = LM.module;
+    const mod = isLearning(LM.module) ? null : LM.module;
     const today = dayKey();
     const P = 'userStats/' + uid + '/';
     if (mod) {

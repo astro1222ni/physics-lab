@@ -2,6 +2,19 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "learn": {
+      "$uid": {
+        "$unit": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid && newData.exists()",
+          ".validate": "newData.hasChildren(['p','n','at']) && newData.child('p').val() <= newData.child('n').val() && (!data.exists() || newData.child('p').val() >= data.child('p').val())",
+          "p": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0" },
+          "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0" },
+          "at": { ".validate": "newData.val() === now" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
     "stats": {
       ".read": true,
       "$module": {

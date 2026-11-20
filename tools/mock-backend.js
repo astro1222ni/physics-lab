@@ -189,6 +189,7 @@
     get(path) {
       // 模擬讀取規則：個人資料只有本人能讀；整個集合（profiles、completions…）只有管理員能讀（11/14 管理頁）
       const ks = path.split('/'), PRIV = ['profiles', 'completions', 'bonus', 'userStats', 'achievements', 'daily', 'bag'];
+      if (ks[0] === 'learn' && (ks.length < 3 || !user || ks[1] !== user.uid)) return deny(path + ': 只有本人能讀單元');
       if (PRIV.includes(ks[0])) {
         const adm = user && load().admins[user.uid];
         if (ks.length === 1 && !adm) return deny(path + ': 只有管理員能讀整個集合');
@@ -196,12 +197,23 @@
       }
       return Promise.resolve(get(load(), path));
     },
+    advanceLearn(uid, unit, p, n) {
+      const path = 'learn/' + uid + '/' + unit;
+      if (!user || uid !== user.uid) return deny(path + ': 不是本人');
+      const old = get(load(), path);
+      return old && old.p >= p ? Promise.resolve() : this.update({ [path]: { p, n, at: this.now() } });
+    },
     update(map) {
       const before = load(), db = load(), t = clock();
       const touched = { daily: {}, bag: {}, scores: {}, treasureBoard: {} };
+      const learnPaths = new Set();
       for (const [path, v0] of Object.entries(map)) {
         const ks = path.split('/');
         if (['daily', 'bag', 'userStats', 'achievements', 'treasureBoard', 'profiles', 'scores'].includes(ks[0]) && (!user || ks[1] !== user.uid)) return deny(path + ': 不是本人');
+        if (ks[0] === 'learn') {
+          if (ks.length < 3 || !user || ks[1] !== user.uid) return deny(path + ': 只有本人能寫單元');
+          learnPaths.add(ks.slice(0, 3).join('/'));
+        }
         let o = db;
         ks.slice(0, -1).forEach(k => { o[k] = o[k] || {}; o = o[k]; });
         const last = ks[ks.length - 1];
@@ -209,6 +221,12 @@
         const v = resolveNow(v0, t);
         o[last] = (v && v.__inc != null) ? (o[last] || 0) + v.__inc : v;
         if (touched[ks[0]]) touched[ks[0]][ks[1]] = true;
+      }
+      for (const path of learnPaths) {
+        const rec = get(db, path), old = get(before, path);
+        if (!rec || Object.keys(rec).some(k => !['p','n','at'].includes(k)) ||
+            !Number.isInteger(rec.p) || !Number.isInteger(rec.n) || rec.p < 0 || rec.p > rec.n ||
+            rec.at !== t || (old && rec.p < old.p)) return deny(path + ': 進度或時間不合規則');
       }
       for (const uid of Object.keys(touched.daily)) { const why = checkDaily(get(before, 'daily/' + uid), get(db, 'daily/' + uid), t); if (why) return deny(why); }
       for (const uid of Object.keys(touched.bag)) { const why = checkBag(get(before, 'bag/' + uid), get(db, 'bag/' + uid), get(before, 'daily/' + uid), get(db, 'daily/' + uid), t); if (why) return deny(why); }
