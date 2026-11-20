@@ -1151,6 +1151,7 @@
     if (run.playing) request();
   });
   $('clearAll').addEventListener('click', function () {
+    emit('reset-grow', {});
     kept = []; rows = []; renderRows();
     if (run && run.playing) { run.playing = false; }
     reset1();
@@ -1183,6 +1184,7 @@
   $('useK').addEventListener('change', function () { $('rowPK').hidden = !this.checked; newSim2(false); });
   $('run2').addEventListener('click', start2);
   $('clear2').addEventListener('click', function () {
+    if (mode2 === 'pp') emit('reset-pp', {});
     kept2 = []; rows2 = rows2.filter(function (x) { return x.mode !== mode2; }); renderRows2();
     newSim2(false);
     $('status2').textContent = T('已清除保留的軌跡與紀錄表。', 'Kept paths and the table are cleared.');

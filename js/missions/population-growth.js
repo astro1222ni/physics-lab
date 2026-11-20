@@ -76,8 +76,22 @@
     {
       id: 'population-growth-9', level: 6,
       title: { zh: '循環平息了', en: 'The cycles die down' },
-      desc: { zh: '替獵物加上負荷量，讓兩個物種都能存活：從離平衡點超過 20% 的地方出發，最後兩者都回到平衡點 5% 以內。', en: 'Give the prey a carrying capacity that still lets both species live: start more than 20% from the equilibrium and end with both within 5% of it.' },
-      check: function (ev) { const d = ev.data; return pp(ev) && d.K != null && d.coexist && d.startDev > 0.2 && d.endDev < 0.05; }
+      desc: { zh: '先在獵物沒有負荷量時跑出至少兩個完整循環，且起點離平衡點超過 20%。保持其他設定、起點和觀察天數，只替獵物加上負荷量再跑一次。讓兩個物種都能存活，從離新平衡點超過 20% 的地方出發，最後都回到新平衡點的 5% 以內。',
+        en: 'First run at least two full cycles with no prey carrying capacity, starting more than 20% from equilibrium. Keep the other settings, starting populations and duration the same, and run again with a prey carrying capacity. Both species must survive, start more than 20% from the new equilibrium and finish within 5% of it.' },
+      check: function (ev, mem) {
+        if (ev.type === 'reset-pp') { delete mem.control; return false; }
+        if (!pp(ev)) return false;
+        const d = ev.data;
+        if (!d.coexist || !(d.startDev > 0.2)) return false;
+        if (d.K == null) {
+          if (d.cycles >= 2) remember(mem, 'control', d);
+          return false;
+        }
+        return d.endDev < 0.05 && (mem.control || []).some(function (c) {
+          return c.a === d.a && c.b === d.b && c.c === d.c && c.d === d.d && c.E === d.E &&
+            c.x0 === d.x0 && c.y0 === d.y0 && c.tEnd === d.tEnd;
+        });
+      }
     },
     {
       id: 'population-growth-10', level: 7,
@@ -130,7 +144,17 @@
     {
       id: 'population-growth-h3', level: 4, hidden: true,
       riddle: { zh: '數著數著，就比所有的你我還多。', en: 'Keep counting, until there are more than all of us.' },
-      check: function (ev) { return ev.type === 'grow' && ev.data.Nmax >= 8e9; }
+      check: function (ev, mem) {
+        if (ev.type === 'reset-grow') { delete mem.near; return false; }
+        if (ev.type !== 'grow') return false;
+        const d = ev.data;
+        if (d.model !== 'expo' || d.stoch || d.Nmax < 1e9) return false;
+        if (d.Nmax < 8e9) {
+          remember(mem, 'near', { r: d.r, N0: d.N0, tEnd: d.tEnd });
+          return false;
+        }
+        return (mem.near || []).some(function (c) { return c.r === d.r && c.N0 === d.N0 && c.tEnd < d.tEnd; });
+      }
     }
   ]);
 })();

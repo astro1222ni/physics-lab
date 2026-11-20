@@ -153,12 +153,15 @@ function compEv(o) {
 }
 // ---------- 9 循環平息了 ----------
 {
-  const e = ppEv({ p: { K: 400 }, x0: 40, y0: 20, tEnd: 150 });
-  claim(check('9', e), `9 收斂：K = 400、起點 (40, 20)、150 天 → 起點偏離 ${f(e.data.startDev * 100, 0)}%，最後 ${f(e.data.endDev * 100, 2)}%`);
-  const e60 = ppEv({ p: { K: 400 }, x0: 40, y0: 20, tEnd: 20 });
-  claim(!check('9', e60), `9 收斂：只跑 20 天還差 ${f(e60.data.endDev * 100, 1)}%，不算`);
-  const e2 = ppEv({ p: { K: 200 }, x0: 40, y0: 20, tEnd: 80 });
-  claim(check('9', e2), `9 收斂：K = 200 收斂更快，80 天 → ${f(e2.data.endDev * 100, 2)}%`);
+  fresh('9');
+  const control = ppEv({ tEnd: 80 }), limited = ppEv({ p: { K: 200 }, tEnd: 80 });
+  claim(limited.data.endDev < 0.05 && !check('9', limited), '9：直接加負荷量即使收斂，缺少無負荷量對照也不成立');
+  claim(!check('9', control) && check('9', limited), `9：起點 (40, 20)，先跑 80 天（${control.data.cycles} 個完整循環），只加 K = 200 再跑，最後偏離 ${f(limited.data.endDev * 100, 2)}%`);
+  claim(!check('9', ppEv({ p: { K: 200 }, y0: 21, tEnd: 80 })), '9：換了起點，兩次結果不能配對');
+  check('9', { type: 'reset-pp', data: {} });
+  claim(!check('9', limited), '9：全部清除會清掉對照');
+  ['h1', 'h2', 'h3'].forEach(fresh);
+  claim(['h1', 'h2', 'h3'].every(id => !check(id, control) && !check(id, limited)), '9 的標準做法不會連帶完成隱藏任務');
 }
 // ---------- 10 競爭排斥 ----------
 {
@@ -216,12 +219,21 @@ function compEv(o) {
 }
 // ---------- h3 地球裝不下 ----------
 {
-  const e = growEv({ r: 0.8, N0: 10, tEnd: 30 });
-  claim(check('h3', e), `h3：指數、r = 0.8、30 天 → ${f(e.data.Nmax / 1e9, 1)} × 10^9`);
-  claim(!check('h3', growEv({})), `h3：預設 r = 0.5 只到 ${f(growEv({}).data.Nmax / 1e6, 1)} 百萬，不算`);
-  claim(!check('h3', growEv({ model: 'logi', K: 1000 })), 'h3：邏輯斯不可能');
-  const es = growEv({ stoch: true, r: 0.8, N0: 50, tEnd: 30, seed: 3 });
-  claim(check('h3', es), `h3：一隻一隻數時超過 3000 隻改用平均，也到得了 ${f(es.data.Nmax / 1e9, 1)} × 10^9`);
+  fresh('h3');
+  const near = growEv({ r: 0.65 }), over = growEv({ r: 0.65, tEnd: 33 });
+  const maxR = growEv({ r: 2 });
+  claim(!check('h3', growEv({})) && maxR.data.Nmax >= 8e9 && !check('h3', maxR), 'h3：預設培養、把 r 拉到最大培養 30 天都不成立');
+  claim(!check('h3', near) && !check('h3', growEv({ r: 0.66, tEnd: 33 })) && check('h3', over),
+    `h3：指數成長 r = 0.65、N0 = 10，30 天為 ${f(near.data.Nmax / 1e9, 2)} 十億，只改 33 天達 ${f(over.data.Nmax / 1e9, 2)} 十億；改 r 無法配對`);
+  check('h3', { type: 'reset-grow', data: {} });
+  claim(!check('h3', over), 'h3：全部清除會清掉較短那筆紀錄');
+  const otherRoutes = [growEv({}), growEv({ model: 'logi', K: 1000 }), growEv({ r: Math.log(2) / 5 }),
+    inspectEv({}, 8), growEv({ stoch: true, r: 0.8, seed: 42 }), ppEv({ p: { K: 70 }, tEnd: 150 }),
+    compEv({ p: { a12: 1.5, a21: 1.5 }, x0: 300, y0: 50, tEnd: 100 }),
+    compEv({ p: { a12: 1.5, a21: 1.5 }, x0: 50, y0: 300, tEnd: 100 })];
+  claim(otherRoutes.every(e => !check('h3', e)), 'h3：公開任務的典型培養及其他隱藏任務的掠食、競爭路線均不會連帶完成');
+  ['h1', 'h2'].forEach(fresh);
+  claim(['h1', 'h2'].every(id => !check(id, near) && !check(id, over)), 'h3 對照路線不會連帶完成其他隱藏任務');
 }
 
 // ---------- 預設狀態不會誤觸困難任務 ----------
