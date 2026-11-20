@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const K = window.EFCore;
   const D = window.LabDraw;
@@ -81,6 +81,10 @@
     const s = split(v), font = (weight ? weight + ' ' : '') + size + 'px ' + FONT;
     suffix = suffix || '';
     if (s.e == null) { D.haloText(g, s.m + suffix, x, y, col, align, 'middle', font); return; }
+    if ((g.canvas === layer1 || g.canvas === cv) && L1 && L1.short) {
+      D.haloText(g, s.m + 'e' + s.e + suffix, x, y, col, align, 'middle', font);
+      return;
+    }
     const base = s.m + ' × 10', sup = String(s.e).replace('-', '−');
     g.font = font;
     const wb = g.measureText(base).width;
@@ -309,7 +313,7 @@
   }
   /** 含數字的膠囊（科學記號時上標自己畫）；xr 是右緣 */
   function pillNum(g, pre, v, suf, xr, y, col, size) {
-    const sp = split(v), f = '600 ' + size + 'px ' + FONT, fe = '600 ' + Math.round(size * 0.7) + 'px ' + FONT;
+    const sp = split(v), f = '600 ' + size + 'px ' + FONT, fe = '600 ' + (L1.short ? size : Math.round(size * 0.7)) + 'px ' + FONT;
     const base = pre + sp.m + (sp.e == null ? '' : ' × 10'), ex = sp.e == null ? '' : String(sp.e).replace('-', '−');
     g.font = f; const wb = g.measureText(base).width, wsuf = g.measureText(suf).width;
     g.font = fe; const we = ex ? g.measureText(ex).width + 1 : 0;
@@ -334,26 +338,27 @@
   }
   function layout1() {
     const w = drawingWidth(cv) || 300;
-    const s = fit(cv, g1, height1(w));
-    const narrow = s.w < 560;
+    const short = shortLandscape.matches && w < 700;
+    const s = fit(cv, g1, short ? 318 : height1(w));
+    const narrow = !short && s.w < 560;
     const bw = narrow ? Math.min(176, s.w * 0.46) : Math.min(250, s.w * 0.34);
     const cx = narrow ? s.w * 0.5 : s.w * 0.44;
-    L1 = { w: s.w, h: s.h, dpr: s.dpr, narrow: narrow, bw: bw, cx: cx, bh: narrow ? 40 : 44 };
+    L1 = { w: s.w, h: s.h, dpr: s.dpr, narrow, short, bw, cx, bh: short ? 29 : narrow ? 40 : 44 };
     layer1 = document.createElement('canvas');
     layer1.width = cv.width; layer1.height = cv.height;
     dirty1 = true;
   }
   function geom() {
     const Lg = L1, N = st.p.N;
-    const soilTop = Lg.h - 92, top = Lg.narrow ? 46 : 40;
-    const slot = (soilTop - 24 - top) / N;
+    const soilTop = Lg.h - (Lg.short ? 70 : 92), top = Lg.narrow ? 46 : 40;
+    const slot = (soilTop - (Lg.short ? 5 : 24) - top) / N;
     const ys = [];
-    for (let n = 0; n < N; n++) ys[n] = soilTop - 24 - slot * (n + 0.5);
+    for (let n = 0; n < N; n++) ys[n] = soilTop - (Lg.short ? 5 : 24) - slot * (n + 0.5);
     const x0 = Lg.cx - Lg.bw / 2, x1 = Lg.cx + Lg.bw / 2;
     const xd = x0 - (Lg.narrow ? 26 : 40);                  // 碎屑往下的通道
     const xh = Math.min(Lg.w - 8, x1 + (Lg.narrow ? (Lg.w - x1) * 0.62 : Math.min(150, (Lg.w - x1) * 0.55)));  // 熱的箭頭終點
     return { N: N, ys: ys, x0: x0, x1: x1, xd: xd, xh: xh, soilTop: soilTop, top: top, slot: slot,
-      decY: soilTop + 30, decX0: Math.max(8, xd - 14), decX1: x1 };
+      decY: soilTop + (Lg.short ? 20 : 30), decX0: Math.max(8, xd - 14), decX1: x1 };
   }
   /** 箭頭寬度：與能量的立方根成正比 */
   function wOf(v, vmax, wmax) { if (!(v > 0)) return 0; return Math.max(1.2, wmax * Math.cbrt(v / vmax)); }
@@ -406,13 +411,13 @@
     const g = layer1.getContext('2d');
     g.setTransform(L1.dpr, 0, 0, L1.dpr, 0, 0);
     const w = L1.w, h = L1.h, G = geom(), r = st.r, N = G.N, bh = L1.bh;
-    const vmax = r.GPP, WM = L1.narrow ? 26 : 34;
+    const vmax = r.GPP, WM = L1.short ? 20 : L1.narrow ? 26 : 34;
     paths = [];
     D.backdrop(g, w, h);
     // 標題
     D.haloText(g, T('能量流動（kJ/m²・年）', 'Energy flow (kJ/m² per year)'), 10, 16, D.c.text, 'left', 'middle', '600 ' + (L1.narrow ? 12.5 : 13.5) + 'px ' + FONT);
     if (L1.narrow) small(g, T('箭頭粗細 ∝ 能量的立方根（示意）', 'arrow width ∝ cube root of energy (not to scale)'), 10, 31, D.c.muted, 'left', 10);
-    else small(g, T('箭頭粗細 ∝ 能量的立方根（示意）', 'arrow width ∝ cube root of energy (not to scale)'), w - 10, 16, D.c.muted, 'right', 11);
+    else if (!L1.short) small(g, T('箭頭粗細 ∝ 能量的立方根（示意）', 'arrow width ∝ cube root of energy (not to scale)'), w - 10, 16, D.c.muted, 'right', 11);
 
     // 土壤與分解者
     const sg = g.createLinearGradient(0, G.soilTop, 0, h);
@@ -449,7 +454,7 @@
     // ---- 太陽 ----
     const rs = L1.narrow ? 13 : 16;
     const sx = L1.narrow ? Math.max(rs + 10, Math.min(G.xd - 34, 34)) : Math.max(40, G.xd - 110);
-    const syy = Math.max(G.top + rs * 2.6, G.ys[0] - bh * (L1.narrow ? 1.25 : 1.1));
+    const syy = L1.short ? G.ys[0] + 3 : Math.max(G.top + rs * 2.6, G.ys[0] - bh * (L1.narrow ? 1.25 : 1.1));
     const glow = g.createRadialGradient(sx, syy, 0, sx, syy, rs * 2.6);
     glow.addColorStop(0, D.alpha(C['ef-sun'], 0.55)); glow.addColorStop(1, D.alpha(C['ef-sun'], 0));
     g.fillStyle = glow; g.beginPath(); g.arc(sx, syy, rs * 2.6, 0, Math.PI * 2); g.fill();
@@ -466,7 +471,7 @@
     headAt(g, beam, C['ef-sun'], L1.narrow ? 6 : 8);
     paths.push({ pts: beam, col: C['ef-sun'], w: 7, v: r.GPP, sun: true });
     // 日照的文字放在太陽上方或右邊
-    const ix = L1.narrow ? 8 : sx - rs * 1.4, iy = L1.narrow ? syy - rs * 2.6 : syy + rs * 2.6;
+    const ix = L1.narrow ? 8 : sx - rs * 1.4, iy = L1.short ? syy + rs * 2.15 : L1.narrow ? syy - rs * 2.6 : syy + rs * 2.6;
     // 太陽光暈上淺橘字對比太低（試玩回報）：淺色模式用深一點的橘
     small(g, T('日照 I', 'Sunlight I'), ix, iy - 7, D.dark ? C['ef-sun'] : D.shade(C['ef-sun'], -0.35), 'left', L1.narrow ? 10.5 : 11.5, 600);
     drawNum(g, st.p.I, ix, iy + 7, D.c.muted, 'left', L1.narrow ? 10.5 : 11, null);
@@ -484,7 +489,7 @@
       if (!L1.narrow) small(g, T('熱 R', 'Heat R'), lx, ly, C['ef-heat'], la, 11, 600);
       drawNum(g, r.R[n], lx, L1.narrow ? ly : ly + 13, L1.narrow ? C['ef-heat'] : D.c.muted, la, L1.narrow ? 10.5 : 11, L1.narrow ? 600 : null);
     }
-    if (!L1.narrow) small(g, T('呼吸作用散失的熱', 'heat lost in respiration'), G.xh + 4, 34, C['ef-heat'], 'left', 11, 600);
+    if (!L1.narrow) small(g, T('呼吸作用散失的熱', 'heat lost in respiration'), L1.short ? w - 9 : G.xh + 4, L1.short ? 16 : 34, C['ef-heat'], L1.short ? 'right' : 'left', 11, 600);
 
     // ---- 往上傳的能量 ----
     for (let n = 1; n < N; n++) {
@@ -495,8 +500,8 @@
       headAt(g, pts, lvCol(n), wi);
       paths.push({ pts: pts, col: lvCol(n), w: wi, v: r.In[n] });
       // 傳遞效率
-      const my = (yb + yt) / 2;
-      pillAt(g, T('效率 ', 'E = ') + pct(r.E[n]), L1.cx + Math.max(10, wi / 2 + 8), my, D.shade(lvCol(n), D.dark ? 0.2 : -0.25), L1.narrow ? 10.5 : 11.5, 'left');
+      const my = L1.short ? G.ys[n] : (yb + yt) / 2;
+      pillAt(g, T('效率 ', 'E = ') + pct(r.E[n]), L1.short ? G.x0 - 44 : L1.cx + Math.max(10, wi / 2 + 8), my, D.shade(lvCol(n), D.dark ? 0.2 : -0.25), L1.narrow ? 10.5 : 11.5, L1.short ? 'right' : 'left');
       void xa;
     }
 
@@ -515,7 +520,8 @@
       // 左邊的色條
       D.roundRect(g, G.x0 + 4, y - bh / 2 + 5, 5, bh - 10, 2.5); g.fillStyle = col; g.fill();
       const fs = L1.narrow ? 11.5 : 12.5;
-      D.haloText(g, fitText(g, (n + 1) + '・' + lvName(n), L1.bw - 22, '600 ' + fs + 'px ' + FONT), G.x0 + 15, y - bh * 0.2, D.c.text, 'left', 'middle', '600 ' + fs + 'px ' + FONT);
+      const name = L1.short && /^Level \d|^第 \d/.test(lvName(n)) ? lvName(n) : (n + 1) + '・' + lvName(n);
+      D.haloText(g, fitText(g, name, L1.bw - 22, '600 ' + fs + 'px ' + FONT), G.x0 + 15, y - bh * 0.2, D.c.text, 'left', 'middle', '600 ' + fs + 'px ' + FONT);
       small(g, T('同化 A', 'A'), G.x0 + 15, y + bh * 0.23, D.c.muted, 'left', L1.narrow ? 10 : 11);
       g.font = (L1.narrow ? 10 : 11) + 'px ' + FONT;
       const aw = g.measureText(T('同化 A', 'A')).width;
@@ -610,7 +616,9 @@
       const left = 1000 * r.A[n] / st.p.I;
       const col = D.shade(lvCol(n), D.dark ? 0.3 : -0.35);
       const wi = n + 1 < N ? wOf(r.In[n + 1], r.GPP, L1.narrow ? 26 : 34) : 0;
-      pillNum(g1, T('還剩 ', 'left: '), left, ' kJ', L1.cx - Math.max(8, wi / 2 + 8), G.ys[n] + L1.bh / 2 + (G.slot - L1.bh) / 2, col, L1.narrow ? 10 : 11);
+      const xr = L1.short ? G.x0 - 44 : L1.cx - Math.max(8, wi / 2 + 8);
+      const y = L1.short ? G.ys[n] + G.slot / 2 : G.ys[n] + L1.bh / 2 + (G.slot - L1.bh) / 2;
+      pillNum(g1, T('還剩 ', 'left: '), left, ' kJ', xr, y, col, L1.narrow ? 10 : 11);
     }
     if (k > tr.lastLv) {
       for (let n = tr.lastLv + 1; n < k; n++) {
