@@ -806,7 +806,7 @@
       const dz = state.z - state.ref.z, ratio = s.P / r.P;
       let html = T('參考點 <b>', 'Mark at <b>') + zLabel(state.ref.z) + '</b>（' + pText(r.P) + '）' + T('：高度差 Δz = <b>', ': height difference Δz = <b>') +
         (Math.abs(dz) < 10 ? sgn(dz * 1000, 1) + ' m' : sgn(dz, 3) + ' km') + T('</b>，氣壓比 P／P<sub>參考</sub> = <b>', '</b>, pressure ratio P/P<sub>mark</sub> = <b>') +
-        (ratio > 1e-3 && ratio < 1e3 ? sig(ratio, 4) : sci(ratio, 3)) + T('</b>，溫度差 <b>', '</b>, temperature difference <b>') + sgn(s.T - r.T, 1) + ' K</b>';
+        (ratio > 1e-3 && ratio < 1e3 ? sig(ratio, 4) : sci(ratio, 3)) + T('</b>，<b>溫差（此處 − 參考點） ', '</b>, <b>temperature difference (here − mark) ') + sgn(s.T - r.T, 1) + ' K</b>';
       if (Math.abs(dz) > 1e-4) {
         const Hm = dz * 1000 / Math.log(r.P / s.P);
         const dP = s.P - r.P;

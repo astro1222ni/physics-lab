@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Climographs and the Köppen Climate Classification | Astro Ni Lab">氣候圖與柯本氣候分類｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"氣候與自然景觀","item":"https://lab.astroni.org/geography.html#climate"},{"@type":"ListItem","position":4,"name":"氣候類型","item":"https://lab.astroni.org/geography.html#ch-climate-types"},{"@type":"ListItem","position":5,"name":"氣候圖與柯本氣候分類","item":"https://lab.astroni.org/climograph.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 氣候圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -129,6 +129,16 @@
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; vertical-align: top; }
     .notes .tw { max-width: 100%; overflow-x: auto; }
+    .month-picker, .vals:not([open]) > :not(summary) { display: none; }
+    @media (max-width: 600px) {
+      .month-picker { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+      .month-picker select { min-height: 44px; padding-inline: 8px; font: inherit; }
+      #vtBody tr:not(.current-month) { display: none; }
+      table.vt input { min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -153,7 +163,24 @@
             <button type="button" data-scope="tw" aria-pressed="false" data-en="Taiwan">臺灣</button>
           </div>
         </div>
-        <canvas id="cv" aria-label="氣候圖：紅線是月均溫、藍色長條是月雨量；拖曳可以修改" data-en-aria-label="Climograph: the red line is the monthly mean temperature and the blue bars are the monthly precipitation; drag to change them"></canvas>
+        <div class="climate-plot">
+          <canvas id="cv" aria-label="氣候圖：紅線是月均溫、藍色長條是月雨量；拖曳可以修改" data-en-aria-label="Climograph: the red line is the monthly mean temperature and the blue bars are the monthly precipitation; drag to change them"></canvas>
+          <details class="vals" id="valsBox">
+            <summary data-en="Table of values (type to change)">數值表（可以直接輸入）</summary>
+            <label class="month-picker"><span data-en="Edit month">編輯月份</span><select></select></label>
+            <div class="vals-wrap">
+              <table class="vt" id="vt">
+                <thead><tr><th data-en="Month">月份</th><th data-en="Mean temp. (°C)">均溫（°C）</th><th data-en="Precip. (mm)">雨量（mm）</th></tr></thead>
+                <tbody id="vtBody"></tbody>
+              </table>
+            </div>
+            <p class="hint" data-en="☀ marks the summer half-year used by the rules. Temperatures −50 to 40 °C, rainfall 0 to 1000 mm.">☀ 是判定規則用的夏半年。溫度可輸入 −50 到 40 °C，雨量 0 到 1000 mm。</p>
+          </details>
+          <div class="toggles" id="chartOpts" role="group" aria-label="圖表選項" data-en-aria-label="Chart options">
+            <button type="button" id="tMarks" aria-pressed="true" data-en="Threshold lines">門檻線</button>
+            <button type="button" id="tJul" aria-pressed="false" data-en="Start the chart in July" title="南半球的夏天在 12–2 月，從 7 月開始畫，夏天就在圖的中間" data-en-title="Summer in the Southern Hemisphere is December–February; starting in July puts it in the middle">從 7 月開始畫</button>
+          </div>
+        </div>
         <div class="legend" id="legChart">
           <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-temp)&quot;></i>Mean temperature (°C, left)"><i class="ln" style="border-color:var(--cl-temp)"></i>月均溫（°C，左軸）</span>
           <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-rain)&quot;></i>Precipitation (mm, right)"><i class="sw" style="background:var(--cl-rain)"></i>月雨量（mm，右軸）</span>
@@ -171,20 +198,6 @@
         <p class="hint l-chart" data-en="Drag a red dot to change that month’s temperature; drag up or down inside a month to set its rainfall; tap a month to read it. With the chart selected, ← → choose the month and ↑ ↓ change the value (Shift: bigger steps); Enter switches between temperature and rainfall.">拖曳紅點改那個月的均溫；在月份欄裡上下拖曳設定雨量；點一下可以讀數值。選取圖表後，← → 選月份、↑ ↓ 調整數值（加 Shift 一次調多一點）；Enter 切換溫度與雨量。</p>
         <p class="hint l-dry" hidden data-en="Drag the large dot: sideways warms or cools every month by the same amount, up and down scales every month’s rainfall by the same factor, so the seasons keep their shape. The arrow keys do the same.">拖曳大圓點：左右移動，每個月同時變暖或變冷同樣的度數；上下移動，每個月的雨量按同樣的比例增減，季節的形狀不變。方向鍵也可以。</p>
         <p class="hint l-map" hidden data-en="Each dot is a station, coloured by its Köppen–Geiger type. Tap a dot to open it (on the world map, tap Taiwan to zoom in). Only land and coastlines are drawn.">每個點是一個測站，顏色代表它的柯本－蓋格類型。點一下測站就換過去（世界地圖上點臺灣會放大）。地圖只畫陸地與海岸線。</p>
-        <div class="toggles" id="chartOpts" role="group" aria-label="圖表選項" data-en-aria-label="Chart options">
-          <button type="button" id="tMarks" aria-pressed="true" data-en="Threshold lines">門檻線</button>
-          <button type="button" id="tJul" aria-pressed="false" data-en="Start the chart in July" title="南半球的夏天在 12–2 月，從 7 月開始畫，夏天就在圖的中間" data-en-title="Summer in the Southern Hemisphere is December–February; starting in July puts it in the middle">從 7 月開始畫</button>
-        </div>
-        <details class="vals" id="valsBox">
-          <summary data-en="Table of values (type to change)">數值表（可以直接輸入）</summary>
-          <div class="vals-wrap">
-            <table class="vt" id="vt">
-              <thead><tr><th data-en="Month">月份</th><th data-en="Mean temp. (°C)">均溫（°C）</th><th data-en="Precip. (mm)">雨量（mm）</th></tr></thead>
-              <tbody id="vtBody"></tbody>
-            </table>
-          </div>
-          <p class="hint" data-en="☀ marks the summer half-year used by the rules. Temperatures −50 to 40 °C, rainfall 0 to 1000 mm.">☀ 是判定規則用的夏半年。溫度可輸入 −50 到 40 °C，雨量 0 到 1000 mm。</p>
-        </details>
       </div>
 
       <aside class="panel">
@@ -213,13 +226,13 @@
             <span class="chip" id="rCode">—</span>
             <div><b id="rName">—</b><small id="rGroup">—</small></div>
           </div>
-          <ol class="steps" id="rSteps" aria-label="判定步驟" data-en-aria-label="Decision steps"></ol>
           <p class="hint" data-en="Boundary between C and D (coldest month)">C 與 D 的分界（最冷月）</p>
           <div class="segw" role="group" aria-label="C 與 D 的分界" data-en-aria-label="Boundary between C and D" id="cdSeg">
             <button type="button" data-cd="0" aria-pressed="true" data-en="0 °C (Peel et al. 2007)">0 °C（Peel 等 2007）</button>
             <button type="button" data-cd="-3" aria-pressed="false" data-en="−3 °C (Köppen’s original)">−3 °C（柯本原本）</button>
           </div>
           <p class="hint" id="rAlt"></p>
+          <ol class="steps" id="rSteps" aria-label="判定步驟" data-en-aria-label="Decision steps"></ol>
         </section>
         <section class="card">
           <h2 data-en="Numbers behind the type">判定用的數值</h2>
@@ -319,18 +332,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/geog-world.js?v=202611201017"></script>
-  <script src="js/climograph-core.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/climograph.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="climograph"></script>
-  <script src="js/missions/climograph.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="climograph"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/geog-world.js?v=202611201021"></script>
+  <script src="js/climograph-core.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/climograph.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="climograph"></script>
+  <script src="js/missions/climograph.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="climograph"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

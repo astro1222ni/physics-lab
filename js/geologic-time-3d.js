@@ -44,8 +44,9 @@
     const camera = new THREE.PerspectiveCamera(36, 1.6, 0.05, 400);
     camera.up.set(0, 0, 1);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: BX / 2, T }) : null;
     controls.enableDamping = true; controls.dampingFactor = 0.12; controls.rotateSpeed = 0.7;
-    controls.enablePan = false; controls.minDistance = 4; controls.maxDistance = 40;
+    controls.minDistance = 4; controls.maxDistance = 40;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x475569, 2.0));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.6); keyLight.position.set(-5, -9, 12); scene.add(keyLight);
@@ -221,10 +222,13 @@
     let camAnim = null;
     function camTo(kind, animate) {
       const Pp = presetFor(kind);
-      if (!animate || B.reducedMotion) { camAnim = null; camera.position.copy(Pp.pos); controls.target.copy(Pp.tgt); controls.update(); render(); return; }
+      if (!animate || B.reducedMotion) { camAnim = null; camera.position.copy(Pp.pos); controls.target.copy(Pp.tgt);
+        if (nav) nav.home();
+        controls.update(); render(); return; }
       camAnim = { t0: performance.now(), dur: 800, p0: camera.position.clone(), t0v: controls.target.clone(), p1: Pp.pos, t1: Pp.tgt };
       B.request();
     }
+    controls.addEventListener('start', function () { camAnim = null; });
     function stepCam() {
       if (!camAnim) return;
       const A = camAnim, u = Math.min(1, (performance.now() - A.t0) / A.dur), e = 1 - Math.pow(1 - u, 3);
@@ -232,6 +236,7 @@
       const len = d0.length() * (1 - e) + d1.length() * e, dir = d0.normalize().lerp(d1.normalize(), e);
       if (dir.lengthSq() < 1e-6) dir.copy(d1).normalize();
       controls.target.copy(tg); camera.position.copy(tg).add(dir.normalize().multiplyScalar(len));
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
 
@@ -244,7 +249,11 @@
       moving = controls.update();
       renderer.render(scene, camera);
     }
-    function sizeOf(w) { return w < 560 ? 420 : 500; }
+    function sizeOf(w) {
+      const natural = w < 560 ? 420 : 500;
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -276,6 +285,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        if (nav) nav.dispose();
         controls.dispose(); disposeObject(scene); renderer.dispose(); renderer.forceContextLoss(); wrap.remove();
       }
     };

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Seismic Waves and Locating an Epicenter | Astro Ni Lab">地震波與震央定位｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":4,"name":"地震與地球內部","item":"https://lab.astroni.org/earth-science.html#ch-quake"},{"@type":"ListItem","position":5,"name":"地震波與震央定位","item":"https://lab.astroni.org/earthquake.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 地震波與震央定位頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依模式與寬度決定；在可拖曳的東西上按住時才阻止捲動，其他地方手機可在畫布上捲動頁面 */
@@ -117,6 +117,18 @@
     @media (max-width: 560px) { .eq3-hud > div { max-width: 66%; } .eq3-hud .br span { font-size: calc(11px * var(--fs, 1)); } }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -155,7 +167,7 @@
           <span data-en-html="<i class=&quot;dash&quot;></i>Ray from focus to station"><i class="dash"></i>震源到測站的射線</span>
         </div>
         <p class="hint" data-m="waves" data-en="Cross-section of a uniform crust, drawn to scale (km). Drag the focus ✶ up or down and the seismometer along the surface. Dots are rock particles; their displacements are greatly magnified (schematic). Arrival times are exact; amplitudes only follow the trends (body waves ∝ 1/R, surface waves spread more slowly and are weaker for deeper quakes). The animation runs at 4× real time.">均勻地殼的剖面，依比例（km）繪製。上下拖曳震源 ✶、沿地表拖曳地震儀。小點是岩石的質點，位移已大幅放大（示意）。到達時間是精確計算；振幅只表示趨勢（體波 ∝ 1/R、表面波衰減較慢，震源越深越弱）。動畫為實際時間的 4 倍速。</p>
-        <p class="hint l3" data-m="waves" data-en="3D: a block of uniform crust drawn to scale (km). The front half is cut away so you see the particles on the section and the spherical P (blue) and S (red) wavefronts growing from the focus. Where a sphere meets the ground it draws a ring; the moment the ring passes the seismometer is the arrival time. Drag to rotate, scroll or pinch to zoom; you can also drag the focus up and down and the seismometer along the ground. The ground’s rise and fall and the particle motions are magnified (schematic).">3D：依比例（km）的一塊均勻地殼。前半塊切開，看得到剖面上的質點，以及由震源向外擴張的 P 波（藍）、S 波（紅）球面波前；球面碰到地表時畫出一圈，這一圈經過地震儀的瞬間就是到達時間。拖曳旋轉，滾輪或雙指縮放；也可以直接拖曳震源（上下）與地震儀（沿地表）。地表起伏與質點位移已放大（示意）。</p>
+        <p class="hint l3" data-m="waves" data-en="3D: a block of uniform crust drawn to scale (km). The front half is cut away so you see the particles on the section and the spherical P (blue) and S (red) wavefronts growing from the focus. Where a sphere meets the ground it draws a ring; the moment the ring passes the seismometer is the arrival time. Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. In Rotate mode you can also drag the focus up and down and the seismometer along the ground. The ground’s rise and fall and the particle motions are magnified (schematic).">3D：依比例（km）的一塊均勻地殼。前半塊切開，看得到剖面上的質點，以及由震源向外擴張的 P 波（藍）、S 波（紅）球面波前；球面碰到地表時畫出一圈，這一圈經過地震儀的瞬間就是到達時間。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。選「旋轉」時，也可以直接拖曳震源（上下）與地震儀（沿地表）。地表起伏與質點位移已放大（示意）。</p>
 
         <div class="legend" data-m="locate" hidden>
           <span data-en-html="<i class=&quot;tri&quot;></i>Seismic station (drag to move)"><i class="tri"></i>測站（可拖曳）</span>
@@ -166,7 +178,7 @@
           <span data-en-html="<i class=&quot;dash&quot;></i>Common chord"><i class="dash"></i>共同弦</span>
         </div>
         <p class="hint" data-m="locate" hidden data-en="Drag on each seismogram to place the P and S cursors at the first arrivals (the nearer cursor follows your finger; a magnifier appears while dragging). The S−P time gives the hypocentral distance d = kΔt, drawn as a circle around the station. Then tap the map where you think the epicenter is (drag the marker or nudge it with the arrow buttons) and press “Check my epicenter”; only then does the computer’s least-squares solution (grey cross) appear for comparison. Equirectangular map of Taiwan; distances on it are accurate to about 1.5%.">在每條地震紀錄上拖曳，把 P、S 游標放到兩種波「開始」的地方（靠近手指的游標會跟著走，拖曳時會出現放大鏡）。S−P 時間差換算成震源距離 d = kΔt，以測站為圓心畫圓。量好後，在地圖上點出你認為的震央（標記可以拖曳，或用方向鍵微調），再按「確認我的震央」；確認後才會顯示電腦的最小平方解（灰色十字）當對照。臺灣地圖為等距圓柱投影，圖上距離誤差約 1.5% 以內。</p>
-        <p class="hint l3" data-m="locate" hidden data-en="3D: under the map is the crust, drawn to scale (depth is not exaggerated). The distance d measured at each station is a half-sphere around the station. Two half-spheres meet in an upright half-circle (its chord on the ground is the common chord of the 2D view); the half-circles of all pairs pass through one point — the focus. Tap the map to place your epicenter marker (you can drag it); with one marker, the small ball below it is the focus worked out from it, h = √(d² − Δ²). Drag to rotate, scroll or pinch to zoom; you can also drag the stations.">3D：地圖下方是依比例的地殼（深度沒有放大）。每個測站量到的震源距離 d，是以測站為球心的半球；兩個半球交成一個直立的半圓（它在地表的弦就是 2D 的共同弦），每一對測站的半圓都通過同一點——震源。在地圖上點一下可以放你的震央標記（可拖曳）；只標一個時，標記正下方的小球是由它推算的震源，h = √(d² − Δ²)。拖曳旋轉，滾輪或雙指縮放；也可以直接拖曳測站。</p>
+        <p class="hint l3" data-m="locate" hidden data-en-html="3D: under the map is the crust, drawn to scale (depth is not exaggerated). The distance d measured at each station is a half-sphere around the station. Two half-spheres meet in an upright half-circle (its chord on the ground is the common chord of the 2D view); the half-circles of all pairs pass through one point — the focus. Tap the map to place your epicenter marker (you can drag it); with one marker, the small ball below it is the focus worked out from it, h = √(d&lt;sup&gt;2&lt;/sup&gt; − Δ&lt;sup&gt;2&lt;/sup&gt;). Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. In Rotate mode you can also drag the stations.">3D：地圖下方是依比例的地殼（深度沒有放大）。每個測站量到的震源距離 d，是以測站為球心的半球；兩個半球交成一個直立的半圓（它在地表的弦就是 2D 的共同弦），每一對測站的半圓都通過同一點——震源。在地圖上點一下可以放你的震央標記（可拖曳）；只標一個時，標記正下方的小球是由它推算的震源，h = √(d<sup>2</sup> − Δ<sup>2</sup>)。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。選「旋轉」時，也可以直接拖曳測站。</p>
 
         <div class="legend" data-m="earth" hidden>
           <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>P rays"><i style="background:var(--neg)"></i>P 波射線</span>
@@ -175,7 +187,7 @@
           <span style="color:var(--pos)" data-en-html="<i class=&quot;dash&quot;></i>S shadow zone"><i class="dash"></i>S 波陰影區</span>
         </div>
         <p class="hint" data-m="earth" hidden data-en="Cross-section of the Earth to scale, with the earthquake at the top. Wave speeds are PREM values in 5 km thick shells; within each shell a ray is straight and at every boundary it obeys Snell’s law, so the rays curve. Drag the station ▼ around the surface. The animation runs at 60× real time.">地球剖面依比例繪製，地震發生在最上方。波速取 PREM 模型的值、切成 5 km 厚的殼層；殼層內射線是直線，每個界面都遵守司乃耳定律，所以射線是彎的。沿地表拖曳測站 ▼。動畫為實際時間的 60 倍速。</p>
-        <p class="hint l3" data-m="earth" hidden data-en="3D: half of the Earth, to scale; the cut face is the 2D cross-section with the same rays. The coloured bands on the outside are the shadow zones: they circle the globe around the epicenter. The Earth is spherically symmetric, so every place at the same angular distance Δ (the pale ring through the station) receives the same waves. Drag to rotate, scroll or pinch to zoom; you can also drag the station along the edge of the cut.">3D：切開一半的地球（依比例），切面就是 2D 的剖面與同樣的射線。外表的色帶是陰影區：它們以震央為中心，在地球表面圍成一圈。地球是球對稱的，和測站同一個角距 Δ 的地方（經過測站的淡色圈）收到的波都一樣。拖曳旋轉，滾輪或雙指縮放；也可以沿切面的邊緣拖曳測站。</p>
+        <p class="hint l3" data-m="earth" hidden data-en="3D: half of the Earth, to scale; the cut face is the 2D cross-section with the same rays. The coloured bands on the outside are the shadow zones: they circle the globe around the epicenter. The Earth is spherically symmetric, so every place at the same angular distance Δ (the pale ring through the station) receives the same waves. Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom; you can also drag the station along the edge of the cut.">3D：切開一半的地球（依比例），切面就是 2D 的剖面與同樣的射線。外表的色帶是陰影區：它們以震央為中心，在地球表面圍成一圈。地球是球對稱的，和測站同一個角距 Δ 的地方（經過測站的淡色圈）收到的波都一樣。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放；也可以沿切面的邊緣拖曳測站。</p>
       </div>
 
       <aside class="panel">
@@ -213,7 +225,7 @@
         <section class="card" data-m="waves">
           <h2 data-en="Readings at the station">測站的讀數</h2>
           <dl class="readout nw">
-            <dt data-en-html="Hypocentral distance <span class=&quot;f&quot;>R = √(Δ² + h²)</span>">震源距離 <span class="f">R = √(Δ² + h²)</span></dt><dd id="r1R">—</dd>
+            <dt data-en-html="Hypocentral distance <span class=&quot;f&quot;>R = √(Δ&lt;sup&gt;2&lt;/sup&gt; + h&lt;sup&gt;2&lt;/sup&gt;)</span>">震源距離 <span class="f">R = √(Δ<sup>2</sup> + h<sup>2</sup>)</span></dt><dd id="r1R">—</dd>
             <dt data-en-html="P arrival <span class=&quot;f&quot;>t<sub>P</sub> = R/V<sub>P</sub></span>">P 波到達 <span class="f">t<sub>P</sub> = R/V<sub>P</sub></span></dt><dd id="r1P">—</dd>
             <dt data-en-html="S arrival <span class=&quot;f&quot;>t<sub>S</sub> = R/V<sub>S</sub></span>">S 波到達 <span class="f">t<sub>S</sub> = R/V<sub>S</sub></span></dt><dd id="r1S">—</dd>
             <dt data-en="S−P time Δt">S−P 時間差 Δt</dt><dd id="r1SP">—</dd>
@@ -423,18 +435,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/earthquake-core.js?v=202611201017"></script>
-  <script src="js/sound.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/earthquake.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="earthquake"></script>
-  <script src="js/missions/earthquake.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="earthquake"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/earthquake-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/earthquake.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="earthquake"></script>
+  <script src="js/missions/earthquake.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="earthquake"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

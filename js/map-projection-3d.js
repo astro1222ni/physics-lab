@@ -25,7 +25,8 @@
     const wrap = document.createElement('div');
     wrap.className = 'c3-wrap';
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('地球與投影面的 3D 檢視（可拖曳旋轉、縮放）；黃色是比例正確的線或點', '3D view of the globe and the projection surface (drag to rotate, pinch or scroll to zoom); yellow marks where the scale is true'));
+    canvas.setAttribute('aria-label', T('地球與投影面的 3D 檢視（可旋轉、平移與縮放）；黃色是比例正確的線或點', '3D view of the globe and the projection surface (rotate, pan or zoom); yellow marks where the scale is true'));
+    canvas.tabIndex = 0;
     wrap.appendChild(canvas);
     const hud = document.createElement('div');
     hud.className = 'c3-hud';
@@ -55,9 +56,9 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
     controls.minDistance = 2.2;
     controls.maxDistance = 30;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 1, T });
 
     // 柔和的全天光＋一盞斜射的主光，讓地球有立體感但每個地方都看得清楚
     scene.add(new THREE.HemisphereLight(0xdbe8ff, 0x2a3140, 1.15));
@@ -483,7 +484,10 @@
       const P = presetFor(kind);
       if (!animate || B.reducedMotion) {
         camAnim = null;
-        camera.position.copy(P.pos); controls.target.copy(P.tgt); controls.update(); render();
+        camera.position.copy(P.pos);
+        controls.target.copy(P.tgt);
+        nav.home();
+        controls.update(); render();
         return;
       }
       camAnim = { t0: performance.now(), dur: 800, p0: camera.position.clone(), t0v: controls.target.clone(), p1: P.pos, t1: P.tgt };
@@ -495,6 +499,7 @@
       const u = Math.min(1, (performance.now() - A.t0) / A.dur), e = 1 - Math.pow(1 - u, 3);
       camera.position.copy(A.p0).lerp(A.p1, e);
       controls.target.copy(A.t0v).lerp(A.t1, e);
+      nav.home();
       if (u >= 1) camAnim = null;
     }
     let moving = false;
@@ -539,6 +544,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (mapTex) mapTex.dispose();

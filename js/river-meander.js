@@ -451,18 +451,25 @@
     const mv = info.R1, ay = 32;
     if (Math.abs(mv) > 0.005) {
       const dir = mv > 0 ? 1 : -1;
-      D.arrow(c, w / 2 - dir * 22, ay, w / 2 + dir * 22, ay, C['rm-cut'], 2);
-      c.font = font; c.fillStyle = C['rm-cut']; c.textAlign = dir > 0 ? 'right' : 'left'; c.textBaseline = 'middle';
-      c.fillText(T('河道往這邊移 ' + num(Math.abs(mv), 1) + ' m/年', 'channel moves ' + num(Math.abs(mv), 1) + ' m/yr'), w / 2 - dir * 28, ay);
+      c.font = font; c.fillStyle = C['rm-cut']; c.textBaseline = 'middle';
+      if (w < 300) {
+        const rate = num(Math.abs(mv), 1) + T(' m/年', ' m/yr'), left = (w - c.measureText(rate).width - 46) / 2;
+        D.arrow(c, left + (dir > 0 ? 0 : 38), ay, left + (dir > 0 ? 38 : 0), ay, C['rm-cut'], 2);
+        c.textAlign = 'left'; c.fillText(rate, left + 46, ay);
+      } else {
+        D.arrow(c, w / 2 - dir * 22, ay, w / 2 + dir * 22, ay, C['rm-cut'], 2);
+        c.textAlign = dir > 0 ? 'right' : 'left';
+        c.fillText(T('河道往這邊移 ' + num(Math.abs(mv), 1) + ' m/年', 'channel moves ' + num(Math.abs(mv), 1) + ' m/yr'), w / 2 - dir * 28, ay);
+      }
     }
     // 標籤
     if (Math.abs(cs.c) >= 0.05) {
       const lo = outerRight ? 'right' : 'left';
       c.font = bold; c.textBaseline = 'bottom';
       c.fillStyle = C['rm-cut']; c.textAlign = lo;
-      c.fillText(T('凹岸・攻擊坡（侵蝕）', 'outer: cut bank (erosion)'), lo === 'right' ? w - 6 : 6, pt - 4);
+      c.fillText(w < 300 ? T('凹岸・侵蝕', 'Outer: erosion') : T('凹岸・攻擊坡（侵蝕）', 'outer: cut bank (erosion)'), lo === 'right' ? w - 6 : 6, pt - 4);
       c.fillStyle = D.dark ? C['rm-bar'] : C['rm-scroll']; c.textAlign = lo === 'right' ? 'left' : 'right';
-      c.fillText(T('凸岸・滑走坡（堆積）', 'inner: point bar (deposition)'), lo === 'right' ? 6 : w - 6, pt - 4);
+      c.fillText(w < 300 ? T('凸岸・堆積', 'Inner: deposition') : T('凸岸・滑走坡（堆積）', 'inner: point bar (deposition)'), lo === 'right' ? 6 : w - 6, pt - 4);
     } else {
       c.font = font; c.fillStyle = C['muted']; c.textAlign = 'center'; c.textBaseline = 'bottom';
       c.fillText(T('這裡幾乎是直的：兩岸一樣深', 'Almost straight here: both sides equally deep'), w / 2, pt - 4);
@@ -523,7 +530,11 @@
     const font = Math.round(10.5 * fs) + 'px ' + FONT;
     c.fillStyle = C['muted']; c.font = '600 ' + Math.round(11.5 * fs) + 'px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'top';
     c.fillText(T('彎曲度隨時間', 'Sinuosity through time'), 10, 8);
-    const pl = 34, pr = 12, pt = 30, pb = 26;
+    c.font = font;
+    const unit = T('年', 'yr'), tickH = Math.ceil(D.textHeight(c.measureText('0'), 13));
+    const rightInset = w < 300 ? 22 : 5;
+    const pl = Math.ceil(c.measureText('0.0').width) + 20, pr = Math.ceil(c.measureText(unit).width) + 20 + rightInset;
+    const pt = 30, pb = tickH + 15;
     const tMax = Math.max(200, Math.ceil(R.t / 100) * 100);
     let yMax = 2;
     series.forEach(function (p) { if (p[1] > yMax) yMax = p[1]; });
@@ -534,11 +545,11 @@
     c.strokeStyle = D.alpha(C['text'], 0.1); c.lineWidth = 1; c.font = font; c.fillStyle = C['muted'];
     c.textAlign = 'right'; c.textBaseline = 'middle';
     const ys = yMax > 4 ? 1 : 0.5;
-    for (let s = 1; s <= yMax + 1e-9; s += ys) { c.beginPath(); c.moveTo(pl, Y(s)); c.lineTo(w - pr, Y(s)); c.stroke(); c.fillText(num(s, ys < 1 ? 1 : 0), pl - 4, Y(s)); }
+    for (let s = 1; s <= yMax + 1e-9; s += ys) { c.beginPath(); c.moveTo(pl, Y(s)); c.lineTo(w - pr, Y(s)); c.stroke(); c.fillText(num(s, ys < 1 ? 1 : 0), pl - 9, Y(s)); }
     const ts = niceStep(tMax);
     c.textAlign = 'center'; c.textBaseline = 'top';
-    for (let t = 0; t <= tMax + 1e-9; t += ts) { c.beginPath(); c.moveTo(X(t), pt); c.lineTo(X(t), h - pb); c.stroke(); c.fillText(num(t, 0), X(t), h - pb + 3); }
-    c.textAlign = 'right'; c.fillText(T('年', 'yr'), w - pr, h - pb + 3 + Math.round(11 * fs));
+    for (let t = 0; t <= tMax + 1e-9; t += ts) { c.beginPath(); c.moveTo(X(t), pt); c.lineTo(X(t), h - pb); c.stroke(); c.fillText(num(t, 0), X(t), h - pb + 8); }
+    c.textAlign = 'right'; c.fillText(unit, w - rightInset, h - pb + 8);
     // 曲流河的門檻 1.5
     c.strokeStyle = D.alpha(C['rm-sel'], 0.6); c.setLineDash([4, 3]);
     c.beginPath(); c.moveTo(pl, Y(1.5)); c.lineTo(w - pr, Y(1.5)); c.stroke(); c.setLineDash([]);
@@ -858,7 +869,7 @@
   cv.addEventListener('pointerleave', function () { preview = null; requestDraw(); });
 
   // ---------- 鍵盤：沿著河道移動剖面 ----------
-  const kb = window.LabKeys ? window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('河谷俯視圖。方向鍵沿著河道移動橫剖面的位置（Shift 走大步）。', 'Valley seen from above. Arrow keys move the cross-section along the river (Shift for big steps).'),
     items: [{
       name: function () { return T('橫剖面位置', 'Cross-section position'); },
@@ -880,7 +891,28 @@
       }
     }],
     onChange: function () { requestDraw(); }
-  }) : null;
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
+  let stopSectionRepeat;
+  function releaseSectionKey() {
+    if (stopSectionRepeat) stopSectionRepeat();
+    stopSectionRepeat = null;
+  }
+  document.querySelectorAll('[data-section-step]').forEach(function (button) {
+    const move = () => keyControls.items[0].move(Number(button.dataset.sectionStep), 0, false);
+    button.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      releaseSectionKey();
+      button.setPointerCapture(e.pointerId);
+      stopSectionRepeat = LabVPad.repeat(move);
+    });
+    button.addEventListener('pointerup', releaseSectionKey);
+    button.addEventListener('pointercancel', releaseSectionKey);
+    button.addEventListener('lostpointercapture', releaseSectionKey);
+    button.addEventListener('click', e => { if (e.detail === 0) move(); });
+  });
+  window.addEventListener('blur', releaseSectionKey);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseSectionKey(); });
 
   // ---------- 分享：河谷、設定、圖層 ----------
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({

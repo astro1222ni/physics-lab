@@ -98,6 +98,17 @@ test('沒有冰反照率回饋時只有一個平衡；時間積分（RK4）收�
   near(K.run(p, 288, 3, 0.25), K.run(p, 288, 3, 0.01), 1e-5, '步長 0.25 年與 0.01 年一致');
 });
 
+test('重用同一組平衡點，跨過不穩定平衡時仍會選到正確的溫暖或雪球解', () => {
+  const p = P({ ice: true, wv: true });
+  const roots = K.equilibria(p);
+  for (const root of roots) {
+    for (const delta of [-0.5, 0, 0.5]) {
+      const start = root.T + delta;
+      assert.strictEqual(K.settle(p, start, roots), K.settle(p, start));
+    }
+  }
+});
+
 test('沒有水氣回饋時，950 ppm 的 CO₂ 就能融化雪球；有水氣回饋時 CO₂ 融不掉（冷的大氣很乾）', () => {
   const T0 = K.settle(P({ ice: true }), 240);
   assert.ok(T0 < 252);

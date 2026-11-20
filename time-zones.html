@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Time Zones, Local Time and the Date Line | Astro Ni Lab">經緯度、時區與換日線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"地圖與地理技能","item":"https://lab.astroni.org/geography.html#mapping"},{"@type":"ListItem","position":4,"name":"經緯度與時間","item":"https://lab.astroni.org/geography.html#ch-latlong-time"},{"@type":"ListItem","position":5,"name":"經緯度、時區與換日線","item":"https://lab.astroni.org/time-zones.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 時區頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -89,7 +89,7 @@
     .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
-    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud .br { right: 8px; bottom: 62px; align-items: flex-end; max-width: calc(100% - 16px); }
     .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
     .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
     .c3-hud span:empty { display: none; }
@@ -97,11 +97,17 @@
     .view-msg:empty { display: none; }
     /* 時鐘列 */
     .clockbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 2px 0; }
+    /* 直放時，190 px 的展開鍵盤比 2:1 世界地圖高，留出下緣以看清 UTC。 */
+    @media (max-width: 480px) {
+      body:has(.lab-vpad.expanded:not([hidden])) .tz .stage:not(.is3d) .clockbar { margin-top: max(10px, calc(238px - 50vw)); }
+    }
     .clockbar .now { flex: 1 1 220px; font-variant-numeric: tabular-nums; line-height: 1.3; }
     .clockbar .now b { font-size: calc(19px * var(--fs, 1)); }
     .clockbar .now small { display: block; color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
     .clockbar .btns { display: flex; gap: 6px; flex: 1 1 260px; }
     .clockbar .btns button { flex: 1 1 auto; padding: 4px 10px; }
+    /* 起飛跟著原本的飛行分頁，只把操作位置移到地圖旁。 */
+    body:has(.labdeck-away #selDep) #fly { display: none; }
     .speed { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex: 1 1 100%; }
     .speed button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 40px; padding: 2px 8px; background: var(--bg); font-size: calc(12.5px * var(--fs, 1)); }
     .speed button + button { border-left: 1px solid var(--border); }
@@ -112,7 +118,16 @@
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
     .legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+      #view3 canvas { max-height: calc(100dvh - 118px); }
+      #cv { width: min(100%, calc((100dvh - 134px) * 2)); margin-inline: auto; }
+      .clockbar .now { flex: 1 1 145px; }
+      .clockbar .btns { flex: 1 1 180px; }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -141,10 +156,11 @@
         <canvas id="cv" aria-label="世界地圖：點一下放量測點（靠近城市會對準城市），拖曳量測點可以移動" data-en-aria-label="World map: tap to drop the measuring point (it snaps to a nearby city); drag the point to move it"></canvas>
         <div id="view3"></div>
 
-        <div class="clockbar">
+        <div class="clockbar controls">
           <div class="now" id="nowBox"><b id="nowUtc">—</b><small id="nowSub">—</small></div>
           <div class="btns">
             <button type="button" id="play" aria-pressed="false" data-en="▶ Play">▶ 播放</button>
+            <button type="button" id="fly" data-en="✈ Take off now">✈ 現在起飛</button>
             <button type="button" id="clear" data-en="Clear all" title="清除地圖上的飛行航跡；時間與設定不變" data-en-title="Remove the flight tracks from the map; the time and settings stay">全部清除</button>
           </div>
           <div class="speed" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
@@ -153,7 +169,7 @@
             <button type="button" data-speed="day" aria-pressed="false" data-en="10 days / s (same hour)">每秒 10 天（時刻不變）</button>
           </div>
         </div>
-        <div class="twin-sliders">
+        <div class="twin-sliders controls">
           <div class="slider"><label for="day" data-en="Date (UTC)">日期（UTC）</label><output></output>
             <input id="day" type="range" min="1" max="365" step="1" value="317" data-decimals="0"></div>
           <div class="slider"><label for="utc" data-en="Time (UTC, hours)">時刻（UTC，小時）</label><output></output>
@@ -168,7 +184,7 @@
           <span style="color:var(--tz-flight)" data-en-html="<i style=&quot;background:var(--tz-flight)&quot;></i>Flight (great circle)"><i style="background:var(--tz-flight)"></i>飛行航線（大圓）</span>
         </div>
         <p class="hint l2" data-en="Tap the map to drop the measuring point; near a city it snaps to the city and uses its official time. Drag the point to move it; with the map focused, the arrow keys move it by 1° (Shift: 10°).">點一下地圖放量測點；靠近城市時會對準城市，改用那裡的官方時間。拖曳量測點可以移動；選取地圖後方向鍵每次移 1°（加 Shift 移 10°）。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The Sun shines from one side; the coloured slices are the 24 time zones and the two bright seams are where the date changes.">拖曳旋轉，滾輪或雙指縮放。太陽從一側照過來；一瓣一瓣的顏色是 24 個時區，兩條亮線是日期改變的地方。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag with one finger or the left mouse button. Pinch or scroll to zoom. The Sun shines from one side; the coloured slices are the 24 time zones and the two bright seams are where the date changes.">選「旋轉」或「平移」後，用單指或滑鼠左鍵拖曳。用雙指或滾輪縮放。太陽從一側照過來；一瓣一瓣的顏色是 24 個時區，兩條亮線是日期改變的地方。</p>
       </div>
 
       <aside class="panel">
@@ -225,7 +241,6 @@
           </dl>
           <div class="row2">
             <button type="button" id="suggest" data-en="Typical flight time" title="大圓距離 ÷ 850 km/h，再加起降的 0.5 小時" data-en-title="Great-circle distance ÷ 850 km/h, plus 0.5 h for take-off and landing">一般飛行時間</button>
-            <button type="button" id="fly" data-en="✈ Take off now">✈ 現在起飛</button>
           </div>
           <p class="hint" data-en="The plane leaves at the time on the clock above and flies along the great circle; the clock runs while it flies.">飛機在上方時鐘的時刻起飛，沿大圓航線飛行；飛行時時鐘會一起走。</p>
         </section>
@@ -285,18 +300,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/geog-world.js?v=202611201017"></script>
-  <script src="js/time-zones-core.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/time-zones.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="time-zones"></script>
-  <script src="js/missions/time-zones.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="time-zones"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/geog-world.js?v=202611201021"></script>
+  <script src="js/time-zones-core.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/vpad.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/time-zones.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="time-zones"></script>
+  <script src="js/missions/time-zones.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="time-zones"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

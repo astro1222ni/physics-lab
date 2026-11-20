@@ -78,7 +78,7 @@
     let controls = null, dragging = null, hoverId = null;
     const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(), pv = new THREE.Vector3();
     function pickHandle(ev) {
-      if (!cur || !cur.handles) return null;
+      if ((nav && nav.mode() === 'pan') || !cur || !cur.handles) return null;
       const r = canvas.getBoundingClientRect();
       if (!r.width) return null;
       const mx = ev.clientX - r.left, my = ev.clientY - r.top, lim = ev.pointerType === 'mouse' ? 22 : 30;
@@ -154,7 +154,13 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.8;
-    controls.enablePan = false;
+    let nav = null, navRadius = 0;
+    function setNavRadius(radius) {
+      if (radius === navRadius) return;
+      navRadius = radius;
+      if (nav) { nav.dispose(); controls.stopListenToKeyEvents(); }
+      nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: radius, T }) : null;
+    }
 
     // ---------- 燈光、接陰影的地板 ----------
     const hemi = new THREE.HemisphereLight(0xffffff, 0x6f6658, 1.15);
@@ -1491,6 +1497,7 @@
       if (!cur) return;
       const f = cur.fit, b = f.box;
       const c = V((b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2);
+      setNavRadius(Math.min(b[1] - b[0], b[3] - b[2]) / 2);
       const d = (dir || f.dir).clone().normalize();
       const fwd = d.clone().negate();
       const right = new THREE.Vector3().crossVectors(fwd, camera.up).normalize();
@@ -1515,14 +1522,17 @@
         camAnim = null;
         camera.position.copy(pos);
         controls.target.copy(c);
+        if (nav) nav.home();
         controls.update();
       }
     }
+    controls.addEventListener('start', function () { camAnim = null; });
     function stepCamAnim() {
       if (!camAnim) return;
       const u = clamp((performance.now() - camAnim.s) / 550, 0, 1), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
       camera.position.lerpVectors(camAnim.p0, camAnim.p1, e);
       controls.target.lerpVectors(camAnim.t0, camAnim.t1, e);
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
     function placeLights() {
@@ -1559,7 +1569,8 @@
       const w = wrap.clientWidth;
       if (!w || !cur) return false;
       const nar = w < 560, sz = cur.size;
-      const h = nar ? Math.round(w * sz[0]) : Math.round(Math.min(w * sz[1], sz[2]));
+      const natural = nar ? Math.round(w * sz[0]) : Math.round(Math.min(w * sz[1], sz[2]));
+      const h = Math.min(natural, matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? Math.max(130, innerHeight - 178) : Infinity);
       if (canvas.style.height !== h + 'px') canvas.style.height = h + 'px';
       const changed = w !== cw || h !== ch;
       narrow = nar; cw = w; ch = h;
@@ -1640,6 +1651,7 @@
         endDrag();
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         domeGeo.dispose();

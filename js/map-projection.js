@@ -529,10 +529,7 @@
     // 名稱
     const nm = projName(state.proj);
     D.pill(ctx, nm, 10, h - 8, C.text, 'left', '600 ' + (w < 520 ? 11 : 12.5) + 'px ' + FONT);
-    if (w < 560) return;   // 窄螢幕：說明文字會壓到地圖名稱，省略
-    if (state.proj === 'mercator') D.haloText(ctx, T('只畫到南北緯 85°（再往兩極就無限大）', 'Shown to 85° N and S (the poles are infinitely far)'), w - 10, h - 10, C.muted, 'right', 'alphabetic', '11px ' + FONT);
-    if (state.proj === 'gnomonic') D.haloText(ctx, T('只畫到離中心 70°', 'Shown to 70° from the centre'), w - 10, h - 10, C.muted, 'right', 'alphabetic', '11px ' + FONT);
-    if ((state.proj === 'lcc' && Math.abs(P.n) >= 1e-6)) D.haloText(ctx, T('遠離圓錐尖端的那一極只畫到 60°', 'The far pole is cut off at 60°'), w - 10, h - 10, C.muted, 'right', 'alphabetic', '11px ' + FONT);
+
   }
 
   // =====================================================================
@@ -586,6 +583,12 @@
   let lastSay = 0;
   function updateReadouts() {
     const pi = PROJ_NAME[state.proj], prop = K.BY_ID[state.proj].prop, pn = PROP_NAME[prop];
+    const limit = document.querySelector('.projection-limit');
+    const note = state.proj === 'mercator' ? T('只畫到南北緯 85°（再往兩極就無限大）', 'Shown to 85° N and S (the poles are infinitely far).')
+      : state.proj === 'gnomonic' ? T('只畫到離中心 70°', 'Shown to 70° from the centre.')
+      : state.proj === 'lcc' && Math.abs(P.n) >= 1e-6 ? T('遠離圓錐尖端的那一極只畫到 60°', 'The far pole is cut off at 60°.') : '';
+    if (limit.textContent !== note) limit.textContent = note;
+    limit.hidden = !note;
     setHTML('propLine', '<b>' + T(pi[0], pi[1]) + '</b>　' + T(pn[0], pn[1]));
     // 陸塊
     const S = shapeInfo();
@@ -783,6 +786,7 @@
       const c = state.shapeAt || SHAPES[state.shape].home;
       drag = ll ? { kind: 'shape', off: [K.wrapPi(c[0] - ll[0]), c[1] - ll[1]] } : null;
     } else drag = { kind: 'map', x0: q[0], y0: q[1], lam0: state.lam0, phi0: state.phi0, moved: false };
+    if (drag && kb) kb.select(end ? (end === 'A' ? 3 : 4) : drag.kind === 'shape' ? 1 : 0);
     if (drag) { cv.setPointerCapture(ev.pointerId); cv.classList.add('dragging'); ev.preventDefault(); }
   });
   cv.addEventListener('pointermove', function (ev) {
@@ -826,6 +830,7 @@
       if (ll) {
         acted();
         state.probes.push({ lam: ll[0], phi: ll[1] });
+        if (kb) kb.select(2);
         if (state.probes.length > MAX_PROBES) state.probes.shift();
         const t = K.tissot(P, ll[0], ll[1]);
         setStatus(T('量測點 ', 'Point at ') + latText(ll[1]) + ' ' + lonText(ll[0]) + T('：面積放大 ', ': areas enlarged ') + num(t.s, 3) + T(' 倍，角度最多改變 ', '×, angles changed by up to ') + num(t.omega / DEG, 1) + '°' + T('。', '.'));
@@ -841,49 +846,48 @@
   cv.addEventListener('pointercancel', function () { drag = null; cv.classList.remove('dragging'); interacting = false; requestDraw(); });
 
   // ---------- 鍵盤 ----------
-  if (window.LabKeys) {
-    const moveLL = function (p, dx, dy, big, fine) { const s = (fine ? (big ? 2 : 0.2) : (big ? 5 : 1)) * DEG; return [K.wrapPi(p[0] + dx * s), Math.max(-89 * DEG, Math.min(89 * DEG, p[1] + dy * s))]; };
-    window.LabKeys.attach(cv, {
-      label: T('世界地圖。方向鍵轉動地圖；Enter 換成移動陸塊、量測點或航線端點。', 'World map. Arrow keys turn the map; Enter switches to moving the landmass, the measuring point or a route end.'),
-      items: [{
-        name: function () { return T('地圖中心', 'Map centre'); },
-        move: function (dx, dy, big) {
-          acted();
-          let l = state.lam0 + dx * (big ? 10 : 1); l = ((l + 180) % 360 + 360) % 360 - 180;
-          setQuiet(el.lam0, l);
-          if (P.family === 'azi' && dy) setQuiet(el.phi0, Math.max(-90, Math.min(90, state.phi0 + dy * (big ? 10 : 1))));
-          readSliders(); makeProj(); refreshOutputs(); afterChange(true); return true;
-        },
-        describe: function () { return T('中央經線 ', 'Central meridian ') + num(state.lam0, 0) + '°' + (P.family === 'azi' ? T('，中心緯度 ', ', centre latitude ') + num(state.phi0, 0) + '°' : ''); }
-      }, {
-        name: function () { return T('陸塊', 'Landmass'); },
-        move: function (dx, dy, big) {
-          if (!state.shape) return false;
-          acted(); state.shapeAt = moveLL(state.shapeAt || SHAPES[state.shape].home, dx, dy, big, true);
-          state.shapeAt[1] = Math.max(-80 * DEG, Math.min(80 * DEG, state.shapeAt[1]));
-          afterChange(true); return true;
-        },
-        describe: function () { const S = shapeInfo(); return S ? T(SHAPE_NAME[S.id][0], SHAPE_NAME[S.id][1]) + ' ' + latText(S.phi) + ' ' + lonText(S.lam) + T('，放大 ', ', enlarged ') + num(S.ratio, 2) + T(' 倍', '×') : T('還沒有選陸塊', 'no landmass chosen'); }
-      }, {
-        name: function () { return T('量測點', 'Measuring point'); },
-        move: function (dx, dy, big) {
-          if (!state.probes.length) return false;
-          acted(); const p = state.probes[state.probes.length - 1]; const m = moveLL([p.lam, p.phi], dx, dy, big, true);
-          p.lam = m[0]; p.phi = m[1]; afterChange(true); return true;
-        },
-        describe: function () { const pr = probeInfo(state.probes[state.probes.length - 1]); return pr && pr.visible ? latText(pr.phi) + ' ' + lonText(pr.lam) + T('，面積倍率 ', ', area scale ') + num(pr.s, 3) + T('，角度變形 ', ', angle distortion ') + num(pr.omega, 1) + '°' : T('還沒有量測點（點一下地圖）', 'no measuring point yet (tap the map)'); }
-      }, {
-        name: function () { return T('航線起點 A', 'Route start A'); },
-        move: function (dx, dy, big) { if (!state.route) return false; acted(); state.A = moveLL(state.A, dx, dy, big); state.cityA = 'custom'; refreshOutputs(); afterChange(true); return true; },
-        describe: function () { return 'A ' + latText(state.A[1]) + ' ' + lonText(state.A[0]); }
-      }, {
-        name: function () { return T('航線終點 B', 'Route end B'); },
-        move: function (dx, dy, big) { if (!state.route) return false; acted(); state.B = moveLL(state.B, dx, dy, big); state.cityB = 'custom'; refreshOutputs(); afterChange(true); return true; },
-        describe: function () { const R = routeInfo(); return 'B ' + latText(state.B[1]) + ' ' + lonText(state.B[0]) + (R ? T('，大圓距離 ', ', great-circle distance ') + grp(R.gc) + ' km' : ''); }
-      }],
-      onChange: function () { requestDraw(); }
-    });
-  }
+  const moveLL = function (p, dx, dy, big, fine) { const s = (fine ? (big ? 2 : 0.2) : (big ? 5 : 1)) * DEG; return [K.wrapPi(p[0] + dx * s), Math.max(-89 * DEG, Math.min(89 * DEG, p[1] + dy * s))]; };
+  const keyControls = {
+    label: T('世界地圖。方向鍵轉動地圖；Enter 換成移動陸塊、量測點或航線端點。', 'World map. Arrow keys turn the map; Enter switches to moving the landmass, the measuring point or a route end.'),
+    items: [{
+      name: function () { return T('地圖中心', 'Map centre'); },
+      move: function (dx, dy, big) {
+        acted();
+        let l = state.lam0 + dx * (big ? 10 : 1); l = ((l + 180) % 360 + 360) % 360 - 180;
+        setQuiet(el.lam0, l);
+        if (P.family === 'azi' && dy) setQuiet(el.phi0, Math.max(-90, Math.min(90, state.phi0 + dy * (big ? 10 : 1))));
+        readSliders(); makeProj(); refreshOutputs(); afterChange(true); setStatus(this.describe()); return true;
+      },
+      describe: function () { return T('中央經線 ', 'Central meridian ') + num(state.lam0, 0) + '°' + (P.family === 'azi' ? T('，中心緯度 ', ', centre latitude ') + num(state.phi0, 0) + '°' : ''); }
+    }, {
+      name: function () { return T('陸塊', 'Landmass'); },
+      move: function (dx, dy, big) {
+        if (!state.shape) return false;
+        acted(); state.shapeAt = moveLL(state.shapeAt || SHAPES[state.shape].home, dx, dy, big, true);
+        state.shapeAt[1] = Math.max(-80 * DEG, Math.min(80 * DEG, state.shapeAt[1]));
+        afterChange(true); setStatus(this.describe()); return true;
+      },
+      describe: function () { const S = shapeInfo(); return S ? T(SHAPE_NAME[S.id][0], SHAPE_NAME[S.id][1]) + ' ' + latText(S.phi) + ' ' + lonText(S.lam) + T('，放大 ', ', enlarged ') + num(S.ratio, 2) + T(' 倍', '×') : T('還沒有選陸塊', 'no landmass chosen'); }
+    }, {
+      name: function () { return T('量測點', 'Measuring point'); },
+      move: function (dx, dy, big) {
+        if (!state.probes.length) return false;
+        acted(); const p = state.probes[state.probes.length - 1]; const m = moveLL([p.lam, p.phi], dx, dy, big, true);
+        p.lam = m[0]; p.phi = m[1]; afterChange(true); setStatus(this.describe()); return true;
+      },
+      describe: function () { const pr = probeInfo(state.probes[state.probes.length - 1]); return pr && pr.visible ? latText(pr.phi) + ' ' + lonText(pr.lam) + T('，面積倍率 ', ', area scale ') + num(pr.s, 3) + T('，角度變形 ', ', angle distortion ') + num(pr.omega, 1) + '°' : T('還沒有量測點（點一下地圖）', 'no measuring point yet (tap the map)'); }
+    }, {
+      name: function () { return T('航線起點 A', 'Route start A'); },
+      move: function (dx, dy, big) { if (!state.route) return false; acted(); state.A = moveLL(state.A, dx, dy, big); state.cityA = 'custom'; refreshOutputs(); afterChange(true); setStatus(this.describe()); return true; },
+      describe: function () { return 'A ' + latText(state.A[1]) + ' ' + lonText(state.A[0]); }
+    }, {
+      name: function () { return T('航線終點 B', 'Route end B'); },
+      move: function (dx, dy, big) { if (!state.route) return false; acted(); state.B = moveLL(state.B, dx, dy, big); state.cityB = 'custom'; refreshOutputs(); afterChange(true); setStatus(this.describe()); return true; },
+      describe: function () { const R = routeInfo(); return 'B ' + latText(state.B[1]) + ' ' + lonText(state.B[0]) + (R ? T('，大圓距離 ', ', great-circle distance ') + grp(R.gc) + ' km' : ''); }
+    }],
+    onChange: function () { requestDraw(); }
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   // ---------- 分享：投影、圖層、陸塊位置、量測點、航線 ----------
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
@@ -1077,4 +1081,85 @@
     probe: function (latDeg, lonDeg) { acted(); state.probes.push({ lam: lonDeg * DEG, phi: latDeg * DEG }); if (state.probes.length > MAX_PROBES) state.probes.shift(); afterChange(true); },
     shapeTo: function (id, latDeg, lonDeg) { acted(); state.shape = id; state.shapeAt = latDeg == null ? null : [lonDeg * DEG, latDeg * DEG]; refreshOutputs(); afterChange(true); },
     redraw: function () { interacting = false; rasterKey = ''; drawMap(); } };
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint(id) {
+    let ll = [state.lam0 * DEG, (P.family === 'azi' ? state.phi0 : 0) * DEG];
+    if (id === 'land' && state.shape) ll = state.shapeAt || SHAPES[state.shape].home;
+    if (id === 'probe' && state.probes.length) {
+      const p = state.probes[state.probes.length - 1];
+      ll = [p.lam, p.phi];
+    }
+    if (id === 'A' || id === 'B') ll = state[id];
+    return P.valid(ll[0], ll[1]) ? toS(P.forward(ll[0], ll[1]), getGeom()) : [cvSize.w / 2, cvSize.h / 2];
+  }
+  if (window.LabVPad && kb) {
+    const name = T('地圖投影', 'Projection');
+    const targets = ['centre', 'land', 'probe', 'A', 'B'];
+    const pad = LabVPad.mount({
+      id: 'map-projection', canvas: cv, step: 1, steps: [1],
+      objects: targets, selected: () => targets[kb.index()], select: id => kb.select(targets.indexOf(id)),
+      move: (dx, dy) => keyControls.items[kb.index()].move(dx, dy, false),
+      visible: () => !stage.classList.contains('is3d'),
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint(id);
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint(targets[kb.index()]);
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      lens: false
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:map-projection'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + T('微調', 'Move');
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    // 共用中央鍵會重畫成探針編號，改用本頁的物件名稱與同一個鍵盤選取索引。
+    const target = document.createElement('button');
+    target.type = 'button';
+    target.className = 'geo-target';
+    panel.querySelector('.vpad-select').replaceWith(target);
+    const names = [T('中心', 'Centre'), T('陸塊', 'Land'), T('測點', 'Point'), 'A', 'B'];
+    function labelTarget() {
+      target.textContent = names[kb.index()];
+      target.setAttribute('aria-label', T('切換移動對象，目前為', 'Switch target, currently ') + keyControls.items[kb.index()].name());
+      target.title = target.getAttribute('aria-label');
+    }
+    target.addEventListener('click', function () {
+      const available = [true, !!state.shape, !!state.probes.length, state.route, state.route];
+      let i = kb.index();
+      do { i = (i + 1) % targets.length; } while (!available[i]);
+      kb.select(i);
+    });
+    keyControls.onChange = function () { labelTarget(); requestDraw(); };
+    $('shapeBtns').addEventListener('click', function (e) {
+      if (e.target.closest('[data-shape]') && state.shape) kb.select(1);
+    });
+    $('shapeOff').addEventListener('click', () => { if (kb.index() === 1) kb.select(0); });
+    $('tRoute').addEventListener('click', () => kb.select(state.route ? 3 : 0));
+    $('clear').addEventListener('click', () => kb.select(0));
+    labelTarget();
+  }
+
 })();

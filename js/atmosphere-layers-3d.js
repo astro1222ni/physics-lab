@@ -60,10 +60,10 @@
     // 畫面的「上」＝臺灣的鉛直方向：從側面看，高度柱是直立的（OrbitControls 建立時就讀 camera.up，所以要先設）
     camera.up.copy(N0);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 1, T }) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
     controls.minDistance = 0.45;
     controls.maxDistance = 9;
 
@@ -317,7 +317,11 @@
 
     // ---------- 相機 ----------
     let narrow = false;
-    function sizeOf(w) { return w < 560 ? 400 : 440; }
+    function sizeOf(w) {
+      const natural = w < 560 ? 400 : 440;
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -350,18 +354,22 @@
       const P = presetFor(kind);
       if (!animate || B.reducedMotion) {
         camAnim = null;
-        camera.position.copy(P.pos); controls.target.copy(P.tgt); controls.update(); render();
+        camera.position.copy(P.pos); controls.target.copy(P.tgt);
+        if (nav) nav.home();
+        controls.update(); render();
         return;
       }
       camAnim = { t0: performance.now(), dur: 900, p0: camera.position.clone(), t0v: controls.target.clone(), p1: P.pos, t1: P.tgt };
       B.request();
     }
+    controls.addEventListener('start', function () { camAnim = null; });
     function stepCam() {
       if (!camAnim) return;
       const A = camAnim;
       const u = Math.min(1, (performance.now() - A.t0) / A.dur), e = 1 - Math.pow(1 - u, 3);
       camera.position.copy(A.p0).lerp(A.p1, e);
       controls.target.copy(A.t0v).lerp(A.t1, e);
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
     let moving = false;
@@ -398,6 +406,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (earthTex) earthTex.dispose();

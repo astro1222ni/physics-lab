@@ -58,7 +58,17 @@
     {
       id: 'faults-folds-7', level: 5,
       title: { zh: '注水引發的地震', en: 'An injection-induced earthquake' },
-      desc: { zh: '選一組應力，讓斷層在靜水壓（λ ≈ 0.37）下還鎖住；再把孔隙壓力調高，讓它滑動並按「地震！」。廢水回注引發地震就是這個道理。', en: 'Choose stresses that keep the fault locked at hydrostatic pore pressure (λ ≈ 0.37); then raise the pore pressure until it slips and press “Earthquake!”. This is how waste-water injection triggers earthquakes.' },
+      desc: { zh: '先在靜水壓（λ = 0.37）按一次「地震！」，確認斷層仍鎖住。保持應力設定，只提高孔隙壓力，等斷層可以滑動時再按一次「地震！」，比較注水前後的結果。', en: 'At hydrostatic pressure (λ = 0.37), press “Earthquake!” once to check that the fault stays locked. Keep the stresses fixed, raise only pore pressure until the fault can slip, then press “Earthquake!” again to compare the two results.' },
+      need: function (ctx) {
+        const d = ctx.last('fault');
+        if (!d) return [[null, '先在斷層模式把 λ 設為 0.37，按「地震！」。', 'In Fault mode, set λ to 0.37 and press “Earthquake!”.']];
+        const v = d.lam.toFixed(2);
+        return [
+          [!d.critHydro, '這組應力在靜水壓下須能鎖住斷層。', 'These stresses must keep the fault locked at hydrostatic pressure.'],
+          [d.lam > HYDRO + 0.005 && d.crit, '提高孔隙壓力直到可以滑動，目前 λ = ' + v, 'Raise pore pressure until slip is possible. Current λ = ' + v],
+          [d.quaked || null, '按「地震！」觀察滑移。', 'Press “Earthquake!” to observe slip.']
+        ];
+      },
       check: function (ev) { const d = Fz(ev); return !!d && d.quaked && d.crit && !d.critHydro && d.lam > HYDRO + 0.005; }
     },
     {

@@ -193,6 +193,8 @@
     cvSize = fit(cv, ctx); grSize = fit(gr, gtx);
     const L = cvSize.w >= 560 ? 56 : 44;
     box = { l: L, r: cvSize.w - 10, t: 30, b: cvSize.h - 28 };
+    // 依實際座標間距標示垂直比例，橫放時也能核對地層厚度。
+    VE = +(((box.b - box.t) * G.W) / ((G.Z_HI - G.Z_LO) * (box.r - box.l))).toFixed(2);
     imgKey = ''; labelCache = {}; requestDraw();
   }
   function X(x) { return box.l + x / G.W * (box.r - box.l); }

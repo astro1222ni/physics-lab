@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Seafloor Spreading and Magnetic Stripes | Astro Ni Lab">海底擴張與磁條帶｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":4,"name":"板塊構造","item":"https://lab.astroni.org/earth-science.html#ch-plates"},{"@type":"ListItem","position":5,"name":"海底擴張與磁條帶","item":"https://lab.astroni.org/seafloor-spreading.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 海底擴張頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -110,6 +110,18 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .notes li { overflow-wrap: anywhere; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -157,7 +169,7 @@
           <span data-en-html="<i style=&quot;background:var(--sf-old)&quot;></i>Older than 8.1 Myr (not modelled)"><i style="background:var(--sf-old)"></i>8.1 Ma 以前（未模擬）</span>
         </div>
         <p class="hint l2" data-en="Drag left and right (or focus the picture and use the arrow keys; Shift for bigger steps) to move the ship. Its magnetometer is towed at the depth set on the right.">左右拖曳（或選取畫面後用方向鍵，Shift 走大步）移動船；磁力計拖在右邊設定的深度。</p>
-        <p class="hint l3" data-en="The seafloor is coloured by the magnetic polarity of the crust; the line above the sea is the anomaly measured along the ship’s track. Drag to rotate, scroll or pinch to zoom.">海床依地殼的磁極性上色；海面上方的曲線是沿著船的航線量到的磁異常。拖曳旋轉，滾輪或雙指縮放。</p>
+        <p class="hint l3" data-en="The seafloor is coloured by the magnetic polarity of the crust; the line above the sea is the anomaly measured along the ship’s track. Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom.">海床依地殼的磁極性上色；海面上方的曲線是沿著船的航線量到的磁異常。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。</p>
 
         <section class="chart-card">
           <div class="segw" role="group" aria-label="圖表" data-en-aria-label="Chart" id="chartSeg">
@@ -218,7 +230,7 @@
           <div class="presets"><button type="button" id="mysteryBtn" data-en="New mystery ridge">出一題神秘海脊</button><button type="button" id="revealBtn" data-en="Reveal" disabled>揭曉</button></div>
           <div class="guess-row">
             <label class="sr-only" for="guess" data-en="Your guess (cm/yr)">你猜的半擴張速率（cm/yr）</label>
-            <input id="guess" type="number" inputmode="decimal" min="0.5" max="8" step="0.01" placeholder="半擴張速率 cm/yr" data-en-placeholder="Half-rate in cm/yr" disabled>
+            <input id="guess" type="number" inputmode="decimal" min="0.5" max="8" step="0.001" placeholder="半擴張速率 cm/yr" data-en-placeholder="Half-rate in cm/yr" disabled>
             <button type="button" id="guessBtn" data-en="Check" disabled>送出</button>
           </div>
           <p class="hint" id="guessMsg" aria-live="polite"></p>
@@ -229,7 +241,7 @@
     <section class="notes">
       <h2 data-en="The science behind it">背後的科學</h2>
       <h3 data-en="A tape recorder on the ocean floor">海床上的錄音帶</h3>
-      <p data-en-html="At a mid-ocean ridge hot mantle rises, melts and erupts as basalt. As the lava cools through about 580 °C (the Curie temperature of magnetite) it locks in the direction of the Earth’s magnetic field at that moment. Plate motion then carries the new crust away on both sides. Because the field has reversed many times, the seafloor ends up in stripes of <strong>normal</strong> and <strong>reversed</strong> magnetisation, mirrored about the ridge. Vine, Matthews and Morley explained these stripes in 1963; it became one of the key pieces of evidence for plate tectonics.">中洋脊下方的熱地函上升、熔融，噴發成玄武岩。熔岩冷卻到約 580 °C（磁鐵礦的居禮溫度）以下時，把當時的地磁方向「鎖」在岩石裡。板塊運動再把新的地殼往兩邊送走。地球磁場反轉過很多次，所以海床變成一條條<strong>正向</strong>與<strong>反向</strong>磁化的條帶，以中洋脊為中心左右對稱。1963 年 Vine、Matthews 與 Morley 用這個想法解釋了磁條帶，它成為板塊構造學說最關鍵的證據之一。</p>
+      <p data-en-html="At a mid-ocean ridge hot mantle rises, melts and erupts as basalt. As the lava cools through about 580 °C (the Curie temperature of magnetite) it locks in the direction of the Earth’s magnetic field at that moment. Plate motion then carries the new crust away on both sides. Because the field has reversed many times, the seafloor ends up in stripes of <strong>normal</strong> and <strong>reversed</strong> magnetisation. When both sides spread at the same rate, stripes of the same age are mirror images across the ridge. If the rates differ, the stripes still match in age, but lie farther from the ridge on the faster side. Vine, Matthews and Morley explained these stripes in 1963; it became one of the key pieces of evidence for plate tectonics.">中洋脊下方的熱地函上升、熔融，噴發成玄武岩。熔岩冷卻到約 580 °C（磁鐵礦的居禮溫度）以下時，把當時的地磁方向「鎖」在岩石裡。板塊運動再把新的地殼往兩邊送走。地球磁場反轉過很多次，所以海床變成一條條<strong>正向</strong>與<strong>反向</strong>磁化的條帶。兩側等速擴張時，同年代的磁條帶以中洋脊為中心左右對稱。若兩側速率不同，仍能按年代配對，擴張較快一側的條帶離中洋脊較遠。1963 年 Vine、Matthews 與 Morley 用這個想法解釋了磁條帶，它成為板塊構造學說最關鍵的證據之一。</p>
       <div class="formula">\[ x = u\,t \qquad 1\ \mathrm{cm/yr} = 10\ \mathrm{km/Ma} \]</div>
       <p data-en-html="Here \(x\) is the distance from the ridge, \(u\) the half-rate and \(t\) the age of the crust. So if the Brunhes–Matuyama reversal (0.781 million years ago) is found 20 km from the ridge, the half-rate is 20 km ÷ 0.781 Myr ≈ 2.6 cm/yr. The full spreading rate is the sum of the two sides.">其中 \(x\) 是離中洋脊的距離，\(u\) 是半擴張速率，\(t\) 是地殼的年齡。所以如果布容／松山反轉（78.1 萬年前）出現在離中洋脊 20 km 的地方，半擴張速率就是 20 km ÷ 0.781 Ma ≈ 2.6 cm/yr。兩邊加起來是全擴張速率。</p>
 
@@ -273,18 +285,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/seafloor-spreading-core.js?v=202611201017"></script>
-  <script src="js/sound.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/seafloor-spreading.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="seafloor-spreading"></script>
-  <script src="js/missions/seafloor-spreading.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="seafloor-spreading"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/seafloor-spreading-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/seafloor-spreading.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="seafloor-spreading"></script>
+  <script src="js/missions/seafloor-spreading.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="seafloor-spreading"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

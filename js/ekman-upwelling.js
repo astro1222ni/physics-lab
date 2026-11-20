@@ -175,7 +175,7 @@
   // =====================================================================
   function drawMain() {
     if (!cvSize || !E) return;
-    const g = ctx, W = cvSize.w, H = cvSize.h, wide = W >= 700, fs = wide ? 11.5 : 10.5;
+    const g = ctx, W = cvSize.w, H = cvSize.h, wide = W >= 700 || W > H * 1.4, fs = wide ? 11.5 : 10.5;
     g.clearRect(0, 0, W, H);
     g.fillStyle = C['canvas-bg']; g.fillRect(0, 0, W, H);
     if (state.mode === 'spiral') drawSpiral(g, W, H, wide, fs);
@@ -695,7 +695,7 @@
     setHTML('rM', num(E.M, 2) + ' m<sup>2</sup>/s<span class="sub">' + (E.M > 0 ? T('往', 'towards ') + dirName(E.transAz) + '（' + az3(E.transAz) + T('，風的' + (E.s > 0 ? '右' : '左') + '邊 90°）', ', 90° to the ' + (E.s > 0 ? 'right' : 'left') + ' of the wind)') : '—') + '</span>');
     setHTML('rProbe', num(PR.speed * 100, 2) + ' cm/s<span class="sub">' + (E.V0 > 0 ? T('表面的 ', '') + num(PR.frac * 100, 1) + T('%，比表面流再轉 ', '% of the surface, turned a further ') + num(Math.abs(PR.turn), 1) + '°' : '—') + '</span>');
     // 沿岸
-    setHTML('rMoff', num(Math.abs(Cs.Moff), 2) + ' m<sup>2</sup>/s<span class="sub">' + (Math.abs(Cs.Moff) < 0.005 ? T('沒有離岸或向岸的輸送', 'no cross-shore transport') : Cs.Moff > 0 ? T('離岸', 'offshore') : T('向岸', 'onshore')) + '</span>');
+    setHTML('rMoff', num(Math.abs(Cs.Moff), 2) + ' m<sup>2</sup>/s<span class="sub">' + (Cs.Moff === 0 ? T('沒有離岸或向岸的輸送', 'no cross-shore transport') : Cs.Moff > 0 ? T('離岸', 'offshore') : T('向岸', 'onshore')) + '</span>');
     setHTML('rBakun', num(Cs.bakun, 0) + ' m<sup>3</sup>/s<span class="sub">' + T('每 100 m 海岸', 'per 100 m of coast') + '</span>');
     setHTML('rRd', num(Cs.Rd / 1000, 1) + ' km');
     setHTML('rW', num(Math.abs(Cs.wDay), 1) + T(' m／天', ' m/day') + '<span class="sub">' + (Math.abs(Cs.wDay) < 0.05 ? '—' : Cs.w > 0 ? T('湧升', 'upwelling') : T('下沉', 'downwelling')) + '</span>');
@@ -721,11 +721,12 @@
       : m === 'coast'
         ? T('左：岸邊溫躍層隨時間線性抬升，碰到虛線（表層暖水的厚度）冷水就露出海面；右：岸邊海面溫度。', 'Left: the thermocline at the coast rises steadily with time; when it reaches the dashed line (the warm-layer thickness) cold water surfaces. Right: sea-surface temperature at the coast.')
         : T('紅線是西太平洋、藍線是東太平洋的溫躍層深度。信風越強，兩邊差越大；紅色底是類似聖嬰、藍色底是類似反聖嬰。', 'Red: thermocline depth in the west Pacific; blue: in the east. Stronger trades make the difference larger; red shading = El Niño-like, blue = La Niña-like.'));
-    $('hint3d').textContent = m === 'spiral'
-      ? T('3D：每一層深度一支海流箭頭，顏色越深越深；細線連起箭頭尖端就是艾克曼螺旋，粉紅圈是探測深度。拖曳旋轉、滾輪或兩指縮放。', '3D: one arrow per depth (darker = deeper); the thin line joining their tips is the Ekman spiral and the pink ring is the probe depth. Drag to rotate; scroll or pinch to zoom.')
+    const sceneHint = m === 'spiral'
+      ? T('3D：每一層深度一支海流箭頭，顏色越深越深；細線連起箭頭尖端就是艾克曼螺旋，粉紅圈是探測深度。', '3D: one arrow per depth (darker = deeper); the thin line joining their tips is the Ekman spiral and the pink ring is the probe depth.')
       : m === 'coast'
-        ? T('3D：正面是垂直海岸的溫度剖面，頂面是海面溫度，旁邊是陸地；深度方向放大。拖曳旋轉、滾輪或兩指縮放。', '3D: the front face is the temperature section across the coast, the top is the sea-surface temperature, with the land beside it; depth exaggerated. Drag to rotate; scroll or pinch to zoom.')
-        : T('3D：沿著赤道的海洋長方塊，半透明面是溫躍層（20 °C），雲在最暖的海面上空；海面高度與深度方向都放大。拖曳旋轉、滾輪或兩指縮放。', '3D: a block of ocean along the equator; the translucent surface is the thermocline (20 °C) and the cloud sits over the warmest water; sea level and depth are exaggerated. Drag to rotate; scroll or pinch to zoom.');
+        ? T('3D：正面是垂直海岸的溫度剖面，頂面是海面溫度，旁邊是陸地；深度方向放大。', '3D: the front face is the temperature section across the coast, the top is the sea-surface temperature, with the land beside it; depth exaggerated.')
+        : T('3D：沿著赤道的海洋長方塊，半透明面是溫躍層（20 °C），雲在最暖的海面上空；海面高度與深度方向都放大。', '3D: a block of ocean along the equator; the translucent surface is the thermocline (20 °C) and the cloud sits over the warmest water; sea level and depth are exaggerated.');
+    $('hint3d').textContent = sceneHint + T('選「旋轉」或「平移」後拖曳畫面，用滾輪或雙指縮放。', ' Choose Rotate or Pan, then drag. Scroll or pinch to zoom.');
     $('hint2d').textContent = m === 'spiral'
       ? T('左：從上往下看，每支箭頭是一個深度的海流（顏色越深越深），虛線是箭頭尖端連成的螺旋；右：斜看的水柱。選取畫布後：左右方向鍵＝風向，上下＝風速。', 'Left: seen from above, each arrow is the current at one depth (darker = deeper) and the dashed curve joins their tips; right: a tilted view of the water column. With the canvas focused: left/right = wind direction, up/down = wind speed.')
       : m === 'coast'
@@ -737,7 +738,7 @@
     const t = performance.now(); if (!force && t - lastSay < 3000) return; lastSay = t;
     let txt;
     if (state.mode === 'spiral') txt = T('表面流 ', 'Surface current ') + num(E.V0 * 100, 1) + T(' 公分每秒，艾克曼深度 ', ' centimetres per second, Ekman depth ') + num(E.DE, 0) + T(' 公尺，淨輸送往', ' metres, net transport towards the ') + dirName(E.transAz);
-    else if (state.mode === 'coast') txt = (Cs.Moff > 0.005 ? T('湧升', 'Upwelling') : Cs.Moff < -0.005 ? T('下沉', 'Downwelling') : T('沒有湧升', 'No upwelling')) + T('，第 ', ', day ') + num(P.days, 1) + T(' 天，岸邊海溫 ', ', coastal temperature ') + num(Cs.sst0, 1) + T(' 度', ' degrees');
+    else if (state.mode === 'coast') txt = (Cs.Moff > 0 ? T('湧升', 'Upwelling') : Cs.Moff < 0 ? T('下沉', 'Downwelling') : T('沒有湧升', 'No upwelling')) + T('，第 ', ', day ') + num(P.days, 1) + T(' 天，岸邊海溫 ', ', coastal temperature ') + num(Cs.sst0, 1) + T(' 度', ' degrees');
     else txt = T('信風 ', 'Trade winds ') + num(P.p, 0) + T('%，東太平洋溫躍層 ', ' percent, eastern thermocline ') + num(Q.hE, 0) + T(' 公尺，', ' metres, ') + (Q.enso.state === 'nino' ? T('類似聖嬰', 'El Niño-like') : Q.enso.state === 'nina' ? T('類似反聖嬰', 'La Niña-like') : T('正常', 'neutral'));
     $('srNow').textContent = txt;
   }
@@ -748,7 +749,7 @@
   }
   let lastEnso = null, lastOut = null, lastUp = null;
   function soundCues() {
-    const S = sound(), up = Cs.Moff > 0.005 ? 1 : Cs.Moff < -0.005 ? -1 : 0;
+    const S = sound(), up = Math.sign(Cs.Moff);
     if (state.mode === 'equator' && lastEnso != null && Q.enso.state !== lastEnso) {
       if (S) S.tone({ freq: Q.enso.state === 'nino' ? 660 : Q.enso.state === 'nina' ? 392 : 523, dur: 0.14, gain: 0.09 });
       setStatus(Q.enso.state === 'nino' ? T('東太平洋比平常暖 0.5 °C 以上：類似聖嬰。暖水和雨雲往東移。', 'The east Pacific is 0.5 °C warmer than normal: El Niño-like. The warm water and rain clouds shift east.')
@@ -1020,7 +1021,7 @@
   applyMode();
   resizeCv();
   compute();
-  lastEnso = Q.enso.state; lastOut = Cs.out; lastUp = Cs.Moff > 0.005 ? 1 : Cs.Moff < -0.005 ? -1 : 0;
+  lastEnso = Q.enso.state; lastOut = Cs.out; lastUp = Math.sign(Cs.Moff);
   refreshOutputs();
   updateReadouts();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) requestDraw(); });

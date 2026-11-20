@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stellar Parallax and the Parsec | Astro Ni Lab">恆星視差與秒差距｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"天文","item":"https://lab.astroni.org/earth-science.html#astro"},{"@type":"ListItem","position":4,"name":"天文觀測","item":"https://lab.astroni.org/earth-science.html#ch-observe"},{"@type":"ListItem","position":5,"name":"恆星視差與秒差距","item":"https://lab.astroni.org/parallax.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 恆星視差頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
     :root {
@@ -74,6 +74,16 @@
     .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
     .runlog b { color: var(--text); }
     .notes li { overflow-wrap: anywhere; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -104,19 +114,25 @@
         <p class="hint" id="cvHint">—</p>
 
         <section class="chart-card">
-          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
-            <button type="button" data-chart="a" aria-pressed="true">—</button>
-            <button type="button" data-chart="b" aria-pressed="false">—</button>
-          </div>
           <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
           <p class="hint" id="chartHint">—</p>
         </section>
       </div>
 
       <aside class="panel">
+        <section class="card" data-deck-order="3">
+          <h2 data-en="Charts">圖表</h2>
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+        </section>
         <section class="card">
           <h2 data-en="The star">恆星</h2>
           <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
+        </section>
+        <section class="card" data-deck-order="1">
+          <h2 data-en="Distance and motion">距離與自行</h2>
           <div class="slider"><label for="dist" data-en="Distance d (pc)">距離 d（pc）</label><output></output>
             <input id="dist" type="range" min="0" max="4" step="0.001" value="0.115"></div>
           <div class="slider"><label for="beta" data-en="Ecliptic latitude β (°)">黃緯 β（°）</label><output></output>
@@ -225,18 +241,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/parallax-core.js?v=202611201017"></script>
-  <script src="js/sound.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/parallax.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="parallax"></script>
-  <script src="js/missions/parallax.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="parallax"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/parallax-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/parallax.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="parallax"></script>
+  <script src="js/missions/parallax.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="parallax"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

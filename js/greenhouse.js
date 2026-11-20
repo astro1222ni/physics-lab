@@ -42,14 +42,20 @@
   }
   function isSnow(P, Tk) { return P.ice && K.iceFraction(P, Tk) >= SNOW; }
   /** 目前狀態的完整數值（讀數、畫圖、任務事件共用） */
-  let cache = null, cacheKey = '';
+  let cache = null, cacheKey = '', climateKey = '', roots, baseline;
   function now() {
     const P = params();
-    const key = [P.S, P.co2, P.eps0, P.alpha0, P.wv, P.ice, state.T].join('|');
+    const settings = [P.S, P.co2, P.eps0, P.alpha0, P.wv, P.ice].join('|');
+    if (climateKey !== settings) {
+      climateKey = settings;
+      roots = K.equilibria(P);
+      baseline = K.baseline(P);
+    }
+    const key = settings + '|' + state.T;
     if (cache && cacheKey === key) return cache;
     const f = K.flows(P, state.T);
-    const Teq = K.settle(P, state.T);
-    const base = K.baseline(P);
+    const Teq = K.settle(P, state.T, roots);
+    const base = baseline;
     cacheKey = key;
     cache = { P: P, f: f, Teq: Teq, base: base, iceFrac: K.iceFraction(P, state.T), iceLat: K.iceLatitude(P, state.T),
       eq: Math.abs(f.N) < EQ_N && Teq != null && Math.abs(Teq - state.T) < 0.05 };
@@ -163,10 +169,16 @@
       }
     }
   }
-  function drawFlow(t) {
-    if (!cvSize) return;
-    const W = cvSize.w, H = cvSize.h, L = flowLay(W, H), g = ctx, c = now(), f = c.f;
-    g.clearRect(0, 0, W, H);
+  const landscape = document.createElement('canvas');
+  let landscapeKey = '';
+  function drawLandscape(L) {
+    const W = L.W, H = L.H, dpr = cvSize.dpr;
+    const key = [W, H, dpr, state.S, C['canvas-bg'], C['gh-sky1']].join('|');
+    if (key === landscapeKey) return;
+    landscapeKey = key;
+    landscape.width = cv.width; landscape.height = cv.height;
+    const g = landscape.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
     // 天空：上方太空、往下漸亮
     const sky = g.createLinearGradient(0, 0, 0, L.yS);
     sky.addColorStop(0, C['gh-space']); sky.addColorStop(0.24, D.mix(C['gh-space'], C['gh-sky1'], 0.35));
@@ -181,20 +193,6 @@
     const sg = g.createRadialGradient(sx, sy, 2, sx, sy, sr * 2.2);
     sg.addColorStop(0, D.alpha('#fffbe6', 1)); sg.addColorStop(0.35, D.alpha(C['gh-sun'], 0.85)); sg.addColorStop(1, D.alpha(C['gh-sun'], 0));
     g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, sr * 2.2, 0, Math.PI * 2); g.fill();
-    // 大氣層：不透明度隨 ε
-    const aTop = L.yA0, aBot = L.yA1, aMid = (aTop + aBot) / 2;
-    const ag = g.createLinearGradient(0, aTop - 14, 0, aBot + 14);
-    const aa = (D.dark ? 0.1 : 0.14) + (D.dark ? 0.5 : 0.62) * f.eps;
-    ag.addColorStop(0, D.alpha(C['gh-atm'], 0)); ag.addColorStop(0.25, D.alpha(C['gh-atm'], aa)); ag.addColorStop(0.75, D.alpha(C['gh-atm'], aa));
-    ag.addColorStop(1, D.alpha(C['gh-atm'], 0));
-    g.fillStyle = ag; g.fillRect(0, aTop - 14, W, aBot - aTop + 28);
-    g.strokeStyle = D.alpha('#ffffff', (D.dark ? 0.06 : 0.22) * (0.3 + f.eps)); g.lineWidth = 1.2; g.lineCap = 'round';
-    for (let i = 0; i < 4; i++) {
-      const yy = aTop + (aBot - aTop) * (0.2 + i * 0.2);
-      g.beginPath();
-      for (let xx = 0; xx <= W; xx += 12) { const y2 = yy + Math.sin(xx / 47 + i * 1.7) * 2.2; if (xx) g.lineTo(xx, y2); else g.moveTo(xx, y2); }
-      g.stroke();
-    }
     // 地面：海、陸地、冰
     const sea = g.createLinearGradient(0, L.yS, 0, H);
     sea.addColorStop(0, D.shade(C['gh-sea'], 0.12)); sea.addColorStop(1, D.shade(C['gh-sea'], -0.25));
@@ -204,6 +202,42 @@
     g.fillStyle = land;
     g.beginPath(); g.moveTo(L.Wp * 0.33, H); g.lineTo(L.Wp * 0.36, L.yS + 2); g.quadraticCurveTo(L.Wp * 0.45, L.yS - 8, L.Wp * 0.52, L.yS - 2);
     g.quadraticCurveTo(L.Wp * 0.58, L.yS - 6, L.Wp * 0.64, L.yS + 3); g.lineTo(L.Wp * 0.66, H); g.closePath(); g.fill();
+  }
+  const airBand = document.createElement('canvas');
+  let airKey = '';
+  function drawAir(L, eps) {
+    const W = L.W, dpr = cvSize.dpr;
+    // 透明度依色階的解析度快取，教學讀數仍使用原始放射率。
+    const opacity = Math.round(eps * 255);
+    const key = [W, L.H, dpr, opacity, C['gh-atm'], D.dark].join('|');
+    if (key === airKey) return;
+    airKey = key;
+    airBand.width = cv.width; airBand.height = Math.ceil((L.yA1 + 16) * dpr);
+    const g = airBand.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // 大氣層：不透明度隨 ε
+    const aTop = L.yA0, aBot = L.yA1;
+    const ag = g.createLinearGradient(0, aTop - 14, 0, aBot + 14);
+    const aa = (D.dark ? 0.1 : 0.14) + (D.dark ? 0.5 : 0.62) * (opacity / 255);
+    ag.addColorStop(0, D.alpha(C['gh-atm'], 0)); ag.addColorStop(0.25, D.alpha(C['gh-atm'], aa)); ag.addColorStop(0.75, D.alpha(C['gh-atm'], aa));
+    ag.addColorStop(1, D.alpha(C['gh-atm'], 0));
+    g.fillStyle = ag; g.fillRect(0, aTop - 14, W, aBot - aTop + 28);
+    g.strokeStyle = D.alpha('#ffffff', (D.dark ? 0.06 : 0.22) * (0.3 + (opacity / 255))); g.lineWidth = 1.2; g.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const yy = aTop + (aBot - aTop) * (0.2 + i * 0.2);
+      g.beginPath();
+      for (let xx = 0; xx <= W; xx += 12) { const y2 = yy + Math.sin(xx / 47 + i * 1.7) * 2.2; if (xx) g.lineTo(xx, y2); else g.moveTo(xx, y2); }
+      g.stroke();
+    }
+  }
+  function drawFlow(t) {
+    if (!cvSize) return;
+    const W = cvSize.w, H = cvSize.h, L = flowLay(W, H), g = ctx, c = now(), f = c.f;
+    const aMid = (L.yA0 + L.yA1) / 2;
+    drawLandscape(L);
+    g.drawImage(landscape, 0, 0, W, H);
+    drawAir(L, f.eps);
+    g.drawImage(airBand, 0, 0, W, airBand.height / cvSize.dpr);
     if (state.ice && c.iceFrac > 0.002) {
       const iw = c.iceFrac * W / 2 + (c.iceFrac > 0.97 ? 8 : 0);
       const ig = g.createLinearGradient(0, L.yS - 4, 0, H);
@@ -360,7 +394,16 @@
     for (let x = TMIN; x <= TMAX; x += 5) hi = Math.max(hi, K.asr(c.P, x), K.olr(c.P, x));
     return Math.ceil(hi / 50) * 50 + 20;
   }
-  function drawBalance(g, W, H, c) {
+  const balanceLayer = document.createElement('canvas');
+  let balanceKey = '', balanceAxes;
+  function balanceBackground(W, H, c) {
+    const dpr = grSize.dpr;
+    const key = [climateKey, W, H, dpr, D.ver, FONT, T('中', 'en')].join('|');
+    if (key === balanceKey) return balanceAxes;
+    balanceKey = key;
+    balanceLayer.width = gr.width; balanceLayer.height = gr.height;
+    const g = balanceLayer.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const yMax = balanceRange(c);
     const F = frame(g, W, H, TMIN, TMAX, 0, yMax, T('地表溫度（K）', 'Surface temperature (K)'), T('能量（W/m²）', 'Energy (W/m²)'),
       function (v) { return num(v, 0); }, function (v) { return num(v, 0); });
@@ -376,12 +419,22 @@
     line(g, A, F.X, F.Y, C['gh-asr'], 2.4);
     line(g, O, F.X, F.Y, C['gh-olr'], 2.4, [7, 4]);
     // 平衡點
-    K.equilibria(c.P, TMIN, TMAX).forEach(function (e) {
+    roots.filter(function (e) { return e.T >= TMIN && e.T <= TMAX; }).forEach(function (e) {
       const px = F.X(e.T), py = F.Y(K.asr(c.P, e.T));
       g.lineWidth = 2; g.strokeStyle = C['gh-eq'];
       g.fillStyle = e.stable ? C['gh-eq'] : C['canvas-bg'];
       g.beginPath(); g.arc(px, py, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
     });
+    // 圖例
+    const lx = W < 520 ? GM.l + 8 : W - GM.r - 8, al = W < 520 ? 'left' : 'right';
+    D.haloText(g, T('吸收的陽光（實線）', 'Sunlight absorbed (solid)'), lx, GM.t + 22, C['gh-asr'], al, 'middle', '600 ' + F.fs + 'px ' + FONT);
+    D.haloText(g, T('射向太空的紅外線（虛線）', 'Infrared to space (dashed)'), lx, GM.t + 38, C['gh-olr'], al, 'middle', '600 ' + F.fs + 'px ' + FONT);
+    balanceAxes = F;
+    return F;
+  }
+  function drawBalance(g, W, H, c) {
+    const F = balanceBackground(W, H, c);
+    g.drawImage(balanceLayer, 0, 0, W, H);
     // 目前的溫度
     const px = F.X(state.T);
     g.save(); g.strokeStyle = D.alpha(C.text, 0.45); g.setLineDash([3, 4]); g.lineWidth = 1;
@@ -394,10 +447,6 @@
       const dir = c.f.N > 0 ? 1 : -1, ym = (ya + yo) / 2;
       D.arrow(g, px + dir * 8, ym, px + dir * 34, ym, g.strokeStyle, 2.2);
     }
-    // 圖例
-    const lx = W < 520 ? GM.l + 8 : W - GM.r - 8, al = W < 520 ? 'left' : 'right';
-    D.haloText(g, T('吸收的陽光（實線）', 'Sunlight absorbed (solid)'), lx, GM.t + 22, C['gh-asr'], al, 'middle', '600 ' + F.fs + 'px ' + FONT);
-    D.haloText(g, T('射向太空的紅外線（虛線）', 'Infrared to space (dashed)'), lx, GM.t + 38, C['gh-olr'], al, 'middle', '600 ' + F.fs + 'px ' + FONT);
   }
   // 遲滯圖：每個太陽亮度的所有平衡溫度（參數改變時才重算）
   let hystKey = '', hystSeg = [];
@@ -724,11 +773,17 @@
   // =====================================================================
   // 繪圖迴圈
   // =====================================================================
-  let raf = 0, lastFrame = 0;
-  function requestDraw() { if (!raf) raf = requestAnimationFrame(loop); }
+  let raf = 0, lastFrame = 0, frozen = false;
+  let lastDisplay = -Infinity;
+  function requestDraw() {
+    lastDisplay = -Infinity;
+    if (!raf && !frozen && !document.hidden) raf = requestAnimationFrame(loop);
+  }
   function loop(tnow) {
-    raf = 0;
-    const dt = lastFrame ? Math.min(1 / 20, (tnow - lastFrame) / 1000) : 0;
+    if (frozen || document.hidden) { raf = 0; lastFrame = 0; return; }
+    const elapsed = lastFrame ? (tnow - lastFrame) / 1000 : 0;
+    // 裝置休眠時，瀏覽器也可能略過凍結通知；跨過長中斷的第一幀重新起算。
+    const dt = elapsed >= 1 ? 0 : Math.min(1 / 20, elapsed);
     lastFrame = tnow;
     let busy = false;
     if (state.running) {
@@ -744,15 +799,23 @@
           const S = sound(); if (S) S.tone({ freq: 660, dur: 0.12, type: 'triangle', gain: 0.16 });
           setStatus(T('已達到平衡，自動暫停：地表 ', 'Equilibrium reached, paused: surface ') + tempText(state.T) + T('。', '.'));
           afterChange(true);
-        } else afterChange();
+        } else if (tnow - lastEmit >= 250) {
+          lastEmit = tnow;
+          emit('state', snapshot());
+        }
       }
       busy = state.running;
     }
     if (view3 && view3.active) { view3.frame(tnow); busy = busy || view3.busy(); }
     else drawFlow(tnow);
-    drawChart();
-    if (busy) raf = requestAnimationFrame(loop);
-    else lastFrame = 0;
+    // 圖表與數字每秒更新十次。操作與最後一幀立即呈現，光點與積分逐幀進行。
+    if (!busy || tnow - lastDisplay >= 100) {
+      updateReadouts();
+      drawChart();
+      lastDisplay = tnow;
+    }
+    raf = busy ? requestAnimationFrame(loop) : 0;
+    if (!busy) lastFrame = 0;
   }
 
   // =====================================================================
@@ -858,6 +921,7 @@
   updateReadouts();
   // 語言切換也會發出 lab:themechange（settings.js），所以這裡一併更新文字
   function themeChanged() {
+    landscapeKey = airKey = balanceKey = '';
     readColors();
     updatePlay(); updateSoundButton(); updateReadouts();
     gr.setAttribute('aria-label', chartAria());
@@ -874,7 +938,17 @@
     }).observe(stage);
   } else window.addEventListener('resize', resizeCv);
   resizeCv();
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) { lastFrame = 0; requestDraw(); } });
+  function suspendClock() {
+    cancelAnimationFrame(raf);
+    raf = 0; lastFrame = 0;
+  }
+  function resumeClock() { suspendClock(); requestDraw(); }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) suspendClock(); else resumeClock();
+  });
+  document.addEventListener('freeze', function () { frozen = true; suspendClock(); });
+  document.addEventListener('resume', function () { frozen = false; resumeClock(); });
+  window.addEventListener('pageshow', resumeClock);
   setStatus(T('現在是 1750 年的地球：280 ppm、地表 15 °C、收支平衡。按「今天 423」看看會發生什麼。', 'The Earth of 1750: 280 ppm, a surface of 15 °C, in balance. Press “Today 423” and see what happens.'));
   requestDraw();
   // 測試用（Playwright）

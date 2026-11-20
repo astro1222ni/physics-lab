@@ -47,7 +47,7 @@ console.log('von-thunen 任務證明\n');
 console.log('[預設與一般操作]');
 {
   const d = S({});
-  expect('杜能的設定：由內而外蔬菜牛奶、林木、穀物、放牧', d.order.join() === 'veg,wood,grain,live', d.rings.map(s => s.id + ' ' + s.to.toFixed(2)).join('、'));
+  expect('邱念的設定：由內而外蔬菜牛奶、林木、穀物、放牧', d.order.join() === 'veg,wood,grain,live', d.rings.map(s => s.id + ' ' + s.to.toFixed(2)).join('、'));
   const acts = ['param', 'crop', 'grow', 'zoom', 'reset', 'rotate', 'view'];
   expect('預設值、任何一般操作都不會完成任務（點地圖例外）', acts.every(a => firing(snap({}, a)).length === 0), acts.map(a => a + ':' + firing(snap({}, a)).join('、')).filter(s => !/:$/.test(s)).join('；'));
   expect('預設的「這塊地」點一下只完成任務 1', firing(snap({}, 'probe')).join() === '1', firing(snap({}, 'probe')).join('、'));
@@ -77,11 +77,11 @@ witness('2', snap({ view: '3d' }, 'view'), '切到立體地租曲面');
 }
 {
   witness('4', snap({ m: 0.9 }, 'param'), '運費倍率 0.9：最外緣 ' + S({ m: 0.9 }).frontier.toFixed(2) + ' km');
-  expect('杜能的設定（90 km）不算', !byId('4').check(snap({}, 'param')));
+  expect('邱念的設定（90 km）不算', !byId('4').check(snap({}, 'param')));
 }
 {
   witness('5', snap({ crops: { veg: { f: 12 } } }, 'param'), '蔬菜運費 12：蔬菜圈到 ' + S({ crops: { veg: { f: 12 } } }).outer.veg.toFixed(2) + ' km');
-  expect('杜能的設定（12.5 km）不算', !byId('5').check(snap({}, 'param')));
+  expect('邱念的設定（12.5 km）不算', !byId('5').check(snap({}, 'param')));
 }
 {
   witness('6', snap({ crops: { wood: { p: 250 } } }, 'param'), '木材價格 250：林木的地租線一直在穀物下面');
@@ -150,7 +150,7 @@ console.log('\n[隱藏任務]');
   expect('蔬菜運費降到最低（蔬菜占滿整片）不算', !byId('h4').check(snap({ crops: { veg: { f: 0.5 } } }, 'param')));
 }
 {
-  // 杜能的設定：最外緣 90 km；把「這塊地」放在城市正北 89.95 km
+  // 邱念的設定：最外緣 90 km；把「這塊地」放在城市正北 89.95 km
   witness('h5', snap({ probe: [0, 89.95] }, 'probe'), '城市正北 89.95 km（最外緣 90 km）');
   expect('差 0.5 km 不算', !byId('h5').check(snap({ probe: [0, 89.5] }, 'probe')));
   const o = { river: true, k: 0.5, probe: [136.7, 25] }, d = S(o);

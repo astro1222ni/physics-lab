@@ -235,9 +235,20 @@
     $('r1VR').innerHTML = num(vr1, 3) + ' km/s<small>V<sub>R</sub>/V<sub>S</sub> = ' + num(vr1 / w.vs, 4) + '</small>';
   }
 
+  let shortHeight = 0;
   function layout1() {
     const W = cw, narrow = W < 560;
     X1.x0 = narrow ? -8 : -15; X1.x1 = narrow ? 102 : 105;
+    if (shortHeight && !S.v3) {
+      const gap = 6, left = Math.round(W * 0.55), right = W - left - gap;
+      const top = Math.round(shortHeight * 0.53), sky = 28;
+      const k = Math.min(left / (X1.x1 - X1.x0), (top - sky) / X1.depth);
+      return { H: shortHeight, narrow: true, sky, k, gap, dot: 2,
+        sec: { x: 0, y: 0, w: left, h: top },
+        chain: { x: 0, y: top + gap, w: left, h: shortHeight - top - gap },
+        tr: { x: left + gap, y: 0, w: right, h: top },
+        hodo: { x: left + gap, y: top + gap, w: right, h: shortHeight - top - gap } };
+    }
     const k = W / (X1.x1 - X1.x0);
     const sky = narrow ? 34 : 40;
     // 3D 檢視時剖面由 3D 畫，2D 畫布只留地震儀紀錄、地面運動軌跡與液體長條
@@ -274,15 +285,15 @@
     const sky = c.createLinearGradient(0, 0, 0, L.sky);
     sky.addColorStop(0, alpha(C['b-wave'], C.dark ? 0.1 : 0.08));
     sky.addColorStop(1, alpha(C['b-wave'], 0));
-    c.fillStyle = sky; c.fillRect(0, 0, cw, L.sky);
+    c.fillStyle = sky; c.fillRect(0, 0, R.w, L.sky);
     // 地殼（上淺下深）
     const g = c.createLinearGradient(0, L.sky, 0, R.h);
     g.addColorStop(0, rockColor(0)); g.addColorStop(1, rockColor(1));
-    c.fillStyle = g; c.fillRect(0, L.sky, cw, R.h - L.sky);
+    c.fillStyle = g; c.fillRect(0, L.sky, R.w, R.h - L.sky);
     // 岩石紋理（純裝飾的細點）
     const r = Q.rng(7);
-    for (let i = 0; i < (cw * (R.h - L.sky)) / 260; i++) {
-      const x = r() * cw, y = L.sky + 2 + r() * (R.h - L.sky - 2), s = 0.6 + r() * 1.1;
+    for (let i = 0; i < (R.w * (R.h - L.sky)) / 260; i++) {
+      const x = r() * R.w, y = L.sky + 2 + r() * (R.h - L.sky - 2), s = 0.6 + r() * 1.1;
       c.fillStyle = alpha(r() < 0.5 ? shade(C.rock, -0.3) : C.surface, C.dark ? 0.1 : 0.18);
       c.fillRect(x, y, s, s * 0.7);
     }
@@ -290,28 +301,28 @@
     c.strokeStyle = alpha(C.text, C.dark ? 0.1 : 0.08);
     c.lineWidth = 1 / dpr;
     c.beginPath();
-    for (let d = 10; d < X1.depth; d += 10) { const y = snap(Y1px(d)); c.moveTo(0, y); c.lineTo(cw, y); }
+    for (let d = 10; d < X1.depth; d += 10) { const y = snap(Y1px(d)); c.moveTo(0, y); c.lineTo(R.w, y); }
     c.stroke();
     const f = fnt(L.narrow ? 10.5 : 11.5);
     // 深度刻度：手機版震源就在左緣，刻度改放右緣，免得和「震源」標籤疊在一起
     for (let d = 10; d < X1.depth; d += 10) {
-      if (L.narrow) D.haloText(c, d + ' km', cw - 4, Y1px(d) - 1, alpha(C.text, 0.62), 'right', 'bottom', f);
+      if (L.narrow) D.haloText(c, d + ' km', R.w - 4, Y1px(d) - 1, alpha(C.text, 0.62), 'right', 'bottom', f);
       else D.haloText(c, d + ' km', 4, Y1px(d) - 1, alpha(C.text, 0.62), 'left', 'bottom', f);
     }
     // 地表下的薄土層（靜態的淡色帶，讓地表有厚度）
     const soil = c.createLinearGradient(0, L.sky, 0, L.sky + 7);
     soil.addColorStop(0, alpha(shade(C.rock, C.dark ? -0.1 : -0.25), C.dark ? 0.32 : 0.26));
     soil.addColorStop(1, alpha(C.rock, 0));
-    c.fillStyle = soil; c.fillRect(0, L.sky, cw, 7);
+    c.fillStyle = soil; c.fillRect(0, L.sky, R.w, 7);
     // 距離刻度（沿地表，自震央量起）
     for (let x = 0; x <= X1.x1; x += 20) {
       const px = snap(X1px(x));
       c.strokeStyle = alpha(C.text, 0.35); c.lineWidth = 1;
       c.beginPath(); c.moveTo(px, L.sky - 4); c.lineTo(px, L.sky); c.stroke();
-      if (x > 0 && px < cw - (L.narrow ? 30 : 120)) D.haloText(c, String(x), px, L.sky - 6, alpha(C.text, 0.55), 'center', 'bottom', f);
+      if (x > 0 && px < R.w - (L.narrow ? 30 : 120)) D.haloText(c, String(x), px, L.sky - 6, alpha(C.text, 0.55), 'center', 'bottom', f);
     }
-    D.haloText(c, L.narrow ? 'km' : T('距震央 km', 'km from epicenter'), cw - 4, L.sky - 6, alpha(C.text, 0.55), 'right', 'bottom', f);
-    D.haloText(c, T('均勻地殼（剖面，依比例）', 'Uniform crust (section, to scale)'), cw - 6, R.h - 6, alpha(C.text, 0.5), 'right', 'bottom', f);
+    D.haloText(c, L.narrow ? 'km' : T('距震央 km', 'km from epicenter'), R.w - 4, L.sky - 6, alpha(C.text, 0.55), 'right', 'bottom', f);
+    D.haloText(c, T('均勻地殼（剖面，依比例）', 'Uniform crust (section, to scale)'), R.w - 6, R.h - 6, alpha(C.text, 0.5), 'right', 'bottom', f);
   }
 
   // ---------- 模式一：繪圖 ----------
@@ -334,7 +345,7 @@
 
     // 波前（只畫在地殼裡）：波前後方一條漸淡的光帶（剛被波經過的岩石），波前本身是一條清楚的細線
     c.save();
-    c.beginPath(); c.rect(0, surf, cw, L.sec.h - surf); c.clip();
+    c.beginPath(); c.rect(0, surf, L.sec.w, L.sec.h - surf); c.clip();
     if (w.show.fronts) {
       const band = L.narrow ? 9 : 13;
       [[w.vp, C.P, 'P'], [w.vs, C.S, 'S']].forEach(function (q) {
@@ -385,7 +396,7 @@
 
     // 地表（隨垂直位移起伏）＋表面波波前：地面隆起處補上岩石色、下陷處補回天空色，地表線畫成有厚度的管狀
     const ground = [];
-    for (let px = 0; px <= cw + 2; px += 3) {
+    for (let px = 0; px <= L.sec.w + 2; px += 3) {
       const x = X1.x0 + px / L.k, u = Q.sectionDisp(x, 0, t, o), v = vis(u);
       ground.push([px, surf + v[1] * sp * 0.8]);
     }
@@ -394,13 +405,13 @@
       ground.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
     };
     c.save();
-    c.beginPath(); c.rect(0, 0, cw, surf); c.clip();
-    groundPath(); c.lineTo(cw + 2, surf); c.lineTo(0, surf); c.closePath();
+    c.beginPath(); c.rect(0, 0, L.sec.w, surf); c.clip();
+    groundPath(); c.lineTo(L.sec.w + 2, surf); c.lineTo(0, surf); c.closePath();
     c.fillStyle = rockColor(0); c.fill();
     c.restore();
     c.save();
-    c.beginPath(); c.rect(0, surf, cw, 30); c.clip();
-    groundPath(); c.lineTo(cw + 2, surf); c.lineTo(0, surf); c.closePath();
+    c.beginPath(); c.rect(0, surf, L.sec.w, 30); c.clip();
+    groundPath(); c.lineTo(L.sec.w + 2, surf); c.lineTo(0, surf); c.closePath();
     c.fillStyle = C['canvas-bg']; c.fill();
     c.restore();
     c.save();
@@ -419,7 +430,7 @@
       const xr = vr1 * (t - w.h / w.vs);
       [xr, -xr].forEach(function (x) {
         const px = X1px(x);
-        if (px < -10 || px > cw + 10) return;
+        if (px < -10 || px > L.sec.w + 10) return;
         c.fillStyle = alpha(C.R, 0.85);
         c.beginPath(); c.arc(px, surf, 3.5, 0, Math.PI * 2); c.fill();
       });
@@ -436,12 +447,12 @@
         const cands = i ? [205, 300, 230, 330, 345, 15] : [225, 318, 250, 340, 352, 25];
         for (let k = 0; k < cands.length; k++) {
           const a = cands[k] * Math.PI / 180, lx = fx + r * L.k * Math.cos(a), ly = fy - r * L.k * Math.sin(a);
-          if (ly > surf + 10 && ly < L.sec.h - 26 && lx > 14 && lx < cw - 14) { tag(c, q[2], lx, ly, q[1], 'center', fLab); break; }
+          if (ly > surf + 10 && ly < L.sec.h - 26 && lx > 14 && lx < L.sec.w - 14) { tag(c, q[2], lx, ly, q[1], 'center', fLab); break; }
         }
       });
       if (t > w.h / w.vs) {
         const xr = vr1 * (t - w.h / w.vs), px = X1px(xr);
-        if (px < cw - 30 && Math.abs(px - fx) > 52 && Math.abs(px - sx) > 52) tag(c, T('表面波', 'Surface'), px, surf - 12, C.R, 'center', fnt(L.narrow ? 10.5 : 11.5, 700));
+        if (px < L.sec.w - 30 && Math.abs(px - fx) > 52 && Math.abs(px - sx) > 52) tag(c, T('表面波', 'Surface'), px, surf - 12, C.R, 'center', fnt(L.narrow ? 10.5 : 11.5, 700));
       }
     }
 
@@ -482,7 +493,7 @@
     c.beginPath(); c.moveTo(x, y - 2 * s + 3); c.lineTo(x, y - s * 0.7); c.stroke();
     c.fillStyle = alpha(C.surface, 0.95); c.beginPath(); c.arc(x, y - s * 0.6, s * 0.28, 0, Math.PI * 2); c.fill();
     if (kbIs('station')) kbBox(c, x - s - 6, y - 2 * s - 6, 2 * s + 12, 2 * s + 10);
-    tag(c, T('地震儀', 'Seismometer'), x, y - 2 * s - 12, C.text, x > cw - 60 ? 'right' : 'center', fnt(L.narrow ? 10.5 : 11.5, 600));
+    tag(c, T('地震儀', 'Seismometer'), x, y - 2 * s - 12, C.text, x > L.sec.w - 60 ? 'right' : 'center', fnt(L.narrow ? 10.5 : 11.5, 600));
   }
   function drawTraces1(c) {
     const w = S.w1, R = L.tr, rec = w.rec;
@@ -735,7 +746,7 @@
   function stationR(s) { return kConv() * (s.picks.s - s.picks.p); }
 
   function layout2() {
-    const W = cw, narrow = W < 640;
+    const W = cw, narrow = W < 640 && !shortHeight;
     const spanX = MAPX1 - MAPX0, spanY = MAPY1 - MAPY0;
     let mw, mh, tr;
     const n = S.w2.n;
@@ -750,7 +761,7 @@
       tr = { x: 0, y: mh + 8, w: W, h: n * rowH + axis + 8 };
       return { narrow: true, map: { x: 0, y: 0, w: mw, h: mh }, tr: tr, H: tr.y + tr.h, s: mw / spanX, rowH: rowH, axis: axis };
     }
-    mw = Math.round(Math.min(W * 0.47, 470)); mh = Math.round(mw * spanY / spanX);
+    mw = Math.round(Math.min(W * 0.47, 470, shortHeight ? shortHeight * spanX / spanY : Infinity)); mh = Math.round(mw * spanY / spanX);
     const rowH = Math.min(150, (mh - 36) / n);
     tr = { x: mw + 10, y: 0, w: W - mw - 10, h: mh };
     return { narrow: false, map: { x: 0, y: 0, w: mw, h: mh }, tr: tr, H: mh, s: mw / spanX, rowH: rowH, axis: 26 };
@@ -1346,7 +1357,7 @@
   }
 
   function layout3() {
-    const W = cw, narrow = W < 640;
+    const W = cw, narrow = W < 640 && !shortHeight;
     if (S.v3) { // 3D 檢視：地球剖面在 3D 裡，2D 畫布只畫走時曲線
       const chH = narrow ? Math.round(W * 0.72) : Math.round(Math.min(340, W * 0.4));
       return { narrow: narrow, disc: { x: 0, y: 0, w: 0, h: 0 }, chart: { x: 0, y: 0, w: W, h: chH }, H: chH };
@@ -1355,7 +1366,7 @@
       const Sd = W, chH = Math.round(W * 0.7);
       return { narrow: true, disc: { x: 0, y: 0, w: Sd, h: Sd }, chart: { x: 0, y: Sd + 8, w: W, h: chH }, H: Sd + 8 + chH };
     }
-    const Sd = Math.round(Math.min(W * 0.58, 560));
+    const Sd = Math.round(Math.min(W * 0.58, shortHeight || 560));
     return { narrow: false, disc: { x: 0, y: 0, w: Sd, h: Sd }, chart: { x: Sd + 10, y: Math.round(Sd * 0.08), w: W - Sd - 10, h: Math.round(Sd * 0.84) }, H: Sd };
   }
   function geo3() {
@@ -1625,6 +1636,7 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
+    shortHeight = parseFloat(getComputedStyle(cv).maxHeight) || 0;
     computeLayout();
     ch = Math.round(L.H);
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';

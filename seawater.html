@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 10:17">
-  <script src="js/settings.js?v=202611201017"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Temperature, Salinity and Density of Seawater: T–S Diagrams and Water Masses | Astro Ni Lab">海水的溫度、鹽度與密度：T–S 圖與水團｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"海洋","item":"https://lab.astroni.org/earth-science.html#ocean"},{"@type":"ListItem","position":4,"name":"海水的性質","item":"https://lab.astroni.org/earth-science.html#ch-seawater"},{"@type":"ListItem","position":5,"name":"海水的溫度、鹽度與密度：T–S 圖與水團","item":"https://lab.astroni.org/seawater.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201017">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 海水 T–S 圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -95,6 +95,18 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .notes li { overflow-wrap: anywhere; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -134,7 +146,7 @@
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" data-en="Drag A or B (or focus the diagram: Enter switches between A and B, left/right = salinity, up/down = temperature, Shift for bigger steps). Tap a grey diamond to look up a water mass.">拖曳 A 或 B（或選取圖後：Enter 切換 A／B，左右＝鹽度、上下＝溫度，Shift 走大步）。點灰色菱形可以查水團。</p>
-        <p class="hint l3" data-en="Height = density σ (lower = heavier). The straight purple line joins A and B: the mixture would sit on it if density mixed linearly — the real mixture is on the surface below it. Drag to rotate, scroll or pinch to zoom.">高度＝密度 σ（越低越重）。紫色直線連接 A 和 B：如果密度也是線性混合，混合水會在這條線上——真正的混合水在它下方的曲面上。拖曳旋轉，滾輪或雙指縮放。</p>
+        <p class="hint l3" data-en="Height = density σ (lower = heavier). The straight purple line joins A and B: the mixture would sit on it if density mixed linearly — the real mixture is on the surface below it. Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom.">高度＝密度 σ（越低越重）。紫色直線連接 A 和 B：如果密度也是線性混合，混合水會在這條線上——真正的混合水在它下方的曲面上。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。</p>
 
         <section class="chart-card">
           <div class="segw" role="group" aria-label="海洋剖面" data-en-aria-label="Ocean profile" id="profSeg">
@@ -196,7 +208,7 @@
     <section class="notes">
       <h2 data-en="The science behind it">背後的科學</h2>
       <h3 data-en="Two things make seawater heavy">讓海水變重的兩件事</h3>
-      <p data-en-html="Cold water is denser than warm water, and salty water is denser than fresh water. Oceanographers write the density as \(\sigma = \rho - 1000\) in kg/m³, so typical seawater has \(\sigma\) between about 20 and 28. The standard formula, the UNESCO equation of state EOS-80, gives \(\rho(S, T, p)\) for any salinity, temperature and pressure; near the surface, roughly">冷的水比暖的水重，鹹的水比淡的水重。海洋學家把密度寫成 \(\sigma = \rho - 1000\)（單位 kg/m³），一般的海水 \(\sigma\) 大約在 20 到 28 之間。標準的公式是 UNESCO 國際海水狀態方程式 EOS-80，可以算出任何鹽度、溫度、壓力下的 \(\rho(S, T, p)\)；在海面附近大約是</p>
+      <p data-en-html="Cold water is denser than warm water, and salty water is denser than fresh water. Oceanographers write the density as \(\sigma = \rho - 1000\) in kg/m&lt;sup&gt;3&lt;/sup&gt;, so typical seawater has \(\sigma\) between about 20 and 28. The standard formula, the UNESCO equation of state EOS-80, gives \(\rho(S, T, p)\) for any salinity, temperature and pressure; near the surface, roughly">冷的水比暖的水重，鹹的水比淡的水重。海洋學家把密度寫成 \(\sigma = \rho - 1000\)（單位 kg/m<sup>3</sup>），一般的海水 \(\sigma\) 大約在 20 到 28 之間。標準的公式是 UNESCO 國際海水狀態方程式 EOS-80，可以算出任何鹽度、溫度、壓力下的 \(\rho(S, T, p)\)；在海面附近大約是</p>
       <div class="formula">\[ \Delta\rho \approx \rho\,(-\alpha\,\Delta T + \beta\,\Delta S),\qquad \alpha \approx 0.5\text{–}3\times10^{-4}\ \mathrm{K^{-1}},\quad \beta \approx 7.5\times10^{-4} \]</div>
       <p data-en-html="But \(\alpha\) is not a constant: warm water expands a lot when heated, cold water hardly at all. That is why the lines of equal density on a T–S diagram are curved.">但 \(\alpha\) 不是常數：暖水加熱時膨脹得多，冷水幾乎不膨脹。所以 T–S 圖上的等密度線是彎的。</p>
 
@@ -217,7 +229,7 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Density from EOS-80 (UNESCO 1981) — checked against all eight check values in UNESCO Technical Paper 44 to 10&lt;sup&gt;−5&lt;/sup&gt; kg/m³; freezing point UNESCO 1983; potential temperature by Fofonoff’s Runge–Kutta method with Bryden’s adiabatic lapse rate. Salinity is practical salinity (PSS-78, no unit). The newer TEOS-10 differs only slightly for these purposes.">密度用 EOS-80（UNESCO 1981），和 UNESCO 技術報告 44 的八組檢核值一致到 10<sup>−5</sup> kg/m³；冰點用 UNESCO 1983；位溫用 Fofonoff 的 Runge–Kutta 法與 Bryden 的絕熱遞減率。鹽度是實用鹽度（PSS-78，沒有單位）。較新的 TEOS-10 在這裡的差別很小。</li>
+        <li data-en-html="Density from EOS-80 (UNESCO 1981) — checked against all eight check values in UNESCO Technical Paper 44 to 10&lt;sup&gt;−5&lt;/sup&gt; kg/m&lt;sup&gt;3&lt;/sup&gt;; freezing point UNESCO 1983; potential temperature by Fofonoff’s Runge–Kutta method with Bryden’s adiabatic lapse rate. Salinity is practical salinity (PSS-78, no unit). The newer TEOS-10 differs only slightly for these purposes.">密度用 EOS-80（UNESCO 1981），和 UNESCO 技術報告 44 的八組檢核值一致到 10<sup>−5</sup> kg/m<sup>3</sup>；冰點用 UNESCO 1983；位溫用 Fofonoff 的 Runge–Kutta 法與 Bryden 的絕熱遞減率。鹽度是實用鹽度（PSS-78，沒有單位）。較新的 TEOS-10 在這裡的差別很小。</li>
         <li data-en-html="The parcels and the water masses are compared by potential density \(\sigma_\theta\) (brought to the surface without exchanging heat). Deep water is better compared at depth (for example \(\sigma_4\)): referred to the surface, North Atlantic Deep Water looks heavier than Antarctic Bottom Water, but at 4000 m the order is reversed.">水團之間用位密度 \(\sigma_\theta\)（不交換熱量地搬到海面時的密度）比較。深層的水最好在深處比較（例如 \(\sigma_4\)）：以海面為參考時，北大西洋深層水看起來比南極底層水重，但在 4000 m 深處比較，順序就反過來。</li>
         <li data-en-html="Mixing: temperature and salinity mix linearly by mass (heat capacity treated as constant).">混合：溫度與鹽度依質量比例線性混合（比熱當成常數）。</li>
         <li data-en-html="The four ocean profiles are smoothed typical shapes based on climatology (World Ocean Atlas), not a single measurement; the water-mass values are typical core values and vary from place to place. A parcel settles at the first depth where the surrounding water is as heavy as it is.">四個海洋剖面是依氣候值（World Ocean Atlas）整理的平滑典型形狀，不是某一次的實測；水團的數值是典型的核心值，各地會有差異。一團水停在第一個「周圍的水和它一樣重」的深度。</li>
@@ -241,18 +253,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201017"></script>
-  <script src="js/seawater-core.js?v=202611201017"></script>
-  <script src="js/sound.js?v=202611201017"></script>
-  <script src="js/numinput.js?v=202611201017"></script>
-  <script src="js/labdeck.js?v=202611201017"></script>
-  <script src="js/drawkit.js?v=202611201017"></script>
-  <script src="js/keys.js?v=202611201017"></script>
-  <script src="js/seawater.js?v=202611201017"></script>
-  <script src="js/firebase-config.js?v=202611201017"></script>
-  <script src="js/missions.js?v=202611201017" data-module="seawater"></script>
-  <script src="js/missions/seawater.js?v=202611201017"></script>
-  <script src="js/stats.js?v=202611201017" data-module="seawater"></script>
-  <script src="js/comments.js?v=202611201017"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/seawater-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/seawater.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="seawater"></script>
+  <script src="js/missions/seawater.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="seawater"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

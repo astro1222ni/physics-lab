@@ -1,4 +1,4 @@
-/* von-thunen.js — 「杜能的農業區位圈」的畫面與互動
+/* von-thunen.js — 「邱念的農業區位圈」的畫面與互動
  * 地租、圈的邊界、河流的最省路線全部在 von-thunen-core.js（VonCore）；這裡只負責操作、繪圖與讀數。 */
 (function () {
   'use strict';
@@ -625,7 +625,7 @@
     setText('rFront', S.frontier > 0 ? km(S.frontier) + (state.river.on && state.river.k < 1 ? T('（沿河 ', ' (along the river ') + km(S.frontierRiver) + T('）', ')') : '') : T('沒有農業', 'no farming'));
     setText('rFarm', area(S.farm));
     setText('rTotal', T(num(S.totalRent / 1e8, 2) + ' 億元／年', num(S.totalRent / 1e6, 0) + ' million yuan a year') +
-      T('（杜能設定的 ' + num(S.totalRent / K.TOTAL0, 2) + ' 倍）', ' (' + num(S.totalRent / K.TOTAL0, 2) + '× von Thünen\'s)'));
+      T('（邱念設定的 ' + num(S.totalRent / K.TOTAL0, 2) + ' 倍）', ' (' + num(S.totalRent / K.TOTAL0, 2) + '× von Thünen\'s)'));
     $('srNow').textContent = S.rings.length
       ? T('由內而外：' + S.rings.map(function (s) { return nm(s.id) + ' 到 ' + km(s.to); }).join('，'), 'From the inside out: ' + S.rings.map(function (s) { return nm(s.id) + ' to ' + km(s.to); }).join(', '))
       : T('沒有任何作物划算。', 'No crop pays anywhere.');
@@ -746,7 +746,7 @@
     acted();
     state.crops = K.defaults(); state.m = 1; state.river.on = false; state.river.k = 0.4;
     loadCropSliders(); loadOtherSliders();
-    setStatus(T('回到杜能的設定：蔬菜牛奶、林木、穀物、放牧四個圈。', 'Back to von Thünen\'s settings: vegetables and dairy, forestry, grain and grazing.'));
+    setStatus(T('回到邱念的設定：蔬菜牛奶、林木、穀物、放牧四個圈。', 'Back to von Thünen\'s settings: vegetables and dairy, forestry, grain and grazing.'));
     afterChange(true, 'reset');
   });
 
@@ -801,7 +801,7 @@
     probeStatus();
   });
 
-  const kb = window.LabKeys ? window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('平原的地圖。方向鍵移動「這塊地」的標記（Shift 一次 10 格）。', 'Map of the plain. Arrow keys move the field marker (Shift for 10 steps).'),
     items: [{
       name: function () { return T('這塊地', 'The field'); },
@@ -818,7 +818,8 @@
       }
     }],
     onChange: function () { requestDraw(); }
-  }) : null;
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
@@ -863,6 +864,56 @@
   let rsTimer = 0;
   window.addEventListener('resize', function () { clearTimeout(rsTimer); rsTimer = setTimeout(function () { fit(); requestDraw(); }, 60); });
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
-  setStatus(T('杜能的設定：城市外面依序是蔬菜牛奶、林木、穀物、放牧，再外面是荒野。點地圖看每一塊地為什麼種那樣作物。', 'Von Thünen\'s settings: around the city come vegetables and dairy, forestry, grain and grazing, then wilderness. Tap the map to see why each field grows what it does.'));
+  setStatus(T('邱念的設定：城市外面依序是蔬菜牛奶、林木、穀物、放牧，再外面是荒野。點地圖看每一塊地為什麼種那樣作物。', 'Von Thünen\'s settings: around the city come vegetables and dairy, forestry, grain and grazing, then wilderness. Tap the map to see why each field grows what it does.'));
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const p = state.probe || { x: 0, y: 0 };
+    return toS(mapView(), p.x, p.y);
+  }
+  if (window.LabVPad && kb) {
+    const name = T('這塊地', 'Field');
+    const pad = LabVPad.mount({
+      id: 'von-thunen', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => state.view !== '3d',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      lens: false
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:von-thunen'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+  }
+
 })();
