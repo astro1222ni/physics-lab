@@ -355,27 +355,50 @@ function twoRuns(seed, a, b, id) {
 // 隱藏任務
 // =====================================================================
 {
-  const L = CellLab({ sol: 'nacl', C: 0 });
-  const ok = playUntil(L, 'h1', 60, 1);
-  let cmax = 0;
-  for (let osm = 0; osm <= 300; osm += 0.5) {
-    const eR = K.cellEquilibrium('rbc', osm, 25), eP = K.cellEquilibrium('plant', osm, 25);
-    if (eR.lysis && eP.P >= 600) cmax = osm;
-  }
-  claim(ok, 'H1 牆，是溫柔的：清水中紅血球溶血、植物細胞膨壓 ' + K.turgor('plant', L.plant.V).toFixed(0) + ' kPa；外液 ≤ ' + cmax + ' mOsm/L 都成立');
+  const reset = { type: 'reset-cell', data: {} };
+  const L = CellLab({ C: K.molarFromPercent(0.9, SOL.nacl.M) });
+  const pure = CellLab({ C: 0 }), low = CellLab({ C: 40 });
+  check('h1', reset);
+  claim(!playUntil(CellLab({}), 'h1', 60, 1) && !playUntil(pure, 'h1', 60, 1) && pure.rbc.lysed &&
+    !playUntil(low, 'h1', 60, 1), 'H1：預設、直接用清水或直接調成低張，均無法完成');
+  const salineOnly = !playUntil(L, 'h1', 60, 1);
+  L.C = 40;
+  claim(salineOnly && playUntil(L, 'h1', 60, 1), 'H1：先在 0.9% 食鹽水觀察平衡，再把 NaCl 降到 40 mmol/L，紅血球溶血、植物細胞仍有 ' + L.data().turgor.toFixed(0) + ' kPa 膨壓');
+  check('h1', reset);
+  claim(!playUntil(L, 'h1', 2, 1), 'H1：換新細胞或清除紀錄會清掉等張對照');
+  claim([280, 198, 75].every(C => !playUntil(CellLab({ C }), 'h1', 60, 1)), 'H1：公開的皺縮、初始質壁分離及溶血邊緣路線均無法順手完成');
+  claim(!check('h2', { type: 'cell', data: L.data() }) && !check('h3', { type: 'cell', data: L.data() }), '細胞路線不會連帶完成擴散或滲透的隱藏任務');
 }
 {
-  const trials = 40, times = [];
-  for (let k = 0; k < trials; k++) {
-    const L = DiffLab(6000 + k, 25, 0.5);
-    L.remove();
-    let when = null;
-    L.play(240, 1, ev => { if (check('h2', ev)) { when = ev.data.t; return true; } return false; });
-    times.push(when == null ? Infinity : when);
-  }
-  times.sort((a, b) => a - b);
-  const fin = times.filter(isFinite).length;
-  claim(fin === trials, 'H2 沒有誰永遠只待在故鄉：預設設定下每個粒子都到過右半邊所需時間中位數 ' + times[trials >> 1].toFixed(0) + ' 秒、最長 ' + times[trials - 1].toFixed(0) + ' 秒（' + fin + '/' + trials + ' 次在 4 分鐘內；可加快播放速度）');
+  const reset = { type: 'reset-diff', data: {} };
+  const putBack = L => { L.putBack(); return check('h2', { type: 'diff', data: L.data() }); };
+  const L = DiffLab(6000, 25, 0.5);
+  check('h2', reset);
+  const idle = !playUntil(L, 'h2', 2, 1);
+  L.remove();
+  const first = !playUntil(L, 'h2', 120, 1) && L.data().allSeen;
+  claim(idle && first && !putBack(L), 'H2：預設或只移除一次隔板，即使所有粒子都到過右半邊也不成立');
+  L.remove();
+  const repeat = playUntil(L, 'h2', 120, 1);
+  claim(repeat, 'H2：25 °C、0.5 nm，放回隔板後用相同設定重做，第二輪在 ' + L.data().t.toFixed(0) + ' 秒時全數造訪右半邊');
+  check('h2', reset);
+  claim(!putBack(L), 'H2：清除後放回隔板不會留下前一輪對照');
+  const repeatWithoutControl = () => { L.remove(); return playUntil(L, 'h2', 120, 1); };
+  claim(!repeatWithoutControl() && L.data().allSeen, 'H2：清除後只有一輪造訪紀錄仍不成立');
+  putBack(L);
+  L.set(40, null);
+  L.remove();
+  const warmed = !playUntil(L, 'h2', 120, 1) && L.data().allSeen;
+  check('h2', reset);
+  const larger = DiffLab(6000, 25, 1);
+  larger.remove();
+  const oneLarger = !playUntil(larger, 'h2', 300, 1) && larger.data().allSeen;
+  putBack(larger);
+  larger.set(null, 4);
+  larger.remove();
+  claim(warmed && oneLarger && !playUntil(larger, 'h2', 1200, 1) && larger.data().allSeen,
+    'H2：只做一輪、用同半徑比較溫度，或用同溫度比較半徑，即使粒子全造訪右半邊也不會順手完成');
+  claim(!check('h1', { type: 'diff', data: L.data() }) && !check('h3', { type: 'diff', data: L.data() }), '擴散路線不會連帶完成細胞或滲透的隱藏任務');
 }
 {
   const L = OsmoLab({ solL: 'nacl', CL: 0.5, solR: 'glucose', CR: 1 });
@@ -386,6 +409,7 @@ function twoRuns(seed, a, b, id) {
   const L3 = OsmoLab({ solL: 'glucose', CL: 1, solR: 'sucrose', CR: 1 });   // 同為 i = 1 不算
   const no3 = !playUntil(L3, 'h3', 60, 1);
   claim(d != null && ok2 && no3, 'H3 勢均力敵的陌生人：左 NaCl 0.5、右葡萄糖 1 mmol/L 在 ' + (d ? d.t.toFixed(0) : '—') + ' 分鐘成立；CaCl2 0.4 對葡萄糖 1.2 也成立；葡萄糖對蔗糖（i 相同）不算');
+  claim(d && !check('h1', { type: 'osmo', data: d }) && !check('h2', { type: 'osmo', data: d }), '滲透的隱藏路線不會連帶完成細胞或擴散的隱藏任務');
 }
 
 // =====================================================================

@@ -1176,6 +1176,7 @@
   $('osmoReset').addEventListener('click', function () { acted(); osmoRefill(T('倒掉重裝：兩邊液面一樣高。剛才的曲線留在圖上。', 'Refilled: both levels equal. The last curve stays on the graph.')); updateReadouts(); requestDraw(); emitState(); schedule(); });
   // ---------- 細胞 ----------
   function freshCells(msg) {
+    if (window.LabMission) window.LabMission.emit('reset-cell', {});
     if (CS.rbc && CS.ts.length > 2) { CS.history.push({ ts: CS.ts, rv: CS.rv, pv: CS.pv }); if (CS.history.length > 4) CS.history.shift(); }
     CS.rbc = K.cellCreate('rbc'); CS.plant = K.cellCreate('plant', S.Tc);
     CS.t = 0; CS.ts = [0]; CS.rv = [CS.rbc.V]; CS.pv = [CS.plant.V];
@@ -1198,6 +1199,7 @@
   // ---------- 共用 ----------
   $('play').addEventListener('click', function () { acted(); S.running = !S.running; updatePlay(); if (!S.running) emitState(); schedule(); });
   $('clear').addEventListener('click', function () {
+    if (window.LabMission && S.mode !== 'osmo') window.LabMission.emit('reset-' + S.mode, {});
     if (S.mode === 'diff') { DF.history = []; if (DF.run) { DF.run.ts = []; DF.run.ms = []; DF.run.th = []; } }
     else if (S.mode === 'osmo') { OS.history = []; OS.ts = [OS.st.t]; OS.hs = [OS.st.x * 200]; }
     else { CS.history = []; CS.ts = [CS.t]; CS.rv = [CS.rbc.V]; CS.pv = [CS.plant.V]; }

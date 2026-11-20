@@ -130,12 +130,33 @@
     {
       id: 'diffusion-osmosis-h1', level: 3, hidden: true,
       riddle: { zh: '牆，是溫柔的。', en: 'A wall can be a kindness.' },
-      check: function (ev) { const d = ev.data; return isCell(ev) && d.rbcLysed && d.plantEq && d.turgor >= 600; }
+      check: function (ev, mem) {
+        if (ev.type === 'reset-cell') { delete mem.isotonic; return false; }
+        if (!isCell(ev)) return false;
+        const d = ev.data;
+        if (d.t >= 3 && d.osm >= 295 && d.osm <= 315 && d.rbcEq && !d.rbcLysed && Math.abs(d.rbcV - 90) <= 3 && d.plantEq) {
+          mem.isotonic = d.T;
+          return false;
+        }
+        return mem.isotonic === d.T && d.osm >= 40 && d.osm <= 100 && d.rbcLysed && d.plantEq && d.turgor >= 600;
+      }
     },
     {
       id: 'diffusion-osmosis-h2', level: 4, hidden: true,
       riddle: { zh: '沒有誰永遠只待在故鄉。', en: 'No one stays in their hometown forever.' },
-      check: function (ev) { return isDiff(ev) && ev.data.allSeen; }
+      check: function (ev, mem) {
+        if (ev.type === 'reset-diff') { delete mem.visited; delete mem.control; return false; }
+        if (ev.type !== 'diff') return false;
+        const d = ev.data;
+        if (d.partition) {
+          // 放回隔板才算結束第一輪。下一輪用同條件的新軌跡重驗。
+          if (mem.visited) { mem.control = mem.visited; delete mem.visited; }
+          return false;
+        }
+        if (!d.allSeen || !d.complete || d.mixed) return false;
+        mem.visited = { T: d.T, r: d.r };
+        return !!mem.control && mem.control.T === d.T && mem.control.r === d.r;
+      }
     },
     {
       id: 'diffusion-osmosis-h3', level: 6, hidden: true,
