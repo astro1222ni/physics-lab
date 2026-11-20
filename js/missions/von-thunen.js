@@ -1,8 +1,8 @@
-/* missions/von-thunen.js — 杜能的農業區位圈的任務（星星數 = 等級；隱藏任務 = 等級 × 2）
+/* missions/von-thunen.js — 邱念的農業區位圈的任務（星星數 = 等級；隱藏任務 = 等級 × 2）
  *
  * 事件（js/von-thunen.js 只在使用者操作過之後才回報；載入頁面不算）：
  *   'vt'：拖曳滑桿時大約每 0.25 秒一次；放開滑桿、換作物、種／不種、開關河流、換畫面、換範圍、
- *         回到杜能的設定、點或拖曳「這塊地」、轉動立體圖時立刻回報。
+ *         回到邱念的設定、點或拖曳「這塊地」、轉動立體圖時立刻回報。
  *     data = VonCore.summary() 的內容，再加上 act（param、crop、grow、river、view、zoom、reset、probe、rotate）、view（map／3d）、zoom、sel：
  *       river（有沒有河）, k（河運費率；沒有河時為 1）, m（運費倍率）,
  *       crops.<作物>（veg、wood、grain、live）= { on, Y, p, c, f, A（城市的地租）, B（每公里少）, d0（地租歸零的距離） },
@@ -84,7 +84,7 @@
     {
       id: 'von-thunen-11', level: 6,
       title: { zh: '鐵路通車', en: 'The railway arrives' },
-      desc: { zh: '沒有河、四種作物的產量、價格、成本都照杜能的設定，只改運費，讓全區總地租變成原來的 2 倍（差 2% 以內）。', en: 'No river, and yields, prices and costs as von Thünen set them: change only freight to double the total rent (within 2%).' },
+      desc: { zh: '沒有河、四種作物的產量、價格、成本都照邱念的設定，只改運費，讓全區總地租變成原來的 2 倍（差 2% 以內）。', en: 'No river, and yields, prices and costs as von Thünen set them: change only freight to double the total rent (within 2%).' },
       check: function (ev) { const d = V(ev); return !!d && !d.river && d.allOn && !d.changedYPC && Math.abs(d.totalRent / TOTAL0 - 2) <= 0.04; }
     },
     {

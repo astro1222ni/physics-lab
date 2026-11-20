@@ -1,4 +1,4 @@
-/* von-thunen.js — 「杜能的農業區位圈」的畫面與互動
+/* von-thunen.js — 「邱念的農業區位圈」的畫面與互動
  * 地租、圈的邊界、河流的最省路線全部在 von-thunen-core.js（VonCore）；這裡只負責操作、繪圖與讀數。 */
 (function () {
   'use strict';
@@ -625,7 +625,7 @@
     setText('rFront', S.frontier > 0 ? km(S.frontier) + (state.river.on && state.river.k < 1 ? T('（沿河 ', ' (along the river ') + km(S.frontierRiver) + T('）', ')') : '') : T('沒有農業', 'no farming'));
     setText('rFarm', area(S.farm));
     setText('rTotal', T(num(S.totalRent / 1e8, 2) + ' 億元／年', num(S.totalRent / 1e6, 0) + ' million yuan a year') +
-      T('（杜能設定的 ' + num(S.totalRent / K.TOTAL0, 2) + ' 倍）', ' (' + num(S.totalRent / K.TOTAL0, 2) + '× von Thünen\'s)'));
+      T('（邱念設定的 ' + num(S.totalRent / K.TOTAL0, 2) + ' 倍）', ' (' + num(S.totalRent / K.TOTAL0, 2) + '× von Thünen\'s)'));
     $('srNow').textContent = S.rings.length
       ? T('由內而外：' + S.rings.map(function (s) { return nm(s.id) + ' 到 ' + km(s.to); }).join('，'), 'From the inside out: ' + S.rings.map(function (s) { return nm(s.id) + ' to ' + km(s.to); }).join(', '))
       : T('沒有任何作物划算。', 'No crop pays anywhere.');
@@ -746,7 +746,7 @@
     acted();
     state.crops = K.defaults(); state.m = 1; state.river.on = false; state.river.k = 0.4;
     loadCropSliders(); loadOtherSliders();
-    setStatus(T('回到杜能的設定：蔬菜牛奶、林木、穀物、放牧四個圈。', 'Back to von Thünen\'s settings: vegetables and dairy, forestry, grain and grazing.'));
+    setStatus(T('回到邱念的設定：蔬菜牛奶、林木、穀物、放牧四個圈。', 'Back to von Thünen\'s settings: vegetables and dairy, forestry, grain and grazing.'));
     afterChange(true, 'reset');
   });
 
@@ -864,7 +864,7 @@
   let rsTimer = 0;
   window.addEventListener('resize', function () { clearTimeout(rsTimer); rsTimer = setTimeout(function () { fit(); requestDraw(); }, 60); });
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
-  setStatus(T('杜能的設定：城市外面依序是蔬菜牛奶、林木、穀物、放牧，再外面是荒野。點地圖看每一塊地為什麼種那樣作物。', 'Von Thünen\'s settings: around the city come vegetables and dairy, forestry, grain and grazing, then wilderness. Tap the map to see why each field grows what it does.'));
+  setStatus(T('邱念的設定：城市外面依序是蔬菜牛奶、林木、穀物、放牧，再外面是荒野。點地圖看每一塊地為什麼種那樣作物。', 'Von Thünen\'s settings: around the city come vegetables and dairy, forestry, grain and grazing, then wilderness. Tap the map to see why each field grows what it does.'));
   requestDraw();
   // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
   function padPoint() {

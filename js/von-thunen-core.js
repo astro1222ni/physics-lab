@@ -1,12 +1,12 @@
-/* von-thunen-core.js — 杜能（J. H. von Thünen）農業區位論的計算核心（純函式，瀏覽器與 Node 共用）
+/* von-thunen-core.js — 邱念（J. H. von Thünen）農業區位論的計算核心（純函式，瀏覽器與 Node 共用）
  *
- * 假設（杜能的「孤立國」）：一片均質平原，中央一座城市是唯一的市場；所有農產品都運到城裡賣，
+ * 假設（邱念的「孤立國」）：一片均質平原，中央一座城市是唯一的市場；所有農產品都運到城裡賣，
  * 運費和距離成正比。每一種作物在距離 d 的一公頃土地上能付出的地租（區位地租）是
  *
  *   R(d) = Y (p − c) − Y f m d
  *
  *   Y：每公頃產量（噸／公頃・年）　p：城裡的價格（元／噸）　c：生產成本（元／噸）
- *   f：運費（元／噸・公里）　m：運輸技術的倍率（全部作物一起乘；1 = 杜能的設定）
+ *   f：運費（元／噸・公里）　m：運輸技術的倍率（全部作物一起乘；1 = 邱念的設定）
  *
  * 每一塊地種「能付最高地租」的作物；地租都 ≤ 0 的地方沒有人耕種（荒野）。
  * 地租線是直線：在城市的高度 A = Y(p − c)，每公里下降 B = Y f m。坡度越陡的作物排在越內圈。
@@ -25,7 +25,7 @@
   'use strict';
 
   const IDS = ['veg', 'wood', 'grain', 'live'];
-  /** 杜能的設定（虛構但比例合理的數字）：圈的邊界 12.5、19、44.7 km，農業最外緣 90 km */
+  /** 邱念的設定（虛構但比例合理的數字）：圈的邊界 12.5、19、44.7 km，農業最外緣 90 km */
   const DEFAULTS = {
     veg: { Y: 20, p: 800, c: 500, f: 20 },     // 蔬菜與牛奶：產量高、容易壞，運費貴
     wood: { Y: 10, p: 300, c: 150, f: 4 },     // 林木（薪柴與木材）：又重又占體積
@@ -225,14 +225,14 @@
       tie3: tie3, parallel: parallel, probe: probe
     };
   }
-  /** 杜能設定（沒有河、運費倍率 1）的全區總地租 */
+  /** 邱念設定（沒有河、運費倍率 1）的全區總地租 */
   const TOTAL0 = (function () {
     const o = {};
     IDS.forEach(function (id) { o[id] = Object.assign({ on: true }, DEFAULTS[id]); });
     return totals(o, 1, null).totalRent;
   })();
 
-  /** 杜能設定的複本（可以放心修改） */
+  /** 邱念設定的複本（可以放心修改） */
   function defaults() {
     const o = {};
     IDS.forEach(function (id) { o[id] = Object.assign({ on: true }, DEFAULTS[id]); });

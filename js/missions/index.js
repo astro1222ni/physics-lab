@@ -178,7 +178,7 @@ window.LAB_MISSION_MODULES = [
   { id: 'central-place', zh: '中地理論：門檻、商品圈與六角形市場區', en: 'Central Place Theory: Thresholds, Ranges and Hexagons' },
   { id: 'urban-heat-island', zh: '都市熱島', en: 'Urban Heat Island' },
   { id: 'gravity-model', zh: '重力模型與距離衰減', en: 'Gravity Model and Distance Decay' },
-  { id: 'von-thunen', zh: '杜能的農業區位圈', en: 'Von Thünen\'s Rings of Farming' },
+  { id: 'von-thunen', zh: '邱念的農業區位圈', en: 'Von Thünen\'s Rings of Farming' },
   { id: 'missing-fundamental', zh: '缺基頻：聽到不存在的音', en: 'The Missing Fundamental' },
   { id: 'loudness', zh: '分貝、等響曲線與聽力保護', en: 'Decibels, Equal-Loudness Contours and Hearing Protection' },
   { id: 'intervals', zh: '音程與頻率比', en: 'Intervals and Frequency Ratios' },
