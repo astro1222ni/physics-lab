@@ -24,8 +24,17 @@
       "4-4": "audio/study/phy-5-1/4-4.m4a",
       "4-5": "audio/study/phy-5-1/4-5.m4a",
       "4-6": "audio/study/phy-5-1/4-6.m4a",
+      "5-1": "audio/study/phy-5-1/5-1.m4a",
+      "5-2": "audio/study/phy-5-1/5-2.m4a",
+      "5-3": "audio/study/phy-5-1/5-3.m4a",
+      "5-4": "audio/study/phy-5-1/5-4.m4a",
       "6-1": "audio/study/phy-5-1/6-1.m4a",
       "6-2": "audio/study/phy-5-1/6-2.m4a",
+      "7-1": "audio/study/phy-5-1/7-1.m4a",
+      "7-1b": "audio/study/phy-5-1/7-1b.m4a",
+      "7-2": "audio/study/phy-5-1/7-2.m4a",
+      "7-2b": "audio/study/phy-5-1/7-2b.m4a",
+      "7-3": "audio/study/phy-5-1/7-3.m4a",
       "8-1": "audio/study/phy-5-1/8-1.m4a",
       "8-2": "audio/study/phy-5-1/8-2.m4a"
     },
@@ -166,19 +175,19 @@
       }
     },
     "5-1": {
-      "dur": 5.85,
+      "dur": 7.86,
       "marks": {}
     },
     "5-2": {
-      "dur": 8.35,
+      "dur": 9.08,
       "marks": {}
     },
     "5-3": {
-      "dur": 8.6,
+      "dur": 8.29,
       "marks": {}
     },
     "5-4": {
-      "dur": 11.35,
+      "dur": 11.72,
       "marks": {}
     },
     "6-1": {
@@ -199,23 +208,23 @@
       }
     },
     "7-1": {
-      "dur": 13.85,
+      "dur": 12.46,
       "marks": {}
     },
     "7-1b": {
-      "dur": 11.1,
+      "dur": 10.6,
       "marks": {}
     },
     "7-2": {
-      "dur": 13.1,
+      "dur": 11.86,
       "marks": {}
     },
     "7-2b": {
-      "dur": 5.1,
+      "dur": 5.23,
       "marks": {}
     },
     "7-3": {
-      "dur": 8.6,
+      "dur": 7.54,
       "marks": {}
     },
     "8-1": {

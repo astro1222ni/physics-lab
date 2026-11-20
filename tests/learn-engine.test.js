@@ -17,17 +17,17 @@ const E=require('../js/learn'),U=require('../js/learn/phy-5-1'),timings=require(
   assert.equal(defs.length,25);assert.equal(defs.filter(m=>!m.hidden).reduce((s,m)=>s+m.level,0),54);
   assert.equal(defs[24].hidden,true);assert.equal(defs[24].studyStars,3);
   const {convert}=require('../tools/learn-timings.cjs'), sample={};
-  for(const p of U.pages.filter(p=>!/^[57]-/.test(p.id))){
+  for(const p of U.pages){
     const rec=E.estimate(p.speech[0]);sample[p.id]={...rec,audio:rec.dur-.6,est:true};
   }
   const converted=convert(sample);
-  assert.equal(converted.estimated,false);assert.equal(Object.keys(converted.audio.zh).length,22);
+  assert.equal(converted.estimated,false);assert.equal(Object.keys(converted.audio.zh).length,U.pages.length);
   assert.deepEqual(converted.audio.en,{});assert.equal(convert({}).estimated,true);
   for(const p of U.pages){
     assert.deepEqual(converted.en[p.id],E.estimate(p.speech[1],'en'));
     assert.equal(converted.audio.zh[p.id],sample[p.id]?'audio/study/phy-5-1/'+p.id+'.m4a':undefined);
   }
-  assert.throws(()=>convert({'5-1':sample['1-1']}));assert.throws(()=>convert({'1-1':{...sample['1-1'],marks:{}}}));
+  assert.throws(()=>convert({'9-9':sample['1-1']}));assert.throws(()=>convert({'1-1':{...sample['1-1'],marks:{}}}));
   defs.forEach((m,i)=>{assert.equal(m.study,true);assert.equal(m.check({type:'learn-progress',data:{}}),false);
     assert.equal(m.check({type:'learn-progress',data:{earned:{[i+1]:true}}}),true);});
   const registry={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/missions/index.js'),'utf8'),registry);

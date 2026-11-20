@@ -15,7 +15,6 @@ function convert(input) {
     out.zh[id] = estimate(page.speech[0], 'zh');
     out.en[id] = estimate(page.speech[1], 'en');
     if (!Object.hasOwn(input, id)) continue;
-    if (/^[57]-/.test(id)) throw Error('Interactive page has no narration: ' + id);
     const { dur, audio, marks } = input[id];
     if (!Number.isFinite(audio) || audio <= 0 || !Number.isFinite(dur) ||
         Math.abs(dur - audio - .6) > .1) throw Error('Invalid audio length or tail: ' + id);
