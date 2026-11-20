@@ -88,7 +88,9 @@
   function coastal(o) {
     const E = ekman({ lat: o.lat, U: o.U, windFrom: o.windFrom, Av: 0.02 });
     const offAz = o.coast === 'W' ? 270 : 90;              // 離岸方向
-    const Moff = E.M * Math.cos((E.transAz - offAz) * R);  // 離岸的輸送 m²/s（每公尺海岸 m³/s）
+    const cross = E.M * Math.cos((E.transAz - offAz) * R);
+    // 跨岸輸送讀到小數第二位；低於半個最小刻度時，讀數和露頭預報都採零。
+    const Moff = Math.abs(cross) < 0.005 ? 0 : cross;
     const c = Math.sqrt(GP_COAST * o.H1), Rd = c / Math.abs(E.f);
     const t = o.days * 86400;
     const w = Moff / Rd;                                   // 岸邊的湧升速度 m/s

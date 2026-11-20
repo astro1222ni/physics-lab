@@ -173,7 +173,7 @@
  "central-place": "b0dbee9201",
  "urban-heat-island": "90cece44a9",
  "gravity-model": "e6ce2bde99",
- "von-thunen": "0dd0bffb5a",
+ "von-thunen": "a709bf2039",
  "missing-fundamental": "341da7852b",
  "loudness": "9763a4c118",
  "intervals": "16159a51be",
@@ -191,5 +191,9 @@
  "mathematics": "8e7402ded2",
  "information-technology": "f0113fc21d",
  "geography": "8b594c199f",
- "music": "9218c2e00f"
+ "music": "9218c2e00f",
+ "civics": "777ee1e257",
+ "visual-arts": "eed99999a4",
+ "supply-demand": "b8efae70af",
+ "perspective-drawing": "b80fbd66b6"
 }

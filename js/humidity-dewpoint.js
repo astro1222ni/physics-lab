@@ -181,7 +181,10 @@
   // =====================================================================
   function drawPsy(g, W, H) {
     roomBg(g, W, H);
-    const A = air(), narrow = W < 560, cx = W / 2, gap = narrow ? 56 : 80, y0 = state.type === 'vent' ? 92 : 70, y1 = H - 110;
+    const A = air(), narrow = W < 560, cx = W / 2, gap = narrow ? 56 : 80;
+    // 矮畫布把空間留給液柱，使相鄰的十度刻度仍可分辨。
+    const short = H < 310, y0 = state.type === 'vent' ? (short ? 63 : 92) : (short ? 52 : 70);
+    const y1 = H - (short ? 78 : 110);
     const xd = cx - gap, xw = cx + gap;
     if (state.type === 'still') {
       // 百葉箱：白色木箱、斜的百葉
@@ -191,10 +194,10 @@
       g.strokeStyle = D.alpha(C.text, 0.16); g.lineWidth = 3;
       for (let y = by + 14; y < by + bh - 8; y += 14) { g.beginPath(); g.moveTo(bx + 6, y); g.lineTo(bx + 28, y + 8); g.stroke(); g.beginPath(); g.moveTo(bx + bw - 6, y); g.lineTo(bx + bw - 28, y + 8); g.stroke(); }
       g.restore();
-      D.haloText(g, T('百葉箱：沒有風扇，空氣慢慢流過', 'Screen: no fan, the air drifts through slowly'), cx, by + bh + 14, C.muted, 'center', 'middle', '600 11px ' + FONT);
+      D.haloText(g, T('百葉箱：沒有風扇，空氣慢慢流過', 'Screen: no fan, the air drifts through slowly'), cx, short ? H - 13 : by + bh + 14, C.muted, 'center', 'middle', '600 11px ' + FONT);
     } else {
       // 風扇：從上往下吹過兩個球
-      const fy = narrow ? 40 : 44, r = narrow ? 18 : 22;
+      const fy = short ? 27 : narrow ? 40 : 44, r = short ? 13 : narrow ? 18 : 22;
       g.save(); g.translate(cx, fy);
       D.ball(g, 0, 0, r + 4, C['hd-metal'], { shadow: false });
       const ang = state.t * 18;
@@ -204,10 +207,10 @@
       g.strokeStyle = D.alpha(C['hd-air'], 0.35); g.lineWidth = 1.5; g.setLineDash([6, 8]); g.lineDashOffset = -state.t * 60;
       for (let k = -2; k <= 2; k++) { const x = cx + k * gap * 0.9; g.beginPath(); g.moveTo(x, fy + 30); g.lineTo(x + (k === 0 ? 0 : k * 6), y1 + 30); g.stroke(); }
       g.setLineDash([]);
-      D.haloText(g, T('風扇把空氣吹過溼球（每秒約 3 公尺）', 'A fan blows air past the wet bulb (about 3 m/s)'), cx, H - 22, C.muted, 'center', 'middle', '600 11px ' + FONT);
+      D.haloText(g, T('風扇把空氣吹過溼球（每秒約 3 公尺）', 'A fan blows air past the wet bulb (about 3 m/s)'), cx, short ? H - 13 : H - 22, C.muted, 'center', 'middle', '600 11px ' + FONT);
     }
     // 水盒與燈芯
-    const wy = y1 + 36;
+    const wy = y1 + (short ? 29 : 36);
     g.strokeStyle = D.alpha('#e2e8f0', 0.9); g.lineWidth = 4; g.beginPath(); g.moveTo(xw, y1 + 14); g.quadraticCurveTo(xw + 2, wy - 6, xw, wy + 8); g.stroke();
     D.roundRect(g, xw - 26, wy - 8, 52, 28, 5); g.fillStyle = D.alpha(C['hd-glass'], 0.7); g.fill(); g.strokeStyle = D.alpha(C.text, 0.35); g.lineWidth = 1; g.stroke();
     D.roundRect(g, xw - 24, wy + 2, 48, 16, 4); g.fillStyle = D.alpha(C['hd-wet'], 0.45); g.fill();

@@ -66,7 +66,7 @@
       const cross = candidates.find(it => it.lab.d !== main && it.reason);
       if (cross && !out.some(it => it.lab.d !== main)) { if (out.length === 4) { const last = out.pop(); ns[last.lab.d]--; nc[last.lab.c]--; } add(cross); }
     }
-    // 固定科序每天前進一格，連續八天必涵蓋八科；科內仍用當天雜湊選卡。
+    // 固定科序每天前進一格，一輪涵蓋目錄裡的每一科；科內用當天雜湊選卡。
     const order = [...new Set(catalog.map(x => x.d))].sort((a, b) => hash(a) - hash(b));
     const offset = ((dayNumber(now) % order.length) + order.length) % order.length;
     const domains = order.slice(offset).concat(order.slice(0, offset));

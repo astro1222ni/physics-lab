@@ -88,6 +88,10 @@ const SUBJECT_PHRASES = {
   math: { '向量': '向量' },
   // 音樂頁：和弦、音程的「向量」（音程向量）是數學用語，不轉成物理的「矢量」
   music: { '向量': '向量' },
+  civ: { '價格上限': '最高限价', '價格下限': '最低限价', '無謂損失': '无谓损失' },
+  health: { '易感族群': '易感人群', '群體免疫': '群体免疫', '盛行率': '患病率' },
+  pe: { '籃框': '篮筐', '入框角': '入筐角', '進框': '进筐' },
+  art: { '造形': '造型', '消失點': '消失点', '視平線': '视平线' },
   // 資訊頁：介面＝接口、物件＝对象、類比＝模拟（数字／模拟信号）、指標＝指针、堆疊＝栈；其他科的這些詞意思不同，不可全站轉
   // 資訊科的用語也只在資訊頁轉：「變數」「數位」「位元」會出現在別科的「改變數值」「讀數位置」「單位元」裡，全站轉會轉錯
   info: {
@@ -111,6 +115,7 @@ new Function('window', fs.readFileSync(path.join(__dirname, '..', 'js', 'mission
 const bySubject = {};
 for (const sub of Object.keys(SUBJECT_PHRASES)) {
   const S = W.LAB_SUBJECTS.find(x => x.id === sub);
+  if (!S) continue; // 還沒上線的科目（尚未列入 LAB_SUBJECTS）先略過，上線後自動生效
   const pages = Object.keys(W.LAB_MODULE_BRANCH).filter(m => S.branches.includes(W.LAB_MODULE_BRANCH[m])).sort();
   pages.push(S.page);
   bySubject[sub] = { pages: pages, phrases: SUBJECT_PHRASES[sub] };

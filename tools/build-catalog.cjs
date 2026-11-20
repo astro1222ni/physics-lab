@@ -102,28 +102,23 @@ for (const k of marks) {
 // 每個實驗最後更新日期：相關檔案最近一次 commit 的日期；還沒 commit 的修改算今天
 const { execFileSync } = require('child_process');
 const git = args => { try { return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim(); } catch (e) { return ''; } };
-const { historyDates, checkFresh } = require('./catalog-dates.cjs');
+const { historyDates, launchCohorts, checkFresh } = require('./catalog-dates.cjs');
 const firstDates = historyDates(list.map(x => x.s));
 const launch = JSON.parse(read('tools/catalog-launch.json'));
-const cohort = {};
-for (const [slug, proof] of Object.entries(launch.modules)) {
-  if (!invariant.catalog.some(x => x.s === slug)) throw new Error('首次建站批次不可加入後續實驗：' + slug);
-  const found = firstDates[slug];
-  if (!found || found.date !== proof.date || found.commit !== proof.commit || found.path !== proof.path) throw new Error('首次建站批次的歷史證據改變：' + slug);
-  cohort[slug] = proof.date;
-}
+const { siteDates, subjectLaunches } = launchCohorts(launch, invariant.catalog, list, firstDates);
 const dirty = new Set(git(['status', '--porcelain']).split(/\r?\n/).map(l => l.slice(3).trim().replace(/^"|"$/g, '')).filter(Boolean));
 const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 for (const x of list) {
   const files = [x.s + '.html', 'js/' + x.s + '.js', 'js/' + x.s + '-core.js', 'js/' + x.s + '-3d.js', 'js/missions/' + x.s + '.js'].filter(f => fs.existsSync(path.join(ROOT, f)));
   x.u = files.some(f => dirty.has(f)) ? today : (git(['log', '-1', '--format=%cs', '--', ...files]) || today);
   const subject = subjects.find(s => s.dom === x.d), directory = JSON.parse(read('docs/directory/' + subject.id + '.json'));
-  x.l = firstDates[x.s]?.date || directory.launchDate;
+  // 還沒進 HEAD 歷史（未 commit、準備今天上線）的實驗，上架日算今天。
+  x.l = firstDates[x.s]?.date || directory.launchDate || (dirty.has(x.s + '.html') ? today : undefined);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.l || '') || !Number.isFinite(Date.parse(x.l)) || new Date(x.l + 'T00:00:00Z').toISOString().slice(0, 10) !== x.l || x.l > today) throw new Error('缺少有效上架日（Git 全歷史／目錄上線日）：' + x.s);
   x.n = (read('js/missions/' + x.s + '.js').match(/\bid:\s*['"][a-z0-9-]+['"]/g) || []).length;
 }
-// 首次建站的既有實驗不冒充本次新增；後續任何科的七日新增超過 30% 就停止，且尚未寫檔。
-const freshness = checkFresh(list, today, cohort);
+// 建站舊站不顯示新徽章。新科首批顯示徽章，其餘新增站照常檢查每科 30% 上限。
+const freshness = checkFresh(list, today, siteDates, subjectLaunches);
 
 const out = '/* catalog.js — 全站實驗目錄（由 tools/build-catalog.cjs 從各科目頁產生，請勿手改；npm run seo 會更新） */\n' +
   'window.LAB_CATALOG = ' + JSON.stringify(list, null, 1).replace(/\n\s*/g, ' ').replace(/\}, \{/g, '},\n{') + ';\n';
@@ -190,7 +185,7 @@ const groups = W.LAB_SUBJECT_GROUPS.map(g => {
     const a = asset(s), live = list.filter(x => x.d === s.dom), plan = dirs[s.id].branches.flatMap(b => b.chapters.flatMap(c => c.modules || [])).filter(m => !W.LAB_LIVE_MODULES.includes(m)).length;
     const fresh = freshness[s.dom].incremental.length;
     const branches = dirs[s.id].branches, copy = subjectCopy[s.dom] || {zh:branches.map(b => b.zh).join('・'),en:branches.map(b => b.en).join(' · ')};
-    return `<a class="subject-card sb-${s.id}" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}<div class="subject-name">${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + ' labs', 'span', 'class="subject-live"')}</div>${formulaLabel(readCatalogText(copy.zh), readCatalogText(copy.en), 'p', 'class="subject-branches"')}<div class="subject-extra">${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress', 'small') : ''}<span class="subject-stars" hidden></span></div>${fresh ? '<span class="subject-new">' + text('新 +' + fresh, '+' + fresh + ' new') + '</span>' : ''}</a>`;
+    return `<a class="subject-card sb-${s.id}" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}<div class="subject-name">${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + (live.length === 1 ? ' lab' : ' labs'), 'span', 'class="subject-live"')}</div>${formulaLabel(readCatalogText(copy.zh), readCatalogText(copy.en), 'p', 'class="subject-branches"')}<div class="subject-extra">${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress', 'small') : ''}<span class="subject-stars" hidden></span></div>${fresh ? '<span class="subject-new">' + text('新 +' + fresh, '+' + fresh + ' new') + '</span>' : ''}</a>`;
   });
   const zh = '製作中：' + g.soon.map(s => s.zh).join('・'), en = 'Coming soon: ' + g.soon.map(s => s.en).join(' · ');
   const soon = g.soon.length ? text(esc(zh), en, 'p', 'class="subject-soon" role="note" aria-label="' + esc(zh) + '" data-en-aria-label="' + esc(en) + '"') : '';

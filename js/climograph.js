@@ -690,10 +690,18 @@
   // ---------- 數值表 ----------
   const tbody = $('vtBody');
   const cells = [];
+  const monthPicker = document.querySelector('.month-picker select');
+  monthPicker.addEventListener('change', function () {
+    state.sel.m = Number(monthPicker.value);
+    syncTable();
+    requestDraw();
+  });
   function buildTable() {
     tbody.innerHTML = '';
     cells.length = 0;
+    monthPicker.replaceChildren();
     for (let m = 0; m < 12; m++) {
+      monthPicker.add(new Option(monthName(m), String(m)));
       const tr = document.createElement('tr');
       const th = document.createElement('td'); th.textContent = monthName(m); tr.appendChild(th);
       const mk = function (kind) {
@@ -722,7 +730,9 @@
   }
   function syncTable(force) {
     const st = station(), sIdx = summerIdx(state.south);
+    monthPicker.value = String(state.sel.m);
     cells.forEach(function (c, m) {
+      c.tr.classList.toggle('current-month', m === state.sel.m);
       c.tr.classList.toggle('summer', sIdx.indexOf(m) >= 0);
       if (c.name.textContent !== monthName(m)) c.name.textContent = monthName(m);
       [['T', state.T, st.T], ['P', state.P, st.P]].forEach(function (q) {
@@ -921,6 +931,7 @@
     chartG = h.g;
     drag = { id: e.pointerId, kind: h.kind, m: h.m, y0: p[1], moved: false, before: cls().code };
     state.sel = { m: h.m, kind: h.kind };
+    syncTable();
     try { cv.setPointerCapture(e.pointerId); } catch (er) { /* 忽略 */ }
     cv.classList.add('dragging');
     requestDraw();
@@ -997,7 +1008,11 @@
       afterChange(true); return true;
     }
     const ord = order();
-    if (dx) { const i = ord.indexOf(state.sel.m); state.sel = { m: ord[Math.max(0, Math.min(11, i + dx))], kind: kind }; requestDraw(); return true; }
+    if (dx) {
+      const i = ord.indexOf(state.sel.m);
+      state.sel = { m: ord[Math.max(0, Math.min(11, i + dx))], kind: kind };
+      syncTable(); requestDraw(); return true;
+    }
     if (!dy) return false;
     const before = cls().code, m = state.sel.m;
     state.sel.kind = kind;

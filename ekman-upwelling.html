@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Ocean Currents and Climate: Ekman Transport, Upwelling and El Niño | Astro Ni Lab">洋流與氣候：艾克曼輸送、湧升流與聖嬰｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"海洋","item":"https://lab.astroni.org/earth-science.html#ocean"},{"@type":"ListItem","position":4,"name":"海洋與氣候","item":"https://lab.astroni.org/earth-science.html#ch-ocean-climate"},{"@type":"ListItem","position":5,"name":"洋流與氣候：艾克曼輸送、湧升流與聖嬰","item":"https://lab.astroni.org/ekman-upwelling.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 艾克曼與湧升頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root { --ek-wind: #475569; --ek-trans: #c2410c; --ek-probe: #db2777; --ek-land: #d6c7a1; --ek-sky: #e0f2fe; --ek-sea: #0e7490; }
@@ -90,6 +90,18 @@
     .notes li { overflow-wrap: anywhere; }
     .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 2px 0; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
     .legend .bar { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: -1px; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -123,12 +135,12 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="艾克曼螺旋：左邊從上往下看各深度的海流，右邊是斜看的海流柱" data-en-aria-label="Ekman spiral: currents at each depth seen from above (left) and as a tilted column (right)"></canvas>
         <div id="view3"></div>
-        <div class="legend" id="legend" aria-hidden="true"></div>
         <div class="playbar">
           <button id="playBtn" type="button" data-en="Play" hidden>播放</button>
           <button id="clearBtn" type="button" data-en="Clear all" title="時間歸零、清掉圖表上的軌跡；滑桿設定不變" data-en-title="Reset the time and clear the traces on the chart; the sliders stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" id="hint2d">—</p>
         <p class="hint l3" id="hint3d">—</p>
@@ -235,9 +247,9 @@
       </ul>
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Ekman spiral: steady state, constant eddy viscosity, infinitely deep ocean (Ekman 1905). Wind stress from the Large &amp; Pond (1981) drag coefficient, ρ = 1025 kg/m³ for sea water, 1.22 kg/m³ for air. Ekman theory fails near the equator where \(f \to 0\), so latitudes start at 5°.">艾克曼螺旋：穩定狀態、渦黏滯係數固定、海無限深（Ekman 1905）。風應力用 Large 與 Pond（1981）的拖曳係數；海水 ρ = 1025 kg/m³、空氣 1.22 kg/m³。赤道附近 \(f \to 0\)，艾克曼理論不適用，所以緯度從 5° 起。</li>
-        <li data-en-html="Coastal upwelling: the linear two-layer response of Gill (1982, §10.8) with \(g' = 0.02\) m/s². The whole upper ocean is lifted by \(\eta\), so the water at depth \(z\) came from \(z - \eta\). The temperature and nitrate profiles are typical illustrative values (surface 20 °C, deep 8 °C; no nitrate in the surface layer, 25 μmol/L at depth). The model is linear: once the cold water reaches the surface the real front stops moving offshore, which is not included.">沿岸湧升：Gill（1982，第 10.8 節）的線性兩層模式，\(g' = 0.02\) m/s²。上層海洋整體被抬高 \(\eta\)，所以深度 \(z\) 的水原本在 \(z - \eta\)。溫度與硝酸鹽的剖面是典型的示意值（表層 20 °C、深層 8 °C；表層幾乎沒有硝酸鹽、深層 25 μmol/L）。模式是線性的：真實的冷水露出海面後，湧升鋒面會停下來，這裡沒有包含。</li>
-        <li data-en-html="Equatorial Pacific: steady reduced-gravity balance (Gill 1982, §11; Philander 1990), basin width 15 000 km, mean thermocline depth 120 m, \(g' = 0.04\) m/s², normal trade winds about 6 m/s. Normal (100%) gives 200 m in the west, 40 m in the east and a 0.66 m sea-level difference. The eastern sea-surface temperature is an illustrative formula, \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C: the shallower the 20 °C isotherm, the colder the water upwelling brings up. “El Niño-like” means 0.5 °C warmer than normal, the threshold NOAA uses for its Oceanic Niño Index. The rain cloud is drawn over the water warmer than about 28.5 °C, where deep convection happens (illustrative).">赤道太平洋：約化重力模式的穩定平衡（Gill 1982 第 11 節；Philander 1990），海盆寬 15000 km、平均溫躍層深 120 m、\(g' = 0.04\) m/s²，平常的信風約 6 m/s。平常（100%）西邊 200 m、東邊 40 m、海面高低差 0.66 m。東太平洋海溫用示意公式 \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C：20 °C 等溫線越淺，湧升帶上來的水越冷。「類似聖嬰」是比平常暖 0.5 °C 以上，和美國 NOAA 海洋聖嬰指數的門檻相同。雨雲畫在海面溫度超過約 28.5 °C、對流旺盛的海域上空（示意）。</li>
+        <li data-en-html="Ekman spiral: steady state, constant eddy viscosity, infinitely deep ocean (Ekman 1905). Wind stress from the Large &amp; Pond (1981) drag coefficient, ρ = 1025 kg/m&lt;sup&gt;3&lt;/sup&gt; for sea water, 1.22 kg/m&lt;sup&gt;3&lt;/sup&gt; for air. Ekman theory fails near the equator where \(f \to 0\), so latitudes start at 5°.">艾克曼螺旋：穩定狀態、渦黏滯係數固定、海無限深（Ekman 1905）。風應力用 Large 與 Pond（1981）的拖曳係數；海水 ρ = 1025 kg/m<sup>3</sup>、空氣 1.22 kg/m<sup>3</sup>。赤道附近 \(f \to 0\)，艾克曼理論不適用，所以緯度從 5° 起。</li>
+        <li data-en-html="Coastal upwelling: the linear two-layer response of Gill (1982, §10.8) with \(g' = 0.02\) m/s&lt;sup&gt;2&lt;/sup&gt;. The whole upper ocean is lifted by \(\eta\), so the water at depth \(z\) came from \(z - \eta\). The temperature and nitrate profiles are typical illustrative values (surface 20 °C, deep 8 °C; no nitrate in the surface layer, 25 μmol/L at depth). The model is linear: once the cold water reaches the surface the real front stops moving offshore, which is not included.">沿岸湧升：Gill（1982，第 10.8 節）的線性兩層模式，\(g' = 0.02\) m/s<sup>2</sup>。上層海洋整體被抬高 \(\eta\)，所以深度 \(z\) 的水原本在 \(z - \eta\)。溫度與硝酸鹽的剖面是典型的示意值（表層 20 °C、深層 8 °C；表層幾乎沒有硝酸鹽、深層 25 μmol/L）。模式是線性的：真實的冷水露出海面後，湧升鋒面會停下來，這裡沒有包含。</li>
+        <li data-en-html="Equatorial Pacific: steady reduced-gravity balance (Gill 1982, §11; Philander 1990), basin width 15 000 km, mean thermocline depth 120 m, \(g' = 0.04\) m/s&lt;sup&gt;2&lt;/sup&gt;, normal trade winds about 6 m/s. Normal (100%) gives 200 m in the west, 40 m in the east and a 0.66 m sea-level difference. The eastern sea-surface temperature is an illustrative formula, \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C: the shallower the 20 °C isotherm, the colder the water upwelling brings up. “El Niño-like” means 0.5 °C warmer than normal, the threshold NOAA uses for its Oceanic Niño Index. The rain cloud is drawn over the water warmer than about 28.5 °C, where deep convection happens (illustrative).">赤道太平洋：約化重力模式的穩定平衡（Gill 1982 第 11 節；Philander 1990），海盆寬 15000 km、平均溫躍層深 120 m、\(g' = 0.04\) m/s<sup>2</sup>，平常的信風約 6 m/s。平常（100%）西邊 200 m、東邊 40 m、海面高低差 0.66 m。東太平洋海溫用示意公式 \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C：20 °C 等溫線越淺，湧升帶上來的水越冷。「類似聖嬰」是比平常暖 0.5 °C 以上，和美國 NOAA 海洋聖嬰指數的門檻相同。雨雲畫在海面溫度超過約 28.5 °C、對流旺盛的海域上空（示意）。</li>
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
       <h3 data-en="References">參考資料</h3>
@@ -247,7 +259,7 @@
         <li data-en-html="W. G. Large and S. Pond (1981), “Open ocean momentum flux measurements in moderate to strong winds”, <i>Journal of Physical Oceanography</i> 11, 324–336.">W. G. Large 與 S. Pond（1981），<i>Journal of Physical Oceanography</i> 11 卷 324–336 頁（拖曳係數）。</li>
         <li data-en-html="A. E. Gill (1982), <i>Atmosphere–Ocean Dynamics</i>, Academic Press.">A. E. Gill（1982），<i>Atmosphere–Ocean Dynamics</i>，Academic Press。</li>
         <li data-en-html="S. G. H. Philander (1990), <i>El Niño, La Niña, and the Southern Oscillation</i>, Academic Press.">S. G. H. Philander（1990），<i>El Niño, La Niña, and the Southern Oscillation</i>，Academic Press。</li>
-        <li data-en-html="A. Bakun (1973), “Coastal upwelling indices, west coast of North America”, NOAA Technical Report NMFS SSRF-671 (upwelling index in m³/s per 100 m of coastline).">A. Bakun（1973），NOAA 技術報告 NMFS SSRF-671（湧升指數：每 100 m 海岸每秒幾立方公尺）。</li>
+        <li data-en-html="A. Bakun (1973), “Coastal upwelling indices, west coast of North America”, NOAA Technical Report NMFS SSRF-671 (upwelling index in m&lt;sup&gt;3&lt;/sup&gt;/s per 100 m of coastline).">A. Bakun（1973），NOAA 技術報告 NMFS SSRF-671（湧升指數：每 100 m 海岸每秒幾立方公尺）。</li>
         <li data-en-html="NOAA Climate Prediction Center, Oceanic Niño Index (ONI) definition (±0.5 °C threshold).">美國 NOAA 氣候預報中心：海洋聖嬰指數（ONI）的定義（±0.5 °C 門檻）。</li>
         <li data-en-html="R. H. Stewart (2008), <i>Introduction to Physical Oceanography</i>, Texas A&amp;M University (open textbook), chapters 9 and 14.">R. H. Stewart（2008），<i>Introduction to Physical Oceanography</i>，Texas A&amp;M 大學開放教科書第 9、14 章。</li>
       </ul>
@@ -258,18 +270,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/ekman-upwelling-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/ekman-upwelling.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="ekman-upwelling"></script>
-  <script src="js/missions/ekman-upwelling.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="ekman-upwelling"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/ekman-upwelling-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/ekman-upwelling.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="ekman-upwelling"></script>
+  <script src="js/missions/ekman-upwelling.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="ekman-upwelling"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

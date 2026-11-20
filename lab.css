@@ -1321,6 +1321,8 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
    淺色都是 Tailwind 700 級（對白底 ≥ 4.9），深色都是 300 級 */
 :root {
   --d-info: #1d4ed8; --d-geog: #a16207; --d-music: #7e22ce;
+  --d-civ: #854d0e; --d-health: #0f766e; --d-pe: #9a3412; --d-art: #9d174d;
+  --b-markets: var(--d-civ); --b-prevention: var(--d-health); --b-sport-skills: var(--d-pe); --b-visual-expression: var(--d-art);
   --b-data: #0369a1; --b-algo: #b45309; --b-prog: #15803d; --b-system: #4338ca; --b-network: #be123c; --b-ai: #7e22ce;
   --b-mapping: #1d4ed8; --b-gis: #6d28d9; --b-climate: #0e7490; --b-landform: #4d7c0f; --b-population: #be185d; --b-economy: #b45309;
   --b-tone: #be123c; --b-tuning: #b45309; --b-harmony: #6d28d9; --b-instruments: #c2410c; --b-rhythm: #15803d; --b-audio: #0369a1;
@@ -1328,6 +1330,7 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --d-info: #93c5fd; --d-geog: #fcd34d; --d-music: #d8b4fe;
+    --d-civ: #fde68a; --d-health: #99f6e4; --d-pe: #fdba74; --d-art: #f9a8d4;
     --b-data: #7dd3fc; --b-algo: #fcd34d; --b-prog: #86efac; --b-system: #a5b4fc; --b-network: #fda4af; --b-ai: #d8b4fe;
     --b-mapping: #93c5fd; --b-gis: #c4b5fd; --b-climate: #67e8f9; --b-landform: #bef264; --b-population: #f9a8d4; --b-economy: #fcd34d;
     --b-tone: #fda4af; --b-tuning: #fcd34d; --b-harmony: #c4b5fd; --b-instruments: #fdba74; --b-rhythm: #86efac; --b-audio: #7dd3fc;
@@ -1335,6 +1338,7 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 }
 :root[data-theme="dark"] {
   --d-info: #93c5fd; --d-geog: #fcd34d; --d-music: #d8b4fe;
+  --d-civ: #fde68a; --d-health: #99f6e4; --d-pe: #fdba74; --d-art: #f9a8d4;
   --b-data: #7dd3fc; --b-algo: #fcd34d; --b-prog: #86efac; --b-system: #a5b4fc; --b-network: #fda4af; --b-ai: #d8b4fe;
   --b-mapping: #93c5fd; --b-gis: #c4b5fd; --b-climate: #67e8f9; --b-landform: #bef264; --b-population: #f9a8d4; --b-economy: #fcd34d;
   --b-tone: #fda4af; --b-tuning: #fcd34d; --b-harmony: #c4b5fd; --b-instruments: #fdba74; --b-rhythm: #86efac; --b-audio: #7dd3fc;
@@ -1342,6 +1346,10 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 .sb-info { --sc: var(--d-info); }
 .sb-geog { --sc: var(--d-geog); }
 .sb-music { --sc: var(--d-music); }
+.sb-civ { --sc: var(--d-civ); }
+.sb-health { --sc: var(--d-health); }
+.sb-pe { --sc: var(--d-pe); }
+.sb-art { --sc: var(--d-art); }
 
 /* ---------- 實驗台版面平衡（js/lab-layout.js）：面板尾端的卡片搬到畫布下方，報紙式分欄 ---------- */
 .lab-spill > * { break-inside: avoid; margin: 0 0 12px; }
@@ -1562,6 +1570,10 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   --d-info-edge: #13338c; --d-info-wash: rgba(29,78,216,.10);
   --d-geog-edge: #694005; --d-geog-wash: rgba(161,98,7,.10);
   --d-music-edge: #521686; --d-music-wash: rgba(126,34,206,.10);
+  --d-civ-edge: #593309; --d-civ-wash: rgba(133,77,14,.10);
+  --d-health-edge: #094f4a; --d-health-wash: rgba(15,118,110,.10);
+  --d-pe-edge: #67240d; --d-pe-wash: rgba(154,52,18,.10);
+  --d-art-edge: #691034; --d-art-wash: rgba(157,23,77,.10);
   --gold-50: #fff7e0; --home-key-face: linear-gradient(180deg,#fff 0%,#f1f4f7 100%); --home-key-highlight: rgba(255,255,255,.9); --home-key-pressed: rgba(255,255,255,.6); --home-key-shadow: rgba(15,23,42,.14); --home-key-hover-shadow: rgba(15,23,42,.18); --home-key-blur:16px; --daily-gold: #e5b741; --daily-ink: #322400; --daily-border: rgba(177,127,14,.4);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -1573,6 +1585,10 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   --d-info-edge: #516c8b; --d-info-wash: rgba(147,197,253,.14);
   --d-geog-edge: #8b742a; --d-geog-wash: rgba(252,211,77,.14);
   --d-music-edge: #77638c; --d-music-wash: rgba(216,180,254,.14);
+  --d-civ-edge: #897849; --d-civ-wash: rgba(253,230,138,.14);
+  --d-health-edge: #52877e; --d-health-wash: rgba(153,246,228,.14);
+  --d-pe-edge: #8a643f; --d-pe-wash: rgba(253,186,116,.14);
+  --d-art-edge: #885c75; --d-art-wash: rgba(249,168,212,.14);
   --gold-50: rgba(229,183,65,.12); --home-key-face: linear-gradient(180deg,#252c35 0%,#1a1f26 100%); --home-key-highlight: rgba(255,255,255,.10); --home-key-pressed: rgba(255,255,255,.05); --home-key-shadow: rgba(0,0,0,.45); --home-key-hover-shadow: rgba(0,0,0,.5); --home-key-blur:18px; --daily-gold: #e5b741; --daily-ink: #322400; --daily-border: rgba(229,183,65,.4);
 } }
 :root[data-theme="dark"] {
@@ -1584,6 +1600,10 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   --d-info-edge: #516c8b; --d-info-wash: rgba(147,197,253,.14);
   --d-geog-edge: #8b742a; --d-geog-wash: rgba(252,211,77,.14);
   --d-music-edge: #77638c; --d-music-wash: rgba(216,180,254,.14);
+  --d-civ-edge: #897849; --d-civ-wash: rgba(253,230,138,.14);
+  --d-health-edge: #52877e; --d-health-wash: rgba(153,246,228,.14);
+  --d-pe-edge: #8a643f; --d-pe-wash: rgba(253,186,116,.14);
+  --d-art-edge: #885c75; --d-art-wash: rgba(249,168,212,.14);
   --gold-50: rgba(229,183,65,.12); --home-key-face: linear-gradient(180deg,#252c35 0%,#1a1f26 100%); --home-key-highlight: rgba(255,255,255,.10); --home-key-pressed: rgba(255,255,255,.05); --home-key-shadow: rgba(0,0,0,.45); --home-key-hover-shadow: rgba(0,0,0,.5); --home-key-blur:18px; --daily-gold: #e5b741; --daily-ink: #322400; --daily-border: rgba(229,183,65,.4);
 }
 .crumbs a { display:inline-flex; align-items:center; min-width:46px; min-height:44px; padding:6px 8px; margin:0; }
@@ -1769,6 +1789,10 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .subject-card.sb-info { --key: var(--d-info); --key-edge: var(--d-info-edge); --key-wash: var(--d-info-wash); }
 .subject-card.sb-geog { --key: var(--d-geog); --key-edge: var(--d-geog-edge); --key-wash: var(--d-geog-wash); }
 .subject-card.sb-music { --key: var(--d-music); --key-edge: var(--d-music-edge); --key-wash: var(--d-music-wash); }
+.subject-card.sb-civ { --key: var(--d-civ); --key-edge: var(--d-civ-edge); --key-wash: var(--d-civ-wash); }
+.subject-card.sb-health { --key: var(--d-health); --key-edge: var(--d-health-edge); --key-wash: var(--d-health-wash); }
+.subject-card.sb-pe { --key: var(--d-pe); --key-edge: var(--d-pe-edge); --key-wash: var(--d-pe-wash); }
+.subject-card.sb-art { --key: var(--d-art); --key-edge: var(--d-art-edge); --key-wash: var(--d-art-wash); }
 .subject-page .site-top { margin: 0 0 14px; padding-right: var(--head-reserve, 150px); }
 .subject-page .site-top > :first-child { padding-right: 0; }
 .subject-page .crumbs { margin: 0 0 8px; font-size: calc(14px * var(--fs, 1)); }

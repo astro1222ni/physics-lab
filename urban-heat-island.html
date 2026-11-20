@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Urban Heat Island | Astro Ni Lab">都市熱島｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"人口與都市","item":"https://lab.astroni.org/geography.html#population"},{"@type":"ListItem","position":4,"name":"都市化與都市結構","item":"https://lab.astroni.org/geography.html#ch-urban"},{"@type":"ListItem","position":5,"name":"都市熱島","item":"https://lab.astroni.org/urban-heat-island.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 都市熱島頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root { --uh-zero: #eef0e4; --uh-cold: #3f74b8; --uh-river: #4f8fd6; --uh-park: #2f9a55; --uh-edge: #4a4038; --uh-probe: #1d2a44; --uh-ground: #b9b19c; --uh-bldg: #8d8a86; }
@@ -55,7 +55,12 @@
     dl.readout dd.big { font-weight: 700; }
     .notes li { overflow-wrap: anywhere; }
     .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -77,6 +82,10 @@
           </div>
         </div>
         <canvas id="cv" aria-label="都市熱島的溫度地圖；點一下放溫度計" data-en-aria-label="Temperature map of the urban heat island; tap to place a thermometer"></canvas>
+        <div class="row">
+          <button type="button" id="parkBtn" data-en="Plant a park at the thermometer">在溫度計的位置種公園</button>
+          <button type="button" id="clearBtn" data-en="Clear all parks">清除公園</button>
+        </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="cvHint"></p>
@@ -99,10 +108,6 @@
           <h2 data-en="City">城市</h2>
           <div class="slider"><label for="hP" data-en="Population (10,000s)">人口（萬人）</label><output></output>
             <input id="hP" type="range" min="0" max="1000" step="1" value="686" data-decimals="1"></div>
-          <div class="row">
-            <button type="button" id="parkBtn" data-en="Plant a park at the thermometer">在溫度計的位置種公園</button>
-            <button type="button" id="clearBtn" data-en="Clear all parks">清除公園</button>
-          </div>
           <p class="hint" id="parkHint"></p>
         </section>
         <section class="card">
@@ -164,17 +169,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/urban-heat-island-core.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/urban-heat-island.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="urban-heat-island"></script>
-  <script src="js/missions/urban-heat-island.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="urban-heat-island"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/urban-heat-island-core.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/vpad.js?v=202611201021"></script>
+  <script src="js/urban-heat-island.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="urban-heat-island"></script>
+  <script src="js/missions/urban-heat-island.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="urban-heat-island"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

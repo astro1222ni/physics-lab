@@ -19,7 +19,7 @@ function randomCrops() {
   return c;
 }
 
-test('杜能的設定：四個圈的邊界等於兩條地租線的交點（解析解）', () => {
+test('邱念的設定：四個圈的邊界等於兩條地租線的交點（解析解）', () => {
   const g = K.rings(K.defaults(), 1);
   assert.deepStrictEqual(g.rings.map(s => s.id), ['veg', 'wood', 'grain', 'live']);
   near(g.rings[0].to, 12.5, 1e-12); near(g.rings[1].to, 19, 1e-12); near(g.rings[2].to, 134 / 3, 1e-12); near(g.frontier, 90, 1e-12);
@@ -161,7 +161,7 @@ test('摘要：三條地租線交在同一點時偵測得到，中間那種作�
   near(d.tie3.d, 12.5, 1e-9);
   assert.ok(!d.present.wood, '林木被擠掉');
   const d0 = K.summary({ crops: K.defaults(), m: 1, river: NO, probe: { x: 0, y: 30 } });
-  assert.ok(!d0.tie3 || d0.tie3.spread > 0.3, '杜能的設定沒有三線交點');
+  assert.ok(!d0.tie3 || d0.tie3.spread > 0.3, '邱念的設定沒有三線交點');
   near(K.IDS.reduce((a, id) => a + d0.share[id], 0), 1, 1e-12);
   assert.strictEqual(d0.probe.id, 'grain'); near(d0.probe.rent, 1120 - 20 * 30, 1e-9);
 });

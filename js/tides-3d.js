@@ -60,10 +60,10 @@
     camera.up.set(0, 0, 1);
     camera.position.set(0, -12, 7);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: DM0 * 2, T }) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
     controls.minDistance = 1.9;
     controls.maxDistance = 60;
 
@@ -487,6 +487,7 @@
         controls.target.set(0, 0, 0);
         camera.position.copy(dirOf(polar, az)).multiplyScalar(dist);
         setNearFar(dist);
+        if (nav) nav.home();
         controls.update();
         requestRender();
         return;
@@ -514,6 +515,7 @@
       controls.target.copy(A.tg0).lerp(new THREE.Vector3(), e);
       camera.position.copy(dirOf(p, a)).multiplyScalar(d).add(controls.target);
       setNearFar(d);
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
     /** 「從月球看地球」：相機一直在月球的方向上（月球本身隱藏），隆起正對著你 */
@@ -693,7 +695,11 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    function sizeOf(w) { return w < 560 ? Math.round(Math.max(340, Math.min(500, w * 1.12))) : 500; }
+    function sizeOf(w) {
+      const natural = w < 560 ? Math.round(Math.max(340, Math.min(500, w * 1.12))) : 500;
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -768,6 +774,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         glowTex.dispose();

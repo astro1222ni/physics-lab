@@ -1,6 +1,13 @@
 # 各科目錄（分支 → 章 → 實驗）
 
-每科一個檔：`phy.json`、`chem.json`、`bio.json`、`earth.json`、`math.json`、`info.json`、`geog.json`、`music.json`。
+每科一個目錄檔，檔名沿用分科計分代號。科目頁網址由 `js/missions/index.js` 的 `LAB_SUBJECTS.page` 指定。原八科的目錄檔為 `phy.json`、`chem.json`、`bio.json`、`earth.json`、`math.json`、`info.json`、`geog.json`、`music.json`。
+
+| 新科目 | 目錄 | 科目頁 |
+| --- | --- | --- |
+| 公民與社會（Civics and Society） | [civ.json](civ.json) | [civics.html](../../civics.html) |
+| 健康與護理（Health and Nursing） | [health.json](health.json) | [health.html](../../health.html) |
+| 體育（Physical Education） | [pe.json](pe.json) | [physical-education.html](../../physical-education.html) |
+| 美術（Visual Arts） | [art.json](art.json) | [visual-arts.html](../../visual-arts.html) |
 
 - 列的是**已上線＋規劃中**的全部實驗。
 - 每科自己的科目頁顯示已上線卡片；還沒有實驗的章顯示「製作中」。首頁只放科目入口、最新上架與推薦。

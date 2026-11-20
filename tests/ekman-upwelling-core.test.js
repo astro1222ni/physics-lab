@@ -69,6 +69,19 @@ test('沿岸湧升：北半球海在西邊要北風、南半球（秘魯）要�
   near(K.coastal({ lat: 37, U: 10, windFrom: 90, coast: 'W', H1: 30, days: 5 }).Moff, 0, 1e-12);
 });
 
+test('跨岸輸送與露頭預報共用半個顯示刻度的零值容差', () => {
+  const p = { lat: -35, coast: 'E', windFrom: 90, U: 14.9, H1: 60, days: 4 };
+  const c = K.coastal(p);
+  assert.strictEqual(c.Moff, 0);
+  assert.strictEqual(c.tOut, Infinity);
+  for (const flux of [0.0049, -0.0049, 0.0051, -0.0051]) {
+    const windFrom = 90 - Math.asin(flux / c.E.M) * 180 / Math.PI;
+    const s = K.coastal(Object.assign({}, p, { windFrom }));
+    near(s.Moff, Math.abs(flux) < 0.005 ? 0 : flux, 1e-12);
+    assert.strictEqual(Number.isFinite(s.tOut), flux >= 0.005);
+  }
+});
+
 test('沿岸湧升的質量守恆：∫η dx = 離岸輸送 × 時間；w = M⊥/R', () => {
   const C = K.coastal({ lat: 37, U: 12, windFrom: 0, coast: 'W', H1: 40, days: 3 });
   let s = 0; const dx = C.Rd / 2000;

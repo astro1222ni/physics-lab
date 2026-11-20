@@ -93,8 +93,9 @@
     return out.map(function (T) { return { T: T, stable: slope(P, T) < 0 }; });
   }
   /** 從溫度 T 出發最後會停在哪個（穩定）平衡 */
-  function settle(P, T) {
-    const eq = equilibria(P);
+  function settle(P, T, roots) {
+    // 同一組設定的平衡點可重用，仍依當下溫度與能量收支選擇會到達的根。
+    const eq = roots || equilibria(P);
     const N = imbalance(P, T);
     if (!eq.length) return null;
     if (Math.abs(N) < 1e-9) {

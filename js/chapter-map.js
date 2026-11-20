@@ -133,5 +133,7 @@ window.LAB_CHAPTERS = [
 {"id":"ch-percussion","zh":"打擊樂器","en":"Percussion","b":"instruments","m":["drum-modes"]},
 {"id":"ch-polyrhythm","zh":"節奏型","en":"Rhythmic Patterns","b":"rhythm","m":["polyrhythm"]},
 {"id":"ch-room-acoustics","zh":"空間聲學","en":"Room Acoustics","b":"audio","m":["reverb-room"]},
-{"id":"ch-synthesis","zh":"合成器與效果器","en":"Synthesizers and Effects","b":"audio","m":["adsr-envelope"]}
+{"id":"ch-synthesis","zh":"合成器與效果器","en":"Synthesizers and Effects","b":"audio","m":["adsr-envelope"]},
+{"id":"ch-market-prices","zh":"市場機能與價格管制","en":"Market Prices and Price Controls","b":"markets","m":["supply-demand"]},
+{"id":"ch-spatial-perspective","zh":"空間與透視","en":"Space and Perspective","b":"visual-expression","m":["perspective-drawing"]}
 ];

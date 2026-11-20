@@ -1,0 +1,15 @@
+{
+  "subject": "civ",
+  "updated": "11/20",
+  "branches": [
+    {
+      "id": "markets", "zh": "市場與經濟生活", "en": "Markets and Economic Life",
+      "chapters": [
+        { "id": "ch-market-prices", "zh": "市場機能與價格管制", "en": "Market Prices and Price Controls",
+          "modules": ["supply-demand"] },
+        { "id": "ch-market-competition", "zh": "市場競爭", "en": "Market Competition",
+          "modules": [] }
+      ]
+    }
+  ]
+}

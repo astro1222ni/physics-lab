@@ -1,12 +1,18 @@
 /* 科目頁：章節數量、科目切換、分支黏頂列與回頁首。 */
-(function () {
+(function initSubjectPage() {
   'use strict';
+  // 等設定套用頁面語言，再量科目按鈕的寬度並加入章節數量。
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSubjectPage, { once: true });
+    return;
+  }
   const T = (zh, en) => window.LabSettings ? LabSettings.t(zh, en) : zh;
   const domain = document.querySelector('section.domain'); if (!domain) return;
   document.querySelectorAll('.chapter').forEach(sec => { const n = sec.querySelectorAll('.module').length; if (n) sec.style.setProperty('--n', n); });
   document.querySelectorAll('.chapter-nav a[href^="#ch-"]').forEach(a => { const sec = document.getElementById(a.hash.slice(1)), n = sec ? sec.querySelectorAll('.module.live').length : 0; if (n) { const b = document.createElement('span'); b.className = 'n'; b.setAttribute('aria-hidden', 'true'); b.textContent = n; a.appendChild(b); } });
   const count = document.querySelector('.subject-count'), n = domain.querySelectorAll('.module.live').length, chapters = domain.querySelectorAll('.chapter').length;
-  count.textContent = T(n + ' 個實驗・' + chapters + ' 章', n + ' labs · ' + chapters + ' chapters');
+  count.textContent = T(n + ' 個實驗・' + chapters + ' 章',
+    n + (n === 1 ? ' lab' : ' labs') + ' · ' + chapters + (chapters === 1 ? ' chapter' : ' chapters'));
   const switching = document.querySelector('.subject-switch'), current = switching.querySelector('[aria-current="page"]');
   const switchWrap = document.createElement('div'); switchWrap.className = 'scroll-cue subject-switch-wrap'; switching.before(switchWrap); switchWrap.appendChild(switching);
   function fades(scroller, wrap) { wrap.classList.toggle('can-left', scroller.scrollLeft > 1); wrap.classList.toggle('can-right', scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft > 1); }

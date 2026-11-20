@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Contour Lines and 3D Terrain: Profiles, Slope and Saddles | Astro Ni Lab">等高線與 3D 地形：剖面、坡度與鞍部｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"地圖與地理技能","item":"https://lab.astroni.org/geography.html#mapping"},{"@type":"ListItem","position":4,"name":"地形圖判讀","item":"https://lab.astroni.org/geography.html#ch-topomap"},{"@type":"ListItem","position":5,"name":"等高線與 3D 地形","item":"https://lab.astroni.org/contour-map.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 等高線頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -95,7 +95,7 @@
     .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
-    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud .br { right: 8px; bottom: 62px; align-items: flex-end; max-width: calc(100% - 16px); }
     .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
     .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
     .c3-hud span:empty { display: none; }
@@ -110,7 +110,15 @@
     .notes li { overflow-wrap: anywhere; }
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    .lab-vpad .geo-target { grid-area: 2 / 2; padding: 1px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: calc(13px * var(--fs, 1)); line-height: 1.1; overflow-wrap: anywhere; }
+    .geo-target::after { content: "⇄"; display: block; font-size: 13px; line-height: 1; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+      #view3 canvas { max-height: calc(100dvh - 118px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -151,7 +159,7 @@
           <span style="color:var(--cm-slice)" data-en-html="<i style=&quot;background:var(--cm-slice)&quot;></i>Level plane (slice)"><i style="background:var(--cm-slice)"></i>水平切面</span>
         </div>
         <p class="hint l2" data-en="Tap the map to drop the measuring point. Drag across the map to draw a new profile line; drag A, B or the point to move them. North is up; the grid is 1 km.">點一下地圖放量測點；在地圖上拖一條線就畫出新的剖面線；拖曳 A、B 或量測點可以移動。上方是北，格線每格 1 km。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The map below the island is the same contour map: move the level plane and see its edge on the land and on the map.">拖曳旋轉，滾輪或雙指縮放。島下方的底圖就是同一張等高線地圖：移動水平切面，看它在地面上切出的線，和底圖上的等高線是同一條。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag with one finger or the left mouse button. Pinch or scroll to zoom. The map below the island is the same contour map: move the level plane and see its edge on the land and on the map.">選「旋轉」或「平移」後，用單指或滑鼠左鍵拖曳。用雙指或滾輪縮放。島下方的底圖就是同一張等高線地圖：移動水平切面，看它在地面上切出的線，和底圖上的等高線是同一條。</p>
       </div>
 
       <aside class="panel">
@@ -304,17 +312,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/contour-map-core.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/contour-map.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="contour-map"></script>
-  <script src="js/missions/contour-map.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="contour-map"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/contour-map-core.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/vpad.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/contour-map.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="contour-map"></script>
+  <script src="js/missions/contour-map.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="contour-map"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

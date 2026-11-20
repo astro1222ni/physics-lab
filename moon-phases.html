@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Moon Phases and Eclipses | Astro Ni Lab">月相與日月食｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 月相與日月食頁面專用樣式（只使用 lab.css 的顏色變數；天空畫面用天空本身的顏色） */
     #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y pinch-zoom; cursor: default; }
@@ -127,6 +127,8 @@
       border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
     .mp .mangrid input:focus-visible, .mp .loccard select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .mp .loccard .hint b { font-weight: 600; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
   </style>
 </head>
 <body data-en-ready>
@@ -179,7 +181,7 @@
           <span><i class="dot" style="background:var(--pos)"></i><span class="plc">臺灣</span></span>
         </div>
         <p class="hint l2" data-en-html="Drag the <b>Moon</b> along its orbit, the <b>ascending node</b> to turn the line of nodes, or the small <b>perigee</b> marker. The Earth and Moon are drawn larger than real (the size label says by how much) — press <b>True scale</b> to see how tiny they really are.">拖曳<b>月球</b>沿軌道移動、拖曳<b>升交點</b>轉動交點線，或拖曳小小的<b>近地點</b>標記。地球與月球畫得比實際大（畫面角落寫著放大幾倍）——按<b>真實比例</b>看看它們實際有多小。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Same Moon, orbit and shadows as the 2D view; set them with the sliders.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。月球、軌道與影子都和 2D 畫面相同；用滑桿調整。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. Same Moon, orbit and shadows as the 2D view; set them with the sliders.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。月球、軌道與影子都和 2D 畫面相同；用滑桿調整。</p>
 
         <div class="views">
           <figure class="view">
@@ -375,18 +377,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/moon-phases-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/moon-phases.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="moon-phases"></script>
-  <script src="js/missions/moon-phases.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="moon-phases"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/moon-phases-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/moon-phases.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="moon-phases"></script>
+  <script src="js/missions/moon-phases.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="moon-phases"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Geologic Structures: Faults, Folds and Stress | Astro Ni Lab">地質構造：斷層、褶皺與應力｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":4,"name":"地質構造","item":"https://lab.astroni.org/earth-science.html#ch-structure"},{"@type":"ListItem","position":5,"name":"地質構造：斷層、褶皺與應力","item":"https://lab.astroni.org/faults-folds.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* 斷層與褶皺頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root { --ff-s1: #dc2626; --ff-s3: #2563eb; --ff-fault: #111827; --ff-env: #b45309; --ff-sky: #e0f2fe; --ff-dike: #9f1239; }
@@ -89,6 +89,18 @@
     .notes li { overflow-wrap: anywhere; }
     .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 8px 2px 0; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
     .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15); }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -121,16 +133,17 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="左邊是垂直於斷層走向的地質剖面，右邊是從上往下看的地質圖" data-en-aria-label="Left: a vertical cross-section perpendicular to the fault; right: the geologic map seen from above"></canvas>
         <div id="view3"></div>
-        <div class="legend" id="legend" aria-hidden="true"></div>
         <div class="playbar">
           <button id="quakeBtn" type="button" data-en="Earthquake!" title="斷層一次滑動 100 m（真實的大地震一次只有幾公尺，這裡把很多次加在一起）" data-en-title="Slip the fault by 100 m (a real large earthquake slips a few metres; this lumps many together)">地震！</button>
           <button id="erodeBtn" type="button" aria-pressed="false" data-en="Erode flat" title="把高出來的部分侵蝕成平地，看地表露出哪些地層" data-en-title="Erode the high side flat and see which layers crop out">侵蝕成平地</button>
           <button id="clearBtn" type="button" data-en="Clear all" title="滑移量歸零、取消侵蝕、地震次數歸零；應力設定不變" data-en-title="Reset the slip, undo the erosion and the earthquake count; the stresses stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" id="hint2d">—</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. Every layer is drawn to scale (no vertical exaggeration).">拖曳旋轉，滾輪或雙指縮放。地層都依真實比例（沒有垂直誇大）。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. Every layer is drawn to scale (no vertical exaggeration).">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。地層都依真實比例（沒有垂直誇大）。</p>
 
         <section class="chart-card">
           <canvas id="gr" aria-label="莫爾圓：橫軸是有效正應力，縱軸是剪應力；直線是破裂線" data-en-aria-label="Mohr circles: effective normal stress across, shear stress up; the straight line is the failure line"></canvas>
@@ -139,7 +152,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="stressCard">
+        <section class="card" id="stressCard" data-deck="地下的應力|Stress underground" data-deck-order="0">
           <h2 data-en="Stress underground">地下的應力</h2>
           <div class="slider"><label for="zDepth" data-en="Depth (km)">深度（km）</label><output></output>
             <input id="zDepth" type="range" min="1" max="15" step="0.1" value="5" data-decimals="2"></div>
@@ -147,17 +160,20 @@
             <input id="kH" type="range" min="0.3" max="3" step="0.01" value="0.8" data-decimals="3"></div>
           <div class="slider"><label for="kh" data-en="Smallest horizontal stress Sh ÷ Sv">最小水平應力 Sh ÷ Sv</label><output></output>
             <input id="kh" type="range" min="0.3" max="3" step="0.01" value="0.6" data-decimals="3"></div>
+        </section>
+        <section class="card" id="frictionCard" data-deck="斷層摩擦|Fault friction" data-deck-order="1">
+          <h2 data-en="Fault friction">斷層摩擦</h2>
           <div class="slider"><label for="lam" data-en="Pore pressure Pp ÷ Sv (0.37 = hydrostatic)">孔隙壓力 Pp ÷ Sv（0.37＝靜水壓）</label><output></output>
             <input id="lam" type="range" min="0" max="0.95" step="0.01" value="0.37" data-decimals="3"></div>
           <div class="slider"><label for="mu" data-en="Friction coefficient μ">摩擦係數 μ</label><output></output>
             <input id="mu" type="range" min="0.2" max="1" step="0.01" value="0.6" data-decimals="3"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="方向|Direction" data-deck-order="2">
           <h2 data-en="Direction">方向</h2>
           <div class="slider"><label for="az" id="azLabel" data-en="Azimuth of SH (° from north)">SH 的方位（由北順時針，度）</label><output></output>
             <input id="az" type="range" min="0" max="179" step="1" value="0" data-decimals="1"></div>
         </section>
-        <section class="card" id="faultCard">
+        <section class="card" id="faultCard" data-deck="斷層|Fault" data-deck-order="3">
           <h2 data-en="Fault">斷層</h2>
           <div class="segw" role="group" aria-label="共軛的兩個破裂面" data-en-aria-label="The two conjugate fault planes" id="planeSeg">
             <button type="button" data-plane="0" aria-pressed="true" data-en="Fault plane 1">破裂面 1</button>
@@ -167,12 +183,15 @@
             <input id="slip" type="range" min="0" max="1200" step="10" value="0" data-decimals="1"></div>
           <p class="hint" id="faultHint">—</p>
         </section>
-        <section class="card" id="foldCard" hidden>
+        <section class="card" id="foldCard" hidden data-deck="褶皺|Fold" data-deck-order="4">
           <h2 data-en="Fold">褶皺</h2>
           <div class="slider"><label for="wl" data-en="Wavelength λ (m)">波長 λ（m）</label><output></output>
             <input id="wl" type="range" min="1000" max="6000" step="50" value="3000" data-decimals="1"></div>
           <div class="slider"><label for="amp" data-en="Amplitude A (m)">振幅 A（m）</label><output></output>
             <input id="amp" type="range" min="0" max="1500" step="10" value="400" data-decimals="1"></div>
+        </section>
+        <section class="card" id="foldSurfaceCard" hidden data-deck="傾沒與侵蝕|Plunge and erosion" data-deck-order="5">
+          <h2 data-en="Plunge and erosion">傾沒與侵蝕</h2>
           <div class="slider"><label for="plunge" data-en="Plunge of the fold axis (°)">褶皺軸的傾沒角（度）</label><output></output>
             <input id="plunge" type="range" min="0" max="30" step="0.5" value="0" data-decimals="2"></div>
           <div class="slider"><label for="ero" data-en="Erosion surface height (m; 1500 = none)">侵蝕面的高度（m；1500＝沒侵蝕）</label><output></output>
@@ -233,7 +252,7 @@
       </ul>
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Andersonian faulting with a cohesionless Coulomb criterion; ρ = 2700 kg/m³, hydrostatic pore pressure = 1000/2700 of \(S_v\). Slip direction from the Wallace–Bott hypothesis (parallel to the resolved shear stress); rake follows Aki &amp; Richards (−90° normal, +90° reverse, 0° left-lateral, 180° right-lateral).">安德森斷層理論配合無內聚力的庫倫破裂準則；ρ = 2700 kg/m³，靜水孔隙壓力 = \(S_v\) 的 1000/2700。滑動方向用華勒斯－博特假設（和面上的剪應力平行）；rake 依 Aki 與 Richards 的定義（−90° 正斷層、+90° 逆斷層、0° 左移、180° 右移）。</li>
+        <li data-en-html="Andersonian faulting with a cohesionless Coulomb criterion; ρ = 2700 kg/m&lt;sup&gt;3&lt;/sup&gt;, hydrostatic pore pressure = 1000/2700 of \(S_v\). Slip direction from the Wallace–Bott hypothesis (parallel to the resolved shear stress); rake follows Aki &amp; Richards (−90° normal, +90° reverse, 0° left-lateral, 180° right-lateral).">安德森斷層理論配合無內聚力的庫倫破裂準則；ρ = 2700 kg/m<sup>3</sup>，靜水孔隙壓力 = \(S_v\) 的 1000/2700。滑動方向用華勒斯－博特假設（和面上的剪應力平行）；rake 依 Aki 與 Richards 的定義（−90° 正斷層、+90° 逆斷層、0° 左移、180° 右移）。</li>
         <li data-en-html="The block is 3 km × 3 km × 2 km; each layer is 250 m thick. The footwall stays put and the whole hanging wall moves rigidly along the fault (no drag folding, no compaction). “Earthquake!” adds 100 m of slip — real large earthquakes slip a few metres, so this is many earthquakes lumped together.">方塊 3 km × 3 km × 2 km，每層 250 m。下盤不動，上盤沿斷層整塊移動（不考慮拖曳褶皺、壓密）。「地震！」一次加 100 m——真實的大地震一次只滑動幾公尺，這裡把很多次地震加在一起。</li>
         <li data-en-html="Folds are sinusoidal with layer length conserved; interlimb-angle classes after Fleuty (1964). Real folds have thickening hinges, chevrons and faults; this is the simplest geometry.">褶皺用正弦形、層長守恆；翼間角分類照 Fleuty（1964）。真實的褶皺有轉折處增厚、尖稜褶皺與斷層，這裡是最簡單的幾何。</li>
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
@@ -255,18 +274,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/faults-folds-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/faults-folds.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="faults-folds"></script>
-  <script src="js/missions/faults-folds.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="faults-folds"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/faults-folds-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/faults-folds.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="faults-folds"></script>
+  <script src="js/missions/faults-folds.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="faults-folds"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

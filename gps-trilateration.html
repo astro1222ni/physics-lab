@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="GPS Trilateration and Positioning Error | Astro Ni Lab">GPS 三邊定位與定位誤差｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"空間資訊科技","item":"https://lab.astroni.org/geography.html#gis"},{"@type":"ListItem","position":4,"name":"空間資料與定位","item":"https://lab.astroni.org/geography.html#ch-gis-data"},{"@type":"ListItem","position":5,"name":"GPS 三邊定位與定位誤差","item":"https://lab.astroni.org/gps-trilateration.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* GPS 頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -72,8 +72,8 @@
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
     .chips button { flex: 1 1 auto; min-height: 44px; min-width: 44px; padding: 4px 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .chips button i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-    .chips button[aria-pressed="true"] { border-color: currentColor; background: var(--accent-soft); }
-    .chips button[aria-pressed="false"] { opacity: 0.6; color: var(--muted); text-decoration: line-through; }
+    .chips button[aria-pressed="true"] { color: var(--tower-ink); border-color: currentColor; background: var(--accent-soft); }
+    .chips button[aria-pressed="false"] { color: var(--text); background: var(--bg); text-decoration: line-through; }
     .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
     .row button { flex: 1 1 auto; }
     dl.readout dd.big { font-weight: 700; }
@@ -84,7 +84,12 @@
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
     .notes .tablewrap { overflow-x: auto; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -109,6 +114,12 @@
           </div>
         </div>
         <canvas id="cv" aria-label="GPS 定位的畫面" data-en-aria-label="GPS positioning view"></canvas>
+        <div class="row" data-for="plane">
+          <button type="button" id="pSolve" data-en="Let the receiver solve it">讓接收機自己解</button>
+        </div>
+        <div class="row" data-for="sky" hidden>
+          <button type="button" id="play" aria-pressed="false" data-en="▶ Run time">▶ 時間前進</button>
+        </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="cvHint"></p>
@@ -119,11 +130,11 @@
         <section class="card" data-for="plane">
           <h2 data-en="Radio towers">發射塔</h2>
           <div class="chips" role="group" aria-label="使用的發射塔" data-en-aria-label="Towers in use" id="towerChips">
-            <button type="button" data-t="0" aria-pressed="true" style="color:var(--gp-a)"><i style="background:var(--gp-a)"></i>A</button>
-            <button type="button" data-t="1" aria-pressed="true" style="color:var(--gp-b)"><i style="background:var(--gp-b)"></i>B</button>
-            <button type="button" data-t="2" aria-pressed="true" style="color:var(--gp-c)"><i style="background:var(--gp-c)"></i>C</button>
-            <button type="button" data-t="3" aria-pressed="false" style="color:var(--gp-d)"><i style="background:var(--gp-d)"></i>D</button>
-            <button type="button" data-t="4" aria-pressed="false" style="color:var(--gp-e)"><i style="background:var(--gp-e)"></i>E</button>
+            <button type="button" data-t="0" aria-pressed="true" style="--tower-ink:var(--gp-a)"><i style="background:var(--gp-a)"></i>A</button>
+            <button type="button" data-t="1" aria-pressed="true" style="--tower-ink:var(--gp-b)"><i style="background:var(--gp-b)"></i>B</button>
+            <button type="button" data-t="2" aria-pressed="true" style="--tower-ink:var(--gp-c)"><i style="background:var(--gp-c)"></i>C</button>
+            <button type="button" data-t="3" aria-pressed="false" style="--tower-ink:var(--gp-d)"><i style="background:var(--gp-d)"></i>D</button>
+            <button type="button" data-t="4" aria-pressed="false" style="--tower-ink:var(--gp-e)"><i style="background:var(--gp-e)"></i>E</button>
           </div>
           <div class="slider"><label for="pTau" data-en="Receiver clock error τ (μs)" title="接收機的時鐘比標準時間慢了多少（負值＝快了）；每一個距離都多算 c τ" data-en-title="How far the receiver clock lags (negative = runs fast); every distance gains c τ">接收機時鐘偏差 τ（μs）</label><output></output>
             <input id="pTau" type="range" min="-40" max="40" step="0.5" value="12" data-decimals="1"></div>
@@ -131,9 +142,6 @@
             <input id="pGuess" type="range" min="-40" max="40" step="0.1" value="0" data-decimals="2"></div>
           <div class="slider"><label for="pNoise" data-en="Distance noise σ (m)" title="每座塔的距離另外有一點隨機誤差" data-en-title="Each tower's distance also has a small random error">距離雜訊 σ（m）</label><output></output>
             <input id="pNoise" type="range" min="0" max="500" step="10" value="0" data-decimals="0"></div>
-          <div class="row">
-            <button type="button" id="pSolve" data-en="Let the receiver solve it">讓接收機自己解</button>
-          </div>
           <p class="hint" data-en="Drag the hiker on the map (or use the arrow keys) to move the receiver.">拖曳地圖上的登山客（或用方向鍵）移動接收機。</p>
         </section>
         <section class="card" data-for="plane">
@@ -155,9 +163,6 @@
             <input id="sLon" type="range" min="-180" max="180" step="1" value="121" data-decimals="1"></div>
           <div class="slider"><label for="sT" data-en="Time (minutes)" title="從 0 分開始經過的時間；衛星繞一圈約 718 分鐘" data-en-title="Minutes since 0; a satellite circles in about 718 minutes">時間（分鐘）</label><output></output>
             <input id="sT" type="range" min="0" max="2880" step="1" value="0" data-decimals="0"></div>
-          <div class="row">
-            <button type="button" id="play" aria-pressed="false" data-en="▶ Run time">▶ 時間前進</button>
-          </div>
         </section>
         <section class="card" data-for="sky" hidden>
           <h2 data-en="Surroundings and errors">環境與誤差</h2>
@@ -228,17 +233,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/gps-trilateration-core.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/gps-trilateration.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="gps-trilateration"></script>
-  <script src="js/missions/gps-trilateration.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="gps-trilateration"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/gps-trilateration-core.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/vpad.js?v=202611201021"></script>
+  <script src="js/gps-trilateration.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="gps-trilateration"></script>
+  <script src="js/missions/gps-trilateration.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="gps-trilateration"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

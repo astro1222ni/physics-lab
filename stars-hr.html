@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 08:02">
-  <script src="js/settings.js?v=202611200802"></script>
+<meta name="lab-updated" content="2026-11-20 10:21">
+  <script src="js/settings.js?v=202611201021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Colour and Brightness of Stars: Blackbody Radiation and the HR Diagram | Astro Ni Lab">恆星的顏色與亮度：黑體輻射與 HR 圖｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"天文","item":"https://lab.astroni.org/earth-science.html#astro"},{"@type":"ListItem","position":4,"name":"恆星","item":"https://lab.astroni.org/earth-science.html#ch-stars"},{"@type":"ListItem","position":5,"name":"恆星的顏色與亮度：黑體輻射與 HR 圖","item":"https://lab.astroni.org/stars-hr.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611200802">
+  <link rel="stylesheet" href="lab.css?v=202611201021">
   <style>
     /* HR 圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）
      * HR 圖本身一律畫在夜空色的底上（深淺色模式都一樣），恆星的顏色才看得出白、藍、橘、紅。 */
@@ -95,6 +95,18 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .notes li { overflow-wrap: anywhere; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -129,11 +141,11 @@
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" data-en="Drag your star (or focus the diagram and use the arrow keys: left/right = temperature, up/down = luminosity; Shift for bigger steps). Tap a real star to compare it.">拖曳你的恆星（或選取 HR 圖後用方向鍵：左右＝溫度、上下＝光度，Shift 走大步）。點一顆真實的恆星可以比較。</p>
-        <p class="hint l3" data-en="True-to-scale sizes: your star, the comparison star and the Sun (and the Earth when it is big enough to see). Drag to rotate, scroll or pinch to zoom.">依真實比例的大小：你的恆星、比較的恆星和太陽（夠大時也有地球）。拖曳旋轉，滾輪或雙指縮放。</p>
+        <p class="hint l3" data-en="True-to-scale sizes: your star, the comparison star and the Sun (and the Earth when it is big enough to see). Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom.">依真實比例的大小：你的恆星、比較的恆星和太陽（夠大時也有地球）。選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。</p>
 
         <section class="chart-card">
           <div class="segw" role="group" aria-label="光譜圖" data-en-aria-label="Spectrum" id="specSeg">
-            <button type="button" data-spec="abs" aria-pressed="true" data-en="Same scale (per m² of surface)">同一尺度（每平方公尺表面）</button>
+            <button type="button" data-spec="abs" aria-pressed="true" data-en-html="Same scale (per m&lt;sup&gt;2&lt;/sup&gt; of surface)">同一尺度（每平方公尺表面）</button>
             <button type="button" data-spec="norm" aria-pressed="false" data-en="Each scaled to its peak">各自以峰值為 1</button>
           </div>
           <canvas id="gr" aria-label="黑體光譜：橫軸是波長，縱軸是每平方公尺表面發出的光" data-en-aria-label="Blackbody spectrum: wavelength across, light given off per square metre of surface up"></canvas>
@@ -171,7 +183,7 @@
           <dl class="readout">
             <dt data-en="Colour and spectral type">顏色與光譜型</dt><dd id="rColor">—</dd>
             <dt data-en="Peak wavelength (Wien)">峰值波長（維恩）</dt><dd id="rPeak" class="big">—</dd>
-            <dt data-en-html="Power per m² of surface (σT&lt;sup&gt;4&lt;/sup&gt;)">每平方公尺表面的功率（σT<sup>4</sup>）</dt><dd id="rFlux">—</dd>
+            <dt data-en-html="Power per m&lt;sup&gt;2&lt;/sup&gt; of surface (σT&lt;sup&gt;4&lt;/sup&gt;)">每平方公尺表面的功率（σT<sup>4</sup>）</dt><dd id="rFlux">—</dd>
             <dt data-en="Luminosity">光度</dt><dd id="rL" class="big">—</dd>
             <dt data-en="Bolometric absolute magnitude">絕對熱星等</dt><dd id="rMbol">—</dd>
             <dt data-en="Radius">半徑</dt><dd id="rR">—</dd>
@@ -244,18 +256,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/stars-hr-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/stars-hr.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="stars-hr"></script>
-  <script src="js/missions/stars-hr.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="stars-hr"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611201021"></script>
+  <script src="js/stars-hr-core.js?v=202611201021"></script>
+  <script src="js/sound.js?v=202611201021"></script>
+  <script src="js/numinput.js?v=202611201021"></script>
+  <script src="js/labdeck.js?v=202611201021"></script>
+  <script src="js/drawkit.js?v=202611201021"></script>
+  <script src="js/keys.js?v=202611201021"></script>
+  <script src="js/view3d-nav.js?v=202611201021"></script>
+  <script src="js/stars-hr.js?v=202611201021"></script>
+  <script src="js/firebase-config.js?v=202611201021"></script>
+  <script src="js/missions.js?v=202611201021" data-module="stars-hr"></script>
+  <script src="js/missions/stars-hr.js?v=202611201021"></script>
+  <script src="js/stats.js?v=202611201021" data-module="stars-hr"></script>
+  <script src="js/comments.js?v=202611201021"></script>
 </body>
 </html>

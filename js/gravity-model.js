@@ -16,6 +16,7 @@
   // =====================================================================
   const el = { b: $('gB'), pop: $('gPop') };
   const state = { view: 'flows', mode: 'km', b: 2, from: 'txg', to: 'tpe', town: null, pop: 50, acted: false };
+  let padTarget = null;
   let L = K.CITIES.slice(), flows = [], AR = null, arKey = '', syncing = false;
   const idx = function (id) { return L.findIndex(function (c) { return c.id === id; }); };
   const cname = function (c) { return T(c.zh, c.en); };
@@ -117,7 +118,54 @@
     ctx.restore();
   }
   const rCity = function (c) { return Math.max(3.5, Math.min(13, 1.4 * Math.sqrt(c.pop))) * Math.min(1.2, Math.max(0.75, size.h / 520)); };
-  function drawCities(v, labels) {
+  // 量測文字的實際寬高。先安置分界點、所選城市和流量，再排其餘城名。
+  function drawCaptions(v, captions) {
+    const occupied = L.map(function (city) {
+      const [x, y] = P(v, city), r = rCity(city) + (city.id === state.from || city.id === state.to ? 6 : 3);
+      return { l: x - r, r: x + r, t: y - r, b: y + r };
+    });
+    occupied.push({ l: 6, r: 26 + 50 * v.s, t: size.h - 40, b: size.h - 5 });
+    const positioned = [];
+    for (const item of captions.sort((a, b) => b.priority - a.priority)) {
+      const { x, y, text, face, side, gap } = item;
+      ctx.font = face;
+      const metrics = ctx.measureText(text);
+      const w = metrics.width + (item.pill ? 12 : 4), h = D.textHeight(metrics, 15) + (item.pill ? 3 : 2);
+      let best = null, cost = Infinity;
+      for (const step of [0, -1, 1, -2, 2, -3, 3, -4, 4]) {
+        const cy = y + step * (h + 3);
+        for (const dir of [side, -side]) {
+          for (const distance of [gap, gap + 16, gap + 36, gap + 64]) {
+            const score = Math.hypot(distance, cy - y) + (dir === side ? 0 : 8);
+            if (score >= cost) continue;
+            const l = dir > 0 ? x + distance : x - distance - w;
+            const box = { l, r: l + w, t: cy - h / 2, b: cy + h / 2 };
+            if (l < 4 || box.r > size.w - 4 || box.t < 4 || box.b > size.h - 4) continue;
+            if (occupied.some(o => box.l < o.r + 2 && box.r > o.l - 2 && box.t < o.b + 2 && box.b > o.t - 2)) continue;
+            cost = score; best = { item, box, cy, dir, leader: step !== 0 || distance > gap || item.pill };
+          }
+        }
+      }
+      if (best) { occupied.push(best.box); positioned.push(best); }
+    }
+    // 所有引線在文字下層。端點仍然是模型原本的座標。
+    ctx.save();
+    for (const {item, box, cy, dir, leader} of positioned) {
+      if (!leader) continue;
+      const tip = dir > 0 ? box.l : box.r;
+      const dx = tip - item.x, dy = cy - item.y, length = Math.hypot(dx, dy) || 1;
+      const inset = Math.min(item.gap - 2, length);
+      ctx.strokeStyle = D.alpha(item.color, 0.65); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(item.x + dx * inset / length, item.y + dy * inset / length);
+      ctx.lineTo(tip, cy); ctx.stroke();
+    }
+    for (const {item, box, cy} of positioned) {
+      if (item.pill) D.pill(ctx, item.text, box.l, box.b, item.color, 'left', item.face);
+      else D.haloText(ctx, item.text, box.l + 2, cy, item.color, 'left', 'middle', item.face);
+    }
+    ctx.restore();
+  }
+  function drawCities(v, labels, captions) {
     const small = size.w < 420;
     L.forEach(function (c, i) {
       const p = P(v, c), r = rCity(c), isA = c.id === state.from, isB = c.id === state.to;
@@ -136,19 +184,23 @@
       if (!show[c.id] || c.id === 'new') return;
       const p = P(v, c), r = rCity(c), left = !!LEFT[c.id];
       const col = c.id === state.from ? C['gm-flow'] : c.id === state.to ? C['gm-break'] : C.text;
-      D.haloText(ctx, cname(c), p[0] + (left ? -(r + 4) : r + 4), p[1] + (c.id === 'tpe' ? -6 : c.id === 'ntp' ? 6 : 0), col, left ? 'right' : 'left', 'middle', font(c.id === state.from || c.id === state.to ? 12 : 11, c.id === state.from || c.id === state.to ? 700 : 600));
+      const selected = c.id === state.from || c.id === state.to;
+      captions.push({ text: cname(c), x: p[0], y: p[1], gap: r + (selected ? 8 : 5),
+        side: left ? -1 : 1, color: col, face: font(selected ? 12 : 11, selected ? 700 : 600),
+        priority: selected ? 95 : (labels.includes(c.id) ? 70 : 50) + c.pop / 1000 });
     });
   }
-  function drawTown(v) {
+  function drawTown(v, captions) {
     if (!state.town) return;
     const c = L[L.length - 1], p = P(v, c), r = rCity(c) + 1;
     ctx.save();
     ctx.beginPath(); ctx.arc(p[0], p[1], r + 6, 0, 2 * Math.PI); ctx.strokeStyle = D.alpha(C['gm-town'], 0.5); ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
     D.ball(ctx, p[0], p[1], r, C['gm-town'], { shadow: true, glow: 0.5 });
-    D.pill(ctx, T('新市鎮', 'New town') + ' ' + state.pop + T(' 萬', '0k'), p[0], p[1] - r - 8, C['gm-town'], 'center', font(11, 700));
+    captions.push({ text: T('新市鎮', 'New town') + ' ' + state.pop + T(' 萬', '0k'), x: p[0], y: p[1],
+      gap: r + 8, side: 1, color: C['gm-town'], face: font(11, 700), priority: 96, pill: true });
   }
-  function drawBreak(v) {
+  function drawBreak(v, captions) {
     const a = byId(state.from), b = byId(state.to);
     if (!a || !b || a.id === b.id) return;
     const pa = P(v, a), pb = P(v, b), f = K.breakFrac(a.pop, b.pop, state.b);
@@ -162,7 +214,8 @@
     ctx.beginPath(); ctx.moveTo(x - 9 * ux, y - 9 * uy); ctx.lineTo(x + 9 * ux, y + 9 * uy); ctx.stroke();
     ctx.restore();
     ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = C['gm-break']; ctx.fillRect(-4.5, -4.5, 9, 9); ctx.strokeStyle = C.surface; ctx.lineWidth = 1.5; ctx.strokeRect(-4.5, -4.5, 9, 9); ctx.restore();
-    D.pill(ctx, T('分界點', 'Break point'), x + 12 * ux + (ux >= 0 ? 4 : -4), y + 12 * uy, C['gm-break'], ux >= 0 ? 'left' : 'right', font(11, 700));
+    captions.push({ text: T('分界點', 'Break point'), x, y, gap: 14, side: ux >= 0 ? 1 : -1,
+      color: C['gm-break'], face: font(11, 700), priority: 100, pill: true });
   }
   function drawFlows() {
     const v = mapView();
@@ -176,9 +229,10 @@
       const mx2 = (pa[0] + pb[0]) / 2, my2 = (pa[1] + pb[1]) / 2, dx = pb[0] - pa[0], dy = pb[1] - pa[1];
       ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.quadraticCurveTo(mx2 - 0.12 * dy, my2 + 0.12 * dx, pb[0], pb[1]); ctx.stroke(); ctx.restore();
     });
-    drawBreak(v);
-    drawCities(v, flows.slice(0, 3).map(function (o) { return L[o.j].id; }));
-    drawTown(v);
+    const captions = [];
+    drawBreak(v, captions);
+    drawCities(v, flows.slice(0, 3).map(function (o) { return L[o.j].id; }), captions);
+    drawTown(v, captions);
     // 前三名的占比
     flows.slice(0, 3).forEach(function (o) {
       const pb = P(v, L[o.j]), dx = pb[0] - pa[0], dy = pb[1] - pa[1];
@@ -186,8 +240,10 @@
       // 二次曲線在 t = 0.6 的位置
       const t = 0.6, cx = (pa[0] + pb[0]) / 2 - 0.12 * dy, cy = (pa[1] + pb[1]) / 2 + 0.12 * dx;
       const x = (1 - t) * (1 - t) * pa[0] + 2 * t * (1 - t) * cx + t * t * pb[0], y = (1 - t) * (1 - t) * pa[1] + 2 * t * (1 - t) * cy + t * t * pb[1];
-      D.pill(ctx, pct(o.share), x, y + 5, C['gm-flow'], 'center', font(11, 700));
+      captions.push({ text: pct(o.share), x, y, gap: 10, side: -1,
+        color: C['gm-flow'], face: font(11, 700), priority: 85, pill: true });
     });
+    drawCaptions(v, captions);
     scaleBar(v);
   }
   function scaleBar(v) {
@@ -233,11 +289,14 @@
     ctx.drawImage(buildAreas(v), 0, 0, size.w, size.h);
     ctx.restore();
     drawCoast(v); drawHsr(v);
-    drawCities(v, []);
-    drawTown(v);
+    const captions = [];
+    drawCities(v, [], captions);
+    drawTown(v, captions);
     // 出發城市的面積
     const a = byId(state.from), p = P(v, a);
-    D.pill(ctx, num(AR.area[idx(state.from)], 0) + ' km²', p[0], p[1] + rCity(a) + 14, C['gm-flow'], 'center', font(11, 700));
+    captions.push({ text: num(AR.area[idx(state.from)], 0) + ' km²', x: p[0], y: p[1], gap: rCity(a) + 8,
+      side: 1, color: C['gm-flow'], face: font(11, 700), priority: 90, pill: true });
+    drawCaptions(v, captions);
     scaleBar(v);
   }
   // ---------------- 距離衰減 ----------------
@@ -319,6 +378,10 @@
     setHTML('legend', legendHTML());
     $('townBtn').textContent = state.town ? T('－ 移除新市鎮', '－ Remove the new town') : T('＋ 加入新市鎮', '＋ Add a new town');
     $('townBtn').setAttribute('aria-pressed', String(!!state.town));
+    if (padTarget) {
+      padTarget.disabled = !state.town;
+      if (!state.town && kb.index() === 1) kb.select(0);
+    }
     $('popRow').hidden = !state.town; $('townHint').hidden = !state.town;
     setText('cvHint', state.view === 'decay' ? T('每一點是 A 和另一座城市；同樣人口的城市會落在同一條虛線上，越遠越低。', 'Each dot is A with another city; cities of equal size fall on one dashed line, lower the further away.') : T('點一座城市當作 A（原來的 A 變成 B）。', 'Tap a city to make it A (the old A becomes B).') + (state.town ? T('拖曳橘色的新市鎮。', ' Drag the orange new town.') : ''));
     $('srNow').textContent = cname(a) + ' → ' + (flows[0] ? cname(L[flows[0].j]) + ' ' + pct(flows[0].share) : '');
@@ -431,12 +494,12 @@
     const v = mapView(), q = local(e);
     if (state.town) {
       const pt = P(v, L[L.length - 1]);
-      if (Math.hypot(q[0] - pt[0], q[1] - pt[1]) < 22) { drag = true; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ } return; }
+      if (Math.hypot(q[0] - pt[0], q[1] - pt[1]) < 22) { drag = true; if (kb) kb.select(1); try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ } return; }
     }
     let best = null, bd = 24;
     K.CITIES.forEach(function (c) { const p = P(v, c), d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; best = c.id; } });
-    if (best) { setFrom(best, 'from'); return; }
-    if (state.town && moveTown(q)) { drag = true; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ } afterChange(false, 'drag'); }
+    if (best) { if (kb) kb.select(0); setFrom(best, 'from'); return; }
+    if (state.town && moveTown(q)) { drag = true; if (kb) kb.select(1); try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ } afterChange(false, 'drag'); }
   });
   cv.addEventListener('pointermove', function (e) { if (!drag) return; if (moveTown(local(e))) afterChange(false, 'drag'); });
   function endDrag() {
@@ -447,7 +510,7 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
 
-  if (window.LabKeys) window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('臺灣地圖。左右鍵換出發城市；有新市鎮時按 Enter 選它，用方向鍵移動（Shift 一次 10 km）。', 'Map of Taiwan. Left/right changes the starting city; with a new town, press Enter to select it and move it with the arrow keys (Shift for 10 km).'),
     items: [{
       name: function () { return T('出發城市', 'Starting city'); },
@@ -463,14 +526,15 @@
       move: function (dx, dy, big) {
         acted();
         if (!state.town) state.town = { lon: 120.95, lat: 23.6 };
-        const st = big ? 10 : 2, q = K.toXY(state.town), p = K.fromXY(q[0] + dx * st, q[1] - dy * st);
+        const st = big ? 10 : 2, q = K.toXY(state.town), p = K.fromXY(q[0] + dx * st, q[1] + dy * st);
         if (K.inside(p)) state.town = { lon: Math.round(p.lon * 1e4) / 1e4, lat: Math.round(p.lat * 1e4) / 1e4 };
         afterChange(true, 'drag'); return true;
       },
       describe: function () { const t = townInfo(); return t ? T('新市鎮受' + cname(byId(t.dom)) + '吸引最大', 'Pulled hardest by ' + cname(byId(t.dom))) : ''; }
     }],
     onChange: function () { requestDraw(); }
-  });
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () { return { v: state.view, m: state.mode, f: state.from, t: state.to, n: state.town ? [state.town.lon, state.town.lat] : null }; },
@@ -504,4 +568,80 @@
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
   say();
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint(id) {
+    const site = id === 'town' ? state.town || { lon: 120.95, lat: 23.6 } : byId(state.from);
+    return P(mapView(), site);
+  }
+  if (window.LabVPad && kb) {
+    const name = T('城市', 'Cities');
+    const targets = ['city', 'town'];
+    const pad = LabVPad.mount({
+      id: 'gravity-model', canvas: cv, step: 1, steps: [1],
+      objects: targets, selected: () => targets[kb.index()], select: id => kb.select(targets.indexOf(id)),
+      move: (dx, dy) => keyControls.items[kb.index()].move(dx, dy, false),
+      visible: () => state.view !== 'decay',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint(id);
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint(targets[kb.index()]);
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      reading: function () {
+        if (kb.index() === 0) return cname(byId(state.from));
+        return state.town ? num(state.town.lat, 2) + '° N' + ' ' + num(state.town.lon, 2) + '° E' : '—';
+      }
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:gravity-model'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + T('微調', 'Move');
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    // 共用中央鍵會重畫成探針編號，改用本頁的物件名稱與同一個鍵盤選取索引。
+    const target = document.createElement('button');
+    padTarget = target;
+    target.type = 'button';
+    target.className = 'geo-target';
+    panel.querySelector('.vpad-select').replaceWith(target);
+    const names = [T('出發地', 'Origin'), T('市鎮', 'Town')];
+    function labelTarget() {
+      target.textContent = names[kb.index()];
+      target.disabled = !state.town;
+      target.setAttribute('aria-label', T('切換移動對象，目前為', 'Switch target, currently ') + keyControls.items[kb.index()].name());
+      target.title = target.getAttribute('aria-label');
+    }
+    target.addEventListener('click', function () {
+      kb.select((kb.index() + 1) % targets.length);
+    });
+    $('townBtn').addEventListener('click', () => kb.select(state.town ? 1 : 0));
+    keyControls.onChange = function () { labelTarget(); requestDraw(); };
+    labelTarget();
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部三倍放大', ' detail at three-times magnification'));
+    cv.addEventListener('lab:keymove', pad.activity);
+    cv.addEventListener('pointerdown', () => requestAnimationFrame(pad.activity));
+    cv.addEventListener('pointermove', e => { if (e.buttons === 1) requestAnimationFrame(pad.activity); });
+  }
+
 })();

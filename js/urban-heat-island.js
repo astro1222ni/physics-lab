@@ -600,19 +600,20 @@
     }
   });
 
-  if (window.LabKeys) window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('都市熱島的溫度地圖。按 Enter 選溫度計，用方向鍵移動（Shift 一次 2.5 km）。', 'Temperature map of the heat island. Press Enter to pick the thermometer and move it with the arrow keys (Shift for 2.5 km).'),
     items: [{
       name: function () { return T('溫度計', 'Thermometer'); },
       move: function (dx, dy, big) {
         acted();
         const st = big ? 5 : 1, p = state.probe || { i: K.CX, j: K.CY };
-        placeProbe(p.i + dx * st, p.j + dy * st, 'probe'); return true;
+        placeProbe(p.i + dx * st, p.j - dy * st, 'probe'); return true;
       },
       describe: function () { return $('status').textContent; }
     }],
     onChange: function () { requestDraw(); }
-  });
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () { return { v: state.view, k: state.parks.map(function (p) { return [p.i, p.j]; }), t: state.probe ? [state.probe.i, state.probe.j] : null }; },
@@ -644,4 +645,60 @@
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
   say();
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const p = state.probe || { i: K.CX, j: K.CY };
+    return G(mapView(), p.i + 0.5, p.j + 0.5);
+  }
+  if (window.LabVPad && kb) {
+    const name = T('溫度計', 'Thermometer');
+    const pad = LabVPad.mount({
+      id: 'urban-heat-island', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => state.view === 'map',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      reading: function () {
+        const p = summaryNow().probe;
+        return p ? num(p.t, 1) + ' °C' : '—';
+      }
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:urban-heat-island'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部三倍放大', ' detail at three-times magnification'));
+    cv.addEventListener('lab:keymove', pad.activity);
+    cv.addEventListener('pointerdown', () => requestAnimationFrame(pad.activity));
+  }
+
 })();

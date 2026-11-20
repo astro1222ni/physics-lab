@@ -171,6 +171,10 @@
     if (x >= 1440) { x -= 1440; tag = T('（隔天）', ' (next day)'); }
     return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') + tag;
   }
+  function selectedClock() {
+    // 同一日期的滑桿包含 0 與 24 兩端，日末顯示 24:00 才能與隔天的 00:00 區分。
+    return Math.round(st.clock * 60) === 1440 ? '24:00' : hm(st.clock);
+  }
   function dur(h) {
     const m = Math.round(h * 60);
     return isEn() ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : Math.floor(m / 60) + ' 小時 ' + (m % 60) + ' 分';
@@ -230,15 +234,16 @@
   function layout() {
     W = cv.clientWidth;
     if (!W) return false;
+    const shortHeight = parseFloat(getComputedStyle(cv).maxHeight) || 0;
     narrow = W < 640;
-    if (narrow) {
+    if (narrow && !shortHeight) {
       // 天空：天球半徑 Rd ≈ 0.44 W，高度 = 上方標題 40 + Rd (1 + sin 28°) + 下方標籤 46
       const h1 = Math.round(clamp(W * 0.82, 260, 340)), h2 = Math.round(40 + Math.min(W * 0.44, 200) * (1 + Math.sin(28 * DEG)) + 46);
       H = h1 + h2 + 8;
       P.orbit = { x: 0, y: 0, w: W, h: h1 };
       P.sky = { x: 0, y: h1 + 8, w: W, h: h2 };
     } else {
-      H = Math.round(clamp(W * 0.48, 330, 440));
+      H = shortHeight || Math.round(clamp(W * 0.48, 330, 440));
       const w1 = Math.round(W * 0.52);
       P.orbit = { x: 0, y: 0, w: w1, h: H };
       P.sky = { x: w1, y: 0, w: W - w1, h: H };
@@ -467,7 +472,7 @@
       }
       g.restore();
     });
-    if (!narrow) { // 兩塊之間的分隔線
+    if (P.sky.x > 0) { // 兩塊之間的分隔線
       g.strokeStyle = A(LD.c.text, 0.08); g.lineWidth = 1;
       g.beginPath(); g.moveTo(P.sky.x + 0.5, 10); g.lineTo(P.sky.x + 0.5, H - 10); g.stroke();
     }
@@ -1096,7 +1101,7 @@
       lines.push(T('影子指向 ', 'Points ') + dirText(s.shadowAz));
     } else lines.push(T('太陽在地平線下：沒有影子', 'The Sun is down: no shadow'));
     lines.forEach(function (tx, i) { LD.pill(g, tx, 8, 24 + i * 22, i ? LD.c.muted : LD.c.text, 'left', font(11.5, i ? '600' : '700')); });
-    if (rec.ana && rec.ana.key === anaKey() && st.mode === 'year') LD.pill(g, T('每天 ', 'Every day at ') + hm(st.clock) + T(' 的影子尖端', ''), w - 8, h - 8, LD.c.muted, 'right', font(11, '600'));
+    if (rec.ana && rec.ana.key === anaKey() && st.mode === 'year') LD.pill(g, T('每天 ', 'Every day at ') + selectedClock() + T(' 的影子尖端', ''), w - 8, h - 8, LD.c.muted, 'right', font(11, '600'));
   }
 
   // =====================================================================
@@ -1317,7 +1322,7 @@
     setHTML('rI', Math.round(s.I) + ' W/m<sup>2</sup><small>' + (st.atmos ? T('計入大氣（晴天直射光）', 'through the air (clear-sky direct light)') : 'S sin h') + '</small>');
     setHTML('rQ', s.Q.toFixed(1) + ' MJ/m<sup>2</sup><small>' + (s.Q / 3.6).toFixed(2) + ' kWh/m<sup>2</sup>' + T('・赤道同一天 ', ' · equator same day ') + s.Qeq.toFixed(1) + '</small>');
     // 狀態列
-    let txt = locName() + T('・', ' · ') + dateText(st.day) + ' ' + hm(st.clock) + T('：', ': ');
+    let txt = locName() + T('・', ' · ') + dateText(st.day) + ' ' + selectedClock() + T('：', ': ');
     if (s.alt > 0) txt += T('太陽高度角 ', 'the Sun is ') + s.alt.toFixed(1) + T('°，方位角 ', '° high at azimuth ') + s.az.toFixed(1) + T('°（', '° (') + dirText(s.az) + T('）。', ').');
     else txt += T('太陽在地平線下 ', 'the Sun is ') + Math.abs(s.alt).toFixed(1) + T('°。', '° below the horizon.');
     if (s.polar === 'day') txt += T('今天永晝。', ' Midnight sun today.');
@@ -1330,7 +1335,7 @@
   function outs() {
     $('lato').textContent = latShort(st.lat);
     $('dayo').textContent = dateText(st.day);
-    $('clocko').textContent = hm(st.clock).slice(0, 5);
+    $('clocko').textContent = selectedClock();
     $('epso').textContent = st.eps.toFixed(2) + '°';
     $('speedo').textContent = st.mode === 'day'
       ? T('一天 ≈ ', 'a day ≈ ') + Math.round(24 / SPEED_DAY[st.speed - 1]) + T(' 秒', ' s')
@@ -1438,7 +1443,7 @@
     if (s.polar === 'day') t += T('，永晝。', ', midnight sun.');
     else if (s.polar === 'night') t += T('，永夜。', ', polar night.');
     else t += T('，晝長 ', ', day length ') + dur(s.dayLen) + T('，日出 ', ', sunrise ') + hm(s.rise) + T('、日落 ', ', sunset ') + hm(s.set) + T('。', '.');
-    t += T(' 現在 ', ' At ') + hm(st.clock).slice(0, 5) + T(' 太陽高度角 ', ' the Sun is ') + s.alt.toFixed(1) + '°' + (s.alt > 0
+    t += T(' 現在 ', ' At ') + selectedClock() + T(' 太陽高度角 ', ' the Sun is ') + s.alt.toFixed(1) + '°' + (s.alt > 0
       ? T('，影長是竿長的 ', ' high; the shadow is ') + (s.ratio < 100 ? s.ratio.toFixed(2) : '> 100') + T(' 倍，地面每平方公尺 ', ' times the pole, and each square metre of ground gets ') + Math.round(s.I) + ' W' + T('。', '.')
       : T('，在地平線下。', ', below the horizon.'));
     return t;
@@ -1530,12 +1535,12 @@
     const S = window.LabSound;
     if (S && st.userPlay) { S.tone({ freq: 523, dur: 0.18, gain: 0.12 }); S.tone({ freq: 659, dur: 0.18, gain: 0.12, delay: 0.12 }); S.tone({ freq: 784, dur: 0.3, gain: 0.12, delay: 0.24 }); }
     if (st.userPlay && st.user && window.LabMission) LabMission.emit('sunrise', eventData());
-    if (st.userPlay) say(T('日出 ', 'Sunrise ') + hm(st.clock).slice(0, 5) + T('，方位 ', ', azimuth ') + s.riseAz.toFixed(1) + '°' + T('。', '.'));
+    if (st.userPlay) say(T('日出 ', 'Sunrise ') + selectedClock() + T('，方位 ', ', azimuth ') + s.riseAz.toFixed(1) + '°' + T('。', '.'));
   }
   function onSunset() {
     const S = window.LabSound;
     if (S && st.userPlay) { S.tone({ freq: 784, dur: 0.18, gain: 0.1 }); S.tone({ freq: 659, dur: 0.18, gain: 0.1, delay: 0.12 }); S.tone({ freq: 523, dur: 0.32, gain: 0.1, delay: 0.24 }); }
-    if (st.userPlay) say(T('日落 ', 'Sunset ') + hm(st.clock).slice(0, 5) + T('。', '.'));
+    if (st.userPlay) say(T('日落 ', 'Sunset ') + selectedClock() + T('。', '.'));
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { kick(); requestDraw(); } });
 
@@ -1733,7 +1738,7 @@
             userChanged();
             return true;
           },
-          describe: function () { const s = snap(); return hm(st.clock).slice(0, 5) + T('，太陽高度角 ', ', Sun altitude ') + s.alt.toFixed(1) + T('°，方位角 ', '°, azimuth ') + s.az.toFixed(1) + '°'; } }
+          describe: function () { const s = snap(); return selectedClock() + T('，太陽高度角 ', ', Sun altitude ') + s.alt.toFixed(1) + T('°，方位角 ', '°, azimuth ') + s.az.toFixed(1) + '°'; } }
       ],
       onChange: requestDraw
     });
@@ -1795,7 +1800,7 @@
       t: t, o: o, s: s, theta: C.greenwich(t, o), sub: C.subsolar(t, o), eps: st.eps, lat: st.lat, lon: st.lon, zone: st.zone, day: st.day, clock: st.clock,
       seasons: SEASONS, seasonDay: seasonDay, path: dayPath(), ref: st.refArcs ? [st.eps, 0, -st.eps] : [], labels: st.labels,
       trace: trace, ana: rec.ana && rec.ana.key === anaKey() ? rec.ana.pts : [], scene: scene3, camEarth: camEarth,
-      locName: st.loc ? T(st.loc.zh, st.loc.en) : latShort(st.lat), dateText: dateText(st.day), timeText: hm(st.clock).slice(0, 5)
+      locName: st.loc ? T(st.loc.zh, st.loc.en) : latShort(st.lat), dateText: dateText(st.day), timeText: selectedClock()
     };
   }
   function tokens3() { readTokens(); return Object.assign({}, tok, LD.c, { dark: LD.dark }); }

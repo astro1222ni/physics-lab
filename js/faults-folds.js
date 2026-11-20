@@ -118,7 +118,7 @@
     cvSize = fit(cv, ctx); grSize = fit(gr, gtx); imgKey = {}; requestDraw();
   }
   function layout() {
-    const W = cvSize.w, H = cvSize.h, wide = W >= 700, gap = 18;
+    const W = cvSize.w, H = cvSize.h, wide = W >= 700 || W > H * 1.4, gap = 18;
     let sec, map;
     if (wide) { const sw = Math.round(W * 0.56); sec = { x: 0, y: 0, w: sw, h: H }; map = { x: sw + gap, y: 0, w: W - sw - gap, h: H }; }
     else { const sh = Math.round(42 + (W - 54) / (2 * K.L) * (Z_HI[state.mode] - Z_LO)); sec = { x: 0, y: 0, w: W, h: sh }; map = { x: 0, y: sh + gap, w: W, h: H - sh - gap }; }
@@ -213,9 +213,13 @@
     g.save(); g.translate(S.x - 36, S.Y((zhi + Z_LO) / 2)); g.rotate(-Math.PI / 2);
     D.haloText(g, T('高度（km）', 'Elevation (km)'), 0, 0, C.muted, 'center', 'middle', '600 ' + (fs - 0.5) + 'px ' + FONT);
     g.restore();
-    D.haloText(g, T('剖面（面向' + dirName(fr.look) + '看，1:1 比例）', 'Cross-section (looking ' + dirName(fr.look) + ', true scale)'), S.x, S.y - 14, C.text, 'left', 'middle', '700 ' + fs + 'px ' + FONT);
-    D.haloText(g, T('1 km', '1 km'), S.x + S.w - 4, S.y - 14, C.muted, 'right', 'middle', '600 ' + (fs - 1) + 'px ' + FONT);
-    g.strokeStyle = C.muted; g.lineWidth = 2; g.beginPath(); g.moveTo(S.x + S.w - 38 - 1000 * S.k, S.y - 14); g.lineTo(S.x + S.w - 38, S.y - 14); g.stroke();
+    const twoRows = S.w < 325;
+    const title = twoRows ? T('剖面（向' + dirName(fr.look) + '看，1:1）', 'Section facing ' + dirName(fr.look) + ' (1:1)')
+      : T('剖面（面向' + dirName(fr.look) + '看，1:1 比例）', 'Cross-section (looking ' + dirName(fr.look) + ', true scale)');
+    D.haloText(g, title, S.x, S.y - (twoRows ? 24 : 14), C.text, 'left', 'middle', '700 ' + fs + 'px ' + FONT);
+    const scaleY = S.y - (twoRows ? 8 : 14);
+    D.haloText(g, '1 km', S.x + S.w - 4, scaleY, C.muted, 'right', 'middle', '600 ' + (fs - 1) + 'px ' + FONT);
+    g.strokeStyle = C.muted; g.lineWidth = 2; g.beginPath(); g.moveTo(S.x + S.w - 38 - 1000 * S.k, scaleY); g.lineTo(S.x + S.w - 38, scaleY); g.stroke();
     g.save(); g.beginPath(); g.rect(S.x, S.y, S.w, S.h); g.clip();
     if (state.mode === 'fault') sectionFault(g, S, fr, fs); else sectionFold(g, S, fs);
     g.restore();
@@ -661,7 +665,8 @@
   function applyMode() {
     const f = state.mode === 'fault';
     setSeg('modeSeg', 'data-mode', state.mode);
-    $('stressCard').hidden = !f; $('faultCard').hidden = !f; $('foldCard').hidden = f;
+    $('stressCard').hidden = !f; $('frictionCard').hidden = !f; $('faultCard').hidden = !f;
+    $('foldCard').hidden = f; $('foldSurfaceCard').hidden = f;
     $('rdFault').hidden = !f; $('rdFold').hidden = f;
     $('quakeBtn').hidden = !f; $('erodeBtn').hidden = !f;
     $('azLabel').textContent = f ? T('SH 的方位（由北順時針，度）', 'Azimuth of SH (° from north)') : T('擠壓方向 σ1 的方位（由北順時針，度）', 'Azimuth of the squeeze σ1 (° from north)');

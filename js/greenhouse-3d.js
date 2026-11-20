@@ -49,10 +49,10 @@
     const camera = new THREE.PerspectiveCamera(34, 1.6, 0.01, 100);
     camera.up.set(0, 0, 1);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 1.5, T }) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
     controls.minDistance = 1.6;
     controls.maxDistance = 9;
 
@@ -151,7 +151,7 @@
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false }));
-      sp.userData = { lw: c.width / RES, lh: c.height / RES, isLabel: true };
+      sp.userData = { lw: c.width / RES, lh: c.height / RES, isLabel: true, anchorX: anchorRight ? 1 : 0 };
       sp.center.set(anchorRight ? 1 : 0, 0.5);
       sp.position.copy(pos);
       sp.renderOrder = 30;
@@ -230,7 +230,11 @@
 
     // ---------- 相機 ----------
     let narrow = false;
-    function sizeOf(w) { return w < 560 ? 380 : 420; }
+    function sizeOf(w) {
+      const natural = w < 560 ? 380 : 420;
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -256,27 +260,44 @@
       const P = presetFor(kind);
       if (!animate || B.reducedMotion) {
         camAnim = null;
-        camera.position.copy(P.pos); controls.target.copy(P.tgt); controls.update(); render();
+        camera.position.copy(P.pos); controls.target.copy(P.tgt);
+        if (nav) nav.home();
+        controls.update(); render();
         return;
       }
       camAnim = { t0: performance.now(), dur: 800, p0: camera.position.clone(), t0v: controls.target.clone(), p1: P.pos, t1: P.tgt };
       B.request();
     }
+    controls.addEventListener('start', function () { camAnim = null; });
     function stepCam() {
       if (!camAnim) return;
       const A = camAnim;
       const u = Math.min(1, (performance.now() - A.t0) / A.dur), e = 1 - Math.pow(1 - u, 3);
       camera.position.copy(A.p0).lerp(A.p1, e);
       controls.target.copy(A.t0v).lerp(A.t1, e);
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
     let moving = false;
+    const labelScreen = new THREE.Vector3();
+    function keepLabelsInside() {
+      camera.updateMatrixWorld();
+      flowGroup.children.forEach(function (sp) {
+        if (!sp.userData.isLabel) return;
+        const x = (labelScreen.copy(sp.position).project(camera).x + 1) * cw / 2;
+        const w = sp.userData.lw;
+        // 留四像素邊距；標籤隨箭頭移動，只有錨點在畫面內時才調整字框方向。
+        sp.center.x = x < 4 || x > cw - 4 ? sp.userData.anchorX
+          : THREE.MathUtils.clamp(sp.userData.anchorX, Math.max(0, 1 - (cw - 4 - x) / w), Math.min(1, (x - 4) / w));
+      });
+    }
     function render() {
       if (!api.active || document.hidden) return;
       const want = Math.min(window.devicePixelRatio || 1, 2);
       if (renderer.getPixelRatio() !== want) { renderer.setPixelRatio(want); renderer.setSize(cw, ch, false); }
       stepCam();
       moving = controls.update();
+      keepLabelsInside();
       renderer.render(scene, camera);
     }
     const ro = window.ResizeObserver ? new ResizeObserver(function () { resize3(); }) : null;
@@ -303,6 +324,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (earthTex) earthTex.dispose();

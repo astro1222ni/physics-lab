@@ -452,21 +452,22 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
 
-  if (window.LabKeys) window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('衛星影像。方向鍵一次移動一個像元（Shift 一次 5 個）。', 'Satellite image. Arrow keys move one pixel (Shift for 5).'),
     items: [{
       name: function () { return T('選取的像元', 'Selected pixel'); },
       move: function (dx, dy, big) {
         acted();
         const k = state.probe >= 0 ? state.probe : (36 * NX + 48), st = big ? 5 : 1;
-        const i = Math.max(0, Math.min(NX - 1, k % NX + dx * st)), j = Math.max(0, Math.min(NY - 1, Math.floor(k / NX) + dy * st));
+        const i = Math.max(0, Math.min(NX - 1, k % NX + dx * st)), j = Math.max(0, Math.min(NY - 1, Math.floor(k / NX) - dy * st));
         setProbe(j * NX + i, true); say();
         return true;
       },
       describe: function () { return $('status').textContent; }
     }],
     onChange: function () { requestDraw(); }
-  });
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () { return { v: state.view, l: state.layer, c: state.comp, rgb: state.rgb.slice(), p: state.probe }; },
@@ -502,4 +503,60 @@
   relabelOptions();
   say();
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const v = imgView(), k = state.probe < 0 ? 36 * NX + 48 : state.probe;
+    return [v.x0 + (k % NX + 0.5) * v.s, v.y0 + (Math.floor(k / NX) + 0.5) * v.s];
+  }
+  if (window.LabVPad && kb) {
+    const name = T('像元', 'Pixel');
+    const pad = LabVPad.mount({
+      id: 'remote-sensing', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => state.view === 'image',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      reading: function () {
+        return PX ? 'NDVI ' + num(K.indices(PX.bands).ndvi, 2) : '—';
+      }
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:remote-sensing'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部三倍放大', ' detail at three-times magnification'));
+    cv.addEventListener('lab:keymove', pad.activity);
+    cv.addEventListener('pointerdown', () => requestAnimationFrame(pad.activity));
+    cv.addEventListener('pointermove', e => { if (e.buttons === 1) requestAnimationFrame(pad.activity); });
+  }
+
 })();

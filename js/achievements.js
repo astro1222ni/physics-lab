@@ -57,7 +57,11 @@
     { id: 'math', zh: '數學', en: 'Mathematics', short: '數學' },
     { id: 'info', zh: '資訊科技', en: 'Information Technology', short: '資訊' },
     { id: 'geog', zh: '地理', en: 'Geography', short: '地理' },
-    { id: 'music', zh: '音樂', en: 'Music', short: '音樂' }
+    { id: 'music', zh: '音樂', en: 'Music', short: '音樂' },
+    { id: 'civ', zh: '公民與社會', en: 'Civics and Society', short: '公民' },
+    { id: 'health', zh: '健康與護理', en: 'Health and Nursing', short: '健護' },
+    { id: 'pe', zh: '體育', en: 'Physical Education', short: '體育' },
+    { id: 'art', zh: '美術', en: 'Visual Arts', short: '美術' }
   ];
   // 跨科成就（cross-*）的五科：說明寫明「物理、化學、生物、地球科學、數學」，之後加的科目不改它的條件
   const CROSS5 = ['phy', 'chem', 'bio', 'earth', 'math'];
@@ -68,7 +72,8 @@
     matter: 'chem', reaction: 'chem', equilibrium: 'chem', acidbase: 'chem', organic: 'chem',
     data: 'info', algo: 'info', prog: 'info', system: 'info', network: 'info', ai: 'info',
     mapping: 'geog', gis: 'geog', climate: 'geog', landform: 'geog', population: 'geog', economy: 'geog',
-    tone: 'music', tuning: 'music', harmony: 'music', instruments: 'music', rhythm: 'music', audio: 'music' };
+    tone: 'music', tuning: 'music', harmony: 'music', instruments: 'music', rhythm: 'music', audio: 'music',
+    markets: 'civ', prevention: 'health', 'sport-skills': 'pe', 'visual-expression': 'art' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -165,6 +170,78 @@
       explore: { 1: nm('聽見聲音', 'Hearing the sound'), 5: nm('音階的旅人', 'Traveller of scales'), 10: nm('樂器的花園', 'Garden of instruments'), 20: nm('節奏的舞者', 'Dancer of rhythm'), 40: nm('和聲的行者', 'Walker of harmony'), 60: nm('聲音的星空', 'The starry sky of sound'), all: nm('音樂全覽', 'All of music') },
       full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('純律的和諧', 'Harmony of just intonation'), 10: nm('平均律的鍵盤', 'The well-tempered keyboard'), 20: nm('傅立葉的耳朵', "Fourier's ear"), 40: nm('交響的織體', 'Texture of the symphony'), 60: nm('畢達哥拉斯的天籟', "Pythagoras's music of the heavens"), all: nm('萬物皆有聲', 'Everything sings') },
       chapter: { 1: nm('讀通一章', 'One chapter of music'), 5: nm('從一根弦到樂團', 'From one string to an orchestra'), 10: nm('音樂的物理', 'The physics of music'), all: nm('音樂的全書', 'The whole book of music') }
+    },
+    civ: {
+      stars: { 10: nm('第一筆交易', 'The first trade'), 100: nm('讀懂價格', 'Reading prices'), 1000: nm('供需交會', 'Where supply meets demand'), 10000: nm('市場觀察員', 'Market observer'), 100000: nm('公共議題研究者', 'Public policy researcher'), 1000000: nm('公民經濟學家', 'Civic economist') },
+      explore: {
+        1: nm('走進市場', 'Entering the market'), 5: nm('市集訪客', 'Market visitor'), 10: nm('社區觀察員', 'Community observer'),
+        20: nm('旁聽席的筆記', 'Notes from the public gallery'), 40: nm('公聽會的麥克風', 'The microphone at a public hearing'),
+        60: nm('眾聲匯聚的廣場', 'A square of many voices'), all: nm('公民全覽', 'All of civics')
+      },
+      full: {
+        1: nm('看懂一筆買賣', 'A trade explained'), 3: nm('制度觀察員', 'Observer of institutions'),
+        5: nm('一張選票的重量', 'The weight of a ballot'), 10: nm('政策分析師', 'Policy analyst'),
+        20: nm('公帑的每一分錢', 'Every cent of the public purse'), 40: nm('天平上的權利', 'Rights in the balance'),
+        60: nm('寫給下一代的憲章', 'A charter for the next generation'), all: nm('公民實驗全通', 'Every civics lab mastered')
+      },
+      chapter: {
+        1: nm('市場筆記', 'Market notes'), 5: nm('公共事務手冊', 'A handbook of public affairs'),
+        10: nm('一座城的議事錄', 'The minutes of a city'), all: nm('公民的全書', 'The whole book of civics')
+      }
+    },
+    health: {
+      stars: { 10: nm('第一筆健康紀錄', 'The first health record'), 100: nm('讀懂曲線', 'Reading the curve'), 1000: nm('校園健康觀察員', 'School health observer'), 10000: nm('社區護理師', 'Community nurse'), 100000: nm('公共衛生研究者', 'Public health researcher'), 1000000: nm('南丁格爾的統計圖', 'Nightingale’s statistical chart') },
+      explore: {
+        1: nm('翻開護理筆記', 'Opening the nursing notebook'), 5: nm('健康觀察員', 'Health observer'), 10: nm('社區訪查員', 'Community surveyor'),
+        20: nm('校護的聽診器', 'The school nurse’s stethoscope'), 40: nm('病房裡的第一道晨光', 'First light on the ward'),
+        60: nm('聽見城市的脈搏', 'Taking the pulse of a city'), all: nm('健護全覽', 'All of health and nursing')
+      },
+      full: {
+        1: nm('讀懂一次流行', 'Understanding an outbreak'), 3: nm('健康紀錄員', 'Health recorder'),
+        5: nm('指尖下的脈動', 'A pulse beneath the fingertips'), 10: nm('防疫規劃師', 'Prevention planner'),
+        20: nm('胸外按壓的節拍', 'The rhythm of chest compressions'), 40: nm('夜班簿上的叮嚀', 'A note from the night nurse'),
+        60: nm('萬家燈下的守護', 'Keeping watch over a thousand homes'), all: nm('健護實驗全通', 'Every health lab mastered')
+      },
+      chapter: {
+        1: nm('疾病預防筆記', 'Disease prevention notes'), 5: nm('社區健康手冊', 'A community health handbook'),
+        10: nm('從一張病床到一座城', 'From one bedside to a whole city'), all: nm('健護的全書', 'The whole book of health and nursing')
+      }
+    },
+    pe: {
+      stars: { 10: nm('第一記投籃', 'The first shot'), 100: nm('投手的手感', 'A thrower’s touch'), 1000: nm('弧線判讀者', 'Reading the arc'), 10000: nm('球場教練', 'Court coach'), 100000: nm('動作分析師', 'Movement analyst'), 1000000: nm('運動科學家', 'Sports scientist') },
+      explore: {
+        1: nm('踏上球場', 'Stepping onto the court'), 5: nm('場邊觀察員', 'Courtside observer'), 10: nm('全場跑動', 'Covering the court'),
+        20: nm('鞋底的紅土', 'Clay on a pair of trainers'), 40: nm('泳道盡頭的水花', 'Spray at the end of the lane'),
+        60: nm('五環下的足跡', 'Footprints beneath the Olympic rings'), all: nm('體育全覽', 'All of physical education')
+      },
+      full: {
+        1: nm('掌握出手', 'Mastering the release'), 3: nm('動作示範員', 'Skills demonstrator'),
+        5: nm('空心入網', 'Nothing but net'), 10: nm('全能選手', 'All-round athlete'),
+        20: nm('交棒的一瞬', 'The instant the baton changes hands'), 40: nm('彎道裡的平衡', 'Balance on the bend'),
+        60: nm('衝破終點線', 'Breaking the tape'), all: nm('體育實驗全通', 'Every sports lab mastered')
+      },
+      chapter: {
+        1: nm('動作筆記', 'Movement notes'), 5: nm('教練的手冊', 'The coach’s handbook'),
+        10: nm('戰術板上的足跡', 'Footprints on the tactics board'), all: nm('體育的全書', 'The whole book of physical education')
+      }
+    },
+    art: {
+      stars: { 10: nm('第一筆線條', 'The first line'), 100: nm('速寫本的一頁', 'A page from the sketchbook'), 1000: nm('找到消失點', 'Finding the vanishing point'), 10000: nm('造形研究者', 'Student of form'), 100000: nm('透視繪圖師', 'Perspective drafter'), 1000000: nm('畫室的主人', 'Master of the studio') },
+      explore: {
+        1: nm('打開速寫本', 'Opening the sketchbook'), 5: nm('街景寫生', 'Sketching in the street'), 10: nm('觀察者的畫冊', 'An observer’s sketchbook'),
+        20: nm('天光下的調色盤', 'A palette in daylight'), 40: nm('走進版畫工坊', 'Inside the printmaker’s workshop'),
+        60: nm('把城市畫成長卷', 'A city in one long scroll'), all: nm('美術全覽', 'The visual arts at a glance')
+      },
+      full: {
+        1: nm('完成一幅習作', 'Finishing a study'), 3: nm('構圖練習', 'Studies in composition'),
+        5: nm('留白之間', 'The space left blank'), 10: nm('個人畫集', 'An artist’s portfolio'),
+        20: nm('光落在畫布上', 'Light on the canvas'), 40: nm('刻刀下的黑與白', 'Black and white beneath the gouge'),
+        60: nm('咫尺畫幅裡的山河', 'Mountains and rivers on a single sheet'), all: nm('美術實驗全通', 'Every visual arts lab mastered')
+      },
+      chapter: {
+        1: nm('畫室筆記', 'Studio notes'), 5: nm('畫家的手冊', 'A painter’s handbook'),
+        10: nm('從窯火到畫布', 'From kiln fire to canvas'), all: nm('美術的全書', 'The whole book of visual arts')
+      }
     }
   };
   SUBJ.forEach(function (sb) {
@@ -256,13 +333,17 @@
     { id: 'branch-climate', tier: 5, cat: 'branch', name: nm('柯本的氣候圖', "Köppen's climate map"), desc: nm('完成氣候與自然景觀分支所有實驗的所有任務。', 'Complete every mission in Climate and Natural Landscapes.'), check: function (c) { return c.branchDone['climate']; } },
     { id: 'branch-landform', tier: 5, cat: 'branch', name: nm('戴維斯的侵蝕輪迴', "Davis's cycle of erosion"), desc: nm('完成地形與水文分支所有實驗的所有任務。', 'Complete every mission in Landforms and Water.'), check: function (c) { return c.branchDone['landform']; } },
     { id: 'branch-population', tier: 5, cat: 'branch', name: nm('馬爾薩斯的人口論', "Malthus's essay on population"), desc: nm('完成人口與都市分支所有實驗的所有任務。', 'Complete every mission in Population and Cities.'), check: function (c) { return c.branchDone['population']; } },
-    { id: 'branch-economy', tier: 5, cat: 'branch', name: nm('杜能的孤立國', "Von Thünen's isolated state"), desc: nm('完成產業、交通與全球化分支所有實驗的所有任務。', 'Complete every mission in Economy, Transport and Globalization.'), check: function (c) { return c.branchDone['economy']; } },
+    { id: 'branch-economy', tier: 5, cat: 'branch', name: nm('邱念的孤立國', "Von Thünen's isolated state"), desc: nm('完成產業、交通與全球化分支所有實驗的所有任務。', 'Complete every mission in Economy, Transport and Globalization.'), check: function (c) { return c.branchDone['economy']; } },
     { id: 'branch-tone', tier: 5, cat: 'branch', name: nm('亥姆霍茲的共鳴器', "Helmholtz's resonators"), desc: nm('完成樂音與聽覺分支所有實驗的所有任務。', 'Complete every mission in Musical Sound and Hearing.'), check: function (c) { return c.branchDone['tone']; } },
     { id: 'branch-tuning', tier: 5, cat: 'branch', name: nm('畢達哥拉斯的單弦琴', "Pythagoras's monochord"), desc: nm('完成音律與音階分支所有實驗的所有任務。', 'Complete every mission in Tuning and Scales.'), check: function (c) { return c.branchDone['tuning']; } },
     { id: 'branch-harmony', tier: 5, cat: 'branch', name: nm('拉摩的和聲學', "Rameau's treatise on harmony"), desc: nm('完成和聲分支所有實驗的所有任務。', 'Complete every mission in Harmony.'), check: function (c) { return c.branchDone['harmony']; } },
     { id: 'branch-instruments', tier: 5, cat: 'branch', name: nm('克拉尼的沙圖', "Chladni's sand figures"), desc: nm('完成樂器的科學分支所有實驗的所有任務。', 'Complete every mission in The Science of Instruments.'), check: function (c) { return c.branchDone['instruments']; } },
     { id: 'branch-rhythm', tier: 5, cat: 'branch', name: nm('梅爾策爾的節拍器', "Maelzel's metronome"), desc: nm('完成節奏與曲式分支所有實驗的所有任務。', 'Complete every mission in Rhythm and Form.'), check: function (c) { return c.branchDone['rhythm']; } },
     { id: 'branch-audio', tier: 5, cat: 'branch', name: nm('賽賓的音樂廳', "Sabine's concert hall"), desc: nm('完成空間、錄音與數位音樂分支所有實驗的所有任務。', 'Complete every mission in Rooms, Recording and Digital Music.'), check: function (c) { return c.branchDone['audio']; } },
+    { id: 'branch-markets', tier: 5, cat: 'branch', name: nm('馬歇爾的剪刀', "Marshall's scissors"), desc: nm('完成「市場與經濟生活」分支所有實驗的所有任務。', 'Complete every mission in Markets and Economic Life.'), check: function (c) { return c.branchDone['markets']; } },
+    { id: 'branch-prevention', tier: 5, cat: 'branch', name: nm('南丁格爾的提燈', "Nightingale's lamp"), desc: nm('完成「健康促進與疾病預防」分支所有實驗的所有任務。', 'Complete every mission in Health Promotion and Disease Prevention.'), check: function (c) { return c.branchDone['prevention']; } },
+    { id: 'branch-sport-skills', tier: 5, cat: 'branch', name: nm('奈史密斯的桃籃', "Naismith's peach basket"), desc: nm('完成「運動技能與原理」分支所有實驗的所有任務。', 'Complete every mission in Sports Skills and Principles.'), check: function (c) { return c.branchDone['sport-skills']; } },
+    { id: 'branch-visual-expression', tier: 5, cat: 'branch', name: nm('杜勒的透視框', "Dürer's perspective frame"), desc: nm('完成「造形與視覺表現」分支所有實驗的所有任務。', 'Complete every mission in Form and Visual Expression.'), check: function (c) { return c.branchDone['visual-expression']; } },
     // ---------- 跨科：五個科目都要有 ----------
     { id: 'cross-visit', tier: 2, cat: 'cross', name: nm('博物學家的好奇心', "A naturalist's curiosity"), desc: nm('物理、化學、生物、地球科學、數學，五科都至少玩過一種實驗。', 'Try at least one experiment in each of the five subjects.'), check: function (c) { return c.subjVisited >= 5; } },
     { id: 'cross-mission', tier: 3, cat: 'cross', name: nm('文藝復興人', 'Renaissance mind'), desc: nm('五科都至少完成一個任務。', 'Complete at least one mission in each of the five subjects.'), check: function (c) { return c.subjMission >= 5; } },

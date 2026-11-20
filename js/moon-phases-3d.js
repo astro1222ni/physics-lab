@@ -59,10 +59,10 @@
     camera.up.set(0, 0, 1);
     camera.position.set(0, -30, 20);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 10, T }) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
     controls.minDistance = 1.5;
     controls.maxDistance = 160;
 
@@ -618,6 +618,7 @@
       const off = camera.position.clone().sub(controls.target);
       const k0 = off.dot(follow.ax), k1 = off.dot(follow.ay), k2 = off.dot(follow.az);
       controls.target.copy(F.o);
+      if (nav) nav.home();
       camera.position.copy(F.o).addScaledVector(F.ax, k0).addScaledVector(F.ay, k1).addScaledVector(F.az, k2);
       follow = F;
     }
@@ -658,6 +659,7 @@
         controls.target.copy(target);
         camera.position.copy(dirOf(polar, az)).multiplyScalar(dist).add(target);
         setNearFar(dist);
+        if (nav) nav.home();
         controls.update();
         requestRender();
         return;
@@ -689,9 +691,10 @@
       controls.target.copy(A.tg0).lerp(A.tg1, e);
       camera.position.copy(dirOf(p, a)).multiplyScalar(d).add(controls.target);
       setNearFar(d);
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
-    controls.addEventListener('start', function () { camAnim = null; });
+    controls.addEventListener('start', function () { camAnim = null; if (nav && nav.mode() === 'pan') stopFollow(); });
     function resetCamera(animate) { stopFollow(); camTo(defPolar(narrow), DEF_AZ, animate, true); }
 
     // ---------- 每一幀 ----------
@@ -868,7 +871,11 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    function sizeOf(w) { return Math.round(w < 560 ? w * 1.16 : Math.min(w * 0.68, 600)); }
+    function sizeOf(w) {
+      const natural = Math.round(w < 560 ? w * 1.16 : Math.min(w * 0.68, 600));
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -933,6 +940,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         glowTex.dispose(); fadeTex.dispose();

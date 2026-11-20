@@ -179,6 +179,7 @@
   // ---------------------------------------------------------------------
   function orbitView(g, b, opts) {
     spaceBox(g, b); bgStars(g, b, 40);
+    const compact = !opts.small && b.w < 250;
     const s = star(), cx = b.x + b.w / 2, cy = b.y + b.h / 2 + 6, R = Math.min(b.w, b.h) * (opts.small ? 0.3 : 0.27);
     const P = function (t) { const e = PC.earthPos(t); return { x: cx + R * e[0], y: cy - R * e[1] }; };
     const sl = state.lam * Math.PI / 180, Rs = Math.min(b.w, b.h) * (opts.small ? 0.45 : 0.4);
@@ -214,11 +215,19 @@
     // 恆星（方向是真的，距離放大縮小了很多）
     D.ball(g, S.x, S.y, opts.small ? 4 : 6, C['px-star'], { shadow: false, glow: 0.9 });
     if (!opts.small) {
-      sText(g, starName(), S.x, S.y + (S.y < cy ? 18 : -16), C['px-star'], 'center', 'middle', '700 12px ' + FONT);
-      sText(g, T('太陽', 'Sun'), cx, cy + 20, '#fde68a', 'center', 'middle', '600 11px ' + FONT);
+      const name = starName();
+      g.font = '700 12px ' + FONT;
+      const margin = Math.min(b.w / 2, g.measureText(name).width / 2 + 4);
+      const nameX = Math.max(b.x + margin, Math.min(b.x + b.w - margin, S.x));
+      const nameY = compact ? Math.max(b.y + 47, Math.min(b.y + b.h - 10, S.y + (S.y < cy ? -15 : 15))) : S.y + (S.y < cy ? 18 : -16);
+      sText(g, name, nameX, nameY, C['px-star'], 'center', 'middle', g.font);
+      sText(g, T('太陽', 'Sun'), compact ? cx - 14 : cx, compact ? cy : cy + 20, '#fde68a', compact ? 'right' : 'center', 'middle', '600 11px ' + FONT);
       sText(g, T('地球', 'Earth'), E.x + 10, E.y - 10, '#93c5fd', 'left', 'middle', '700 11px ' + FONT);
       sText(g, T('從北黃極往下看', 'Seen from above the ecliptic'), b.x + 10, b.y + 14, '#cbd5e1', 'left', 'middle', '600 11px ' + FONT);
-      sText(g, T('恆星實際的距離是地球軌道半徑的 ', 'The star is really ') + sig(state.d * PC.AU_PER_PC, 3) + T(' 倍', ' times the orbit radius away'), b.x + 10, b.y + 32, '#94a3b8', 'left', 'middle', '10.5px ' + FONT);
+      const distance = sig(state.d * PC.AU_PER_PC, 3);
+      const distanceText = compact ? T('恆星距離 ', 'Star distance: ') + distance + ' AU'
+        : T('恆星實際的距離是地球軌道半徑的 ', 'The star is really ') + distance + T(' 倍', ' times the orbit radius away');
+      sText(g, distanceText, b.x + 10, b.y + 32, '#94a3b8', 'left', 'middle', '10.5px ' + FONT);
     } else sText(g, T('拍照的日期', 'Photo dates'), b.x + 8, b.y + 12, '#cbd5e1', 'left', 'middle', '600 10.5px ' + FONT);
   }
 
@@ -332,7 +341,7 @@
     if (Math.abs(dx) > r) D.haloText(g, T('恆星跑出視野了', 'The star is out of the field'), cx, cy + r * 0.5, C.text, 'center', 'middle', '600 11px ' + FONT);
   }
   function drawBaseline(g, W, H) {
-    const narrow = W < 560, run = state.run.baseline;
+    const narrow = W < 560 && W <= H * 1.4, run = state.run.baseline;
     let geo, fa, fb;
     if (narrow) { geo = { x: 6, y: 6, w: W - 12, h: H * 0.44 }; const fy = H * 0.44 + 16, fh = H - fy - 26; fa = { x: 4, y: fy, w: W / 2 - 6, h: fh }; fb = { x: W / 2 + 2, y: fy, w: W / 2 - 6, h: fh }; }
     else { geo = { x: 6, y: 6, w: W * 0.46, h: H - 12 }; const fx = W * 0.46 + 16, fw = (W - fx - 8) / 2; fa = { x: fx, y: 18, w: fw, h: H - 60 }; fb = { x: fx + fw + 4, y: 18, w: fw, h: H - 60 }; }
@@ -353,7 +362,7 @@
   // 主畫面
   // ---------------------------------------------------------------------
   function drawMain() {
-    const W = cvSize.w, H = cvSize.h, g = ctx, narrow = W < 560;
+    const W = cvSize.w, H = cvSize.h, g = ctx, narrow = W < 560 && W <= H * 1.4;
     g.clearRect(0, 0, W, H);
     D.backdrop(g, W, H);
     if (state.mode === 'baseline') { drawBaseline(g, W, H); return; }
