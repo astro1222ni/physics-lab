@@ -51,7 +51,9 @@ function stimEv(o) {
   return { type: 'stim', data: {
     mode, a1, a2: mode === 'paired' ? a2 : null, dur: mode === 'step' ? null : dur, gap: mode === 'paired' ? gap : null,
     T: e.T, ttx: e.ttx, tea: e.tea, kOut: e.kOut, naOut: e.naOut, env: key,
-    rest: an.rest, n: an.n, fired1: !!s1, fired2: !!s2, peak1: s1 ? s1.peak : null, peak2: s2 ? s2.peak : null,
+    rest: an.rest, n: an.n, interrupted: !!o.interrupted,
+    afterPulse: mode === 'single' ? sp.filter(s => s.t >= pulses[0].t0 + dur).length : 0,
+    fired1: !!s1, fired2: !!s2, peak1: s1 ? s1.peak : null, peak2: s2 ? s2.peak : null,
     rise: an.rise, amp1: shape ? shape.amp : null, halfWidth: shape ? shape.halfWidth : null,
     thr, a2alone, rate: an.rate, lat: s1 ? s1.tPeak - t0 : null
   } };
@@ -196,15 +198,32 @@ const THR = K.threshold(P0, 0.5);
 // h2. 對撞
 {
   fresh('h2');
-  const ev = cableEv({ xs: [1, 9] });
-  claim(check('h2', ev), `隱藏 2：S1 = 1、S2 = 9 cm 同時刺激，兩道衝動在 ${f(ev.data.xMeet, 2)} cm 相撞`);
+  const old = cableEv({ xs: [1, 9] }), movedOne = cableEv({ xs: [1, 6] });
+  const ev = cableEv({ xs: [2, 5] });
+  claim(old.data.collided && !check('h2', old) && !check('h2', movedOne), '隱藏 2：只開啟 S2 或只移動一個電極，即使碰撞也不成立');
+  claim(check('h2', ev) && !check('h2', cableEv({ xs: [2, 8] })), `隱藏 2：S1 = 2、S2 = 5 cm 同時刺激，在 ${f(ev.data.xMeet, 2)} cm 對撞；只改成對稱位置不算`);
+  const publicCables = [cableEv({}), cableEv({ diam: 100 }), cableEv({ myelin: true }), cableEv({ env: { ttx: 0.75 } })];
+  claim(publicCables.every(e => !check('h2', e)), '單電極量速度、換直徑、加髓鞘或降傳導速度均不會順手完成隱藏 2');
+  fresh('h1'); fresh('h3');
+  claim(!check('h1', ev) && !check('h3', ev) && !check('h2', stimEv({ a1: -20, dur: 5 })), '軸突對撞與膜片的隱藏任務彼此獨立');
 }
 // h3. 一個脈衝、一串動作電位
 {
   fresh('h3');
   const ev = stimEv({ a1: 20, env: { kOut: 2 } });
   const ev0 = stimEv({ a1: 20 });
-  claim(check('h3', ev) && !check('h3', ev0), `隱藏 3：細胞外 K×2、單一 20 µA/cm² 脈衝 → ${ev.data.n} 個動作電位；正常條件只有 ${ev0.data.n} 個`);
+  const tea = stimEv({ a1: 20, env: { tea: 0.5 } });
+  claim(!check('h3', ev) && !check('h3', tea), '隱藏 3：直接提高外液鉀濃度或加 TEA 再刺激，沒有對照就不成立');
+  claim(!check('h3', ev0) && !check('h3', stimEv({ a1: 21, env: { kOut: 2 } })) && check('h3', ev),
+    `隱藏 3：同一個 20 µA/cm²、0.5 ms 脈衝，正常外液只有 ${ev0.data.n} 個動作電位；外液鉀濃度加倍後，脈衝結束後有 ${ev.data.afterPulse} 個；改刺激強度不能配對`);
+  check('h3', { type: 'reset-stim', data: {} });
+  check('h3', stimEv({ a1: 20, interrupted: true }));
+  claim(!check('h3', ev), '隱藏 3：全部清除會清掉對照，打斷的刺激也不會留下對照');
+  const otherRoutes = [ev0, stimEv({ a1: 12 }), stimEv({ a1: 14 }), stimEv({ a1: 42 }),
+    stimEv({ mode: 'paired', a1: 20, a2: 200, gap: 3 }), stimEv({ mode: 'step', a1: 7 }), stimEv({ mode: 'step', a1: 50 }),
+    stimEv({ a1: 60, env: { naOut: 0.15 } }), stimEv({ a1: -20, dur: 5 }), cableEv({ xs: [2, 5] })];
+  claim(otherRoutes.every(e => !check('h3', e)), '公開任務的典型刺激、陽極斷電與軸突對撞均不會順手完成隱藏 3');
+  claim([ev0, ev].every(e => !check('h1', e) && !check('h2', e)), '隱藏 3 的兩次去極化脈衝不會連帶完成其他隱藏任務');
 }
 
 const pub = defs.filter(m => !m.hidden), hid = defs.filter(m => m.hidden);

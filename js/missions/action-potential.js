@@ -144,12 +144,32 @@
     {
       id: 'action-potential-h2', level: 5, hidden: true,
       riddle: { zh: '兩道浪迎面相遇，誰也沒有抵達對岸。', en: 'Two waves meet head-on, and neither reaches the far shore.' },
-      check: function (ev) { return ev.type === 'cable' && ev.data.collided; }
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'cable' || !d.collided || d.nStim !== 2) return false;
+        const [s1, s2] = d.xs;
+        // 移動兩個電極，讓相向的波在離中點至少 1 cm 的位置相遇。
+        return Math.abs(s1 - 1) >= 0.5 && Math.abs(s2 - 9) >= 0.5 &&
+          d.xMeet > Math.min(s1, s2) && d.xMeet < Math.max(s1, s2) && Math.abs(d.xMeet - 5) >= 1;
+      }
     },
     {
       id: 'action-potential-h3', level: 6, hidden: true,
       riddle: { zh: '一句話說完了，回聲卻停不下來。', en: 'The sentence is over, but the echo will not stop.' },
-      check: function (ev) { const d = ev.data; return single(ev) && d.a1 > 0 && d.dur <= 1 && d.n >= 3; }
+      check: function (ev, mem) {
+        if (ev.type === 'reset-stim') { delete mem.pulses; return false; }
+        const d = ev.data;
+        if (!single(ev) || d.interrupted || d.a1 <= 0 || d.dur > 1 || d.ttx !== 0) return false;
+        const normalK = Math.abs(d.kOut - 1) < 1e-6;
+        if (normalK && d.tea === 0) {
+          if (d.n === 1) remember(mem, 'pulses', d);
+          return false;
+        }
+        const oneChange = (d.kOut > 1 && d.tea === 0) || (normalK && d.tea > 0);
+        return oneChange && d.afterPulse >= 3 && (mem.pulses || []).some(function (c) {
+          return c.a1 === d.a1 && c.dur === d.dur && c.T === d.T && c.naOut === d.naOut;
+        });
+      }
     }
   ]);
 })();

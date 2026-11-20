@@ -227,7 +227,9 @@
     addRow1(r);
     statusFor(r);
     updateReadouts1();
-    emit('stim', data);
+    const pulse = r.mode === 'single' ? r.pulses[0] : null;
+    emit('stim', Object.assign({}, data, { interrupted: interrupted,
+      afterPulse: pulse ? r.an.spikes.filter(function (s) { return s.t >= pulse.t0 + pulse.dur; }).length : 0 }));
     if (!interrupted) request();
   }
   function statusFor(r) {
@@ -1137,6 +1139,7 @@
   $('fire').addEventListener('click', fire);
   $('clearAll').addEventListener('click', function () {
     if (run1 && run1.playing) finishRun1(true);
+    emit('reset-stim', {});
     kept = []; rows1.length = 0; runNo1 = 0; renderRows1();
     run1 = null; flux = [];
     setStatus(T('已清除保留的波形與紀錄表；設定不變。', 'Kept traces and the table are cleared; the settings stay.'));
