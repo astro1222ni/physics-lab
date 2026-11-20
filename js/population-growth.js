@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const P = window.PopCore;
   const D = window.LabDraw;
@@ -304,7 +304,14 @@
     const w = drawingWidth(cv) || 300;
     const narrow = w < 640;
     let h, dish, pN, pR;
-    if (!narrow) {
+    const short = shortLandscape.matches && w < 700;
+    if (short) {
+      h = 314;
+      const radius = Math.round(w * 0.15), left = 2 * radius + 68;
+      dish = { cx: radius + 10, cy: h * 0.45, R: radius };
+      pN = { x0: left, x1: w - 12, y0: 32, y1: 153 };
+      pR = { x0: left, x1: w - 12, y0: 207, y1: h - 30 };
+    } else if (!narrow) {
       h = 440;
       const size = Math.min(h - 70, Math.round(w * 0.34));
       dish = { cx: 14 + size / 2, cy: 36 + size / 2, R: size / 2 - 6 };
@@ -320,7 +327,7 @@
     }
     const s = fit(cv, ctx, h);
     W1 = s.w; H1 = s.h;
-    L1 = { narrow: narrow, dish: dish, pN: pN, pR: pR };
+    L1 = { short, narrow: narrow && !short, dish: dish, pN: pN, pR: pR };
     draw1();
   }
 
@@ -407,6 +414,10 @@
     if (o.extinct && t >= o.tExt) D.pill(g, T('族群滅絕', 'Died out'), cx, cy + 9, D.c.neg || '#b91c1c', 'center', '700 14px ' + FONT);
   }
 
+  const compactCount = new Intl.NumberFormat('en', { notation: 'compact', maximumSignificantDigits: 3 });
+  function countTick(v) {
+    return L1.short && EN ? compactCount.format(v) : fmtN(v);
+  }
   function drawNgraph(g) {
     const o = run, p = L1.pN, S = scales1();
     plotFrame(g, p);
@@ -414,10 +425,10 @@
     if (s1.logY) {
       g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
       const every = Math.max(1, Math.ceil((S.hi - S.lo) / 6));
-      for (let e = S.lo; e <= S.hi; e += every) { const y = S.yOf(Math.pow(10, e)); g.fillText(fmtN(Math.pow(10, e)), p.x0 - 7, y); hLine(g, p, y, 0.08); }
+      for (let e = S.lo; e <= S.hi; e += every) { const y = S.yOf(Math.pow(10, e)); g.fillText(countTick(Math.pow(10, e)), p.x0 - 7, y); hLine(g, p, y, 0.08); }
     } else {
       const step = niceStep(S.hi, L1.narrow ? 4 : 5);
-      yTicksLin(g, p, 0, S.hi, step, function (v) { return fmtN(v); }, S.yOf);
+      yTicksLin(g, p, 0, S.hi, step, countTick, S.yOf);
     }
     xTicks(g, p, 0, S.tMax, niceStep(S.tMax, L1.narrow ? 5 : 8), function (v) { return num(v, 0); }, S.xOf, T('天', 'days'));
     D.haloText(g, T('族群數量 N', 'Population N') + (s1.logY ? T('（對數刻度）', ' (log scale)') : ''), p.x0, p.y0 - 13, C['pg-n'], 'left', 'middle', '600 12px ' + FONT);
@@ -484,8 +495,8 @@
     if (o.model === 'expo') hi = niceCeil(o.r * xM * 1.05);
     else { hi = niceCeil(o.r * o.K / 4 * 1.2); lo = Math.min(0, rateAt(o, xM)); if (lo < 0) lo = -niceCeil(-lo * 1.05); }
     const yOf = function (v) { return p.y1 - (p.y1 - p.y0) * (v - lo) / (hi - lo); };
-    yTicksLin(g, p, lo, hi, niceStep(hi - lo, 3), function (v) { return fmtN(v); }, yOf);
-    xTicks(g, p, 0, xM, niceStep(xM, L1.narrow ? 4 : 6), function (v) { return fmtN(v); }, xOf, 'N');
+    yTicksLin(g, p, lo, hi, niceStep(hi - lo, 3), countTick, yOf);
+    xTicks(g, p, 0, xM, niceStep(xM, L1.short ? 3 : L1.narrow ? 4 : 6), countTick, xOf, 'N');
     D.haloText(g, T('成長速率 dN/dt（每天）', 'Growth rate dN/dt (per day)'), p.x0, p.y0 - 13, D.c.text, 'left', 'middle', '600 12px ' + FONT);
     g.save();
     g.beginPath(); g.rect(p.x0 - 2, p.y0 - 2, p.x1 - p.x0 + 4, p.y1 - p.y0 + 4); g.clip();
