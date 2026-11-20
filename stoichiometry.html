@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stoichiometry and Limiting Reactants | Astro Ni Lab">化學計量與限量試劑｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 化學計量與限量試劑頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .st canvas { aspect-ratio: auto; touch-action: auto; }
@@ -93,6 +93,25 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-console button { min-height: 44px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -104,22 +123,31 @@
     </header>
 
     <p class="try-hint" data-en="Try it: press “Start”. When the bubbles stop, press “Level the water”, read the cylinder in the magnifier, type the reading in the “Analysis” card and press “Calculate”.">試試看：按「開始反應」。氣泡停了以後，按「對齊液面」，從放大鏡讀出量筒的刻度，填進「分析」卡，再按「計算」。</p>
-    <div class="lab st">
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab st" data-scene="bench">
       <div class="stage" id="stage">
-        <canvas id="cv" role="img" aria-label="鎂與鹽酸反應、排水集氣法收集氫氣" data-en-aria-label="Magnesium reacting with hydrochloric acid; hydrogen collected over water"></canvas>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
-          <button id="skipEnd" type="button" data-en="Skip to the end" title="直接跳到氣泡停止（反應結束）" data-en-title="Jump to the moment the bubbles stop (end of the reaction)">跳到反應結束</button>
-          <button id="alignBtn" type="button" aria-pressed="false" data-en="Level the water" title="上下移動量筒，使量筒內外的水面一樣高（氣體壓力等於大氣壓）" data-en-title="Move the cylinder up or down until the water inside and outside are at the same level (the gas is then at atmospheric pressure)">對齊液面</button>
-          <button id="restart" type="button" data-en="New run" title="同樣的設定重新做一次：換新的鎂帶與鹽酸，量筒重新裝滿水" data-en-title="Same settings, new run: fresh ribbon and acid, cylinder refilled with water">重做一次</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除結果表與圖上累積的數據點" data-en-title="Clear the results table and the points collected on the graph">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-            <div class="seg4" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false">×1</button>
-              <button type="button" id="sp1" aria-pressed="true">×4</button>
-              <button type="button" id="sp2" aria-pressed="false">×16</button>
-              <button type="button" id="sp3" aria-pressed="false">×64</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="鎂與鹽酸反應、排水集氣法收集氫氣" data-en-aria-label="Magnesium reacting with hydrochloric acid; hydrogen collected over water"></canvas>
+          </div>
+          <div class="playbar">
+            <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
+            <button id="skipEnd" type="button" data-en="Skip to the end" title="直接跳到氣泡停止（反應結束）" data-en-title="Jump to the moment the bubbles stop (end of the reaction)">跳到反應結束</button>
+            <button id="alignBtn" type="button" aria-pressed="false" data-en="Level the water" title="上下移動量筒，使量筒內外的水面一樣高（氣體壓力等於大氣壓）" data-en-title="Move the cylinder up or down until the water inside and outside are at the same level (the gas is then at atmospheric pressure)">對齊液面</button>
+            <button id="restart" type="button" data-en="New run" title="同樣的設定重新做一次：換新的鎂帶與鹽酸，量筒重新裝滿水" data-en-title="Same settings, new run: fresh ribbon and acid, cylinder refilled with water">重做一次</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除結果表與圖上累積的數據點" data-en-title="Clear the results table and the points collected on the graph">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+              <div class="seg4" role="group" aria-labelledby="speedLabel">
+                <button type="button" id="sp0" aria-pressed="false">×1</button>
+                <button type="button" id="sp1" aria-pressed="true">×4</button>
+                <button type="button" id="sp2" aria-pressed="false">×16</button>
+                <button type="button" id="sp3" aria-pressed="false">×64</button>
+              </div>
             </div>
           </div>
         </div>
@@ -144,9 +172,9 @@
         <section class="card">
           <h2 data-en="Apparatus and conditions">器材與環境</h2>
           <div class="seg3" id="cylSeg" role="group" aria-label="量筒" data-en-aria-label="Measuring cylinder">
-            <button type="button" data-cyl="25" aria-pressed="false" data-en="25 mL cylinder">25 mL 量筒</button>
-            <button type="button" data-cyl="100" aria-pressed="true" data-en="100 mL cylinder">100 mL 量筒</button>
-            <button type="button" data-cyl="250" aria-pressed="false" data-en="250 mL cylinder">250 mL 量筒</button>
+            <button type="button" data-cyl="25" aria-pressed="false" data-en="25 mL cylinder">25 mL 量筒</button>
+            <button type="button" data-cyl="100" aria-pressed="true" data-en="100 mL cylinder">100 mL 量筒</button>
+            <button type="button" data-cyl="250" aria-pressed="false" data-en="250 mL cylinder">250 mL 量筒</button>
           </div>
           <div class="slider"><label for="temp" data-en="Temperature of the water">水溫</label><output id="tempo"></output>
             <input id="temp" type="range" min="0" max="40" step="0.5" value="25" data-decimals="1"></div>
@@ -157,7 +185,7 @@
       </aside>
     </div>
 
-    <div class="lab st">
+    <div class="lab st" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Graph and results">圖表與結果</h2>
         <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -206,21 +234,21 @@
         \[ \mathrm{Mg(s) + 2HCl(aq) \to MgCl_2(aq) + H_2(g)} \]
         \[ n_{\mathrm{Mg}} = \frac{m}{24.305\ \mathrm{g/mol}} \qquad n_{\mathrm{HCl}} = C_M V \]
       </div>
-      <p data-en-html="One mole of Mg needs two moles of HCl and gives one mole of H&lt;sub&gt;2&lt;/sub&gt;. If \(n_{\mathrm{HCl}} &gt; 2n_{\mathrm{Mg}}\) the magnesium runs out first (it is the &lt;strong&gt;limiting reactant&lt;/strong&gt;) and \(n_{\mathrm{H_2}} = n_{\mathrm{Mg}}\); otherwise the acid runs out and \(n_{\mathrm{H_2}} = n_{\mathrm{HCl}}/2\). The other reactant is left over (in excess).">1 莫耳 Mg 要和 2 莫耳 HCl 反應，產生 1 莫耳 H<sub>2</sub>。如果 \(n_{\mathrm{HCl}} &gt; 2n_{\mathrm{Mg}}\)，鎂先用完（鎂是<strong>限量試劑</strong>），\(n_{\mathrm{H_2}} = n_{\mathrm{Mg}}\)；反之鹽酸先用完，\(n_{\mathrm{H_2}} = n_{\mathrm{HCl}}/2\)。另一種反應物有剩（過量）。</p>
+      <p data-en-html="One mole of Mg needs two moles of HCl and gives one mole of H&lt;sub&gt;2&lt;/sub&gt;. If \(n_{\mathrm{HCl}} &gt; 2n_{\mathrm{Mg}}\) the magnesium runs out first (it is the &lt;strong&gt;limiting reactant&lt;/strong&gt;) and \(n_{\mathrm{H_2}} = n_{\mathrm{Mg}}\); otherwise the acid runs out and \(n_{\mathrm{H_2}} = n_{\mathrm{HCl}}/2\). The other reactant is left over (in excess).">1 莫耳 Mg 要和 2 莫耳 HCl 反應，產生 1 莫耳 H<sub>2</sub>。如果 \(n_{\mathrm{HCl}} &gt; 2n_{\mathrm{Mg}}\)，鎂先用完（鎂是<strong>限量試劑</strong>），\(n_{\mathrm{H_2}} = n_{\mathrm{Mg}}\)；反之鹽酸先用完，\(n_{\mathrm{H_2}} = n_{\mathrm{HCl}}/2\)。另一種反應物有剩（過量）。</p>
       <h3 data-en="Collecting gas over water: Dalton's law">排水集氣與道耳頓分壓定律</h3>
       <p data-en="The gas in the cylinder is hydrogen mixed with water vapour, which is saturated at the temperature of the water. When the water inside and outside the cylinder are at the same level, the total pressure of the gas equals the atmospheric pressure:">量筒裡的氣體是氫氣加上水蒸氣，水蒸氣在水溫下是飽和的。量筒內外水面一樣高時，氣體的總壓力等於大氣壓：</p>
       <div class="formula multi">
         \[ P_{\mathrm{H_2}} = P_{\mathrm{atm}} - P_{\mathrm{H_2O}}(T) \]
         \[ n_{\mathrm{H_2}} = \frac{P_{\mathrm{H_2}}\,V}{RT} \]
       </div>
-      <p data-en-html="If the water inside is higher than outside by \(h\), the gas is at a lower pressure: \(P_{\mathrm{gas}} = P_{\mathrm{atm}} - \rho g h\) (1 cm of water ≈ 0.73 mmHg). That is why the cylinder is moved until the levels are equal before reading.">如果量筒內的水面比外面高 \(h\)，氣體的壓力比大氣壓小：\(P_{\mathrm{gas}} = P_{\mathrm{atm}} - \rho g h\)（gas：量筒內的氣體，atm：大氣）（1 cm 水柱約 0.73 mmHg）。所以讀數前要上下移動量筒，使內外液面相平。</p>
+      <p data-en-html="If the water inside is higher than outside by \(h\), the gas is at a lower pressure: \(P_{\mathrm{gas}} = P_{\mathrm{atm}} - \rho g h\) (1 cm of water ≈ 0.73 mmHg). That is why the cylinder is moved until the levels are equal before reading.">如果量筒內的水面比外面高 \(h\)，氣體的壓力比大氣壓小：\(P_{\mathrm{gas}} = P_{\mathrm{atm}} - \rho g h\)（gas：量筒內的氣體，atm：大氣）（1 cm 水柱約 0.73 mmHg）。所以讀數前要上下移動量筒，使內外液面相平。</p>
       <h3 data-en="Converting to STP">換算成標準狀況（STP）</h3>
       <div class="formula multi">
         \[ V_{\mathrm{STP}} = V \times \frac{P_{\mathrm{H_2}}}{760\ \mathrm{mmHg}} \times \frac{273.15\ \mathrm{K}}{T} \]
         \[ V_m = \frac{V_{\mathrm{STP}}}{n_{\mathrm{H_2}}} \approx 22.4\ \mathrm{L/mol} \]
         \[ M_{\mathrm{Mg}} = \frac{m}{n_{\mathrm{H_2}}} \]
       </div>
-      <p data-en="STP here means 0 °C and 1 atm, as in the Taiwanese senior-high textbook (the molar volume of an ideal gas is 22.414 L/mol). At 25 °C and 1 atm it is 24.465 L/mol.">這裡的標準狀況（STP）照高中課本，指 0 °C、1 atm，理想氣體的莫耳體積是 22.414 L/mol；25 °C、1 atm 時是 24.465 L/mol。</p>
+      <p data-en="STP here means 0 °C and 1 atm, as in the Taiwanese senior-high textbook (the molar volume of an ideal gas is 22.414 L/mol). At 25 °C and 1 atm it is 24.465 L/mol.">這裡的標準狀況（STP）照高中課本，指 0 °C、1 atm，理想氣體的莫耳體積是 22.414 L/mol；25 °C、1 atm 時是 24.465 L/mol。</p>
 
       <h3 data-en="Saturated vapour pressure of water">水的飽和蒸氣壓</h3>
       <div class="tablewrap"><table class="data" id="vpTable"></table></div>
@@ -228,7 +256,7 @@
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
         <li data-en="Keep the magnesium fixed and add more and more acid (“Acid added–yield” graph): the hydrogen first grows in a straight line, then stops growing — that corner is where both reactants are used up exactly.">固定鎂的質量，鹽酸越加越多（看「鹽酸量—產量」圖）：氫氣先是直線增加，到某一點就不再增加——轉折點就是兩種反應物剛好完全反應的地方。</li>
-        <li data-en="Forget to subtract the vapour pressure: at 25 °C the molar volume comes out about 3% too large and the atomic mass about 3% too small. At 35 °C the error is more than 5%.">忘了扣除水的飽和蒸氣壓：25 °C 時莫耳體積大約大 3%、原子量大約小 3%；35 °C 時誤差超過 5%。</li>
+        <li data-en="Forget to subtract the vapour pressure: at 25 °C the molar volume comes out about 3 % too large and the atomic mass about 3 % too small. At 35 °C the error is more than 5 %.">忘了扣除水的飽和蒸氣壓：25 °C 時莫耳體積大約大 3 %、原子量大約小 3 %；35 °C 時誤差超過 5 %。</li>
         <li data-en="Read the cylinder before levelling the water: the water inside is higher, the gas is stretched and its volume is too large.">沒有對齊液面就讀數：量筒內的水面比較高，氣體被「拉開」，體積讀得太大。</li>
         <li data-en="Use magnesium that has not been cleaned: part of the mass is magnesium oxide, which uses up acid but gives no hydrogen, so the atomic mass comes out too large.">鎂帶沒磨亮：一部分質量是氧化鎂，會消耗鹽酸但不產生氫氣，算出的原子量偏大。</li>
         <li data-en="Choose the cylinder: a small volume in a big cylinder is hard to read precisely; too much gas overflows from the mouth of a small one.">選量筒：少量氣體用大量筒，讀數的相對誤差大；氣體太多，小量筒裝不下，會從筒口冒走。</li>
@@ -236,16 +264,16 @@
 
       <h3 data-en="Think about it">想一想</h3>
       <ol>
-        <li data-en="0.0486 g of magnesium is dropped into 10.0 mL of 0.30 M hydrochloric acid. Which is the limiting reactant? How many moles of hydrogen are formed?">0.0486 g 鎂放進 10.0 mL、0.30 M 的鹽酸。哪一個是限量試劑？產生多少莫耳氫氣？</li>
-        <li data-en="At 25 °C and 755 mmHg, 48.6 mL of gas is collected over water from 0.0480 g of magnesium (with excess acid). The vapour pressure of water at 25 °C is 23.8 mmHg. Find the volume of dry hydrogen at STP and the atomic mass of magnesium.">25 °C、755 mmHg 下，以排水集氣法收集 0.0480 g 鎂（鹽酸過量）產生的氣體 48.6 mL。25 °C 水的飽和蒸氣壓是 23.8 mmHg。求乾燥氫氣在標準狀況下的體積、鎂的原子量。</li>
+        <li data-en="0.0486 g of magnesium is dropped into 10.0 mL of 0.30 M hydrochloric acid. Which is the limiting reactant? How many moles of hydrogen are formed?">0.0486 g 鎂放進 10.0 mL、0.30 M 的鹽酸。哪一個是限量試劑？產生多少莫耳氫氣？</li>
+        <li data-en="At 25 °C and 755 mmHg, 48.6 mL of gas is collected over water from 0.0480 g of magnesium (with excess acid). The vapour pressure of water at 25 °C is 23.8 mmHg. Find the volume of dry hydrogen at STP and the atomic mass of magnesium.">25 °C、755 mmHg 下，以排水集氣法收集 0.0480 g 鎂（鹽酸過量）產生的氣體 48.6 mL。25 °C 水的飽和蒸氣壓是 23.8 mmHg。求乾燥氫氣在標準狀況下的體積、鎂的原子量。</li>
         <li data-en="Why must the levels inside and outside the cylinder be the same before reading? If the water inside is higher, is the calculated atomic mass too large or too small?">為什麼讀數前要使量筒內外液面相平？如果量筒內的水面比較高，算出的原子量會偏大還是偏小？</li>
         <li data-en="Some students find an atomic mass of about 30 for magnesium. Suggest two possible mistakes.">有同學算出鎂的原子量大約是 30。請提出兩個可能的錯誤。</li>
       </ol>
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="n(Mg) = 0.0486 ÷ 24.305 = 0.00200 mol; n(HCl) = 0.30 × 0.0100 = 0.0030 mol, but 0.00400 mol would be needed, so the acid is limiting. n(H&lt;sub&gt;2&lt;/sub&gt;) = 0.0030 ÷ 2 = 0.0015 mol; 0.00050 mol of magnesium (0.012 g) is left.">n(Mg) = 0.0486 ÷ 24.305 = 0.00200 mol；n(HCl) = 0.30 × 0.0100 = 0.0030 mol，但需要 0.00400 mol，所以鹽酸是限量試劑。n(H<sub>2</sub>) = 0.0030 ÷ 2 = 0.0015 mol；剩下 0.00050 mol（0.012 g）鎂。</li>
-          <li data-en-html="P(H&lt;sub&gt;2&lt;/sub&gt;) = 755 − 23.8 = 731.2 mmHg; V(STP) = 48.6 × (731.2 ÷ 760) × (273.15 ÷ 298.15) = 42.8 mL; n(H&lt;sub&gt;2&lt;/sub&gt;) = 42.8 ÷ 22414 = 0.00191 mol; atomic mass = 0.0480 ÷ 0.00191 = 25.1 (the accepted value is 24.3).">P(H<sub>2</sub>) = 755 − 23.8 = 731.2 mmHg；V(STP) = 48.6 × (731.2 ÷ 760) × (273.15 ÷ 298.15) = 42.8 mL；n(H<sub>2</sub>) = 42.8 ÷ 22414 = 0.00191 mol；原子量 = 0.0480 ÷ 0.00191 = 25.1（公認值 24.3）。</li>
+          <li data-en-html="n(Mg) = 0.0486 ÷ 24.305 = 0.00200 mol; n(HCl) = 0.30 × 0.0100 = 0.0030 mol, but 0.00400 mol would be needed, so the acid is limiting. n(H&lt;sub&gt;2&lt;/sub&gt;) = 0.0030 ÷ 2 = 0.0015 mol; 0.00050 mol of magnesium (0.012 g) is left.">n(Mg) = 0.0486 ÷ 24.305 = 0.00200 mol；n(HCl) = 0.30 × 0.0100 = 0.0030 mol，但需要 0.00400 mol，所以鹽酸是限量試劑。n(H<sub>2</sub>) = 0.0030 ÷ 2 = 0.0015 mol；剩下 0.00050 mol（0.012 g）鎂。</li>
+          <li data-en-html="P(H&lt;sub&gt;2&lt;/sub&gt;) = 755 − 23.8 = 731.2 mmHg; V(STP) = 48.6 × (731.2 ÷ 760) × (273.15 ÷ 298.15) = 42.8 mL; n(H&lt;sub&gt;2&lt;/sub&gt;) = 42.8 ÷ 22414 = 0.00191 mol; atomic mass = 0.0480 ÷ 0.00191 = 25.1 (the accepted value is 24.3).">P(H<sub>2</sub>) = 755 − 23.8 = 731.2 mmHg；V(STP) = 48.6 × (731.2 ÷ 760) × (273.15 ÷ 298.15) = 42.8 mL；n(H<sub>2</sub>) = 42.8 ÷ 22414 = 0.00191 mol；原子量 = 0.0480 ÷ 0.00191 = 25.1（公認值 24.3）。</li>
           <li data-en-html="Only then is the pressure of the gas equal to the atmospheric pressure, which is what we use in the calculation. If the water inside is higher, the gas is at a lower pressure and its volume is larger than it should be: we overestimate n(H&lt;sub&gt;2&lt;/sub&gt;), so the atomic mass comes out too small.">這樣氣體的壓力才等於計算時用的大氣壓。量筒內的水面比較高時，氣體壓力較小、體積偏大，算出的 n(H<sub>2</sub>) 偏大，原子量偏小。</li>
           <li data-en="An atomic mass that is too large means too little hydrogen was counted: the acid was the limiting reactant (not all the magnesium reacted); gas escaped from the cylinder or the stopper leaked; the reading was taken before the reaction finished; the ribbon was covered with oxide.">原子量偏大表示算到的氫氣太少：鹽酸是限量試劑（鎂沒有完全反應）、氣體從量筒冒走或瓶塞漏氣、反應還沒結束就讀數、鎂帶表面有氧化層。</li>
         </ol>
@@ -253,12 +281,12 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="Atomic masses: Mg 24.305, O 15.999 (IUPAC standard atomic weights, conventional values). Gas constant R = 8.314462618 J/(mol·K) (exact in the SI); 1 mmHg is taken as 1 torr = 101325/760 Pa.">原子量：Mg 24.305、O 15.999（IUPAC 標準原子量的慣用值）。氣體常數 R = 8.314462618 J/(mol·K)（SI 定義值）；1 mmHg 取 1 torr = 101325/760 Pa。</li>
-        <li data-en="Vapour pressure of water: the IAPWS saturation curve of Wagner and Pruss (2002), which the CRC Handbook table is calculated from (for example 23.78 mmHg at 25 °C).">水的飽和蒸氣壓：IAPWS 的 Wagner–Pruss 飽和曲線公式（2002；CRC Handbook 的水蒸氣壓表就是用它算的），例如 25 °C 是 23.78 mmHg。</li>
+        <li data-en="Atomic masses: Mg 24.305, O 15.999 (IUPAC standard atomic weights, conventional values). Gas constant R = 8.314462618 J/(mol·K) (exact in the SI); 1 mmHg is taken as 1 torr = 101325/760 Pa.">原子量：Mg 24.305、O 15.999（IUPAC 標準原子量的慣用值）。氣體常數 R = 8.314462618 J/(mol·K)（SI 定義值）；1 mmHg 取 1 torr = 101325/760 Pa。</li>
+        <li data-en="Vapour pressure of water: the IAPWS saturation curve of Wagner and Pruss (2002), which the CRC Handbook table is calculated from (for example 23.78 mmHg at 25 °C).">水的飽和蒸氣壓：IAPWS 的 Wagner–Pruss 飽和曲線公式（2002；CRC Handbook 的水蒸氣壓表就是用它算的），例如 25 °C 是 23.78 mmHg。</li>
         <li data-en="Hydrogen is treated as an ideal gas; its solubility in water and the heat of the reaction are ignored (the gas is at the temperature of the water). The air pushed out of the flask has the same volume as the hydrogen formed, so the cylinder collects exactly that volume.">氫氣當成理想氣體；不計氫氣溶在水裡的量與反應熱（氣體與水同溫）。瓶中的空氣被推進量筒，體積和產生的氫氣相同，所以量筒收集到的就是這個體積。</li>
-        <li data-en="The cylinders: 25 mL (0.5 mL divisions, inner diameter 1.8 cm), 100 mL (1 mL, 2.7 cm) and 250 mL (2 mL, 3.7 cm); the lowest mark is at one tenth of the capacity. When the water is not levelled, the cylinder stays clamped with its mouth 2 cm under the water, and the water column inside lowers the gas pressure (1 cm of water = 0.733 mmHg). Gas that reaches the mouth escapes.">量筒：25 mL（最小刻度 0.5 mL、內徑 1.8 cm）、100 mL（1 mL、2.7 cm）、250 mL（2 mL、3.7 cm），最低刻度是容量的十分之一。沒有對齊液面時，量筒夾在筒口位於水面下 2 cm 的位置，筒內的水柱使氣體壓力變小（1 cm 水柱 = 0.733 mmHg）。氣體到了筒口就會冒走。</li>
-        <li data-en-html="The rate is only illustrative: rate = k·n(Mg)·[H&lt;sup&gt;+&lt;/sup&gt;], with k = 0.1 L/(mol·s) at 25 °C and an activation energy of 40 kJ/mol. The reaction is taken as finished when 0.1% of the limiting reactant is left. The amount of hydrogen is exact.">反應速率只是示意：速率 = k·n(Mg)·[H<sup>+</sup>]，25 °C 時 k = 0.1 L/(mol·s)、活化能 40 kJ/mol；限量試劑剩 0.1% 時算反應結束。氫氣的量是精確的。</li>
-        <li data-en="A ribbon that has not been cleaned is taken to be 2% magnesium oxide by mass (an illustration); the oxide reacts with the acid first and gives no hydrogen.">沒磨亮的鎂帶設定成質量的 2% 是氧化鎂（示意）；氧化鎂先和鹽酸反應，不產生氫氣。</li>
+        <li data-en="The cylinders: 25 mL (0.5 mL divisions, inner diameter 1.8 cm), 100 mL (1 mL, 2.7 cm) and 250 mL (2 mL, 3.7 cm); the lowest mark is at one tenth of the capacity. When the water is not levelled, the cylinder stays clamped with its mouth 2 cm under the water, and the water column inside lowers the gas pressure (1 cm of water = 0.733 mmHg). Gas that reaches the mouth escapes.">量筒：25 mL（最小刻度 0.5 mL、內徑 1.8 cm）、100 mL（1 mL、2.7 cm）、250 mL（2 mL、3.7 cm），最低刻度是容量的十分之一。沒有對齊液面時，量筒夾在筒口位於水面下 2 cm 的位置，筒內的水柱使氣體壓力變小（1 cm 水柱 = 0.733 mmHg）。氣體到了筒口就會冒走。</li>
+        <li data-en-html="The rate is only illustrative: rate = k·n(Mg)·[H&lt;sup&gt;+&lt;/sup&gt;], with k = 0.1 L/(mol·s) at 25 °C and an activation energy of 40 kJ/mol. The reaction is taken as finished when 0.1 % of the limiting reactant is left. The amount of hydrogen is exact.">反應速率只是示意：速率 = k·n(Mg)·[H<sup>+</sup>]，25 °C 時 k = 0.1 L/(mol·s)、活化能 40 kJ/mol；限量試劑剩 0.1 % 時算反應結束。氫氣的量是精確的。</li>
+        <li data-en="A ribbon that has not been cleaned is taken to be 2 % magnesium oxide by mass (an illustration); the oxide reacts with the acid first and gives no hydrogen.">沒磨亮的鎂帶設定成質量的 2 % 是氧化鎂（示意）；氧化鎂先和鹽酸反應，不產生氫氣。</li>
       </ul>
 
       <h3 data-en="Safety">安全提醒</h3>
@@ -267,7 +295,7 @@
       <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: senior-high chemistry · chemical reactions (stoichiometry, limiting reactant) and gases (ideal gas law, Dalton's law of partial pressures); the textbook experiment on the molar volume of a gas.">課綱對應：高中化學・化學反應（化學計量、限量試劑）與氣體（理想氣體方程式、道耳頓分壓定律）；課本的「氣體莫耳體積的測定」實驗。</li>
-        <li data-en-html="W. Wagner and A. Pruss, &lt;i&gt;J. Phys. Chem. Ref. Data&lt;/i&gt; 31, 387 (2002); the same values as &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, “Vapor Pressure of Water from 0 to 370 °C”.">W. Wagner、A. Pruss，《J. Phys. Chem. Ref. Data》31 卷 387 頁（2002）；與《CRC Handbook of Chemistry and Physics》的「水的蒸氣壓（0–370 °C）」表數值相同。</li>
+        <li data-en-html="W. Wagner and A. Pruss, &lt;i&gt;J. Phys. Chem. Ref. Data&lt;/i&gt; 31, 387 (2002); the same values as &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, “Vapor Pressure of Water from 0 to 370 °C”.">W. Wagner、A. Pruss，《J. Phys. Chem. Ref. Data》31 卷 387 頁（2002）；與《CRC Handbook of Chemistry and Physics》的「水的蒸氣壓（0–370 °C）」表數值相同。</li>
         <li data-en-html="IUPAC Commission on Isotopic Abundances and Atomic Weights, standard atomic weights; OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, sections 4.4 (reaction yields) and 9.3 (Dalton's law, collecting gases over water).">IUPAC 同位素豐度與原子量委員會的標準原子量；OpenStax《Chemistry 2e》第 4.4 節（反應產量）、第 9.3 節（道耳頓分壓定律、排水集氣）（英文）。</li>
       </ul>
     </section>
@@ -277,18 +305,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/stoichiometry-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/stoichiometry.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="stoichiometry"></script>
-  <script src="js/missions/stoichiometry.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="stoichiometry"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/stoichiometry-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/stoichiometry.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="stoichiometry"></script>
+  <script src="js/missions/stoichiometry.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="stoichiometry"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

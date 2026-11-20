@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Reaction Rates and Collision Theory | Astro Ni Lab">反應速率與碰撞學說｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 反應速率頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .rr canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
@@ -121,6 +121,31 @@
     .notes ol li, .notes ul li { margin: 3px 0; }
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    #view3 .r3-hud.bl, #view3 .m3-hud .bl { bottom: 62px; }
+    .bench-pages { display: none; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bench-pages { display: flex; gap: 4px; margin: 8px 0; }
+      .bench-pages label { position: relative; display: flex; align-items: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+      .bench-pages input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+      .bench-pages label:has(:checked) { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+      .bench-pages label:focus-within { outline: 2px solid var(--accent); }
+      /* 未選的圖表保留排版寬度，切換時能直接沿用原來的座標與資料。 */
+      .bench-pages:not(:has(#bench-graphs:checked)) ~ [data-bench-section="graphs"],
+      .bench-pages:has(#bench-graphs:checked) ~ [data-bench-section="apparatus"] {
+        position: absolute; visibility: hidden; pointer-events: none; width: 100%; height: 0; overflow: hidden;
+      }
+      .wrap:has(.bench-pages) { position: relative; }
+      .bench-work { height: calc(100dvh - 12px); display: flex; flex-direction: column; }
+      .bench-visual { flex: 1 1 0; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+      .bench-visual #cv { width: auto; height: auto !important; max-width: 100%; max-height: 100%; aspect-ratio: auto; min-width: 0; }
+      .bench-visual #view3:empty { display: none; }
+      .bench-visual #view3, .bench-visual .m3-wrap { width: 100%; height: 100%; min-height: 0; }
+      .bench-visual #view3 canvas { width: 100%; height: 100% !important; aspect-ratio: auto; }
+      .bench-visual .v3nav-hint { display: none; }
+      .bench-actions { flex: none; }
+      .bench-actions .playbar { gap: 4px; margin: 4px 0 0; }
+      .bench-actions button { min-height: 44px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -132,8 +157,12 @@
     </header>
 
     <!-- 第一部分：分子碰撞 -->
-    <p class="try-hint" data-en="Try it: raise the temperature from 400 K to 700 K and watch how many more bright flashes (reactions) you see — and how fast A and B run out.">試試看：把溫度從 400 K 拉到 700 K，看亮閃光（反應）多了多少，A 和 B 又消耗得多快。</p>
-    <div class="lab rr">
+    <p class="try-hint" data-en="Try it: raise the temperature from 400 K to 700 K and watch how many more bright flashes (reactions) you see — and how fast A and B run out.">試試看：把溫度從 400 K 拉到 700 K，看亮閃光（反應）多了多少，A 和 B 又消耗得多快。</p>
+    <div class="bench-pages" role="group" aria-label="實驗畫面" data-en-aria-label="Experiment view" data-share-skip>
+      <label><input type="radio" name="bench-page" value="apparatus" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input id="bench-graphs" type="radio" name="bench-page" value="graphs"><span data-en="Graphs and data">圖表與數據</span></label>
+    </div>
+    <div class="lab rr" data-bench-section="apparatus">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -143,24 +172,30 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="反應容器：分子 A、B、C、D 在立體容器中運動與碰撞"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
-          <button id="restart" type="button" data-en="New run" title="用目前的設定重新放入 A 和 B，開始新的一次實驗（上一次的結果留在數據表）" data-en-title="Put fresh A and B into the box with the current settings and start a new run (the last run stays in the data table)">重新開始</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、圖上的舊曲線與所有統計；滑桿設定不變" data-en-title="Clear the data table, the old curves and all statistics; the sliders stay as they are">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
-            <div class="seg3" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false" data-en="Slow-mo">慢動作</button>
-              <button type="button" id="sp1" aria-pressed="true" data-en="Normal">正常</button>
-              <button type="button" id="sp2" aria-pressed="false" data-en="Fast ×10">快轉 ×10</button>
+        <div class="bench-work">
+          <div class="bench-visual">
+            <canvas id="cv" role="img" aria-label="反應容器：分子 A、B、C、D 在立體容器中運動與碰撞"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="bench-actions" data-stage-controls>
+            <div class="playbar">
+              <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+              <button id="restart" type="button" data-en="New run" title="用目前的設定重新放入 A 和 B，開始新的一次實驗（上一次的結果留在數據表）" data-en-title="Put fresh A and B into the box with the current settings and start a new run (the last run stays in the data table)">重新開始</button>
+              <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、圖上的舊曲線與所有統計；滑桿設定不變" data-en-title="Clear the data table, the old curves and all statistics; the sliders stay as they are">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
+                <div class="seg3" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false" data-en="Slow-mo">慢動作</button>
+                  <button type="button" id="sp1" aria-pressed="true" data-en="Normal">正常</button>
+                  <button type="button" id="sp2" aria-pressed="false" data-en="Fast ×10">快轉 ×10</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
         <div class="legend" id="spLegend"></div>
         <p class="status" id="status" aria-live="polite"></p>
-        <p class="hint" data-en="Molecules are drawn to scale (diameter 0.6 nm in a 12 nm box). Bright flash: a reaction. Faint grey ring: a collision with enough energy that did not react because the molecules met the wrong way round. Speeds: slow-mo 2 ps per second, normal 20 ps, fast 200 ps.">分子依比例畫出（直徑 0.6 nm，容器邊長 12 nm）。亮閃光：發生反應；淡灰色圓圈：能量足夠、但方向不對而沒有反應的碰撞。播放速度：慢動作每秒 2 ps、正常 20 ps、快轉 200 ps。</p>
+        <p class="hint" data-en="Molecules are drawn to scale (diameter 0.6 nm in a 12 nm box). Bright flash: a reaction. Faint grey ring: a collision with enough energy that did not react because the molecules met the wrong way round. Speeds: slow-mo 2 ps per second, normal 20 ps, fast 200 ps.">分子依比例畫出（直徑 0.6 nm，容器邊長 12 nm）。亮閃光：發生反應；淡灰色圓圈：能量足夠、但方向不對而沒有反應的碰撞。播放速度：慢動作每秒 2 ps、正常 20 ps、快轉 200 ps。</p>
       </div>
 
       <aside class="panel">
@@ -192,13 +227,13 @@
             <input id="na" type="range" min="20" max="200" step="10" value="100" data-decimals="0"></div>
           <div class="slider"><label for="nb" data-en="Molecules of B">B 的分子數</label><output id="nbo"></output>
             <input id="nb" type="range" min="20" max="200" step="10" value="100" data-decimals="0"></div>
-          <p class="hint" data-en="Box volume 1728 nm³: 100 molecules = 0.0961 mol/L.">容器容積 1728 nm³：100 個分子 = 0.0961 mol/L。</p>
+          <p class="hint" data-en-html="Box volume 1728 nm&lt;sup&gt;3&lt;/sup&gt;: 100 molecules = 0.0961 mol/L.">容器容積 1728 nm<sup>3</sup>：100 個分子 = 0.0961 mol/L。</p>
         </section>
       </aside>
     </div>
 
     <!-- 第二部分：圖表、數據表與分析 -->
-    <div class="lab rr">
+    <div class="lab rr" data-bench-section="graphs">
       <div class="stage">
         <h2 data-en="Graphs and data table">圖表與數據表</h2>
         <div class="seg4 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -224,7 +259,7 @@
         </section>
         <section class="card" id="mysCard" data-share-skip>
           <h2 data-en="Unknown reaction">未知反應</h2>
-          <p class="hint" data-en-html="A reaction with a hidden activation energy (between 8 and 20 kJ/mol). Measure k at several temperatures, read the slope of the Arrhenius plot and enter E&lt;sub&gt;a&lt;/sub&gt;.">活化能看不到（在 8～20 kJ/mol 之間）的反應。在幾個不同溫度量出 k，由阿瑞尼斯圖的斜率求出 E<sub>a</sub> 再填入。</p>
+          <p class="hint" data-en-html="A reaction with a hidden activation energy (between 8 and 20 kJ/mol). Measure k at several temperatures, read the slope of the Arrhenius plot and enter E&lt;sub&gt;a&lt;/sub&gt;.">活化能看不到（在 8～20 kJ/mol 之間）的反應。在幾個不同溫度量出 k，由阿瑞尼斯圖的斜率求出 E<sub>a</sub> 再填入。</p>
           <div class="btns"><button type="button" id="mysOn" data-en="Start an unknown reaction">開始未知反應</button></div>
           <div id="mysBox" hidden>
             <div class="ans"><label for="ansEa" data-en-html="E&lt;sub&gt;a&lt;/sub&gt; (kJ/mol)">E<sub>a</sub>（kJ/mol）</label><input id="ansEa" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 12.5" data-en-placeholder="e.g. 12.5"></div>
@@ -258,7 +293,7 @@
       <p data-en-html="\(r\) is the reaction rate, \(Z_{AB}\) the number of A–B collisions per unit time and volume (proportional to [A][B]), \(f\) the fraction of collisions with enough energy, and \(p\) the fraction with a suitable orientation (here 1, or 1/4 when “Orientation matters” is on).">\(r\) 是反應速率，\(Z_{AB}\) 是單位時間、單位體積內 A 與 B 的碰撞次數（和 [A][B] 成正比），\(f\) 是能量足夠的碰撞所占的比例，\(p\) 是位向適當的比例（本模擬為 1；勾選「方向要對才反應」時是 1/4）。</p>
 
       <h3 data-en="Temperature and the energy distribution">溫度與能量分布</h3>
-      <p data-en-html="The molecules of a gas do not all have the same energy: their kinetic energies follow the Maxwell–Boltzmann distribution. Raising the temperature flattens and widens the curve and moves more molecules beyond \(E_\mathrm{a}\). Because \(f = e^{-E_\mathrm{a}/RT}\) is exponential, a modest rise in temperature can multiply the rate: with \(E_\mathrm{a}\) = 50 kJ/mol, going from 300 K to 310 K almost doubles it. (The collision rate itself only grows as \(\sqrt{T}\), about 2% for the same 10 K.)">氣體分子的能量並不相同，動能呈馬克士威–波茲曼分布。溫度升高，曲線變矮變寬，超過 \(E_\mathrm{a}\) 的分子變多。因為 \(f = e^{-E_\mathrm{a}/RT}\) 是指數函數，溫度稍微升高就能讓速率加倍：\(E_\mathrm{a}\) = 50 kJ/mol 時，由 300 K 升到 310 K，速率幾乎變成兩倍；碰撞次數本身只跟 \(\sqrt{T}\) 成正比，同樣 10 K 只多約 2%。</p>
+      <p data-en-html="The molecules of a gas do not all have the same energy: their kinetic energies follow the Maxwell–Boltzmann distribution. Raising the temperature flattens and widens the curve and moves more molecules beyond \(E_\mathrm{a}\). Because \(f = e^{-E_\mathrm{a}/RT}\) is exponential, a modest rise in temperature can multiply the rate: with \(E_\mathrm{a}\) = 50 kJ/mol, going from 300 K to 310 K almost doubles it. (The collision rate itself only grows as \(\sqrt{T}\), about 2 % for the same 10 K.)">氣體分子的能量並不相同，動能呈馬克士威–波茲曼分布。溫度升高，曲線變矮變寬，超過 \(E_\mathrm{a}\) 的分子變多。因為 \(f = e^{-E_\mathrm{a}/RT}\) 是指數函數，溫度稍微升高就能讓速率加倍：\(E_\mathrm{a}\) = 50 kJ/mol 時，由 300 K 升到 310 K，速率幾乎變成兩倍；碰撞次數本身只跟 \(\sqrt{T}\) 成正比，同樣 10 K 只多約 2 %。</p>
 
       <h3 data-en="Concentration and the rate law">濃度與速率定律</h3>
       <p data-en-html="Doubling [A] doubles the number of A–B collisions, so it doubles the rate; the same for [B]. For this one-step reaction the rate law is">[A] 加倍，A 與 B 的碰撞次數加倍，速率也加倍；[B] 也一樣。這個一步完成的反應，速率定律為</p>
@@ -269,36 +304,36 @@
       <p data-en-html="The rate constant \(k\) does not depend on the concentrations, only on the temperature, \(E_\mathrm{a}\), the orientation factor and the size and speed of the molecules. As A and B are used up the rate falls, while \(k\) stays the same. With equal starting concentrations the time to use up half of A is \(t_{1/2} = 1/(k[\mathrm{A}]_0)\).">速率常數 \(k\) 與濃度無關，只和溫度、\(E_\mathrm{a}\)、方向因子、分子的大小與速率有關。A 和 B 漸漸用掉，速率跟著變慢，\(k\) 卻不變。兩者起始濃度相同時，A 用掉一半所需的時間為 \(t_{1/2} = 1/(k[\mathrm{A}]_0)\)。</p>
 
       <h3 data-en="Catalysts">催化劑</h3>
-      <p data-en-html="A catalyst opens another pathway with a lower activation energy. It lowers the barrier for the forward and the reverse reaction by the same amount, so \(\Delta H\) and the position of equilibrium are unchanged — equilibrium is only reached sooner. In this simulation the catalysed pathway keeps 40% of the barrier above the higher of the two ends.">催化劑提供另一條活化能較低的途徑。正反應與逆反應的活化能降低一樣多，所以 \(\Delta H\) 與平衡的位置都不變，只是更快達到平衡。本模擬中，催化後的能障只剩原來（高於兩端中較高者的部分）的 40%。</p>
+      <p data-en-html="A catalyst opens another pathway with a lower activation energy. It lowers the barrier for the forward and the reverse reaction by the same amount, so \(\Delta H\) and the position of equilibrium are unchanged — equilibrium is only reached sooner. In this simulation the catalysed pathway keeps 40 % of the barrier above the higher of the two ends.">催化劑提供另一條活化能較低的途徑。正反應與逆反應的活化能降低一樣多，所以 \(\Delta H\) 與平衡的位置都不變，只是更快達到平衡。本模擬中，催化後的能障只剩原來（高於兩端中較高者的部分）的 40 %。</p>
 
       <h3 data-en="The Arrhenius equation">阿瑞尼斯方程式</h3>
       <div class="formula multi">
         \[ k = A\,e^{-E_\mathrm{a}/RT} \]
         \[ \ln k = \ln A - \frac{E_\mathrm{a}}{R}\cdot\frac{1}{T} \]
       </div>
-      <p data-en-html="A graph of \(\ln k\) against \(1/T\) is a straight line with slope \(-E_\mathrm{a}/R\), so measuring \(k\) at several temperatures gives \(E_\mathrm{a}\). (In collision theory \(A\) grows slowly as \(\sqrt{T}\), so the slope gives a value about \(\tfrac12 RT\) higher than the threshold energy — 1.7 kJ/mol at 400 K. The unknown-reaction check allows for this.)">畫 \(\ln k\) 對 \(1/T\) 的圖會得到斜率為 \(-E_\mathrm{a}/R\) 的直線，所以在幾個溫度量出 \(k\)，就能求出 \(E_\mathrm{a}\)。（碰撞學說的 \(A\) 會隨 \(\sqrt{T}\) 緩慢變大，所以由斜率得到的值比門檻能量多約 \(\tfrac12 RT\)，400 K 時約 1.7 kJ/mol；未知反應的核對已考慮這一點。）</p>
+      <p data-en-html="A graph of \(\ln k\) against \(1/T\) is a straight line with slope \(-E_\mathrm{a}/R\), so measuring \(k\) at several temperatures gives \(E_\mathrm{a}\). (In collision theory \(A\) grows slowly as \(\sqrt{T}\), so the slope gives a value about \(\tfrac12 RT\) higher than the threshold energy — 1.7 kJ/mol at 400 K. The unknown-reaction check allows for this.)">畫 \(\ln k\) 對 \(1/T\) 的圖會得到斜率為 \(-E_\mathrm{a}/R\) 的直線，所以在幾個溫度量出 \(k\)，就能求出 \(E_\mathrm{a}\)。（碰撞學說的 \(A\) 會隨 \(\sqrt{T}\) 緩慢變大，所以由斜率得到的值比門檻能量多約 \(\tfrac12 RT\)，400 K 時約 1.7 kJ/mol；未知反應的核對已考慮這一點。）</p>
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en-html="<strong>Temperature.</strong> Run at 400 K and at 600 K with everything else the same. In “Energy distribution” compare the shaded areas beyond \(E_\mathrm{a}\); in the data table compare \(k\)."><strong>溫度</strong>：其他條件不變，在 400 K 與 600 K 各做一次。在「能量分布」比較 \(E_\mathrm{a}\) 右邊的面積，在數據表比較 \(k\)。</li>
+        <li data-en-html="<strong>Temperature.</strong> Run at 400 K and at 600 K with everything else the same. In “Energy distribution” compare the shaded areas beyond \(E_\mathrm{a}\); in the data table compare \(k\)."><strong>溫度</strong>：其他條件不變，在 400 K 與 600 K 各做一次。在「能量分布」比較 \(E_\mathrm{a}\) 右邊的面積，在數據表比較 \(k\)。</li>
         <li data-en-html="<strong>Concentration.</strong> Double the number of A molecules: the initial rate doubles but \(k\) does not change."><strong>濃度</strong>：A 的分子數加倍，初速率加倍，\(k\) 卻不變。</li>
         <li data-en-html="<strong>Catalyst.</strong> Tick “Catalyst” and look at “Energy profile”: the dashed path is lower, the ends are where they were."><strong>催化劑</strong>：勾選「加入催化劑」，看「反應進程」：虛線的能障變低，兩端的高度不變。</li>
         <li data-en-html="<strong>Orientation.</strong> Tick “Orientation matters” and switch to slow-mo: the faint grey rings are collisions that had the energy but hit the wrong side of A."><strong>位向</strong>：勾選「方向要對才反應」並切到慢動作：淡灰色的圓圈是能量足夠、卻撞在 A 錯的那一側的碰撞。</li>
-        <li data-en-html="<strong>Equilibrium.</strong> Make \(\Delta H\) small (for example −3 kJ/mol) and the temperature high: C and D start to turn back into A and B, and the amounts stop changing although reactions go on in both directions."><strong>平衡</strong>：把 \(\Delta H\) 調小（例如 −3 kJ/mol）、溫度調高：C 和 D 也會變回 A 和 B，最後各成分的量不再改變，正逆反應卻都還在進行。</li>
+        <li data-en-html="<strong>Equilibrium.</strong> Make \(\Delta H\) small (for example −3 kJ/mol) and the temperature high: C and D start to turn back into A and B, and the amounts stop changing although reactions go on in both directions."><strong>平衡</strong>：把 \(\Delta H\) 調小（例如 −3 kJ/mol）、溫度調高：C 和 D 也會變回 A 和 B，最後各成分的量不再改變，正逆反應卻都還在進行。</li>
         <li data-en-html="<strong>Heat that stays.</strong> Tick “Heat of reaction stays in the gas”, make the reaction strongly exothermic and fast, and watch the gas temperature: the reaction heats itself and speeds up."><strong>留在氣體裡的熱</strong>：勾選「反應熱留在氣體裡」，讓反應強烈放熱又很快，看容器的溫度：反應把自己加熱，越來越快。</li>
       </ul>
 
       <h3 data-en="Questions for discussion">問題與討論</h3>
       <ol>
-        <li data-en="Raising the temperature from 400 K to 500 K increases the number of collisions by only about 12%. Why does the rate increase much more?">溫度由 400 K 升到 500 K，碰撞次數只增加約 12%，為什麼反應速率增加得多很多？</li>
+        <li data-en="Raising the temperature from 400 K to 500 K increases the number of collisions by only about 12 %. Why does the rate increase much more?">溫度由 400 K 升到 500 K，碰撞次數只增加約 12 %，為什麼反應速率增加得多很多？</li>
         <li data-en="Why does the rate fall as the reaction goes on, even though the temperature stays the same?">溫度不變，為什麼反應進行時速率越來越慢？</li>
         <li data-en="A catalyst lowers the activation energy. Does it change ΔH? Does it change how much product there is at equilibrium?">催化劑降低活化能，會改變 ΔH 嗎？會改變平衡時的產物量嗎？</li>
-        <li data-en-html="With \(E_\mathrm{a}\) = 10 kJ/mol, how many times faster is the reaction at 600 K than at 300 K (ignore the change in collision rate)?">\(E_\mathrm{a}\) = 10 kJ/mol 時，600 K 的速率是 300 K 的幾倍（不考慮碰撞次數的變化）？</li>
+        <li data-en-html="With \(E_\mathrm{a}\) = 10 kJ/mol, how many times faster is the reaction at 600 K than at 300 K (ignore the change in collision rate)?">\(E_\mathrm{a}\) = 10 kJ/mol 時，600 K 的速率是 300 K 的幾倍（不考慮碰撞次數的變化）？</li>
       </ol>
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="The fraction of collisions with enough energy, \(e^{-E_\mathrm{a}/RT}\), grows exponentially. With \(E_\mathrm{a}\) = 10 kJ/mol it goes from 0.050 to 0.090 — 1.8 times — while the collision rate grows by \(\sqrt{500/400} = 1.12\).">能量足夠的碰撞比例 \(e^{-E_\mathrm{a}/RT}\) 隨溫度呈指數增加。\(E_\mathrm{a}\) = 10 kJ/mol 時，由 0.050 變成 0.090，約 1.8 倍；碰撞次數只變成 \(\sqrt{500/400} = 1.12\) 倍。</li>
+          <li data-en-html="The fraction of collisions with enough energy, \(e^{-E_\mathrm{a}/RT}\), grows exponentially. With \(E_\mathrm{a}\) = 10 kJ/mol it goes from 0.050 to 0.090 — 1.8 times — while the collision rate grows by \(\sqrt{500/400} = 1.12\).">能量足夠的碰撞比例 \(e^{-E_\mathrm{a}/RT}\) 隨溫度呈指數增加。\(E_\mathrm{a}\) = 10 kJ/mol 時，由 0.050 變成 0.090，約 1.8 倍；碰撞次數只變成 \(\sqrt{500/400} = 1.12\) 倍。</li>
           <li data-en="The rate is k[A][B]. k stays the same, but A and B are being used up, so there are fewer collisions between them.">速率等於 k[A][B]。k 不變，但 A、B 越來越少，兩者碰撞的次數變少。</li>
           <li data-en="No and no. The catalyst lowers the forward and reverse barriers by the same amount; the energies of the reactants and products, and therefore ΔH and the equilibrium constant, stay the same. Equilibrium is just reached sooner.">都不會。催化劑讓正、逆反應的能障降低一樣多，反應物與產物的能量不變，所以 ΔH 與平衡常數都不變，只是更快達到平衡。</li>
           <li data-en-html="\(e^{-E_\mathrm{a}/R(600)} \div e^{-E_\mathrm{a}/R(300)} = e^{(10000/8.314)(1/300 - 1/600)} = e^{2.00} \approx 7.4\) times.">\(e^{-E_\mathrm{a}/R(600)} \div e^{-E_\mathrm{a}/R(300)} = e^{(10000/8.314)(1/300 - 1/600)} = e^{2.00} \approx 7.4\) 倍。</li>
@@ -307,12 +342,12 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="The molecules are hard spheres in three dimensions (diameter 0.6 nm, molar mass 40 g/mol, all four kinds the same). Positions advance in steps of 0.04 ps; when two spheres overlap, the program goes back to the exact moment they touched (a quadratic equation), decides what happens and moves them on, so momentum is conserved exactly. Units: nm, ps, g/mol and kJ/mol, so all readings are real values.">分子是三維的硬球（直徑 0.6 nm、莫耳質量 40 g/mol，四種分子都一樣）。每步前進 0.04 ps；兩球重疊時，先倒回剛接觸的時刻（解二次方程式）再判定碰撞結果，動量完全守恆。單位用 nm、ps、g/mol、kJ/mol，所有讀數都是真實的數值。</li>
+        <li data-en-html="The molecules are hard spheres in three dimensions (diameter 0.6 nm, molar mass 40 g/mol, all four kinds the same). Positions advance in steps of 0.04 ps; when two spheres overlap, the program goes back to the exact moment they touched (a quadratic equation), decides what happens and moves them on, so momentum is conserved exactly. Units: nm, ps, g/mol and kJ/mol, so all readings are real values.">分子是三維的硬球（直徑 0.6 nm、莫耳質量 40 g/mol，四種分子都一樣）。每步前進 0.04 ps；兩球重疊時，先倒回剛接觸的時刻（解二次方程式）再判定碰撞結果，動量完全守恆。單位用 nm、ps、g/mol、kJ/mol，所有讀數都是真實的數值。</li>
         <li data-en-html="Reaction rule (the line-of-centres model of collision theory): an A–B collision reacts when \(\tfrac12\mu g^2 \ge E_\mathrm{a}\), where \(g\) is the speed at which they approach along the line of centres and \(\mu = M/2\). The reverse reaction C + D → A + B uses the barrier \(E_\mathrm{a} - \Delta H\). With “Orientation matters”, A (and C) can only react on one end — a cone of half-angle 60°, a quarter of its surface; the molecules spin with thermal angular velocities.">反應的判定（碰撞學說的連心線模型）：A–B 碰撞時，若 \(\tfrac12\mu g^2 \ge E_\mathrm{a}\)（\(g\) 是沿連心線接近的速率，\(\mu = M/2\)）就反應；逆反應 C + D → A + B 的門檻是 \(E_\mathrm{a} - \Delta H\)。勾選「方向要對才反應」時，A（與 C）只有一端（半頂角 60° 的圓錐，占表面的 1/4）能反應，分子以熱運動的角速度轉動。</li>
-        <li data-en-html="For hard spheres in three dimensions this rule gives exactly \(f = e^{-E_\mathrm{a}/RT}\) and \(k = p\,\chi\,\phi\,\pi d^{2}\langle v_\mathrm{rel}\rangle e^{-E_\mathrm{a}/RT}\) with \(\langle v_\mathrm{rel}\rangle = \sqrt{8RT/\pi\mu}\). Two small corrections are included: \(\chi\) ≈ 1.03–1.07 because the molecules take up some room (Carnahan–Starling), and \(\phi\) = 0.927 because the box is so small that molecules near a wall have fewer partners on one side. The tests check the simulated collision rate, energy fractions and rate constants against these formulas.">三維硬球用這個規則，恰好得到 \(f = e^{-E_\mathrm{a}/RT}\) 與 \(k = p\,\chi\,\phi\,\pi d^{2}\langle v_\mathrm{rel}\rangle e^{-E_\mathrm{a}/RT}\)，\(\langle v_\mathrm{rel}\rangle = \sqrt{8RT/\pi\mu}\)。另含兩個小修正：分子本身佔空間，碰撞多約 3～7%（\(\chi\)，Carnahan–Starling 式）；容器很小，靠牆的分子一側沒有碰撞對象，碰撞少約 7%（\(\phi\) = 0.927）。單元測試把模擬的碰撞次數、能量比例與速率常數都和這些公式對照過。</li>
-        <li data-en-html="Measured rate constant: \(k\) = (number of reactions) × \(V\) ÷ \(\int N_\mathrm{A}N_\mathrm{B}\,dt\) — every reaction counts, even as A and B run down. Its statistical uncertainty is about \(1/\sqrt{\text{number of reactions}}\). The initial rate is the average rate until 10% of the limiting reactant has reacted. When the activation energy is almost zero, almost every A–B encounter reacts, the neighbourhood of a molecule that has just reacted runs short of partners, and the measured \(k\) comes out up to about 15% below the formula — the same thing happens to very fast, diffusion-controlled reactions in real solutions.">量到的速率常數：\(k\) =（反應次數）× \(V\) ÷ \(\int N_\mathrm{A}N_\mathrm{B}\,dt\)，A、B 減少的過程中每一次反應都算進去；統計不確定度約為 \(1/\sqrt{\text{反應次數}}\)。初速率是從開始到限量試劑反應 10% 的平均速率。活化能接近 0 時，A、B 一碰就反應，剛反應過的地方附近暫時缺少反應對象，量到的 \(k\) 會比公式小（最多約 15%）；真實溶液中極快的「擴散控制」反應也有同樣的現象。</li>
+        <li data-en-html="For hard spheres in three dimensions this rule gives exactly \(f = e^{-E_\mathrm{a}/RT}\) and \(k = p\,\chi\,\phi\,\pi d^{2}\langle v_\mathrm{rel}\rangle e^{-E_\mathrm{a}/RT}\) with \(\langle v_\mathrm{rel}\rangle = \sqrt{8RT/\pi\mu}\). Two small corrections are included: \(\chi\) ≈ 1.03–1.07 because the molecules take up some room (Carnahan–Starling), and \(\phi\) = 0.927 because the box is so small that molecules near a wall have fewer partners on one side. The tests check the simulated collision rate, energy fractions and rate constants against these formulas.">三維硬球用這個規則，恰好得到 \(f = e^{-E_\mathrm{a}/RT}\) 與 \(k = p\,\chi\,\phi\,\pi d^{2}\langle v_\mathrm{rel}\rangle e^{-E_\mathrm{a}/RT}\)，\(\langle v_\mathrm{rel}\rangle = \sqrt{8RT/\pi\mu}\)。另含兩個小修正：分子本身佔空間，碰撞多約 3～7 %（\(\chi\)，Carnahan–Starling 式）；容器很小，靠牆的分子一側沒有碰撞對象，碰撞少約 7 %（\(\phi\) = 0.927）。單元測試把模擬的碰撞次數、能量比例與速率常數都和這些公式對照過。</li>
+        <li data-en-html="Measured rate constant: \(k\) = (number of reactions) × \(V\) ÷ \(\int N_\mathrm{A}N_\mathrm{B}\,dt\) — every reaction counts, even as A and B run down. Its statistical uncertainty is about \(1/\sqrt{\text{number of reactions}}\). The initial rate is the average rate until 10 % of the limiting reactant has reacted. When the activation energy is almost zero, almost every A–B encounter reacts, the neighbourhood of a molecule that has just reacted runs short of partners, and the measured \(k\) comes out up to about 15 % below the formula — the same thing happens to very fast, diffusion-controlled reactions in real solutions.">量到的速率常數：\(k\) =（反應次數）× \(V\) ÷ \(\int N_\mathrm{A}N_\mathrm{B}\,dt\)，A、B 減少的過程中每一次反應都算進去；統計不確定度約為 \(1/\sqrt{\text{反應次數}}\)。初速率是從開始到限量試劑反應 10 % 的平均速率。活化能接近 0 時，A、B 一碰就反應，剛反應過的地方附近暫時缺少反應對象，量到的 \(k\) 會比公式小（最多約 15 %）；真實溶液中極快的「擴散控制」反應也有同樣的現象。</li>
         <li data-en-html="The walls are a heat bath: a molecule that hits them comes back with a velocity drawn from the Maxwell–Boltzmann distribution at T. Normally the heat of reaction is also taken up by the bath at once (the products fly apart like an elastic collision), so the temperature stays constant. With “Heat of reaction stays in the gas” the products take away the collision energy minus \(\Delta H\), and an exothermic reaction warms the gas.">器壁是恆溫槽：撞牆的分子依溫度 T 的馬克士威–波茲曼分布重新射出。平常反應熱也立刻由恆溫槽吸收或供給（產物像彈性碰撞一樣分開），溫度保持不變；勾選「反應熱留在氣體裡」時，產物分走「碰撞能量 − \(\Delta H\)」，放熱反應會讓氣體變熱。</li>
-        <li data-en-html="All four molecules have the same mass and size, so the equilibrium constant is exactly \(K = [\mathrm{C}][\mathrm{D}]/([\mathrm{A}][\mathrm{B}]) = e^{-\Delta H/RT}\). To see reactions among a few hundred molecules in seconds, the activation energies (0–40 kJ/mol) are smaller than those of most real reactions (often 50–150 kJ/mol). The reaction A + B → C + D is a model, not a particular real reaction.">四種分子質量、大小相同，平衡常數恰好是 \(K = [\mathrm{C}][\mathrm{D}]/([\mathrm{A}][\mathrm{B}]) = e^{-\Delta H/RT}\)。為了在幾百個分子、幾秒鐘內就看得到反應，活化能（0～40 kJ/mol）比多數真實反應（常見 50～150 kJ/mol）小。A + B → C + D 是示意的反應，不是某個特定的真實反應。</li>
+        <li data-en-html="All four molecules have the same mass and size, so the equilibrium constant is exactly \(K = [\mathrm{C}][\mathrm{D}]/([\mathrm{A}][\mathrm{B}]) = e^{-\Delta H/RT}\). To see reactions among a few hundred molecules in seconds, the activation energies (0–40 kJ/mol) are smaller than those of most real reactions (often 50–150 kJ/mol). The reaction A + B → C + D is a model, not a particular real reaction.">四種分子質量、大小相同，平衡常數恰好是 \(K = [\mathrm{C}][\mathrm{D}]/([\mathrm{A}][\mathrm{B}]) = e^{-\Delta H/RT}\)。為了在幾百個分子、幾秒鐘內就看得到反應，活化能（0～40 kJ/mol）比多數真實反應（常見 50～150 kJ/mol）小。A + B → C + D 是示意的反應，不是某個特定的真實反應。</li>
         <li data-en-html="The 2D view is a perspective drawing of the same three-dimensional box; the 3D view (three.js, MIT licence, downloaded only when you switch to it) draws the same molecules at the same positions.">2D 平面是同一個立體容器的透視圖；3D 立體（使用 three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子、同樣的位置。</li>
       </ul>
 
@@ -330,18 +365,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/reaction-rate-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/reaction-rate-3d.js?v=202611201125"></script>
-  <script src="js/reaction-rate.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="reaction-rate"></script>
-  <script src="js/missions/reaction-rate.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="reaction-rate"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/reaction-rate-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/reaction-rate-3d.js?v=202611201126"></script>
+  <script src="js/reaction-rate.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="reaction-rate"></script>
+  <script src="js/missions/reaction-rate.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="reaction-rate"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

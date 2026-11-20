@@ -18,6 +18,7 @@
     const HL = K.L / 2, WL = HL + K.D / 2, R = K.D / 2;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', T('反應容器的 3D 立體檢視：分子 A、B、C、D 在玻璃箱中運動與碰撞（拖曳旋轉、雙指或滾輪縮放）',
       '3D view of the reaction box: molecules A, B, C and D moving and colliding in a glass box (drag to rotate, pinch or scroll to zoom)'));
     canvas.setAttribute('role', 'img');
@@ -46,7 +47,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 8;
     controls.maxDistance = 120;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: K.L / 2, T });
 
     // ---------- 光源 ----------
     const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.5);
@@ -268,13 +269,17 @@
       const dist = (WL * 1.95) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1, camera.aspect) * 1.0;
       if (force) {
         controls.target.set(0, 0, 0);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(dist);
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, vh = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(320, w * 0.95)) : Math.round(Math.min(480, Math.max(380, w * 0.62))); }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(320, w * 0.95)) : Math.round(Math.min(480, Math.max(380, w * 0.62)));
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -297,7 +302,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; if (!H.running()) renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -318,6 +323,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

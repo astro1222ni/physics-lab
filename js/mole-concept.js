@@ -10,6 +10,46 @@
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+  // 分段量字再對齊，沿用目前的基線、字型與主題色。
+  function drawNotation(g, label, x, y, color, align, baseline, font, maxWidth) {
+    g.save();
+    const px = Number(font.match(/([\d.]+)px/)[1]);
+    const small = font.replace(/[\d.]+px/, (px * 0.72) + 'px');
+    const runs = label.split(/(<su[bp]>[^<]+<\/su[bp]>)/).filter(Boolean).map(function (t) {
+      const match = /^<(sub|sup)>([^<]+)<\/\1>$/.exec(t);
+      const text = match ? match[2] : t;
+      const face = match ? small : font;
+      g.font = face;
+      return { text: text, face: face, width: g.measureText(text).width,
+        dy: match ? (match[1] === 'sub' ? 0.24 : -0.40) * px : 0 };
+    });
+    const width = runs.reduce(function (sum, run) { return sum + run.width; }, 0);
+    g.translate(x, y);
+    if (maxWidth && width > maxWidth) g.scale(maxWidth / width, 1);
+    let left = align === 'right' ? -width : align === 'center' ? -width / 2 : 0;
+    runs.forEach(function (run) {
+      LD.haloText(g, run.text, left, run.dy, color, 'left', baseline, run.face);
+      left += run.width;
+    });
+    g.restore();
+  }
+
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.MoleCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -48,7 +88,7 @@
     if (nm >= 1e7) return { v: sigf(nm / 1e7, sig || 3), u: 'cm' };
     return { v: sigf(nm / u[0], sig || 3), u: u[1] };
   }
-  function lenStr(nm, sig) { const p = lenParts(nm, sig); return p.v + ' ' + p.u; }
+  function lenStr(nm, sig) { const p = lenParts(nm, sig); return p.v + ' ' + p.u; }
 
   // ======================= 名稱 =======================
   function subName(s) { return T(s.zh, s.en); }
@@ -85,7 +125,7 @@
   function val(e) { return window.LabNum ? window.LabNum.value(e) : +e.value; }
   function setVal(e, v) { syncing = true; if (window.LabNum) window.LabNum.set(e, v); else e.value = v; syncing = false; }
   const statusEl = $('status');
-  function setStatus(s) { statusEl.textContent = s || ''; }
+  function setStatus(s) { statusEl.innerHTML = formulaMarkup(s || ''); }
 
   // ---------- 天平：每盤的滑桿（對數，範圍依質量 10^-4 – 10^3 g） ----------
   function massOfPos(p) { return Math.pow(10, MLOG0 + (MLOG1 - MLOG0) * p / 1000); }
@@ -120,9 +160,10 @@
   }
   function showPan(P) {
     const s = C.SUB[P.id], v = panValue(P);
+    $(P === pans.A ? 'subAFormula' : 'subBFormula').innerHTML = fH(s.f);
     const p = sciParts(v, 4);
     const u = P.unit === 'N' ? (T('個', ' ') + kindName(s, true)).trim() : unitName(P.unit, s);
-    P.out.innerHTML = (p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>') + ' ' + u;
+    P.out.innerHTML = (p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>') + ' ' + u;
     const lab = P === pans.A ? $('amtALabel') : $('amtBLabel');
     lab.textContent = P.unit === 'g' ? T('質量', 'Mass') : P.unit === 'mol' ? T('莫耳數', 'Amount') : P.unit === 'N' ? T('粒子數', 'Number of particles') : (s.phase === 'g' ? T('體積（氣體）', 'Volume (gas)') : T('體積', 'Volume'));
     document.querySelectorAll('#unit' + (P === pans.A ? 'A' : 'B') + ' button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.unit === P.unit)); });
@@ -135,7 +176,8 @@
       og.label = g[1];
       C.SUBS.filter(function (s) { return s.phase === g[0]; }).forEach(function (s) {
         const o = document.createElement('option');
-        o.value = s.id; o.textContent = subName(s) + '  ' + s.f;
+        o.value = s.id;
+        o.textContent = subName(s) + ' ' + s.f;
         og.appendChild(o);
       });
       sel.appendChild(og);
@@ -158,9 +200,9 @@
   function zData(src) { return C.zoomData(zSub(), zL(), zV0(), zCuts(), src); }
   function showZoomOut() {
     const L = zL(), lp = lenParts(L, 4);
-    $('zoomLo').textContent = lp.v + ' ' + lp.u;
-    $('V0o').textContent = sigf(zV0(), 3) + ' mL';
-    $('cutso').textContent = zCuts() + ' ' + T('刀', zCuts() === 1 ? 'cut' : 'cuts');
+    $('zoomLo').textContent = lp.v + ' ' + lp.u;
+    $('V0o').textContent = sigf(zV0(), 3) + ' mL';
+    $('cutso').textContent = zCuts() + ' ' + T('刀', zCuts() === 1 ? 'cut' : 'cuts');
     $('uncutBtn').disabled = zCuts() <= 0;
   }
 
@@ -174,7 +216,7 @@
     if (msg != null) setStatus(msg);
   }
   function showFilmOut() {
-    $('dilo').textContent = num(val(elF.dil), 0) + ' mL';
+    $('dilo').textContent = num(val(elF.dil), 0) + ' mL';
     $('kko').textContent = num(val(elF.k), 2);
   }
 
@@ -185,7 +227,7 @@
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function font(px, w) { return (w ? w + ' ' : '') + px + 'px ' + LD.FONT; }
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -198,7 +240,10 @@
   function resizeGraph() {
     const w = gcv.clientWidth;
     if (!w) return;
-    gw = w; gh = w < 560 ? Math.round(Math.max(300, w * 0.85)) : 320;
+    gw = w;
+    const preferred = w < 560 ? Math.round(Math.max(300, w * 0.85)) : 320;
+    gh = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.min(preferred, Math.max(1, innerHeight - 64)) : preferred;
     if (gcv.style.height !== gh + 'px') gcv.style.height = gh + 'px';
     gcv.width = Math.round(gw * dpr); gcv.height = Math.round(gh * dpr);
   }
@@ -370,11 +415,11 @@
       const lx = px - (wl + wf) / 2, ly = py + 30;
       LD.haloText(g, q[3], lx, ly, q[2], 'left', 'alphabetic', font(15, 800));
       formula(g, sub.f, lx + wl, ly, col.text, 14, 'left', 700);
-      LD.pill(g, sigf(s.m, 4) + ' g' + (tiny ? T('（實際更小）', ' (even smaller)') : ''), px, ly + 22, q[2], 'center', font(12, 600));
+      LD.pill(g, sigf(s.m, 4) + ' g' + (tiny ? T('（實際更小）', ' (even smaller)') : ''), px, ly + 22, q[2], 'center', font(12, 600));
     });
     // 狀態
     const dm = b.m - a.m;
-    const txt = Math.abs(dm) <= 0.01 ? T('平衡', 'Level') : (dm > 0 ? T('右盤重 ', 'Right heavier by ') : T('左盤重 ', 'Left heavier by ')) + sigf(Math.abs(dm), 3) + ' g';
+    const txt = Math.abs(dm) <= 0.01 ? T('平衡', 'Level') : (dm > 0 ? T('右盤重 ', 'Right heavier by ') : T('左盤重 ', 'Left heavier by ')) + sigf(Math.abs(dm), 3) + ' g';
     LD.pill(g, txt, cx, pad + fsz(18), Math.abs(dm) <= 0.01 ? col.probe : col.text, 'center', font(13, 700));
     // 粒子數比
     const rN = b.N / a.N;
@@ -387,7 +432,7 @@
     const sx = pad, sy = ch - pad - 4, lw = L * sc;
     g.strokeStyle = col.text; g.lineWidth = 2;
     g.beginPath(); g.moveTo(sx, sy - 5); g.lineTo(sx, sy); g.lineTo(sx + lw, sy); g.lineTo(sx + lw, sy - 5); g.stroke();
-    LD.haloText(g, (L >= 1 ? num(L, 0) : num(L, 1)) + ' cm', sx + lw + 6, sy, col.text, 'left', 'alphabetic', font(12, 600));
+    LD.haloText(g, (L >= 1 ? num(L, 0) : num(L, 1)) + ' cm', sx + lw + 6, sy, col.text, 'left', 'alphabetic', font(12, 600));
     LD.haloText(g, T('樣品畫成實際體積的立方體', 'Samples drawn as cubes of their real volume'), cw - pad, sy, col.muted, 'right', 'alphabetic', font(11));
     return { a: a, b: b };
   }
@@ -412,8 +457,8 @@
   }
   // 水：一層分子的排列（六角格加亂數位移，週期性拼貼）
   const WT = (function () {
-    const n = C.countInCube(C.ZOOM.H2O, 1);          // 每 nm³
-    const dens2 = Math.pow(n, 2 / 3);                 // 一層的面密度 nm⁻²
+    const n = C.countInCube(C.ZOOM.H2O, 1);          // 每 nm^3
+    const dens2 = Math.pow(n, 2 / 3);                 // 一層的面密度 nm^−2
     const a = Math.sqrt(2 / (Math.sqrt(3) * dens2));
     const m = 12, k = 14, W = m * a, H = k * a * Math.sqrt(3) / 2;
     const pts = [];
@@ -580,15 +625,15 @@
       const N0 = C.countInVolume(z, V0), d = C.spacing(z), f = font(13, 600), lh = fsz(13) * (below ? 1.6 : 1.9);
       let yy = iy;
       const line = function (s, color, ff) { LD.haloText(g, s, ix, yy, color || col.text, 'left', 'alphabetic', ff || f); yy += lh; };
-      line(T(zz.zh, zz.en) + ' ' + sigf(V0, 3) + ' mL' + T(z.id === 'H2O' ? '（一滴）' : '（一小塊）', z.id === 'H2O' ? ' (a drop)' : ' (a small piece)'), col.text, font(14, 700));
+      line(T(zz.zh, zz.en) + ' ' + sigf(V0, 3) + ' mL' + T(z.id === 'H2O' ? '（一滴）' : '（一小塊）', z.id === 'H2O' ? ' (a drop)' : ' (a small piece)'), col.text, font(14, 700));
       sciText(g, ix, T('共約 ', 'about '), ' ' + kindName(zz, true), yy, col.accent, 13, 'left', 3)(N0); yy += lh * 1.3;
       line(T('每個粒子平均分到的空間', 'Space for each particle'), col.muted, font(12, 600));
-      line(T('邊長 d ≈ ', 'a cube of side d ≈ ') + num(d, 3) + ' nm');
+      line(T('邊長 d ≈ ', 'a cube of side d ≈ ') + num(d, 3) + ' nm');
       yy += lh * 0.3;
       const zoomMore = L / d;
       if (cuts === 0) {
         line(T('要只看到一個，視野還要再縮小', 'To see just one, shrink the view'), col.muted, font(12, 600));
-        if (zoomMore > 1.05) sciText(g, ix, T('約 ', 'by about '), T(' 倍', ' times'), yy, col.text, 13, 'left', 2)(zoomMore);
+        if (zoomMore > 1.05) sciText(g, ix, T('約 ', 'by about '), T(' 倍', ' times'), yy, col.text, 13, 'left', 2)(zoomMore);
         else LD.haloText(g, T('已經到了！', 'You are there!'), ix, yy, col.probe, 'left', 'alphabetic', font(13, 700));
         yy += lh * 1.3;
       }
@@ -614,7 +659,7 @@
     const ly = function (lg) { return top + (ZL1 - lg) / (ZL1 - ZL0) * (bot - top); };
     g.strokeStyle = LD.alpha(col.text, 0.4); g.lineWidth = 2; g.lineCap = 'round';
     g.beginPath(); g.moveTo(lx, top); g.lineTo(lx, bot); g.stroke();
-    const labels = [[7, '1 cm'], [6, '1 mm'], [5, '100 µm'], [4, '10 µm'], [3, '1 µm'], [2, '100 nm'], [1, '10 nm'], [0, '1 nm'], [-1, '0.1 nm']];
+    const labels = [[7, '1 cm'], [6, '1 mm'], [5, '100 µm'], [4, '10 µm'], [3, '1 µm'], [2, '100 nm'], [1, '10 nm'], [0, '1 nm'], [-1, '0.1 nm']];
     labels.forEach(function (q) {
       const yy = ly(q[0]);
       g.strokeStyle = LD.alpha(col.text, 0.5); g.lineWidth = 1;
@@ -655,7 +700,7 @@
   function drawFilm(g, now) {
     const F = filmGeo = filmLayout();
     const x0 = F.x0, y0 = F.y0, tw = F.tw, th = F.th;
-    LD.haloText(g, T('水盤（40 cm × 30 cm，從上往下看）', 'Tray (40 cm × 30 cm, seen from above)'), x0, y0 - 9, col.muted, 'left', 'alphabetic', font(12, 600));
+    LD.haloText(g, T('水盤（40 cm × 30 cm，從上往下看）', 'Tray (40 cm × 30 cm, seen from above)'), x0, y0 - 9, col.muted, 'left', 'alphabetic', font(12, 600));
     // 盤子
     g.fillStyle = LD.shadowInk(col.dark ? 0.4 : 0.16); LD.roundRect(g, x0 + 3, y0 + 5, tw + 6, th + 6, 10); g.fill();
     LD.roundRect(g, x0 - 5, y0 - 5, tw + 10, th + 10, 10); g.fillStyle = col.dark ? '#3b444a' : '#e8ecef'; g.fill();
@@ -724,11 +769,11 @@
     }
     g.restore();
     // 盤上的說明
-    const info = tray.drops ? T('盤中已滴 ', 'Drops in tray: ') + tray.drops + T(' 滴', '') : T('先「滴一滴」油酸酒精溶液', 'Press “Add a drop”');
+    const info = tray.drops ? T('盤中已滴 ', 'Drops in tray: ') + tray.drops + T(' 滴', '') : T('先「滴一滴」油酸酒精溶液', 'Press “Add a drop”');
     LD.pill(g, info, x0 + 8, y0 + 26, col.text, 'left', font(12, 600));
     if (tray.drops && C.touches(tray)) LD.pill(g, T('油膜碰到盤邊了！', 'The film reaches the side!'), x0 + tw - 8, y0 + 26, col.pos, 'right', font(12, 700));
     if (tray.drops && tray.powder === 'none') LD.pill(g, T('沒撒粉：看不到油膜的邊界', 'No powder: the edge of the film is invisible'), x0 + tw / 2, y0 + th - 8, col.pos, 'center', font(12, 700));
-    if (lastCount && !filmAnim) LD.pill(g, T('數到 ', 'Counted ') + lastCount.count + T(' 格 → ', ' squares → ') + sigf(lastCount.area, 4) + ' cm²', x0 + tw / 2, y0 + th - (tray.powder === 'none' ? 34 : 8), col.accent, 'center', font(12, 700));
+    if (lastCount && !filmAnim) drawNotation(g, T('數到 ', 'Counted ') + lastCount.count + T(' 格 → ', ' squares → ') + sigf(lastCount.area, 4) + ' cm<sup>2</sup>', x0 + tw / 2, y0 + th - (tray.powder === 'none' ? 34 : 8), col.accent, 'center', 'alphabetic', font(12, 700));
     drawSide(g, F, now);
   }
   let dropFx = null;
@@ -766,7 +811,7 @@
       if (v % 5 === 0 || v <= 2) LD.haloText(g, String(v), cx + cylW / 2 + 4, yy + 4, col.muted, 'left', 'alphabetic', font(10));
     }
     if (vcal) { g.strokeStyle = col.accent; g.setLineDash([3, 2]); g.beginPath(); g.moveTo(cx - cylW / 2 - 6, vy(vcal)); g.lineTo(cx + cylW / 2 + 2, vy(vcal)); g.stroke(); g.setLineDash([]); }
-    LD.haloText(g, T('量筒', 'Cylinder') + ' 10 mL', cx, cyTop - 8, col.muted, 'center', 'alphabetic', font(11, 600));
+    LD.haloText(g, T('量筒', 'Cylinder') + ' 10 mL', cx, cyTop - 8, col.muted, 'center', 'alphabetic', font(11, 600));
     // 滴管
     const dx = F.narrow ? x + w * 0.08 : x + w * 0.18, dTop = y + 6;
     const tip = state.dropper === 'fine' ? 1.5 : state.dropper === 'mid' ? 2.5 : 3.8;
@@ -780,11 +825,11 @@
     // 校正結果
     const ty = F.narrow ? y + 44 : cyBot + 26, tx = F.narrow ? x + w * 0.17 : x;   // 窄螢幕放在滴管與量筒之間，寬螢幕放在量筒下面
     if (count != null) {
-      LD.haloText(g, vcal + ' mL = ' + count + T(' 滴', ' drops'), tx, ty, col.text, 'left', 'alphabetic', font(12, 700));
-      if (!calAnim && cal) LD.haloText(g, T('每滴 ', 'per drop ') + sigf(cal.v, 3) + ' mL', tx, ty + 17, col.accent, 'left', 'alphabetic', font(12, 600));
+      LD.haloText(g, vcal + ' mL = ' + count + T(' 滴', ' drops'), tx, ty, col.text, 'left', 'alphabetic', font(12, 700));
+      if (!calAnim && cal) LD.haloText(g, T('每滴 ', 'per drop ') + sigf(cal.v, 3) + ' mL', tx, ty + 17, col.accent, 'left', 'alphabetic', font(12, 600));
     } else {
       LD.haloText(g, T('還沒校正', 'Not calibrated'), tx, ty, col.muted, 'left', 'alphabetic', font(12, 600));
-      LD.haloText(g, T('標示：1 mL ≈ 50 滴', 'Label: 1 mL ≈ 50 drops'), tx, ty + 17, col.muted, 'left', 'alphabetic', font(11));
+      LD.haloText(g, T('標示：1 mL ≈ 50 滴', 'Label: 1 mL ≈ 50 drops'), tx, ty + 17, col.muted, 'left', 'alphabetic', font(11));
     }
   }
 
@@ -819,27 +864,27 @@
     if (state.mode === 'scale') {
       const a = panSample(pans.A), b = panSample(pans.B), sa = C.SUB[a.id], sb = C.SUB[b.id];
       const row = function (lab, fa, fb) { return '<tr><td>' + lab + '</td><td class="a">' + fa + '</td><td class="b">' + fb + '</td></tr>'; };
-      const vol = function (s) { return s.phase === 'g' ? sci(s.V / 1000, 4) + ' L' : sci(s.V, 4) + ' cm³'; };
+      const vol = function (s) { return s.phase === 'g' ? sci(s.V / 1000, 4) + ' L' : sci(s.V, 4) + ' cm<sup>3</sup>'; };
       R.innerHTML = '<div class="tablewrap" style="margin:0"><table class="data cmp"><thead><tr><th></th><th>A ' + fH(sa.f) + '</th><th>B ' + fH(sb.f) + '</th></tr></thead><tbody>' +
-        row(T('質量', 'Mass'), sci(a.m, 4) + ' g', sci(b.m, 4) + ' g') +
-        row(T('莫耳質量', 'Molar mass'), num(sa.M, 3) + ' g/mol', num(sb.M, 3) + ' g/mol') +
-        row(T('莫耳數', 'Amount'), sci(a.n, 4) + ' mol', sci(b.n, 4) + ' mol') +
-        row(T('粒子數', 'Particles'), sci(a.N, 4) + T(' 個', ''), sci(b.N, 4) + T(' 個', '')) +
+        row(T('質量', 'Mass'), sci(a.m, 4) + ' g', sci(b.m, 4) + ' g') +
+        row(T('莫耳質量', 'Molar mass'), num(sa.M, 3) + ' g/mol', num(sb.M, 3) + ' g/mol') +
+        row(T('莫耳數', 'Amount'), sci(a.n, 4) + ' mol', sci(b.n, 4) + ' mol') +
+        row(T('粒子數', 'Particles'), sci(a.N, 4) + T(' 個', ''), sci(b.N, 4) + T(' 個', '')) +
         row(T('（粒子是）', '(particle)'), kindName(sa), kindName(sb)) +
         row(sa.kind === 'formula' || sb.kind === 'formula' ? T('原子（離子）數', 'Atoms (ions)') : T('原子數', 'Atoms'), sci(a.atoms, 4), sci(b.atoms, 4)) +
         row(T('電子數', 'Electrons'), sci(a.electrons, 4), sci(b.electrons, 4)) +
         row(T('體積', 'Volume'), vol(a), vol(b)) +
-        row(T('一個粒子的質量', 'Mass of one particle'), sci(a.mOne, 4) + ' g', sci(b.mOne, 4) + ' g') +
+        row(T('一個粒子的質量', 'Mass of one particle'), sci(a.mOne, 4) + ' g', sci(b.mOne, 4) + ' g') +
         '</tbody></table></div>' +
-        '<p class="hint">' + T('氣體：', 'Gas: ') + T(C.COND[state.cond].zh, C.COND[state.cond].en) + T('，莫耳體積 ', ', molar volume ') + num(C.VM[state.cond], 3) + ' L/mol</p>';
+        '<p class="hint">' + T('氣體：', 'Gas: ') + T(C.COND[state.cond].zh, C.COND[state.cond].en) + T('，莫耳體積 ', ', molar volume ') + num(C.VM[state.cond], 3) + ' L/mol</p>';
     } else if (state.mode === 'zoom') {
       const z = zSub(), L = zL(), cuts = zCuts(), N0 = C.countInVolume(z, zV0()), zz = C.SUB[z.id];
       const left = N0 / Math.pow(2, cuts), max = C.maxCuts(N0);
       R.innerHTML = '<dl class="readout">' +
         '<dt>' + T('視野邊長 L', 'Field of view L') + '</dt><dd>' + lenStr(L, 4) + '</dd>' +
         '<dt>' + T('視野中的', 'In the view: ') + kindName(zz, true) + '<small>' + T('邊長 L 的立方體', 'a cube of side L') + '</small></dt><dd class="big">' + sci(C.countInCube(z, L), 3) + '</dd>' +
-        '<dt>' + T('粒子間距 d', 'Spacing d') + '<small>' + T('每個粒子分到的立方體邊長', 'side of the cube each particle gets') + '</small></dt><dd>' + num(C.spacing(z), 3) + ' nm</dd>' +
-        '<dt>' + T('樣品的', 'Sample: ') + kindName(zz, true) + '<small>' + sigf(zV0(), 3) + ' mL</small></dt><dd>' + sci(N0, 4) + '</dd>' +
+        '<dt>' + T('粒子間距 d', 'Spacing d') + '<small>' + T('每個粒子分到的立方體邊長', 'side of the cube each particle gets') + '</small></dt><dd>' + num(C.spacing(z), 3) + ' nm</dd>' +
+        '<dt>' + T('樣品的', 'Sample: ') + kindName(zz, true) + '<small>' + sigf(zV0(), 3) + ' mL</small></dt><dd>' + sci(N0, 4) + '</dd>' +
         '<dt>' + T('切了幾刀', 'Cuts') + '<small>' + T('最多能切 ', 'at most ') + max + T(' 刀', '') + '</small></dt><dd>' + cuts + '</dd>' +
         '<dt>' + T('剩下', 'Left') + '</dt><dd>' + sci(left, 3) + '</dd>' +
         '</dl>';
@@ -849,10 +894,10 @@
       const Voil = tray.drops * v / tray.D;
       R.innerHTML = '<dl class="readout">' +
         '<dt>' + T('盤中的滴數', 'Drops in the tray') + '</dt><dd>' + tray.drops + '</dd>' +
-        '<dt>' + T('每滴體積', 'Volume per drop') + '<small>' + (cal ? T('校正值（', 'calibrated (') + cal.count + T(' 滴 = ', ' drops = ') + cal.Vcal + ' mL)' : T('標示值（還沒校正）', 'label value (not calibrated)')) + '</small></dt><dd>' + sigf(v, 4) + ' mL</dd>' +
+        '<dt>' + T('每滴體積', 'Volume per drop') + '<small>' + (cal ? T('校正值（', 'calibrated (') + cal.count + T(' 滴 = ', ' drops = ') + cal.Vcal + ' mL)' : T('標示值（還沒校正）', 'label value (not calibrated)')) + '</small></dt><dd>' + sigf(v, 4) + ' mL</dd>' +
         '<dt>' + T('溶液濃度', 'Concentration') + '</dt><dd>1 : ' + tray.D + '</dd>' +
-        '<dt>' + T('滴入的油酸體積', 'Oleic acid added') + '</dt><dd>' + sci(Voil, 4) + ' mL</dd>' +
-        '<dt>' + T('油膜面積', 'Film area') + '<small>' + (lastCount ? T('數到 ', 'counted ') + lastCount.count + T(' 格（每格 ', ' squares of ') + state.grid + ' cm' + T('）', '') : T('按「量面積」', 'press “Measure area”')) + '</small></dt><dd>' + (lastCount ? sigf(lastCount.area, 4) + ' cm²' : '—') + '</dd>' +
+        '<dt>' + T('滴入的油酸體積', 'Oleic acid added') + '</dt><dd>' + sci(Voil, 4) + ' mL</dd>' +
+        '<dt>' + T('油膜面積', 'Film area') + '<small>' + (lastCount ? T('數到 ', 'counted ') + lastCount.count + T(' 格（每格 ', ' squares of ') + state.grid + ' cm' + T('）', '') : T('按「量面積」', 'press “Measure area”')) + '</small></dt><dd>' + (lastCount ? sigf(lastCount.area, 4) + ' cm<sup>2</sup>' : '—') + '</dd>' +
         '<dt>' + T('紀錄', 'Records') + '</dt><dd>' + rows.length + '</dd>' +
         '</dl>';
     }
@@ -860,10 +905,10 @@
   }
   function updateBig() {
     const yrs = C.countYears(C.NA);
-    let h = '<dt>' + T('每秒數一個，數完 1 莫耳要', 'Counting one per second, one mole takes') + '</dt><dd>' + sci(yrs, 2) + T(' 年', ' years') + '</dd>' +
-      '<dt>' + T('是宇宙年齡（138 億年）的', 'times the age of the Universe (13.8 billion years)') + '</dt><dd>' + sci(yrs / C.UNIVERSE_YEARS, 2) + T(' 倍', '') + '</dd>' +
-      '<dt>' + T('1 莫耳的細沙（每粒 1 mm³）鋪滿臺灣', 'One mole of 1 mm³ sand grains spread over Taiwan') + '</dt><dd>' + T('約 ', 'about ') + num(C.NA * 1e-9 / 3.6e10 / 1000, 0) + ' km' + T(' 厚', ' deep') + '</dd>' +
-      '<dt>' + T('1 莫耳的水分子排成一列', 'One mole of water molecules in a row') + '</dt><dd>' + sci(C.NA * C.spacing(C.ZOOM.H2O) * 1e-9 / 1.496e11, 3) + ' AU</dd>';
+    let h = '<dt>' + T('每秒數一個，數完 1 莫耳要', 'Counting one per second, one mole takes') + '</dt><dd>' + sci(yrs, 2) + T(' 年', ' years') + '</dd>' +
+      '<dt>' + T('是宇宙年齡（138 億年）的', 'times the age of the Universe (13.8 billion years)') + '</dt><dd>' + sci(yrs / C.UNIVERSE_YEARS, 2) + T(' 倍', '') + '</dd>' +
+      '<dt>' + T('1 莫耳的細沙（每粒 1 mm<sup>3</sup>）鋪滿臺灣', 'One mole of 1 mm<sup>3</sup> sand grains spread over Taiwan') + '</dt><dd>' + T('約 ', 'about ') + num(C.NA * 1e-9 / 3.6e10 / 1000, 0) + ' km' + T(' 厚', ' deep') + '</dd>' +
+      '<dt>' + T('1 莫耳的水分子排成一列', 'One mole of water molecules in a row') + '</dt><dd>' + sci(C.NA * C.spacing(C.ZOOM.H2O) * 1e-9 / 1.496e11, 3) + ' AU</dd>';
     let N = null, lab = '';
     if (state.mode === 'scale') { N = panSample(pans.A).N; lab = T('左盤的粒子', 'Particles on pan A'); }
     else if (state.mode === 'zoom') { N = C.countInVolume(zSub(), zV0()); lab = T('樣品的粒子', 'Particles in the sample'); }
@@ -899,19 +944,19 @@
       cube(g, x, yb, Math.cbrt(s.Vm) * sc, s);
       const hl = ids.indexOf(s.id);
       formula(g, s.f, x, yb + 16, hl === 0 ? col.neg : hl === 1 ? col.pos : col.text, 11, 'center', hl >= 0 ? 800 : 600);
-      LD.haloText(g, num(s.M, s.M < 100 ? 1 : 0) + ' g', x, yb + 30, col.muted, 'center', 'alphabetic', font(10.5));
+      LD.haloText(g, num(s.M, s.M < 100 ? 1 : 0) + ' g', x, yb + 30, col.muted, 'center', 'alphabetic', font(10.5));
     });
     // 氣體
     const gx = gw - pad - gasW / 2, gyb = gh - pad - labH;
     const gs = ids.map(function (id) { return C.SUB[id]; }).filter(function (s) { return s.phase === 'g'; })[0] || C.SUB.O2;
     cube(g, gx - gasW * 0.08, gyb, gasSide * sc, gs);
-    LD.haloText(g, T('任何氣體 ', 'Any gas ') + num(C.VM[cond], 1) + ' L', gx, gyb + 16, col.text, 'center', 'alphabetic', font(11, 700));
-    LD.haloText(g, T(cond === 'stp' ? '0 °C、1 atm' : '25 °C、1 atm', cond === 'stp' ? '0 °C, 1 atm' : '25 °C, 1 atm'), gx, gyb + 30, col.muted, 'center', 'alphabetic', font(10.5));
+    LD.haloText(g, T('任何氣體 ', 'Any gas ') + num(C.VM[cond], 1) + ' L', gx, gyb + 16, col.text, 'center', 'alphabetic', font(11, 700));
+    LD.haloText(g, T(cond === 'stp' ? '0 °C、1 atm' : '25 °C、1 atm', cond === 'stp' ? '0 °C, 1 atm' : '25 °C, 1 atm'), gx, gyb + 30, col.muted, 'center', 'alphabetic', font(10.5));
     // 10 cm 比例尺
     const bw = 10 * sc, by = pad + 10;
     g.strokeStyle = col.text; g.lineWidth = 2; g.beginPath(); g.moveTo(gw - pad - bw, by + 5); g.lineTo(gw - pad - bw, by); g.lineTo(gw - pad, by); g.lineTo(gw - pad, by + 5); g.stroke();
-    LD.haloText(g, '10 cm', gw - pad - bw - 6, by + 5, col.text, 'right', 'alphabetic', font(11, 600));
-    $('gHint').textContent = T('每個立方體都是 1 莫耳（6.022 × 10²³ 個粒子），依實際大小畫；下面是質量。藍色、紅色是天平上的 A、B。', 'Every cube is one mole (6.022 × 10²³ particles), drawn to scale, with its mass below. Blue and red are pans A and B.');
+    LD.haloText(g, '10 cm', gw - pad - bw - 6, by + 5, col.text, 'right', 'alphabetic', font(11, 600));
+    $('gHint').innerHTML = T('每個立方體都是 1 莫耳（6.022 × 10<sup>23</sup> 個粒子），依實際大小畫；下面是質量。藍色、紅色是天平上的 A、B。', 'Every cube is one mole (6.022 × 10<sup>23</sup> particles), drawn to scale, with its mass below. Blue and red are pans A and B.');
   }
   function graphZoom(g) {
     const pad = 14, X0 = pad + 46, X1 = gw - pad - 8, Y0 = gh - pad - 30, Y1 = pad + 10;
@@ -943,7 +988,7 @@
     const px = sx(Math.log10(L)), py = sy(Math.max(yl[0], Math.min(yl[1], Math.log10(N))));
     LD.ball(g, px, py, 6, col.accent, { glow: 0 });
     sciText(g, px + (px > gw * 0.6 ? -10 : 10), 'N ≈ ', '', py - 10, col.accent, 12, px > gw * 0.6 ? 'right' : 'left', 3)(N);
-    $('gHint').textContent = T('雙對數圖：視野邊長每縮小 10 倍，粒子數少 1000 倍（斜率 3）。虛線是只剩一個粒子。', 'Log–log graph: each tenfold zoom divides the count by 1000 (slope 3). The dashed line is a single particle.');
+    $('gHint').textContent = T('雙對數圖：視野邊長每縮小 10 倍，粒子數少 1000 倍（斜率 3）。虛線是只剩一個粒子。', 'Log–log graph: each tenfold zoom divides the count by 1000 (slope 3). The dashed line is a single particle.');
   }
   function graphFilm(g) {
     const pad = 14, X0 = pad + 50, X1 = gw - pad - 10, Y0 = gh - pad - 34, Y1 = pad + 12;
@@ -962,14 +1007,14 @@
     g.font = font(11, 600); const w1 = g.measureText(xl).width;
     const xx = (X0 + X1) / 2 - 50;
     LD.supText(g, xl, String(ex).replace('-', '−'), xx, gh - 6, col.muted, font(11, 600), 'left');
-    LD.haloText(g, ' mL）'.replace('）', T('）', ')')), xx + w1 + 14, gh - 6, col.muted, 'left', 'alphabetic', font(11, 600));
+    LD.haloText(g, ' mL）'.replace('）', T('）', ')')), xx + w1 + 14, gh - 6, col.muted, 'left', 'alphabetic', font(11, 600));
     g.save(); g.translate(12, (Y0 + Y1) / 2); g.rotate(-Math.PI / 2);
-    LD.haloText(g, T('油膜面積 A（cm²）', 'Film area A (cm²)'), 0, 0, col.muted, 'center', 'middle', font(11, 600)); g.restore();
+    drawNotation(g, T('油膜面積 A（cm<sup>2</sup>）', 'Film area A (cm<sup>2</sup>)'), 0, 0, col.muted, 'center', 'middle', font(11, 600)); g.restore();
     const fit = C.fitThroughOrigin(ok);
     if (fit) {
       g.strokeStyle = col.accent; g.lineWidth = 2; g.setLineDash([6, 4]);
       g.beginPath(); g.moveTo(sx(0), sy(0)); const xe = Math.min(xm, ym / fit.slope); g.lineTo(sx(xe), sy(fit.slope * xe)); g.stroke(); g.setLineDash([]);
-      LD.pill(g, T('斜率 → h = ', 'slope → h = ') + num(fit.h, 3) + ' nm', X0 + 8, Y1 + 18, col.accent, 'left', font(12, 700));
+      LD.pill(g, T('斜率 → h = ', 'slope → h = ') + num(fit.h, 3) + ' nm', X0 + 8, Y1 + 18, col.accent, 'left', font(12, 700));
     }
     ok.forEach(function (r) { LD.ball(g, sx(r.Voil), sy(r.A), 5, r.edge ? col.pos : col.neg, { glow: 0 }); });
     $('gHint').textContent = ok.length ? T('每一點是一次「量面積」；紅點表示油膜碰到盤邊。過原點直線的斜率是 1 ÷ h。', 'Each point is one “Measure area”; red points mean the film reached the side. The slope of the line through the origin is 1 ÷ h.') : T('還沒有紀錄：滴幾滴、按「量面積」。', 'No records yet: add some drops and press “Measure area”.');
@@ -979,7 +1024,7 @@
     const t = $('tbl');
     if (state.mode !== 'film') { $('tblWrap').hidden = true; return; }
     $('tblWrap').hidden = false;
-    let h = '<thead><tr><th>#</th><th>' + T('滴數', 'Drops') + '</th><th>' + T('每滴', 'Per drop') + '<br><small>mL</small></th><th>' + T('稀釋', 'Dilution') + '</th><th>V<br><small>mL</small></th><th>' + T('格子', 'Grid') + '<br><small>cm</small></th><th>A<br><small>cm²</small></th><th>h<br><small>nm</small></th></tr></thead><tbody>';
+    let h = '<thead><tr><th>#</th><th>' + T('滴數', 'Drops') + '</th><th>' + T('每滴', 'Per drop') + '<br><small>mL</small></th><th>' + T('稀釋', 'Dilution') + '</th><th>V<br><small>mL</small></th><th>' + T('格子', 'Grid') + '<br><small>cm</small></th><th>A<br><small>cm<sup>2</sup></small></th><th>h<br><small>nm</small></th></tr></thead><tbody>';
     if (!rows.length) h += '<tr class="empty"><td colspan="8">' + T('還沒有紀錄', 'No records yet') + '</td></tr>';
     rows.forEach(function (r, i) {
       const hh = r.A ? r.Voil / r.A * 1e7 : null;
@@ -1027,7 +1072,7 @@
       else if (left < 2) msg = T('只剩一個了！', 'Only one left!');
       else {
         const p = sciParts(left, 3);
-        msg = T('剩下約 ', 'About ') + (p.e == null ? p.m : p.m + ' × 10^' + p.e) + T(' 個', ' left') + T('（' + k + ' 刀）', ' (' + k + (k === 1 ? ' cut)' : ' cuts)'));
+        msg = T('剩下約 ', 'About ') + (p.e == null ? p.m : p.m + ' × 10^' + p.e) + T(' 個', ' left') + T('（' + k + ' 刀）', ' (' + k + (k === 1 ? ' cut)' : ' cuts)'));
       }
     }
     setStatus(msg);
@@ -1047,7 +1092,7 @@
     $('filmPanel').hidden = state.mode !== 'film';
     $('filmBar').hidden = state.mode !== 'film';
     $('zoomBar').hidden = state.mode !== 'zoom';
-    $('gTitle').textContent = state.mode === 'scale' ? T('1 莫耳排排站', 'One mole of each, side by side') : state.mode === 'zoom' ? T('數量級', 'Orders of magnitude') : T('油膜面積與油酸體積', 'Film area against volume of oleic acid');
+    $('gTitle').textContent = state.mode === 'scale' ? T('1 莫耳排排站', 'One mole of each, side by side') : state.mode === 'zoom' ? T('數量級', 'Orders of magnitude') : T('油膜面積與油酸體積', 'Film area against volume of oleic acid');
     $('stageHint').textContent = state.mode === 'scale' ? T('拖曳滑桿或點數字直接輸入；單位可以隨時切換，樣品的量不變。', 'Drag a slider or tap the number to type; switching the unit keeps the same amount.') :
       state.mode === 'zoom' ? T('拖曳「視野邊長」一路放大；或按「對切一刀」，看要切幾刀才剩一個分子。', 'Drag “Width of the field of view” to zoom in, or press “Cut in half” to see how many cuts leave a single molecule.') :
       T('步驟：校正滴管 → 滴一滴 → 等油膜推開 → 量面積（數格子）→ 計算。', 'Steps: calibrate the dropper → add a drop → let the film spread → measure the area (count squares) → calculate.');
@@ -1072,7 +1117,7 @@
     calAnim = { t0: performance.now(), Vcal: c.Vcal, count: c.count };
     if (reducedMotion) calAnim = null;
     if (snd()) { for (let i = 0; i < 6; i++) window.LabSound.tone({ freq: 760 + 30 * i, dur: 0.03, gain: 0.04, delay: i * 0.22 }); window.LabSound.tone({ freq: 1040, dur: 0.15, gain: 0.06, delay: 1.5 }); }
-    setStatus(T('滴到量筒的 ', 'Counted ') + c.Vcal + T(' mL 刻度，共 ', ' mL: ') + c.count + T(' 滴：每滴 ', ' drops, so one drop is ') + sigf(c.v, 4) + ' mL' + T('。', '.'));
+    setStatus(T('滴到量筒的 ', 'Counted ') + c.Vcal + T(' mL 刻度，共 ', ' mL: ') + c.count + T(' 滴：每滴 ', ' drops, so one drop is ') + sigf(c.v, 4) + ' mL' + T('。', '.'));
     updateReadouts(); kick();
   }
   function addDrop() {
@@ -1099,7 +1144,7 @@
     lastCount = C.countCells(tray, state.grid);
     rows.push(r);
     if (snd()) window.LabSound.tone({ freq: 660, dur: 0.1, gain: 0.06 });
-    setStatus(T('描下輪廓、數格子：超過半格算一格，共 ', 'Traced and counted (a square at least half covered counts as one): ') + r.count + T(' 格，面積 ', ' squares, area ') + sigf(r.A, 4) + ' cm²' + (r.edge ? T('（油膜碰到盤邊，面積偏小）', ' (the film touches the side, so the area is too small)') : '') + T('。', '.'));
+    setStatus(T('描下輪廓、數格子：超過半格算一格，共 ', 'Traced and counted (a square at least half covered counts as one): ') + r.count + T(' 格，面積 ', ' squares, area ') + sigf(r.A, 4) + ' cm<sup>2</sup>' + (r.edge ? T('（油膜碰到盤邊，面積偏小）', ' (the film touches the side, so the area is too small)') : '') + T('。', '.'));
     renderTable(); updateReadouts(); drawGraph(); draw();
   }
   function calc() {
@@ -1113,12 +1158,12 @@
     lastRes = res;
     const Vm = C.OLEIC.M / C.OLEIC.rho;
     let h = '';
-    if (res.method === 'fit') h += T('直線斜率 = ', 'Slope = ') + sci(res.fit.slope, 4) + ' cm<sup>−1</sup>' + T('（' + res.fit.n + ' 筆）', ' (' + res.fit.n + ' records)') + '<br>h = 1 ÷ ' + T('斜率', 'slope') + ' = <span class="res">' + num(res.h, 3) + ' nm</span><br>';
-    else h += 'h = V ÷ A = ' + sci(res.last.Voil, 3) + ' cm³ ÷ ' + sigf(res.last.A, 4) + ' cm² = <span class="res">' + num(res.h, 3) + ' nm</span><br>';
-    h += T('一個分子的體積', 'Volume of one molecule') + ' v<sub>1</sub> = h³ ÷ k² = ' + num(res.h * res.h * res.h / (res.k * res.k), 3) + ' nm³<br>';
-    h += T('1 莫耳油酸的體積', 'Volume of one mole of oleic acid') + ' M ÷ ρ = ' + num(Vm, 1) + ' cm³<br>';
+    if (res.method === 'fit') h += T('直線斜率 = ', 'Slope = ') + sci(res.fit.slope, 4) + ' cm<sup>−1</sup>' + T('（' + res.fit.n + ' 筆）', ' (' + res.fit.n + ' records)') + '<br>h = 1 ÷ ' + T('斜率', 'slope') + ' = <span class="res">' + num(res.h, 3) + ' nm</span><br>';
+    else h += 'h = V ÷ A = ' + sci(res.last.Voil, 3) + ' cm<sup>3</sup> ÷ ' + sigf(res.last.A, 4) + ' cm<sup>2</sup> = <span class="res">' + num(res.h, 3) + ' nm</span><br>';
+    h += T('一個分子的體積', 'Volume of one molecule') + ' v<sub>1</sub> = h<sup>3</sup> ÷ k<sup>2</sup> = ' + num(res.h * res.h * res.h / (res.k * res.k), 3) + ' nm<sup>3</sup><br>';
+    h += T('1 莫耳油酸的體積', 'Volume of one mole of oleic acid') + ' M ÷ ρ = ' + num(Vm, 1) + ' cm<sup>3</sup><br>';
     h += 'N<sub>A</sub> ≈ (M ÷ ρ) ÷ v<sub>1</sub> = <span class="res">' + sci(res.NA, 3) + '</span> mol<sup>−1</sup><br>';
-    h += '<small>' + T('與 6.022 × 10<sup>23</sup> 相比：', 'Compared with 6.022 × 10<sup>23</sup>: ') + (res.NA >= C.NA ? '+' : '−') + num(Math.abs(res.NAerr) * 100, 1) + '%</small>';
+    h += '<small>' + T('與 6.022 × 10<sup>23</sup> 相比：', 'Compared with 6.022 × 10<sup>23</sup>: ') + (res.NA >= C.NA ? '+' : '−') + num(Math.abs(res.NAerr) * 100, 1) + ' %</small>';
     if (res.edge) h += '<br><small>' + T('⚠ 有紀錄的油膜碰到盤邊，面積偏小。', '⚠ Some records touched the side of the tray: the area is too small.') + '</small>';
     out.innerHTML += h;
     if (snd()) window.LabSound.tone({ freq: 990, dur: 0.12, gain: 0.06 });
@@ -1269,7 +1314,7 @@
   function buildDataTable() {
     const t = $('dataTable');
     if (!t) return;
-    let h = '<thead><tr><th>' + T('物質', 'Substance') + '</th><th>M<br><small>g/mol</small></th><th>ρ<br><small>g/cm³</small></th><th>' + T('1 mol 的體積', 'Volume of 1 mol') + '<br><small>cm³</small></th><th>' + T('每個粒子的原子', 'Atoms per particle') + '</th><th>' + T('電子', 'Electrons') + '</th></tr></thead><tbody>';
+    let h = '<thead><tr><th>' + T('物質', 'Substance') + '</th><th>M<br><small>g/mol</small></th><th>ρ<br><small>g/cm<sup>3</sup></small></th><th>' + T('1 mol 的體積', 'Volume of 1 mol') + '<br><small>cm<sup>3</sup></small></th><th>' + T('每個粒子的原子', 'Atoms per particle') + '</th><th>' + T('電子', 'Electrons') + '</th></tr></thead><tbody>';
     C.SUBS.forEach(function (s) {
       h += '<tr><td>' + subName(s) + ' ' + fH(s.f) + '</td><td>' + num(s.M, 3) + '</td><td>' + (s.phase === 'g' ? T('（氣體）', '(gas)') : s.rho) + '</td><td>' +
         (s.phase === 'g' ? num(C.VM.stp * 1000, 0) + ' / ' + num(C.VM.rt * 1000, 0) : num(s.Vm, 2)) + '</td><td>' + s.atoms + '</td><td>' + s.electrons + '</td></tr>';

@@ -41,7 +41,7 @@
     const controls = new lib.OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 8, T });
     controls.minDistance = 3;
     controls.maxDistance = 60;
 
@@ -176,15 +176,24 @@
 
     function fit(force) {
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         const dist = radius / Math.sin(camera.fov * Math.PI / 360) / Math.min(1, camera.aspect) * 0.86;
         controls.target.set(0, 0, 0);
         camera.position.copy(viewDir).multiplyScalar(Math.max(4, dist));
       }
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function sizeFor(w) { return Math.round(Math.min(w * 0.8, Math.max(320, w * 0.62))); }
+    function sizeFor(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return Math.round(Math.min(w * 0.8, Math.max(320, w * 0.62)));
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -200,7 +209,6 @@
       const d = H.hud();
       hudTL.textContent = d.tl || '';
       hudTR.innerHTML = d.tr || '';
-      hudBL.textContent = T('拖曳旋轉・滾輪或雙指縮放', 'Drag to rotate · scroll or pinch to zoom');
     }
     function renderNow() {
       if (!api.active || document.hidden) return;
@@ -213,7 +221,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || sizeFor(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -241,6 +249,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         halos.forEach(function (h) { if (h.material !== haloMat) h.material.dispose(); });
         group.clear();

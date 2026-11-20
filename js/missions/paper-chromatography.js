@@ -22,7 +22,7 @@
     {
       id: 'paper-chromatography-1', level: 1,
       title: { zh: '黑色裡藏著彩虹', en: 'A rainbow inside black' },
-      desc: { zh: '把黑色水性筆的樣品展開，取出濾紙時那一道至少看得出 3 個斑點。', en: 'Develop the black marker sample: when you take the paper out, its lane must show at least 3 separate spots.' },
+      desc: { zh: '把黑色水性筆的樣品展開，取出濾紙時那一道至少看得出 3 個斑點。', en: 'Develop the black marker sample: when you take the paper out, its lane must show at least 3 separate spots.' },
       check: function (ev) { const d = TA(ev); return !!d && lane(d, 'ink').some(function (L) { return L.peaks >= 3; }); }
     },
     {
@@ -34,7 +34,7 @@
     {
       id: 'paper-chromatography-3', level: 2,
       title: { zh: '起始線泡到水了', en: 'The start line went under' },
-      desc: { zh: '示範一個常見錯誤：讓起始線低於液面再展開，直到濾紙上的樣品八成以上溶進展開液。', en: 'Show a common mistake: put the start line below the solvent surface and develop until more than 80% of the sample has dissolved into the solvent.' },
+      desc: { zh: '示範一個常見錯誤：讓起始線低於液面再展開，直到濾紙上的樣品八成以上溶進展開液。', en: 'Show a common mistake: put the start line below the solvent surface and develop until more than 80 % of the sample has dissolved into the solvent.' },
       check: function (ev) { const d = TK(ev); return !!d && d.submerged && d.anySample && d.frac <= 0.2; }
     },
     {
@@ -46,7 +46,7 @@
     {
       id: 'paper-chromatography-5', level: 3,
       title: { zh: '點太大就糊了', en: 'Too big a spot' },
-      desc: { zh: '點樣直徑 8 mm 以上，取出時有一道相鄰成分的解析度 Rs < 0.8；同樣的展開若只點 2 mm，Rs 會在 1.2 以上。', en: 'With a spot of 8 mm or more, take out a paper where two neighbouring substances in a lane have Rs < 0.8, although a 2 mm spot under the same conditions would give Rs ≥ 1.2.' },
+      desc: { zh: '點樣直徑 8 mm 以上，取出時有一道相鄰成分的解析度 Rs < 0.8；同樣的展開若只點 2 mm，Rs 會在 1.2 以上。', en: 'With a spot of 8 mm or more, take out a paper where two neighbouring substances in a lane have Rs < 0.8, although a 2 mm spot under the same conditions would give Rs ≥ 1.2.' },
       check: function (ev) {
         const d = TA(ev);
         return !!d && d.spot >= 8 && d.lanes.some(function (L) { return L.minRs != null && L.minRs < 0.8 && L.minRsRef != null && L.minRsRef >= 1.2; });
@@ -55,13 +55,13 @@
     {
       id: 'paper-chromatography-6', level: 4,
       title: { zh: '葉子的四種色素', en: 'Four pigments in a leaf' },
-      desc: { zh: '把菠菜葉萃取液分成 4 個斑點，相鄰兩個的解析度 Rs 都 ≥ 1。', en: 'Separate the spinach-leaf extract into 4 spots, with a resolution Rs of at least 1 between neighbours.' },
+      desc: { zh: '把菠菜葉萃取液分成 4 個斑點，相鄰兩個的解析度 Rs 都 ≥ 1。', en: 'Separate the spinach-leaf extract into 4 spots, with a resolution Rs of at least 1 between neighbours.' },
       check: function (ev) { const d = TA(ev); return !!d && lane(d, 'leaf').some(function (L) { return L.n === 4 && L.minRs >= 1; }); }
     },
     {
       id: 'paper-chromatography-7', level: 5,
       title: { zh: 'Rf 不看展開多久', en: 'Rf ignores the running time' },
-      desc: { zh: '用同一種展開液在兩張濾紙上量同一種物質：兩次前緣的距離相差 3 cm 以上，Rf 卻相差不到 0.02。', en: 'Measure the same substance on two papers with the same solvent: the front distances differ by 3 cm or more, yet the Rf values agree within 0.02.' },
+      desc: { zh: '用同一種展開液在兩張濾紙上量同一種物質：兩次前緣的距離相差 3 cm 以上，Rf 卻相差不到 0.02。', en: 'Measure the same substance on two papers with the same solvent: the front distances differ by 3 cm or more, yet the Rf values agree within 0.02.' },
       check: function (ev) {
         const d = ME(ev);
         if (!good(d)) return false;
@@ -81,7 +81,7 @@
     {
       id: 'paper-chromatography-9', level: 6,
       title: { zh: '咖啡色的祕密', en: 'The secret of brown' },
-      desc: { zh: '把咖啡色食用色素分成 3 個斑點，相鄰兩個的解析度 Rs 都 ≥ 1。', en: 'Separate the brown food colouring into 3 spots, with a resolution Rs of at least 1 between neighbours.' },
+      desc: { zh: '把咖啡色食用色素分成 3 個斑點，相鄰兩個的解析度 Rs 都 ≥ 1。', en: 'Separate the brown food colouring into 3 spots, with a resolution Rs of at least 1 between neighbours.' },
       check: function (ev) { const d = TA(ev); return !!d && lane(d, 'brown').some(function (L) { return L.n === 3 && L.minRs >= 1; }); }
     },
     {
@@ -93,7 +93,7 @@
     {
       id: 'paper-chromatography-11', level: 8,
       title: { zh: '精準量 Rf', en: 'A precise Rf' },
-      desc: { zh: '前緣離起始線 10 cm 以上，量到的 Rf 與這種物質真正的 Rf 相差不到 0.01。', en: 'With the front at least 10 cm from the start line, measure an Rf within 0.01 of the true value for that substance.' },
+      desc: { zh: '前緣離起始線 10 cm 以上，量到的 Rf 與這種物質真正的 Rf 相差不到 0.01。', en: 'With the front at least 10 cm from the start line, measure an Rf within 0.01 of the true value for that substance.' },
       check: function (ev) { const d = ME(ev); return good(d) && d.dF >= 10 && Math.abs(d.Rf - d.rfTrue) <= 0.01; }
     },
     {

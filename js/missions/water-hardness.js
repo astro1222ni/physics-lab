@@ -37,67 +37,67 @@
     {
       id: 'water-hardness-2', level: 2,
       title: { zh: '只有浮渣', en: 'Nothing but scum' },
-      desc: { zh: '在總硬度 180 mg/L 以上的極硬水裡加肥皂水，加到第 5 滴以上還是只有白色浮渣、沒有持久的泡沫。', en: 'Add soap to very hard water (total hardness over 180 mg/L): after 5 or more drops there is still only white scum and no lasting lather.' },
+      desc: { zh: '在總硬度 180 mg/L 以上的極硬水裡加肥皂水，加到第 5 滴以上還是只有白色浮渣、沒有持久的泡沫。', en: 'Add soap to very hard water (total hardness over 180 mg/L): after 5 or more drops there is still only white scum and no lasting lather.' },
       check: function (ev) { const d = ev.data; return isSoap(ev) && !d.detergent && d.H > 180 && d.drops >= 5 && !d.lather && d.ppt > 0; }
     },
     {
       id: 'water-hardness-3', level: 3,
       title: { zh: '燒水壺的白垢', en: 'The kettle’s white crust' },
-      desc: { zh: '按「煮沸 10 分鐘」，讓水的總硬度一次下降 100 mg/L 以上，杯底留下水垢。', en: 'Press “Boil 10 min” so that the total hardness falls by at least 100 mg/L in one go, leaving scale on the bottom.' },
+      desc: { zh: '按「煮沸 10 分鐘」，讓水的總硬度一次下降 100 mg/L 以上，杯底留下水垢。', en: 'Press “Boil 10 min” so that the total hardness falls by at least 100 mg/L in one go, leaving scale on the bottom.' },
       check: function (ev) { const d = ev.data; return isT(ev, 'boil') && d.H0 - d.H >= 100 - E; }
     },
     {
       id: 'water-hardness-4', level: 3,
       title: { zh: '換成鈉離子', en: 'Swapped for sodium' },
-      desc: { zh: '把總硬度 250 mg/L 以上的水「通過樹脂」，讓硬度降到 1 mg/L 以下。', en: 'Send water with a total hardness of at least 250 mg/L “Through the resin” and bring the hardness below 1 mg/L.' },
+      desc: { zh: '把總硬度 250 mg/L 以上的水「通過樹脂」，讓硬度降到 1 mg/L 以下。', en: 'Send water with a total hardness of at least 250 mg/L “Through the resin” and bring the hardness below 1 mg/L.' },
       check: function (ev) { const d = ev.data; return isT(ev, 'resin') && d.H0 >= 250 && d.H < 1; }
     },
     {
       id: 'water-hardness-5', level: 4,
       title: { zh: '酒紅變純藍', en: 'From wine red to pure blue' },
-      desc: { zh: '用 pH 10 緩衝液＋EBT 滴定總硬度，在純藍色時按「記錄終點」，終點和當量點相差不超過 0.10 mL（當量點至少 2 mL）。', en: 'Titrate the total hardness with the pH 10 buffer + EBT and press “Record end point” at pure blue, within 0.10 mL of the equivalence point (which must be at least 2 mL).' },
+      desc: { zh: '用 pH 10 緩衝液＋EBT 滴定總硬度，在純藍色時按「記錄終點」，終點和當量點相差不超過 0.10 mL（當量點至少 2 mL）。', en: 'Titrate the total hardness with the pH 10 buffer + EBT and press “Record end point” at pure blue, within 0.10 mL of the equivalence point (which must be at least 2 mL).' },
       check: function (ev) { const d = ev.data; return isE(ev) && d.mode === 'A' && good(d); }
     },
     {
       id: 'water-hardness-6', level: 4,
       title: { zh: '只挑走鈣', en: 'Calcium only' },
-      desc: { zh: '按「加洗滌鹼」，讓 Ca2+ 降到 5 mg/L 以下，Mg2+ 卻留下九成以上（原本 Ca2+ 至少 20 mg/L、Mg2+ 至少 5 mg/L）。', en: '“Add washing soda” so that Ca2+ falls below 5 mg/L while at least 90% of the Mg2+ stays (starting from at least 20 mg/L of Ca2+ and 5 mg/L of Mg2+).' },
+      desc: { zh: '按「加洗滌鹼」，讓 Ca<sup>2+</sup> 降到 5 mg/L 以下，Mg<sup>2+</sup> 卻留下九成以上（原本 Ca<sup>2+</sup> 至少 20 mg/L、Mg<sup>2+</sup> 至少 5 mg/L）。', en: '“Add washing soda” so that Ca<sup>2+</sup> falls below 5 mg/L while at least 90 % of the Mg<sup>2+</sup> stays (starting from at least 20 mg/L of Ca<sup>2+</sup> and 5 mg/L of Mg<sup>2+</sup>).' },
       check: function (ev) { const d = ev.data; return isT(ev, 'soda') && d.Ca0 >= 20 && d.Mg0 >= 5 && d.Ca < 5 && d.Mg >= 0.9 * d.Mg0 - E; }
     },
     {
       id: 'water-hardness-7', level: 5,
       title: { zh: '鎂沉下去了', en: 'The magnesium sinks out' },
-      desc: { zh: '用 NaOH 調到 pH 12 測鈣硬度（水中至少有 5 mg/L 的 Mg2+），在純藍色時記錄終點，和當量點相差不超過 0.10 mL。', en: 'Measure the calcium hardness at pH 12 with NaOH (the water must hold at least 5 mg/L of Mg2+) and record the end point at pure blue, within 0.10 mL of the equivalence point.' },
+      desc: { zh: '用 NaOH 調到 pH 12 測鈣硬度（水中至少有 5 mg/L 的 Mg<sup>2+</sup>），在純藍色時記錄終點，和當量點相差不超過 0.10 mL。', en: 'Measure the calcium hardness at pH 12 with NaOH (the water must hold at least 5 mg/L of Mg<sup>2+</sup>) and record the end point at pure blue, within 0.10 mL of the equivalence point.' },
       check: function (ev) { const d = ev.data; return isE(ev) && d.mode === 'B' && d.Mg * 24.305 >= 5 - E && good(d); }
     },
     {
       id: 'water-hardness-8', level: 5,
-      title: { zh: '剛好 10 mL', en: 'Exactly 10 mL' },
-      desc: { zh: '調整水樣的體積或 EDTA 的濃度，讓當量點剛好在 10.00 mL（相差不超過 0.01 mL），再準確地滴到終點（純藍色、相差不超過 0.10 mL）。', en: 'Adjust the volume of water or the EDTA concentration so the equivalence point is 10.00 mL (within 0.01 mL), then titrate accurately to the end point (pure blue, within 0.10 mL).' },
+      title: { zh: '剛好 10 mL', en: 'Exactly 10 mL' },
+      desc: { zh: '調整水樣的體積或 EDTA 的濃度，讓當量點剛好在 10.00 mL（相差不超過 0.01 mL），再準確地滴到終點（純藍色、相差不超過 0.10 mL）。', en: 'Adjust the volume of water or the EDTA concentration so the equivalence point is 10.00 mL (within 0.01 mL), then titrate accurately to the end point (pure blue, within 0.10 mL).' },
       check: function (ev) { const d = ev.data; return isE(ev) && !d.unknown && Math.abs(d.Veq - 10) <= 0.01 + E && good(d); }
     },
     {
       id: 'water-hardness-9', level: 6,
       title: { zh: '再生的樹脂', en: 'The resin reborn' },
-      desc: { zh: '讓樹脂的容量用完、硬度漏過去，再按「食鹽水再生」，然後讓一杯總硬度 50 mg/L 以上的水通過樹脂，硬度降到 1 mg/L 以下。', en: 'Use up the resin until hardness leaks through, press “Regenerate with brine”, then send water with a total hardness of at least 50 mg/L through it and bring the hardness below 1 mg/L.' },
+      desc: { zh: '讓樹脂的容量用完、硬度漏過去，再按「食鹽水再生」，然後讓一杯總硬度 50 mg/L 以上的水通過樹脂，硬度降到 1 mg/L 以下。', en: 'Use up the resin until hardness leaks through, press “Regenerate with brine”, then send water with a total hardness of at least 50 mg/L through it and bring the hardness below 1 mg/L.' },
       check: function (ev) { const d = ev.data; return isT(ev, 'resin') && d.regenAfterLeak && d.H0 >= 50 && d.H < 1; }
     },
     {
       id: 'water-hardness-10', level: 7,
       title: { zh: '未知的水', en: 'An unknown water' },
-      desc: { zh: '選「未知水樣」，用 EDTA 滴定求出它的總硬度，按「核對答案」，誤差在 2% 以內（不可先揭曉答案）。', en: 'Choose “Unknown”, find its total hardness by EDTA titration and press “Check”: within 2% (without revealing the answer first).' },
+      desc: { zh: '選「未知水樣」，用 EDTA 滴定求出它的總硬度，按「核對答案」，誤差在 2 % 以內（不可先揭曉答案）。', en: 'Choose “Unknown”, find its total hardness by EDTA titration and press “Check”: within 2 % (without revealing the answer first).' },
       check: function (ev) { const d = ev.data; return isA(ev) && Math.abs(d.errH) <= 0.02 + E; }
     },
     {
       id: 'water-hardness-11', level: 8,
       title: { zh: '鈣與鎂各多少', en: 'How much calcium, how much magnesium' },
-      desc: { zh: '同一瓶未知水樣，總硬度與鈣硬度一起填，按「核對答案」，兩個誤差都在 2% 以內。', en: 'For the same unknown water, fill in both the total and the calcium hardness and press “Check”: both within 2%.' },
+      desc: { zh: '同一瓶未知水樣，總硬度與鈣硬度一起填，按「核對答案」，兩個誤差都在 2 % 以內。', en: 'For the same unknown water, fill in both the total and the calcium hardness and press “Check”: both within 2 %.' },
       check: function (ev) { const d = ev.data; return isA(ev) && Math.abs(d.errH) <= 0.02 + E && Math.abs(d.errCa) <= 0.02 + E; }
     },
     {
       id: 'water-hardness-12', level: 10,
       title: { zh: '一瓶定勝負', en: 'One flask each' },
-      desc: { zh: '同一瓶未知水樣，總硬度與鈣硬度各只滴一瓶，兩個答案的誤差都在 1% 以內。', en: 'For one unknown water, titrate just one flask for the total and one for the calcium hardness, and get both within 1%.' },
+      desc: { zh: '同一瓶未知水樣，總硬度與鈣硬度各只滴一瓶，兩個答案的誤差都在 1 % 以內。', en: 'For one unknown water, titrate just one flask for the total and one for the calcium hardness, and get both within 1 %.' },
       check: function (ev) { const d = ev.data; return isA(ev) && d.flasksA === 1 && d.flasksB === 1 && Math.abs(d.errH) <= 0.01 + E && Math.abs(d.errCa) <= 0.01 + E; }
     },
 

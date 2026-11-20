@@ -23,25 +23,25 @@
     {
       id: 'solubility-equilibrium-2', level: 2,
       title: { zh: '飽和的氯化銀溶液', en: 'Saturated silver chloride' },
-      desc: { zh: '只用氯化銀固體和水，做出底部還留著固體的飽和溶液，讀出 [Ag+]。', en: 'Using only solid silver chloride and water, make a saturated solution with solid left at the bottom, and read [Ag+].' },
+      desc: { zh: '只用氯化銀固體和水，做出底部還留著固體的飽和溶液，讀出 [Ag<sup>+</sup>]。', en: 'Using only solid silver chloride and water, make a saturated solution with solid left at the bottom, and read [Ag<sup>+</sup>].' },
       check: function (ev) { const d = mx(ev); return !!d && only(d, ['w', 'x:AgCl']) && d.p.AgCl > 0 && Math.abs(d.c.Ag / S0_AGCL - 1) < 0.01; }
     },
     {
       id: 'solubility-equilibrium-3', level: 3,
       title: { zh: '兩種離子都在，卻不沉澱', en: 'Both ions there, no precipitate' },
-      desc: { zh: '讓溶液裡 [Ag+] 和 [Cl−] 都至少 0.000002 M，卻沒有氯化銀沉澱。', en: 'Make [Ag+] and [Cl−] both at least 0.000002 M without any silver chloride precipitate.' },
+      desc: { zh: '讓溶液裡 [Ag<sup>+</sup>] 和 [Cl<sup>−</sup>] 都至少 0.000002 M，卻沒有氯化銀沉澱。', en: 'Make [Ag<sup>+</sup>] and [Cl<sup>−</sup>] both at least 0.000002 M without any silver chloride precipitate.' },
       check: function (ev) { const d = mx(ev); return !!d && !(d.p.AgCl > 0) && d.c.Ag >= 2e-6 && d.c.Cl >= 2e-6; }
     },
     {
       id: 'solubility-equilibrium-4', level: 4,
       title: { zh: '同離子效應', en: 'The common-ion effect' },
-      desc: { zh: '燒杯裡有氯化銀沉澱時，加入共同離子，把 [Ag+] 壓到純水中飽和時的 1/100 以下。', en: 'With silver chloride precipitate in the beaker, add a common ion until [Ag+] is below 1/100 of its value in a saturated solution in pure water.' },
+      desc: { zh: '燒杯裡有氯化銀沉澱時，加入共同離子，把 [Ag<sup>+</sup>] 壓到純水中飽和時的 1/100 以下。', en: 'With silver chloride precipitate in the beaker, add a common ion until [Ag<sup>+</sup>] is below 1/100 of its value in a saturated solution in pure water.' },
       check: function (ev) { const d = mx(ev); return !!d && d.p.AgCl > 0 && d.c.Ag <= S0_AGCL / 100; }
     },
     {
       id: 'solubility-equilibrium-5', level: 5,
       title: { zh: '剛好不沉澱', en: 'Just short of precipitating' },
-      desc: { zh: '只用溶液，讓某一種難溶鹽的離子積 Q 達到 Ksp 的 95%～100%，但還沒有沉澱。', en: 'Using solutions only, bring the ion product Q of some sparingly soluble salt to 95–100% of its Ksp without any of it precipitating.' },
+      desc: { zh: '只用溶液，讓某一種難溶鹽的離子積 Q 達到 Ksp 的 95 %～100 %，但還沒有沉澱。', en: 'Using solutions only, bring the ion product Q of some sparingly soluble salt to 95–100 % of its Ksp without any of it precipitating.' },
       check: function (ev) {
         const d = mx(ev);
         if (!d || !fromSolns(d)) return false;
@@ -51,13 +51,13 @@
     {
       id: 'solubility-equilibrium-6', level: 6,
       title: { zh: 'Ksp 小，溶解度卻大', en: 'Smaller Ksp, yet more soluble' },
-      desc: { zh: '分別做出氯化銀和鉻酸銀在純水中的飽和溶液（各用一杯，只加那種固體和水），比較兩者的 Ksp 與 [Ag+]。', en: 'Make saturated solutions of silver chloride and of silver chromate in pure water (one beaker each, only that solid and water), and compare their Ksp and [Ag+].' },
+      desc: { zh: '分別做出氯化銀和鉻酸銀在純水中的飽和溶液（各用一杯，只加那種固體和水），比較兩者的 Ksp 與 [Ag<sup>+</sup>]。', en: 'Make saturated solutions of silver chloride and of silver chromate in pure water (one beaker each, only that solid and water), and compare their Ksp and [Ag<sup>+</sup>].' },
       check: function (ev) { const d = mx(ev); return !!d && d.sats.indexOf('AgCl') >= 0 && d.sats.indexOf('Ag2CrO4') >= 0; }
     },
     {
       id: 'solubility-equilibrium-7', level: 7,
       title: { zh: '加水溶光最後一粒', en: 'Water away the last grain' },
-      desc: { zh: '有沉澱的燒杯裡只加水，讓沉澱剛好全部溶解：溶完的那一刻，溶液仍要達到飽和的 95% 以上（Q ≥ 0.95 Ksp）。', en: 'Add only water to a beaker with a precipitate until it just dissolves completely: at that moment the solution must still be at least 95% saturated (Q ≥ 0.95 Ksp).' },
+      desc: { zh: '有沉澱的燒杯裡只加水，讓沉澱剛好全部溶解：溶完的那一刻，溶液仍要達到飽和的 95 % 以上（Q ≥ 0.95 Ksp）。', en: 'Add only water to a beaker with a precipitate until it just dissolves completely: at that moment the solution must still be at least 95 % saturated (Q ≥ 0.95 Ksp).' },
       check: function (ev) {
         const d = mx(ev);
         return !!d && d.act === 'water' && d.vanished.some(function (k) { return d.Qr[k] >= 0.95; });
@@ -66,7 +66,7 @@
     {
       id: 'solubility-equilibrium-8', level: 8,
       title: { zh: '分步沉澱', en: 'Fractional precipitation' },
-      desc: { zh: '溶液裡有 Cl− 和 I− 各至少 0.1 mmol。加 Ag+ 讓 99% 以上的 I− 變成碘化銀沉澱，而氯化銀還沒有出現。', en: 'With at least 0.1 mmol each of Cl− and I− in solution, add Ag+ so that over 99% of the I− precipitates as silver iodide while no silver chloride has formed yet.' },
+      desc: { zh: '溶液裡有 Cl<sup>−</sup> 和 I<sup>−</sup> 各至少 0.1 mmol。加 Ag<sup>+</sup> 讓 99 % 以上的 I<sup>−</sup> 變成碘化銀沉澱，而氯化銀還沒有出現。', en: 'With at least 0.1 mmol each of Cl<sup>−</sup> and I<sup>−</sup> in solution, add Ag<sup>+</sup> so that over 99 % of the I<sup>−</sup> precipitates as silver iodide while no silver chloride has formed yet.' },
       check: function (ev) {
         const d = mx(ev);
         return !!d && d.N.Cl >= 1e-4 && d.N.I >= 1e-4 && !(d.p.AgCl > 0) && (d.p.AgI || 0) >= 0.99 * d.N.I;
@@ -75,7 +75,7 @@
     {
       id: 'solubility-equilibrium-9', level: 9,
       title: { zh: '莫耳法', en: 'The Mohr method' },
-      desc: { zh: '在含 Cl−（至少 0.1 mmol）和少量鉻酸根的溶液中滴入硝酸銀：紅棕色的鉻酸銀第一次出現時，加入的 Ag+ 和 Cl− 的莫耳數相差不超過 1%。', en: 'Titrate a solution containing Cl− (at least 0.1 mmol) and a little chromate with silver nitrate: when red-brown silver chromate first appears, the moles of Ag+ added must be within 1% of the moles of Cl−.' },
+      desc: { zh: '在含 Cl<sup>−</sup>（至少 0.1 mmol）和少量鉻酸根的溶液中滴入硝酸銀：紅棕色的鉻酸銀第一次出現時，加入的 Ag<sup>+</sup> 和 Cl<sup>−</sup> 的莫耳數相差不超過 1 %。', en: 'Titrate a solution containing Cl<sup>−</sup> (at least 0.1 mmol) and a little chromate with silver nitrate: when red-brown silver chromate first appears, the moles of Ag<sup>+</sup> added must be within 1 % of the moles of Cl<sup>−</sup>.' },
       check: function (ev) {
         const d = mx(ev);
         return !!d && d.act === 'soln' && d.what === 'AgNO3' && d.appeared.indexOf('Ag2CrO4') >= 0 && d.N.Cl >= 1e-4 && Math.abs(d.N.Ag / d.N.Cl - 1) <= 0.01;
@@ -84,7 +84,7 @@
     {
       id: 'solubility-equilibrium-10', level: 10,
       title: { zh: '恰到好處的指示劑', en: 'Just the right indicator' },
-      desc: { zh: '再做一次莫耳法，這次鉻酸銀第一次出現時，Ag+ 和 Cl− 的莫耳數相差不超過 0.05%。要選對鉻酸根的濃度，也要一滴一滴地加。', en: 'Do the Mohr titration again, this time with Ag+ within 0.05% of Cl− when silver chromate first appears. You will need the right chromate concentration and to add the titrant drop by drop.' },
+      desc: { zh: '再做一次莫耳法，這次鉻酸銀第一次出現時，Ag<sup>+</sup> 和 Cl<sup>−</sup> 的莫耳數相差不超過 0.05 %。要選對鉻酸根的濃度，也要一滴一滴地加。', en: 'Do the Mohr titration again, this time with Ag<sup>+</sup> within 0.05 % of Cl<sup>−</sup> when silver chromate first appears. You will need the right chromate concentration and to add the titrant drop by drop.' },
       check: function (ev) {
         const d = mx(ev);
         return !!d && d.act === 'soln' && d.what === 'AgNO3' && d.appeared.indexOf('Ag2CrO4') >= 0 && d.N.Cl >= 1e-4 && Math.abs(d.N.Ag / d.N.Cl - 1) <= 0.0005;

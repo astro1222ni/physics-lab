@@ -27,7 +27,7 @@
   const HC_EV_NM = 1239.84198;  // hc（eV·nm）
   const EV_KJ = 96.4853;        // 1 eV = 96.4853 kJ/mol
   const N_AIR = 1.000277;       // 標準空氣折射率（可見光的平均值，用來把空氣波長換成光子能量）
-  const AMU_C2 = 931.494e6;     // 1 u 的 mc²（eV）
+  const AMU_C2 = 931.494e6;     // 1 u 的 mc^2（eV）
   const K_EV = 8.617333e-5;     // 波茲曼常數（eV/K）
   const LMIN = 380, LMAX = 800; // 分光鏡的刻度範圍（nm）
   const T_REF = 1800;           // 參考溫度（蒲朗克亮度的歸一化）

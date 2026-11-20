@@ -26,6 +26,18 @@ function molar(f) {
 function runTo(run, tEnd, h) { while (run.t < tEnd - 1e-9) C.step(run, Math.min(h || 30, tEnd - run.t)); return run; }
 const ACIDS = Object.keys(C.ACIDS), ALCS = Object.keys(C.ALCS);
 
+test('只放酯和水就能開始加熱，水解生成等莫耳的酸和醇', function () {
+  const r = C.createRun({ A: 0, B: 0, E: 0.50, W: 0.50, cat: 1, T: 70 });
+  assert.ok(C.canHeat(r));
+  C.step(r, 5);
+  assert.ok(r.t > 0 && r.A > 0 && r.B > 0 && r.E < 0.50 && r.W < 0.50);
+  near(r.A, r.B, 1e-12);
+  near(r.A + r.E, 0.50, 1e-12);
+  near(r.B + r.W, 0.50, 1e-12);
+  assert.ok(!C.canHeat(C.createRun({ cat: 1 })));
+  for (const species of ['A', 'B', 'E', 'W']) assert.ok(C.canHeat(C.createRun({ [species]: 0.1 })));
+});
+
 test('數據：K(25 °C) = 4.0 → 等莫耳的乙酸＋乙醇恰有 2/3 變成酯（Berthelot 1862）', function () {
   const eq = C.equilibrium({ A: 1, B: 1, E: 0, W: 0 }, 25);
   near(eq.E, 2 / 3, 1e-9);

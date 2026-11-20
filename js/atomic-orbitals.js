@@ -6,8 +6,8 @@
  * 任務事件（只在使用者操作過之後送出；每個事件都帶 snap() 的完整狀態）：
  *   'state'：軌域、原子、副層加總、切面、切面位置、顯示方式改變
  *   'cursor'：徑向分布圖的游標移動 { r, P, cum, hits（這個軌域每個徑向節面是否被游標碰過） }
- *   'state' 在勾「整個副層加總」時，若有探針另附 pAng（|Y| ÷ 最大 |Y|，看探針是否在原本軌域的角節面上）、pRel（加總後的 |ψ|² ÷ 最大值）
- *   'probe'：2D 切面放探針 { px, py, pz, pr, theta（度）, rel（|ψ|² ÷ 全空間最大值）, sign }
+ *   'state' 在勾「整個副層加總」時，若有探針另附 pAng（|Y| ÷ 最大 |Y|，看探針是否在原本軌域的角節面上）、pRel（加總後的 |ψ|^2 ÷ 最大值）
+ *   'probe'：2D 切面放探針 { px, py, pz, pr, theta（度）, rel（|ψ|^2 ÷ 全空間最大值）, sign }
  *   'pin'：保留一條徑向分布曲線
  *   'view3d'：3D 立體開啟成功；'opts3d'：3D 選項改變
  *   'quiz'：認軌域按「核對」{ hit（n 與副層都對）, exact（連哪一個軌域都對）, ql, streak, exactStreak }
@@ -16,6 +16,13 @@
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+
   const A = window.AOCore, LD = window.LabDraw;
   if (!A || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -33,7 +40,7 @@
     return s.charAt(0) === '-' ? (/^-0(\.0*)?$/.test(s) ? s.slice(1) : '−' + s.slice(1)) : s;
   }
   function rStr(r) { return num(r, r < 10 ? 2 : 1); }
-  function pm(r) { return num(r * A.A0_PM, r * A.A0_PM < 100 ? 1 : 0) + ' pm'; }
+  function pm(r) { return num(r * A.A0_PM, r * A.A0_PM < 100 ? 1 : 0) + ' pm'; }
   /** 科學記號（HTML）：3 位有效數字 */
   function sciH(x) {
     if (!isFinite(x)) return '—';
@@ -82,7 +89,7 @@
     info = {
       id: A.id(o), tab: tab, rc: rc,
       nodes: A.radialNodes(o.n, o.l, o.Z), ang: state.sum ? [] : A.angularNodes(o.key),
-      rMax: A.rMax(o.n, o.l, o.Z), mean: A.meanR(o.n, o.l, o.Z), r90: inv(0.9), r995: r995,
+      rMax: A.rMax(o.n, o.l, o.Z), mean: A.meanR(o.n, o.l, o.Z), r50: inv(0.5), r90: inv(0.9), r995: r995,
       maxD: A.maxDensity(o, state.sum), iso: isoFor(o, state.pct, state.sum),
       autoHalf: Math.max(1.2, Math.round(r995 * 1.04 * 10) / 10)
     };
@@ -152,7 +159,7 @@
       ctx.strokeStyle = LD.alpha(color || col.muted, col.dark ? 0.45 : 0.35); ctx.lineWidth = 1; ctx.stroke();
     }
     parts.forEach(function (p, i) {
-      const dy = p.sub ? size * 0.24 : p.sup ? -size * 0.38 : 0;
+      const dy = p.exponent ? -size * 0.16 : p.sub ? size * 0.24 : p.sup ? -size * 0.38 : 0;
       LD.haloText(ctx, p.t, x0, y + dy, color, 'left', 'alphabetic', p.sub || p.sup ? fS : fN);
       x0 += ws[i];
     });
@@ -162,7 +169,12 @@
   function nameParts(o, sum) {
     if (sum) return [{ t: o.n + LN[o.l] }];
     const txt = A.ANG[o.key].txt;
-    return txt.length > 1 ? [{ t: o.n + txt.charAt(0) }, { t: txt.slice(1), sub: true }] : [{ t: o.n + txt }];
+    const parts = [{ t: o.n + txt.charAt(0) }];
+    txt.slice(1).split(/(\^\d+)/).filter(Boolean).forEach(function (part) {
+      if (part[0] === '^') parts.push({ t: part.slice(1), sub: true, exponent: true });
+      else parts.push({ t: part, sub: true });
+    });
+    return parts;
   }
   function a0Parts(prefix) { return [{ t: prefix + 'a' }, { t: '0', sub: true }]; }
   function nameHtml(o, sum) { return sum ? o.n + LN[o.l] : A.html(o); }
@@ -204,7 +216,7 @@
     const img = lctx.createImageData(gw, gh), d = img.data, pm = info.psiMax || 1;
     for (let k = 0; k < gw * gh; k++) {
       let t = psiGrid[k] / pm;
-      // 對數色階：|ψ| 由最大值往下 3 個數量級（|ψ|² 是 6 個數量級）
+      // 對數色階：|ψ| 由最大值往下 3 個數量級（|ψ|^2 是 6 個數量級）
       if (state.logc) { const a = Math.abs(t); t = a < 1e-3 ? 0 : Math.sign(t) * (1 + Math.log10(a) / 3); }
       let r, g, b;
       if (state.disp === 'phase' && !state.sum) {
@@ -297,7 +309,7 @@
     ctx.restore();
     // 等值面的切線（實線）
     strokeSegs(segIso, LD.alpha(col.text, col.dark ? 0.85 : 0.75), 1.6);
-    // 徑向節面：球面和切面的交線是圓（半徑 √(r² − d²)）
+    // 徑向節面：球面和切面的交線是圓（半徑 √(r^2 − d^2)）
     ctx.save();
     ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = col.node;
     info.nodes.forEach(function (rn) {
@@ -331,7 +343,7 @@
     ctx.strokeStyle = col.text; ctx.lineWidth = 2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + sb, by); ctx.moveTo(bx, by - 4); ctx.lineTo(bx, by + 4); ctx.moveTo(bx + sb, by - 4); ctx.lineTo(bx + sb, by + 4); ctx.stroke();
     ctx.restore();
-    rich(ctx, a0Parts(num(sbv, sbv < 1 ? 1 : 0) + ' ').concat([{ t: ' = ' + pm(sbv) }]), bx + sb + 10, by + 4, col.text, { pill: true, size: 11 });
+    rich(ctx, a0Parts(num(sbv, sbv < 1 ? 1 : 0) + ' ').concat([{ t: ' = ' + pm(sbv) }]), bx + sb + 10, by + 4, col.text, { pill: true, size: 11 });
     // 探針
     if (state.probe) {
       const p = toPx(state.probe.u, state.probe.v);
@@ -345,9 +357,9 @@
       ctx.stroke();
       ctx.restore();
       const pr = probeInfo();
-      const txt = '|ψ|² ' + T('＝最大值的 ', '= ') + num(pr.rel * 100, pr.rel < 0.1 ? 2 : 1) + '%' + T('', ' of max');
+      const txt = ' ' + T('＝最大值的 ', '= ') + num(pr.rel * 100, pr.rel < 0.1 ? 2 : 1) + ' %' + T('', ' of max');
       const right = p[0] > W - 190;
-      rich(ctx, [{ t: txt }], p[0] + (right ? -16 : 16), p[1] - 12, col.probe, { align: right ? 'right' : 'left', pill: true, size: 12 });
+      rich(ctx, [{ t: '|ψ|' }, { t: '2', sup: true }, { t: txt }], p[0] + (right ? -16 : 16), p[1] - 12, col.probe, { align: right ? 'right' : 'left', pill: true, size: 12 });
     }
   }
 
@@ -488,6 +500,10 @@
       g.save(); g.fillStyle = col.node; g.beginPath(); g.arc(X(rn), Tm + ph, 4.5, 0, Math.PI * 2); g.fill(); g.restore();
     });
     if (!hiddenQ()) {
+      const median = X(info.r50);
+      g.save(); g.strokeStyle = LD.alpha(col.muted, 0.65); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(median, Tm + ph); g.lineTo(median, Tm + ph - 8); g.stroke(); g.restore();
+      rich(g, [{ t: '50 %' }], median + 3, Tm + ph - 9, col.muted, { size: 10 });
       const xm = X(info.rMax), ym = Yp(A.radialP(state.n, state.l, info.rMax, state.Z));
       g.save(); g.fillStyle = col.accent; g.beginPath(); g.moveTo(xm, ym - 5); g.lineTo(xm - 6, ym - 15); g.lineTo(xm + 6, ym - 15); g.closePath(); g.fill(); g.restore();
       rich(g, [{ t: 'r' }, { t: 'max', sub: true }], xm, ym - 19, col.accent, { align: 'center', size: 12 });
@@ -504,7 +520,7 @@
     LD.ball(g, xc, Tm + ph, 6.5, col.accent, {});
     const cum = A.lookup(info.tab, info.tab.C, state.cur);
     const right = xc > L + pw - 150;
-    rich(g, a0Parts('r = ' + num(state.cur, 3) + ' ').concat([{ t: T('，以內 ', ', inside ') + num(cum * 100, 1) + '%' }]),
+    rich(g, a0Parts('r = ' + num(state.cur, 3) + ' ').concat([{ t: T('，以內 ', ', inside ') + num(cum * 100, 1) + ' %' }]),
       xc + (right ? -8 : 8), Tm + 16, col.text, { align: right ? 'right' : 'left', pill: true, size: 12 });
     // 測驗中：曲線名稱是 ?
     if (hiddenQ()) rich(g, [{ t: '?' }], L + pw - 6, Tm + 16, col.accent, { align: 'right', pill: true, size: 14, weight: 800 });
@@ -513,7 +529,7 @@
     const old = state.cur;
     state.cur = Math.max(0, Math.min(CUR_MAX, r));
     if (from !== 'slider') { if (window.LabNum) window.LabNum.set(elCur, state.cur); else elCur.value = curPos(state.cur); }
-    $('curo').innerHTML = num(state.cur, 3) + ' ' + A0H;
+    $('curo').innerHTML = num(state.cur, 3) + ' ' + A0H;
     // 穿過徑向節面：一聲短促的「喀」
     info.nodes.forEach(function (rn, i) {
       if ((old - rn) * (state.cur - rn) <= 0 && old !== state.cur && snd()) window.LabSound.tone({ freq: 1320, dur: 0.035, gain: 0.05, type: 'square' });
@@ -532,6 +548,11 @@
   gcv.addEventListener('pointermove', function (ev) { if (gDrag) gEvent(ev); });
   gcv.addEventListener('pointerup', function () { gDrag = false; });
   gcv.addEventListener('pointercancel', function () { gDrag = false; });
+  document.querySelectorAll('[data-radius-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      acted(); setCursor(state.cur + Number(button.dataset.radiusStep) * 0.005, 'graph');
+    });
+  });
   gcv.addEventListener('keydown', function (e) {
     const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
     if (!d || !gx) return;
@@ -541,41 +562,41 @@
 
   // ======================= 讀數 =======================
   function row(dt, dd, cls) { return '<dt>' + dt + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + dd + '</dd>'; }
-  function a0h(r) { return rStr(r) + ' ' + A0H; }
+  function a0h(r) { return rStr(r) + ' ' + A0H; }
   function renderReadouts() {
     const o = orb(), hq = hiddenQ(), Q = '?';
     let h = '';
     const mList = function () {
       const m = A.ANG[state.key].m;
-      if (state.sum) return T('全部 ', 'all ') + (2 * state.l + 1) + T(' 個（', ' (') + (state.l ? '−' + state.l + ' … +' + state.l : '0') + T('）', ')');
+      if (state.sum) return T('全部 ', 'all ') + (2 * state.l + 1) + T(' 個（', ' (') + (state.l ? '−' + state.l + ' … +' + state.l : '0') + T('）', ')');
       return m === 0 ? '0' : '±' + m + T(' 組合', ' (combined)');
     };
     h += row(T('軌域', 'Orbital'), hq ? Q : nameHtml(o, state.sum) + (state.sum ? T('（副層加總）', ' (subshell sum)') : ''), 'big');
     h += row(T('主量子數 n', 'Principal n'), hq ? Q : String(state.n));
     h += row(T('角量子數 l', 'Angular l'), hq ? Q : state.l + T('（' + LN[state.l] + '）', ' (' + LN[state.l] + ')'));
     h += row(T('磁量子數 m<sub>l</sub>', 'Magnetic m<sub>l</sub>'), hq ? Q : mList());
-    h += row(T('能量 E<sub>n</sub>', 'Energy E<sub>n</sub>'), hq ? Q : num(A.energyEV(state.n, state.Z), 3) + ' eV<br>' + num(A.energyKJ(state.n, state.Z), 0) + ' kJ/mol');
-    h += row(T('徑向節面', 'Radial nodes'), hq ? Q : info.nodes.length + T(' 個', '') + (info.nodes.length ? '<br>r = ' + info.nodes.map(rStr).join(', ') + ' ' + A0H : ''), 'wr');
+    h += row(T('能量 E<sub>n</sub>', 'Energy E<sub>n</sub>'), hq ? Q : num(A.energyEV(state.n, state.Z), 3) + ' eV<br>' + num(A.energyKJ(state.n, state.Z), 0) + ' kJ/mol');
+    h += row(T('徑向節面', 'Radial nodes'), hq ? Q : info.nodes.length + T(' 個', '') + (info.nodes.length ? '<br>r = ' + info.nodes.map(rStr).join(', ') + ' ' + A0H : ''), 'wr');
     h += row(T('角節面', 'Angular nodes'), hq ? Q : state.sum ? T('加總後沒有（球形）', 'none after summing (spherical)') :
-      info.ang.length + T(' 個', '') + (info.ang.length ? '<br>' + info.ang.map(function (a) { return T(a.zh, a.en); }).join(T('、', '; ')) : ''), 'wr');
+      info.ang.length + T(' 個', '') + (info.ang.length ? '<br>' + info.ang.map(function (a) { return T(a.zh, a.en); }).join(T('、', '; ')) : ''), 'wr');
     h += row(T('節面總數', 'Total nodes'), hq ? Q : (state.sum ? info.nodes.length : state.n - 1) + (state.sum ? '' : ' = n − 1'));
     h += row(T('最可能半徑', 'Most probable radius'), hq ? Q : a0h(info.rMax) + '<br>' + pm(info.rMax));
     h += row(T('平均半徑 ⟨r⟩', 'Mean radius ⟨r⟩'), hq ? Q : a0h(info.mean) + '<br>' + pm(info.mean));
-    h += row(T('90% 的機率在半徑', '90% probability within'), hq ? Q : a0h(info.r90) + T(' 以內', ''));
+    h += row(T('90 % 的機率在半徑', '90 % probability within'), hq ? Q : a0h(info.r90) + T(' 以內', ''));
     $('qOut').innerHTML = h;
     // 游標與探針
     const cum = A.lookup(info.tab, info.tab.C, state.cur), P = A.radialP(state.n, state.l, state.cur, state.Z);
     let c = '';
-    c += row(T('游標半徑 r', 'Cursor radius r'), num(state.cur, 3) + ' ' + A0H + '<br>' + pm(state.cur));
-    c += row(T('徑向分布 P(r)', 'Radial distribution P(r)'), sciH(P) + ' ' + A0H + SUP_M1);
-    c += row(T('0 到 r 的機率', 'Probability from 0 to r'), num(cum * 100, 2) + '%', 'big');
+    c += row(T('游標半徑 r', 'Cursor radius r'), num(state.cur, 3) + ' ' + A0H + '<br>' + pm(state.cur));
+    c += row(T('徑向分布 P(r)', 'Radial distribution P(r)'), sciH(P) + ' ' + A0H + SUP_M1);
+    c += row(T('0 到 r 的機率', 'Probability from 0 to r'), num(cum * 100, 2) + ' %', 'big');
     const pr = probeInfo();
     if (!pr) c += row(T('探針', 'Probe'), T('點 2D 切面放探針', 'tap the 2D slice'), 'wr');
     else {
-      c += row(T('探針位置 (x, y, z)', 'Probe position (x, y, z)'), '(' + [pr.x, pr.y, pr.z].map(function (v) { return num(v, 2); }).join(', ') + ') ' + A0H, 'wr');
-      c += row(T('探針離原子核', 'Probe distance r'), a0h(pr.r) + '<br>θ = ' + num(pr.theta, 1) + '°' + T('（與 +z 軸）', ' (from +z)'));
+      c += row(T('探針位置 (x, y, z)', 'Probe position (x, y, z)'), '(' + [pr.x, pr.y, pr.z].map(function (v) { return num(v, 2); }).join(', ') + ') ' + A0H, 'wr');
+      c += row(T('探針離原子核', 'Probe distance r'), a0h(pr.r) + '<br>θ = ' + num(pr.theta, 1) + ' °' + T('（與 +z 軸）', ' (from +z)'));
       c += row(T('探針處 ψ 的正負', 'Sign of ψ at the probe'), state.sum ? T('—（加總沒有正負）', '— (sum has no sign)') : pr.sign > 0 ? '+' : pr.sign < 0 ? '−' : T('0（在節面上）', '0 (on a node)'));
-      c += row(T('探針處的密度 |ψ|<sup>2</sup>', 'Density |ψ|<sup>2</sup> at the probe'), sciH(pr.d) + ' ' + A0H + '<sup>−3</sup><br>' + T('＝最大值的 ', '= ') + num(pr.rel * 100, 2) + '%' + T('', ' of max'));
+      c += row(T('探針處的密度 |ψ|<sup>2</sup>', 'Density |ψ|<sup>2</sup> at the probe'), sciH(pr.d) + ' ' + A0H + '<sup>−3</sup><br>' + T('＝最大值的 ', '= ') + num(pr.rel * 100, 2) + ' %' + T('', ' of max'));
     }
     $('cOut').innerHTML = c;
   }
@@ -627,10 +648,10 @@
     elZoom.disabled = state.auto;
     $('nodeChk').checked = state.nodes3; $('cutChk').checked = state.cut; $('planeChk').checked = state.plane3; $('rChk').checked = state.showR;
     $('offLabel').textContent = T('切面位置 ', 'Slice position ') + A.PLANES[state.plane].nName + T('（離原子核的距離）', ' (distance from the nucleus)');
-    $('offo').innerHTML = num(state.off, 2) + ' ' + A0H;
-    $('zoomo').innerHTML = num(state.half, 1) + ' ' + A0H;
-    $('pcto').textContent = state.pct + '%';
-    $('curo').innerHTML = num(state.cur, 3) + ' ' + A0H;
+    $('offo').innerHTML = num(state.off, 2) + ' ' + A0H;
+    $('zoomo').innerHTML = num(state.half, 1) + ' ' + A0H;
+    $('pcto').textContent = state.pct + ' %';
+    $('curo').innerHTML = num(state.cur, 3) + ' ' + A0H;
     $('pinBtn').disabled = hq;
     updateLegend();
   }
@@ -643,10 +664,10 @@
       else h += '<span><span class="sw" style="background:' + col.pos + '"></span>ψ &gt; 0</span><span><span class="sw" style="background:' + col.neg + '"></span>ψ &lt; 0</span>';
       h += '<span><span class="sw" style="background:' + LD.alpha(col.node, 0.6) + '"></span>' + T('節面', 'nodes') + '</span>';
     } else {
-      const sc = state.logc ? T('（對數：3 個數量級）', ' (log scale, 3 decades)') : '';
+      const sc = state.logc ? T('（對數：3 個數量級）', ' (log scale, 3 decades)') : '';
       if (state.disp === 'phase' && !state.sum) h += '<span>−<span class="ramp" style="background:' + rampP + '"></span>+ ' + T('ψ 的正負（深淺 ∝ |ψ|）', 'sign of ψ (strength ∝ |ψ|)') + sc + '</span>';
-      else h += '<span>0<span class="ramp" style="background:' + rampD + '"></span>' + T('最大　顏色深淺 ∝ |ψ| = √|ψ|²', 'max  colour ∝ |ψ| = √|ψ|²') + sc + '</span>';
-      h += '<span><span class="ln" style="border-color:' + LD.alpha(col.text, 0.75) + '"></span>' + T('等值面（包住 ', 'isosurface (') + state.pct + T('% 機率）', '% inside)') + '</span>';
+      else h += '<span>0<span class="ramp" style="background:' + rampD + '"></span>' + T('最大　顏色深淺 ∝ |ψ| = √|ψ|<sup>2</sup>', 'max  colour ∝ |ψ| = √|ψ|<sup>2</sup>') + sc + '</span>';
+      h += '<span><span class="ln" style="border-color:' + LD.alpha(col.text, 0.75) + '"></span>' + T('等值面（包住 ', 'isosurface (') + state.pct + T(' % 機率）', ' % inside)') + '</span>';
       h += '<span><span class="ln dash" style="border-color:' + col.node + '"></span>' + T('徑向節面', 'radial node') + '</span>';
       if (!state.sum) h += '<span><span class="ln dash" style="border-color:' + col.field + '"></span>' + T('角節面', 'angular node') + '</span>';
     }
@@ -791,7 +812,13 @@
     sel.innerHTML = '<option value="">' + T('（不指定）', '(not chosen)') + '</option>' +
       A.KEYS[l].map(function (k) { return '<option value="' + k + '">' + A.ANG[k].txt + '</option>'; }).join('');
     if (A.KEYS[l].indexOf(old) >= 0) sel.value = old;
+    showQuizOrbital();
   }
+  function showQuizOrbital() {
+    const entry = A.ANG[$('qK').value];
+    $('qKFormula').innerHTML = entry ? entry.html : '';
+  }
+  $('qK').addEventListener('change', showQuizOrbital);
   function setQuizUI() {
     $('quizIn').hidden = !hiddenQ();
     $('quizNext').hidden = !quiz.on || hiddenQ();
@@ -828,7 +855,7 @@
   }
   function endRound(msg) {
     quiz.streak = 0; quiz.exact = 0;
-    $('quizOut').textContent = msg;
+    $('quizOut').innerHTML = formulaMarkup(msg);
     reveal();
   }
   function checkQuiz() {
@@ -839,12 +866,12 @@
     quiz.streak = hit ? quiz.streak + 1 : 0;
     quiz.exact = exact ? quiz.exact + 1 : 0;
     quiz.best = Math.max(quiz.best, quiz.streak);
-    const ansTxt = an + LN[al] + (ak ? '（' + A.ANG[ak].txt.slice(1) + '）' : '');
+    const ansTxt = ak ? an + A.ANG[ak].html : an + LN[al];
     quiz.hist.push({ k: quiz.n, ans: ansTxt, right: A.html(o), hit: hit, exact: exact });
     if (quiz.hist.length > 30) quiz.hist.shift();
     const nr = o.n - o.l - 1;
     $('quizOut').innerHTML = (hit ? (exact ? T('完全正確！', 'Exactly right!') : T('答對了！', 'Right!')) : T('不對，', 'Not quite: ')) +
-      T('答案是 ', 'it is ') + A.html(o) + T('：徑向節面 ', ' — ') + nr + T(' 個、角節面 ', ' radial and ') + o.l + T(' 個。', ' angular nodes.') +
+      T('答案是 ', 'it is ') + A.html(o) + T('：徑向節面 ', ' — ') + nr + T(' 個、角節面 ', ' radial and ') + o.l + T(' 個。', ' angular nodes.') +
       T('連續答對 ', ' Streak ') + quiz.streak + T('，最佳 ', ', best ') + quiz.best + T('。', '.');
     if (snd()) {
       if (hit) { window.LabSound.tone({ freq: 784, dur: 0.1, gain: 0.08 }); window.LabSound.tone({ freq: exact ? 1568 : 1175, dur: 0.18, gain: 0.08, delay: 0.11 }); }
@@ -857,7 +884,7 @@
     if (!hiddenQ()) return;
     acted();
     quiz.hist.push({ k: quiz.n, ans: '—', right: A.html(quiz.o), give: true });
-    endRound(T('答案是 ', 'It is ') + A.text(quiz.o) + T('。連勝歸零。', '. The streak is reset.'));
+    endRound(T('答案是 ', 'It is ') + A.html(quiz.o) + T('。連勝歸零。', '. The streak is reset.'));
   }
   function clearQuiz() {
     acted();
@@ -901,11 +928,11 @@
       colors: function () { return col; },
       hud: function () {
         const o = orb();
-        const nm = hiddenQ() ? '?' : (state.sum ? o.n + LN[o.l] + T(' 副層加總', ' subshell (sum)') : A.text(o)) + (state.Z === 2 ? '  He+' : state.Z === 3 ? '  Li2+' : '');
+        const nm = hiddenQ() ? '?' : (state.sum ? o.n + LN[o.l] + T(' 副層加總', ' subshell (sum)') : A.html(o)) + (state.Z === 2 ? '  He<sup>+</sup>' : state.Z === 3 ? '  Li<sup>2+</sup>' : '');
         return {
           tl: nm,
-          tr: (state.style === 'cloud' ? T('機率雲：依 |ψ|² 抽 15000 點', 'Dot cloud: 15 000 points') : T('等值面包住 ', 'Isosurface: ') + state.pct + T('% 的機率', '% inside')) +
-            '\n' + T('最遠到 ', 'reaches ') + rStr(info.iso.rOut) + ' a0 = ' + pm(info.iso.rOut)
+          tr: (state.style === 'cloud' ? T('機率雲：依 |ψ|<sup>2</sup> 抽 15000 點', 'Dot cloud: 15 000 points') : T('等值面包住 ', 'Isosurface: ') + state.pct + T(' % 的機率', ' % inside')) +
+            '\n' + T('最遠到 ', 'reaches ') + rStr(info.iso.rOut) + ' ' + A0H + ' = ' + pm(info.iso.rOut)
         };
       },
       contextLost: function () {
@@ -985,8 +1012,8 @@
     if (ev.detail && ev.detail.name === 'fs') { resize(); resizeGraph(); }
   });
   if (window.ResizeObserver) {
-    let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    let lg = 0;
+    new ResizeObserver(resize).observe(cv);
     new ResizeObserver(function () { if (gcv.clientWidth && gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', function () { resize(); resizeGraph(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });
@@ -1010,4 +1037,54 @@
   setQuizUI();
   resize(); resizeGraph();
   refreshAll();
+  function mountKeypad() {
+    const label = T('截面探針', 'Slice probe');
+    let step = 0.05;
+    const pad = LabVPad.mount({
+      id: 'atomic-orbitals', canvas: cv, lens: false, objects: ['cursor'], steps: [1], step: 1,
+      selected: () => 'cursor', select: () => {},
+      move(dx, dy) {
+        acted();
+        const p = state.probe || { u: 0, v: 0 };
+        setProbe(p.u + dx * step, p.v + dy * step);
+      },
+      point() {
+        const p = state.probe || { u: 0, v: 0 }, xy = toPx(p.u, p.v);
+        const r = cv.getBoundingClientRect();
+        return { x: r.left + xy[0], y: r.top + xy[1] };
+      },
+      record: () => {},
+      visible() {
+        const r = cv.getBoundingClientRect();
+        return state.view === '2d' && getComputedStyle(cv).visibility === 'visible' && r.top < innerHeight && r.bottom > 0;
+      },
+      home(w, h) {
+        const r = cv.getBoundingClientRect();
+        return { x: r.right - w - 4, y: Math.min(r.bottom, innerHeight) - h - 4 };
+      },
+      viewport() {
+        const drawer = document.querySelector('html.labdeck-drawer .labdeck');
+        return { width: drawer ? drawer.getBoundingClientRect().left : innerWidth, height: innerHeight };
+      }
+    });
+    pad.element.setAttribute('aria-label', label);
+    const centre = document.createElement('span');
+    centre.className = 'keypad-centre'; centre.textContent = '◎'; centre.setAttribute('aria-hidden', 'true');
+    pad.element.querySelector('.vpad-select').replaceWith(centre);
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', label + ' ' + b.textContent));
+    pad.element.querySelector('.vpad-step').remove();
+    // 探針微調只送出探針移動事件，保留曲線仍由徑向分布圖上的原按鈕操作。
+    const fine = document.createElement('button');
+    fine.type = 'button';
+    fine.setAttribute('aria-label', T('切換探針步距（波耳半徑）', 'Change probe step in Bohr radii'));
+    const steps = [0.01, 0.05, 0.5];
+    function showStep() { fine.innerHTML = step + ' a<sub>0</sub>'; }
+    fine.addEventListener('click', () => { step = steps[(steps.indexOf(step) + 1) % steps.length]; showStep(); });
+    pad.element.querySelector('.vpad-footer').replaceChildren(fine);
+    showStep();
+    try {
+      if (!localStorage.getItem('lab-vpad:atomic-orbitals')) pad.collapse(true);
+    } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();

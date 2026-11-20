@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Addition and Condensation Polymerisation | Astro Ni Lab">加成聚合與縮合聚合｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 加成聚合與縮合聚合頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pm canvas { aspect-ratio: auto; touch-action: auto; }
@@ -110,6 +110,31 @@
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
     .notes table.data td { white-space: normal; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
   </style>
 </head>
 <body data-en-ready>
@@ -121,7 +146,12 @@
     </header>
 
     <p class="try-hint" data-en="Try it: press “Start”, and watch the magnified view — a few chains grow very long while most of the monomer is still waiting. Then switch to “Condensation” and start again: almost every molecule reacts at once, yet the chains stay short for a long time.">試試看：按「開始反應」，看放大圖：少數幾條鏈很快就長得很長，大部分單體卻還在旁邊等著。再切到「縮合聚合」重新開始：幾乎每個分子馬上都反應了，鏈卻很久都還很短。</p>
-    <div class="lab pm">
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab pm" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -131,20 +161,24 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="反應器與分子放大圖" data-en-aria-label="Reactor and a magnified view of the molecules"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
-          <button id="record" type="button" data-en="Record" title="把目前的轉化率、聚合度、分子量記到下面的紀錄表" data-en-title="Add the present conversion, degree of polymerisation and molar mass to the table below">記錄數據</button>
-          <button id="restart" type="button" data-en="New run" title="同樣的設定，從頭再做一次" data-en-title="Start again from the beginning with the same settings">重新開始</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上保留的舊曲線" data-en-title="Clear the table and the old curves kept on the graph">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-            <div class="seg4" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false">×1</button>
-              <button type="button" id="sp1" aria-pressed="true">×5</button>
-              <button type="button" id="sp2" aria-pressed="false">×20</button>
-              <button type="button" id="sp3" aria-pressed="false">×60</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="反應器與分子放大圖" data-en-aria-label="Reactor and a magnified view of the molecules"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar">
+            <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
+            <button id="record" type="button" data-en="Record" title="把目前的轉化率、聚合度、分子量記到下面的紀錄表" data-en-title="Add the present conversion, degree of polymerisation and molar mass to the table below">記錄數據</button>
+            <button id="restart" type="button" data-en="New run" title="同樣的設定，從頭再做一次" data-en-title="Start again from the beginning with the same settings">重新開始</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上保留的舊曲線" data-en-title="Clear the table and the old curves kept on the graph">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+              <div class="seg4" role="group" aria-labelledby="speedLabel">
+                <button type="button" id="sp0" aria-pressed="false">×1</button>
+                <button type="button" id="sp1" aria-pressed="true">×5</button>
+                <button type="button" id="sp2" aria-pressed="false">×20</button>
+                <button type="button" id="sp3" aria-pressed="false">×60</button>
+              </div>
             </div>
           </div>
         </div>
@@ -202,9 +236,9 @@
       </aside>
     </div>
 
-    <div class="lab pm">
+    <div class="lab pm" data-scene="graphs">
       <div class="stage">
-        <h2 data-en="Graphs and records">圖表與紀錄</h2>
+        <h2 data-en="Graphs">圖表與紀錄</h2>
         <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
           <button type="button" data-tab="xp" aria-pressed="true" data-en="Xn – conversion">聚合度—轉化率</button>
           <button type="button" data-tab="mwd" aria-pressed="false" data-en="Chain lengths">鏈長分布</button>
@@ -240,7 +274,7 @@
         \[ r = 1:\ X_n = \frac{1}{1 - p} \]
         \[ M_n = \frac{\sum N_x M_x}{\sum N_x} \]
       </div>
-      <p data-en-html="At \(p = 0.99\) the chains are only 100 monomers long; an excess of 5% of one monomer limits them to about 40 even when the reaction is complete. In a closed flask the water reacts back (hydrolysis) and an equilibrium is reached, \(K = \dfrac{[\text{bonds}][\mathrm{H_2O}]}{[\mathrm A][\mathrm B]}\); removing the water shifts it to the right (Le Chatelier).">\(p = 0.99\) 時鏈也才 100 個單體長；某一種單體多了 5%，就算完全反應，鏈也只有約 40 個單體。在密閉的瓶子裡，水會反過來把鍵水解，最後達到平衡 \(K = \dfrac{[\text{鍵}][\mathrm{H_2O}]}{[\mathrm A][\mathrm B]}\)；把水抽走，平衡就往右移（勒沙特列原理）。</p>
+      <p data-en-html="At \(p = 0.99\) the chains are only 100 monomers long; an excess of 5 % of one monomer limits them to about 40 even when the reaction is complete. In a closed flask the water reacts back (hydrolysis) and an equilibrium is reached, \(K = \dfrac{[\text{bonds}][\mathrm{H_2O}]}{[\mathrm A][\mathrm B]}\); removing the water shifts it to the right (Le Chatelier).">\(p = 0.99\) 時鏈也才 100 個單體長；某一種單體多了 5 %，就算完全反應，鏈也只有約 40 個單體。在密閉的瓶子裡，水會反過來把鍵水解，最後達到平衡 \(K = \dfrac{[\text{鍵}][\mathrm{H_2O}]}{[\mathrm A][\mathrm B]}\)；把水抽走，平衡就往右移（勒沙特列原理）。</p>
       <h3 data-en="Degree of polymerisation, molar mass and dispersity">聚合度、分子量與分散度</h3>
       <div class="formula multi">
         \[ X_n = \frac{\sum N_x\,x}{\sum N_x} \]
@@ -254,19 +288,19 @@
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en="Addition: pause at 5% conversion. The chains are already hundreds of monomers long; later there are just more of them. Condensation: at 90% conversion the average chain is only 10 monomers long.">加成聚合：在轉化率 5% 時暫停，鏈已經有幾百個單體長，之後只是鏈的數目變多。縮合聚合：轉化率 90% 時，平均每條鏈才 10 個單體。</li>
-        <li data-en="Use 4 times as much initiator: the reaction is about twice as fast and the chains about half as long.">起始劑變成 4 倍：反應約快 2 倍，鏈約短一半。</li>
+        <li data-en="Addition: pause at 5 % conversion. The chains are already hundreds of monomers long; later there are just more of them. Condensation: at 90 % conversion the average chain is only 10 monomers long.">加成聚合：在轉化率 5 % 時暫停，鏈已經有幾百個單體長，之後只是鏈的數目變多。縮合聚合：轉化率 90 % 時，平均每條鏈才 10 個單體。</li>
+        <li data-en="Use 4 times as much initiator: the reaction is about twice as fast and the chains about half as long.">起始劑變成 4 倍：反應約快 2 倍，鏈約短一半。</li>
         <li data-en="Very little initiator: it runs out before all the monomer has reacted (dead-end polymerisation).">起始劑很少：單體還沒用完，起始劑就先耗盡了（反應停在半路）。</li>
         <li data-en="Styrene and methyl methacrylate shrink as they polymerise — the polymer is denser than the monomer.">苯乙烯與甲基丙烯酸甲酯聚合時體積會縮小：聚合物的密度比單體大。</li>
-        <li data-en="Condensation without removing the water: PET stops at chains of about 2 monomers, nylon at about 18. Then switch water removal on.">縮合聚合不除水：PET 停在平均約 2 個單體，耐綸約 18 個。再把除水打開看看。</li>
+        <li data-en="Condensation without removing the water: PET stops at chains of about 2 monomers, nylon at about 18. Then switch water removal on.">縮合聚合不除水：PET 停在平均約 2 個單體，耐綸約 18 個。再把除水打開看看。</li>
         <li data-en="Change the mole ratio from 1 to 1.05: however long you wait, the chains stay short.">莫耳比從 1 改成 1.05：不管等多久，鏈都長不大。</li>
       </ul>
 
       <h3 data-en="Think about it">想一想</h3>
       <ol>
         <li data-en="Why can ethene polymerise by addition but ethane cannot? Why can ethanol not form a condensation polymer on its own?">為什麼乙烯能加成聚合，乙烷卻不行？為什麼乙醇自己不能縮合聚合？</li>
-        <li data-en="A sample of polystyrene has Mn = 52 000 g/mol. What is its degree of polymerisation? (C8H8 = 104.15 g/mol)">某聚苯乙烯的 Mn = 52 000 g/mol，它的聚合度是多少？（C<sub>8</sub>H<sub>8</sub> = 104.15 g/mol）</li>
-        <li data-en="0.100 mol of hexane-1,6-diamine and 0.100 mol of hexanedioic acid react completely to make nylon-6,6. About how many grams of water are given off?">0.100 mol 己二胺與 0.100 mol 己二酸完全反應成耐綸-66，大約放出幾克水？</li>
+        <li data-en-html="A sample of polystyrene has Mn = 52 000 g/mol. What is its degree of polymerisation? (C&lt;sub&gt;8&lt;/sub&gt;H&lt;sub&gt;8&lt;/sub&gt; = 104.15 g/mol)">某聚苯乙烯的 Mn = 52 000 g/mol，它的聚合度是多少？（C<sub>8</sub>H<sub>8</sub> = 104.15 g/mol）</li>
+        <li data-en="0.100 mol of hexane-1,6-diamine and 0.100 mol of hexanedioic acid react completely to make nylon-6,6. About how many grams of water are given off?">0.100 mol 己二胺與 0.100 mol 己二酸完全反應成耐綸-66，大約放出幾克水？</li>
         <li data-en="To make a polyester with Xn = 100 from a diol and a diacid in exactly equal amounts, what fraction of the groups must react? Why do factories remove the water under vacuum?">二醇與二酸剛好等莫耳，要做出 Xn = 100 的聚酯，官能基要反應掉多少？為什麼工廠要減壓除水？</li>
       </ol>
       <details>
@@ -274,18 +308,18 @@
         <ol>
           <li data-en="Addition needs a C=C double bond to open; ethane has only single bonds. A condensation polymer needs two functional groups on every monomer; ethanol has only one –OH, so it can only form a small molecule (an ester or an ether) and stop.">加成聚合要打開 C=C 雙鍵，乙烷只有單鍵。縮合聚合要每個單體有兩個官能基，乙醇只有一個 –OH，最多和別人生成一個小分子（酯或醚）就停了。</li>
           <li data-en="Xn = 52 000 ÷ 104.15 ≈ 500.">Xn = 52 000 ÷ 104.15 ≈ 500。</li>
-          <li data-en="Each amide bond gives off one H2O: 0.200 mol of bonds → 0.200 × 18.0 ≈ 3.6 g (strictly a little less, because the two ends of each chain have not reacted).">每生成一個醯胺鍵放出一個 H<sub>2</sub>O：0.200 mol 的鍵 → 0.200 × 18.0 ≈ 3.6 g（嚴格說略少一點，因為每條鏈的兩端沒有反應）。</li>
-          <li data-en="Xn = 1/(1 − p) = 100 gives p = 0.99: 99% of the groups. The reaction is reversible (K is only about 1 for esters), so the water must be removed to push the equilibrium to the right; otherwise it stops at about Xn = 2.">Xn = 1/(1 − p) = 100，所以 p = 0.99，要反應掉 99% 的官能基。酯化是可逆反應（K 只有約 1），必須把水抽走，平衡才會往右移，否則停在 Xn 約 2。</li>
+          <li data-en-html="Each amide bond gives off one H&lt;sub&gt;2&lt;/sub&gt;O: 0.200 mol of bonds → 0.200 × 18.0 ≈ 3.6 g (strictly a little less, because the two ends of each chain have not reacted).">每生成一個醯胺鍵放出一個 H<sub>2</sub>O：0.200 mol 的鍵 → 0.200 × 18.0 ≈ 3.6 g（嚴格說略少一點，因為每條鏈的兩端沒有反應）。</li>
+          <li data-en="Xn = 1/(1 − p) = 100 gives p = 0.99: 99 % of the groups. The reaction is reversible (K is only about 1 for esters), so the water must be removed to push the equilibrium to the right; otherwise it stops at about Xn = 2.">Xn = 1/(1 − p) = 100，所以 p = 0.99，要反應掉 99 % 的官能基。酯化是可逆反應（K 只有約 1），必須把水抽走，平衡才會往右移，否則停在 Xn 約 2。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Both kinds of polymerisation are simulated molecule by molecule in a small sample (Gillespie's stochastic algorithm: each event happens with the right probability). Addition: 1.3 to 28 million monomers (more when there is less initiator, so that about 40 radicals are always present); condensation: 60 000 monomers. Xn, Mw, Đ and the chain-length distribution are counted from the sample; the masses are scaled to 1.00 mol of monomer (addition) or 0.100 mol of each monomer (0.200 mol of lactic acid).">兩種聚合都在一小份樣品裡逐個分子模擬（Gillespie 隨機演算法：每個反應事件依正確的機率發生）。加成聚合的樣品有 130 萬到 2800 萬個單體（起始劑越少樣品越大，讓樣品裡隨時約有 40 個自由基），縮合聚合 6 萬個單體。Xn、Mw、Đ 與鏈長分布直接從樣品數出來；質量換算成 1.00 mol 單體（加成）或兩種單體各 0.100 mol（乳酸 0.200 mol）。</li>
-        <li data-en-html="Addition: initiation \(k_d = 0.005\ \mathrm{s^{-1}}\) (efficiency taken as 1), propagation and termination chosen so that with 0.5% initiator ν = 200. All six monomers use the same rate constants and only their molar masses and densities differ; real values differ a lot, and polypropene and high-density polyethylene are really made with Ziegler–Natta catalysts, not radicals. Initiator end groups are ignored in Mn.">加成聚合：起始劑分解 \(k_d = 0.005\ \mathrm{s^{-1}}\)（起始效率視為 1），成長與終止的速率常數取成起始劑 0.5% 時 ν = 200。六種單體用同一組速率常數，只有莫耳質量與密度不同；真實的數值差很多，而且聚丙烯與高密度聚乙烯其實是用齊格勒－納塔觸媒、不是自由基聚合的。Mn 不計起始劑碎片的端基。</li>
-        <li data-en-html="Condensation: every A group and every B group of two different molecules react with the same rate constant \(k\) (acid-catalysed, second order; no rings form — Flory's assumptions), hydrolysis with \(k/K\), and water is pumped off with a rate constant of 5 s<sup>−1</sup>. Representative equilibrium constants: K = 300 for amide formation and K = 1 for ester formation (their orders of magnitude are those quoted by Odian).">縮合聚合：不同分子上的任一個 A 端與 B 端都以同一個速率常數 \(k\) 反應（外加酸催化、二級反應；不成環，Flory 的假設），水解速率常數 \(k/K\)，除水時水以 5 s<sup>−1</sup> 的速率常數被抽走。平衡常數取代表值：醯胺化 K = 300、酯化 K = 1（數量級取自 Odian 的教科書）。</li>
+        <li data-en-html="Both kinds of polymerisation are simulated molecule by molecule in a small sample (Gillespie's stochastic algorithm: each event happens with the right probability). Addition: 1.3 to 28 million monomers (more when there is less initiator, so that about 40 radicals are always present); condensation: 60 000 monomers. Xn, Mw, Đ and the chain-length distribution are counted from the sample; the masses are scaled to 1.00 mol of monomer (addition) or 0.100 mol of each monomer (0.200 mol of lactic acid).">兩種聚合都在一小份樣品裡逐個分子模擬（Gillespie 隨機演算法：每個反應事件依正確的機率發生）。加成聚合的樣品有 130 萬到 2800 萬個單體（起始劑越少樣品越大，讓樣品裡隨時約有 40 個自由基），縮合聚合 6 萬個單體。Xn、Mw、Đ 與鏈長分布直接從樣品數出來；質量換算成 1.00 mol 單體（加成）或兩種單體各 0.100 mol（乳酸 0.200 mol）。</li>
+        <li data-en-html="Addition: initiation \(k_d = 0.005\ \mathrm{s^{-1}}\) (efficiency taken as 1), propagation and termination chosen so that with 0.5 % initiator ν = 200. All six monomers use the same rate constants and only their molar masses and densities differ; real values differ a lot, and polypropene and high-density polyethylene are really made with Ziegler–Natta catalysts, not radicals. Initiator end groups are ignored in Mn.">加成聚合：起始劑分解 \(k_d = 0.005\ \mathrm{s^{-1}}\)（起始效率視為 1），成長與終止的速率常數取成起始劑 0.5 % 時 ν = 200。六種單體用同一組速率常數，只有莫耳質量與密度不同；真實的數值差很多，而且聚丙烯與高密度聚乙烯其實是用齊格勒－納塔觸媒、不是自由基聚合的。Mn 不計起始劑碎片的端基。</li>
+        <li data-en-html="Condensation: every A group and every B group of two different molecules react with the same rate constant \(k\) (acid-catalysed, second order; no rings form — Flory's assumptions), hydrolysis with \(k/K\), and water is pumped off with a rate constant of 5 s<sup>−1</sup>. Representative equilibrium constants: K = 300 for amide formation and K = 1 for ester formation (their orders of magnitude are those quoted by Odian).">縮合聚合：不同分子上的任一個 A 端與 B 端都以同一個速率常數 \(k\) 反應（外加酸催化、二級反應；不成環，Flory 的假設），水解速率常數 \(k/K\)，除水時水以 5 s<sup>−1</sup> 的速率常數被抽走。平衡常數取代表值：醯胺化 K = 300、酯化 K = 1（數量級取自 Odian 的教科書）。</li>
         <li data-en="Time is in “model seconds”: real polymerisations take hours; here they are shortened in proportion, so compare times only with each other.">時間是「模擬秒」：真實的聚合要好幾個小時，這裡等比例縮短，時間只用來互相比較。</li>
-        <li data-en-html="The magnified picture is only an illustration: a handful of molecules (chains much shorter than the real ones) move randomly and react in step with the sample. The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same molecules. Densities: styrene 0.906 and methyl methacrylate 0.944 g/mL; polystyrene 1.05 and PMMA 1.18 g/mL; volumes are taken as additive.">放大圖只是示意：少數幾十個分子（鏈比真實的短得多）隨機運動，並跟著樣品的反應程度相連或斷開。3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子。密度：苯乙烯 0.906、甲基丙烯酸甲酯 0.944 g/mL；聚苯乙烯 1.05、PMMA 1.18 g/mL；體積視為可以相加。</li>
+        <li data-en-html="The magnified picture is only an illustration: a handful of molecules (chains much shorter than the real ones) move randomly and react in step with the sample. The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same molecules. Densities: styrene 0.906 and methyl methacrylate 0.944 g/mL; polystyrene 1.05 and PMMA 1.18 g/mL; volumes are taken as additive.">放大圖只是示意：少數幾十個分子（鏈比真實的短得多）隨機運動，並跟著樣品的反應程度相連或斷開。3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子。密度：苯乙烯 0.906、甲基丙烯酸甲酯 0.944 g/mL；聚苯乙烯 1.05、PMMA 1.18 g/mL；體積視為可以相加。</li>
       </ul>
 
       <h3 data-en="Safety">安全提醒</h3>
@@ -304,18 +338,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/polymerization-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/polymerization-3d.js?v=202611201125"></script>
-  <script src="js/polymerization.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="polymerization"></script>
-  <script src="js/missions/polymerization.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="polymerization"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/polymerization-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/polymerization-3d.js?v=202611201126"></script>
+  <script src="js/polymerization.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="polymerization"></script>
+  <script src="js/missions/polymerization.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="polymerization"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

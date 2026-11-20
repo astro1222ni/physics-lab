@@ -66,25 +66,25 @@
     {
       id: 'periodic-trends-9', level: 5,
       title: { zh: '由鄰居猜', en: 'Ask the neighbours' },
-      desc: { zh: '在猜猜看卡片按「開始」，猜中一題（誤差 10% 以內）。', en: 'Press “Start” on the guessing card and get one within 10%.' },
+      desc: { zh: '在猜猜看卡片按「開始」，猜中一題（誤差 10 % 以內）。', en: 'Press “Start” on the guessing card and get one within 10 %.' },
       check: function (ev) { const d = pr(ev); return !!d && d.err <= 0.10; }
     },
     {
       id: 'periodic-trends-10', level: 6,
       title: { zh: '精準的游離能', en: 'Ionization energy, precisely' },
-      desc: { zh: '按「開始」玩猜猜看，猜第一游離能，誤差在 5% 以內。', en: 'Press “Start” to play the guessing game and predict a first ionization energy to within 5%.' },
+      desc: { zh: '按「開始」玩猜猜看，猜第一游離能，誤差在 5 % 以內。', en: 'Press “Start” to play the guessing game and predict a first ionization energy to within 5 %.' },
       check: function (ev) { const d = pr(ev); return !!d && d.prop === 'IE' && d.err <= 0.05; }
     },
     {
       id: 'periodic-trends-11', level: 7,
       title: { zh: '看出規律了', en: 'You see the pattern' },
-      desc: { zh: '按「開始」玩猜猜看，連續猜中 3 題（每題誤差 10% 以內）。', en: 'Press “Start” to play the guessing game and get 3 in a row (each within 10%).' },
+      desc: { zh: '按「開始」玩猜猜看，連續猜中 3 題（每題誤差 10 % 以內）。', en: 'Press “Start” to play the guessing game and get 3 in a row (each within 10 %).' },
       check: function (ev) { const d = pr(ev); return !!d && d.hit && d.streak >= 3; }
     },
     {
       id: 'periodic-trends-12', level: 8,
       title: { zh: '週期表在心中', en: 'The table in your head' },
-      desc: { zh: '按「開始」玩猜猜看，連續猜中 5 題（每題誤差 10% 以內）。', en: 'Press “Start” to play the guessing game and get 5 in a row (each within 10%).' },
+      desc: { zh: '按「開始」玩猜猜看，連續猜中 5 題（每題誤差 10 % 以內）。', en: 'Press “Start” to play the guessing game and get 5 in a row (each within 10 %).' },
       check: function (ev) { const d = pr(ev); return !!d && d.hit && d.streak >= 5; }
     },
     {

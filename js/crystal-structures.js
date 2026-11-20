@@ -40,8 +40,8 @@
     return { m: num(m, (sig || 3) - 1), e: e };
   }
   function sciHTML(x, sig) { const p = sciParts(x, sig); return p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>'; }
-  function pct(x, d) { return num(x * 100, d == null ? 2 : d) + '%'; }
-  function signPct(x) { return (x >= 0 ? '+' : '') + num(x * 100, 2) + '%'; }
+  function pct(x, d) { return num(x * 100, d == null ? 2 : d) + ' %'; }
+  function signPct(x) { return (x >= 0 ? '+' : '') + num(x * 100, 2) + ' %'; }
   const FRAC = function (f) {
     const L = [[1, '1'], [0.5, '1/2'], [0.25, '1/4'], [0.125, '1/8'], [1 / 6, '1/6'], [1 / 3, '1/3']];
     for (let i = 0; i < L.length; i++) if (Math.abs(f - L[i][0]) < 1e-9) return L[i][1];
@@ -218,7 +218,9 @@
 
   // ======================= 版面 =======================
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -650,7 +652,7 @@
       c.beginPath(); c.moveTo(L, Tp); c.lineTo(L, B); c.lineTo(R, B); c.stroke();
       c.restore();
       c.save(); c.font = font; c.fillStyle = col.muted; c.textAlign = 'right'; c.textBaseline = 'middle';
-      for (let v = 20; v <= 80; v += 10) c.fillText(v + '%', L - 6, Y(v));
+      for (let v = 20; v <= 80; v += 10) c.fillText(v + ' %', L - 6, Y(v));
       c.textAlign = 'center'; c.textBaseline = 'top';
       for (let v = 4; v <= 12; v += 2) c.fillText(String(v), X(v), B + 5);
       c.fillText(T('配位數', 'Coordination number'), (L + R) / 2, B + 21);
@@ -661,7 +663,7 @@
       const yk = Y(74.05);
       c.save(); c.strokeStyle = col.pos; c.setLineDash([6, 4]); c.lineWidth = 1.4;
       c.beginPath(); c.moveTo(L, yk); c.lineTo(R, yk); c.stroke(); c.restore();
-      const kep = R - L > 520 ? T('最密堆積 74.05%（克卜勒猜想的上限）', 'close packing 74.05% (Kepler’s upper limit)') : T('最密堆積 74.05%', 'close packing 74.05%');
+      const kep = R - L > 520 ? T('最密堆積 74.05 %（克卜勒猜想的上限）', 'close packing 74.05 % (Kepler’s upper limit)') : T('最密堆積 74.05 %', 'close packing 74.05 %');
       LD.haloText(c, kep, L + 8, yk - 9, col.pos, 'left', 'middle', '600 11.5px ' + FONT);
       // 每個物質一點
       const shift = { sc: 0, bcc: 0, fcc: -0.18, hcp: 0.18, nacl: 0, cscl: 0.18, zns: 0.18, diamond: -0.18 };
@@ -704,10 +706,10 @@
       ticks.forEach(function (v) { c.fillText(String(v), L - 6, Y(v)); });
       c.textAlign = 'center'; c.textBaseline = 'top';
       ticks.forEach(function (v) { c.fillText(String(v), X(v), B + 5); });
-      c.fillText(T('實測密度（g/cm³）', 'Measured density (g/cm³)'), (L + R) / 2, B + 21);
+      drawParts(c, [[T('實測密度（g/cm', 'Measured density (g/cm'), 0], ['3', 1], [T('）', ')'), 0]], (L + R) / 2, B + 25, col.muted, 12, 'center', 500);
       c.restore();
       c.save(); c.translate(13, (Tp + B) / 2); c.rotate(-Math.PI / 2); c.font = font; c.fillStyle = col.muted; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(T('由晶格常數算出（g/cm³）', 'From the lattice constant (g/cm³)'), 0, 0); c.restore();
+      drawParts(c, [[T('由晶格常數算出（g/cm', 'From the lattice constant (g/cm'), 0], ['3', 1], [T('）', ')'), 0]], 0, 0, col.muted, 12, 'center', 500); c.restore();
       LD.haloText(c, T('兩者相等', 'equal'), X(22), Y(22) - 12, col.accent, 'right', 'middle', '600 11.5px ' + FONT);
       CS.MAT_ORDER.forEach(function (k) {
         const x = CS.crystal(k);
@@ -731,10 +733,10 @@
     h += '<span><i class="dot" style="background:transparent;border:2px solid ' + familyColor('nacl') + ';border-radius:2px"></i>' + T('離子晶體（估算）', 'ionic (estimated)') + '</span>';
     lg.innerHTML = h;
     $('gHint').textContent = state.tab === 'cn' ?
-      T('每一點是一種物質。配位數越多，排得越密；兩種最密堆積（12 個鄰居）都是 74.05%，硬球不可能更密。鋅、鈹、鈦的 c/a 不是理想值，所以略低。',
-        'Each dot is a substance. More neighbours means tighter packing; both close-packed structures (12 neighbours) reach 74.05%, and hard spheres can do no better. Zinc, beryllium and titanium have non-ideal c/a, so they fall a little short.') :
-      T('X 光量到的晶格常數算出的密度，和直接秤重量體積得到的密度，幾乎都落在虛線上（相差多半不到 0.5%）。',
-        'The density worked out from the X-ray lattice constant and the density measured by weighing almost all lie on the dashed line (mostly within 0.5%).');
+      T('每一點是一種物質。配位數越多，排得越密；兩種最密堆積（12 個鄰居）都是 74.05 %，硬球不可能更密。鋅、鈹、鈦的 c/a 不是理想值，所以略低。',
+        'Each dot is a substance. More neighbours means tighter packing; both close-packed structures (12 neighbours) reach 74.05 %, and hard spheres can do no better. Zinc, beryllium and titanium have non-ideal c/a, so they fall a little short.') :
+      T('X 光量到的晶格常數算出的密度，和直接秤重量體積得到的密度，幾乎都落在虛線上（相差多半不到 0.5 %）。',
+        'The density worked out from the X-ray lattice constant and the density measured by weighing almost all lie on the dashed line (mostly within 0.5 %).');
   }
 
   // ======================= 讀數 =======================
@@ -780,36 +782,36 @@
     const zb = zBreakdown(cr.s, cr.ca || CS.CA_IDEAL);
     let h = row(T('結構', 'Structure'), sName(cr.s) + (cr.hypo ? '<small>' + T('假想：', 'imaginary: ') + mName(state.mat) + T(' 的原子', ' atoms') + '</small>' : ''));
     if (st.kind === 'ionic') {
-      h += row(T('每個晶胞', 'Per unit cell'), ionH(m, 'a') + T('：', ': ') + zb.a.html + '<br>' + ionH(m, 'c') + T('：', ': ') + zb.c.html + '<small>' + T('＝ ', '= ') + st.Z + T(' 個 ', ' formula units of ') + m.sym + '</small>');
-      h += row(T('配位數', 'Coordination number'), st.CN + '<small>' + T('每個 ', 'each ') + ionH(m, 'c') + T(' 周圍 ', ' has ') + st.CN + T(' 個 ', ' ') + ionH(m, 'a') + T('，反過來也一樣', ' around it, and vice versa') + '</small>', 'big');
+      h += row(T('每個晶胞', 'Per unit cell'), ionH(m, 'a') + T('：', ': ') + zb.a.html + '<br>' + ionH(m, 'c') + T('：', ': ') + zb.c.html + '<small>' + T('＝ ', '= ') + st.Z + T(' 個 ', ' formula units of ') + m.sym + '</small>');
+      h += row(T('配位數', 'Coordination number'), st.CN + '<small>' + T('每個 ', 'each ') + ionH(m, 'c') + T(' 周圍 ', ' has ') + st.CN + T(' 個 ', ' ') + ionH(m, 'a') + T('，反過來也一樣', ' around it, and vice versa') + '</small>', 'big');
     } else {
       h += row(T('每個晶胞的原子數 Z', 'Atoms per cell Z'), zb.m.html, 'big');
       let cn = String(st.CN);
       if (cr.s === 'hcp' && cr.ca && Math.abs(cr.ca - CS.CA_IDEAL) > 0.01) {
         const nb = CS.neighbors('hcp', cr.ca, [0, 0, 0], 'm');
         const d1 = nb.d1 * cr.a, d2 = nb.d2 * cr.a;
-        cn += '<small>' + T('6 個 ', '6 at ') + num(Math.min(d1, d2), 0) + ' pm' + T('＋6 個 ', ' + 6 at ') + num(Math.max(d1, d2), 0) + ' pm</small>';
+        cn += '<small>' + T('6 個 ', '6 at ') + num(Math.min(d1, d2), 0) + ' pm' + T('＋6 個 ', ' + 6 at ') + num(Math.max(d1, d2), 0) + ' pm</small>';
       }
       h += row(T('配位數', 'Coordination number'), cn, 'big');
     }
     if (hideR) h += row(T('晶格常數', 'Lattice constant'), '?');
     else {
-      let lat = 'a = ' + num(cr.a, cr.hypo ? 1 : 2) + ' pm';
-      if (cr.c) lat += '<br>c = ' + num(cr.c, cr.hypo ? 1 : 2) + ' pm<small>c/a = ' + num(cr.ca, 3) + T('（理想 1.633）', ' (ideal 1.633)') + '</small>';
+      let lat = 'a = ' + num(cr.a, cr.hypo ? 1 : 2) + ' pm';
+      if (cr.c) lat += '<br>c = ' + num(cr.c, cr.hypo ? 1 : 2) + ' pm<small>c/a = ' + num(cr.ca, 3) + T('（理想 1.633）', ' (ideal 1.633)') + '</small>';
       h += row(T('晶格常數', 'Lattice constant') + (cr.hypo ? '<small>' + T('由原子半徑推算', 'from the radius') + '</small>' : '<small>' + T('X 光繞射實測', 'measured by X-ray diffraction') + '</small>'), lat);
     }
     if (st.kind === 'ionic') {
       h += row(T('離子半徑', 'Ionic radii') + '<small>' + T('依 Shannon 比例放大到相切', 'Shannon ratio, scaled to touch') + '</small>',
-        'r(' + ionH(m, 'c') + ') = ' + num(cr.rc, 1) + ' pm<br>r(' + ionH(m, 'a') + ') = ' + num(cr.ra, 1) + ' pm<small>' + T('半徑比 ', 'radius ratio ') + num(cr.ratio, 3) + '</small>');
+        'r(' + ionH(m, 'c') + ') = ' + num(cr.rc, 1) + ' pm<br>r(' + ionH(m, 'a') + ') = ' + num(cr.ra, 1) + ' pm<small>' + T('半徑比 ', 'radius ratio ') + num(cr.ratio, 3) + '</small>');
     } else {
-      h += row((st.kind === 'covalent' ? T('原子半徑（共價）', 'Atomic radius (covalent)') : T('原子半徑（金屬）', 'Atomic radius (metallic)')), hideR ? '?' : 'r = ' + num(cr.r, 1) + ' pm');
+      h += row((st.kind === 'covalent' ? T('原子半徑（共價）', 'Atomic radius (covalent)') : T('原子半徑（金屬）', 'Atomic radius (metallic)')), hideR ? '?' : 'r = ' + num(cr.r, 1) + ' pm');
     }
     h += row(T('相切的方向', 'Where the spheres touch'), relHTML(cr.s));
     h += row(T('堆積率', 'Packing fraction') + (st.kind === 'ionic' ? '<small>' + T('用離子半徑估算', 'estimated with the ionic radii') + '</small>' : ''), pct(cr.pf), 'big');
-    h += row(T('密度（由晶格常數算）', 'Density (from the lattice constant)'), hideRho ? '?' : num(cr.rho, 3) + ' g/cm³', 'big');
+    h += row(T('密度（由晶格常數算）', 'Density (from the lattice constant)'), hideRho ? '?' : num(cr.rho, 3) + ' g/cm<sup>3</sup>', 'big');
     if (cr.hypo) h += row(T('實測密度', 'Measured density'), T('—（假想的晶體）', '— (imaginary crystal)'));
-    else if (cr.rhoExp == null) h += row(T('實測密度', 'Measured density'), T('—（', '— (') + num(m.T, 0) + T(' °C 的數據只有 X 光）', ' °C: X-ray data only)'));
-    else h += row(T('實測密度', 'Measured density'), num(cr.rhoExp, 3) + ' g/cm³' + (hideRho ? '' : '<small>' + T('差 ', 'difference ') + signPct(cr.rhoErr) + '</small>'));
+    else if (cr.rhoExp == null) h += row(T('實測密度', 'Measured density'), T('—（', '— (') + num(m.T, 0) + T(' °C 的數據只有 X 光）', ' °C: X-ray data only)'));
+    else h += row(T('實測密度', 'Measured density'), num(cr.rhoExp, 3) + ' g/cm<sup>3</sup>' + (hideRho ? '' : '<small>' + T('差 ', 'difference ') + signPct(cr.rhoErr) + '</small>'));
     if (model && model.voids.length) {
       const VN = { oct: ['八面體空隙', 'octahedral holes'], tet: ['四面體空隙', 'tetrahedral holes'], cube: ['立方體空隙', 'cubic hole'] };
       CS.voidTypes(cr.s).forEach(function (t) {
@@ -817,7 +819,7 @@
         const vi = CS.VOID_INFO[cr.s][t];
         const v = model.voids.filter(function (q) { return q.type === t; })[0];
         const ratio = v ? v.R / (cr.r / cr.a) : vi.ratio;
-        h += row(T(VN[t][0], VN[t][1]) + '<small>' + T('每個晶胞', 'per cell') + '</small>', vi.n + T(' 個', '') + '<small>' + T('能容納半徑 ', 'fits a sphere of ') + num(ratio, 3) + ' r' + T('（', ' (') + num(ratio * cr.r, 0) + ' pm' + T('）', ')') + '</small>');
+        h += row(T(VN[t][0], VN[t][1]) + '<small>' + T('每個晶胞', 'per cell') + '</small>', vi.n + T(' 個', '') + '<small>' + T('能容納半徑 ', 'fits a sphere of ') + num(ratio, 3) + ' r' + T('（', ' (') + num(ratio * cr.r, 0) + ' pm' + T('）', ')') + '</small>');
       });
     }
     ro.innerHTML = h;
@@ -875,10 +877,11 @@
     sel.innerHTML = '';
     list.forEach(function (k) {
       const o = document.createElement('option');
-      o.value = k; o.textContent = mName(k) + (state.hypo ? T('（原本是', ' (really ') + sName(CS.MATS[k].s) + T('）', ')') : '');
+      o.value = k; o.textContent = mName(k) + ' ' + CS.MATS[k].sym + (state.hypo ? T('（原本是', ' (really ') + sName(CS.MATS[k].s) + T('）', ')') : '');
       sel.appendChild(o);
     });
     sel.value = state.mat;
+    $('matSelFormula').textContent = CS.MATS[state.mat].sym;
     sel.disabled = state.hypo || list.length < 2;
     // 假想
     const hy = $('hypo');
@@ -887,9 +890,9 @@
     $('hypoLab').classList.toggle('off', !metal);
     const m = CS.MATS[state.mat];
     let info = '';
-    if (state.hypo) info = T('假想：' + m.zh + '的原子（半徑 ' + num(CS.crystal(state.mat).r, 1) + ' pm）排成' + st.zh + '。原本是' + CS.STRUCTS[m.s].zh + '。',
-      'Imaginary: ' + m.en.toLowerCase() + ' atoms (radius ' + num(CS.crystal(state.mat).r, 1) + ' pm) packed as ' + st.en.toLowerCase() + '. Really ' + CS.STRUCTS[m.s].en.toLowerCase() + '.');
-    else if (m.hot) info = T('高溫的數據（' + m.T + ' °C，X 光繞射）。鐵在 912 °C 由 α（體心立方）變成 γ（面心立方）。', 'High-temperature data (' + m.T + ' °C, X-ray diffraction). At 912 °C iron changes from α (body-centred cubic) to γ (face-centred cubic).');
+    if (state.hypo) info = T('假想：' + m.zh + '的原子（半徑 ' + num(CS.crystal(state.mat).r, 1) + ' pm）排成' + st.zh + '。原本是' + CS.STRUCTS[m.s].zh + '。',
+      'Imaginary: ' + m.en.toLowerCase() + ' atoms (radius ' + num(CS.crystal(state.mat).r, 1) + ' pm) packed as ' + st.en.toLowerCase() + '. Really ' + CS.STRUCTS[m.s].en.toLowerCase() + '.');
+    else if (m.hot) info = T('高溫的數據（' + m.T + ' °C，X 光繞射）。鐵在 912 °C 由 α（體心立方）變成 γ（面心立方）。', 'High-temperature data (' + m.T + ' °C, X-ray diffraction). At 912 °C iron changes from α (body-centred cubic) to γ (face-centred cubic).');
     else if (!metal) info = T('離子晶體與共價網狀晶體不能用「保持同一種原子」。', '“Keep the same atoms” is only for the metal packings.');
     $('matInfo').textContent = info;
     // 顯示選項
@@ -897,8 +900,13 @@
     $('coord').checked = state.coord;
     const vts = CS.voidTypes(state.s);
     [['voOct', 'oct'], ['voTet', 'tet'], ['voCube', 'cube']].forEach(function (p) {
-      $(p[0] + 'Lab').hidden = vts.indexOf(p[1]) < 0;
-      $(p[0]).checked = state.vo[p[1]] && vts.indexOf(p[1]) >= 0;
+      // 切換晶體時保留選項的位置，讓學生看得到哪些空隙可在目前的結構上標示。
+      const available = vts.includes(p[1]), input = $(p[0]), label = $(p[0] + 'Lab');
+      input.disabled = !available;
+      input.checked = available && state.vo[p[1]];
+      label.classList.toggle('off', !available);
+      if (available) label.removeAttribute('title');
+      else label.title = T('目前的結構無此空隙標示', 'This hole is not marked for the current structure');
     });
     const lay = state.s === 'fcc' || state.s === 'hcp';
     $('layers').disabled = !lay;
@@ -942,7 +950,7 @@
   function updateTable() {
     const el = $('tbl');
     let h = '<thead><tr><th>#</th><th class="l">' + T('結構', 'Structure') + '</th><th class="l">' + T('物質', 'Substance') + '</th><th>Z</th><th>' + T('配位數', 'C.N.') +
-      '</th><th>' + T('堆積率', 'Packing') + '</th><th>a<br><small>pm</small></th><th>r<br><small>pm</small></th><th>' + T('密度', 'Density') + '<br><small>g/cm³</small></th></tr></thead><tbody>';
+      '</th><th>' + T('堆積率', 'Packing') + '</th><th>a<br><small>pm</small></th><th>r<br><small>pm</small></th><th>' + T('密度', 'Density') + '<br><small>g/cm<sup>3</sup></small></th></tr></thead><tbody>';
     if (!rows.length) h += '<tr class="empty"><td colspan="9">' + T('按「記下來」把目前的晶體加進來，比較不同排法。', 'Press “Record” to add the current crystal and compare packings.') + '</td></tr>';
     rows.forEach(function (r, i) {
       if (r.stack) {
@@ -1006,20 +1014,20 @@
     quizS = { q: q, tries: 0, revealed: false, closed: false, answered: false };
     const m = CS.MATS[state.mat], g = q.given;
     const sN = sName(g.s), mN = mName(state.mat);
-    const lat = 'a = ' + num(g.a, 2) + ' pm' + (g.c ? T('、', ', ') + 'c = ' + num(g.c, 2) + ' pm' : '');
-    const Mx = 'M = ' + num(g.M, g.M < 10 ? 4 : g.M < 100 ? 3 : 2) + ' g/mol';
-    const rhoT = 'ρ = ' + sigf(g.rho, 4) + ' g/cm³';
+    const lat = 'a = ' + num(g.a, 2) + ' pm' + (g.c ? T('、', ', ') + 'c = ' + num(g.c, 2) + ' pm' : '');
+    const Mx = 'M = ' + num(g.M, g.M < 10 ? 4 : g.M < 100 ? 3 : 2) + ' g/mol';
+    const rhoT = 'ρ = ' + sigf(g.rho, 4) + ' g/cm<sup>3</sup>';
     const kind = CS.STRUCTS[g.s].kind;
     const who = kind === 'ionic' ? mN + '（' + m.sym + '）' : mN;
     let t;
-    if (q.type === 'rho') t = T(who + '是' + sN + '，' + lat + '，' + Mx + '。求密度（g/cm³）。', mN + ' is ' + sN.toLowerCase() + ' with ' + lat + ' and ' + Mx + '. Find the density (g/cm³).');
+    if (q.type === 'rho') t = T(who + '是' + sN + '，' + lat + '，' + Mx + '。求密度（g/cm<sup>3</sup>）。', mN + ' is ' + sN.toLowerCase() + ' with ' + lat + ' and ' + Mx + '. Find the density (g/cm<sup>3</sup>).');
     else if (q.type === 'r') t = T(who + '是' + sN + (g.ca ? '（c/a = ' + num(g.ca, 3) + '）' : '') + '，' + rhoT + '，' + Mx + '。求原子半徑（pm）。',
       mN + ' is ' + sN.toLowerCase() + (g.ca ? ' (c/a = ' + num(g.ca, 3) + ')' : '') + ' with ' + rhoT + ' and ' + Mx + '. Find the atomic radius (pm).');
     else t = T(who + '是' + sN + '，' + lat + '，' + rhoT + '，' + Mx + '。求亞佛加厥數（填 10<sup>23</sup> 的倍數，例如 6.02）。',
       mN + ' is ' + sN.toLowerCase() + ' with ' + lat + ', ' + rhoT + ' and ' + Mx + '. Find Avogadro’s number (as a multiple of 10<sup>23</sup>, e.g. 6.02).');
-    if (q.type !== 'NA') t += T('（N<sub>A</sub> = 6.022 × 10<sup>23</sup> mol<sup>−1</sup>）', ' (N<sub>A</sub> = 6.022 × 10<sup>23</sup> mol<sup>−1</sup>)');
+    if (q.type !== 'NA') t += T('（N<sub>A</sub> = 6.022 × 10<sup>23</sup> mol<sup>−1</sup>）', ' (N<sub>A</sub> = 6.022 × 10<sup>23</sup> mol<sup>−1</sup>)');
     $('qText').innerHTML = t;
-    $('qLabel').innerHTML = q.type === 'rho' ? T('密度（g/cm³）', 'Density (g/cm³)') : q.type === 'r' ? T('原子半徑（pm）', 'Radius (pm)') : 'N<sub>A</sub>（× 10<sup>23</sup> mol<sup>−1</sup>）';
+    $('qLabel').innerHTML = q.type === 'rho' ? T('密度（g/cm<sup>3</sup>）', 'Density (g/cm<sup>3</sup>)') : q.type === 'r' ? T('原子半徑（pm）', 'Radius (pm)') : 'N<sub>A</sub>（× 10<sup>23</sup> mol<sup>−1</sup>）';
     $('qAns').value = '';
     $('qAns').placeholder = q.type === 'rho' ? T('例如 8.93', 'e.g. 8.93') : q.type === 'r' ? T('例如 128', 'e.g. 128') : T('例如 6.02', 'e.g. 6.02');
     $('qBox').hidden = false;
@@ -1054,7 +1062,7 @@
     } else {
       qStreak = 0; qKinds = {};
       $('qOut').innerHTML = '<span class="no">' + T('還差一點。', 'Not yet.') + '</span> ' + T('你的答案偏', 'Your answer is ') + (err > 0 ? T('大', 'too large') : T('小', 'too small')) +
-        T('了 ', ' by ') + num(Math.abs(err) * 100, 1) + '%' + T('。檢查 Z、單位（1 pm = 10', '. Check Z and the units (1 pm = 10') + '<sup>−10</sup> cm' + T('）再算一次。', ') and try again.');
+        T('了 ', ' by ') + num(Math.abs(err) * 100, 1) + ' %' + T('。檢查 Z、單位（1 pm = 10', '. Check Z and the units (1 pm = 10') + '<sup>−10</sup> cm' + T('）再算一次。', ') and try again.');
     }
     const s = snd();
     if (s) { if (ok) { s.tone({ freq: 784, dur: 0.1, gain: 0.14 }); s.tone({ freq: 1047, dur: 0.16, gain: 0.12, delay: 0.09 }); } else s.sweep({ from: 392, to: 262, dur: 0.25, gain: 0.12, type: 'triangle' }); }
@@ -1068,7 +1076,7 @@
     quizS.revealed = true;
     qStreak = 0; qKinds = {};
     const q = quizS.q;
-    const a = q.type === 'rho' ? num(q.ans, 3) + ' g/cm³' : q.type === 'r' ? num(q.ans, 1) + ' pm' : sciHTML(q.ans, 4) + ' mol<sup>−1</sup>';
+    const a = q.type === 'rho' ? num(q.ans, 3) + ' g/cm<sup>3</sup>' : q.type === 'r' ? num(q.ans, 1) + ' pm' : sciHTML(q.ans, 4) + ' mol<sup>−1</sup>';
     let how = '';
     if (q.type === 'rho') how = T('ρ = ZM ／（N<sub>A</sub>V），Z = ', 'ρ = ZM / (N<sub>A</sub>V), Z = ') + q.given.Z;
     else if (q.type === 'r') how = T('先由 V = ZM ／（N<sub>A</sub>ρ）求晶胞體積與 a，再由相切的方向求 r', 'First V = ZM / (N<sub>A</sub>ρ) gives the cell volume and a; then r from the touching direction');
@@ -1157,7 +1165,7 @@
     const A = model.atoms[model.sel];
     const m = CS.MATS[state.mat];
     const who = A.sp === 'c' ? m.cat + T(' 離子', ' ion') : A.sp === 'a' ? m.an + T(' 離子', ' ion') : T('這個原子', 'This atom');
-    setStatus(who + T('有 ' + model.bonds.length + ' 個最近的鄰居。', ' has ' + model.bonds.length + ' nearest neighbours.'));
+    setStatus(who + T('有 ' + model.bonds.length + ' 個最近的鄰居。', ' has ' + model.bonds.length + ' nearest neighbours.'));
     const s = snd(); if (s) s.tone({ freq: 300 + 60 * model.bonds.length, dur: 0.09, gain: 0.08 });
     emitCell();
   }
@@ -1181,7 +1189,7 @@
   });
   const elSize = $('size');
   function sizeVal() { return window.LabNum ? window.LabNum.value(elSize) : +elSize.value; }
-  function refreshSize() { $('sizeo').textContent = num(state.size, 0) + '%'; }
+  function refreshSize() { $('sizeo').textContent = num(state.size, 0) + ' %'; }
   elSize.addEventListener('input', function () {
     acted();
     state.size = Math.max(20, Math.min(100, sizeVal()));
@@ -1243,7 +1251,7 @@
 
   // ---------- 畫布：拖曳轉動、點選原子 ----------
   let drag = null;
-  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; }
+  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [(ev.clientX - b.left) * cw / b.width, (ev.clientY - b.top) * ch / b.height]; }
   cv.addEventListener('pointerdown', function (ev) {
     const p = canvasXY(ev);
     drag = { x: p[0], y: p[1], yaw: state.yaw, pitch: state.pitch, moved: false, inA: PA && p[0] >= PA.x && p[0] <= PA.x + PA.w && p[1] >= PA.y && p[1] <= PA.y + PA.h };
@@ -1411,7 +1419,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth && gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', function () { resize(); resizeGraph(); drawGraph(); });
 
@@ -1445,4 +1453,17 @@
   resizeGraph();
   refreshAll();
   resize();
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('roTitle').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

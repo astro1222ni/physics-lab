@@ -48,19 +48,19 @@
     {
       id: 'flame-test-5', level: 3,
       title: { zh: '鈉的黃線', en: 'Sodium’s yellow line' },
-      desc: { zh: '沾 NaCl，在光譜圖上用「找亮線」把游標放到鈉的黃線上（589 nm 附近，誤差 0.5 nm 以內）。', en: 'With NaCl on the wire, use “Find bright line” to put the cursor on sodium’s yellow line (near 589 nm, within 0.5 nm).' },
+      desc: { zh: '沾 NaCl，在光譜圖上用「找亮線」把游標放到鈉的黃線上（589 nm 附近，誤差 0.5 nm 以內）。', en: 'With NaCl on the wire, use “Find bright line” to put the cursor on sodium’s yellow line (near 589 nm, within 0.5 nm).' },
       check: function (ev) { const d = ms(ev); return !!d && !d.unknown && has(d, 'Na') && d.isPeak && d.near && d.near.el === 'Na' && Math.abs(d.lam - 589.29) <= 0.5 && d.sig >= 0.02; }
     },
     {
       id: 'flame-test-6', level: 4,
       title: { zh: '紅色火焰裡的藍線', en: 'A blue line in a red flame' },
-      desc: { zh: '鍶的火焰是紅色的，但光譜裡有一條藍線：用游標量出 460.73 nm 這條線（誤差 0.3 nm 以內）。', en: 'Strontium’s flame is red, yet its spectrum has a blue line: measure the 460.73 nm line with the cursor (within 0.3 nm).' },
+      desc: { zh: '鍶的火焰是紅色的，但光譜裡有一條藍線：用游標量出 460.73 nm 這條線（誤差 0.3 nm 以內）。', en: 'Strontium’s flame is red, yet its spectrum has a blue line: measure the 460.73 nm line with the cursor (within 0.3 nm).' },
       check: function (ev) { const d = ms(ev); return !!d && d.isPeak && onLine(d, 'Sr', 460.7331, 0.3); }
     },
     {
       id: 'flame-test-7', level: 4,
       title: { zh: '最熱的地方', en: 'The hottest spot' },
-      desc: { zh: '把空氣孔開到 90% 以上，沾上任一種樣品，把白金絲放在火焰最熱的地方（內焰尖端上方，誤差 3 mm 以內）。', en: 'Open the air hole to 90% or more, put any sample on the wire and hold the wire at the hottest spot of the flame (just above the tip of the inner cone, within 3 mm).' },
+      desc: { zh: '把空氣孔開到 90 % 以上，沾上任一種樣品，把白金絲放在火焰最熱的地方（內焰尖端上方，誤差 3 mm 以內）。', en: 'Open the air hole to 90 % or more, put any sample on the wire and hold the wire at the hottest spot of the flame (just above the tip of the inner cone, within 3 mm).' },
       check: function (ev) { const d = fl(ev); return !!d && d.metals.length > 0 && d.air >= 0.9 && Math.abs(d.h - d.hp) <= 3; }
     },
     {
@@ -90,7 +90,7 @@
     {
       id: 'flame-test-12', level: 8,
       title: { zh: '鉀的紫線', en: 'Potassium’s violet line' },
-      desc: { zh: '沾 KCl，把狹縫調細，量出鉀在 404.41 nm 的紫線（誤差 0.1 nm 以內；它和 404.72 nm 的線靠得很近）。', en: 'With KCl on the wire, narrow the slit and measure potassium’s violet line at 404.41 nm (within 0.1 nm; it sits very close to the 404.72 nm line).' },
+      desc: { zh: '沾 KCl，把狹縫調細，量出鉀在 404.41 nm 的紫線（誤差 0.1 nm 以內；它和 404.72 nm 的線靠得很近）。', en: 'With KCl on the wire, narrow the slit and measure potassium’s violet line at 404.41 nm (within 0.1 nm; it sits very close to the 404.72 nm line).' },
       check: function (ev) { const d = ms(ev); return !!d && d.isPeak && onLine(d, 'K', 404.4136, 0.1); }
     },
 

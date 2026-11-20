@@ -13,6 +13,36 @@
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+  // 分段量字再對齊，沿用目前的基線、字型與主題色。
+  function drawNotation(g, label, x, y, color, align, baseline, font, maxWidth) {
+    g.save();
+    const px = Number(font.match(/([\d.]+)px/)[1]);
+    const small = font.replace(/[\d.]+px/, (px * 0.72) + 'px');
+    const runs = label.split(/(<su[bp]>[^<]+<\/su[bp]>)/).filter(Boolean).map(function (t) {
+      const match = /^<(sub|sup)>([^<]+)<\/\1>$/.exec(t);
+      const text = match ? match[2] : t;
+      const face = match ? small : font;
+      g.font = face;
+      return { text: text, face: face, width: g.measureText(text).width,
+        dy: match ? (match[1] === 'sub' ? 0.24 : -0.40) * px : 0 };
+    });
+    const width = runs.reduce(function (sum, run) { return sum + run.width; }, 0);
+    g.translate(x, y);
+    if (maxWidth && width > maxWidth) g.scale(maxWidth / width, 1);
+    let left = align === 'right' ? -width : align === 'center' ? -width / 2 : 0;
+    runs.forEach(function (run) {
+      LD.haloText(g, run.text, left, run.dy, color, 'left', baseline, run.face);
+      left += run.width;
+    });
+    g.restore();
+  }
+
   const O = window.OICore, LD = window.LabDraw;
   if (!O || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -135,7 +165,7 @@
   function addAtom(q, r, parent) {
     const el = state.pen;
     if (!inGrid(q, r) || atomAt(q, r) >= 0) return false;
-    if (state.atoms.length >= O.MAX_ATOMS) { status(T('這個實驗最多 10 個碳和氧。', 'This lab allows at most 10 carbon and oxygen atoms.'), 'warn'); sndBad(); return false; }
+    if (state.atoms.length >= O.MAX_ATOMS) { status(T('這個實驗最多 10 個碳和氧。', 'This lab allows at most 10 carbon and oxygen atoms.'), 'warn'); sndBad(); return false; }
     if (parent >= 0) {
       if (free(parent) < 1) { status(valMsg(parent), 'warn'); sndBad(); return false; }
       if (el === 'O' && state.atoms[parent].el === 'O') { status(ooMsg(), 'warn'); sndBad(); return false; }
@@ -152,8 +182,8 @@
     return true;
   }
   function valMsg(i) {
-    return state.atoms[i].el === 'O' ? T('氧只能有 2 個鍵，這個氧已經滿了。', 'Oxygen forms only 2 bonds, and this one is already full.')
-      : T('碳最多只有 4 個鍵，這個碳已經滿了。', 'Carbon forms at most 4 bonds, and this one is already full.');
+    return state.atoms[i].el === 'O' ? T('氧只能有 2 個鍵，這個氧已經滿了。', 'Oxygen forms only 2 bonds, and this one is already full.')
+      : T('碳最多只有 4 個鍵，這個碳已經滿了。', 'Carbon forms at most 4 bonds, and this one is already full.');
   }
   function ooMsg() { return T('兩個氧直接相連（過氧化物）不在這個實驗的範圍。', 'Two oxygens bonded together (a peroxide) are not part of this lab.'); }
   function maxOrder(a, b) { return state.atoms[a].el === 'C' && state.atoms[b].el === 'C' ? 3 : 2; }
@@ -200,7 +230,7 @@
     const a = state.atoms[i], to = a.el === 'C' ? 'O' : 'C';
     if (to === 'O') {
       const bs = state.bonds.filter(function (b) { return b.a === i || b.b === i; });
-      if (used(i) > 2 || bs.some(function (b) { return b.o > 2; })) { status(T('這個位置有 3 個以上的鍵，氧接不了。', 'This position has more than 2 bonds, which oxygen cannot make.'), 'warn'); sndBad(); return; }
+      if (used(i) > 2 || bs.some(function (b) { return b.o > 2; })) { status(T('這個位置有 3 個以上的鍵，氧接不了。', 'This position has more than 2 bonds, which oxygen cannot make.'), 'warn'); sndBad(); return; }
       if (bs.some(function (b) { return state.atoms[b.a === i ? b.b : b.a].el === 'O'; })) { status(ooMsg(), 'warn'); sndBad(); return; }
     }
     pushUndo();
@@ -255,7 +285,9 @@
     return p.x >= win.x0 - 1e-6 && p.x <= win.x0 + win.w + 1e-6 && p.y >= win.y0 - 1e-6 && p.y <= win.y0 + win.h + 1e-6;
   }
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w; ch = Math.round(w * (w < 560 ? 0.84 : 0.8));
@@ -424,6 +456,7 @@
       ctx.strokeStyle = LD.c.accent; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.arc(p[0], p[1], s * 0.36, 0, Math.PI * 2); ctx.stroke();
     }
+    const labelBounds = [];
     // 原子
     const big = Math.max(11, Math.min(22, s * 0.36)) * (1 + ((window.LabSettings && window.LabSettings.get('fs') || 1) - 1) * 0.5);
     state.atoms.forEach(function (a, i) {
@@ -433,7 +466,7 @@
         LD.ball(ctx, p[0], p[1], Math.max(2.5, s * 0.075), col.C, { shadow: false });
         return;
       }
-      drawLabel(p[0], p[1], hLabel(i), color, big);
+      labelBounds[i] = drawLabel(p[0], p[1], hLabel(i), color, big);
     });
     // 主鏈編號與順反
     if (an.ok && an.name && an.name.ok) {
@@ -455,7 +488,13 @@
             const sc = m - Math.abs(Math.sin(a / 2 + Math.PI / 4)) * 0.01 - (Math.sin(a) > 0 ? 0.02 : 0);
             if (sc > bs + 1e-9) { bs = sc; best = a; }
           }
-          const d = s * 0.56;
+          const box = labelBounds[x], dx = Math.cos(best), dy = Math.sin(best);
+          let d = s * 0.56;
+          if (box) {
+            const reachX = dx > 0 ? box.x + box.w - p[0] : p[0] - box.x;
+            const reachY = dy > 0 ? box.y + box.h - p[1] : p[1] - box.y;
+            d = Math.max(d, Math.min((reachX + 13) / Math.max(0.001, Math.abs(dx)), (reachY + 13) / Math.max(0.001, Math.abs(dy))));
+          }
           LD.pill(ctx, String(i + 1), p[0] + Math.cos(best) * d, p[1] + Math.sin(best) * d + fsz(8), LD.c.accent, 'center', '700 ' + fsz(11) + 'px ' + LD.FONT);
         });
       }
@@ -488,7 +527,7 @@
   }
 
   // ======================= 畫布操作 =======================
-  function canvasPoint(ev) { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function canvasPoint(ev) { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * cw / r.width, (ev.clientY - r.top) * ch / r.height]; }
   cv.addEventListener('pointerdown', function (ev) {
     if (ev.button && ev.button !== 0) return;
     const p = canvasPoint(ev), pt = nearestPoint(p[0], p[1]);
@@ -585,10 +624,15 @@
     if (ct.length) return ct.map(function (c) { return (c.cis ? T('順式', 'cis') : T('反式', 'trans')) + T('（' + c.loc + ' 號雙鍵）', ' (double bond at ' + c.loc + ')'); }).join(T('、', ', '));
     return T('有（以構造判斷）', 'Yes');
   }
-  function targetLabel(t) {
+  function displayName(a) { return nameOf(a) || a.fhtml; }
+  function targetFormula(t, html) {
+    const f = t.id.replace(/-ene$/, '');
+    return html ? O.condHTML(f) : f;
+  }
+  function targetLabel(t, html) {
     const n = O.targetCount(t.id);
-    if (t.scope === 'alkane') return t.id + T('：烷類（' + n + ' 種）', ': alkanes (' + n + ')');
-    return t.id.replace(/-ene$/, '') + T('：' + t.zh + '（' + n + ' 種）', ': ' + t.en + ' (' + n + ')');
+    const group = t.scope === 'alkane' ? T('烷類', 'alkanes') : T(t.zh, t.en);
+    return targetFormula(t, html) + T('：' + group + '（' + n + ' 種）', ': ' + group + ' (' + n + ')');
   }
   function matchTargets(a) { return O.TARGETS.filter(function (t) { return O.inTarget(a, t); }); }
   function updateMolCard() {
@@ -609,14 +653,14 @@
     const rows = [];
     rows.push([T('分子式', 'Formula'), an.fhtml]);
     if (an.condHTML) rows.push([T('示性式', 'Condensed'), an.condHTML]);
-    rows.push([T('不飽和度', 'Unsaturation'), String(an.dou) + (an.rings ? T('<small>含 ' + an.rings + ' 個環</small>', '<small>' + an.rings + ' ring' + (an.rings > 1 ? 's' : '') + '</small>') : '')]);
+    rows.push([T('不飽和度', 'Unsaturation'), String(an.dou) + (an.rings ? T('<small>含 ' + an.rings + ' 個環</small>', '<small>' + an.rings + ' ring' + (an.rings > 1 ? 's' : '') + '</small>') : '')]);
     rows.push([T('順反', 'Cis–trans'), esc(ctText(an))]);
-    rows.push([T('沸點', 'Boiling point'), an.bp != null ? num(an.bp, 1) + ' °C' + (an.en === 'ethyne' ? T('<small>昇華</small>', '<small>sublimes</small>') : '') + '<small>' + T('1 atm，CRC 手冊', '1 atm, CRC Handbook') + '</small>' :
+    rows.push([T('沸點', 'Boiling point'), an.bp != null ? num(an.bp, 1) + ' °C' + (an.en === 'ethyne' ? T('<small>昇華</small>', '<small>sublimes</small>') : '') + '<small>' + T('1 atm，CRC 手冊', '1 atm, CRC Handbook') + '</small>' :
       '—<small>' + (an.stereoUndef ? T('先決定順式或反式', 'decide cis or trans first') : T('資料表沒有收錄', 'not in the data table')) + '</small>']);
-    if (an.mp != null) rows.push([T('熔點', 'Melting point'), num(an.mp, 1) + ' °C']);
+    if (an.mp != null) rows.push([T('熔點', 'Melting point'), num(an.mp, 1) + ' °C']);
     rows.push([T('維納指數', 'Wiener index'), String(an.W) + '<small>' + T('碳、氧兩兩之間的鍵數總和', 'sum of bond counts between all pairs of C and O') + '</small>']);
     const ts = matchTargets(an);
-    if (ts.length) rows.push([T('同分異構物', 'Isomers'), ts.map(function (t) { return esc(targetLabel(t)); }).join('<br>')]);
+    if (ts.length) rows.push([T('同分異構物', 'Isomers'), ts.map(function (t) { return targetLabel(t, true); }).join('<br>')]);
     out.innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
   }
 
@@ -655,22 +699,23 @@
   function list() { return dex[state.target] || (dex[state.target] = []); }
   function fillTargets() {
     const sel = $('target');
-    sel.innerHTML = O.TARGETS.map(function (t) { return '<option value="' + t.id + '">' + esc(targetLabel(t)) + '</option>'; }).join('');
+    sel.innerHTML = O.TARGETS.map(function (t) { return '<option value="' + t.id + '" label="' + esc(targetLabel(t)) + '">' + esc(T(t.zh, t.en)) + '</option>'; }).join('');
     sel.value = state.target;
   }
   let flashKey = null;
   function updateDex() {
     const t = O.target(state.target), L = list(), N = O.targetCount(t.id);
+    $('targetFormula').innerHTML = targetFormula(t, true);
     $('dexCount').textContent = L.length + ' / ' + N;
     $('dexDots').innerHTML = Array.from({ length: N }, function (_, i) { return '<i' + (i < L.length ? ' class="on"' : '') + '></i>'; }).join('');
     const items = L.slice().sort(function (a, b) { return (b.an.bp == null ? -999 : b.an.bp) - (a.an.bp == null ? -999 : a.an.bp); });
     const box = $('dexList');
-    if (!items.length) { box.innerHTML = '<p class="none">' + T('還沒有收集。組出一個 ' + t.id.replace(/-ene$/, '') + ' 的分子，按「收進圖鑑」。', 'Nothing collected yet. Build a ' + t.id.replace(/-ene$/, '') + ' molecule and press “Add to collection”.') + '</p>'; }
+    if (!items.length) { box.innerHTML = '<p class="none">' + T('還沒有收集。組出一個 ' + targetFormula(t, true) + ' 的分子，按「收進圖鑑」。', 'Nothing collected yet. Build a ' + targetFormula(t, true) + ' molecule and press “Add to collection”.') + '</p>'; }
     else {
       box.innerHTML = items.map(function (it) {
         const cur = an.ok && an.key === it.key;
-        return '<button type="button" data-key="' + esc(it.key) + '"' + (it.key === flashKey ? ' class="flash"' : '') + (cur ? ' aria-current="true"' : '') + '><span>' + esc(nameOf(it.an) || it.an.ftext) + '</span><small>' +
-          (it.an.bp != null ? num(it.an.bp, 1) + ' °C' : '—') + '</small></button>';
+        return '<button type="button" data-key="' + esc(it.key) + '"' + (it.key === flashKey ? ' class="flash"' : '') + (cur ? ' aria-current="true"' : '') + '><span>' + (nameOf(it.an) ? esc(nameOf(it.an)) : it.an.fhtml) + '</span><small>' +
+          (it.an.bp != null ? num(it.an.bp, 1) + ' °C' : '—') + '</small></button>';
       }).join('');
     }
   }
@@ -679,16 +724,16 @@
     const t = O.target(state.target), L = list(), N = O.targetCount(t.id), msg = $('dexMsg');
     flashKey = null;
     msg.className = 'dexmsg warn';
-    if (!an.ok) { msg.textContent = T('先組出一個完整的分子。', 'Build a complete molecule first.'); sndBad(); updateDex(); return; }
-    if (an.stereoUndef) { msg.textContent = T('雙鍵的順反還沒決定：把雙鍵碳上的一個鍵改畫成斜的，再收。', 'Cis or trans is not decided yet: draw a bond on the C=C at an angle, then add it.'); sndBad(); updateDex(); return; }
+    if (!an.ok) { msg.innerHTML = formulaMarkup(T('先組出一個完整的分子。', 'Build a complete molecule first.')); sndBad(); updateDex(); return; }
+    if (an.stereoUndef) { msg.innerHTML = formulaMarkup(T('雙鍵的順反還沒決定：把雙鍵碳上的一個鍵改畫成斜的，再收。', 'Cis or trans is not decided yet: draw a bond on the C=C at an angle, then add it.')); sndBad(); updateDex(); return; }
     if (!O.inTarget(an, t)) {
-      msg.textContent = T('這是 ' + an.ftext + '（' + an.clsName[0] + '），不屬於「' + targetLabel(t) + '」。', 'This is ' + an.ftext + ' (' + an.clsName[1] + '), not part of “' + targetLabel(t) + '”.');
+      msg.innerHTML = formulaMarkup(T('這是 ' + an.fhtml + '（' + an.clsName[0] + '），不屬於「' + targetLabel(t, true) + '」。', 'This is ' + an.fhtml + ' (' + an.clsName[1] + '), not part of “' + targetLabel(t, true) + '”.'));
       sndBad(); updateDex(); return;
     }
-    const nm = nameOf(an) || an.ftext;
+    const nm = displayName(an);
     if (L.some(function (it) { return it.key === an.key; })) {
       flashKey = an.key;
-      msg.textContent = T('圖鑑裡已經有「' + nm + '」了：畫法不同，但是同一個分子。', '“' + nm + '” is already in the collection: drawn differently, but the same molecule.');
+      msg.innerHTML = formulaMarkup(T('圖鑑裡已經有「' + nm + '」了：畫法不同，但是同一個分子。', '“' + nm + '” is already in the collection: drawn differently, but the same molecule.'));
       tone(392, 0.16, 'triangle', 0.07);
       updateDex();
       emit('collect', { target: t.id, n: L.length, total: N, complete: L.length >= N, added: false, en: an.en });
@@ -699,8 +744,8 @@
     saveDex();
     const done = L.length >= N;
     msg.className = 'dexmsg good';
-    msg.textContent = done ? T('全部收齊！' + t.id.replace(/-ene$/, '') + ' 共 ' + N + ' 種，一個也不少。', 'Complete! All ' + N + ' of them, not one missing.')
-      : T('收進圖鑑：' + nm + '（' + L.length + ' / ' + N + '）', 'Added: ' + nm + ' (' + L.length + ' / ' + N + ')');
+    msg.innerHTML = formulaMarkup(done ? T('全部收齊！' + targetFormula(t, true) + ' 共 ' + N + ' 種，一個也不少。', 'Complete! All ' + N + ' of them, not one missing.')
+      : T('收進圖鑑：' + nm + '（' + L.length + ' / ' + N + '）', 'Added: ' + nm + ' (' + L.length + ' / ' + N + ')'));
     if (done) [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.14, 'sine', 0.07, i * 0.1); });
     else { tone(784, 0.1, 'sine', 0.08); tone(1175, 0.18, 'sine', 0.08, 0.11); }
     updateDex(); drawGraph(); updateWhy();
@@ -712,7 +757,7 @@
     saveDex();
     flashKey = null;
     $('dexMsg').className = 'dexmsg';
-    $('dexMsg').textContent = T('已清空這個分子式的圖鑑。', 'The collection for this formula has been emptied.');
+    $('dexMsg').innerHTML = formulaMarkup(T('已清空這個分子式的圖鑑。', 'The collection for this formula has been emptied.'));
     updateDex(); drawGraph(); updateWhy();
   }
   $('dexList').addEventListener('click', function (ev) {
@@ -724,7 +769,7 @@
     if (state.view === '3d') state.bond3 = -1;
     setMolecule(it.atoms.map(function (a) { return { el: a.el, q: a.q, r: a.r }; }), it.bonds.map(function (x) { return { a: x.a, b: x.b, o: x.o }; }), -1);
     $('dexMsg').className = 'dexmsg';
-    $('dexMsg').textContent = T('已載入：' + (nameOf(an) || an.ftext), 'Loaded: ' + (nameOf(an) || an.ftext));
+    $('dexMsg').innerHTML = formulaMarkup(T('已載入：' + (displayName(an)), 'Loaded: ' + (displayName(an))));
   });
 
   // ======================= 沸點圖 =======================
@@ -760,8 +805,8 @@
     const f12 = fsz(12) + 'px ' + LD.FONT, f11 = fsz(11) + 'px ' + LD.FONT;
     const hint = $('gHint');
     if (!D.length) {
-      LD.haloText(g, T('圖鑑裡還沒有 ' + t.id.replace(/-ene$/, '') + ' 的分子', 'No ' + t.id.replace(/-ene$/, '') + ' molecules in the collection yet'), gw / 2, gh / 2, LD.c.muted, 'center', 'middle', '600 ' + fsz(14) + 'px ' + LD.FONT);
-      hint.textContent = T('組出「' + targetLabel(t) + '」裡的分子並收進圖鑑，這裡就會畫出它們的沸點。', 'Build molecules from “' + targetLabel(t) + '” and add them to the collection to plot their boiling points.');
+      drawNotation(g, T('圖鑑裡還沒有 ' + targetFormula(t, true) + ' 的分子', 'No ' + targetFormula(t, true) + ' molecules in the collection yet'), gw / 2, gh / 2, LD.c.muted, 'center', 'middle', '600 ' + fsz(14) + 'px ' + LD.FONT);
+      hint.innerHTML = T('組出「' + targetLabel(t, true) + '」裡的分子並收進圖鑑，這裡就會畫出它們的沸點。', 'Build molecules from “' + targetLabel(t, true) + '” and add them to the collection to plot their boiling points.');
       gcv.setAttribute('aria-label', T('沸點圖：還沒有資料', 'Boiling point graph: no data yet'));
       return;
     }
@@ -780,7 +825,7 @@
         g.beginPath(); g.moveTo(x, y0 - 6); g.lineTo(x, gh - 30); g.stroke();
         LD.haloText(g, num(v, ax.step < 1 ? 1 : 0), x, gh - 14, LD.c.muted, 'center', 'middle', f11);
       }
-      LD.haloText(g, T('沸點（°C，1 atm）', 'Boiling point (°C, 1 atm)'), x1, 14, LD.c.muted, 'right', 'middle', '600 ' + f11);
+      LD.haloText(g, T('沸點（°C，1 atm）', 'Boiling point (°C, 1 atm)'), x1, 14, LD.c.muted, 'right', 'middle', '600 ' + f11);
       D.forEach(function (d, i) {
         const y = y0 + rowH * (i + 0.5), h = Math.min(rowH * 0.62, fsz(16));
         const color = d.an.cls === 'alcohol' ? LD.c.neg : d.an.cls === 'ether' ? LD.c.field : d.an.cls === 'ketone' || d.an.cls === 'aldehyde' ? LD.c.pos : LD.c.accent;
@@ -790,7 +835,7 @@
           g.save(); g.setLineDash([5, 4]); g.strokeStyle = color; g.lineWidth = 1.6;
           LD.roundRect(g, xa, y - h / 2, Math.max(3, xb - xa), h, 4); g.stroke(); g.restore();
         }
-        LD.haloText(g, nameOf(d.an) || d.an.ftext, labW, y, d.cur ? LD.c.accent : LD.c.text, 'right', 'middle', (d.cur ? '700 ' : '600 ') + f12);
+        drawNotation(g, displayName(d.an), labW, y, d.cur ? LD.c.accent : LD.c.text, 'right', 'middle', (d.cur ? '700 ' : '600 ') + f12);
         LD.haloText(g, num(d.an.bp, 1) + (d.coll ? '' : T('（目前）', ' (now)')), xb + 6, y, LD.c.text, 'left', 'middle', f11);
       });
     } else {
@@ -817,7 +862,7 @@
         else { g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.c.pos; g.lineWidth = 1.8; g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.stroke(); g.restore(); }
         if (!many || d.cur || d.an.bp === lo || d.an.bp === hi) {
           const right = x < (x0 + x1) / 2;
-          LD.haloText(g, nameOf(d.an) || d.an.ftext, x + (right ? 10 : -10), y - 9, d.cur ? LD.c.pos : LD.c.text, right ? 'left' : 'right', 'middle', (d.cur ? '700 ' : '') + f11);
+          drawNotation(g, displayName(d.an), x + (right ? 10 : -10), y - 9, d.cur ? LD.c.pos : LD.c.text, right ? 'left' : 'right', 'middle', (d.cur ? '700 ' : '') + f11);
         }
       });
     }
@@ -825,15 +870,15 @@
     hint.textContent = state.chart === 'bar'
       ? T('長條是 CRC 手冊的沸點；虛線框是目前組的分子（還沒收進圖鑑）。顏色：藍＝烴、紅＝醇、綠＝醚、橙＝醛酮。', 'Bars show CRC Handbook boiling points; a dashed bar is the molecule you are building (not yet collected). Colours: blue = hydrocarbon, red = alcohol, green = ether, orange = aldehyde or ketone.')
       : T('橫軸是維納指數：分子越長、支鏈越少，W 越大。烷類的沸點大致隨 W 上升，但不是完全一致。', 'The horizontal axis is the Wiener index: the longer and less branched the molecule, the larger W. Alkane boiling points mostly rise with W, though not perfectly.');
-    gcv.setAttribute('aria-label', T('沸點：', 'Boiling points: ') + lo.map(function (d) { return (nameOf(d.an) || d.an.ftext) + ' ' + num(d.an.bp, 1) + ' °C'; }).join(T('、', ', ')));
+    gcv.setAttribute('aria-label', T('沸點：', 'Boiling points: ') + lo.map(function (d) { return (nameOf(d.an) || d.an.ftext) + ' ' + num(d.an.bp, 1) + ' °C'; }).join(T('、', ', ')));
   }
   function updateWhy() {
     const t = O.target(state.target), L = list().filter(function (it) { return it.an.bp != null; });
     let txt;
     if (t.scope === 'alkane') txt = T('烷類分子之間只有倫敦分散力，作用在分子互相接觸的地方。直鏈分子長長的，能和鄰居大面積並排；支鏈多的分子緊湊、接近球形，接觸面積小，吸引力弱，沸點就低。',
       'Alkane molecules attract one another only by London dispersion forces, acting where they touch. A straight chain can lie alongside its neighbours over a large area; a branched molecule is compact and nearly spherical, touches less, attracts less, and boils lower.');
-    else if (t.scope === 'ene') txt = T('烯類的沸點也是直鏈高、支鏈低。順式的兩個烷基在雙鍵同一側，分子有一點極性，沸點略高於反式：順-2-丁烯 3.7 °C，反-2-丁烯 0.9 °C。',
-      'Alkenes also boil higher when straight and lower when branched. In a cis isomer both alkyl groups are on one side, giving a small dipole, so it boils a little higher than the trans: cis-2-butene 3.7 °C, trans-2-butene 0.9 °C.');
+    else if (t.scope === 'ene') txt = T('烯類的沸點也是直鏈高、支鏈低。順式的兩個烷基在雙鍵同一側，分子有一點極性，沸點略高於反式：順-2-丁烯 3.7 °C，反-2-丁烯 0.9 °C。',
+      'Alkenes also boil higher when straight and lower when branched. In a cis isomer both alkyl groups are on one side, giving a small dipole, so it boils a little higher than the trans: cis-2-butene 3.7 °C, trans-2-butene 0.9 °C.');
     else if (t.scope === 'hc') txt = T('一個環和一個雙鍵一樣，都讓分子少兩個氫，所以環烷和烯類可以是同分異構物（官能基異構）。環狀分子比較緊湊、剛硬，排得整齊，沸點常比同碳數的烯類高。',
       'A ring removes two hydrogens just as a double bond does, so cycloalkanes and alkenes can be isomers of each other. Ring molecules are rigid and pack neatly, and often boil higher than the alkenes with the same carbons.');
     else if (t.scope === 'any') txt = T('醇的 O–H 能和鄰近分子的氧形成氫鍵，醚的氧上沒有氫，彼此之間形成不了氫鍵，所以同分子式的醇沸點比醚高得多。',
@@ -843,8 +888,8 @@
     if (L.length >= 2) {
       const s2 = L.slice().sort(function (a, b) { return b.an.bp - a.an.bp; });
       const hi = s2[0].an, lo = s2[s2.length - 1].an;
-      txt += T(' 你收集的 ' + L.length + ' 種裡，沸點最高的是' + nameOf(hi) + '（' + num(hi.bp, 1) + ' °C），最低的是' + nameOf(lo) + '（' + num(lo.bp, 1) + ' °C），相差 ' + num(hi.bp - lo.bp, 1) + ' °C。',
-        ' Of the ' + L.length + ' you collected, ' + nameOf(hi) + ' boils highest (' + num(hi.bp, 1) + ' °C) and ' + nameOf(lo) + ' lowest (' + num(lo.bp, 1) + ' °C), ' + num(hi.bp - lo.bp, 1) + ' °C apart.');
+      txt += T(' 你收集的 ' + L.length + ' 種裡，沸點最高的是' + nameOf(hi) + '（' + num(hi.bp, 1) + ' °C），最低的是' + nameOf(lo) + '（' + num(lo.bp, 1) + ' °C），相差 ' + num(hi.bp - lo.bp, 1) + ' °C。',
+        ' Of the ' + L.length + ' you collected, ' + nameOf(hi) + ' boils highest (' + num(hi.bp, 1) + ' °C) and ' + nameOf(lo) + ' lowest (' + num(lo.bp, 1) + ' °C), ' + num(hi.bp - lo.bp, 1) + ' °C apart.');
     }
     $('whyOut').textContent = txt;
   }
@@ -926,26 +971,26 @@
     const ok = state.bond3 >= 0 && !!side3;
     tw.disabled = !ok;
     $('twReset').disabled = !ok;
-    $('twisto').textContent = num(state.twist, 0) + '°';
+    $('twisto').textContent = num(state.twist, 0) + ' °';
     if (why === undefined) why = state.bond3 >= 0 ? twistBlock(state.bond3) : null;
-    if (!an.ok) msg.textContent = T('先在 2D 平面組好一個完整的分子。', 'Build a complete molecule in 2D first.');
-    else if (state.bond3 < 0) msg.textContent = T('點 3D 模型上的一個鍵，或從上面的選單選一個鍵。', 'Tap a bond in the 3D model, or pick one from the menu above.');
-    else if (why) msg.textContent = why;
+    if (!an.ok) msg.innerHTML = formulaMarkup(T('先在 2D 平面組好一個完整的分子。', 'Build a complete molecule in 2D first.'));
+    else if (state.bond3 < 0) msg.innerHTML = formulaMarkup(T('點 3D 模型上的一個鍵，或從上面的選單選一個鍵。', 'Tap a bond in the 3D model, or pick one from the menu above.'));
+    else if (why) msg.innerHTML = formulaMarkup(why);
     else {
       const b = state.bonds[state.bond3];
-      msg.textContent = b.o === 2
+      msg.innerHTML = formulaMarkup(b.o === 2
         ? (state.light ? T('照光把 π 鍵打開了：可以自由扭轉。扭過 90° 放手，看看會變成什麼。', 'Light has opened the π bond, so it twists freely. Let go past 90° and see what forms.')
           : T('雙鍵要先打斷 π 鍵才轉得動，最多只能扭到 90°，放手就彈回。', 'The π bond must break before a double bond turns: you can twist only to 90°, and it springs back when you let go.'))
-        : T('單鍵可以自由旋轉。看看前後兩個碳上的原子團對齊（重疊式）時，能量最高。', 'A single bond turns freely. Watch the energy peak when the groups on the two carbons line up (eclipsed).');
+        : T('單鍵可以自由旋轉。看看前後兩個碳上的原子團對齊（重疊式）時，能量最高。', 'A single bond turns freely. Watch the energy peak when the groups on the two carbons line up (eclipsed).'));
     }
     const tn = ok ? twistNow() : null;
     if (!tn) out.innerHTML = '<dt>' + T('扭轉能', 'Twist energy') + '</dt><dd>—</dd>';
     else {
-      const rows = [[T('鍵', 'Bond'), esc(bondName(state.bond3))], [T('扭轉角', 'Twist angle'), num(state.twist, 0) + '°']];
+      const rows = [[T('鍵', 'Bond'), esc(bondName(state.bond3))], [T('扭轉角', 'Twist angle'), num(state.twist, 0) + ' °']];
       if (tn.E == null) rows.push([T('扭轉能', 'Twist energy'), T('≈ 0<small>π 鍵已被光打開</small>', '≈ 0<small>the π bond is opened by light</small>')]);
       else {
-        rows.push([T('扭轉能', 'Twist energy'), num(tn.E, 1) + ' kJ/mol']);
-        rows.push([T('相當於', 'Compared with RT'), num(tn.E / O.RT298, tn.E / O.RT298 < 10 ? 1 : 0) + T(' 倍 RT', ' × RT') + '<small>' + T('室溫 RT = 2.48 kJ/mol', 'room temperature RT = 2.48 kJ/mol') + '</small>']);
+        rows.push([T('扭轉能', 'Twist energy'), num(tn.E, 1) + ' kJ/mol']);
+        rows.push([T('相當於', 'Compared with RT'), num(tn.E / O.RT298, tn.E / O.RT298 < 10 ? 1 : 0) + T(' 倍 RT', ' × RT') + '<small>' + T('室溫 RT = 2.48 kJ/mol', 'room temperature RT = 2.48 kJ/mol') + '</small>']);
       }
       out.innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
     }
@@ -967,7 +1012,7 @@
     const x0 = 40, x1 = w - 8, y0 = 10, y1 = h - 22;
     const X = function (t) { return x0 + (t + 180) / 360 * (x1 - x0); }, Y = function (e) { return y1 - e / emax * (y1 - y0); };
     g.strokeStyle = LD.alpha(LD.c.text, 0.1); g.lineWidth = 1;
-    [-180, -90, 0, 90, 180].forEach(function (t) { g.beginPath(); g.moveTo(X(t), y0); g.lineTo(X(t), y1); g.stroke(); LD.haloText(g, t + '°', X(t), y1 + 11, LD.c.muted, 'center', 'middle', f11); });
+    [-180, -90, 0, 90, 180].forEach(function (t) { g.beginPath(); g.moveTo(X(t), y0); g.lineTo(X(t), y1); g.stroke(); LD.haloText(g, t + ' °', X(t), y1 + 11, LD.c.muted, 'center', 'middle', f11); });
     [0, emax / 2, emax].forEach(function (e) { LD.haloText(g, num(e, 0), x0 - 4, Y(e), LD.c.muted, 'right', 'middle', f11); });
     LD.haloText(g, 'kJ/mol', x0 + 4, y0 + 6, LD.c.muted, 'left', 'middle', f11);
     // RT 的高度
@@ -1071,8 +1116,8 @@
     request();
     const to = an.en;
     const same = from === to;
-    $('twMsg').textContent = same ? T('翻過去還是同一個分子：這個雙鍵沒有順反異構。', 'Still the same molecule: this double bond has no cis–trans isomers.')
-      : T('光讓雙鍵翻了身：', 'Light flipped the double bond: ') + (nameOf(an) || an.ftext);
+    $('twMsg').innerHTML = formulaMarkup(same ? T('翻過去還是同一個分子：這個雙鍵沒有順反異構。', 'Still the same molecule: this double bond has no cis–trans isomers.')
+      : T('光讓雙鍵翻了身：', 'Light flipped the double bond: ') + (displayName(an)));
     emit('photo', { from: from, to: to });
     emitMol();
   }
@@ -1117,8 +1162,8 @@
       hud: function () {
         const nm = nameOf(an);
         return {
-          tl: an.ok ? (nm || an.ftext) : T('先在 2D 平面組好一個分子', 'Build a molecule in 2D first'),
-          tr: state.bond3 >= 0 && side3 ? bondName(state.bond3) + '  ' + num(state.twist, 0) + '°' : ''
+          tl: an.ok ? (nm || an.fhtml) : T('先在 2D 平面組好一個分子', 'Build a molecule in 2D first'),
+          tr: state.bond3 >= 0 && side3 ? bondName(state.bond3) + '  ' + num(state.twist, 0) + ' °' : ''
         };
       },
       contextLost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
@@ -1219,7 +1264,7 @@
     acted();
     state.target = $('target').value;
     flashKey = null;
-    $('dexMsg').textContent = '';
+    $('dexMsg').innerHTML = formulaMarkup('');
     updateDex(); updateMolCard(); drawGraph(); updateWhy();
   });
   $('chartBar').addEventListener('click', function () { acted(); setChart('bar'); });
@@ -1253,11 +1298,30 @@
   });
 
   // ======================= 鍵盤 =======================
+  function moveGridCursor(dx, dy) {
+    if (!dx && !dy) return false;
+    const c = state.cur;
+    let d;
+    const yInt = Math.abs(((c.r + c.q / 2) % 1)) < 1e-9;
+    if (dx && dy) d = O.DIRS[dx > 0 ? (dy > 0 ? 5 : 0) : (dy > 0 ? 3 : 2)];
+    else if (dx > 0) d = yInt ? O.DIRS[5] : O.DIRS[0];
+    else if (dx < 0) d = yInt ? O.DIRS[3] : O.DIRS[2];
+    else if (dy > 0) d = O.DIRS[4];
+    else d = O.DIRS[1];
+    const q = c.q + d[0], r = c.r + d[1];
+    if (!inGrid(q, r) || !inView(q, r)) return false;
+    acted();
+    state.cur = { q: q, r: r };
+    const i = atomAt(q, r);
+    if (i >= 0 && i !== state.sel) { state.prev = state.sel; state.sel = i; }
+    request();
+    return true;
+  }
   function cursorDescribe() {
     const c = state.cur, i = atomAt(c.q, c.r);
     if (i < 0) return T('空格點', 'empty point') + (state.atoms.length ? '' : T('，按 C 或 O 放第一個原子', '; press C or O for the first atom'));
     const h = Math.max(0, free(i));
-    return elName(state.atoms[i].el) + T('，接了 ' + h + ' 個氫', ', with ' + h + ' hydrogens') + (an.ok && nameOf(an) ? T('；分子：', '; molecule: ') + nameOf(an) : '');
+    return elName(state.atoms[i].el) + T('，接了 ' + h + ' 個氫', ', with ' + h + ' hydrogens') + (an.ok && nameOf(an) ? T('；分子：', '; molecule: ') + nameOf(an) : '');
   }
   if (window.LabKeys) {
     kb = window.LabKeys.attach(cv, {
@@ -1265,24 +1329,7 @@
         'Building grid. Arrow keys move the cursor; press C or O to add carbon or oxygen at the cursor (bonded to the atom selected before); moving onto an atom selects it; 1, 2, 3 set the bond to the previously selected atom to single, double or triple; Delete removes the atom.'),
       items: [{
         name: function () { return T('游標', 'Cursor'); },
-        move: function (dx, dy) {
-          if (!dx && !dy) return false;
-          const c = state.cur;
-          let d;
-          const yInt = Math.abs(((c.r + c.q / 2) % 1)) < 1e-9;
-          if (dx > 0) d = yInt ? O.DIRS[5] : O.DIRS[0];
-          else if (dx < 0) d = yInt ? O.DIRS[3] : O.DIRS[2];
-          else if (dy > 0) d = O.DIRS[4];
-          else d = O.DIRS[1];
-          const q = c.q + d[0], r = c.r + d[1];
-          if (!inGrid(q, r) || !inView(q, r)) return false;
-          acted();
-          state.cur = { q: q, r: r };
-          const i = atomAt(q, r);
-          if (i >= 0 && i !== state.sel) { state.prev = state.sel; state.sel = i; }
-          request();
-          return true;
-        },
+        move: moveGridCursor,
         describe: cursorDescribe
       }],
       onChange: function () { request(); }
@@ -1321,7 +1368,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0, le = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth && gcv.clientWidth !== lg) { lg = gcv.clientWidth; drawGraph(); } }).observe(gcv);
     new ResizeObserver(function () { if (ecv.clientWidth && ecv.clientWidth !== le) { le = ecv.clientWidth; drawEnergy(); } }).observe(ecv);
   } else window.addEventListener('resize', function () { resize(); drawGraph(); drawEnergy(); });
@@ -1384,4 +1431,50 @@
   updateTwist();
   drawGraph();
   request();
+  function mountKeypad() {
+    const label = T('組分子游標', 'Molecule grid cursor');
+    const pad = LabVPad.mount({
+      id: 'organic-isomers', canvas: cv, lens: false, objects: ['cursor'], steps: [1], step: 1,
+      selected: () => 'cursor', select: () => {},
+      move(dx, dy) {
+        cv.focus({ preventScroll: true });
+        moveGridCursor(dx, dy);
+      },
+      point() {
+        const xy = px(state.cur.q, state.cur.r), r = cv.getBoundingClientRect();
+        return { x: r.left + xy[0] * r.width / (cw || 1), y: r.top + xy[1] * r.height / (ch || 1) };
+      },
+      record: () => {
+        acted(); cv.focus({ preventScroll: true });
+        const c = state.cur, i = atomAt(c.q, c.r);
+        if (i < 0) placeAt(c.q, c.r);
+        else if (state.atoms[i].el !== state.pen) swapEl(i);
+      },
+      visible() {
+        const r = cv.getBoundingClientRect();
+        return state.view === '2d' && getComputedStyle(cv).visibility === 'visible' && r.top < innerHeight && r.bottom > 0;
+      },
+      home(w, h) {
+        const r = cv.getBoundingClientRect();
+        return { x: r.right - w - 4, y: Math.min(r.bottom, innerHeight) - h - 4 };
+      },
+      viewport() {
+        const drawer = document.querySelector('html.labdeck-drawer .labdeck');
+        return { width: drawer ? drawer.getBoundingClientRect().left : innerWidth, height: innerHeight };
+      }
+    });
+    pad.element.setAttribute('aria-label', label);
+    const centre = document.createElement('span');
+    centre.className = 'keypad-centre'; centre.textContent = '◎'; centre.setAttribute('aria-hidden', 'true');
+    pad.element.querySelector('.vpad-select').replaceWith(centre);
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', label + ' ' + b.textContent));
+    pad.element.querySelector('.vpad-step').remove();
+    const place = pad.element.querySelector('.vpad-record');
+    place.textContent = T('放原子', 'Place atom');
+    place.setAttribute('aria-label', T('在游標處放入目前選取的原子', 'Place the selected atom at the cursor'));
+    try {
+      if (!localStorage.getItem('lab-vpad:organic-isomers')) pad.collapse(true);
+    } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();

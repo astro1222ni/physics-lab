@@ -31,19 +31,19 @@
     {
       id: 'gas-diffusion-2', level: 2,
       title: { zh: '比較慢的酸', en: 'A slower acid' },
-      desc: { zh: '左端用氨，右端換一種比氯化氫更重的酸，讓白煙環出現在距氨端 62% 管長以外的地方。', en: 'Keep ammonia on the left, use an acid heavier than hydrogen chloride on the right, and make the ring form more than 62% of the tube length from the ammonia end.' },
+      desc: { zh: '左端用氨，右端換一種比氯化氫更重的酸，讓白煙環出現在距氨端 62 % 管長以外的地方。', en: 'Keep ammonia on the left, use an acid heavier than hydrogen chloride on the right, and make the ring form more than 62 % of the tube length from the ammonia end.' },
       check: function (ev) { const d = rg(ev); return !!d && d.base === 'NH3' && ['HBr', 'HI', 'HNO3'].indexOf(d.acid) >= 0 && d.frac >= 0.62; }
     },
     {
       id: 'gas-diffusion-3', level: 3,
       title: { zh: '格雷厄姆的四倍', en: "Graham's factor of four" },
-      desc: { zh: '在逸散實驗中比較氫和氧（同一溫度），量出兩者的半衰時間比，等於 √(32/2) 的 0.5% 以內。', en: 'In the effusion experiment compare hydrogen and oxygen at the same temperature and measure a half-time ratio within 0.5% of √(32/2).' },
+      desc: { zh: '在逸散實驗中比較氫和氧（同一溫度），量出兩者的半衰時間比，等於 √(32/2) 的 0.5 % 以內。', en: 'In the effusion experiment compare hydrogen and oxygen at the same temperature and measure a half-time ratio within 0.5 % of √(32/2).' },
       check: function (ev) { const d = ef(ev); return !!d && pair(d, 'H2', 'O2') && sameT(d) && near(big(d.ratio), 3.984, 0.005); }
     },
     {
       id: 'gas-diffusion-4', level: 3,
       title: { zh: '熱一點快一點', en: 'Warmer is faster' },
-      desc: { zh: '同一對氣體、同一模型、同一管長，溫度相差 40 K 以上各做一次：較熱的白煙環比較早出現，但位置幾乎不變（相差不到管長的 0.1%）。', en: 'With the same gases, model and tube length, run twice at temperatures at least 40 K apart: the warmer ring appears sooner, but in almost the same place (less than 0.1% of the tube apart).' },
+      desc: { zh: '同一對氣體、同一模型、同一管長，溫度相差 40 K 以上各做一次：較熱的白煙環比較早出現，但位置幾乎不變（相差不到管長的 0.1 %）。', en: 'With the same gases, model and tube length, run twice at temperatures at least 40 K apart: the warmer ring appears sooner, but in almost the same place (less than 0.1 % of the tube apart).' },
       check: function (ev) {
         const d = rg(ev);
         return !!d && earlier(d).some(function (e) {
@@ -55,7 +55,7 @@
     {
       id: 'gas-diffusion-5', level: 4,
       title: { zh: '管子加長一倍', en: 'Twice the tube' },
-      desc: { zh: '同一對氣體、同一模型、同一溫度，把管長改成另一次的 2 倍，讓白煙環出現的時間變成 4 倍（誤差 2% 以內）。', en: 'With the same gases, model and temperature, make the tube twice as long as in another run so that the ring takes four times as long to appear (within 2%).' },
+      desc: { zh: '同一對氣體、同一模型、同一溫度，把管長改成另一次的 2 倍，讓白煙環出現的時間變成 4 倍（誤差 2 % 以內）。', en: 'With the same gases, model and temperature, make the tube twice as long as in another run so that the ring takes four times as long to appear (within 2 %).' },
       check: function (ev) {
         const d = rg(ev);
         return !!d && earlier(d).some(function (e) {
@@ -68,7 +68,7 @@
     {
       id: 'gas-diffusion-6', level: 4,
       title: { zh: '甲胺換氨', en: 'Swap in methylamine' },
-      desc: { zh: '同一種酸、同一模型，左端分別用氨和甲胺各做一次，讓甲胺的白煙環比氨的更靠近左端至少 5% 管長。', en: 'With the same acid and model, run once with ammonia and once with methylamine on the left, so that the methylamine ring is at least 5% of the tube length closer to the left end.' },
+      desc: { zh: '同一種酸、同一模型，左端分別用氨和甲胺各做一次，讓甲胺的白煙環比氨的更靠近左端至少 5 % 管長。', en: 'With the same acid and model, run once with ammonia and once with methylamine on the left, so that the methylamine ring is at least 5 % of the tube length closer to the left end.' },
       check: function (ev) {
         const d = rg(ev);
         if (!d || d.unknown) return false;
@@ -82,7 +82,7 @@
     {
       id: 'gas-diffusion-7', level: 5,
       title: { zh: '空氣擋了路', en: 'The air gets in the way' },
-      desc: { zh: '同一對氣體、同一管長與溫度，分別用「格雷厄姆（理想）」和「在空氣中擴散」各做一次，兩個白煙環相差 2% 管長以上。', en: 'With the same gases, tube length and temperature, run once with “Graham (ideal)” and once with “Diffusion in air”, with the two rings at least 2% of the tube length apart.' },
+      desc: { zh: '同一對氣體、同一管長與溫度，分別用「格雷厄姆（理想）」和「在空氣中擴散」各做一次，兩個白煙環相差 2 % 管長以上。', en: 'With the same gases, tube length and temperature, run once with “Graham (ideal)” and once with “Diffusion in air”, with the two rings at least 2 % of the tube length apart.' },
       check: function (ev) {
         const d = rg(ev);
         return !!d && !d.unknown && earlier(d).some(function (e) {
@@ -93,7 +93,7 @@
     {
       id: 'gas-diffusion-8', level: 5,
       title: { zh: '孔大小不改比例', en: 'Hole size does not change the ratio' },
-      desc: { zh: '同一對氣體、同樣的溫度，孔徑相差 2 倍以上各做一次逸散：半衰時間變了，時間比卻相差不到 0.5%。', en: 'With the same pair of gases and the same temperatures, run the effusion twice with hole diameters at least 2 times apart: the half-times change, but their ratio changes by less than 0.5%.' },
+      desc: { zh: '同一對氣體、同樣的溫度，孔徑相差 2 倍以上各做一次逸散：半衰時間變了，時間比卻相差不到 0.5 %。', en: 'With the same pair of gases and the same temperatures, run the effusion twice with hole diameters at least 2 times apart: the half-times change, but their ratio changes by less than 0.5 %.' },
       check: function (ev) {
         const d = ef(ev);
         return known(d) && d.A !== d.B && earlier(d).some(function (e) {
@@ -105,7 +105,7 @@
     {
       id: 'gas-diffusion-9', level: 6,
       title: { zh: '冷熱逸散', en: 'Hot and cold effusion' },
-      desc: { zh: '兩個容器裝同一種氣體，一個的絕對溫度是另一個的 2 倍以上，量出半衰時間比等於 √(T 比)（誤差 0.5% 以內）。', en: 'Fill both containers with the same gas, one at least twice the absolute temperature of the other, and measure a half-time ratio equal to √(temperature ratio) within 0.5%.' },
+      desc: { zh: '兩個容器裝同一種氣體，一個的絕對溫度是另一個的 2 倍以上，量出半衰時間比等於 √(T 比)（誤差 0.5 % 以內）。', en: 'Fill both containers with the same gas, one at least twice the absolute temperature of the other, and measure a half-time ratio equal to √(temperature ratio) within 0.5 %.' },
       check: function (ev) {
         const d = ef(ev);
         if (!known(d) || d.A !== d.B) return false;
@@ -116,19 +116,19 @@
     {
       id: 'gas-diffusion-10', level: 6,
       title: { zh: '未知氣體 X', en: 'Unknown gas X' },
-      desc: { zh: '在逸散模式按「開始挑戰」，在揭曉答案之前算出 X 的莫耳質量，誤差在 5% 以內。', en: 'In effusion mode press “Start the challenge” and, before revealing the answer, work out the molar mass of X to within 5%.' },
+      desc: { zh: '在逸散模式按「開始挑戰」，在揭曉答案之前算出 X 的莫耳質量，誤差在 5 % 以內。', en: 'In effusion mode press “Start the challenge” and, before revealing the answer, work out the molar mass of X to within 5 %.' },
       check: function (ev) { return solved(an(ev), 'X', 0.05); }
     },
     {
       id: 'gas-diffusion-11', level: 8,
       title: { zh: '未知氣體：精準', en: 'Unknown gas: precisely' },
-      desc: { zh: '在揭曉答案之前算出未知氣體 X 的莫耳質量，誤差在 1% 以內。', en: 'Before revealing the answer, work out the molar mass of unknown gas X to within 1%.' },
+      desc: { zh: '在揭曉答案之前算出未知氣體 X 的莫耳質量，誤差在 1 % 以內。', en: 'Before revealing the answer, work out the molar mass of unknown gas X to within 1 %.' },
       check: function (ev) { return solved(an(ev), 'X', 0.01); }
     },
     {
       id: 'gas-diffusion-12', level: 9,
       title: { zh: '未知的酸', en: 'The unknown acid' },
-      desc: { zh: '在擴散模式按「開始挑戰」，在揭曉答案之前用白煙環的位置算出 HX 的莫耳質量，誤差在 3% 以內。', en: 'In diffusion mode press “Start the challenge” and, before revealing the answer, use the position of the ring to work out the molar mass of HX to within 3%.' },
+      desc: { zh: '在擴散模式按「開始挑戰」，在揭曉答案之前用白煙環的位置算出 HX 的莫耳質量，誤差在 3 % 以內。', en: 'In diffusion mode press “Start the challenge” and, before revealing the answer, use the position of the ring to work out the molar mass of HX to within 3 %.' },
       check: function (ev) { return solved(an(ev), 'HX', 0.03); }
     },
     {

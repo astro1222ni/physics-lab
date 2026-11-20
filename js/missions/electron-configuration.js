@@ -72,13 +72,13 @@
     {
       id: 'electron-configuration-10', level: 7,
       title: { zh: '先走的是 4s', en: '4s leaves first' },
-      desc: { zh: '在「自己填」裡，填出電荷 +2 的鐵離子（Fe2+）的基態。', en: 'In “Fill it yourself”, build the ground state of the iron ion with charge +2 (Fe2+).' },
+      desc: { zh: '在「自己填」裡，填出電荷 +2 的鐵離子（Fe<sup>2+</sup>）的基態。', en: 'In “Fill it yourself”, build the ground state of the iron ion with charge +2 (Fe<sup>2+</sup>).' },
       check: function (ev) { return built(ev, 26, 2); }
     },
     {
       id: 'electron-configuration-11', level: 7,
       title: { zh: '等電子家族', en: 'An isoelectronic family' },
-      desc: { zh: '找出 4 種電子數都是 10 的原子或離子（氖也算），一個一個選過。', en: 'Find four atoms or ions that all have 10 electrons (neon counts) and choose each of them.' },
+      desc: { zh: '找出 4 種電子數都是 10 的原子或離子（氖也算），一個一個選過。', en: 'Find four atoms or ions that all have 10 electrons (neon counts) and choose each of them.' },
       check: function (ev) { const d = sp(ev); return !!d && d.N === 10 && d.iso >= 4; }
     },
     {

@@ -3,18 +3,25 @@
  *
  * three.js 由 atomic-orbitals.js 在切換到 3D 時才以 import() 動態載入，再傳進 AO3D.create(lib, host)。
  * 這個檔案只「讀」頁面的狀態與 AOCore 的公式，不改變任何數值：
- *   - 等值面：在 3D 格點（64³）上算 ψ，用 surface nets 法取出 ψ = +c（紅）與 ψ = −c（藍）的曲面；
+ *   - 等值面：在 3D 格點（64^3）上算 ψ，用 surface nets 法取出 ψ = +c（紅）與 ψ = −c（藍）的曲面；
  *     c 由 AOCore.isoLevel 求得，使 |ψ| > c 的區域剛好包住指定的機率。法向量用 ψ 的梯度（中央差分）。
- *     副層加總時是 √(Σ|ψ|²/(2l+1)) = c 的球殼（一種顏色）。
- *   - 機率雲：AOCore.sample 依 |ψ|² 精確抽 15000 個點，顏色依 ψ 的正負。
+ *     副層加總時是 √(Σ|ψ|^2/(2l+1)) = c 的球殼（一種顏色）。
+ *   - 機率雲：AOCore.sample 依 |ψ|^2 精確抽 15000 個點，顏色依 ψ 的正負。
  *   - 節面：徑向節面是半徑 r 的球面；角節面是通過原子核的平面或圓錐（AOCore.angularNodes）。
  * 座標：化學的 (x, y, z) 放在一個繞 x 軸轉 −90° 的群組裡，畫面上 z 軸朝上；整個軌域縮放到同樣大小，真正的大小寫在角落。
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+
   const GRID = 64, NPTS = 15000, SIZE = 3;
 
-  /** surface nets：v 是 (N+1)³ 個格點上的值（> 0 為內部），格點座標 x = −L + i·h。傳回 { pos: Float32Array, idx: Uint32Array } */
+  /** surface nets：v 是 (N+1)^3 個格點上的值（> 0 為內部），格點座標 x = −L + i·h。傳回 { pos: Float32Array, idx: Uint32Array } */
   function surfaceNets(v, N, L) {
     const M = N + 1, h = 2 * L / N;
     const at = function (i, j, k) { return i + M * (j + M * k); };
@@ -62,6 +69,7 @@
     const THREE = lib.THREE, A = H.A, T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', T('原子軌域的 3D 檢視：紅色 ψ > 0、藍色 ψ < 0（拖曳旋轉、雙指或滾輪縮放）',
       '3D view of the orbital: red ψ > 0, blue ψ < 0 (drag to rotate, pinch or scroll to zoom)'));
@@ -90,7 +98,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 4;
     controls.maxDistance = 40;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: 6, T });
 
     const hemi = new THREE.HemisphereLight(0xffffff, 0x6f7784, 1.15);
     scene.add(hemi);
@@ -332,8 +340,9 @@
         if (k === 'axis' || k === 'axisHead' || k === 'nuc' || k === 'slice' || k === 'sliceLine') return;
         mats[k].clippingPlanes = planes; mats[k].clipIntersection = true; mats[k].needsUpdate = true;
       });
-      hudTL.textContent = H.hud().tl;
-      hudTR.innerHTML = H.hud().tr.replace(/\n/g, '<br>').replace(/ a0 /, ' a<sub>0</sub> ');
+      const labels = H.hud();
+      hudTL.innerHTML = formulaMarkup(labels.tl);
+      hudTR.innerHTML = labels.tr.split('\n').map(formulaMarkup).join('<br>');
       requestRender();
       return o;
     }
@@ -351,13 +360,17 @@
       const dist = 14.0 / Math.min(1, camera.aspect * 1.05);
       if (force) {
         controls.target.set(0, 0, 0);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(dist);
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(320, w * 1.0)) : Math.round(Math.min(600, w * 0.72)); }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(320, w * 1.0)) : Math.round(Math.min(600, w * 0.72));
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -379,7 +392,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     // 第一次拖曳或縮放後收起操作說明，讓出畫面（窄螢幕特別需要）
@@ -413,6 +426,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         [isoGroup, cloud, nodeGroup, axisGroup, sliceGroup].forEach(disposeGroup);
         Object.keys(mats).forEach(function (k) { mats[k].dispose(); });

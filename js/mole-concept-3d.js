@@ -14,13 +14,12 @@
     const T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('1 莫耳各種物質的實際大小（3D，拖曳旋轉、雙指或滾輪縮放）', 'The real size of one mole of each substance (3D; drag to rotate, pinch or scroll to zoom)'));
+    canvas.setAttribute('aria-label', T('1 莫耳各種物質的實際大小（3D，拖曳旋轉、雙指或滾輪縮放）', 'The real size of one mole of each substance (3D; drag to rotate, pinch or scroll to zoom)'));
     canvas.setAttribute('role', 'img');
     host.appendChild(canvas);
     const hudTL = document.createElement('div'), hudBL = document.createElement('div');
     hudTL.className = 'r3-hud tl'; hudBL.className = 'r3-hud bl';
     [hudTL, hudBL].forEach(function (d) { d.setAttribute('aria-hidden', 'true'); host.appendChild(d); });
-    hudBL.textContent = T('拖曳旋轉・滾輪或雙指縮放', 'Drag to rotate · scroll or pinch to zoom');
 
     let renderer;
     try {
@@ -34,7 +33,8 @@
     const viewDir = new THREE.Vector3(0.3, 0.7, 1).normalize();
     const controls = new lib.OrbitControls(camera, canvas);
     controls.enableDamping = true; controls.dampingFactor = 0.12;
-    controls.enablePan = false; controls.maxPolarAngle = Math.PI * 0.49;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 40, T });
+    controls.maxPolarAngle = Math.PI * 0.49;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.3));
     const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.position.set(-30, 60, 40); scene.add(sun);
@@ -101,7 +101,7 @@
       group.add(e);
       return s;
     }
-    function fmtMass(m) { return m >= 100 ? m.toFixed(0) + ' g' : m >= 1 ? m.toFixed(1) + ' g' : m >= 0.01 ? m.toFixed(3) + ' g' : m.toFixed(4) + ' g'; }
+    function fmtMass(m) { return m >= 100 ? m.toFixed(0) + ' g' : m >= 1 ? m.toFixed(1) + ' g' : m >= 0.01 ? m.toFixed(3) + ' g' : m.toFixed(4) + ' g'; }
 
     let span = 40, radius = 30, center = new THREE.Vector3(), size3 = new THREE.Vector3();
     function build() {
@@ -124,7 +124,7 @@
       // 氣體 1 莫耳：放在後面
       const gs = d.gas.side, gz = -gs / 2 - 6;
       cubeAt({ id: 'O2', phase: 'g', color: '#7fcfff', side: gs }, 0, gz);
-      const glb = label([T('任何氣體 1 mol', 'Any gas, 1 mol'), d.gas.V.toFixed(1) + ' L'], col.text, 3.2);
+      const glb = label([T('任何氣體 1 mol', 'Any gas, 1 mol'), d.gas.V.toFixed(1) + ' L'], col.text, 3.2);
       glb.position.set(0, gs + 0.5, gz + gs / 2); group.add(glb);   // 放在氣體立方體正面的上緣
       // 10 cm 尺
       const rz = 13.5, rx = gx0 - 2;
@@ -134,7 +134,7 @@
         const t = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x333333 }));
         t.scale.set(0.06, 0.02, k % 5 ? 0.3 : 0.55); t.position.set(rx + k, 0.16, rz - 0.4 + (k % 5 ? 0.15 : 0.275)); group.add(t);
       }
-      const rl = label(['10 cm', ''], col.text, 2.4); rl.position.set(rx + 5, 0.4, rz); group.add(rl);
+      const rl = label(['10 cm', ''], col.text, 2.4); rl.position.set(rx + 5, 0.4, rz); group.add(rl);
       // 前排：A、B 兩盤目前的樣品
       const big = Math.max(d.A.side, d.B.side), fz = 22 + big / 2;
       [[d.A, -1, col.neg, 'A'], [d.B, 1, col.pos, 'B']].forEach(function (q) {
@@ -153,7 +153,7 @@
       floor.scale.set(size.x + 16, 1, size.z + 16);
       floor.position.set(center.x, -0.1, center.z);
       controls.minDistance = 3; controls.maxDistance = span * 6;
-      hudTL.textContent = T('後排：每種都是 1 莫耳｜前排：天平上的 A、B', 'Back row: one mole of each | front: pans A and B');
+      hudTL.textContent = T('後排：每種都是 1 莫耳｜前排：天平上的 A、B', 'Back row: one mole of each | front: pans A and B');
     }
     function applyColors() {
       const col = H.colors();
@@ -165,15 +165,24 @@
       const half = camera.fov * Math.PI / 360;
       const dist = radius * 0.92 / Math.sin(Math.min(half, Math.atan(Math.tan(half) * camera.aspect)));
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         controls.target.set(center.x, center.y * 0.45, center.z + size3.z * 0.12);
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.far = Math.max(500, dist * 8);
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(400, w * 1.12)) : 440; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(400, w * 1.12)) : 440;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -195,7 +204,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -221,6 +230,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set(), geos = new Set();
         scene.traverse(function (o) {

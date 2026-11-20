@@ -16,6 +16,7 @@
     const T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', T('本生燈與分光鏡的 3D 檢視：內焰、外焰、白金絲、最熱的地方與光路（拖曳旋轉、雙指或滾輪縮放）',
       '3D view of the Bunsen burner and spectroscope: inner cone, outer flame, platinum wire, hottest point and light path (drag to rotate, pinch or scroll to zoom)'));
     canvas.setAttribute('role', 'img');
@@ -43,7 +44,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 5;
     controls.maxDistance = 60;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: 9, T });
     controls.maxPolarAngle = Math.PI * 0.53;
 
     const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.25);
@@ -307,7 +308,7 @@
         r[1].position.set(xs - 0.05, py, dz);
         r[0].visible = r[1].visible = true;
       });
-      const hd = H.hud(); hudTL.textContent = hd.tl; hudTR.textContent = hd.tr;
+      const hd = H.hud(); hudTL.textContent = hd.tl; hudTR.innerHTML = hd.tr;
       requestRender();
     }
 
@@ -317,13 +318,17 @@
       const dist = Math.max(9.2 / t, 8.6 / (t * camera.aspect));
       if (force) {
         controls.target.set(2.2, 4.2, 0.6);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(380, w * 1.05)) : 440; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(380, w * 1.05)) : 440;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -345,7 +350,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -366,6 +371,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const geos = new Set();
         scene.traverse(function (o) { if (o.geometry) geos.add(o.geometry); });

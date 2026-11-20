@@ -29,6 +29,7 @@
   function snd() { return window.LabSound && window.LabSound.enabled(); }
   function sampleMetals() { return unk.active ? unk.active.metals : state.metals; }
   function sampleConc() { return unk.active ? unk.active.conc : state.conc; }
+  function saltHTML(s) { return C.METALS[s].salt.replace(/(\d+)/g, '<sub>$1</sub>'); }
   function mName(s) { const m = C.METALS[s]; return T(m.zh, m.en.charAt(0).toUpperCase() + m.en.slice(1)); }
 
   // ======================= 數字格式 =======================
@@ -68,11 +69,11 @@
     state.log = $('logY').checked;
   }
   function showOutputs() {
-    $('conco').textContent = sig3(state.conc) + ' mol/L';
-    $('reso').textContent = (state.res < 0.1 ? num(state.res, 3) : state.res < 1 ? num(state.res, 2) : num(state.res, 2)) + ' nm';
-    $('airo').textContent = num(state.air * 100, 0) + '%';
-    $('hgto').textContent = num(state.h, 1) + ' mm';
-    $('tlo').textContent = num(state.TL, 0) + ' K';
+    $('conco').textContent = sig3(state.conc) + ' mol/L';
+    $('reso').textContent = (state.res < 0.1 ? num(state.res, 3) : state.res < 1 ? num(state.res, 2) : num(state.res, 2)) + ' nm';
+    $('airo').textContent = num(state.air * 100, 0) + ' %';
+    $('hgto').textContent = num(state.h, 1) + ' mm';
+    $('tlo').textContent = num(state.TL, 0) + ' K';
     tlEl.disabled = !state.lamp;
     $('tlRow').style.opacity = state.lamp ? '' : '0.6';
   }
@@ -120,7 +121,9 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   let cw = 600, ch = 420, dpr = 1, G = null, drag = null, flick = 0;
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w; ch = w < 560 ? Math.round(Math.max(380, w * 1.05)) : 440;
@@ -172,7 +175,7 @@
       LD.ball(c, lx, zy, r, rgbStr(lc));
       c.save(); c.setLineDash([5, 5]); c.strokeStyle = rgbStr(lc, 0.55); c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(lx + r, zy); c.lineTo(G.sx, zy); c.stroke(); c.restore();
-      LD.pill(c, T('燈 ', 'Lamp ') + num(state.TL, 0) + ' K', Math.max(4, lx - r), zy + r + 22, pal.muted, 'left', '600 11px ' + FONT);
+      LD.pill(c, T('燈 ', 'Lamp ') + num(state.TL, 0) + ' K', Math.max(4, lx - r), zy + r + 22, pal.muted, 'left', '600 11px ' + FONT);
     }
     // ---- 溫度色條 ----
     const tbX = bx - G.tubeR * 3.3 - 26, tbW = 10, hMax = 135;
@@ -307,7 +310,7 @@
     if (sampleMetals().length) { c.fillStyle = 'rgba(245,245,245,0.85)'; c.beginPath(); c.arc(bx, wy + 3.5, 2.2, 0, 7); c.fill(); }
     // 拖曳提示
     if (drag || hoverWire) { c.strokeStyle = LD.alpha(pal.accent, 0.6); c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.arc(bx, wy, 11, 0, 7); c.stroke(); c.setLineDash([]); }
-    const lab = num(Tw - 273.15, 0) + ' °C';
+    const lab = num(Tw - 273.15, 0) + ' °C';
     LD.pill(c, T('白金絲 ', 'Wire ') + lab, bx + Math.max(flameR(state.h, S.F), G.tubeR) + 8, wy + 21, pal.text, 'left', '600 11px ' + FONT);
   }
   function spectroscope(c, zy) {
@@ -346,7 +349,7 @@
       }
     }
     list.forEach(function (l) {
-      const ang = 0.35 + 1.15 * ((1 / (l.lam * l.lam)) - 1 / (800 * 800)) / (1 / (380 * 380) - 1 / (800 * 800));   // 折射率 ∝ 1/λ²（柯西）
+      const ang = 0.35 + 1.15 * ((1 / (l.lam * l.lam)) - 1 / (800 * 800)) / (1 / (380 * 380) - 1 / (800 * 800));   // 折射率 ∝ 1/λ^2（柯西）
       const L = Math.min(cw - ex - 8, (narrow ? 50 : 80));
       const rgb = C.wavelengthRGB(l.lam) || [200, 200, 200], a = clamp(Math.sqrt(l.v / (vm || 1)), 0.08, 1);
       c.strokeStyle = rgbStr(rgb, a); c.lineWidth = 2;
@@ -387,7 +390,7 @@
     for (let lam = 400; lam <= 800; lam += step) {
       const x = x0 + (lam - C.LMIN) / nmpp;
       c.beginPath(); c.moveTo(x + 0.5, y0 + h); c.lineTo(x + 0.5, y0 + h + 4); c.stroke();
-      LD.haloText(c, String(lam), x, y0 + h + 15, pal.muted, 'center', 'alphabetic', '11px ' + FONT);
+      LD.haloText(c, String(lam), x, y0 + h + 15, pal.muted, lam === C.LMAX ? 'right' : 'center', 'alphabetic', '11px ' + FONT);
     }
     LD.haloText(c, T('波長（nm）', 'Wavelength (nm)'), x0 + w, y0 - 5, pal.muted, 'right', 'alphabetic', '11px ' + FONT);
     // 游標
@@ -397,9 +400,16 @@
     LD.haloText(c, T('目鏡中看到的光譜', 'Seen in the eyepiece'), x0 + 2, y0 - 5, pal.muted, 'left', 'alphabetic', '600 11px ' + FONT);
   }
 
+  document.querySelectorAll('[data-wire-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      acted();
+      setSlider(hEl, clamp(val(hEl) + Number(button.dataset.wireStep) * 0.5, 0, 120));
+    });
+  });
+
   // ---- 拖曳白金絲 ----
   let hoverWire = false;
-  function cpt(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+  function cpt(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cw / r.width, (e.clientY - r.top) * ch / r.height]; }
   function onWire(p) { const wy = yOf(state.h); return Math.abs(p[1] - wy) < 24 && p[0] > G.bx - 24 && p[0] < G.coX + 4; }
   cv.addEventListener('pointerdown', function (e) {
     const p = cpt(e);
@@ -518,7 +528,7 @@
     if (cx >= L - 1 && cx <= L + W + 1) {
       c.save(); c.strokeStyle = pal.accent; c.lineWidth = 1.5; c.setLineDash([5, 4]);
       c.beginPath(); c.moveTo(Math.round(cx) + 0.5, Tp); c.lineTo(Math.round(cx) + 0.5, Tp + H); c.stroke(); c.restore();
-      LD.pill(c, num(state.cur, lamDec()) + ' nm', clamp(cx, L + 34, L + W - 34), Tp - 4, pal.accent, 'center', '700 11px ' + FONT);
+      LD.pill(c, num(state.cur, lamDec()) + ' nm', clamp(cx, L + 34, L + W - 34), Tp - 4, pal.accent, 'center', '700 11px ' + FONT);
     }
   }
   function graphLam(e) { const r = gcv.getBoundingClientRect(), x = e.clientX - r.left; return GR ? clamp(GR.a + (x - GR.L) / GR.W * (GR.b - GR.a), C.LMIN, C.LMAX) : state.cur; }
@@ -542,15 +552,15 @@
     const l = state.cur, e = C.photonEV(l), vm = visMax(), v = dispVal(l);
     const n = nearestAll(l);
     const rows = [
-      [T('游標的波長', 'Cursor wavelength'), num(l, lamDec()) + ' nm', true],
-      [T('光子能量', 'Photon energy'), num(e, 3) + ' eV'],
-      [T('每莫耳光子', 'Per mole of photons'), num(e * C.EV_KJ, 1) + ' kJ/mol'],
-      [T('相對亮度', 'Relative brightness'), vm > 0 ? (v / vm < 0.001 && v > 0 ? '< 0.1%' : num(100 * v / vm, 1) + '%') : '—']
+      [T('游標的波長', 'Cursor wavelength'), num(l, lamDec()) + ' nm', true],
+      [T('光子能量', 'Photon energy'), num(e, 3) + ' eV'],
+      [T('每莫耳光子', 'Per mole of photons'), num(e * C.EV_KJ, 1) + ' kJ/mol'],
+      [T('相對亮度', 'Relative brightness'), vm > 0 ? (v / vm < 0.001 && v > 0 ? '< 0.1 %' : num(100 * v / vm, 1) + ' %') : '—']
     ];
     let html = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[2] ? ' class="big"' : '') + '>' + r[1] + '</dd>'; }).join('');
     if (n && n.d < 3) {
       html += '<dt>' + T('最接近的已知譜線', 'Nearest known line') + '<small>' + T('（九種金屬的原子譜線表）', '(atomic lines of the nine metals)') + '</small></dt><dd>' +
-        n.el + ' ' + num(n.lam, 3) + ' nm<br><small>' + mName(n.el) + T('，相差 ', ', off by ') + num(n.d, 3) + ' nm</small></dd>';
+        n.el + ' ' + num(n.lam, 3) + ' nm<br><small>' + mName(n.el) + T('，相差 ', ', off by ') + num(n.d, 3) + ' nm</small></dd>';
     }
     $('curOut').innerHTML = html;
   }
@@ -619,9 +629,11 @@
   // ======================= 能階圖 =======================
   const ecv = $('ecv'), ectx = ecv.getContext('2d');
   let ew = 300, eh = 230, edpr = 1;
-  function resizeEnergy() {
+  function resizeEnergy(height) {
     const w = ecv.clientWidth; if (!w) return;
-    edpr = Math.min(window.devicePixelRatio || 1, 2); ew = w; eh = 230;
+    edpr = Math.min(window.devicePixelRatio || 1, 2); ew = w;
+    if (height !== undefined) eh = height;
+    ecv.style.height = eh + 'px';
     ecv.width = Math.round(ew * edpr); ecv.height = Math.round(eh * edpr);
   }
   /** 組態「2p6 3s」→ 去掉內層填滿的殼層，傳回 [[基字, 上標], …] */
@@ -653,12 +665,15 @@
   }
   function drawEnergy() {
     const c = ectx;
-    c.setTransform(edpr, 0, 0, edpr, 0, 0);
-    LD.backdrop(c, ew, eh);
     const sel = energyElement(), m = C.METALS[sel.el];
     const lv = {};
     m.lines.forEach(function (l) { lv[Math.round(l.Ei)] = { E: l.Ei, lab: l.lo }; lv[Math.round(l.Ek)] = { E: l.Ek, lab: l.up }; });
     const levels = Object.keys(lv).map(function (k) { return lv[k]; }).sort(function (a, b) { return a.E - b.E; });
+    const labelGap = 17;
+    const height = Math.max(230, 54 + (levels.length - 1) * labelGap);
+    if (eh !== height) resizeEnergy(height);
+    c.setTransform(edpr, 0, 0, edpr, 0, 0);
+    LD.backdrop(c, ew, eh);
     const Emax = levels[levels.length - 1].E / 8065.544;
     const L = 40, R = ew < 330 ? 96 : 116, Tp = 36, B = 14, H = eh - Tp - B, W = ew - L - R;
     const ye = function (cm) { return Tp + H - (cm / 8065.544) / (Emax * 1.05) * H; };
@@ -669,11 +684,17 @@
     for (let e = 0; e <= Emax * 1.05; e += st) { const y = ye(e * 8065.544); LD.haloText(c, String(e), L - 12, y + 4, pal.muted, 'right', 'alphabetic', '10px ' + FONT); }
     LD.haloText(c, 'eV', L - 12, Tp - 6, pal.muted, 'right', 'alphabetic', '10px ' + FONT);
     // 能階
-    let lastY = 1e9;
-    levels.forEach(function (v) {
+    // 只移動文字。引線仍指向按能量比例畫出的原位。
+    const labels = levels.map(function (v) { return ye(v.E); });
+    for (let i = 1; i < labels.length; i++) labels[i] = Math.min(labels[i], labels[i - 1] - labelGap);
+    labels[labels.length - 1] = Math.max(Tp, labels[labels.length - 1]);
+    for (let i = labels.length - 2; i >= 0; i--) labels[i] = Math.max(labels[i], labels[i + 1] + labelGap);
+    levels.forEach(function (v, i) {
       const y = ye(v.E);
       c.strokeStyle = pal.text; c.lineWidth = 1.5; c.beginPath(); c.moveTo(L, Math.round(y) + 0.5); c.lineTo(L + W, Math.round(y) + 0.5); c.stroke();
-      if (Math.abs(lastY - y) > 11) { drawLevelLabel(c, v.lab, L + W + 4, y + 4, pal.muted); lastY = y; }
+      c.strokeStyle = pal.muted; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(L + W, y); c.lineTo(L + W + 9, labels[i]); c.stroke();
+      drawLevelLabel(c, v.lab, L + W + 12, labels[i] + 4, pal.text);
     });
     // 躍遷
     const lines = m.lines.slice().sort(function (a, b) { return a.lam - b.lam; });
@@ -682,30 +703,30 @@
       const on = sel.lam != null && Math.abs(l.lam - sel.lam) < 1e-6;
       const rgb = C.wavelengthRGB(l.lam) || [150, 150, 160];
       LD.arrow(c, x, ye(l.Ek), x, ye(l.Ei), rgbStr(rgb), on ? 3 : 1.6);
-      if (on) LD.pill(c, num(l.lam, 1) + ' nm', clamp(x, L + 30, L + W - 30), (ye(l.Ek) + ye(l.Ei)) / 2 + 8, pal.text, 'center', '700 11px ' + FONT);
+      if (on) LD.pill(c, num(l.lam, 1) + ' nm', clamp(x, L + 30, L + W - 30), (ye(l.Ek) + ye(l.Ei)) / 2 + 8, pal.text, 'center', '700 11px ' + FONT);
     });
     $('ecvHint').textContent = sel.lam != null
-      ? T('箭頭是' + mName(sel.el) + '原子的電子從高能階掉到低能階、放出光子；粗箭頭是游標附近的 ' + num(sel.lam, 1) + ' nm。', 'Arrows: an electron in a ' + C.METALS[sel.el].en + ' atom drops from a higher to a lower level and gives out a photon. The thick arrow is the ' + num(sel.lam, 1) + ' nm line near the cursor.')
+      ? T('箭頭是' + mName(sel.el) + '原子的電子從高能階掉到低能階、放出光子；粗箭頭是游標附近的 ' + num(sel.lam, 1) + ' nm。', 'Arrows: an electron in a ' + C.METALS[sel.el].en + ' atom drops from a higher to a lower level and gives out a photon. The thick arrow is the ' + num(sel.lam, 1) + ' nm line near the cursor.')
       : T('移動游標到一條線上，看它是哪兩個能階之間的躍遷。', 'Move the cursor onto a line to see which two levels it comes from.');
   }
 
   // ======================= 讀數 =======================
-  function status(t) { $('status').textContent = t; }
+  function status(t) { $('status').innerHTML = t; }
   function drawReadout() {
     const F = S.F, ms = sampleMetals();
-    const sample = unk.active ? T('未知樣品', 'Unknown sample') : ms.length ? ms.map(function (s) { return C.METALS[s].salt.replace(/(\d)/, '<sub>$1</sub>'); }).join(' + ') : T('沒有（乾淨的白金絲）', 'None (clean wire)');
+    const sample = unk.active ? T('未知樣品', 'Unknown sample') : ms.length ? ms.map(saltHTML).join(' + ') : T('沒有（乾淨的白金絲）', 'None (clean wire)');
     const swatch = col && col.rgb && (col.Ym > 0 || ms.length) ? '<span class="swatch" style="background:' + rgbStr(col.rgb) + '"></span>' : '';
     const cname = !ms.length ? T('淡藍（本生燈本身）', 'pale blue (the burner itself)') : col && col.name ? T(col.name.zh, col.name.en) + (brightOf(col.Ym) < 0.2 ? T('（很暗）', ' (very faint)') : '') : '—';
     const rows = [
       [T('樣品', 'Sample'), sample],
       [T('火焰顏色', 'Flame colour') + (state.cobalt ? '<small>' + T('（透過鈷玻璃）', '(through cobalt glass)') + '</small>' : ''), swatch + cname, true],
-      [T('白金絲處的溫度', 'Temperature at the wire'), num(S.Tw, 0) + ' K（' + num(S.Tw - 273.15, 0) + ' °C）'],
-      [T('發光區的平均溫度', 'Mean temperature of the glowing zone') + '<small>' + T('（白金絲上方 10 mm）', '(10 mm above the wire)') + '</small>', num(S.T, 0) + ' K'],
-      [T('最熱的地方', 'Hottest point'), num(F.hp, 1) + ' mm・' + num(F.Tmax, 0) + ' K'],
-      [T('內焰高度', 'Inner-cone height'), F.Hc > 0 ? num(F.Hc, 1) + ' mm' : T('沒有內焰', 'no inner cone')]
+      [T('白金絲處的溫度', 'Temperature at the wire'), num(S.Tw, 0) + ' K' + T('（', ' (') + num(S.Tw - 273.15, 0) + ' °C' + T('）', ')')],
+      [T('發光區的平均溫度', 'Mean temperature of the glowing zone') + '<small>' + T('（白金絲上方 10 mm）', '(10 mm above the wire)') + '</small>', num(S.T, 0) + ' K'],
+      [T('最熱的地方', 'Hottest point'), num(F.hp, 1) + ' mm・' + num(F.Tmax, 0) + ' K'],
+      [T('內焰高度', 'Inner-cone height'), F.Hc > 0 ? num(F.Hc, 1) + ' mm' : T('沒有內焰', 'no inner cone')]
     ];
-    if (state.lamp) rows.push([T('燈的亮度溫度', 'Lamp brightness temperature'), num(state.TL, 0) + ' K']);
-    $('readout').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[2] ? ' class="big"' : '') + '>' + r[1] + '</dd>'; }).join('').replace(/K（/g, isEn() ? 'K (' : 'K（').replace(/ °C）/g, isEn() ? ' °C)' : ' °C）');
+    if (state.lamp) rows.push([T('燈的亮度溫度', 'Lamp brightness temperature'), num(state.TL, 0) + ' K']);
+    $('readout').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[2] ? ' class="big"' : '') + '>' + r[1] + '</dd>'; }).join('');
     const lg = [];
     lg.push('<span><i style="background:linear-gradient(90deg,' + tempColor(500) + ',' + tempColor(1200) + ',' + tempColor(1850) + ')"></i>' + T('溫度（色條）', 'Temperature (colour bar)') + '</span>');
     lg.push('<span><i style="background:' + pal.pos + ';height:8px;width:8px;border-radius:50%"></i>' + T('最熱的地方', 'Hottest point') + '</span>');
@@ -751,7 +772,7 @@
       else { state.metals.push(m); if (state.metals.length > 2) state.metals.shift(); if (snd()) window.LabSound.noise({ dur: 0.22, gain: 0.22, filter: 3400, q: 0.8 }); }
       setSampleUI(); changed();
       const ms = state.metals;
-      if (ms.length) status(T('白金絲沾上 ', 'The wire carries ') + ms.map(function (s) { return C.METALS[s].salt; }).join(' + ') + T(' 的溶液。火焰：', ' solution. Flame: ') + (col && col.name ? T(col.name.zh, col.name.en) : '—') + T('。', '.'));
+      if (ms.length) status(T('白金絲沾上 ', 'The wire carries ') + ms.map(saltHTML).join(' + ') + T(' 的溶液。火焰：', ' solution. Flame: ') + (col && col.name ? T(col.name.zh, col.name.en) : '—') + T('。', '.'));
       else status(T('白金絲上沒有樣品。', 'No sample on the wire.'));
     });
   });
@@ -839,7 +860,7 @@
     if (unk.hist.length > 12) unk.hist.shift();
     emit('identify', { correct: ok, n: a.kind, metals: a.metals.slice(), answer: unk.answer.slice(), streak: unk.streak, mixNoCo: unk.mixNoCo, usedCobalt: a.usedCobalt, usedScope: a.usedScope });
     $('unkOut').innerHTML = (ok ? '<span class="ok">' + T('答對了！', 'Correct!') + '</span> ' : '<span class="no">' + T('不對。', 'Not quite.') + '</span> ') +
-      T('答案是 ', 'It was ') + a.metals.map(function (s) { return mName(s) + '（' + C.METALS[s].salt + '）'; }).join(T('與', ' and ')).replace(/（/g, isEn() ? ' (' : '（').replace(/）/g, isEn() ? ')' : '）') +
+      T('答案是 ', 'It was ') + a.metals.map(function (s) { return mName(s) + '（' + saltHTML(s) + '）'; }).join(T('與', ' and ')).replace(/（/g, isEn() ? ' (' : '（').replace(/）/g, isEn() ? ')' : '）') +
       T('。連續答對 ', '. Streak: ') + unk.streak + T(' 題。', '.');
     if (snd()) {
       if (ok) { window.LabSound.tone({ freq: 784, dur: 0.1, gain: 0.14 }); window.LabSound.tone({ freq: 1047, dur: 0.16, gain: 0.12, delay: 0.09 }); }
@@ -891,8 +912,8 @@
       },
       hud: function () {
         return {
-          tl: T('白金絲 ', 'Wire ') + num(state.h, 1) + ' mm・' + num(S.Tw - 273.15, 0) + ' °C',
-          tr: (unk.active ? T('未知樣品', 'Unknown sample') : sampleMetals().length ? sampleMetals().map(function (s) { return C.METALS[s].salt; }).join(' + ') : T('沒有樣品', 'No sample')) +
+          tl: T('白金絲 ', 'Wire ') + num(state.h, 1) + ' mm・' + num(S.Tw - 273.15, 0) + ' °C',
+          tr: (unk.active ? T('未知樣品', 'Unknown sample') : sampleMetals().length ? sampleMetals().map(saltHTML).join(' + ') : T('沒有樣品', 'No sample')) +
             (col && col.name && sampleMetals().length ? '・' + T(col.name.zh, col.name.en) : '')
         };
       },
@@ -968,7 +989,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0, le = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth && gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
     new ResizeObserver(function () { if (ecv.clientWidth && ecv.clientWidth !== le) { le = ecv.clientWidth; resizeEnergy(); drawEnergy(); } }).observe(ecv);
   } else window.addEventListener('resize', function () { resize(); resizeGraph(); resizeEnergy(); refresh(); });

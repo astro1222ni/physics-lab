@@ -12,6 +12,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const P = window.PhCore, LD = window.LabDraw;
   if (!P || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -55,9 +65,9 @@
   /** 解離百分率（α 是小數） */
   function pct(a) {
     if (a == null || !isFinite(a)) return '—';
-    if (a >= 0.99995) return '100%';
-    if (a * 100 < 1e-4) return sciHTML(a * 100, 3) + '%';
-    return sigf(a * 100, 3) + '%';
+    if (a >= 0.99995) return '100 %';
+    if (a * 100 < 1e-4) return sciHTML(a * 100, 3) + ' %';
+    return sigf(a * 100, 3) + ' %';
   }
   function pctPlain(a) { return pct(a).replace(/<sup>(.*?)<\/sup>/, '^$1').replace(/<[^>]+>/g, ''); }
 
@@ -133,15 +143,15 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   const gcv = $('gcv'), gctx = gcv.getContext('2d');
   const elC = { A: $('cA'), B: $('cB') }, elT = $('temp'), elInd = $('ind');
-  const logMap = {
-    toValue: function (p) { return Math.round((-8 + p / 100) * 100) / 100; },
-    toPos: function (v) { return Math.round((Math.max(-8, Math.min(0, v)) + 8) * 100); },
-    min: -8, max: 0, decimals: 2
-  };
-  if (window.LabNum) { window.LabNum.register(elC.A, logMap); window.LabNum.register(elC.B, logMap); }
-  function val(el) { return window.LabNum ? window.LabNum.value(el) : (el === elT ? +el.value : logMap.toValue(+el.value)); }
   let syncing = false;
-  function setVal(el, v) { syncing = true; if (window.LabNum) window.LabNum.set(el, v); else el.value = el === elT ? v : logMap.toPos(v); syncing = false; }
+  function val(el) { return window.LabNum ? LabNum.value(el) : Number(el.value); }
+  function setVal(el, value) {
+    if (el !== elT) { el.value = Math.round((value - P.LOGC_MIN) * 100); return; }
+    syncing = true;
+    if (window.LabNum) LabNum.set(el, value); else el.value = value;
+    syncing = false;
+  }
+  function concentrationText(logC) { return String(Number((10 ** logC).toPrecision(12))); }
 
   // ======================= 顏色 =======================
   let col = {};
@@ -264,7 +274,7 @@
     return { cw: cw, bw: bw, bh: bh, top: top, meterH: meterH, yb: yb, R: R, zy: zy, sy: sy, H: Math.round(sy + 16 + 52), cx: [cw * 0.5, cw * 1.5] };
   }
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     G = layout(w);
@@ -513,7 +523,7 @@
     c.fillStyle = col.muted; c.font = '11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
     for (let k = 0; k <= 14; k++) {
       const x = phX(k);
-      if (W < 480 && k % 2) { c.fillRect(Math.round(x), y + h, 1, 3); continue; }
+      if (W < 480 && k % 2 && k !== 7 && k !== 11) { c.fillRect(Math.round(x), y + h, 1, 3); continue; }
       c.fillRect(Math.round(x), y + h, 1, 4);
       c.fillText(String(k), x, y + h + 5);
     }
@@ -599,7 +609,7 @@
     // 刻度文字
     c.fillStyle = col.muted; c.font = '11px ' + FONT;
     c.textAlign = 'right'; c.textBaseline = 'middle';
-    ys.forEach(function (v) { c.fillText(isPH ? String(v) : v + '%', L - 5, Y(v)); });
+    ys.forEach(function (v) { c.fillText(isPH ? String(v) : v + ' %', L - 5, Y(v)); });
     for (let k = -8; k <= 0; k++) {
       if (GW < 480 && k % 2) continue;
       if (k === 0) { LD.haloText(c, '1', X(k), Tp + ph + 15, col.muted, 'center', 'middle', '11px ' + FONT); continue; }
@@ -670,11 +680,11 @@
     lg.push('<span><span class="ring" style="color:' + col.muted + '"></span>' + T('現在', 'now') + '</span>');
     if (state.tab === 'ph') lg.push('<span><i class="ln dash" style="color:' + col.muted + '"></i>' + T('中性', 'neutral') + '</span>');
     $('gLegend').innerHTML = lg.join('');
-    $('gHint').textContent = state.tab === 'ph'
-      ? T('強酸稀釋 10 倍 pH 加 1（斜率 1）；弱酸約加 0.5（斜率 ½）。很稀的時候，每條曲線都彎向中性線，不會越過去。淡色的點是在別的溫度記錄的。',
+    $('gHint').innerHTML = state.tab === 'ph'
+      ? T('強酸稀釋 10 倍 pH 加 1（斜率 1）；弱酸約加 0.5（斜率 ½）。很稀的時候，每條曲線都彎向中性線，不會越過去。淡色的點是在別的溫度記錄的。',
         'Diluting a strong acid ten times adds 1 to the pH (slope 1); a weak acid adds about 0.5 (slope ½). When very dilute, every curve bends towards the neutral line without crossing it. Faded points were recorded at another temperature.')
-      : T('弱酸越稀，解離百分率越大（奧士華稀釋定律）；但 Ka 比 10^-7 還小的酸，再稀也有上限，因為水本身的 H3O+ 會把平衡推回去。',
-        'The more dilute a weak acid, the larger its degree of ionisation (Ostwald’s dilution law); but an acid with Ka below about 10^-7 has a ceiling, because the H3O+ from water itself pushes the equilibrium back.');
+      : T('弱酸越稀，解離百分率越大（奧士華稀釋定律）；但 K<sub>a</sub> 比 10<sup>−7</sup> 還小的酸，再稀也有上限，因為水本身的 H<sub>3</sub>O<sup>+</sup> 會把平衡推回去。',
+        'The more dilute a weak acid, the larger its degree of ionisation (Ostwald’s dilution law); but an acid with K<sub>a</sub> below about 10<sup>−7</sup> has a ceiling, because the H<sub>3</sub>O<sup>+</sup> from water itself pushes the equilibrium back.');
   }
 
   // ======================= 讀數與紀錄表 =======================
@@ -701,7 +711,7 @@
     const ap = function (r) { return r.kind === 'water' || (r.sp === 'HX' && !unkRevealed) ? '—' : num(r.pHapprox, 2); };
     h += row(T('近似式的 pH', 'Shortcut pH'), ap(a), ap(b));
     $('nowTbl').innerHTML = h + '</tbody>';
-    $('readout').innerHTML = '<dt>K<sub>w</sub>' + T('（', ' (') + num(state.T, 0) + ' °C' + T('）', ')') + '</dt><dd>' + sciAlwaysHTML(a.Kw, 3) + '</dd>' +
+    $('readout').innerHTML = '<dt>K<sub>w</sub>' + T('（', ' (') + num(state.T, 0) + ' °C' + T('）', ')') + '</dt><dd>' + sciAlwaysHTML(a.Kw, 3) + '</dd>' +
       '<dt>pK<sub>w</sub></dt><dd>' + num(a.pKw, 2) + '</dd>' +
       '<dt>' + T('中性時的 pH', 'Neutral pH') + '<small>' + T('[H<sub>3</sub>O<sup>+</sup>] = [OH<sup>−</sup>]', '[H<sub>3</sub>O<sup>+</sup>] = [OH<sup>−</sup>]') + '</small></dt><dd>' + num(a.neutral, 2) + '</dd>';
   }
@@ -740,12 +750,15 @@
     IDS.forEach(function (id) {
       const b = state.b[id], el = elC[id], water = b.sp === 'water';
       el.disabled = water;
-      $('c' + id + 'o').innerHTML = water ? T('不適用', 'not used') : '10<sup>' + num(b.logC, 2) + '</sup> M';
-      $('c' + id + 'v').innerHTML = water ? T('純水不用設定濃度。', 'Pure water has no solute concentration.') : '= ' + sciAlwaysHTML(Math.pow(10, b.logC), 3) + ' M' + (b.logC <= -6.995 ? T('（比水本身的 H<sub>3</sub>O<sup>+</sup> 還稀）', ' (more dilute than the H<sub>3</sub>O<sup>+</sup> from water itself)') : '');
+      const field = $('conc' + id);
+      field.disabled = water;
+      if (water || field !== document.activeElement) field.value = water ? '' : concentrationText(b.logC);
+      el.setAttribute('aria-valuetext', water ? T('不適用', 'Not applicable') : concentrationText(b.logC) + ' mol/L');
+      $('c' + id + 'v').innerHTML = water ? T('純水不用設定濃度。', 'Pure water has no solute concentration.') : '= ' + sciAlwaysHTML(Math.pow(10, b.logC), 3) + ' M' + (b.logC <= -6.995 ? T('（比水本身的 H<sub>3</sub>O<sup>+</sup> 還稀）', ' (more dilute than the H<sub>3</sub>O<sup>+</sup> from water itself)') : '');
       $('dil' + id).disabled = water || b.logC - 1 < -8 - 1e-9;
       document.querySelectorAll('#sp' + id + ' button').forEach(function (bt) { bt.setAttribute('aria-pressed', String(bt.dataset.sp === b.sp)); });
     });
-    $('tempo').textContent = num(state.T, 0) + ' °C';
+    $('tempo').textContent = num(state.T, 0) + ' °C';
   }
   function refreshAll() {
     compute();
@@ -790,9 +803,8 @@
     else s += T('。', '.');
     setStatus(s);
   }
-  function onConc(id) {
-    if (syncing) return;
-    const v = Math.max(-8, Math.min(0, val(elC[id])));
+  function onConc(id, v) {
+    if (syncing || elC[id].disabled) return;
     if (v === state.b[id].logC) { updateControls(); return; }
     state.b[id].logC = v;
     chain[id] = null;
@@ -811,7 +823,7 @@
     if (b.sp === 'water' || b.logC - 1 < -8 - 1e-9) return;
     const before = sol[id];
     const ch = chain[id] || { logC0: before.logC, pH0: before.pH, alpha0: before.alpha, k: 0 };
-    b.logC = Math.round((b.logC - 1) * 100) / 100;
+    b.logC = Math.max(P.LOGC_MIN, b.logC - 1);
     setVal(elC[id], b.logC);
     refreshAll();
     const after = sol[id];
@@ -825,9 +837,9 @@
       window.LabSound.sweep({ from: 700, to: 420, dur: 0.3, gain: 0.12, delay: 0.05 });
     }
     const dp = after.pH - before.pH;
-    setStatus(id + T(' 杯加水稀釋 10 倍：pH ', ': diluted ten times — pH ') + num(before.pH, 2) + ' → ' + num(after.pH, 2) + T('（', ' (') + (dp >= 0 ? '+' : '−') + num(Math.abs(dp), 2) + T('）', ')') +
+    setStatus(id + T(' 杯加水稀釋 10 倍：pH ', ': diluted ten times — pH ') + num(before.pH, 2) + ' → ' + num(after.pH, 2) + T('（', ' (') + (dp >= 0 ? '+' : '−') + num(Math.abs(dp), 2) + T('）', ')') +
       (after.kind === 'wa' || after.kind === 'wb' ? (after.sp === 'HX' && !unkRevealed ? '' : T('；解離百分率 ', '; ionised ') + pct(before.alpha) + ' → ' + pct(after.alpha)) : '') +
-      (ch.k > 1 ? T('；這一串已稀釋 ', '; diluted ') + ch.k + T(' 次（共 10', ' times in a row (10') + '<sup>' + ch.k + '</sup>' + T(' 倍）', ' times in all)') : '') + T('。', '.'));
+      (ch.k > 1 ? T('；這一串已稀釋 ', '; diluted ') + ch.k + T(' 次（共 10', ' times in a row (10') + '<sup>' + ch.k + '</sup>' + T(' 倍）', ' times in all)') : '') + T('。', '.'));
     emit('dilute', { id: id, sp: b.sp, kind: after.kind, T: state.T, k: ch.k, logC0: ch.logC0, pH0: ch.pH0, alpha0: ch.alpha0,
       pHprev: before.pH, alphaPrev: before.alpha, logC: after.logC, pH: after.pH, alpha: after.alpha, alphaLim: after.alphaLim, K: after.K, Kw: after.Kw, dpH: dp });
   }
@@ -993,7 +1005,26 @@
     $('soundLabel').textContent = on ? T('音效：開', 'Sound: on') : T('音效：關', 'Sound: off');
   }
   IDS.forEach(function (id) {
-    elC[id].addEventListener('input', function () { onConc(id); });
+    const field = $('conc' + id), note = $('concNote' + id);
+    elC[id].addEventListener('input', function () {
+      note.textContent = '';
+      onConc(id, P.LOGC_MIN + Number(elC[id].value) / 100);
+    });
+    field.addEventListener('change', function () {
+      if (field.disabled) return;
+      const result = P.parseConcentration(field.value);
+      if (result) {
+        setVal(elC[id], result.logC);
+        onConc(id, result.logC);
+      }
+      field.value = concentrationText(state.b[id].logC);
+      note.textContent = !result ? T('請輸入濃度，例如 0.01 或 1e-3。', 'Enter a concentration such as 0.01 or 1e-3.') :
+        result.clamped ? T('範圍為 1e-8 至 1 mol/L，已調為 ', 'Range 1e-8 to 1 mol/L. Adjusted to ') + field.value + ' mol/L.' : '';
+    });
+    field.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') field.value = concentrationText(state.b[id].logC);
+      if (event.key === 'Enter' || event.key === 'Escape') { event.preventDefault(); field.blur(); }
+    });
     $('dil' + id).addEventListener('click', function () { dilute(id); });
   });
   elT.addEventListener('input', onTemp);
@@ -1063,4 +1094,17 @@
   refreshAll();
   kick();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：粒子不會移動，讀數照常更新。', 'Reduced motion is on: the particles stay still, but every reading still updates.'));
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('nowTbl').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

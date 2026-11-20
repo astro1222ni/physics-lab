@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Mole and Avogadro's Number | Astro Ni Lab">莫耳與亞佛加厥數｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 莫耳與亞佛加厥數頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .mc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -75,7 +75,7 @@
     .mc .slider input[type="range"] { height: 28px; margin: 0; }
     .mc sub, .mc sup, .notes sub, .notes sup { font-size: .75em; }
     .mc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
-    .mc select { font: inherit; width: 100%; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .mc select, select:has(+ .formula-choice) { font: inherit; width: 100%; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
     .mc .pan-a h2 { color: var(--neg); }
     .mc .pan-b h2 { color: var(--pos); }
     .mc .unit-seg { margin: 8px 0 0; }
@@ -105,6 +105,38 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    .formula-choice { display: inline-block; margin-inline: .25em; color: var(--accent); font-size: .9em; font-weight: 600; white-space: nowrap; }
+    .formula-choice:empty { display: none; }
+    table.cmp { table-layout: fixed; }
+    table.cmp th:first-child, table.cmp td:first-child { width: 32%; white-space: normal; }
+    table.cmp td { overflow-wrap: normal; }
+    #readout .tablewrap { max-height: none; }
+    #readout table.cmp th:first-child, #readout table.cmp td:first-child { width: 34%; }
   </style>
 </head>
 <body data-en-ready>
@@ -112,11 +144,16 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;chemistry.html&quot;&gt;Chemistry&lt;/a&gt; / &lt;a href=&quot;chemistry.html#reaction&quot;&gt;Reactions and Energy&lt;/a&gt; / &lt;a href=&quot;chemistry.html#ch-stoich&quot;&gt;Stoichiometry&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="chemistry.html">化學</a> / <a href="chemistry.html#reaction">化學反應與能量</a> / <a href="chemistry.html#ch-stoich">化學計量</a></nav>
       <h1 data-en="The Mole and Avogadro's Number">莫耳與亞佛加厥數</h1>
-      <p data-en="Put two substances on a balance and convert between mass, amount (mol), number of particles and gas volume. One mole of copper, of water and of hydrogen weigh and fill very different amounts — yet they hold exactly the same number of particles. Zoom in, power of ten by power of ten, until single molecules appear, then estimate Avogadro's number yourself from a film of oleic acid one molecule thick.">把兩種物質放上天平，在質量、莫耳數、粒子數、氣體體積之間互相換算。1 莫耳的銅、水、氫氣，重量與大小差很多，粒子數卻一模一樣。再用放大鏡一次放大十倍，一直放大到看見單一個分子；最後用一層只有一個分子厚的油酸膜，自己估計亞佛加厥數。</p>
+      <p data-en="Put two substances on a balance and convert between mass, amount (mol), number of particles and gas volume. One mole of copper, of water and of hydrogen weigh and fill very different amounts — yet they hold exactly the same number of particles. Zoom in, power of ten by power of ten, until single molecules appear, then estimate Avogadro's number yourself from a film of oleic acid one molecule thick.">把兩種物質放上天平，在質量、莫耳數、粒子數、氣體體積之間互相換算。1 莫耳的銅、水、氫氣，重量與大小差很多，粒子數卻一模一樣。再用放大鏡一次放大十倍，一直放大到看見單一個分子；最後用一層只有一個分子厚的油酸膜，自己估計亞佛加厥數。</p>
     </header>
 
-    <p class="try-hint" data-en="Try it: on the right pan, switch the unit to “mol” and type 1. Both pans now hold one mole — the same number of particles — yet the balance is far from level.">試試看：把右盤的單位改成「莫耳」，數量打 1。兩盤都是 1 莫耳、粒子一樣多，天平卻一點也不平衡。</p>
-    <div class="lab mc">
+    <p class="try-hint" data-en="Try it: on the right pan, switch the unit to “mol” and type 1. Both pans now hold one mole — the same number of particles — yet the balance is far from level.">試試看：把右盤的單位改成「莫耳」，數量打 1。兩盤都是 1 莫耳、粒子一樣多，天平卻一點也不平衡。</p>
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab mc" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg3" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
@@ -132,18 +169,22 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="實驗畫面" data-en-aria-label="Experiment"></canvas>
-        <div id="view3"></div>
-        <div class="playbar" id="filmBar" hidden>
-          <button type="button" id="calBtn" data-en="Calibrate dropper">校正滴管</button>
-          <button type="button" id="dropBtn" class="primary" data-en="Add a drop">滴一滴</button>
-          <button type="button" id="measBtn" data-en="Measure area">量面積</button>
-          <button type="button" id="trayBtn" data-en="New tray" title="倒掉這盤水，換一盤乾淨的水重新撒粉" data-en-title="Pour this tray away and start with clean water and fresh powder">換一盤水</button>
-          <button type="button" id="clearAll" data-en="Clear all" title="清除所有面積紀錄（設定保留）" data-en-title="Clear all area records (settings kept)">全部清除</button>
-        </div>
-        <div class="playbar" id="zoomBar" hidden>
-          <button type="button" id="cutBtn" class="primary" data-en="Cut in half">對切一刀</button>
-          <button type="button" id="uncutBtn" data-en="Put back together">接回去</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="實驗畫面" data-en-aria-label="Experiment"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar" id="filmBar" hidden>
+            <button type="button" id="calBtn" data-en="Calibrate dropper">校正滴管</button>
+            <button type="button" id="dropBtn" class="primary" data-en="Add a drop">滴一滴</button>
+            <button type="button" id="measBtn" data-en="Measure area">量面積</button>
+            <button type="button" id="trayBtn" data-en="New tray" title="倒掉這盤水，換一盤乾淨的水重新撒粉" data-en-title="Pour this tray away and start with clean water and fresh powder">換一盤水</button>
+            <button type="button" id="clearAll" data-en="Clear all" title="清除所有面積紀錄（設定保留）" data-en-title="Clear all area records (settings kept)">全部清除</button>
+          </div>
+          <div class="playbar" id="zoomBar" hidden>
+            <button type="button" id="cutBtn" class="primary" data-en="Cut in half">對切一刀</button>
+            <button type="button" id="uncutBtn" data-en="Put back together">接回去</button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="stageHint"></p>
@@ -153,7 +194,7 @@
         <div id="scalePanel">
           <section class="card pan-a">
             <h2 data-en="Left pan A">左盤 A</h2>
-            <select id="subA" aria-label="左盤的物質" data-en-aria-label="Substance on the left pan"></select>
+            <select id="subA" aria-label="左盤的物質" data-en-aria-label="Substance on the left pan"></select><span class="formula-choice" id="subAFormula" aria-hidden="true"></span>
             <div class="seg4 unit-seg" id="unitA" role="group" aria-label="左盤的單位" data-en-aria-label="Unit for the left pan">
               <button type="button" data-unit="g" aria-pressed="true" data-en="g">克</button>
               <button type="button" data-unit="mol" aria-pressed="false" data-en="mol">莫耳</button>
@@ -165,7 +206,7 @@
           </section>
           <section class="card pan-b">
             <h2 data-en="Right pan B">右盤 B</h2>
-            <select id="subB" aria-label="右盤的物質" data-en-aria-label="Substance on the right pan"></select>
+            <select id="subB" aria-label="右盤的物質" data-en-aria-label="Substance on the right pan"></select><span class="formula-choice" id="subBFormula" aria-hidden="true"></span>
             <div class="seg4 unit-seg" id="unitB" role="group" aria-label="右盤的單位" data-en-aria-label="Unit for the right pan">
               <button type="button" data-unit="g" aria-pressed="true" data-en="g">克</button>
               <button type="button" data-unit="mol" aria-pressed="false" data-en="mol">莫耳</button>
@@ -178,8 +219,8 @@
           <section class="card">
             <h2 data-en="Gas conditions">氣體的條件</h2>
             <div class="seg2" id="condSeg" role="group" aria-label="氣體的條件" data-en-aria-label="Gas conditions">
-              <button type="button" data-cond="stp" aria-pressed="true" data-en="0 °C, 1 atm (STP)">0 °C、1 atm（STP）</button>
-              <button type="button" data-cond="rt" aria-pressed="false" data-en="25 °C, 1 atm">25 °C、1 atm</button>
+              <button type="button" data-cond="stp" aria-pressed="true" data-en="0 °C, 1 atm (STP)">0 °C、1 atm（STP）</button>
+              <button type="button" data-cond="rt" aria-pressed="false" data-en="25 °C, 1 atm">25 °C、1 atm</button>
             </div>
             <p class="hint" data-en="Changing a substance keeps the number you typed in its unit. Gases are treated as ideal gases.">換物質時，保留你在該單位打的數字。氣體當成理想氣體。</p>
           </section>
@@ -207,7 +248,7 @@
         <div id="filmPanel" hidden>
           <section class="card">
             <h2 data-en="Oleic-acid solution">油酸酒精溶液</h2>
-            <div class="slider"><label for="dil" data-en="1 mL of oleic acid made up with ethanol to">1 mL 油酸加酒精配成</label><output id="dilo"></output>
+            <div class="slider"><label for="dil" data-en="1 mL of oleic acid made up with ethanol to">1 mL 油酸加酒精配成</label><output id="dilo"></output>
               <input id="dil" type="range" min="200" max="4000" step="100" value="500" data-decimals="0"></div>
             <h3 data-en="Dropper">滴管</h3>
             <div class="seg3" id="dropSeg" role="group" aria-label="滴管" data-en-aria-label="Dropper">
@@ -217,9 +258,9 @@
             </div>
             <h3 data-en="Calibrate by counting drops up to">校正時數到量筒的</h3>
             <div class="seg3" id="calSeg" role="group" aria-label="校正體積" data-en-aria-label="Calibration volume">
-              <button type="button" data-cal="1" aria-pressed="true">1 mL</button>
-              <button type="button" data-cal="2" aria-pressed="false">2 mL</button>
-              <button type="button" data-cal="5" aria-pressed="false">5 mL</button>
+              <button type="button" data-cal="1" aria-pressed="true">1 mL</button>
+              <button type="button" data-cal="2" aria-pressed="false">2 mL</button>
+              <button type="button" data-cal="5" aria-pressed="false">5 mL</button>
             </div>
             <h3 data-en="Powder on the water">水面的粉</h3>
             <div class="seg3" id="powSeg" role="group" aria-label="水面的粉" data-en-aria-label="Powder on the water">
@@ -229,8 +270,8 @@
             </div>
             <h3 data-en="Grid on the glass plate">玻璃板上的格子</h3>
             <div class="seg2" id="gridSeg" role="group" aria-label="格子" data-en-aria-label="Grid">
-              <button type="button" data-grid="1" aria-pressed="true">1 cm</button>
-              <button type="button" data-grid="0.5" aria-pressed="false">0.5 cm</button>
+              <button type="button" data-grid="1" aria-pressed="true">1 cm</button>
+              <button type="button" data-grid="0.5" aria-pressed="false">0.5 cm</button>
             </div>
             <p class="hint" data-en="Changing the solution, dropper or powder starts a new tray.">改溶液、滴管或粉，會換一盤新的水。</p>
           </section>
@@ -255,7 +296,7 @@
       </aside>
     </div>
 
-    <div class="lab mc">
+    <div class="lab mc" data-scene="graphs">
       <div class="stage">
         <h2 id="gTitle" data-en="Graph">圖表</h2>
         <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
@@ -280,13 +321,13 @@
 
       <h2 style="margin-top:18px" data-en="Principle">原理</h2>
       <h3 data-en="The mole">莫耳</h3>
-      <p data-en-html="Since 2019, one mole is defined as exactly \(N_A = 6.02214076\times10^{23}\) particles (atoms, molecules or formula units) — Avogadro's number. The mass of one mole in grams has the same number as the atomic or formula mass: the molar mass \(M\) (g/mol).">2019 年起，1 莫耳定義為剛好 \(N_A = 6.02214076\times10^{23}\) 個粒子（原子、分子或化學式單位），這個數就是亞佛加厥數。1 莫耳物質的質量（以克為單位）在數值上等於它的原子量或式量，稱為莫耳質量 \(M\)（g/mol）。</p>
+      <p data-en-html="Since 2019, one mole is defined as exactly \(N_A = 6.02214076\times10^{23}\) particles (atoms, molecules or formula units) — Avogadro's number. The mass of one mole in grams has the same number as the atomic or formula mass: the molar mass \(M\) (g/mol).">2019 年起，1 莫耳定義為剛好 \(N_A = 6.02214076\times10^{23}\) 個粒子（原子、分子或化學式單位），這個數就是亞佛加厥數。1 莫耳物質的質量（以克為單位）在數值上等於它的原子量或式量，稱為莫耳質量 \(M\)（g/mol）。</p>
       <div class="formula multi">
         \[ n = \frac{m}{M} = \frac{N}{N_A} \]
         \[ n = \frac{V}{V_m} \]
         \[ V = \frac{m}{\rho} \]
       </div>
-      <p data-en-html="The middle formula is for gases, the right one for solids and liquids (ρ is the density). Avogadro's law: at the same temperature and pressure, equal volumes of all (ideal) gases hold the same number of molecules. The molar volume is \(V_m = RT/P\): 22.4 L/mol at 0 °C and 1 atm (STP), 24.5 L/mol at 25 °C and 1 atm. Solids and liquids have no such common value: their molar volume \(M/\rho\) depends on how big the particles are and how they pack.">中間的式子用於氣體，右邊的式子用於固體與液體（ρ 是密度）。亞佛加厥定律：同溫同壓下，同體積的任何（理想）氣體含有相同數目的分子。莫耳體積 \(V_m = RT/P\)：0 °C、1 atm（STP）時 22.4 L/mol，25 °C、1 atm 時 24.5 L/mol。固體與液體沒有共同的莫耳體積：\(M/\rho\) 要看粒子多大、怎麼堆積。</p>
+      <p data-en-html="The middle formula is for gases, the right one for solids and liquids (ρ is the density). Avogadro's law: at the same temperature and pressure, equal volumes of all (ideal) gases hold the same number of molecules. The molar volume is \(V_m = RT/P\): 22.4 L/mol at 0 °C and 1 atm (STP), 24.5 L/mol at 25 °C and 1 atm. Solids and liquids have no such common value: their molar volume \(M/\rho\) depends on how big the particles are and how they pack.">中間的式子用於氣體，右邊的式子用於固體與液體（ρ 是密度）。亞佛加厥定律：同溫同壓下，同體積的任何（理想）氣體含有相同數目的分子。莫耳體積 \(V_m = RT/P\)：0 °C、1 atm（STP）時 22.4 L/mol，25 °C、1 atm 時 24.5 L/mol。固體與液體沒有共同的莫耳體積：\(M/\rho\) 要看粒子多大、怎麼堆積。</p>
 
       <h3 data-en="Zooming in">放大到原子</h3>
       <p data-en="A cube of side L holds, on average,">邊長 L 的立方體裡，平均有</p>
@@ -294,7 +335,7 @@
         \[ N = \frac{\rho L^3}{M}\,N_A \]
         \[ d = \left(\frac{M}{\rho N_A}\right)^{1/3} \]
       </div>
-      <p data-en-html="particles; \(d\) is the side of the little cube each particle gets — roughly the distance between neighbouring particles (0.31 nm for water). Each tenfold zoom divides the number by 1000. Cutting in half again and again, a drop of water (about 1.7 × 10&lt;sup&gt;21&lt;/sup&gt; molecules) can be cut only about 70 times before a single molecule is left.">個粒子；\(d\) 是每個粒子分到的小立方體邊長，大約就是相鄰粒子的距離（水是 0.31 nm）。每放大 10 倍，粒子數就少 1000 倍。一滴水（約 1.7 × 10<sup>21</sup> 個分子）一直對切，大約切 70 刀就只剩一個分子。</p>
+      <p data-en-html="particles; \(d\) is the side of the little cube each particle gets — roughly the distance between neighbouring particles (0.31 nm for water). Each tenfold zoom divides the number by 1000. Cutting in half again and again, a drop of water (about 1.7 × 10&lt;sup&gt;21&lt;/sup&gt; molecules) can be cut only about 70 times before a single molecule is left.">個粒子；\(d\) 是每個粒子分到的小立方體邊長，大約就是相鄰粒子的距離（水是 0.31 nm）。每放大 10 倍，粒子數就少 1000 倍。一滴水（約 1.7 × 10<sup>21</sup> 個分子）一直對切，大約切 70 刀就只剩一個分子。</p>
 
       <h3 data-en="The oil-film method">油膜法</h3>
       <p data-en-html="Oleic acid has a water-loving end (–COOH) and a long oily tail. A small drop of its dilute solution in ethanol spreads on water into a layer one molecule thick, standing on end; the ethanol dissolves away. Powder on the water shows the edge of the film, and the area \(A\) is found by counting squares on a glass plate. If one drop of solution holds \(V\) of oleic acid:">油酸一端是親水的 –COOH，另一端是長長的油性尾巴。很稀的油酸酒精溶液滴在水面上，會散開成一層只有一個分子厚、分子豎立著的薄膜，酒精則溶到水裡。水面撒粉可以看出油膜的邊界，再把玻璃板放在盤上描下輪廓、數格子求面積 \(A\)。若滴下的溶液中含油酸體積 \(V\)：</p>
@@ -303,45 +344,45 @@
         \[ v_1 = \frac{h^3}{k^2} \]
         \[ N_A \approx \frac{M/\rho}{v_1} = \frac{M k^2}{\rho\, h^3} \]
       </div>
-      <p data-en-html="The thickness \(h\) is the height of one molecule. To get the volume \(v_1\) of one molecule we must assume a shape: a cube (\(k = 1\)), or a column whose height is \(k\) times its width. \(M/\rho\) is the volume of one mole of oleic acid.">膜厚 \(h\) 就是一個分子的高度。要得到一個分子的體積 \(v_1\)，必須假設形狀：立方體（\(k = 1\)），或高是寬的 \(k\) 倍的長方柱。\(M/\rho\) 是 1 莫耳油酸的體積。</p>
+      <p data-en-html="The thickness \(h\) is the height of one molecule. To get the volume \(v_1\) of one molecule we must assume a shape: a cube (\(k = 1\)), or a column whose height is \(k\) times its width. \(M/\rho\) is the volume of one mole of oleic acid.">膜厚 \(h\) 就是一個分子的高度。要得到一個分子的體積 \(v_1\)，必須假設形狀：立方體（\(k = 1\)），或高是寬的 \(k\) 倍的長方柱。\(M/\rho\) 是 1 莫耳油酸的體積。</p>
 
       <h3 data-en="Values used in the simulation">模擬使用的數據</h3>
       <div class="tablewrap"><table class="data" id="dataTable"></table></div>
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en="Put one mole on each pan: the masses and volumes are very different, but the number of particles is the same.">兩盤各放 1 莫耳：質量和體積差很多，粒子數卻一樣。</li>
+        <li data-en="Put one mole on each pan: the masses and volumes are very different, but the number of particles is the same.">兩盤各放 1 莫耳：質量和體積差很多，粒子數卻一樣。</li>
         <li data-en="Choose two different gases and give them the same volume: whatever the gases, the numbers of molecules are equal.">選兩種不同的氣體、讓體積相同：不管是哪兩種氣體，分子數都相等。</li>
-        <li data-en-html="Zoom in step by step: a cube of water one micrometre wide still holds about 3 × 10&lt;sup&gt;10&lt;/sup&gt; molecules.">一步一步放大：邊長 1 微米的一小塊水，還有約 3 × 10<sup>10</sup> 個分子。</li>
+        <li data-en-html="Zoom in step by step: a cube of water one micrometre wide still holds about 3 × 10&lt;sup&gt;10&lt;/sup&gt; molecules.">一步一步放大：邊長 1 微米的一小塊水，還有約 3 × 10<sup>10</sup> 個分子。</li>
         <li data-en="In the oil-film method, sprinkle too much powder or let the film reach the side of the tray: the area comes out too small and the molecule too thick.">油膜法中粉撒太厚，或油膜碰到盤邊：量到的面積太小、分子變得太厚。</li>
-        <li data-en="Assume the molecules are cubes and Avogadro's number comes out about three times too small. Why?">假設分子是立方體，算出的亞佛加厥數大約小了 3 倍。為什麼？</li>
+        <li data-en="Assume the molecules are cubes and Avogadro's number comes out about three times too small. Why?">假設分子是立方體，算出的亞佛加厥數大約小了 3 倍。為什麼？</li>
       </ul>
 
       <h3 data-en="Think about it">想一想</h3>
       <ol>
-        <li data-en="A glass holds 250 mL of water (density 0.997 g/mL). About how many water molecules is that? How many hydrogen atoms?">一杯 250 mL 的水（密度 0.997 g/mL）大約有幾個水分子？幾個氫原子？</li>
-        <li data-en="At the same temperature and pressure, which takes up more space, 10.0 g of hydrogen or 10.0 g of oxygen? By what factor?">同溫同壓下，10.0 g 的氫氣與 10.0 g 的氧氣，哪一個體積比較大？大幾倍？</li>
-        <li data-en="1 mL of oleic acid is made up to 500 mL with ethanol; 50 drops make 1 mL. One drop gives a film of 350 cm². How thick is the film?">1 mL 油酸加酒精配成 500 mL；50 滴是 1 mL。滴 1 滴，油膜面積 350 cm²。油膜多厚？</li>
+        <li data-en="A glass holds 250 mL of water (density 0.997 g/mL). About how many water molecules is that? How many hydrogen atoms?">一杯 250 mL 的水（密度 0.997 g/mL）大約有幾個水分子？幾個氫原子？</li>
+        <li data-en="At the same temperature and pressure, which takes up more space, 10.0 g of hydrogen or 10.0 g of oxygen? By what factor?">同溫同壓下，10.0 g 的氫氣與 10.0 g 的氧氣，哪一個體積比較大？大幾倍？</li>
+        <li data-en-html="1 mL of oleic acid is made up to 500 mL with ethanol; 50 drops make 1 mL. One drop gives a film of 350 cm&lt;sup&gt;2&lt;/sup&gt;. How thick is the film?">1 mL 油酸加酒精配成 500 mL；50 滴是 1 mL。滴 1 滴，油膜面積 350 cm<sup>2</sup>。油膜多厚？</li>
         <li data-en="Why does the cube assumption make Avogadro's number too small? If the powder is too thick, will the estimate be too large or too small?">為什麼立方體假設算出的亞佛加厥數偏小？粉撒太厚時，估計值會偏大還是偏小？</li>
       </ol>
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="m = 250 × 0.997 = 249 g; n = 249 ÷ 18.015 = 13.8 mol; N = 13.8 × 6.02 × 10&lt;sup&gt;23&lt;/sup&gt; = 8.33 × 10&lt;sup&gt;24&lt;/sup&gt; molecules, and twice as many hydrogen atoms, 1.67 × 10&lt;sup&gt;25&lt;/sup&gt;.">m = 250 × 0.997 = 249 g；n = 249 ÷ 18.015 = 13.8 mol；N = 13.8 × 6.02 × 10<sup>23</sup> = 8.33 × 10<sup>24</sup> 個分子，氫原子是兩倍：1.67 × 10<sup>25</sup> 個。</li>
-          <li data-en-html="Equal volumes hold equal numbers of moles, so compare moles: 10.0 ÷ 2.016 = 4.96 mol of H&lt;sub&gt;2&lt;/sub&gt; against 10.0 ÷ 32.00 = 0.313 mol of O&lt;sub&gt;2&lt;/sub&gt;. Hydrogen takes up 15.9 times as much space.">同溫同壓下體積比 = 莫耳數比：H<sub>2</sub> 10.0 ÷ 2.016 = 4.96 mol，O<sub>2</sub> 10.0 ÷ 32.00 = 0.313 mol。氫氣的體積是氧氣的 15.9 倍。</li>
-          <li data-en-html="One drop is 0.020 mL of solution, holding 0.020 ÷ 500 = 4.0 × 10&lt;sup&gt;−5&lt;/sup&gt; mL of oleic acid. h = 4.0 × 10&lt;sup&gt;−5&lt;/sup&gt; cm³ ÷ 350 cm² = 1.1 × 10&lt;sup&gt;−7&lt;/sup&gt; cm = 1.1 nm.">一滴是 0.020 mL 溶液，含油酸 0.020 ÷ 500 = 4.0 × 10<sup>−5</sup> mL。h = 4.0 × 10<sup>−5</sup> cm³ ÷ 350 cm² = 1.1 × 10<sup>−7</sup> cm = 1.1 nm。</li>
-          <li data-en-html="In the film each molecule stands up and is taller than it is wide, so its real volume is smaller than h³: dividing the mole's volume by h³ counts too few molecules. Too much powder makes the area too small, h too large and h³ larger still, so the estimate is even smaller.">油膜中的分子豎立著，高比寬大，所以一個分子的真實體積比 h³ 小；用 h³ 去分 1 莫耳的體積，算出的分子數太少。粉太厚時面積偏小、h 偏大、h³ 更大，估計值就更小。</li>
+          <li data-en-html="m = 250 × 0.997 = 249 g; n = 249 ÷ 18.015 = 13.8 mol; N = 13.8 × 6.02 × 10&lt;sup&gt;23&lt;/sup&gt; = 8.33 × 10&lt;sup&gt;24&lt;/sup&gt; molecules, and twice as many hydrogen atoms, 1.67 × 10&lt;sup&gt;25&lt;/sup&gt;.">m = 250 × 0.997 = 249 g；n = 249 ÷ 18.015 = 13.8 mol；N = 13.8 × 6.02 × 10<sup>23</sup> = 8.33 × 10<sup>24</sup> 個分子，氫原子是兩倍：1.67 × 10<sup>25</sup> 個。</li>
+          <li data-en-html="Equal volumes hold equal numbers of moles, so compare moles: 10.0 ÷ 2.016 = 4.96 mol of H&lt;sub&gt;2&lt;/sub&gt; against 10.0 ÷ 32.00 = 0.313 mol of O&lt;sub&gt;2&lt;/sub&gt;. Hydrogen takes up 15.9 times as much space.">同溫同壓下體積比 = 莫耳數比：H<sub>2</sub> 10.0 ÷ 2.016 = 4.96 mol，O<sub>2</sub> 10.0 ÷ 32.00 = 0.313 mol。氫氣的體積是氧氣的 15.9 倍。</li>
+          <li data-en-html="One drop is 0.020 mL of solution, holding 0.020 ÷ 500 = 4.0 × 10&lt;sup&gt;−5&lt;/sup&gt; mL of oleic acid. h = 4.0 × 10&lt;sup&gt;−5&lt;/sup&gt; cm&lt;sup&gt;3&lt;/sup&gt; ÷ 350 cm&lt;sup&gt;2&lt;/sup&gt; = 1.1 × 10&lt;sup&gt;−7&lt;/sup&gt; cm = 1.1 nm.">一滴是 0.020 mL 溶液，含油酸 0.020 ÷ 500 = 4.0 × 10<sup>−5</sup> mL。h = 4.0 × 10<sup>−5</sup> cm<sup>3</sup> ÷ 350 cm<sup>2</sup> = 1.1 × 10<sup>−7</sup> cm = 1.1 nm。</li>
+          <li data-en-html="In the film each molecule stands up and is taller than it is wide, so its real volume is smaller than h&lt;sup&gt;3&lt;/sup&gt;: dividing the mole's volume by h&lt;sup&gt;3&lt;/sup&gt; counts too few molecules. Too much powder makes the area too small, h too large and h&lt;sup&gt;3&lt;/sup&gt; larger still, so the estimate is even smaller.">油膜中的分子豎立著，高比寬大，所以一個分子的真實體積比 h<sup>3</sup> 小；用 h<sup>3</sup> 去分 1 莫耳的體積，算出的分子數太少。粉太厚時面積偏小、h 偏大、h<sup>3</sup> 更大，估計值就更小。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Atomic weights are IUPAC standard values (abridged); N&lt;sub&gt;A&lt;/sub&gt; and R are the exact SI values. Densities are from the CRC Handbook (liquids at 25 °C). Gases are ideal: real gases differ slightly (for example 22.26 L/mol for CO&lt;sub&gt;2&lt;/sub&gt; at STP).">原子量用 IUPAC 標準原子量（慣用值）；N<sub>A</sub> 與 R 是 SI 的定義值。密度取自 CRC 手冊（液體為 25 °C）。氣體當成理想氣體，真實氣體略有不同（例如 STP 下 CO<sub>2</sub> 是 22.26 L/mol）。</li>
+        <li data-en-html="Atomic weights are IUPAC standard values (abridged); N&lt;sub&gt;A&lt;/sub&gt; and R are the exact SI values. Densities are from the CRC Handbook (liquids at 25 °C). Gases are ideal: real gases differ slightly (for example 22.26 L/mol for CO&lt;sub&gt;2&lt;/sub&gt; at STP).">原子量用 IUPAC 標準原子量（慣用值）；N<sub>A</sub> 與 R 是 SI 的定義值。密度取自 CRC 手冊（液體為 25 °C）。氣體當成理想氣體，真實氣體略有不同（例如 STP 下 CO<sub>2</sub> 是 22.26 L/mol）。</li>
         <li data-en="The balance shows the masses as if the gases were weighed in a container whose own mass has been tared off, without the buoyancy of the air. Every sample is drawn as a cube of its real volume, all at the same scale.">天平上的氣體，當成裝在已經扣重的容器裡秤，不計空氣的浮力。每個樣品都畫成和實際體積一樣大的立方體，用同一個比例尺。</li>
-        <li data-en="Zoom view: the count is ρL³N_A/M for a cube of side L. At the atomic scale the picture is one layer of atoms (a slice): the (001) face of copper, gold and salt from their lattice constants, and water as a disordered layer at the right density. The reference objects (hair, red blood cell, virus…) are only for scale.">放大畫面：粒子數是邊長 L 的立方體的 ρL³N_A/M。原子尺度的畫面是一層原子的切面：銅、金、氯化鈉照晶格常數畫 (001) 面；水畫成密度正確、排列雜亂的一層。頭髮、紅血球、病毒等只是大小對照的示意圖。</li>
-        <li data-en="Oil film: oleic acid M = 282.47 g/mol, ρ = 0.895 g/cm³; in the film each molecule takes 0.46 nm² (literature: about 0.4–0.5 nm²), so the film is 1.14 nm thick. Each drop varies by ±4%; the film is an irregular blob with exactly the right area; a thick layer of powder lets it spread to only 75% of its area; squares at least half covered are counted.">油膜：油酸 M = 282.47 g/mol、ρ = 0.895 g/cm³；膜中每個分子占 0.46 nm²（文獻約 0.4–0.5 nm²），所以膜厚 1.14 nm。每一滴的體積有 ±4% 的差異；油膜是面積精確、形狀不規則的一片；粉太厚時油膜只能推開到應有面積的 75%；覆蓋超過半格的格子算一格。</li>
-        <li data-en="The dropper is calibrated by letting drops fall into a measuring cylinder until the mark is reached; without calibration the label value (50 drops per mL) is used.">校正滴管：一滴一滴滴進量筒，數到刻度為止；沒有校正時用標示值（1 mL 約 50 滴）。</li>
-        <li data-en="The 3D view shows one mole of each solid and liquid, and the volume of one mole of any gas, as cubes at their real sizes.">3D 立體畫面把 1 莫耳的各種固體、液體，以及 1 莫耳任何氣體的體積，畫成實際大小的立方體。</li>
+        <li data-en-html="Zoom view: the count is ρL&lt;sup&gt;3&lt;/sup&gt;N_A/M for a cube of side L. At the atomic scale the picture is one layer of atoms (a slice): the (001) face of copper, gold and salt from their lattice constants, and water as a disordered layer at the right density. The reference objects (hair, red blood cell, virus…) are only for scale.">放大畫面：粒子數是邊長 L 的立方體的 ρL<sup>3</sup>N_A/M。原子尺度的畫面是一層原子的切面：銅、金、氯化鈉照晶格常數畫 (001) 面；水畫成密度正確、排列雜亂的一層。頭髮、紅血球、病毒等只是大小對照的示意圖。</li>
+        <li data-en-html="Oil film: oleic acid M = 282.47 g/mol, ρ = 0.895 g/cm&lt;sup&gt;3&lt;/sup&gt;; in the film each molecule takes 0.46 nm&lt;sup&gt;2&lt;/sup&gt; (literature: about 0.4–0.5 nm&lt;sup&gt;2&lt;/sup&gt;), so the film is 1.14 nm thick. Each drop varies by ±4 %; the film is an irregular blob with exactly the right area; a thick layer of powder lets it spread to only 75 % of its area; squares at least half covered are counted.">油膜：油酸 M = 282.47 g/mol、ρ = 0.895 g/cm<sup>3</sup>；膜中每個分子占 0.46 nm<sup>2</sup>（文獻約 0.4–0.5 nm<sup>2</sup>），所以膜厚 1.14 nm。每一滴的體積有 ±4 % 的差異；油膜是面積精確、形狀不規則的一片；粉太厚時油膜只能推開到應有面積的 75 %；覆蓋超過半格的格子算一格。</li>
+        <li data-en="The dropper is calibrated by letting drops fall into a measuring cylinder until the mark is reached; without calibration the label value (50 drops per mL) is used.">校正滴管：一滴一滴滴進量筒，數到刻度為止；沒有校正時用標示值（1 mL 約 50 滴）。</li>
+        <li data-en="The 3D view shows one mole of each solid and liquid, and the volume of one mole of any gas, as cubes at their real sizes.">3D 立體畫面把 1 莫耳的各種固體、液體，以及 1 莫耳任何氣體的體積，畫成實際大小的立方體。</li>
       </ul>
 
       <h3 data-en="Safety">安全提醒</h3>
@@ -361,18 +402,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/mole-concept-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/mole-concept-3d.js?v=202611201125"></script>
-  <script src="js/mole-concept.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="mole-concept"></script>
-  <script src="js/missions/mole-concept.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="mole-concept"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/mole-concept-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/mole-concept-3d.js?v=202611201126"></script>
+  <script src="js/mole-concept.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="mole-concept"></script>
+  <script src="js/missions/mole-concept.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="mole-concept"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

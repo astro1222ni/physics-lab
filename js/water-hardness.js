@@ -1,6 +1,16 @@
 /* water-hardness.js — 「水的硬度」的畫面與互動（化學計算全部在 water-hardness-core.js；3D 微觀在 water-hardness-3d.js） */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const K = window.HardCore;
   const LD = window.LabDraw;
   if (!K || !LD) return;
@@ -44,7 +54,7 @@
   function fH(x) { return isFinite(x) ? num(x, 1) : '—'; }
   /** 小數位數在 lo–hi 之間，去掉多餘的 0（滑桿旁的數字和 LabNum.value 一致） */
   function fdec(x, lo, hi) { let s = x.toFixed(hi); while (s.indexOf('.') >= 0 && s.length - s.indexOf('.') - 1 > lo && s.slice(-1) === '0') s = s.slice(0, -1); return s.replace(/\.$/, ''); }
-  function fpc(x) { return isFinite(x) ? Math.round(x * 100) + '%' : '—'; }
+  function fpc(x) { return isFinite(x) ? Math.round(x * 100) + ' %' : '—'; }
 
   // ======================= 名稱 =======================
   const PRESET_NAMES = {
@@ -127,7 +137,7 @@
   const bstat = document.createElement('canvas'), bsctx = bstat.getContext('2d');
   let BL = null;
   function resizeBench1() {
-    const W = bcv.clientWidth;
+    const W = Math.max(bcv.clientWidth, Number(getComputedStyle(bcv).getPropertyValue('--drawing-min-width')));
     if (!W) return;
     const D = W >= 600 ? BLAY.wide : BLAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s) + (D === BLAY.wide ? 40 : 34);
@@ -434,10 +444,10 @@
   }
   function drawBenchLabels(g) {
     const s = BL.s, bk = beaker(), i = K.benchInfo(B), mys = isMys();
-    LD.pill(g, T('1 L 燒杯：', 'Beaker: ') + Math.round(B.water.V * 1000) + ' mL', bk.cx * s, (bk.top - 8) * s, C.text, 'center');
-    if (B.scale > 0.5) LD.pill(g, T('水垢 ', 'Scale ') + Math.round(B.scale) + ' mg', bk.cx * s, (bk.bot - 14) * s, C.muted, 'center');
+    LD.pill(g, T('1 L 燒杯：', 'Beaker: ') + Math.round(B.water.V * 1000) + ' mL', bk.cx * s, (bk.top - 8) * s, C.text, 'center');
+    if (B.scale > 0.5) LD.pill(g, T('水垢 ', 'Scale ') + Math.round(B.scale) + ' mg', bk.cx * s, (bk.bot - 14) * s, C.muted, 'center');
     const H = mys ? null : i.H;
-    const hTxt = mys ? T('硬度 ?', 'Hardness ?') : T('硬度 ', 'Hardness ') + fH(H) + ' mg/L';
+    const hTxt = mys ? T('硬度 ?', 'Hardness ?') : T('硬度 ', 'Hardness ') + fH(H) + ' mg/L';
     LD.pill(g, hTxt, bk.cx * s, (bk.lvl(B.water.V) + 26) * s, mys ? C.unknown : C.chem, 'center');
     // 放大鏡圖例
     const m = BL.mag, ly = (m[1] + m[2] + 22) * s;
@@ -445,7 +455,7 @@
     const labels = { Ca: 'Ca2+', Mg: 'Mg2+', Na: 'Na+' };
     g.font = '600 11px ' + FF;
     let wsum = 0; items.forEach(function (it) { wsum += 14 + supWidth(g, it[0], labels[it[0]]) + 10; });
-    let xx = m[0] * s - wsum / 2;
+    let xx = Math.max(5, Math.min(BL.Wpx - wsum - 5, m[0] * s - wsum / 2));
     items.forEach(function (it) {
       const k = it[0];
       LD.ball(g, xx + 5, ly - 4, 4.2, mys && !S.sample.revealed ? C.ion.q : C.ion[k], { shadow: false, glow: 0 });
@@ -457,7 +467,7 @@
     LD.pill(g, T('樹脂 剩 ', 'Resin ') + fpc(B.resin.left / K.RESIN_Q) + T('', ' left'), cl.x * s, (cl.top - 22) * s, B.resin.left <= 0 ? C.pos : C.text, 'center');
     // 試管
     const tb = BL.tube, info = soapNow();
-    const t1 = (B.tube.detergent ? T('清潔劑 ', 'Detergent ') : T('肥皂 ', 'Soap ')) + B.tube.drops + T(' 滴', B.tube.drops === 1 ? ' drop' : ' drops');
+    const t1 = (B.tube.detergent ? T('清潔劑 ', 'Detergent ') : T('肥皂 ', 'Soap ')) + B.tube.drops + T(' 滴', B.tube.drops === 1 ? ' drop' : ' drops');
     LD.pill(g, t1, tb.x * s, (tb.top - 58) * s, C.text, 'center');
     if (B.tube.drops > 0) LD.pill(g, info.lather ? T('持久泡沫 ✓', 'Lasting lather ✓') : (info.ppt > 0.05 ? T('只有浮渣', 'Scum only') : T('還沒起泡', 'No lather yet')), tb.x * s, (tb.top - 36) * s, info.lather ? C.probe : C.muted, 'center');
     // 桌子前緣
@@ -528,7 +538,7 @@
   const front = document.createElement('canvas'), fctx = front.getContext('2d');
   let L = null;
   function resizeBench() {
-    const W = cv.clientWidth;
+    const W = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!W) return;
     const D = W >= 600 ? LAY.wide : LAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s) + (D === LAY.wide ? 0 : 22);
@@ -1022,15 +1032,15 @@
   }
   function flaskParts() {
     const p = S.run.p, w = p.water, parts = [{ t: T('錐形瓶：', 'Flask: ') }];
-    parts.push({ t: (w.unknown ? T('未知水樣 ', 'unknown water ') : T('水樣 ', 'water ')) + p.Va.toFixed(2) + ' mL' });
+    parts.push({ t: (w.unknown ? T('未知水樣 ', 'unknown water ') : T('水樣 ', 'water ')) + p.Va.toFixed(2) + ' mL' });
     if (p.mode === 'A') parts.push({ t: T('＋pH 10 緩衝液', ' + pH 10 buffer') + (p.mgEdta ? T('（含 Mg–EDTA）', ' (with Mg–EDTA)') : '') + T('＋EBT', ' + EBT') });
     else parts.push({ t: T('＋', ' + ') }, { f: 'NaOH' }, { t: T('（pH 12）＋鈣指示劑', ' (pH 12) + Ca indicator') });
     return parts;
   }
   function drawLabels(g) {
     const s = L.s, r = S.run, p = r.p;
-    richText(g, [{ t: T('滴定管：', 'Burette: ') + 'EDTA ' + sigf(p.cE, 3) + ' M' }], (L.xb + 16) * s, (VY.top + 56) * s, C.text, 12, 'left');
-    pillClamp(g, T('讀最低點 ', 'Bottom ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
+    richText(g, [{ t: T('滴定管：', 'Burette: ') + 'EDTA ' + sigf(p.cE, 3) + ' M' }], (L.xb + 16) * s, (VY.top + 56) * s, C.text, 12, 'left');
+    pillClamp(g, T('讀最低點 ', 'Bottom ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
     const lc = lcdRect();
     LD.haloText(g, 'pCa', (lc.x + lc.w - 3) * s, (lc.y + lc.h - 4) * s, LD.alpha(C.lcdInk, 0.95), 'right', 'alphabetic', '700 ' + (L.wide ? 11 : 9) + 'px ' + FF);
     let mlab = '';
@@ -1164,7 +1174,7 @@
     if (left <= 0) { closeTap(); emptyNotice(); return 0; }
     if (r.p.Va + K.V_ADD_ML + (r.out + n) / U > VT_MAX) {
       closeTap();
-      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。按「換一瓶」，或減少水樣的體積、提高 EDTA 的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Press “New flask”, or use less water or a more concentrated EDTA.'), true);
+      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。按「換一瓶」，或減少水樣的體積、提高 EDTA 的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Press “New flask”, or use less water or a more concentrated EDTA.'), true);
       return 0;
     }
     n = K.release(S, n);
@@ -1216,7 +1226,7 @@
   }
   function emptyNotice() {
     sndEmpty();
-    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
+    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
   }
   function closeTap() {
     if (!state.tap) return;
@@ -1231,7 +1241,7 @@
     if (last) last.c = flaskRGB(r);
     latestRow = true;
     renderAll();
-    routineStatus(T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
+    routineStatus(T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
       (state.meter && r.eq.pCa != null ? T('，', ', ') + 'pCa = ' + r.eq.pCa.toFixed(2) : '') +
       T('，溶液' + tn(COLOUR_NAMES[K.colourKey(r.eq.rf)]) + '。', ', solution ' + tn(COLOUR_NAMES[K.colourKey(r.eq.rf)]) + '.'));
     emit('settle', data);
@@ -1356,7 +1366,7 @@
       if (px <= x1 + 0.5) {
         g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
         g.beginPath(); g.moveTo(px, y0); g.lineTo(px, y1); g.stroke(); g.restore();
-        pillGraph(g, T('當量點 ' + r.Veq.toFixed(2) + ' mL', 'equivalence ' + r.Veq.toFixed(2) + ' mL'), px + 8, y1 - 8, C.text, 'left', x0, x1);
+        pillGraph(g, T('當量點 ' + r.Veq.toFixed(2) + ' mL', 'equivalence ' + r.Veq.toFixed(2) + ' mL'), px + 8, y1 - 8, C.text, 'left', x0, x1);
       }
     }
     if (r.endpoint != null) {
@@ -1364,7 +1374,7 @@
       if (px <= x1) {
         g.strokeStyle = C.equi; g.lineWidth = 1.6;
         g.beginPath(); g.moveTo(px, y0); g.lineTo(px, y1); g.stroke();
-        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px - 5, y0 + (x1 - x0 < 520 ? 40 : 18), C.equi, 'right', x0, x1);   // 窄版往下一行，不蓋住左上角的 pCa 標題
+        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px - 5, y0 + (x1 - x0 < 520 ? 40 : 18), C.equi, 'right', x0, x1);   // 窄版往下一行，不蓋住左上角的 pCa 標題
       }
     }
     // 座標軸
@@ -1441,13 +1451,13 @@
     let best = null, bd = 28;
     r.pts.forEach(function (q) { if (q.m && q.pCa != null) { const d = Math.abs(X(q.u / U) - hover.x); if (d < bd) { bd = d; best = q; } } });
     let v, pc, lab;
-    if (best) { v = best.u / U; pc = best.pCa; lab = 'V = ' + vRead(best.u) + ' mL' + T('・', ', ') + 'pCa = ' + pc.toFixed(2); }
+    if (best) { v = best.u / U; pc = best.pCa; lab = 'V = ' + vRead(best.u) + ' mL' + T('・', ', ') + 'pCa = ' + pc.toFixed(2); }
     else if (state.theory && !mysteryHidden()) {
       v = Math.max(0, Math.min(G.xmax, (hover.x - G.x0) / (G.x1 - G.x0) * G.xmax));
       const e = K.eqAt(r.p, r.nCa, r.nMg, v * U);
       pc = e.pCa;
       if (pc == null) return;
-      lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL' + T('・', ', ') + 'pCa = ' + pc.toFixed(2);
+      lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL' + T('・', ', ') + 'pCa = ' + pc.toFixed(2);
     } else return;
     const x = X(v), y = Y(Math.max(PMIN, Math.min(PMAX, pc)));
     g.strokeStyle = LD.alpha(C.text, 0.4); g.lineWidth = 1;
@@ -1472,40 +1482,40 @@
   function unitH() { return T('mg/L<small>以 CaCO<sub>3</sub> 計</small>', 'mg/L<small>as CaCO<sub>3</sub></small>'); }
   function renderReadouts() {
     const r = S.run, p = r.p, e = r.eq, hid = mysteryHidden(), rows = [];
-    rows.push([T('滴定管讀數（最低點）', 'Burette reading (bottom of meniscus)'), vRead(r.fill) + ' mL', 'big']);
-    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
-    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), num(e.V, 1) + ' mL']);
+    rows.push([T('滴定管讀數（最低點）', 'Burette reading (bottom of meniscus)'), vRead(r.fill) + ' mL', 'big']);
+    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
+    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), num(e.V, 1) + ' mL']);
     rows.push(['pH', p.mode === 'A' ? '10.0' : '12.0']);
     if (state.meter) rows.push(['pCa' + T('<small>鈣離子電極</small>', '<small>calcium electrode</small>'), e.pCa == null ? '—' : e.pCa.toFixed(2), 'big']);
     else rows.push(['pCa', '—<small>' + T('電極不在瓶中', 'electrode not in the flask') + '</small>']);
     rows.push([T('溶液的顏色', 'Colour of the solution'), tn(COLOUR_NAMES[K.colourKey(e.rf)]), e.rf <= K.BLUE_RF ? 'good' : '']);
-    rows.push([T('指示劑與金屬結合的比例', 'Indicator bound to metal'), (e.rf * 100).toFixed(e.rf < 0.1 ? 1 : 0) + '%']);
+    rows.push([T('指示劑與金屬結合的比例', 'Indicator bound to metal'), (e.rf * 100).toFixed(e.rf < 0.1 ? 1 : 0) + ' %']);
     if (!hid) {
-      if (r.nCa > 0) rows.push([CA + T(' 被 EDTA 螯合', ' held by EDTA'), (Math.min(1, e.fCa) * 100).toFixed(1) + '%']);
-      if (p.mode === 'A' && (r.nMg > 0 || p.mgEdta)) rows.push([MG + T(' 被 EDTA 螯合', ' held by EDTA'), (Math.min(1, e.fMg) * 100).toFixed(1) + '%']);
+      if (r.nCa > 0) rows.push([CA + T(' 被 EDTA 螯合', ' held by EDTA'), (Math.min(1, e.fCa) * 100).toFixed(1) + ' %']);
+      if (p.mode === 'A' && (r.nMg > 0 || p.mgEdta)) rows.push([MG + T(' 被 EDTA 螯合', ' held by EDTA'), (Math.min(1, e.fMg) * 100).toFixed(1) + ' %']);
     }
-    if (p.mode === 'B' && r.nMg > 0) rows.push([MG + T(' 沉澱成 Mg(OH)<sub>2</sub>', ' precipitated as Mg(OH)<sub>2</sub>'), (Math.min(1, e.MgSolid * e.V / r.nMg) * 100).toFixed(1) + '%']);
+    if (p.mode === 'B' && r.nMg > 0) rows.push([MG + T(' 沉澱成 Mg(OH)<sub>2</sub>', ' precipitated as Mg(OH)<sub>2</sub>'), (Math.min(1, e.MgSolid * e.V / r.nMg) * 100).toFixed(1) + ' %']);
     $('readout').innerHTML = dl(rows);
   }
   function renderAnalysis() {
     const r = S.run, p = r.p, hid = mysteryHidden(), rows = [];
     rows.push([T('莫耳數比', 'Mole ratio') + '<small>' + T('金屬離子', 'metal ion') + ' : EDTA</small>', '1 : 1']);
-    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>' + (p.mode === 'A' ? 'V<sub>eq</sub> = (n<sub>Ca</sub> + n<sub>Mg</sub>) / c<sub>EDTA</sub>' : 'V<sub>eq</sub> = n<sub>Ca</sub> / c<sub>EDTA</sub>') + '</small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
+    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>' + (p.mode === 'A' ? 'V<sub>eq</sub> = (n<sub>Ca</sub> + n<sub>Mg</sub>) / c<sub>EDTA</sub>' : 'V<sub>eq</sub> = n<sub>Ca</sub> / c<sub>EDTA</sub>') + '</small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
     if (r.endpoint != null) {
       const Hm = r.endpoint * p.cE / p.Va * K.MW.CaCO3 * 1000;
-      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
-      rows.push([(p.mode === 'A' ? T('算出的總硬度', 'Total hardness from it') : T('算出的鈣硬度', 'Calcium hardness from it')) + '<small>H = c<sub>EDTA</sub>V × 100.09 / V<sub>s</sub></small>', fH(Hm) + ' ' + unitH(), 'big']);
+      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
+      rows.push([(p.mode === 'A' ? T('算出的總硬度', 'Total hardness from it') : T('算出的鈣硬度', 'Calcium hardness from it')) + '<small>H = c<sub>EDTA</sub>V × 100.09 / V<sub>s</sub></small>', fH(Hm) + ' ' + unitH(), 'big']);
       if (!hid) {
         const err = r.endpoint - r.Veq;
-        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
+        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
       }
     } else rows.push([T('你記錄的終點', 'Your end point'), T('還沒記錄', 'not yet')]);
-    if (!hid) rows.push([p.mode === 'A' ? T('真正的總硬度', 'True total hardness') : T('真正的鈣硬度', 'True calcium hardness'), fH(p.mode === 'A' ? p.water.H : p.water.Hca) + ' ' + unitH()]);
+    if (!hid) rows.push([p.mode === 'A' ? T('真正的總硬度', 'True total hardness') : T('真正的鈣硬度', 'True calcium hardness'), fH(p.mode === 'A' ? p.water.H : p.water.Hca) + ' ' + unitH()]);
     const ms = maxSlope(r);
-    rows.push([T('數據中斜率最大處', 'Steepest point in your data') + '<small>' + T('相鄰兩點 ΔpCa/ΔV 最大', 'largest ΔpCa/ΔV between neighbours') + '</small>', ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
+    rows.push([T('數據中斜率最大處', 'Steepest point in your data') + '<small>' + T('相鄰兩點 ΔpCa/ΔV 最大', 'largest ΔpCa/ΔV between neighbours') + '</small>', ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
     if (isMys() && S.sample.revealed) {
-      rows.push([T('未知水樣的總硬度', 'Total hardness of the unknown'), fH(S.sample.H) + ' ' + unitH(), 'good']);
-      rows.push([T('未知水樣的鈣硬度', 'Calcium hardness of the unknown'), fH(S.sample.Hca) + ' ' + unitH(), 'good']);
+      rows.push([T('未知水樣的總硬度', 'Total hardness of the unknown'), fH(S.sample.H) + ' ' + unitH(), 'good']);
+      rows.push([T('未知水樣的鈣硬度', 'Calcium hardness of the unknown'), fH(S.sample.Hca) + ' ' + unitH(), 'good']);
     }
     $('anaOut').innerHTML = dl(rows);
   }
@@ -1584,6 +1594,10 @@
       $(id).title = mys ? T('未知水樣要直接測，不能先處理', 'The unknown water must be measured as it is') : '';
     });
     $('mysCard').hidden = !mys;
+    $('answerEntry').disabled = !mys;
+    $('answerEntry').title = mys
+      ? T('前往未知水樣的作答欄', 'Go to the answers for the unknown water')
+      : T('選擇未知水樣後即可核對答案', 'Choose the unknown water to check your answers');
   }
 
   // ======================= 工作台的讀數 =======================
@@ -1596,30 +1610,30 @@
       ground: T('流過石灰岩的地下水：CaCO<sub>3</sub> + CO<sub>2</sub> + H<sub>2</sub>O → Ca(HCO<sub>3</sub>)<sub>2</sub>，暫時硬度很高。', 'Groundwater from limestone: CaCO<sub>3</sub> + CO<sub>2</sub> + H<sub>2</sub>O → Ca(HCO<sub>3</sub>)<sub>2</sub>, so its temporary hardness is high.'),
       mineral: T('含鎂多的礦泉水：鎂硬度比鈣硬度大，而且有一部分是煮不掉的永久硬度。', 'Magnesium-rich mineral water: more magnesium than calcium hardness, and part of it is permanent hardness that boiling cannot remove.'),
       mys: T('成分保密的未知水樣：用 EDTA 滴定求出它的總硬度與鈣硬度，答案欄在滴定曲線旁（手機在下方）。這一瓶不能先做軟化處理。', 'An unknown water of secret composition: find its total and calcium hardness by EDTA titration; the answer box is next to the titration curve (below it on a phone). It cannot be treated first.'),
-      custom: T('自訂的水：組成照下面的滑桿（Na<sup>+</sup> 10 mg/L）。', 'Custom water: made up from the sliders below (Na<sup>+</sup> 10 mg/L).')
+      custom: T('自訂的水：組成照下面的滑桿（Na<sup>+</sup> 10 mg/L）。', 'Custom water: made up from the sliders below (Na<sup>+</sup> 10 mg/L).')
     };
     $('presetInfo').innerHTML = pinfo[B.preset] || pinfo.custom;
     $('customBox').hidden = mys;
     const rows = [];
-    rows.push([T('燒杯中的水', 'Water in the beaker'), Math.round(i.V * 1000) + ' mL']);
-    rows.push([T('總硬度', 'Total hardness'), q(fH(i.H)) + ' ' + unitH(), 'big']);
+    rows.push([T('燒杯中的水', 'Water in the beaker'), Math.round(i.V * 1000) + ' mL']);
+    rows.push([T('總硬度', 'Total hardness'), q(fH(i.H)) + ' ' + unitH(), 'big']);
     rows.push([T('分級（USGS）', 'Class (USGS)'), mys ? '?' : tn(CLASS_NAMES[i.cls])]);
-    rows.push([T('鈣硬度・鎂硬度', 'Calcium · magnesium hardness'), q(fH(i.Hca)) + T('・', ' · ') + q(fH(i.Hmg)) + ' mg/L']);
-    rows.push([T('暫時硬度・永久硬度', 'Temporary · permanent'), q(fH(i.Htemp)) + T('・', ' · ') + q(fH(Math.max(0, i.Hperm))) + ' mg/L']);
-    rows.push([CA + T('・', ' · ') + MG, q(fmg(i.mg.Ca)) + T('・', ' · ') + q(fmg(i.mg.Mg)) + ' mg/L']);
-    rows.push(['HCO<sub>3</sub><sup>−</sup>' + T('・', ' · ') + 'Na<sup>+</sup>', q(fmg(i.mg.HCO3)) + T('・', ' · ') + q(fmg(i.mg.Na)) + ' mg/L']);
-    if (i.mg.CO3 > 0.05) rows.push(['CO<sub>3</sub><sup>2−</sup>' + T('（過量的洗滌鹼）', ' (excess washing soda)'), fmg(i.mg.CO3) + ' mg/L']);
-    if (B.scale > 0.05) rows.push([T('杯底的水垢', 'Scale on the bottom'), Math.round(B.scale) + ' mg']);
+    rows.push([T('鈣硬度・鎂硬度', 'Calcium · magnesium hardness'), q(fH(i.Hca)) + T('・', ' · ') + q(fH(i.Hmg)) + ' mg/L']);
+    rows.push([T('暫時硬度・永久硬度', 'Temporary · permanent'), q(fH(i.Htemp)) + T('・', ' · ') + q(fH(Math.max(0, i.Hperm))) + ' mg/L']);
+    rows.push([CA + T('・', ' · ') + MG, q(fmg(i.mg.Ca)) + T('・', ' · ') + q(fmg(i.mg.Mg)) + ' mg/L']);
+    rows.push(['HCO<sub>3</sub><sup>−</sup>' + T('・', ' · ') + 'Na<sup>+</sup>', q(fmg(i.mg.HCO3)) + T('・', ' · ') + q(fmg(i.mg.Na)) + ' mg/L']);
+    if (i.mg.CO3 > 0.05) rows.push(['CO<sub>3</sub><sup>2−</sup>' + T('（過量的洗滌鹼）', ' (excess washing soda)'), fmg(i.mg.CO3) + ' mg/L']);
+    if (B.scale > 0.05) rows.push([T('杯底的水垢', 'Scale on the bottom'), Math.round(B.scale) + ' mg']);
     $('wout').innerHTML = dl(rows);
     const rs = B.resin;
-    $('resinInfo').innerHTML = T('樹脂還能交換 ' + num(rs.left, 2) + ' mmol（共 5.0 mmol）；已抓住 ' + CA + ' ' + num(rs.Ca, 2) + ' mmol、' + MG + ' ' + num(rs.Mg, 2) + ' mmol。',
-      'The resin can still take ' + num(rs.left, 2) + ' mmol (of 5.0 mmol); it holds ' + CA + ' ' + num(rs.Ca, 2) + ' mmol and ' + MG + ' ' + num(rs.Mg, 2) + ' mmol.');
+    $('resinInfo').innerHTML = T('樹脂還能交換 ' + num(rs.left, 2) + ' mmol（共 5.0 mmol）；已抓住 ' + CA + ' ' + num(rs.Ca, 2) + ' mmol、' + MG + ' ' + num(rs.Mg, 2) + ' mmol。',
+      'The resin can still take ' + num(rs.left, 2) + ' mmol (of 5.0 mmol); it holds ' + CA + ' ' + num(rs.Ca, 2) + ' mmol and ' + MG + ' ' + num(rs.Mg, 2) + ' mmol.');
     const s = soapNow(), det = B.tube.detergent;
     const srows = [];
-    srows.push([T('試管', 'Test tube'), T('水樣 5.00 mL＋', '5.00 mL water + ') + B.tube.drops + T(' 滴' + (det ? '清潔劑' : '肥皂水'), (det ? ' drop' + (B.tube.drops === 1 ? '' : 's') + ' of detergent' : ' drop' + (B.tube.drops === 1 ? '' : 's') + ' of soap'))]);
-    srows.push([T('加入的' + (det ? '清潔劑' : '肥皂'), (det ? 'Detergent' : 'Soap') + ' added'), num(s.nS, 1) + ' µmol']);
-    if (!det) srows.push([T('變成浮渣（金屬肥皂）', 'Turned into scum (metal soap)'), num(s.ppt, 2) + ' µmol']);
-    srows.push([T('溶液中剩下的' + (det ? '清潔劑' : '肥皂'), 'Free ' + (det ? 'detergent' : 'soap') + ' left'), sciHTML(Math.max(0, s.cFree), 2) + ' M']);
+    srows.push([T('試管', 'Test tube'), T('水樣 5.00 mL＋', '5.00 mL water + ') + B.tube.drops + T(' 滴' + (det ? '清潔劑' : '肥皂水'), (det ? ' drop' + (B.tube.drops === 1 ? '' : 's') + ' of detergent' : ' drop' + (B.tube.drops === 1 ? '' : 's') + ' of soap'))]);
+    srows.push([T('加入的' + (det ? '清潔劑' : '肥皂'), (det ? 'Detergent' : 'Soap') + ' added'), num(s.nS, 1) + ' µmol']);
+    if (!det) srows.push([T('變成浮渣（金屬肥皂）', 'Turned into scum (metal soap)'), num(s.ppt, 2) + ' µmol']);
+    srows.push([T('溶液中剩下的' + (det ? '清潔劑' : '肥皂'), 'Free ' + (det ? 'detergent' : 'soap') + ' left'), sciHTML(Math.max(0, s.cFree), 2) + ' M']);
     srows.push([T('結果', 'Result'), B.tube.drops === 0 ? T('還沒加', 'nothing added yet') : s.lather ? T('持久的泡沫', 'lasting lather') : (s.ppt > 0.01 ? T('只有浮渣、沒有持久泡沫', 'scum, no lasting lather') : T('還沒有持久泡沫', 'no lasting lather yet')), s.lather ? 'good' : '']);
     $('sout').innerHTML = dl(srows);
   }
@@ -1627,6 +1641,7 @@
   function chemHTML(msg) {
     return String(msg).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\b(Ca|Mg)2\+/g, '$1<sup>2+</sup>').replace(/\bNa\+/g, 'Na<sup>+</sup>')
+      .replace(/Ca\(HCO3\)2/g, 'Ca(HCO<sub>3</sub>)<sub>2</sub>').replace(/\bCO2\b/g, 'CO<sub>2</sub>').replace(/\bH2O\b/g, 'H<sub>2</sub>O')
       .replace(/\(OH\)2\b/g, '(OH)<sub>2</sub>').replace(/\bNa2CO3\b/g, 'Na<sub>2</sub>CO<sub>3</sub>')
       .replace(/\bCaCO3\b/g, 'CaCO<sub>3</sub>').replace(/\bHCO3(−|-)/g, 'HCO<sub>3</sub><sup>−</sup>');
   }
@@ -1690,19 +1705,19 @@
   function readBenchSliders() {
     const o = { Ca: clamp(val(caEl), 0, 200), Mg: clamp(val(mgEl), 0, 100), HCO3: clamp(val(hco3El), 0, 600) };
     state.dose = clamp(val(doseEl), 0, 600);
-    $('cao').textContent = fdec(o.Ca, 1, 2) + ' mg/L';
-    $('mgo').textContent = fdec(o.Mg, 1, 2) + ' mg/L';
-    $('hco3o').textContent = fdec(o.HCO3, 0, 1) + ' mg/L';
-    $('doseo').textContent = fdec(state.dose, 0, 1) + ' mg/L';
+    $('cao').textContent = fdec(o.Ca, 1, 2) + ' mg/L';
+    $('mgo').textContent = fdec(o.Mg, 1, 2) + ' mg/L';
+    $('hco3o').textContent = fdec(o.HCO3, 0, 1) + ' mg/L';
+    $('doseo').textContent = fdec(state.dose, 0, 1) + ' mg/L';
     return o;
   }
   function readTitrSliders() {
     state.Va = clamp(val(vaEl), 10, 100);
     state.cE = clamp(val(ceEl), 0.005, 0.02);
     state.rate = clamp(val(rateEl), 0.1, 2);
-    $('vao').textContent = state.Va.toFixed(2) + ' mL';
-    $('ceo').textContent = fdec(state.cE, 4, 5) + ' M';
-    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
+    $('vao').textContent = state.Va.toFixed(2) + ' mL';
+    $('ceo').textContent = fdec(state.cE, 4, 5) + ' M';
+    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
   }
   // 程式自己設定滑桿時（LabNum.set 會送出 input 事件），不要當成學生在調整
   let quiet = 0;
@@ -1727,7 +1742,7 @@
       pressGroup('#presetSeg button', 'data-preset', pr);
       sndClick();
       waterChanged();
-      bStatus(T('換了一杯 1 L 的' + tn(PRESET_NAMES[pr]) + '；滴定用的錐形瓶也換成這杯水。', 'A fresh litre of ' + tn(PRESET_NAMES[pr]) + '; the titration flask now holds this water too.'));
+      bStatus(T('換了一杯 1 L 的' + tn(PRESET_NAMES[pr]) + '；滴定用的錐形瓶也換成這杯水。', 'A fresh litre of ' + tn(PRESET_NAMES[pr]) + '; the titration flask now holds this water too.'));
     });
   });
   [caEl, mgEl, hco3El].forEach(function (el) {
@@ -1737,7 +1752,7 @@
       K.benchSet(B, 'custom', { Ca: o.Ca, Mg: o.Mg, HCO3: o.HCO3, Na: 10 });
       pressGroup('#presetSeg button', 'data-preset', '');
       waterChanged();
-      bStatus(T('自訂的水：硬度 ' + fH(K.benchInfo(B).H) + ' mg/L。', 'Custom water: hardness ' + fH(K.benchInfo(B).H) + ' mg/L.'));
+      bStatus(T('自訂的水：硬度 ' + fH(K.benchInfo(B).H) + ' mg/L。', 'Custom water: hardness ' + fH(K.benchInfo(B).H) + ' mg/L.'));
     };
     el.addEventListener('input', on);
     el.addEventListener('change', on);
@@ -1748,14 +1763,14 @@
   $('boilBtn').addEventListener('click', function () {
     if (isMys()) return;
     const d = K.benchBoil(B);
-    if (!d) { bStatus(T('水只剩 ' + Math.round(B.water.V * 1000) + ' mL，不能再煮了（至少要留 500 mL）。換一杯新的水吧。', 'Only ' + Math.round(B.water.V * 1000) + ' mL left: it cannot be boiled again (500 mL must remain). Take a fresh litre.'), true); return; }
+    if (!d) { bStatus(T('水只剩 ' + Math.round(B.water.V * 1000) + ' mL，不能再煮了（至少要留 500 mL）。換一杯新的水吧。', 'Only ' + Math.round(B.water.V * 1000) + ' mL left: it cannot be boiled again (500 mL must remain). Take a fresh litre.'), true); return; }
     anim('boil', 2.4);
     sndBoil();
     waterChanged();
     const dH = d.H0 - d.H;
     bStatus(dH >= 0.05
-      ? T('煮沸 10 分鐘：Ca(HCO3)2 → CaCO3↓ + CO2 + H2O，硬度從 ' + fH(d.H0) + ' 降到 ' + fH(d.H) + ' mg/L，杯底多了 ' + Math.round(d.dScale) + ' mg 水垢；同時蒸發掉 100 mL 水。', 'Boiled 10 min: Ca(HCO3)2 → CaCO3↓ + CO2 + H2O. Hardness fell from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L, leaving ' + Math.round(d.dScale) + ' mg of scale; 100 mL of water boiled away.')
-      : T('煮沸 10 分鐘：沒有碳酸氫根可以變成水垢，硬度從 ' + fH(d.H0) + ' 變成 ' + fH(d.H) + ' mg/L（蒸發掉 100 mL 水）。', 'Boiled 10 min: there is no hydrogencarbonate to turn into scale; hardness went from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L (100 mL boiled away).'));
+      ? T('煮沸 10 分鐘：Ca(HCO3)2 → CaCO3↓ + CO2 + H2O，硬度從 ' + fH(d.H0) + ' 降到 ' + fH(d.H) + ' mg/L，杯底多了 ' + Math.round(d.dScale) + ' mg 水垢；同時蒸發掉 100 mL 水。', 'Boiled 10 min: Ca(HCO3)2 → CaCO3↓ + CO2 + H2O. Hardness fell from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L, leaving ' + Math.round(d.dScale) + ' mg of scale; 100 mL of water boiled away.')
+      : T('煮沸 10 分鐘：沒有碳酸氫根可以變成水垢，硬度從 ' + fH(d.H0) + ' 變成 ' + fH(d.H) + ' mg/L（蒸發掉 100 mL 水）。', 'Boiled 10 min: there is no hydrogencarbonate to turn into scale; hardness went from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L (100 mL boiled away).'));
     emit('treat', d);
   });
   $('sodaBtn').addEventListener('click', function () {
@@ -1765,7 +1780,7 @@
     anim('soda', 2.2);
     sndPpt();
     waterChanged();
-    bStatus(T('加入 ' + fdec(state.dose, 0, 1) + ' mg Na2CO3：CaCO3 沉澱、濾掉。Ca2+ 從 ' + fmg(d.Ca0) + ' 剩 ' + fmg(d.Ca) + ' mg/L，Mg2+ 從 ' + fmg(d.Mg0) + ' 剩 ' + fmg(d.Mg) + ' mg/L。', 'Added ' + fdec(state.dose, 0, 1) + ' mg of Na2CO3; the CaCO3 is filtered off. Ca2+ went from ' + fmg(d.Ca0) + ' to ' + fmg(d.Ca) + ' mg/L, Mg2+ from ' + fmg(d.Mg0) + ' to ' + fmg(d.Mg) + ' mg/L.'));
+    bStatus(T('加入 ' + fdec(state.dose, 0, 1) + ' mg Na2CO3：CaCO3 沉澱、濾掉。Ca2+ 從 ' + fmg(d.Ca0) + ' 剩 ' + fmg(d.Ca) + ' mg/L，Mg2+ 從 ' + fmg(d.Mg0) + ' 剩 ' + fmg(d.Mg) + ' mg/L。', 'Added ' + fdec(state.dose, 0, 1) + ' mg of Na2CO3; the CaCO3 is filtered off. Ca2+ went from ' + fmg(d.Ca0) + ' to ' + fmg(d.Ca) + ' mg/L, Mg2+ from ' + fmg(d.Mg0) + ' to ' + fmg(d.Mg) + ' mg/L.'));
     emit('treat', d);
   });
   $('resinBtn').addEventListener('click', function () {
@@ -1775,8 +1790,8 @@
     sndResin();
     waterChanged();
     bStatus(d.H < 1
-      ? T('整杯水流過樹脂：Ca2+、Mg2+ 換成 Na+，硬度從 ' + fH(d.H0) + ' 降到 ' + fH(d.H) + ' mg/L。樹脂還剩 ' + num(B.resin.left, 2) + ' mmol 的容量。', 'The whole beaker ran through the resin: Ca2+ and Mg2+ were swapped for Na+, and the hardness fell from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L. ' + num(B.resin.left, 2) + ' mmol of capacity left.')
-      : T('流過樹脂後硬度還有 ' + fH(d.H) + ' mg/L：樹脂' + (B.resin.left <= 0 ? '的容量用完了，有離子漏過去。按「食鹽水再生」。' : '只換掉了一部分。'), 'After the resin the hardness is still ' + fH(d.H) + ' mg/L: ' + (B.resin.left <= 0 ? 'the resin is used up and ions leak through. Press “Regenerate with brine”.' : 'only part was exchanged.')), d.H >= 1 && B.resin.left <= 0);
+      ? T('整杯水流過樹脂：Ca2+、Mg2+ 換成 Na+，硬度從 ' + fH(d.H0) + ' 降到 ' + fH(d.H) + ' mg/L。樹脂還剩 ' + num(B.resin.left, 2) + ' mmol 的容量。', 'The whole beaker ran through the resin: Ca2+ and Mg2+ were swapped for Na+, and the hardness fell from ' + fH(d.H0) + ' to ' + fH(d.H) + ' mg/L. ' + num(B.resin.left, 2) + ' mmol of capacity left.')
+      : T('流過樹脂後硬度還有 ' + fH(d.H) + ' mg/L：樹脂' + (B.resin.left <= 0 ? '的容量用完了，有離子漏過去。按「食鹽水再生」。' : '只換掉了一部分。'), 'After the resin the hardness is still ' + fH(d.H) + ' mg/L: ' + (B.resin.left <= 0 ? 'the resin is used up and ions leak through. Press “Regenerate with brine”.' : 'only part was exchanged.')), d.H >= 1 && B.resin.left <= 0);
     emit('treat', d);
   });
   $('regenBtn').addEventListener('click', function () {
@@ -1786,7 +1801,7 @@
     sndResin();
     renderAll();
     bStatus(used > 1e-9
-      ? T('用濃食鹽水沖過樹脂：大量的 Na+ 把 ' + num(used, 2) + ' mmol 的 Ca2+、Mg2+ 換下來沖走，樹脂又回到鈉型。', 'Concentrated brine washed through the resin: the flood of Na+ pushed off ' + num(used, 2) + ' mmol of Ca2+ and Mg2+, and the resin is back in its sodium form.')
+      ? T('用濃食鹽水沖過樹脂：大量的 Na+ 把 ' + num(used, 2) + ' mmol 的 Ca2+、Mg2+ 換下來沖走，樹脂又回到鈉型。', 'Concentrated brine washed through the resin: the flood of Na+ pushed off ' + num(used, 2) + ' mmol of Ca2+ and Mg2+, and the resin is back in its sodium form.')
       : T('樹脂本來就是新的鈉型，不用再生。', 'The resin is already fresh, in its sodium form.'));
     emit('treat', d);
   });
@@ -1802,8 +1817,8 @@
     renderBench();
     kick();
     bStatus(d.lather
-      ? T('第 ' + d.drops + ' 滴：搖一搖，出現持久的泡沫。', 'Drop ' + d.drops + ': shake it, and a lasting lather forms.')
-      : (d.ppt > 0.01 ? T('第 ' + d.drops + ' 滴：搖一搖，只出現白色浮渣，泡沫一下就破了。', 'Drop ' + d.drops + ': shake it; only white scum forms and the bubbles burst at once.') : T('第 ' + d.drops + ' 滴：泡沫還不夠持久。', 'Drop ' + d.drops + ': the lather does not last yet.')));
+      ? T('第 ' + d.drops + ' 滴：搖一搖，出現持久的泡沫。', 'Drop ' + d.drops + ': shake it, and a lasting lather forms.')
+      : (d.ppt > 0.01 ? T('第 ' + d.drops + ' 滴：搖一搖，只出現白色浮渣，泡沫一下就破了。', 'Drop ' + d.drops + ': shake it; only white scum forms and the bubbles burst at once.') : T('第 ' + d.drops + ' 滴：泡沫還不夠持久。', 'Drop ' + d.drops + ': the lather does not last yet.')));
     emit('soap', d);
   }
   $('soapBtn').addEventListener('click', soapDrop);
@@ -1812,7 +1827,7 @@
     state.shake = 0; state.soapDrop = null;
     sndClick();
     renderBench(); kick();
-    bStatus(T('換了一支乾淨的試管，裝 5.00 mL 燒杯裡的水。', 'A clean test tube with 5.00 mL of the water from the beaker.'));
+    bStatus(T('換了一支乾淨的試管，裝 5.00 mL 燒杯裡的水。', 'A clean test tube with 5.00 mL of the water from the beaker.'));
   });
   $('deterg').addEventListener('change', function () {
     B.tube = { drops: 0, detergent: $('deterg').checked };
@@ -1835,8 +1850,8 @@
   function freshFlaskNote() {
     const r = S.run, p = r.p, hid = mysteryHidden();
     if (!hid && r.Veq > VT_MAX - p.Va - K.V_ADD_ML) return T('注意：當量點需要的 EDTA 超過錐形瓶的容量，到不了當量點。', 'Note: the flask cannot hold enough EDTA to reach the equivalence point.');
-    if (!hid && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
-    if (!hid && r.Veq < 1 && r.Veq > 0) return T('當量點只要 ' + r.Veq.toFixed(2) + ' mL：多取一點水樣，或用稀一點的 EDTA，誤差才會小。', 'The equivalence point is only ' + r.Veq.toFixed(2) + ' mL: take more water or use a more dilute EDTA to keep the error small.');
+    if (!hid && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
+    if (!hid && r.Veq < 1 && r.Veq > 0) return T('當量點只要 ' + r.Veq.toFixed(2) + ' mL：多取一點水樣，或用稀一點的 EDTA，誤差才會小。', 'The equivalence point is only ' + r.Veq.toFixed(2) + ' mL: take more water or use a more dilute EDTA to keep the error small.');
     if (p.mode === 'B' && r.nMg > 0) return T('加了 NaOH：Mg2+ 沉澱成白色的 Mg(OH)2，不會被 EDTA 滴到。', 'NaOH added: Mg2+ precipitates as white Mg(OH)2, so EDTA will not titrate it.');
     if (p.mode === 'A' && r.nMg <= 0 && !p.mgEdta && r.nCa > 0) return T('這瓶水沒有 Mg2+：看看 EBT 的變色會不會清楚。', 'This water has no Mg2+: see whether the EBT colour change is sharp.');
     return '';
@@ -1911,14 +1926,14 @@
   $('tap').addEventListener('click', function () {
     if (state.tap) {
       closeTap();
-      setStatus(T('活栓關上了，滴定管讀數 ' + vRead(S.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(S.run.fill) + ' mL.'));
+      setStatus(T('活栓關上了，滴定管讀數 ' + vRead(S.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(S.run.fill) + ' mL.'));
       kick(); return;
     }
     if (K.BURETTE_UNITS - S.run.fill <= 0) { emptyNotice(); return; }
     state.tap = true; state.acc = 0;
     sndClick();
     updateButtons();
-    setStatus(T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。看到紫色就關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it when purple appears and go drop by drop.'));
+    setStatus(T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。看到紫色就關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it when purple appears and go drop by drop.'));
     kick();
   });
   $('endBtn').addEventListener('click', function () {
@@ -1932,19 +1947,19 @@
     sndRecord();
     renderAll();
     const hid = mysteryHidden();
-    setStatus(T('記錄終點：' + vRead(r.out) + ' mL，算出' + (r.p.mode === 'A' ? '總' : '鈣') + '硬度 ' + fH(d.Hmeas) + ' mg/L', 'End point recorded: ' + vRead(r.out) + ' mL, giving a ' + (r.p.mode === 'A' ? 'total' : 'calcium') + ' hardness of ' + fH(d.Hmeas) + ' mg/L') +
-      (hid ? T('。把它填進答案欄。', '. Put it in the answer box.') : T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(d.err, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(d.err, 3) + ' mL.')) +
+    setStatus(T('記錄終點：' + vRead(r.out) + ' mL，算出' + (r.p.mode === 'A' ? '總' : '鈣') + '硬度 ' + fH(d.Hmeas) + ' mg/L', 'End point recorded: ' + vRead(r.out) + ' mL, giving a ' + (r.p.mode === 'A' ? 'total' : 'calcium') + ' hardness of ' + fH(d.Hmeas) + ' mg/L') +
+      (hid ? T('。把它填進答案欄。', '. Put it in the answer box.') : T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(d.err, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(d.err, 3) + ' mL.')) +
       (d.blue ? '' : T('（溶液還不是純藍色）', ' (the solution is not pure blue yet)')));
     emit('endpoint', d);
   });
   $('refill').addEventListener('click', function () {
     const r = S.run;
-    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
+    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
     closeTap();
     r.fill = 0;
     sndRefill();
     renderAll();
-    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
+    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
   });
   $('newFlask').addEventListener('click', function () {
     const had = S.run.u > 0;
@@ -1970,6 +1985,13 @@
     const v = Number(s);
     return isFinite(v) ? v : NaN;
   }
+  $('answerEntry').addEventListener('click', function () {
+    const graphPage = document.querySelector('.scene-pages input[value="graphs"]');
+    if (graphPage.closest('fieldset').getClientRects().length) graphPage.click();
+    LabDeck.reveal($('ansH'));
+    $('ansH').focus();
+  });
+
   $('check').addEventListener('click', function () {
     const s = S.sample;
     const H = parseNum($('ansH').value), Hc = parseNum($('ansCa').value);
@@ -1979,9 +2001,9 @@
     const parts = [];
     const judge = function (err, zh, en) {
       const a = Math.abs(err);
-      return a <= 0.01 ? '<span class="ok">' + T(zh + '：誤差在 1% 以內 ✓', en + ': within 1% ✓') + '</span>'
-        : a <= 0.02 ? '<span class="ok">' + T(zh + '：誤差在 2% 以內 ✓', en + ': within 2% ✓') + '</span>'
-          : '<span class="no">' + T(zh + '：誤差超過 2%', en + ': more than 2% off') + '</span>';
+      return a <= 0.01 ? '<span class="ok">' + T(zh + '：誤差在 1 % 以內 ✓', en + ': within 1 % ✓') + '</span>'
+        : a <= 0.02 ? '<span class="ok">' + T(zh + '：誤差在 2 % 以內 ✓', en + ': within 2 % ✓') + '</span>'
+          : '<span class="no">' + T(zh + '：誤差超過 2 %', en + ': more than 2 % off') + '</span>';
     };
     if (okH) parts.push(judge(d.errH, '總硬度', 'Total hardness'));
     if (okC) parts.push(judge(d.errCa, '鈣硬度', 'Calcium hardness'));
@@ -1995,7 +2017,7 @@
     s.revealed = true;
     renderAll();
     if (L) drawBench1();
-    $('mysOut').innerHTML = T('答案：總硬度 ' + fH(s.H) + ' mg/L、鈣硬度 ' + fH(s.Hca) + ' mg/L（鎂硬度 ' + fH(s.Hmg) + ' mg/L）。圖上已標出當量點。', 'Answer: total hardness ' + fH(s.H) + ' mg/L, calcium hardness ' + fH(s.Hca) + ' mg/L (magnesium ' + fH(s.Hmg) + ' mg/L). The equivalence point is now marked on the graph.');
+    $('mysOut').innerHTML = T('答案：總硬度 ' + fH(s.H) + ' mg/L、鈣硬度 ' + fH(s.Hca) + ' mg/L（鎂硬度 ' + fH(s.Hmg) + ' mg/L）。圖上已標出當量點。', 'Answer: total hardness ' + fH(s.H) + ' mg/L, calcium hardness ' + fH(s.Hca) + ' mg/L (magnesium ' + fH(s.Hmg) + ' mg/L). The equivalence point is now marked on the graph.');
   });
   $('newMys').addEventListener('click', function () {
     K.newSample(S);
@@ -2054,13 +2076,13 @@
       hud: function () {
         const r = S.run, e = r.eq, hid = mysteryHidden(), p = r.p;
         const col = flaskRGB(r);
-        const tl = 'V = ' + vRead(r.out) + ' mL' + (state.meter && e.pCa != null ? T('・', ' · ') + 'pCa = ' + e.pCa.toFixed(2) : '');
+        const tl = 'V = ' + vRead(r.out) + ' mL' + (state.meter && e.pCa != null ? T('・', ' · ') + 'pCa = ' + e.pCa.toFixed(2) : '');
         let tr = '<i style="background:' + rgbStr(col) + '"></i>' + tn(COLOUR_NAMES[K.colourKey(e.rf)]);
         if (!hid) {
-          tr += '<br>' + CA + T(' 被螯合 ', ' chelated ') + Math.round(Math.min(1, e.fCa) * 100) + '%';
-          if (p.mode === 'A') tr += T('・', ' · ') + MG + ' ' + Math.round(Math.min(1, e.fMg) * 100) + '%';
+          tr += '<br>' + CA + T(' 被螯合 ', ' chelated ') + Math.round(Math.min(1, e.fCa) * 100) + ' %';
+          if (p.mode === 'A') tr += T('・', ' · ') + MG + ' ' + Math.round(Math.min(1, e.fMg) * 100) + ' %';
         }
-        tr += '<br>' + T('指示劑與金屬結合 ', 'indicator on metal ') + Math.round(e.rf * 100) + '%';
+        tr += '<br>' + T('指示劑與金屬結合 ', 'indicator on metal ') + Math.round(e.rf * 100) + ' %';
         return { tl: tl, tr: tr };
       },
       running: function () { return !!raf; },
@@ -2184,8 +2206,37 @@
   observe(gcv, resizeGraph);
   resizeBench1(); resizeBench(); resizeGraph();
   renderAll();
-  bStatus(T('預設是一杯 1 L 的自來水。試試「加一滴」肥皂水，數一數幾滴才有持久的泡沫。', 'A litre of tap water to start. Try “Add a drop” of soap and count the drops before the lather lasts.'));
-  setStatus(T('預設：自來水 50.00 mL＋pH 10 緩衝液＋EBT（酒紅色），滴定管裝 0.0100 M EDTA。先打開活栓快速加，變紫色時改成一滴一滴，直到純藍色。', 'Default: 50.00 mL of tap water + pH 10 buffer + EBT (wine red), with 0.0100 M EDTA in the burette. Open the stopcock to start, then go drop by drop when it turns purple, until it is pure blue.'));
+  bStatus(T('預設是一杯 1 L 的自來水。試試「加一滴」肥皂水，數一數幾滴才有持久的泡沫。', 'A litre of tap water to start. Try “Add a drop” of soap and count the drops before the lather lasts.'));
+  setStatus(T('預設：自來水 50.00 mL＋pH 10 緩衝液＋EBT（酒紅色），滴定管裝 0.0100 M EDTA。先打開活栓快速加，變紫色時改成一滴一滴，直到純藍色。', 'Default: 50.00 mL of tap water + pH 10 buffer + EBT (wine red), with 0.0100 M EDTA in the burette. Open the stopcock to start, then go drop by drop when it turns purple, until it is pure blue.'));
   drawBench1(); drawBench();
   kick();
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

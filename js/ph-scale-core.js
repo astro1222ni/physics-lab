@@ -23,6 +23,15 @@
   'use strict';
 
   const LOGC_MIN = -8, LOGC_MAX = 0;   // 濃度範圍 10^-8 ～ 1 M
+  function parseConcentration(text) {
+    const raw = String(text).normalize('NFKC').trim().replace(/−/g, '-')
+      .replace(/\s*×\s*10\s*\^?\s*/i, 'e');
+    if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(raw)) return null;
+    const value = Number(raw);
+    const concentration = Math.min(10 ** LOGC_MAX, Math.max(10 ** LOGC_MIN, value));
+    return { concentration, logC: Math.log10(concentration), clamped: concentration !== value };
+  }
+
   const T_MIN = 25, T_MAX = 100;       // 溫度範圍（°C）
   const WATER_M = 55.35;               // 25 °C 純水的莫耳濃度（997 g/L ÷ 18.015 g/mol），只用在「多少個水分子才有一個 H3O+」
 
@@ -132,6 +141,7 @@
   }
 
   const api = {
+    parseConcentration: parseConcentration,
     LOGC_MIN: LOGC_MIN, LOGC_MAX: LOGC_MAX, T_MIN: T_MIN, T_MAX: T_MAX, WATER_M: WATER_M,
     SPECIES: SPECIES, ORDER: ORDER, isAcid: isAcid, isBase: isBase, isWeak: isWeak, isStrong: isStrong,
     pKw: pKw, Kw: Kw, solveH: solveH, solution: solution, balance: balance, kaFrom: kaFrom, newUnknown: newUnknown

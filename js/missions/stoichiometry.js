@@ -28,7 +28,7 @@
     {
       id: 'stoichiometry-1', level: 1,
       title: { zh: '冒泡了', en: 'Bubbles!' },
-      desc: { zh: '按「開始反應」，讓量筒收集到 20 mL 以上的氣體。', en: 'Press “Start” and collect at least 20 mL of gas in the cylinder.' },
+      desc: { zh: '按「開始反應」，讓量筒收集到 20 mL 以上的氣體。', en: 'Press “Start” and collect at least 20 mL of gas in the cylinder.' },
       check: function (ev) { const d = ev2(ev, 'tick'); return !!d && d.started && d.V >= 20; }
     },
     {
@@ -52,13 +52,13 @@
     {
       id: 'stoichiometry-5', level: 5,
       title: { zh: '剛好完全反應', en: 'Exactly enough' },
-      desc: { zh: '用磨亮的鎂帶，調整鎂與鹽酸的量，讓兩者剛好完全反應（HCl 與 Mg 的莫耳數比在 2 的 1% 以內），並做到反應結束。', en: 'With a cleaned ribbon, adjust the magnesium and the acid so that they react exactly (mole ratio HCl : Mg within 1% of 2), and run the reaction to the end.' },
+      desc: { zh: '用磨亮的鎂帶，調整鎂與鹽酸的量，讓兩者剛好完全反應（HCl 與 Mg 的莫耳數比在 2 的 1 % 以內），並做到反應結束。', en: 'With a cleaned ribbon, adjust the magnesium and the acid so that they react exactly (mole ratio HCl : Mg within 1 % of 2), and run the reaction to the end.' },
       check: function (ev) { const d = ev2(ev, 'done'); return !!d && d.polished && Math.abs(d.ratio / 2 - 1) <= 0.01; }
     },
     {
       id: 'stoichiometry-6', level: 5,
       title: { zh: '氣體的莫耳體積', en: 'Molar volume of a gas' },
-      desc: { zh: '選對限量試劑，算出氫氣在標準狀況下的莫耳體積，誤差在 2% 以內。', en: 'Pick the right limiting reactant and find the molar volume of hydrogen at STP to within 2%.' },
+      desc: { zh: '選對限量試劑，算出氫氣在標準狀況下的莫耳體積，誤差在 2 % 以內。', en: 'Pick the right limiting reactant and find the molar volume of hydrogen at STP to within 2 %.' },
       check: function (ev) { const d = va(ev); return !!d && rightLim(d) && Math.abs(d.VmErr) <= 0.02; }
     },
     {
@@ -77,31 +77,31 @@
     {
       id: 'stoichiometry-8', level: 7,
       title: { zh: '鎂的原子量', en: 'Atomic mass of magnesium' },
-      desc: { zh: '鎂是限量試劑，由收集到的氫氣算出鎂的原子量，誤差在 1% 以內。', en: 'With magnesium as the limiting reactant, find the atomic mass of magnesium from the hydrogen you collect, to within 1%.' },
+      desc: { zh: '鎂是限量試劑，由收集到的氫氣算出鎂的原子量，誤差在 1 % 以內。', en: 'With magnesium as the limiting reactant, find the atomic mass of magnesium from the hydrogen you collect, to within 1 %.' },
       check: function (ev) { const d = va(ev); return !!d && d.limPick === 'Mg' && d.lim !== 'HCl' && Math.abs(d.Merr) <= 0.01; }
     },
     {
       id: 'stoichiometry-9', level: 7,
       title: { zh: '溫水裡的氫氣', en: 'Hydrogen over warm water' },
-      desc: { zh: '水溫 35 °C 以上，鎂的原子量算到誤差 1% 以內（水蒸氣不可忽略）。', en: 'With the water at 35 °C or warmer, find the atomic mass of magnesium to within 1% (the water vapour cannot be ignored).' },
+      desc: { zh: '水溫 35 °C 以上，鎂的原子量算到誤差 1 % 以內（水蒸氣不可忽略）。', en: 'With the water at 35 °C or warmer, find the atomic mass of magnesium to within 1 % (the water vapour cannot be ignored).' },
       check: function (ev) { const d = va(ev); return !!d && d.T >= 35 && d.limPick === 'Mg' && d.lim !== 'HCl' && Math.abs(d.Merr) <= 0.01; }
     },
     {
       id: 'stoichiometry-10', level: 8,
       title: { zh: '反推鹽酸的濃度', en: 'Work out the acid' },
-      desc: { zh: '鹽酸是限量試劑，由收集到的氫氣算出鹽酸的濃度，誤差在 1% 以內。', en: 'With the acid as the limiting reactant, work out the concentration of the acid from the hydrogen you collect, to within 1%.' },
+      desc: { zh: '鹽酸是限量試劑，由收集到的氫氣算出鹽酸的濃度，誤差在 1 % 以內。', en: 'With the acid as the limiting reactant, work out the concentration of the acid from the hydrogen you collect, to within 1 %.' },
       check: function (ev) { const d = va(ev); return !!d && d.limPick === 'HCl' && d.lim === 'HCl' && Math.abs(d.cErr) <= 0.01; }
     },
     {
       id: 'stoichiometry-11', level: 9,
       title: { zh: '精密測量', en: 'Precision measurement' },
-      desc: { zh: '鎂的原子量誤差在 0.3% 以內。提示：選對量筒、對齊液面、讀數要估到最小刻度的十分之一。', en: 'Find the atomic mass of magnesium to within 0.3%. Hint: choose the right cylinder, level the water and estimate the reading to a tenth of a division.' },
+      desc: { zh: '鎂的原子量誤差在 0.3 % 以內。提示：選對量筒、對齊液面、讀數要估到最小刻度的十分之一。', en: 'Find the atomic mass of magnesium to within 0.3 %. Hint: choose the right cylinder, level the water and estimate the reading to a tenth of a division.' },
       check: function (ev) { const d = va(ev); return !!d && d.limPick === 'Mg' && d.lim !== 'HCl' && Math.abs(d.Merr) <= 0.003; }
     },
     {
       id: 'stoichiometry-12', level: 10,
       title: { zh: '換了天氣，同一個答案', en: 'Any weather, one answer' },
-      desc: { zh: '在不清除結果的情況下，做至少三次實驗，水溫最高與最低相差 15 °C 以上、大氣壓相差 80 mmHg 以上，每次換算成標準狀況的莫耳體積誤差都在 0.5% 以內。', en: 'Without clearing the results, do at least three runs whose water temperatures span 15 °C or more and whose air pressures span 80 mmHg or more, each giving the molar volume at STP to within 0.5%.' },
+      desc: { zh: '在不清除結果的情況下，做至少三次實驗，水溫最高與最低相差 15 °C 以上、大氣壓相差 80 mmHg 以上，每次換算成標準狀況的莫耳體積誤差都在 0.5 % 以內。', en: 'Without clearing the results, do at least three runs whose water temperatures span 15 °C or more and whose air pressures span 80 mmHg or more, each giving the molar volume at STP to within 0.5 %.' },
       check: function (ev, mem) {
         const d = va(ev); if (!d) return false;
         segMem(mem, d);

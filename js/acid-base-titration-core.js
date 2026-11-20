@@ -155,7 +155,7 @@
     strongBefore: function (p, Vb) { return -Math.log10((p.Ca * p.Va - p.Cb * Vb) / (p.Va + p.Vw + Vb)); },
     /** 強鹼過量（強酸滴定的當量點後） */
     strongAfter: function (p, Vb) { return 14 + Math.log10((p.Cb * Vb - p.Ca * p.Va) / (p.Va + p.Vw + Vb)); },
-    /** 弱酸起點：解二次式 h² + Ka h − Ka C = 0（忽略水的解離） */
+    /** 弱酸起點：解二次式 h^2 + Ka h − Ka C = 0（忽略水的解離） */
     weakAcidStart: function (p) {
       const C = p.Ca * p.Va / (p.Va + p.Vw);
       return -Math.log10((-p.Ka + Math.sqrt(p.Ka * p.Ka + 4 * p.Ka * C)) / 2);
@@ -171,7 +171,7 @@
       const V = Veq(p), C = p.Ca * p.Va / (p.Va + p.Vw + V);
       return 14 + Math.log10(Math.sqrt(KW / p.Ka * C));
     },
-    /** 弱鹼起點：[OH-] = (−Kb + √(Kb² + 4 Kb C))/2 */
+    /** 弱鹼起點：[OH-] = (−Kb + √(Kb^2 + 4 Kb C))/2 */
     weakBaseStart: function (p) {
       const C = p.Ca * p.Va / (p.Va + p.Vw);
       return 14 + Math.log10((-p.Kb + Math.sqrt(p.Kb * p.Kb + 4 * p.Kb * C)) / 2);

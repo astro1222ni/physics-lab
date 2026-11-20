@@ -51,7 +51,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 8;
     controls.maxDistance = 60;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 12, T });
     controls.maxPolarAngle = Math.PI * 0.49;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x7d828c, 1.35));
@@ -294,14 +294,23 @@
       const span = NX * SP + 4;
       const dist = (span * 0.5) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1.3, camera.aspect) + 4;
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         controls.target.set(0, 2.2, 0);
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(300, w * 0.9)) : 420; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(300, w * 0.9)) : 420;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -325,7 +334,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; if (!H.running()) renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -336,8 +345,7 @@
     });
 
     function setHint(w) {
-      hudBL.textContent = w < 560 ? T('示意圖（未依比例）・黃點是電子', 'Sketch, not to scale · yellow dots: electrons')
-        : T('示意圖（未依比例）・黃點是電子・拖曳旋轉、滾輪或雙指縮放', 'Sketch, not to scale · yellow dots are electrons · drag to rotate, scroll or pinch to zoom');
+      hudBL.textContent = T('示意圖（未依比例）・黃點是電子', 'Sketch, not to scale · yellow dots: electrons');
     }
 
     const api = {
@@ -352,6 +360,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

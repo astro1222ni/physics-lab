@@ -16,7 +16,7 @@
   const VT_MAX = 290;             // 錐形瓶最多裝到 290 mL（250 mL 錐形瓶的錐體部分約 310 mL）
   const MAX_ARCHIVE = 5;          // 圖上最多留 5 條舊曲線
   const STREAM_RATE = 0.6;        // 流速超過 0.6 mL/s 時，液滴連成細流
-  const G_PX = 9800;              // 液滴下落的重力加速度（畫面 px/s²；錐形瓶的比例是 12 px/cm，約 1000 px/m）
+  const G_PX = 9800;              // 液滴下落的重力加速度（畫面 px/s^2；錐形瓶的比例是 12 px/cm，約 1000 px/m）
   const STIR_W = 2 * Math.PI * 2; // 攪拌子每秒 2 轉（畫面效果）
   const SAMPLE_SCALE_ML = 45;     // 指示劑的吸光度以「2 滴指示劑、45 mL 溶液」為準，溶液越多顏色越淡
 
@@ -204,7 +204,9 @@
   let L = null;
 
   function resizeBench() {
-    const W = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const W = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!W) return;
     const D = W >= 600 ? LAY.wide : LAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s);
@@ -337,7 +339,7 @@
     g.setTransform(L.dpr, 0, 0, L.dpr, 0, 0);
     // 滴定管的數字（每 5 mL）
     for (let i = 0; i <= 50; i += 5) {
-      LD.haloText(g, String(i), (L.xb - 12) * s, (VY.y0 + i * MLPX) * s, LD.alpha(C.text, 0.85), 'right', 'middle', (i % 10 ? '' : '600 ') + '10px ' + FF);
+      LD.haloText(g, String(i), (L.xb + 15) * s, (VY.y0 + i * MLPX) * s, LD.alpha(C.text, 0.85), 'left', 'middle', (i % 10 ? '' : '600 ') + '10px ' + FF);
     }
     // 錐形瓶的刻度數字
     const F = flaskDims();
@@ -641,8 +643,8 @@
     // 右下角「pH」字樣的寬度（文字不縮放，換回設計座標）：數字不可以跟它重疊
     g.font = '700 ' + (L.wide ? 11 : 9) + 'px ' + FF;
     const n = digits.length, pad = lc.w * 0.06, unitW = Math.max(lc.w * 0.2, (g.measureText('pH').width + 5) / L.s);
-    const cw = (lc.w - 2 * pad - unitW) / n, w = cw * 0.72, hgt = lc.h * 0.66, y = lc.y + (lc.h - hgt) / 2;
-    const on = C.lcdInk, off = LD.alpha(C.lcdInk, 0.07);
+    const cw = (lc.w - 2 * pad - unitW) / n, w = cw * 0.72, hgt = lc.h * 0.82, y = lc.y + (lc.h - hgt) / 2;
+    const on = '#c7ffc3', off = LD.alpha(C.lcdInk, 0.07);
     g.save();
     g.translate(lc.x + pad, 0);
     g.transform(1, 0, -0.08, 1, 0, 0);
@@ -696,7 +698,7 @@
     g.fillStyle = LD.alpha(C.surface, C.dark ? 0.2 : 0.6); g.fillRect(mx - tw + 3, my - R, 2.5, 2 * R);
     // 視線（與彎月面最低點同高）
     g.strokeStyle = LD.alpha(C.accent, 0.85); g.lineWidth = 1.2; g.setLineDash([5, 4]);
-    g.beginPath(); g.moveTo(mx - R, my); g.lineTo(mx + R, my); g.stroke();
+    g.beginPath(); g.moveTo(mx - R, my); g.lineTo(mx + tw * 0.15, my); g.stroke();
     g.setLineDash([]);
     // 鏡片的反光
     const lg = g.createRadialGradient(mx - R * 0.35, my - R * 0.4, R * 0.05, mx, my, R);
@@ -755,21 +757,21 @@
   function drawLabels(g) {
     const s = L.s, r = state.run, p = r.p, sys = p.sys;
     // 滴定管裡裝的是什麼
-    pillClamp(g, T('滴定管：', 'Burette: ') + titrant(sys) + ' ' + conc(p.Cb) + ' M', (L.xb + 16) * s, (VY.top + 56) * s, C.text, 'left');
+    pillClamp(g, T('滴定管：', 'Burette: ') + titrant(sys) + ' ' + conc(p.Cb) + ' M', (L.xb + 31) * s, (VY.top + 31) * s, C.text, 'left');
     // 放大鏡的讀數
-    pillClamp(g, T('讀數 ', 'Reading ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
+    pillClamp(g, T('讀數 ', 'Reading ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
     const F = flaskDims();
     // pH 計
     const lc = lcdRect();
     LD.haloText(g, 'pH', (lc.x + lc.w - 3) * s, (lc.y + lc.h - 4) * s, LD.alpha(C.lcdInk, 0.95), 'right', 'alphabetic', '700 ' + (L.wide ? 11 : 9) + 'px ' + FF);
     if (!state.meter) LD.haloText(g, T('電極在保存液中', 'electrode in storage'), ((L.meter[0] + L.meter[2]) / 2) * s, (L.meter[3] - 6) * s, C.muted, 'center', 'alphabetic', '10px ' + FF);
-    else if (L.wide) LD.haloText(g, T('pH 計　25.0 °C', 'pH meter  25.0 °C'), ((L.meter[0] + L.meter[2]) / 2) * s, (L.meter[3] - 8) * s, C.muted, 'center', 'alphabetic', '10px ' + FF);
+    else if (L.wide) LD.haloText(g, T('pH 計　25.0 °C', 'pH meter  25.0 °C'), ((L.meter[0] + L.meter[2]) / 2) * s, (L.meter[3] - 8) * s, C.muted, 'center', 'alphabetic', '10px ' + FF);
     // 實驗桌前緣：錐形瓶裡有什麼、示意圖
     // 一行放不下時：窄版分成兩行（指示劑與「示意圖」放第二行），寬版省略「示意圖」
     const px = 12, line1 = VY.bench * s + 17, line2 = VY.bench * s + 35;
     const parts = [{ t: T('錐形瓶：', 'Flask: ') + sysName(sys) + ' ' }, { f: SYS[sys].f },
-      { t: (sys === 'mx' ? T(' 濃度未知', ' (unknown c)') : ' ' + conc(p.Ca) + ' M') + T('・', ' · ') + p.Va.toFixed(2) + ' mL' +
-        (p.Vw > 0 ? T('＋水 ', ' + water ') + p.Vw.toFixed(0) + ' mL' : '') }];
+      { t: (sys === 'mx' ? T(' 濃度未知', ' (unknown c)') : ' ' + conc(p.Ca) + ' M') + T('・', ' · ') + p.Va.toFixed(2) + ' mL' +
+        (p.Vw > 0 ? T('＋水 ', ' + water ') + p.Vw.toFixed(0) + ' mL' : '') }];
     const indT = state.ind !== 'none' ? T('＋', ' + ') + indName(state.ind) : '';
     const note = T('示意圖（未依比例）', 'Not to scale');
     g.font = '11px ' + FF;
@@ -899,7 +901,7 @@
     if (left <= 0) { closeTap(); emptyNotice(); return 0; }
     if (r.p.Va + r.p.Vw + (r.out + n) / U > VT_MAX) {
       closeTap();
-      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。換一瓶，或減少待測液、提高滴定液的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Start a new flask, or use less sample or a more concentrated titrant.'), true);
+      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。換一瓶，或減少待測液、提高滴定液的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Start a new flask, or use less sample or a more concentrated titrant.'), true);
       return 0;
     }
     n = Math.min(n, left);
@@ -958,7 +960,7 @@
   }
   function emptyNotice() {
     sndEmpty();
-    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
+    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
   }
   function closeTap() {
     if (!state.tap) return;
@@ -991,7 +993,7 @@
     if (r.rows.length > 600) r.rows.splice(1, r.rows.length - 600);
     latestRow = true;
     renderAll();
-    const msg = T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
+    const msg = T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
       (state.meter ? T('、pH ' + f2(r.pH), ', pH ' + f2(r.pH)) : '') +
       (state.ind !== 'none' ? T('、溶液' + colourName(state.ind, row.fb), ', solution ' + colourName(state.ind, row.fb)) : '') + T('。', '.');
     routineStatus(msg);
@@ -1141,7 +1143,7 @@
           g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
           g.beginPath(); g.moveTo(px, py); g.lineTo(px, y1); g.stroke(); g.restore();
           LD.ball(g, px, py, 4.8, C.sys[p.sys], { shadow: false });
-          const lab = T('當量點 ' + r.Veq.toFixed(2) + ' mL・pH ' + f2(r.pHeq), 'equivalence ' + r.Veq.toFixed(2) + ' mL, pH ' + f2(r.pHeq));
+          const lab = T('當量點 ' + r.Veq.toFixed(2) + ' mL・pH ' + f2(r.pHeq), 'equivalence ' + r.Veq.toFixed(2) + ' mL, pH ' + f2(r.pHeq));
           pillGraph(g, lab, px + 8, p.sys === 'wb' ? py - 8 : py + 24, C.text, 'left', x0, x1);
         }
       }
@@ -1151,7 +1153,7 @@
       if (px <= x1) {
         g.strokeStyle = C.equi; g.lineWidth = 1.6;
         g.beginPath(); g.moveTo(px, y0); g.lineTo(px, y1); g.stroke();
-        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px + 5, y0 + 34, C.equi, 'left', x0, x1);
+        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px + 5, y0 + 34, C.equi, 'left', x0, x1);
       }
     }
     // 座標軸與刻度
@@ -1228,10 +1230,10 @@
     let best = null, bd = 28;
     r.pts.forEach(function (q) { if (q.m) { const d = Math.abs(X(q.u / U) - hover.x); if (d < bd) { bd = d; best = q; } } });
     let v, ph, lab;
-    if (best) { v = best.u / U; ph = best.pH; lab = 'V = ' + vRead(best.u) + ' mL・pH ' + f2(ph); }
+    if (best) { v = best.u / U; ph = best.pH; lab = 'V = ' + vRead(best.u) + ' mL・pH ' + f2(ph); }
     else if (state.theory && !mysteryHidden()) {
       v = Math.max(0, Math.min(G.xmax, (hover.x - G.x0) / (G.x1 - G.x0) * G.xmax));
-      ph = K.pH(r.p, v); lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL・pH ' + f2(ph);
+      ph = K.pH(r.p, v); lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL・pH ' + f2(ph);
     } else return;
     const x = X(v), y = Y(ph);
     g.strokeStyle = LD.alpha(C.text, 0.4); g.lineWidth = 1;
@@ -1256,14 +1258,14 @@
   }
   function renderReadouts() {
     const r = state.run, p = r.p, hid = mysteryHidden(), rows = [];
-    rows.push([T('滴定管讀數', 'Burette reading'), vRead(r.fill) + ' mL', 'big']);
-    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
-    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), (p.Va + p.Vw + r.u / U).toFixed(1) + ' mL']);
+    rows.push([T('滴定管讀數', 'Burette reading'), vRead(r.fill) + ' mL', 'big']);
+    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
+    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), (p.Va + p.Vw + r.u / U).toFixed(1) + ' mL']);
     if (state.meter) {
       const h = Math.pow(10, -r.pH);
       rows.push([T('pH（pH 計）', 'pH (meter)'), f2(r.pH), 'big']);
-      rows.push(['[H<sup>+</sup>]', sciHTML(h, 2) + ' M']);
-      rows.push(['[OH<sup>−</sup>]', sciHTML(K.KW / h, 2) + ' M']);
+      rows.push(['[H<sup>+</sup>]', sciHTML(h, 2) + ' M']);
+      rows.push(['[OH<sup>−</sup>]', sciHTML(K.KW / h, 2) + ' M']);
     } else {
       rows.push([T('pH', 'pH'), '—<small>' + T('pH 計不在瓶中', 'meter not in the flask') + '</small>']);
     }
@@ -1271,8 +1273,8 @@
     if (!hid) {
       // 已中和最多 100%；過了當量點，多出來的滴定液另列（試玩回報：顯示 230% 不合理）
       const pct = r.u / U / r.Veq * 100;
-      rows.push([T('已中和', 'Neutralised'), Math.min(100, pct).toFixed(1) + '%']);
-      if (pct > 100.05) rows.push([T('滴定液過量', 'Excess titrant'), (r.u / U - r.Veq).toFixed(2) + ' mL']);
+      rows.push([T('已中和', 'Neutralised'), Math.min(100, pct).toFixed(1) + ' %']);
+      if (pct > 100.05) rows.push([T('滴定液過量', 'Excess titrant'), (r.u / U - r.Veq).toFixed(2) + ' mL']);
     }
     $('readout').innerHTML = dl(rows);
   }
@@ -1281,24 +1283,24 @@
   function renderAnalysis() {
     const r = state.run, p = r.p, hid = mysteryHidden(), rows = [];
     const weak = K.SYSTEMS[p.sys].kind !== 'strong-acid';
-    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>V<sub>eq</sub> = c<sub>a</sub>V<sub>a</sub> / c<sub>b</sub></small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
+    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>V<sub>eq</sub> = c<sub>a</sub>V<sub>a</sub> / c<sub>b</sub></small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
     rows.push([T('當量點的 pH（理論）', 'pH at equivalence (theory)'), hid ? '？' : f2(r.pHeq)]);
     if (weak) {
       rows.push([p.sys === 'wb' ? T('半當量點的 pH（≈ 14 − pK<sub>b</sub>）', 'pH at half-equivalence (≈ 14 − pK<sub>b</sub>)') : T('半當量點的 pH（≈ pK<sub>a</sub>）', 'pH at half-equivalence (≈ pK<sub>a</sub>)'), hid ? '？' : f2(K.pH(p, r.Veq / 2))]);
       rows.push([p.sys === 'wb' ? '14 − pK<sub>b</sub>' : 'pK<sub>a</sub>', hid ? '？' : f2(halfRef(p))]);
     }
     if (r.endpoint != null) {
-      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
+      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
       if (!hid) {
         const err = r.endpoint - r.Veq;
-        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
+        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
       }
     } else rows.push([T('你記錄的終點', 'Your end point'), T('還沒記錄', 'not yet')]);
     const ms = maxSlope(r);
     rows.push([T('數據中斜率最大處', 'Steepest point in your data') + '<small>' + T('相鄰兩點 ΔpH/ΔV 最大', 'largest ΔpH/ΔV between neighbours') + '</small>',
-      ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
+      ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
     if (p.sys === 'mx' && state.sample.revealed) {
-      rows.push([T('真正的濃度', 'True concentration'), state.sample.C.toFixed(3) + ' M', 'good']);
+      rows.push([T('真正的濃度', 'True concentration'), state.sample.C.toFixed(3) + ' M', 'good']);
       rows.push([T('真正的 K<sub>a</sub>', 'True K<sub>a</sub>'), sciHTML(state.sample.Ka, 2) + '（pK<sub>a</sub> ' + (-Math.log10(state.sample.Ka)).toFixed(2) + '）', 'good']);
     }
     $('anaOut').innerHTML = dl(rows);
@@ -1324,9 +1326,9 @@
   }
   function runLabel(r, current) {
     const p = r.p;
-    const what = p.sys === 'mx' ? sysName('mx') + T('（樣品 ' + (r.sample ? r.sample.no : '') + '）', ' (sample ' + (r.sample ? r.sample.no : '') + ')') : sysName(p.sys) + ' ' + conc(p.Ca) + ' M';
-    return (current ? (r.no ? T('目前（#' + r.no + '）：', 'Now (#' + r.no + '): ') : T('目前：', 'Now: ')) : '#' + r.no + ' ') + what + ' ' + p.Va.toFixed(2) + ' mL' +
-      (p.Vw > 0 ? T('＋水 ', ' + water ') + p.Vw.toFixed(0) + ' mL' : '') + ' ← ' + titrant(p.sys) + ' ' + conc(p.Cb) + ' M';
+    const what = p.sys === 'mx' ? sysName('mx') + T('（樣品 ' + (r.sample ? r.sample.no : '') + '）', ' (sample ' + (r.sample ? r.sample.no : '') + ')') : sysName(p.sys) + ' ' + conc(p.Ca) + ' M';
+    return (current ? (r.no ? T('目前（#' + r.no + '）：', 'Now (#' + r.no + '): ') : T('目前：', 'Now: ')) : '#' + r.no + ' ') + what + ' ' + p.Va.toFixed(2) + ' mL' +
+      (p.Vw > 0 ? T('＋水 ', ' + water ') + p.Vw.toFixed(0) + ' mL' : '') + ' ← ' + titrant(p.sys) + ' ' + conc(p.Cb) + ' M';
   }
   function renderLegend() {
     const items = [];
@@ -1432,11 +1434,11 @@
     state.Vw = clamp(val(vwEl), 0, 100);
     state.Cb = clamp(val(cbEl), 0.001, 1);
     state.rate = clamp(val(rateEl), 0.1, 2);
-    $('cao').textContent = conc(state.Ca) + ' M';
-    $('vao').textContent = state.Va.toFixed(2) + ' mL';
-    $('vwo').textContent = state.Vw.toFixed(state.Vw % 1 ? 1 : 0) + ' mL';
-    $('cbo').textContent = conc(state.Cb) + ' M';
-    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
+    $('cao').textContent = conc(state.Ca) + ' M';
+    $('vao').textContent = state.Va.toFixed(2) + ' mL';
+    $('vwo').textContent = state.Vw.toFixed(state.Vw % 1 ? 1 : 0) + ' mL';
+    $('cbo').textContent = conc(state.Cb) + ' M';
+    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
   }
   function settingsChanged() {
     const p = state.run.p;
@@ -1445,7 +1447,7 @@
   function freshFlaskNote() {
     const r = state.run, p = r.p, room = VT_MAX - p.Va - p.Vw;
     if (r.Veq > room) return T('注意：當量點需要的滴定液超過錐形瓶的容量，到不了當量點。請提高滴定液的濃度，或減少待測液。', 'Note: the flask cannot hold enough titrant to reach the equivalence point. Use a more concentrated titrant or less sample.');
-    if (!mysteryHidden() && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
+    if (!mysteryHidden() && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
     return '';
   }
   [caEl, vaEl, vwEl, cbEl].forEach(function (el) {
@@ -1511,7 +1513,7 @@
       if (r.u > 0) {
         setStatus(T('換了指示劑（真實的錐形瓶裡做不到：指示劑加了就拿不出來）。用顏色判斷終點的任務，要在加入滴定液之前選好指示劑。', 'Indicator changed (impossible in a real flask: once added it cannot be removed). For the colour end-point missions, choose the indicator before adding any titrant.'));
         settleIfIdle();
-      } else setStatus(ind === 'none' ? T('不加指示劑：只能靠 pH 計了。', 'No indicator: only the pH meter can tell you now.') : T('加了 2 滴' + indName(ind) + '。', 'Two drops of ' + indName(ind) + ' added.'));
+      } else setStatus(ind === 'none' ? T('不加指示劑：只能靠 pH 計了。', 'No indicator: only the pH meter can tell you now.') : T('加了 2 滴' + indName(ind) + '。', 'Two drops of ' + indName(ind) + ' added.'));
     });
   });
   $('meter').addEventListener('change', function () {
@@ -1552,15 +1554,15 @@
       // 滴定管讀數在關上的那一刻就停了；已經離開管口、還在空中的液滴會照樣落進瓶裡（2 mL/s 時約 0.3 mL）
       const air = state.drops.reduce(function (s, d) { return s + d.n; }, 0) / U;
       setStatus(air >= 0.05
-        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
-        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
+        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
+        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
       kick(); return;
     }
     if (K.BURETTE_UNITS - state.run.fill <= 0) { emptyNotice(); return; }
     state.tap = true; state.acc = 0;
     sndClick();
     updateButtons();
-    setStatus(T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。快到終點前記得關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it before the end point and go drop by drop.'));
+    setStatus(T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。快到終點前記得關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it before the end point and go drop by drop.'));
     kick();
   });
   $('endBtn').addEventListener('click', function () {
@@ -1577,9 +1579,9 @@
     sndRecord();
     renderAll();
     const hid = mysteryHidden();
-    setStatus(T('記錄終點：' + vRead(r.out) + ' mL', 'End point recorded: ' + vRead(r.out) + ' mL') +
+    setStatus(T('記錄終點：' + vRead(r.out) + ' mL', 'End point recorded: ' + vRead(r.out) + ' mL') +
       (hid ? T('。用它算出未知酸的濃度吧。', '. Use it to work out the concentration of the unknown acid.') :
-        T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(Vend - r.Veq, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(Vend - r.Veq, 3) + ' mL.')));
+        T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(Vend - r.Veq, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(Vend - r.Veq, 3) + ' mL.')));
     emit('endpoint', {
       sys: r.p.sys, Ca: r.p.Ca, Va: r.p.Va, Vw: r.p.Vw, Cb: r.p.Cb, Vend: Vend, Veq: K.Veq(r.p), err: Vend - K.Veq(r.p), pH: pH, pHeq: pHeq,
       ind: state.ind, indFixed: r.indFixed, moved: K.indicatorMoved(state.ind, r.pH0, pH),
@@ -1589,12 +1591,12 @@
   });
   $('refill').addEventListener('click', function () {
     const r = state.run;
-    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
+    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
     closeTap();
     r.fill = 0;
     sndRefill();
     renderAll();
-    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
+    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
   });
   $('newFlask').addEventListener('click', function () {
     const had = state.run.u > 0;
@@ -1629,8 +1631,8 @@
     const Ka = okP ? Math.pow(10, -pKa) : NaN;
     const d = { c: okC ? c : NaN, pKa: okP ? pKa : NaN, Ka: Ka, cTrue: s.C, KaTrue: s.Ka, errC: okC ? c / s.C - 1 : NaN, errKa: okP ? Ka / s.Ka - 1 : NaN, revealed: s.revealed, flasks: s.flasks };
     const parts = [];
-    if (okC) parts.push(Math.abs(d.errC) <= 0.01 ? '<span class="ok">' + T('濃度：誤差在 1% 以內 ✓', 'Concentration: within 1% ✓') + '</span>' : '<span class="no">' + T('濃度：誤差超過 1%', 'Concentration: more than 1% off') + '</span>');
-    if (okP) parts.push(Math.abs(d.errKa) <= 0.05 ? '<span class="ok">' + T('K<sub>a</sub>：誤差在 5% 以內 ✓', 'K<sub>a</sub>: within 5% ✓') + '</span>' : '<span class="no">' + T('K<sub>a</sub>：誤差超過 5%', 'K<sub>a</sub>: more than 5% off') + '</span>');
+    if (okC) parts.push(Math.abs(d.errC) <= 0.01 ? '<span class="ok">' + T('濃度：誤差在 1 % 以內 ✓', 'Concentration: within 1 % ✓') + '</span>' : '<span class="no">' + T('濃度：誤差超過 1 %', 'Concentration: more than 1 % off') + '</span>');
+    if (okP) parts.push(Math.abs(d.errKa) <= 0.05 ? '<span class="ok">' + T('K<sub>a</sub>：誤差在 5 % 以內 ✓', 'K<sub>a</sub>: within 5 % ✓') + '</span>' : '<span class="no">' + T('K<sub>a</sub>：誤差超過 5 %', 'K<sub>a</sub>: more than 5 % off') + '</span>');
     parts.push(T('這個未知酸用了 ' + s.flasks + ' 瓶。', 'You have used ' + s.flasks + ' flask' + (s.flasks === 1 ? '' : 's') + ' of this acid.') + (s.revealed ? T('（已揭曉，不算任務）', ' (revealed — no missions)') : ''));
     $('mysOut').innerHTML = parts.join('<br>');
     sndCheck((!okC || Math.abs(d.errC) <= 0.01) && (!okP || Math.abs(d.errKa) <= 0.05));
@@ -1640,7 +1642,7 @@
     const s = state.sample;
     s.revealed = true;
     renderAll();
-    $('mysOut').innerHTML = T('答案：c = ', 'Answer: c = ') + s.C.toFixed(3) + ' M、K<sub>a</sub> = ' + sciHTML(s.Ka, 2) + '（pK<sub>a</sub> = ' + (-Math.log10(s.Ka)).toFixed(2) + '）' +
+    $('mysOut').innerHTML = T('答案：c = ', 'Answer: c = ') + s.C.toFixed(3) + ' M、K<sub>a</sub> = ' + sciHTML(s.Ka, 2) + '（pK<sub>a</sub> = ' + (-Math.log10(s.Ka)).toFixed(2) + '）' +
       T('。圖上已標出當量點與半當量點。', '. The equivalence and half-equivalence points are now marked on the graph.');
   });
   $('newMys').addEventListener('click', function () {
@@ -1741,7 +1743,7 @@
       hud: function () {
         const r = state.run, cn = state.ind === 'none' ? T('無色', 'colourless') : colourName(state.ind, K.indicatorFraction(state.ind, r.pH));
         return {
-          tl: T('滴定管讀數 ', 'Burette reading ') + vRead(r.fill) + ' mL',
+          tl: T('滴定管讀數 ', 'Burette reading ') + vRead(r.fill) + ' mL',
           tr: (state.meter ? 'pH ' + f2(r.pH) + T('・', ' · ') : T('pH 計不在瓶中・', 'meter out · ')) + T('溶液', 'solution ') + cn,
           tag: state.tag && state.tag.t > 0 ? state.tag.text : ''
         };
@@ -1831,7 +1833,7 @@
   observe(gcv, resizeGraph);
   resizeBench(); resizeGraph();
   renderAll();
-  setStatus(T('預設：0.100 M 鹽酸 25.00 mL，加了酚酞，滴定管裝 0.100 M NaOH。先打開活栓快速加，接近 25 mL 時改成一滴一滴。', 'Default: 25.00 mL of 0.100 M HCl with phenolphthalein, 0.100 M NaOH in the burette. Open the stopcock to add quickly, then go drop by drop near 25 mL.'));
+  setStatus(T('預設：0.100 M 鹽酸 25.00 mL，加了酚酞，滴定管裝 0.100 M NaOH。先打開活栓快速加，接近 25 mL 時改成一滴一滴。', 'Default: 25.00 mL of 0.100 M HCl with phenolphthalein, 0.100 M NaOH in the burette. Open the stopcock to add quickly, then go drop by drop near 25 mL.'));
   drawBench();
   kick();
 })();

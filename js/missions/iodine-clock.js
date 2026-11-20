@@ -5,12 +5,12 @@
 
   // 事件（js/iodine-clock.js 只在使用者按「混合並計時」之後才會送出）：
   //   'run'：溶液變藍、記入數據表時 { rx（'ps' 過硫酸根／'x' 未知氧化劑）, unk（未知反應的編號，過硫酸根為 0）, T（°C）, salt（保持離子強度）,
-  //          VKI, VP, VS（mL）, I0, P0, S0（M）, t（變藍時間 s，碼錶讀數到 0.01 s）, rate（[S₂O₃²⁻]₀ / 2t，M/s；沒有硫代硫酸根時為 null）,
-  //          prev（同一個反應先前的各次實驗）, fitI／fitP（其他條件相同的各次，ln 速率對 ln[I⁻]₀／ln[氧化劑]₀ 的擬合 { slope, n, nx, span }）,
+  //          VKI, VP, VS（mL）, I0, P0, S0（M）, t（變藍時間 s，碼錶讀數到 0.01 s）, rate（[S2O3^2−]0 / 2t，M/s；沒有硫代硫酸根時為 null）,
+  //          prev（同一個反應先前的各次實驗）, fitI／fitP（其他條件相同的各次，ln 速率對 ln[I^−]0／ln[氧化劑]0 的擬合 { slope, n, nx, span }）,
   //          arr（同一配方在不同溫度：{ Ea（kJ/mol）, nT, span（°C） }）, sinceOk（未知反應：第一次答對級數之後的第幾次實驗，0 起算；沒答對過為 null） }
-  //   'never'：硫代硫酸根過量、氧化劑用掉 99% 仍沒有變藍 { rx, unk, T, salt, I0, P0, S0, ratio（[S₂O₃²⁻]₀ ÷ 2[氧化劑]₀） }
+  //   'never'：硫代硫酸根過量、氧化劑用掉 99% 仍沒有變藍 { rx, unk, T, salt, I0, P0, S0, ratio（[S2O3^2−]0 ÷ 2[氧化劑]0） }
   //   'answer'：按「核對」{ rx, unk, m, n, k（學生答的 25 °C 速率常數）, mOk, nOk, kErr（相對誤差，k 沒填為 null）, tries, revealed,
-  //          runs（這個反應做了幾次）, nI, nP（用過幾種不同的 [I⁻]₀、[氧化劑]₀）, at25（25 °C 做的次數）, temps（用過幾個溫度） }
+  //          runs（這個反應做了幾次）, nI, nP（用過幾種不同的 [I^−]0、[氧化劑]0）, at25（25 °C 做的次數）, temps（用過幾個溫度） }
   const run = function (ev) { return ev.type === 'run' && ev.data ? ev.data : null; };
   const ans = function (ev) { return ev.type === 'answer' && ev.data ? ev.data : null; };
   const same = function (a, b, tol) { return Math.abs(a - b) <= (tol || 0.005) * Math.max(Math.abs(a), Math.abs(b), 1e-12); };
@@ -27,7 +27,7 @@
     {
       id: 'iodine-clock-2', level: 2,
       title: { zh: '一分鐘的鐘', en: 'A one-minute clock' },
-      desc: { zh: '調整配方或溫度，讓變藍時間落在 57–63 秒。', en: 'Change the recipe or the temperature so that the solution turns blue after 57–63 s.' },
+      desc: { zh: '調整配方或溫度，讓變藍時間落在 57–63 秒。', en: 'Change the recipe or the temperature so that the solution turns blue after 57–63 s.' },
       check: function (ev) { const d = run(ev); return !!d && d.t >= 57 && d.t <= 63; }
     },
     {
@@ -49,7 +49,7 @@
     {
       id: 'iodine-clock-4', level: 3,
       title: { zh: '差十度', en: 'Ten degrees apart' },
-      desc: { zh: '同一個配方，在相差 10 °C 的兩個溫度各做一次，溫度高的速率至少是 1.5 倍。', en: 'Run the same recipe at two temperatures 10 °C apart. The warmer run must be at least 1.5 times as fast.' },
+      desc: { zh: '同一個配方，在相差 10 °C 的兩個溫度各做一次，溫度高的速率至少是 1.5 倍。', en: 'Run the same recipe at two temperatures 10 °C apart. The warmer run must be at least 1.5 times as fast.' },
       check: function (ev) {
         const d = run(ev);
         if (!d || !(d.t > 0)) return false;
@@ -63,13 +63,13 @@
     {
       id: 'iodine-clock-5', level: 4,
       title: { zh: '碘離子的級數', en: 'The order in iodide' },
-      desc: { zh: '勾選「保持離子強度」，其他條件相同、用至少 3 種碘化鉀體積（最大是最小的 4 倍以上），對數圖的斜率在 0.95–1.05。', en: 'With “Keep the ionic strength” ticked and everything else the same, use at least 3 different volumes of potassium iodide (the largest at least 4 times the smallest). The slope of the log–log graph must be 0.95–1.05.' },
+      desc: { zh: '勾選「保持離子強度」，其他條件相同、用至少 3 種碘化鉀體積（最大是最小的 4 倍以上），對數圖的斜率在 0.95–1.05。', en: 'With “Keep the ionic strength” ticked and everything else the same, use at least 3 different volumes of potassium iodide (the largest at least 4 times the smallest). The slope of the log–log graph must be 0.95–1.05.' },
       check: function (ev) { const d = run(ev), f = d && d.fitI; return !!f && d.rx === 'ps' && d.salt && f.nx >= 3 && f.span >= 3.99 && f.slope >= 0.95 && f.slope <= 1.05; }
     },
     {
       id: 'iodine-clock-6', level: 4,
       title: { zh: '過硫酸根的級數', en: 'The order in persulfate' },
-      desc: { zh: '勾選「保持離子強度」，其他條件相同、用至少 3 種過硫酸銨體積（最大是最小的 4 倍以上），對數圖的斜率在 0.95–1.05。', en: 'With “Keep the ionic strength” ticked and everything else the same, use at least 3 different volumes of ammonium persulfate (the largest at least 4 times the smallest). The slope of the log–log graph must be 0.95–1.05.' },
+      desc: { zh: '勾選「保持離子強度」，其他條件相同、用至少 3 種過硫酸銨體積（最大是最小的 4 倍以上），對數圖的斜率在 0.95–1.05。', en: 'With “Keep the ionic strength” ticked and everything else the same, use at least 3 different volumes of ammonium persulfate (the largest at least 4 times the smallest). The slope of the log–log graph must be 0.95–1.05.' },
       check: function (ev) { const d = run(ev), f = d && d.fitP; return !!f && d.rx === 'ps' && d.salt && f.nx >= 3 && f.span >= 3.99 && f.slope >= 0.95 && f.slope <= 1.05; }
     },
     {
@@ -81,13 +81,13 @@
     {
       id: 'iodine-clock-8', level: 6,
       title: { zh: '速率常數', en: 'The rate constant' },
-      desc: { zh: '過硫酸根反應：至少用過 2 種碘化鉀與 2 種過硫酸銨的體積，級數填對，25 °C 的速率常數 k 誤差在 5% 以內。', en: 'Persulfate reaction: after using at least 2 volumes of potassium iodide and 2 of ammonium persulfate, get the orders right and the rate constant k at 25 °C to within 5%.' },
+      desc: { zh: '過硫酸根反應：至少用過 2 種碘化鉀與 2 種過硫酸銨的體積，級數填對，25 °C 的速率常數 k 誤差在 5 % 以內。', en: 'Persulfate reaction: after using at least 2 volumes of potassium iodide and 2 of ammonium persulfate, get the orders right and the rate constant k at 25 °C to within 5 %.' },
       check: function (ev) { const d = ans(ev); return !!d && d.rx === 'ps' && d.mOk && d.nOk && d.nI >= 2 && d.nP >= 2 && d.kErr != null && d.kErr <= 0.05; }
     },
     {
       id: 'iodine-clock-9', level: 7,
       title: { zh: '時鐘裡的活化能', en: 'Activation energy from a clock' },
-      desc: { zh: '過硫酸根反應：同一個配方在至少 3 個溫度（最高與最低差 20 °C 以上）各做一次，阿瑞尼斯圖求出的 Ea 誤差在 5% 以內。', en: 'Persulfate reaction: run one recipe at 3 or more temperatures (at least 20 °C from lowest to highest). The Ea from the Arrhenius graph must be within 5%.' },
+      desc: { zh: '過硫酸根反應：同一個配方在至少 3 個溫度（最高與最低差 20 °C 以上）各做一次，阿瑞尼斯圖求出的 Ea 誤差在 5 % 以內。', en: 'Persulfate reaction: run one recipe at 3 or more temperatures (at least 20 °C from lowest to highest). The Ea from the Arrhenius graph must be within 5 %.' },
       check: function (ev) { const d = run(ev), a = d && d.arr; return !!a && d.rx === 'ps' && a.nT >= 3 && a.span >= 19.99 && Math.abs(a.Ea / 50 - 1) <= 0.05; }
     },
     {
@@ -99,13 +99,13 @@
     {
       id: 'iodine-clock-11', level: 9,
       title: { zh: '未知氧化劑的速率常數', en: 'Rate constant of the unknown' },
-      desc: { zh: '未知氧化劑 X：不揭曉答案，級數全對，25 °C 的速率常數誤差在 5% 以內。', en: 'Unknown oxidant X: without revealing the answer, get both orders right and the rate constant at 25 °C to within 5%.' },
+      desc: { zh: '未知氧化劑 X：不揭曉答案，級數全對，25 °C 的速率常數誤差在 5 % 以內。', en: 'Unknown oxidant X: without revealing the answer, get both orders right and the rate constant at 25 °C to within 5 %.' },
       check: function (ev) { const d = ans(ev); return !!d && d.rx === 'x' && !d.revealed && d.mOk && d.nOk && d.kErr != null && d.kErr <= 0.05; }
     },
     {
       id: 'iodine-clock-12', level: 10,
       title: { zh: '三杯定江山', en: 'Three beakers are enough' },
-      desc: { zh: '同一個未知氧化劑 X 最多只做 3 次實驗，第一次按「核對」就把兩個級數和速率常數（誤差 5% 以內）全部答對。', en: 'With at most 3 runs of one unknown oxidant X, get both orders and the rate constant (within 5%) right the first time you press “Check”.' },
+      desc: { zh: '同一個未知氧化劑 X 最多只做 3 次實驗，第一次按「核對」就把兩個級數和速率常數（誤差 5 % 以內）全部答對。', en: 'With at most 3 runs of one unknown oxidant X, get both orders and the rate constant (within 5 %) right the first time you press “Check”.' },
       check: function (ev) { const d = ans(ev); return !!d && d.rx === 'x' && !d.revealed && d.tries === 1 && d.runs >= 1 && d.runs <= 3 && d.mOk && d.nOk && d.kErr != null && d.kErr <= 0.05; }
     },
 

@@ -54,7 +54,7 @@
     ac: { HA: 'CH<sub>3</sub>COOH', A: 'CH<sub>3</sub>COO<sup>−</sup>', acidF: 'CH<sub>3</sub>COOH', baseF: 'CH<sub>3</sub>COONa',
       acid: ['醋酸', 'acetic acid'], base: ['醋酸鈉', 'sodium acetate'], Acid: ['醋酸', 'Acetic acid'], Base: ['醋酸鈉', 'Sodium acetate'] },
     ph: { HA: 'H<sub>2</sub>PO<sub>4</sub><sup>−</sup>', A: 'HPO<sub>4</sub><sup>2−</sup>', acidF: 'NaH<sub>2</sub>PO<sub>4</sub>', baseF: 'Na<sub>2</sub>HPO<sub>4</sub>',
-      acid: ['磷酸二氫鈉', 'sodium dihydrogenphosphate'], base: ['磷酸氫二鈉', 'disodium hydrogenphosphate'], Acid: ['磷酸二氫鈉', 'NaH2PO4'], Base: ['磷酸氫二鈉', 'Na2HPO4'] },
+      acid: ['磷酸二氫鈉', 'sodium dihydrogenphosphate'], base: ['磷酸氫二鈉', 'disodium hydrogenphosphate'], Acid: ['磷酸二氫鈉', 'NaH<sub>2</sub>PO<sub>4</sub>'], Base: ['磷酸氫二鈉', 'Na<sub>2</sub>HPO<sub>4</sub>'] },
     nh: { HA: 'NH<sub>4</sub><sup>+</sup>', A: 'NH<sub>3</sub>', acidF: 'NH<sub>4</sub>Cl', baseF: 'NH<sub>3</sub>',
       acid: ['氯化銨', 'ammonium chloride'], base: ['氨', 'ammonia'], Acid: ['氯化銨', 'Ammonium chloride'], Base: ['氨', 'Ammonia'] }
   };
@@ -74,7 +74,7 @@
     const S = SYS[sys || state.sys];
     switch (c || state.comp) {
       case 'same': return run && run.cmp.Na > 0 ? T('同 pH 的 NaOH', 'NaOH, same pH') : T('同 pH 的 HCl', 'HCl, same pH');
-      case 'dil10': return T('稀釋 10 倍的緩衝溶液', 'The buffer ÷ 10');
+      case 'dil10': return T('稀釋 10 倍的緩衝溶液', 'The buffer ÷ 10');
       case 'acid': return T('只有' + S.acid[0], S.Acid[1] + ' only');
       case 'base': return T('只有' + S.base[0], S.Base[1] + ' only');
       default: return T('純水', 'Pure water');
@@ -156,8 +156,8 @@
     const r = K.addTo(run, kind, mL, state.cs);
     if (!r.ok) {
       sndFull();
-      setStatus(T('燒杯最多裝 250 mL，這一次加不下了。按「換新的兩杯」重新開始，或改用較少的量、較濃的 HCl／NaOH。',
-        'A beaker holds at most 250 mL, so this will not fit. Press “Fresh beakers” to start again, or add less, or use more concentrated HCl / NaOH.'), true);
+      setStatus(T('燒杯最多裝 250 mL，這一次加不下了。按「換新的兩杯」重新開始，或改用較少的量、較濃的 HCl／NaOH。',
+        'A beaker holds at most 250 mL, so this will not fit. Press “Fresh beakers” to start again, or add less, or use more concentrated HCl / NaOH.'), true);
       updateButtons();
       return;
     }
@@ -187,8 +187,8 @@
       sndBack();
     }
     if (!msg) {
-      const what = kind === 'water' ? T('兩杯各加入 ' + sigf(mL, 3) + ' mL 蒸餾水', sigf(mL, 3) + ' mL of distilled water added to each beaker')
-        : T('兩杯各加入 ' + mmolHTML(r.n) + ' mmol ' + (kind === 'acid' ? 'HCl' : 'NaOH'), mmolHTML(r.n) + ' mmol of ' + (kind === 'acid' ? 'HCl' : 'NaOH') + ' added to each beaker');
+      const what = kind === 'water' ? T('兩杯各加入 ' + sigf(mL, 3) + ' mL 蒸餾水', sigf(mL, 3) + ' mL of distilled water added to each beaker')
+        : T('兩杯各加入 ' + mmolHTML(r.n) + ' mmol ' + (kind === 'acid' ? 'HCl' : 'NaOH'), mmolHTML(r.n) + ' mmol of ' + (kind === 'acid' ? 'HCl' : 'NaOH') + ' added to each beaker');
       msg = what + T('：緩衝溶液的 pH 變化 ', '. Change in pH: buffer ') + signed(r.sdpH, 3) + T('，' + cmpName() + '的 pH 變化 ', ', ' + lowerName(cmpName()) + ' ') + signed(r.sdpHc, 2) + T('。', '.');
     }
     setStatus(msg, out);
@@ -208,25 +208,25 @@
       [T('與起點相比', 'Change from start'), signed(dp, 3), Math.abs(dp) > 1 ? 'warn' : ''],
       [T('右杯：', 'Right: ') + cmpName() + ' pH', f2(sc.pH), 'big'],
       [T('與起點相比', 'Change from start'), signed(dc, 2), Math.abs(dc) > 1 ? 'warn' : ''],
-      [T('加入的 HCl／NaOH', 'HCl / NaOH added'), mmolHTML(run.acid) + '／' + mmolHTML(run.base) + ' mmol'],
-      [T('加入的水', 'Water added'), sigf(run.water, 3) + ' mL'],
-      [T('每杯體積', 'Volume of each'), num(run.buf.V, 2) + ' mL'],
-      [S.HA + T('（弱酸）', ' (weak acid)'), mmolHTML(sb.nHA) + ' mmol'],
-      [S.A + T('（共軛鹼）', ' (conjugate base)'), mmolHTML(sb.nA) + ' mmol'],
+      [T('加入的 HCl／NaOH', 'HCl / NaOH added'), mmolHTML(run.acid) + '／' + mmolHTML(run.base) + ' mmol'],
+      [T('加入的水', 'Water added'), sigf(run.water, 3) + ' mL'],
+      [T('每杯體積', 'Volume of each'), num(run.buf.V, 2) + ' mL'],
+      [S.HA + T('（弱酸）', ' (weak acid)'), mmolHTML(sb.nHA) + ' mmol'],
+      [S.A + T('（共軛鹼）', ' (conjugate base)'), mmolHTML(sb.nA) + ' mmol'],
       ['[' + S.A + ']／[' + S.HA + ']', isFinite(ratio) ? sigf(ratio, 3) : '—', Math.abs(sb.pH - pk) > 1 ? 'warn' : '']
     ]);
     // 分析
     const hh = K.hhPH(state.sys, run.nHA0 + run.acid - run.base, run.nA0 - run.acid + run.base);
     const dn = K.toShift(run.buf, -1, state.cs, 400), up = K.toShift(run.buf, 1, state.cs, 400);
     const dnc = K.toShift(run.cmp, -1, state.cs, 400), upc = K.toShift(run.cmp, 1, state.cs, 400);
-    const lim = function (x) { return x == null ? T('超過 400 mmol', 'over 400 mmol') : mmolHTML(x) + ' mmol'; };
+    const lim = function (x) { return x == null ? T('超過 400 mmol', 'over 400 mmol') : mmolHTML(x) + ' mmol'; };
     $('anaOut').innerHTML = dl([
       ['pK<sub>a</sub>（' + S.HA + '）', num(pk, 2)],
       [T('有效緩衝範圍', 'Effective range'), num(pk - 1, 2) + '–' + num(pk + 1, 2), Math.abs(sb.pH - pk) <= 1 ? 'good' : 'warn'],
       [T('亨德森公式估計的 pH', 'pH from Henderson–Hasselbalch'), hh == null ? T('不適用', 'not applicable') : f2(hh)],
       [T('精確計算的 pH', 'Exact pH'), f2(sb.pH)],
-      [T('緩衝容量 β（左）', 'Buffer capacity β (left)'), sigf(sb.beta, 3) + ' M/pH'],
-      [T('緩衝容量 β（右）', 'Buffer capacity β (right)'), (sc.beta >= 0.001 ? sigf(sc.beta, 3) : sciHTML(sc.beta, 3)) + ' M/pH'],
+      [T('緩衝容量 β（左）', 'Buffer capacity β (left)'), sigf(sb.beta, 3) + ' M/pH'],
+      [T('緩衝容量 β（右）', 'Buffer capacity β (right)'), (sc.beta >= 0.001 ? sigf(sc.beta, 3) : sciHTML(sc.beta, 3)) + ' M/pH'],
       [T('左杯 pH 降 1 要加 HCl', 'HCl to lower left pH by 1'), lim(dn)],
       [T('左杯 pH 升 1 要加 NaOH', 'NaOH to raise left pH by 1'), lim(up)],
       [T('右杯 pH 降 1 要加 HCl', 'HCl to lower right pH by 1'), lim(dnc)],
@@ -237,26 +237,26 @@
     const S = SYS[state.sys];
     $('chaLabel').innerHTML = T('弱酸：' + S.acid[0] + ' ', 'Weak acid: ') + S.acidF;
     $('caLabel').innerHTML = T('共軛鹼：' + S.base[0] + ' ', 'Conjugate base: ') + S.baseF;
-    $('cmpAcidName').textContent = T('只有' + S.acid[0], S.Acid[1] + ' only');
-    $('cmpBaseName').textContent = T('只有' + S.base[0], S.Base[1] + ' only');
+    $('cmpAcidName').innerHTML = T('只有' + S.acid[0], S.Acid[1] + ' only');
+    $('cmpBaseName').innerHTML = T('只有' + S.base[0], S.Base[1] + ' only');
     const pk = K.pKa(state.sys), n1 = state.CHA * state.V0, n2 = state.CA * state.V0;
     const eq = S.HA + ' ⇌ H<sup>+</sup> + ' + S.A;
     $('sysInfo').innerHTML = eq + T('，pK<sub>a</sub> = ', ', pK<sub>a</sub> = ') + num(pk, 2) + '<br>' +
-      T('配好時：弱酸 ' + mmolHTML(n1) + ' mmol、共軛鹼 ' + mmolHTML(n2) + ' mmol，起始 pH ' + f2(run.pH0),
-        'As made: weak acid ' + mmolHTML(n1) + ' mmol, conjugate base ' + mmolHTML(n2) + ' mmol, starting pH ' + f2(run.pH0));
+      T('配好時：弱酸 ' + mmolHTML(n1) + ' mmol、共軛鹼 ' + mmolHTML(n2) + ' mmol，起始 pH ' + f2(run.pH0),
+        'As made: weak acid ' + mmolHTML(n1) + ' mmol, conjugate base ' + mmolHTML(n2) + ' mmol, starting pH ' + f2(run.pH0));
   }
   function updateButtons() {
     const room = K.BEAKER_ML - run.buf.V + 1e-9;
     $('addAcid').disabled = state.amt > room;
     $('addBase').disabled = state.amt > room;
     $('addWater').disabled = state.V0 > room;
-    $('addAcid').textContent = T('加入 HCl', 'Add HCl') + '（' + sigf(state.amt * state.cs, 3) + ' mmol）';
-    $('addBase').textContent = T('加入 NaOH', 'Add NaOH') + '（' + sigf(state.amt * state.cs, 3) + ' mmol）';
+    $('addAcid').textContent = T('加入 HCl', 'Add HCl') + '（' + sigf(state.amt * state.cs, 3) + ' mmol）';
+    $('addBase').textContent = T('加入 NaOH', 'Add NaOH') + '（' + sigf(state.amt * state.cs, 3) + ' mmol）';
     if (window.LabSettings && window.LabSettings.lang === 'en') {
-      $('addAcid').textContent = 'Add HCl (' + sigf(state.amt * state.cs, 3) + ' mmol)';
-      $('addBase').textContent = 'Add NaOH (' + sigf(state.amt * state.cs, 3) + ' mmol)';
+      $('addAcid').textContent = 'Add HCl (' + sigf(state.amt * state.cs, 3) + ' mmol)';
+      $('addBase').textContent = 'Add NaOH (' + sigf(state.amt * state.cs, 3) + ' mmol)';
     }
-    $('addWater').textContent = T('加水稀釋（＋' + sigf(state.V0, 3) + ' mL）', 'Add water (+' + sigf(state.V0, 3) + ' mL)');
+    $('addWater').textContent = T('加水稀釋（＋' + sigf(state.V0, 3) + ' mL）', 'Add water (+' + sigf(state.V0, 3) + ' mL)');
   }
 
   // ======================= 數據表 =======================
@@ -267,7 +267,7 @@
     const from = Math.max(0, rows.length - 200);
     for (let i = rows.length - 1; i >= from; i--) {
       const r = rows[i];
-      const what = r.kind === 'start' ? T('起點', 'start') : r.kind === 'water' ? sigf(r.amt, 3) + ' mL ' + H2O :
+      const what = r.kind === 'start' ? T('起點', 'start') : r.kind === 'water' ? sigf(r.amt, 3) + ' mL ' + H2O :
         mmolHTML(r.amt) + ' ' + (r.kind === 'acid' ? 'HCl' : 'NaOH');
       h += '<tr' + (i === last && i > 0 ? ' class="latest"' : '') + '><td>' + r.i + '</td><td class="l">' + what + '</td><td>' + signed(r.net, 3) + '</td><td>' + num(r.V, 2) + '</td><td>' + f2(r.pH) + '</td><td>' + f2(r.pHc) + '</td></tr>';
     }
@@ -278,7 +278,9 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   let Lw = null;
   function resize() {
-    const W = cv.clientWidth || 600;
+    const frameWidth = cv.parentElement.clientWidth;
+    const W = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth || 600;
     const colW = W / 2;
     const bw = Math.min(170, colW * 0.6), bh = bw * 1.12;
     const fs = window.LabSettings ? (window.LabSettings.get('fs') || 1) : 1;
@@ -432,10 +434,9 @@
     const yL = y1 + 22 * L.fs;
     const maxW = L.colW - 14;
     const title = c ? T('右：', 'Right: ') + cmpName() : T('左：緩衝溶液', 'Left: buffer');
-    const tpx = fitText(g, title, maxW, 13.5 * L.fs, true);
-    g.font = font(tpx, true); g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillStyle = c ? col.cmp : col.accent;
-    g.fillText(title, cx, yL);
-    const sub = 'V = ' + num(V, 1) + ' mL';
+    drawParts(g, partsOf(title), cx, yL, 13.5 * L.fs, c ? col.cmp : col.accent, 'center', true, false, maxW);
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const sub = 'V = ' + num(V, 1) + ' mL';
     g.font = font(12 * L.fs); g.fillStyle = col.muted; g.fillText(sub, cx, yL + 17 * L.fs);
     drawSpeciesBar(g, c, cx, yL + 26 * L.fs, Math.min(maxW, bw * 1.25), st);
     // 提示（燒杯上方）
@@ -524,15 +525,15 @@
       g.fillStyle = grd(col.A); LD.roundRect(g, x + wa, y, Math.max(0.01, w - wa), h, 3); g.fill();
       g.strokeStyle = LD.alpha(col.text, 0.25); g.lineWidth = 1; LD.roundRect(g, x + 0.5, y + 0.5, w - 1, h - 1, 3); g.stroke();
       const y2 = y + h + px + 3;
-      drawParts(g, partsOf(S.HA).concat([[' ' + mmolText(st.nHA) + ' mmol', 0]]), cx, y2, px, col.HA, 'center', true, true, tw);
-      drawParts(g, partsOf(S.A).concat([[' ' + mmolText(st.nA) + ' mmol', 0]]), cx, y2 + px + 5, px, col.A, 'center', true, true, tw);
+      drawParts(g, partsOf(S.HA).concat([[' ' + mmolText(st.nHA) + ' mmol', 0]]), cx, y2, px, col.HA, 'center', true, true, tw);
+      drawParts(g, partsOf(S.A).concat([[' ' + mmolText(st.nA) + ' mmol', 0]]), cx, y2 + px + 5, px, col.A, 'center', true, true, tw);
     } else {
       const y2 = y + px;
       const sp = fitText(g, T('沒有弱酸與共軛鹼，只有自由的', 'no weak acid or base, only free'), tw, px * 0.9);
       g.font = font(sp); g.fillStyle = col.muted; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
       g.fillText(T('沒有弱酸與共軛鹼，只有自由的', 'no weak acid or base, only free'), cx, y2);
-      drawParts(g, partsOf(H3O).concat([[' ' + mmolText(st.nH) + ' mmol', 0]]), cx, y2 + px + 5, px, col.H3O, 'center', true, true, tw);
-      drawParts(g, partsOf(OHm).concat([[' ' + mmolText(st.nOH) + ' mmol', 0]]), cx, y2 + 2 * px + 10, px, col.OH, 'center', true, true, tw);
+      drawParts(g, partsOf(H3O).concat([[' ' + mmolText(st.nH) + ' mmol', 0]]), cx, y2 + px + 5, px, col.H3O, 'center', true, true, tw);
+      drawParts(g, partsOf(OHm).concat([[' ' + mmolText(st.nOH) + ' mmol', 0]]), cx, y2 + 2 * px + 10, px, col.OH, 'center', true, true, tw);
     }
   }
   /** 畫布用的莫耳數文字（很小時寫成 a×10^n 的一般寫法：畫布不能用上標字元，改用 e 記法太醜，所以用 <0.001） */
@@ -632,6 +633,15 @@
       g.strokeStyle = LD.alpha(col.text, Math.abs(n) < 1e-9 ? 0.35 : 0.08);
       g.beginPath(); g.moveTo(Math.round(xs(n)) + 0.5, Y0); g.lineTo(Math.round(xs(n)) + 0.5, Y1); g.stroke();
     }
+    // 各緩衝系統的公開目標只在縱軸旁做短刻度，和實測曲線、酸解離常數分開。
+    const targetPH = { ac: 5.00, ph: 7.40, nh: 10.00 }[state.sys];
+    if (targetPH !== undefined) {
+      const y = ys(targetPH);
+      g.save(); g.strokeStyle = LD.alpha(col.muted, 0.7);
+      g.beginPath(); g.moveTo(X1 - 12, y); g.lineTo(X1, y); g.stroke();
+      g.font = font(11 * fs); g.fillStyle = col.muted; g.textAlign = 'right'; g.textBaseline = 'top';
+      g.fillText('pH ' + targetPH.toFixed(2), X1 - 3, y + 2); g.restore();
+    }
     // pKa 線
     g.strokeStyle = LD.alpha(col.accent, 0.75); g.setLineDash([5, 4]); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(X0, ys(pk)); g.lineTo(X1, ys(pk)); g.stroke(); g.setLineDash([]);
@@ -730,8 +740,8 @@
     return {
       tl: line(0), tr: line(1),
       bl: chip(col.HA) + S.HA + T('（弱酸）', ' (weak acid)') + chip(col.A) + S.A + T('（共軛鹼）', ' (conj. base)') + chip(col.H3O) + H3O + chip(col.OH) + OHm +
-        '<span class="tip">' + T('每一顆 = ' + mmolHTML(s.unit) + ' mmol・水分子與 Na<sup>+</sup>、Cl<sup>−</sup> 沒有畫出・拖曳旋轉、滾輪或雙指縮放',
-          'Each particle = ' + mmolHTML(s.unit) + ' mmol · water and Na<sup>+</sup>, Cl<sup>−</sup> not drawn · drag to rotate, scroll or pinch to zoom') + '</span>'
+        '<span class="tip">' + T('每一顆 = ' + mmolHTML(s.unit) + ' mmol・水分子與 Na<sup>+</sup>、Cl<sup>−</sup> 沒有畫出・拖曳旋轉、滾輪或雙指縮放',
+          'Each particle = ' + mmolHTML(s.unit) + ' mmol · water and Na<sup>+</sup>, Cl<sup>−</sup> not drawn · drag to rotate, scroll or pinch to zoom') + '</span>'
     };
   }
   function host3Api() {
@@ -816,10 +826,10 @@
     state.CA = clamp(val(caEl, logC), 1e-4, 1);
     state.V0 = clamp(val(v0El), 20, 200);
     state.cs = clamp(val(csEl, logS), 0.01, 2);
-    $('chao').textContent = conc(state.CHA) + ' M';
-    $('cao').textContent = conc(state.CA) + ' M';
-    $('v0o').textContent = num(state.V0, state.V0 % 1 ? 1 : 0) + ' mL';
-    $('cso').textContent = conc(state.cs) + ' M';
+    $('chao').textContent = conc(state.CHA) + ' M';
+    $('cao').textContent = conc(state.CA) + ' M';
+    $('v0o').textContent = num(state.V0, state.V0 % 1 ? 1 : 0) + ' mL';
+    $('cso').textContent = conc(state.cs) + ' M';
   }
   function setSeg(sel, attr, v) { document.querySelectorAll(sel + ' button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute(attr) === String(v))); }); }
 
@@ -893,7 +903,7 @@
   }
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth && gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', function () { resize(); resizeGraph(); drawGraph(); });
 
@@ -911,4 +921,21 @@
   resize();
   resizeGraph();
   drawGraph();
+  // 矮橫放時，畫面下只留直接加液的三顆鍵；每次用量與換杯仍可在同屏右側操作。
+  const doseSettings = $('doseSettings');
+  const dosingControls = [$('amtSeg'), $('newRun').closest('.playbar')].map(element => {
+    const home = document.createComment('加液控制的原位');
+    element.before(home);
+    return { element, home };
+  });
+  const shortScreen = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function positionDoseSettings() {
+    doseSettings.hidden = !shortScreen.matches;
+    dosingControls.forEach(({ element, home }) => {
+      if (shortScreen.matches) doseSettings.append(element);
+      else home.after(element);
+    });
+  }
+  shortScreen.addEventListener('change', positionDoseSettings);
+  positionDoseSettings();
 })();

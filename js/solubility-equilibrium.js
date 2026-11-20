@@ -8,6 +8,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const S = window.SolubilityCore, LD = window.LabDraw;
   if (!S || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -125,11 +135,15 @@
   function concV() { const v = window.LabNum ? val(el.conc) : concMap.toValue(+el.conc.value); return Math.max(1e-5, Math.min(1, v)); }
   function massV() { const v = window.LabNum ? val(el.mass) : massMap.toValue(+el.mass.value); return Math.max(0.1, Math.min(1000, v)); }
   function showOutputs() {
-    $('conco').textContent = sigf(concV(), 3) + ' M';
-    $('masso').textContent = sigf(massV(), 3) + ' mg';
+    $('conco').textContent = sigf(concV(), 3) + ' M';
+    $('masso').textContent = sigf(massV(), 3) + ' mg';
   }
 
   // ======================= 選單 =======================
+  function solidOption(k) {
+    const name = nm(S.SOLID[k]);
+    return '<option value="' + k + '">' + name + ' ' + k + '</option>';
+  }
   function buildControls() {
     let h = '';
     SOLN_KEYS.forEach(function (k) {
@@ -144,7 +158,7 @@
     groups.forEach(function (g) {
       o += '<optgroup label="' + T(g[1], g[2]) + '">';
       SOLID_KEYS.filter(function (k) { return catOf(k) === g[0]; }).forEach(function (k) {
-        o += '<option value="' + k + '">' + k + '　' + nm(S.SOLID[k]) + '</option>';
+        o += solidOption(k);
       });
       o += '</optgroup>';
     });
@@ -152,7 +166,7 @@
     el.solidSel.value = keep;
     const fk = el.kspSel.value || 'auto';
     let q = '<option value="auto">' + T('自動（跟著燒杯裡最相關的鹽）', 'Automatic (the most relevant salt)') + '</option>';
-    SOLID_KEYS.forEach(function (k) { q += '<option value="' + k + '">' + k + '　' + nm(S.SOLID[k]) + '</option>'; });
+    SOLID_KEYS.forEach(function (k) { q += solidOption(k); });
     el.kspSel.innerHTML = q;
     el.kspSel.value = fk;
   }
@@ -186,19 +200,19 @@
     if (kind === 'soln') {
       const c = concV();
       d = S.addSolution(b, key, c, amt);
-      what = sigf(c, 3) + ' M ' + fH(solnF(key)) + ' ' + mL(amt) + ' mL';
+      what = sigf(c, 3) + ' M ' + fH(solnF(key)) + ' ' + mL(amt) + ' mL';
       if (d) startPour(amt, key === 'K2CrO4' ? Math.min(1, 0.25 + 0.75 * Math.max(0, (Math.log10(c) + 4) / 4)) : 0);
     } else if (kind === 'solid') {
       d = S.addSolid(b, key, amt);
-      what = T('固體 ', 'solid ') + fH(key) + ' ' + sigf(amt, 3) + ' mg';
+      what = T('固體 ', 'solid ') + fH(key) + ' ' + sigf(amt, 3) + ' mg';
       if (d) startSprinkle(key, amt);
     } else {
       d = S.addWater(b, amt);
-      what = T('水 ', 'water ') + mL(amt) + ' mL';
+      what = T('水 ', 'water ') + mL(amt) + ' mL';
       if (d) startWash(amt);
     }
     if (!d) {
-      setStatus(T('燒杯裝不下了（最多 250 mL）。按「倒掉重來」換一個乾淨的燒杯。', 'The beaker is full (250 mL at most). Press “Empty the beaker” to start again.'));
+      setStatus(T('燒杯裝不下了（最多 250 mL）。按「倒掉重來」換一個乾淨的燒杯。', 'The beaker is full (250 mL at most). Press “Empty the beaker” to start again.'));
       if (snd()) window.LabSound.tone({ freq: 300, dur: 0.12, gain: 0.06, type: 'triangle' });
       return;
     }
@@ -243,7 +257,7 @@
   }
   function pptList() {
     const ks = Object.keys(b.p);
-    return ks.length ? ks.map(function (k) { return fH(k) + ' ' + mgHTML(S.pptMg(b, k)) + ' mg'; }).join(T('、', ', ')) : '—';
+    return ks.length ? ks.map(function (k) { return fH(k) + ' ' + mgHTML(S.pptMg(b, k)) + ' mg'; }).join(T('、', ', ')) : '—';
   }
   function newBeaker(msg) {
     b = S.createBeaker();
@@ -253,7 +267,7 @@
     lastData = null;
     pile = {}; grains = []; anims = []; pileOrder = [];
     if (logRows.length) logRows.push({ sep: true, beaker: beakerNo });
-    setStatus(msg || T('換了一個乾淨的燒杯：50 mL 純水。', 'A clean beaker with 50 mL of pure water.'));
+    setStatus(msg || T('換了一個乾淨的燒杯：50 mL 純水。', 'A clean beaker with 50 mL of pure water.'));
     refreshAll();
   }
 
@@ -261,7 +275,7 @@
   let cw = 0, ch = 0, dpr = 1, G = null;
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -490,8 +504,8 @@
       const mid = ly - h / 2;
       ly -= h;
       if (!(b.p[k] > 0)) return;
-      const ps = fP(k).concat([[' ' + (S.pptMg(b, k) < 0.01 ? '' : sigf(S.pptMg(b, k), 3) + ' mg'), 0]]);
-      if (S.pptMg(b, k) < 0.01) { const sp = sciP(S.pptMg(b, k), 2); ps.push.apply(ps, sp); ps.push([' mg', 0]); }
+      const ps = fP(k).concat([[' ' + (S.pptMg(b, k) < 0.01 ? '' : sigf(S.pptMg(b, k), 3) + ' mg'), 0]]);
+      if (S.pptMg(b, k) < 0.01) { const sp = sciP(S.pptMg(b, k), 2); ps.push.apply(ps, sp); ps.push([' mg', 0]); }
       g.strokeStyle = LD.alpha(col.text, 0.35); g.lineWidth = 1;
       g.beginPath(); g.moveTo(x1 - 4, mid); g.lineTo(x1 + 12, mid); g.stroke();
       richPill(g, ps, x1 + 16, mid + fsz(11) * 0.38, col.text, fsz(11), 'left');
@@ -606,6 +620,7 @@
     lg(ci, x); x += w1 + fs * 2.2; lg(ai, x);
     g.font = fsz(10) + 'px ' + LD.FONT; g.fillStyle = LD.alpha(col.muted, 0.85);
     const note = T('示意，不照真實比例', 'illustration, not to scale'), nw = g.measureText(note).width;
+    g.textAlign = 'center';
     g.fillText(note, Math.max(nw / 2 + 4, Math.min(cw - nw / 2 - 4, cx)), ly + fs * 1.5);
   }
   function drawStage() {
@@ -622,7 +637,7 @@
     drawMicro(g);
     // 體積
     const fs = fsz(12.5);
-    richPill(g, [[T('體積 ', 'Volume ') + mL(b.V) + ' mL', 0]], G.pad + 6, G.pad + fs + 4, col.text, fs, 'left', '600');
+    richPill(g, [[T('體積 ', 'Volume ') + mL(b.V) + ' mL', 0]], G.pad + 6, G.pad + fs + 4, col.text, fs, 'left', '600');
     if (b.V >= S.V_MAX - 1e-9) richPill(g, [[T('已滿', 'Full'), 0]], G.pad + 6, G.pad + fs * 2.9 + 4, col.pos, fsz(11), 'left');
   }
 
@@ -631,7 +646,10 @@
   function resizeGraph() {
     const w = gcv.clientWidth;
     if (!w) return;
-    gw = w; gh = w < 560 ? Math.round(Math.max(300, w * 0.85)) : 340;
+    gw = w;
+    const preferred = w < 560 ? Math.round(Math.max(300, w * 0.85)) : 340;
+    gh = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.min(preferred, Math.max(1, innerHeight - 64)) : preferred;
     if (gcv.style.height !== gh + 'px') gcv.style.height = gh + 'px';
     gcv.width = Math.round(gw * dpr); gcv.height = Math.round(gh * dpr);
   }
@@ -736,7 +754,7 @@
       gr.addColorStop(0, LD.shade(c0, 0.3)); gr.addColorStop(1, LD.shade(c0, -0.15));
       g.fillStyle = sp ? LD.alpha(c0, 0.45) : gr;
       LD.roundRect(g, L, y - bh / 2, Math.max(2, X(Math.log10(Math.max(c, 1e-30))) - L), bh, 3); g.fill();
-      const txt = sciP(c, 3).concat([[' M', 0]]);
+      const txt = sciP(c, 3).concat([[' M', 0]]);
       const tw = richW(g, txt, fsz(10.5));
       const xe = X(Math.log10(Math.max(c, 1e-30)));
       if (xe + tw + 8 < R) rich(g, txt, xe + 6, y + fsz(10.5) * 0.38, col.text, fsz(10.5), 'left');
@@ -753,20 +771,22 @@
       $('gHint').innerHTML = T('每一個點是這個燒杯每一步之後的濃度。有沉澱時，點一定落在飽和線上；點在線的右上方不可能維持，會沉澱到回到線上。', 'Each point shows the concentrations after one step in this beaker. With a precipitate present the point always lies on the line; above the line is impossible to keep — the salt precipitates until the point returns to the line.');
     } else {
       h = '<span><span class="box" style="background:' + ION_COL.Ag + '"></span>' + T('會參與沉澱的離子', 'ions that can precipitate') + '</span>　<span><span class="box" style="background:' + LD.alpha(ION_COL.Na, 0.45) + '"></span>' + T('旁觀離子（不沉澱）', 'spectator ions (never precipitate)') + '</span>';
-      $('gHint').innerHTML = T('橫軸是對數刻度：每一格差 100 倍。', 'Logarithmic scale: each grid step is a factor of 100.');
+      $('gHint').innerHTML = T('橫軸是對數刻度：每一格差 100 倍。', 'Logarithmic scale: each grid step is a factor of 100.');
     }
     $('gLegend').innerHTML = h;
   }
 
   // ======================= 讀數與表格 =======================
   function updateReadouts() {
-    let h = '<dt>' + T('溶液體積', 'Volume') + '</dt><dd class="big">' + mL(b.V) + ' mL</dd>';
+    $('solidSelFormula').innerHTML = fH(el.solidSel.value);
+    $('kspSelFormula').innerHTML = fH(el.kspSel.value === 'auto' ? focus : el.kspSel.value);
+    let h = '<dt>' + T('溶液體積', 'Volume') + '</dt><dd class="big">' + mL(b.V) + ' mL</dd>';
     const ps = Object.keys(b.p);
-    if (ps.length) ps.forEach(function (k) { h += '<dt>' + T('沉澱 ', 'Precipitate ') + fH(k) + '</dt><dd>' + mgHTML(S.pptMg(b, k)) + ' mg</dd>'; });
+    if (ps.length) ps.forEach(function (k) { h += '<dt>' + T('沉澱 ', 'Precipitate ') + fH(k) + '</dt><dd>' + mgHTML(S.pptMg(b, k)) + ' mg</dd>'; });
     else h += '<dt>' + T('沉澱', 'Precipitate') + '</dt><dd>' + T('沒有', 'none') + '</dd>';
     S.CATIONS.concat(S.ANIONS).forEach(function (i) {
       if (!((b.N[i] || 0) > 0)) return;
-      h += '<dt>[' + ionH(i) + ']</dt><dd>' + sciHTML(b.c[i] || 0, 3) + ' M</dd>';
+      h += '<dt>[' + ionH(i) + ']</dt><dd>' + sciHTML(b.c[i] || 0, 3) + ' M</dd>';
     });
     const qr = lastData ? Object.keys(lastData.Qr).sort(function (a, c) { return lastData.Qr[c] - lastData.Qr[a]; }).slice(0, 4) : [];
     qr.forEach(function (k) {
@@ -781,7 +801,7 @@
     if (!logRows.length) h += '<tr class="empty"><td colspan="4">' + T('還沒有操作紀錄。', 'Nothing has been added yet.') + '</td></tr>';
     for (let i = logRows.length - 1; i >= 0; i--) {
       const r = logRows[i];
-      if (r.sep) { h += '<tr class="empty"><td colspan="4">' + T('── 第 ' + r.beaker + ' 杯：50 mL 純水 ──', '── Beaker ' + r.beaker + ': 50 mL pure water ──') + '</td></tr>'; continue; }
+      if (r.sep) { h += '<tr class="empty"><td colspan="4">' + T('── 第 ' + r.beaker + ' 杯：50 mL 純水 ──', '── Beaker ' + r.beaker + ': 50 mL pure water ──') + '</td></tr>'; continue; }
       h += '<tr><td>' + r.n + '</td><td class="l">' + r.what + '</td><td>' + mL(r.V) + '</td><td class="l wrap">' + r.ppt + '</td></tr>';
     }
     t.innerHTML = h + '</tbody>';
@@ -790,7 +810,7 @@
     const t = $('satTbl');
     const ks = Object.keys(satRows);
     let h = '<thead><tr><th class="l">' + T('鹽', 'Salt') + '</th><th>Ksp</th><th>' + T('量到的 s', 'measured s') + '<br><small>M</small></th><th>' + T('理論 s', 'theory s') + '<br><small>M</small></th></tr></thead><tbody>';
-    if (!ks.length) h += '<tr class="empty"><td colspan="4">' + T('還沒有做過。例如：選 AgCl 加入 10 mg 固體。', 'None yet. Try adding 10 mg of solid AgCl.') + '</td></tr>';
+    if (!ks.length) h += '<tr class="empty"><td colspan="4">' + T('還沒有做過。例如：選 AgCl 加入 10 mg 固體。', 'None yet. Try adding 10 mg of solid AgCl.') + '</td></tr>';
     ks.forEach(function (k) {
       h += '<tr><td class="l">' + fH(k) + '</td><td>' + sciHTML(S.SOLID[k].Ksp, 3) + '</td><td>' + sciHTML(satRows[k].s, 3) + '</td><td>' + sciHTML(S.molarSolubility(k), 3) + '</td></tr>';
     });
@@ -831,19 +851,21 @@
   $('addDrop').addEventListener('click', function () { act('soln', soln, S.DROP); });
   $('add1').addEventListener('click', function () { act('soln', soln, 1); });
   $('add10').addEventListener('click', function () { act('soln', soln, 10); });
+  el.solidSel.addEventListener('change', function () { $('solidSelFormula').innerHTML = fH(el.solidSel.value); });
   $('addSolid').addEventListener('click', function () { act('solid', el.solidSel.value, massV()); });
   $('water1').addEventListener('click', function () { act('water', 'water', 1); });
   $('water10').addEventListener('click', function () { act('water', 'water', 10); });
   $('newBeaker').addEventListener('click', function () { newBeaker(); });
   $('clearAll').addEventListener('click', function () {
     logRows = []; satRows = {}; sats = []; stepNo = 0; beakerNo = 0;
-    newBeaker(T('全部清除：紀錄、軌跡與飽和溶液比較表都清空了，換了一個裝 50 mL 純水的乾淨燒杯。', 'Everything cleared: the log, the trail and the saturated-solution table. A clean beaker with 50 mL of pure water.'));
+    newBeaker(T('全部清除：紀錄、軌跡與飽和溶液比較表都清空了，換了一個裝 50 mL 純水的乾淨燒杯。', 'Everything cleared: the log, the trail and the saturated-solution table. A clean beaker with 50 mL of pure water.'));
     logRows = [];
     renderLog();
   });
   el.kspSel.addEventListener('change', function () {
     if (el.kspSel.value === 'auto') { focusManual = false; if (lastData) focus = pickFocus(lastData); }
     else { focusManual = true; focus = el.kspSel.value; }
+    $('kspSelFormula').innerHTML = fH(focus);
     drawGraph(); drawStage(); startLoop();
   });
   $('tabs').addEventListener('click', function (e) {
@@ -891,4 +913,33 @@
   resize();
   refreshAll();
   startLoop();
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

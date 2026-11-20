@@ -10,7 +10,7 @@
  *   enumerate(C, O, H, scope) 列出某分子式在某範圍內的全部異構物（烷類 C4H10 2 種 … C8H18 18 種，OEIS A000602）
  *   layout(S)        把抽象結構擺到三角格子上（遵守 120° 鍵角與順反），任務證明與測試用
  *   embed3D(mol)     球棍模型的 3D 座標（鍵長、鍵角、雙鍵共平面當作彈簧，梯度下降放鬆）
- *   twist(...)       繞鍵旋轉的扭轉能（單鍵：重疊／錯開的取代基對；雙鍵：π 鍵 266 kJ/mol × sin²θ）
+ *   twist(...)       繞鍵旋轉的扭轉能（單鍵：重疊／錯開的取代基對；雙鍵：π 鍵 266 kJ/mol × sin^2θ）
  * 簡化：只有碳、氧、氫；不處理 O–O 鍵（過氧化物）、光學異構（鏡像異構）與環上的順反。
  */
 (function (root, factory) {
@@ -1272,7 +1272,7 @@
   }
   /** 扭轉能（kJ/mol，相對於最低的錯開式）：
    *  單鍵：每一對前後取代基的重疊代價——H/H 4.0、H/CH3 6.0、CH3/CH3 11（重疊 0° 時），另加兩個碳取代基的偏轉（gauche，60°）3.8；
-   *  雙鍵：π 鍵 266 × sin²θ（θ 是離開平面的扭轉角）。 */
+   *  雙鍵：π 鍵 266 × sin^2θ（θ 是離開平面的扭轉角）。 */
   function twistEnergy(E, a, b, P, twistDeg, bondOrder) {
     if (bondOrder === 2) { const t = twistDeg * Math.PI / 180; return PI_BOND * Math.sin(t) * Math.sin(t); }
     if (bondOrder !== 1) return 0;

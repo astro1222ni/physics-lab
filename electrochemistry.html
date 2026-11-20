@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electrochemical Cells and Electrolysis | Astro Ni Lab">化學電池與電解｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 化學電池與電解頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ec canvas { aspect-ratio: auto; touch-action: auto; }
@@ -96,6 +96,28 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+    .bench-pages { display: none; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bench-pages { display: flex; gap: 4px; margin: 8px 0; }
+      .bench-pages label { position: relative; display: flex; align-items: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+      .bench-pages input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+      .bench-pages label:has(:checked) { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+      .bench-pages label:focus-within { outline: 2px solid var(--accent); }
+      /* 未選的圖表保留排版寬度，切換時能直接沿用原來的座標與資料。 */
+      .bench-pages:not(:has(#bench-graphs:checked)) ~ [data-bench-section="graphs"],
+      .bench-pages:has(#bench-graphs:checked) ~ [data-bench-section="apparatus"] {
+        position: absolute; visibility: hidden; pointer-events: none; width: 100%; height: 0; overflow: hidden;
+      }
+      .wrap:has(.bench-pages) { position: relative; }
+      .bench-work { height: calc(100dvh - 12px); display: flex; flex-direction: column; }
+      .bench-visual { flex: 1 1 0; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+      .bench-visual #cv { width: auto; height: auto !important; max-width: 100%; max-height: 100%; aspect-ratio: auto; min-width: 0; }
+      .bench-actions { flex: none; }
+      .bench-actions .playbar { gap: 4px; margin: 4px 0 0; }
+      .bench-actions button { min-height: 44px; }
+    }
+    button[data-m] small { display: block; white-space: nowrap; font-size: .86em; }
+    button[data-m] { min-height: 44px; }
   </style>
 </head>
 <body data-en-ready>
@@ -107,20 +129,30 @@
     </header>
 
     <p class="try-hint" data-en="Try it: the zinc and copper half-cells are ready but the voltmeter reads 0. Tick “Salt bridge” — then swap the two metals and see what happens to the reading.">試試看：鋅和銅的半電池都準備好了，伏特計卻是 0。勾選「鹽橋」，再把兩邊的金屬對調，看讀數怎麼變。</p>
-    <div class="lab ec">
+    <div class="bench-pages" role="group" aria-label="實驗畫面" data-en-aria-label="Experiment view" data-share-skip>
+      <label><input type="radio" name="bench-page" value="apparatus" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input id="bench-graphs" type="radio" name="bench-page" value="graphs"><span data-en="Graphs and data">圖表與數據</span></label>
+    </div>
+    <div class="lab ec" data-bench-section="apparatus">
       <div class="stage" id="stage">
-        <canvas id="cv" role="img" aria-label="化學電池" data-en-aria-label="Electrochemical cell"></canvas>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
-          <button id="restart" type="button" data-en="Restart" title="換上新的溶液與電極，從頭開始（滑桿設定不變）" data-en-title="Fresh solutions and electrodes, start again (settings kept)">重新開始</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除圖表與紀錄表" data-en-title="Clear the graphs and the table">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-            <div class="seg4" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="true">×1</button>
-              <button type="button" id="sp1" aria-pressed="false">×100</button>
-              <button type="button" id="sp2" aria-pressed="false">×10<sup>4</sup></button>
-              <button type="button" id="sp3" aria-pressed="false">×10<sup>6</sup></button>
+        <div class="bench-work">
+          <div class="bench-visual">
+            <canvas id="cv" role="img" aria-label="化學電池" data-en-aria-label="Electrochemical cell"></canvas>
+          </div>
+          <div class="bench-actions" data-stage-controls>
+            <div class="playbar">
+              <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+              <button id="restart" type="button" data-en="Restart" title="換上新的溶液與電極，從頭開始（滑桿設定不變）" data-en-title="Fresh solutions and electrodes, start again (settings kept)">重新開始</button>
+              <button id="clearAll" type="button" data-en="Clear all" title="清除圖表與紀錄表" data-en-title="Clear the graphs and the table">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+                <div class="seg4" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="true">×1</button>
+                  <button type="button" id="sp1" aria-pressed="false">×100</button>
+                  <button type="button" id="sp2" aria-pressed="false">×10<sup>4</sup></button>
+                  <button type="button" id="sp3" aria-pressed="false">×10<sup>6</sup></button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -173,12 +205,12 @@
           </div>
           <div class="slider" id="rRow" hidden><label for="rload" data-en="Resistance of the bulb">燈泡的電阻</label><output id="rloado"></output>
             <input id="rload" type="range" min="0" max="1000" step="1" value="333" data-decimals="1"></div>
-          <p class="hint" data-en="The voltmeter draws no current, so it reads the cell potential. With the bulb, current flows (internal resistance of the salt bridge 5 Ω) and the cell slowly runs down.">伏特計不取電流，讀到的就是電池電位；換成燈泡就有電流（鹽橋的內電阻取 5 Ω），電池會慢慢放電。</p>
+          <p class="hint" data-en="The voltmeter draws no current, so it reads the cell potential. With the bulb, current flows (internal resistance of the salt bridge 5 Ω) and the cell slowly runs down.">伏特計不取電流，讀到的就是電池電位；換成燈泡就有電流（鹽橋的內電阻取 5 Ω），電池會慢慢放電。</p>
         </section>
       </aside>
     </div>
 
-    <div class="lab ec">
+    <div class="lab ec" data-bench-section="graphs">
       <div class="stage">
         <h2 data-en="Graphs and table">圖表與紀錄</h2>
         <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -186,6 +218,7 @@
           <button type="button" data-tab="nernst" aria-pressed="false" data-en="Nernst plot">能斯特圖</button>
           <button type="button" data-tab="faraday" aria-pressed="false" data-en="Faraday plot">法拉第圖</button>
         </div>
+        <div class="checks" id="targetScaleBox" data-share-skip><label><input id="targetScale" type="checkbox" checked><span data-en="Show public mission targets on the axes">顯示公開任務的目標刻度</span></label></div>
         <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
         <div class="legend" id="gLegend"></div>
         <p class="hint" id="gHint"></p>
@@ -231,7 +264,7 @@
         \[ E^\circ_\text{cell} = E^\circ_\text{cathode} - E^\circ_\text{anode} \]
         \[ E = E^\circ + \frac{0.05916\ \mathrm{V}}{z}\log[\mathrm{M}^{z+}] \]
       </div>
-      <p data-en-html="The second equation is the Nernst equation for one electrode at 25 °C. For the whole cell it becomes \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\), where \(n\) is the number of electrons transferred and \(Q\) is the reaction quotient. The voltmeter here reads \(E_\text{right} - E_\text{left}\): a negative reading means the right-hand electrode is the anode.">第二式是單一電極在 25 °C 的能斯特方程式。對整個電池則為 \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\)，\(n\) 是轉移的電子數、\(Q\) 是反應商。本模擬的伏特計讀 \(E_\text{右} - E_\text{左}\)：讀數是負的，表示右邊才是陽極。</p>
+      <p data-en-html="The second equation is the Nernst equation for one electrode at 25 °C. For the whole cell it becomes \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\), where \(n\) is the number of electrons transferred and \(Q\) is the reaction quotient. The voltmeter here reads \(E_\text{right} - E_\text{left}\): a negative reading means the right-hand electrode is the anode.">第二式是單一電極在 25 °C 的能斯特方程式。對整個電池則為 \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\)，\(n\) 是轉移的電子數、\(Q\) 是反應商。本模擬的伏特計讀 \(E_\text{右} - E_\text{左}\)：讀數是負的，表示右邊才是陽極。</p>
       <h3 data-en="Concentration cells">濃差電池</h3>
       <p data-en-html="If both half-cells use the same metal, \(E^\circ_\text{cell} = 0\), but a difference in concentration still gives a voltage:">兩邊用同一種金屬時 \(E^\circ_\text{cell} = 0\)，但濃度不同仍有電壓：</p>
       <div class="formula multi">
@@ -246,15 +279,15 @@
       </div>
       <p data-en-html="In electrolysis an external power supply forces the reaction. At the cathode (connected to −) Cu&lt;sup&gt;2+&lt;/sup&gt; + 2e&lt;sup&gt;−&lt;/sup&gt; → Cu. At a graphite anode water is oxidised: 2H&lt;sub&gt;2&lt;/sub&gt;O → O&lt;sub&gt;2&lt;/sub&gt; + 4H&lt;sup&gt;+&lt;/sup&gt; + 4e&lt;sup&gt;−&lt;/sup&gt;, so the blue colour fades and the solution becomes acidic. At a copper anode the copper itself dissolves, Cu → Cu&lt;sup&gt;2+&lt;/sup&gt; + 2e&lt;sup&gt;−&lt;/sup&gt;: copper simply moves from the anode to the cathode (the principle of copper refining). When Cu&lt;sup&gt;2+&lt;/sup&gt; runs out, hydrogen is given off at the cathode instead.">電解時由外加電源推動反應。陰極（接 −）：Cu<sup>2+</sup> + 2e<sup>−</sup> → Cu。石墨陽極是水被氧化：2H<sub>2</sub>O → O<sub>2</sub> + 4H<sup>+</sup> + 4e<sup>−</sup>，藍色漸漸變淡、溶液變酸。銅陽極則是銅本身溶解：Cu → Cu<sup>2+</sup> + 2e<sup>−</sup>，銅只是由陽極搬到陰極（銅的電解精煉）。Cu<sup>2+</sup> 用完後，陰極改為產生氫氣。</p>
 
-      <h3 data-en="Standard reduction potentials used here (25 °C)">本實驗使用的標準還原電位（25 °C）</h3>
+      <h3 data-en="Standard reduction potentials used here (25 °C)">本實驗使用的標準還原電位（25 °C）</h3>
       <div class="tablewrap"><table class="data" id="eTable"></table></div>
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en="Zinc and copper, both 1 M: the Daniell cell, 1.10 V. Swap the two sides: the reading changes sign.">鋅和銅、都是 1 M：丹尼爾電池 1.10 V。左右對調，讀數變號。</li>
-        <li data-en="Make the copper solution 1000 times more dilute: the voltage falls by 3 × 0.0296 = 0.089 V.">把銅溶液稀釋 1000 倍：電壓下降 3 × 0.0296 = 0.089 V。</li>
+        <li data-en="Zinc and copper, both 1 M: the Daniell cell, 1.10 V. Swap the two sides: the reading changes sign.">鋅和銅、都是 1 M：丹尼爾電池 1.10 V。左右對調，讀數變號。</li>
+        <li data-en="Make the copper solution 1000 times more dilute: the voltage falls by 3 × 0.0296 = 0.089 V.">把銅溶液稀釋 1000 倍：電壓下降 3 × 0.0296 = 0.089 V。</li>
         <li data-en-html="Connect the bulb and use ×10&lt;sup&gt;4&lt;/sup&gt; or ×10&lt;sup&gt;6&lt;/sup&gt;: the zinc plate gets thinner, copper builds up, the blue colour fades and the voltage slowly drops.">接上燈泡、用 ×10<sup>4</sup> 或 ×10<sup>6</sup>：鋅片變薄、銅變厚，藍色變淡，電壓慢慢下降。</li>
-        <li data-en="Electrolysis: 1.00 A for 3036 s deposits 1.000 g of copper.">電解：1.00 A 通電 3036 秒，析出 1.000 g 的銅。</li>
+        <li data-en="Electrolysis: 1.00 A for 3036 s deposits 1.000 g of copper.">電解：1.00 A 通電 3036 秒，析出 1.000 g 的銅。</li>
       </ul>
 
       <h3 data-en="Questions for discussion">問題與討論</h3>
@@ -262,7 +295,7 @@
         <li data-en="Why does the voltmeter read zero when the salt bridge is removed, even though the two metals are different?">拿掉鹽橋時，兩種金屬明明不同，為什麼伏特計是 0？</li>
         <li data-en-html="Why is KNO&lt;sub&gt;3&lt;/sub&gt;, not KCl, used in the salt bridge when one of the half-cells contains Ag&lt;sup&gt;+&lt;/sup&gt;?">半電池中有 Ag<sup>+</sup> 時，為什麼鹽橋用 KNO<sub>3</sub> 而不用 KCl？</li>
         <li data-en="In the copper–zinc cell, what happens to the voltage as the cell runs? Explain with the Nernst equation.">銅鋅電池放電時電壓怎麼變？用能斯特方程式解釋。</li>
-        <li data-en-html="How long must a current of 0.50 A flow through CuSO&lt;sub&gt;4&lt;/sub&gt; solution to deposit 0.635 g of copper?">0.50 A 的電流要通過硫酸銅溶液多久，才能析出 0.635 g 的銅？</li>
+        <li data-en-html="How long must a current of 0.50 A flow through CuSO&lt;sub&gt;4&lt;/sub&gt; solution to deposit 0.635 g of copper?">0.50 A 的電流要通過硫酸銅溶液多久，才能析出 0.635 g 的銅？</li>
       </ol>
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
@@ -270,16 +303,16 @@
           <li data-en="Without the salt bridge the circuit is open: ions cannot move between the solutions, so no charge can flow and the meter cannot register a potential difference across the cell.">沒有鹽橋，電路是斷的：離子無法在兩杯之間移動，電荷無法流通，伏特計量不到電池的電位差。</li>
           <li data-en-html="Cl&lt;sup&gt;−&lt;/sup&gt; would precipitate AgCl where the bridge meets the solution. Nitrates are all soluble.">Cl<sup>−</sup> 會和 Ag<sup>+</sup> 生成 AgCl 沉澱。硝酸鹽都可溶。</li>
           <li data-en-html="Zn&lt;sup&gt;2+&lt;/sup&gt; increases and Cu&lt;sup&gt;2+&lt;/sup&gt; decreases, so Q = [Zn&lt;sup&gt;2+&lt;/sup&gt;]/[Cu&lt;sup&gt;2+&lt;/sup&gt;] grows and E = 1.10 − 0.0296 log Q falls, slowly at first and quickly when Cu&lt;sup&gt;2+&lt;/sup&gt; is nearly used up.">Zn<sup>2+</sup> 增加、Cu<sup>2+</sup> 減少，Q = [Zn<sup>2+</sup>]/[Cu<sup>2+</sup>] 變大，E = 1.10 − 0.0296 log Q 下降：一開始很慢，Cu<sup>2+</sup> 快用完時下降得很快。</li>
-          <li data-en="0.635 g ÷ 63.55 g/mol = 0.0100 mol Cu, needing 0.0200 mol of electrons = 1930 C; t = 1930 C ÷ 0.50 A = 3860 s (about 64 minutes).">0.635 g ÷ 63.55 g/mol = 0.0100 mol 銅，需要 0.0200 mol 電子 = 1930 C；t = 1930 C ÷ 0.50 A = 3860 s（約 64 分鐘）。</li>
+          <li data-en="0.635 g ÷ 63.55 g/mol = 0.0100 mol Cu, needing 0.0200 mol of electrons = 1930 C; t = 1930 C ÷ 0.50 A = 3860 s (about 64 minutes).">0.635 g ÷ 63.55 g/mol = 0.0100 mol 銅，需要 0.0200 mol 電子 = 1930 C；t = 1930 C ÷ 0.50 A = 3860 s（約 64 分鐘）。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="Temperature 25 °C. Concentrations are used instead of activities (accurate for dilute solutions; at 1 M real activities are noticeably smaller, so real cells differ by a few hundredths of a volt).">溫度 25 °C。以濃度代替活性（稀溶液時準確；1 M 時真實的活性明顯較小，真實電池會差幾十毫伏）。</li>
-        <li data-en="Electrode potentials follow the Nernst equation exactly. With the bulb, the current is I = E/(R + r) with an internal resistance r = 5 Ω; each coulomb that flows changes the amounts by Faraday's law. Polarisation and overpotential are not modelled.">電極電位完全依能斯特方程式。接燈泡時電流 I = E/(R + r)，內電阻 r = 5 Ω；每流過一庫侖，莫耳數依法拉第定律改變。不考慮極化與過電位。</li>
+        <li data-en="Temperature 25 °C. Concentrations are used instead of activities (accurate for dilute solutions; at 1 M real activities are noticeably smaller, so real cells differ by a few hundredths of a volt).">溫度 25 °C。以濃度代替活性（稀溶液時準確；1 M 時真實的活性明顯較小，真實電池會差幾十毫伏）。</li>
+        <li data-en="Electrode potentials follow the Nernst equation exactly. With the bulb, the current is I = E/(R + r) with an internal resistance r = 5 Ω; each coulomb that flows changes the amounts by Faraday's law. Polarisation and overpotential are not modelled.">電極電位完全依能斯特方程式。接燈泡時電流 I = E/(R + r)，內電阻 r = 5 Ω；每流過一庫侖，莫耳數依法拉第定律改變。不考慮極化與過電位。</li>
         <li data-en="Magnesium actually reacts slowly with water, and tin and lead salts need a little acid to stay in solution; these side reactions are ignored.">鎂其實會和水慢慢反應，錫、鉛的鹽需要加一點酸才不會水解；這些副反應都不考慮。</li>
-        <li data-en-html="Electrolysis uses a constant current with 100% current efficiency. When Cu&lt;sup&gt;2+&lt;/sup&gt; is nearly used up, part of the current (and then all of it) produces hydrogen at the cathode; this switch-over is illustrative. Gas volumes are at 25 °C and 1 atm (24.47 L/mol).">電解是定電流、電流效率 100%。Cu<sup>2+</sup> 快用完時，陰極有一部分（最後全部）電流改為產生氫氣，這個轉換是示意的。氣體體積以 25 °C、1 atm（24.47 L/mol）計。</li>
+        <li data-en-html="Electrolysis uses a constant current with 100 % current efficiency. When Cu&lt;sup&gt;2+&lt;/sup&gt; is nearly used up, part of the current (and then all of it) produces hydrogen at the cathode; this switch-over is illustrative. Gas volumes are at 25 °C and 1 atm (24.47 L/mol).">電解是定電流、電流效率 100 %。Cu<sup>2+</sup> 快用完時，陰極有一部分（最後全部）電流改為產生氫氣，這個轉換是示意的。氣體體積以 25 °C、1 atm（24.47 L/mol）計。</li>
         <li data-en="The ions and electrons on the screen show directions only; their number follows the concentration but their speed is not to scale.">畫面上的離子與電子只表示方向：數目依濃度，速度不依比例。</li>
       </ul>
 
@@ -287,7 +320,7 @@
       <ul>
         <li data-en="Curriculum: Senior-high chemistry · Redox reactions and electrochemistry (galvanic cells, electrolysis).">課綱對應：高中化學・氧化還原與電化學（化學電池、電解）。</li>
         <li data-en-html="Standard reduction potentials: OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix L: Standard Electrode (Half-Cell) Potentials&lt;/a&gt;.">標準還原電位：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials" target="_blank" rel="noopener">附錄 L：標準電極（半電池）電位</a>（英文）。</li>
-        <li data-en-html="Faraday constant F = N&lt;sub&gt;A&lt;/sub&gt;e = 96485.33212 C/mol (exact in the 2019 SI, CODATA); atomic weights: IUPAC standard atomic weights.">法拉第常數 F = N<sub>A</sub>e = 96485.33212 C/mol（2019 年國際單位制的定義值，CODATA）；原子量：IUPAC 標準原子量。</li>
+        <li data-en-html="Faraday constant F = N&lt;sub&gt;A&lt;/sub&gt;e = 96485.33212 C/mol (exact in the 2019 SI, CODATA); atomic weights: IUPAC standard atomic weights.">法拉第常數 F = N<sub>A</sub>e = 96485.33212 C/mol（2019 年國際單位制的定義值，CODATA）；原子量：IUPAC 標準原子量。</li>
       </ul>
     </section>
 
@@ -296,18 +329,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/electrochemistry-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/electrochemistry.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="electrochemistry"></script>
-  <script src="js/missions/electrochemistry.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="electrochemistry"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/electrochemistry-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/electrochemistry.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="electrochemistry"></script>
+  <script src="js/missions/electrochemistry.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="electrochemistry"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

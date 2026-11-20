@@ -2,7 +2,7 @@
  * periodic-trends-core.js — 「週期表與週期性」的化學核心（數據與計算，與畫面無關，Node 可直接 require）
  *
  * 數據來源（2026-11-12 下載並逐項核對）：
- *   - 原子量、電子組態、電負度（鮑林）、第一游離能（eV）、電子親和力（eV）、熔點與沸點（K）、密度（g/cm³）、標準狀態、元素類別：
+ *   - 原子量、電子組態、電負度（鮑林）、第一游離能（eV）、電子親和力（eV）、熔點與沸點（K）、密度（g/cm^3）、標準狀態、元素類別：
  *     PubChem Periodic Table（美國國家醫學圖書館 NCBI；游離能取自 NIST Atomic Spectra Database，其他欄位整理自 CRC Handbook 等）
  *     https://pubchem.ncbi.nlm.nih.gov/periodic-table/ （CSV：https://pubchem.ncbi.nlm.nih.gov/rest/pug/periodictable/CSV）
  *   - 原子半徑：單鍵共價半徑（pm），P. Pyykkö & M. Atsumi, Chem. Eur. J. 15, 186–197 (2009)（自洽擬合，1–118 號同一套定義，含鈍氣）。
@@ -16,7 +16,7 @@
 (function (root) {
   'use strict';
   const F_KJ = 96.48533212;   // 1 eV/粒子 = 96.485 kJ/mol（F = N_A·e）
-  // [符號, 英文名, 原子量, 電子組態, 電負度, 共價半徑 pm, 第一游離能 eV, 電子親和力 eV, 熔點 K, 沸點 K, 密度 g/cm³, 狀態, 類別, 組態是預測]
+  // [符號, 英文名, 原子量, 電子組態, 電負度, 共價半徑 pm, 第一游離能 eV, 電子親和力 eV, 熔點 K, 沸點 K, 密度 g/cm^3, 狀態, 類別, 組態是預測]
   const RAW = [
     ["H", "Hydrogen", "1.0080", "1s1", 2.2, 32, 13.598, 0.754, 13.81, 20.28, 8.988e-05, "g", "nm", 0],   // 1
     ["He", "Helium", "4.00260", "1s2", null, 46, 24.587, null, 0.95, 4.22, 0.0001785, "g", "ng", 0],   // 2
@@ -241,7 +241,7 @@
     IE:  { zh: '第一游離能', en: 'First ionization energy', unit: 'kJ/mol', dec: 0, get: function (e) { return e.IE; } },
     EN:  { zh: '電負度', en: 'Electronegativity', unit: '', dec: 2, get: function (e) { return e.EN; } },
     mp:  { zh: '熔點', en: 'Melting point', unit: '°C', dec: 0, get: function (e) { return e.mp == null ? null : e.mp - 273.15; } },
-    rho: { zh: '密度', en: 'Density', unit: 'g/cm³', dec: 3, log: true, get: function (e) { return e.rho; } }
+    rho: { zh: '密度', en: 'Density', unit: 'g/cm<sup>3</sup>', dec: 3, log: true, get: function (e) { return e.rho; } }
   };
   function value(Z, prop) { return PROPS[prop].get(EL[Z]); }
   /** 這個性質有數據的元素中，最大與最小的 */

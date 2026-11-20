@@ -11,6 +11,36 @@
  */
 (function () {
   'use strict';
+
+  // 分段量字再對齊，沿用目前的基線、字型與主題色。
+  function drawNotation(g, label, x, y, color, align, baseline, font, maxWidth) {
+    g.save();
+    const px = Number(font.match(/([\d.]+)px/)[1]);
+    const small = font.replace(/[\d.]+px/, (px * 0.72) + 'px');
+    const runs = label.split(/(<su[bp]>[^<]+<\/su[bp]>)/).filter(Boolean).map(function (t) {
+      const match = /^<(sub|sup)>([^<]+)<\/\1>$/.exec(t);
+      const text = match ? match[2] : t;
+      const face = match ? small : font;
+      g.font = face;
+      return { text: text, face: face, width: g.measureText(text).width,
+        dy: match ? (match[1] === 'sub' ? 0.24 : -0.40) * px : 0 };
+    });
+    const width = runs.reduce(function (sum, run) { return sum + run.width; }, 0);
+    g.translate(x, y);
+    if (maxWidth && width > maxWidth) g.scale(maxWidth / width, 1);
+    let left = align === 'right' ? -width : align === 'center' ? -width / 2 : 0;
+    runs.forEach(function (run) {
+      LD.haloText(g, run.text, left, run.dy, color, 'left', baseline, run.face);
+      left += run.width;
+    });
+    g.restore();
+  }
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+
   const P = window.PTCore, LD = window.LabDraw;
   if (!P || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -38,14 +68,14 @@
     s = s.replace(/(pm|kj\/mol|kj|°c|g\/cm3)$/i, '');
     return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s) ? parseFloat(s) : NaN;
   }
-  function pct(x) { return num(x * 100, x < 0.1 ? 1 : 0) + '%'; }
+  function pct(x) { return num(x * 100, x < 0.1 ? 1 : 0) + ' %'; }
 
   // ======================= 名稱與數值的文字 =======================
   function nm(Z) { const e = P.EL[Z]; return T(e.zh, e.en); }
   function nmFull(Z) { const e = P.EL[Z]; return isEn() ? e.en : T(e.zh, e.en) + '（' + e.sym + '）'; }
   function propName(p) { return p === 'cat' ? T('元素類別', 'Kind of element') : T(P.PROPS[p].zh, P.PROPS[p].en); }
   function unitOf(p) { return p === 'cat' || p === 'EN' ? '' : P.PROPS[p].unit; }
-  /** 讀數（純文字） */
+  /** 讀數與單位，密度的立方以 HTML 上標排版。 */
   function fmt(p, v, withUnit) {
     if (v == null) return '—';
     let s;
@@ -55,9 +85,9 @@
     else if (p === 'mp') s = num(v, Math.abs(v) >= 1000 ? 0 : 1);
     else s = v < 0.01 ? sigf(v * 1000, 3) : sigf(v, 3);
     if (!withUnit) return s;
-    if (p === 'rho') return s + (v < 0.01 ? ' g/L' : ' g/cm³');
+    if (p === 'rho') return s + (v < 0.01 ? ' g/L' : ' g/cm<sup>3</sup>');
     const u = unitOf(p);
-    return u ? s + ' ' + u : s;
+    return u ? s + ' ' + u : s;
   }
   /** 格子裡的短數字 */
   function short(p, v) {
@@ -94,7 +124,7 @@
       text: c.text, muted: c.muted, border: c.border, accent: c.accent, bg: c['canvas-bg'], surface: c.surface,
       pos: c.pos || '#d1453b', neg: c.neg || '#2f6fd0', probe: c.probe || '#0d7f57', dark: dk,
       ramp: dk ? RAMP_D : RAMP_L,
-      none: dk ? '#3a3d44' : '#e4e6ea', noneInk: dk ? '#80858f' : '#9aa0a8'
+      none: dk ? '#3a3d44' : '#e4e6ea', noneInk: dk ? '#e3e6ed' : '#313b49'
     };
   }
   function rampAt(t) {
@@ -187,7 +217,9 @@
   }
 
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -240,7 +272,8 @@
       g.font = font(Math.max(6.5, Math.min(fsz(10), cell * 0.21)));
       g.fillText(cell < 34 ? (i ? '**' : '*') : a[1], x + w / 2, y + h / 2);
       const fy = rowY(9 + i) + cH / 2;
-      g.font = font(Math.max(7.5, Math.min(fsz(11), cell * 0.3)));
+      g.font = font(Math.max(10, Math.min(fsz(13), cell * 0.37)));
+      g.fillStyle = col.text;
       g.fillText((cell < 34 ? (i ? '** ' : '* ') : '') + a[2], colX(1) + cell, fy);
     });
     // 元素格
@@ -273,7 +306,7 @@
     g.fillStyle = lg; g.fill();
     if (noData && !hid) {
       g.save(); g.clip();
-      g.strokeStyle = LD.alpha(col.noneInk, 0.35); g.lineWidth = 1;
+      g.strokeStyle = LD.alpha(col.noneInk, 0.17); g.lineWidth = 1;
       for (let k = -r.h; k < r.w; k += 5) { g.beginPath(); g.moveTo(r.x + k, r.y + r.h); g.lineTo(r.x + k + r.h, r.y); g.stroke(); }
       g.restore();
     }
@@ -294,14 +327,14 @@
     const symY = big ? r.y + r.h * 0.47 : mid ? r.y + r.h * 0.56 : r.y + r.h / 2;
     g.fillText(e.sym, r.x + r.w / 2, symY);
     if (mid) {
-      g.font = font(Math.max(6.5, Math.min(cell * 0.2, fsz(10))));
+      g.font = font(Math.max(8.5, Math.min(cell * 0.26, fsz(12))));
       g.textAlign = 'left'; g.textBaseline = 'top';
       g.globalAlpha = 0.85;
       g.fillText(String(Z), r.x + 2.5, r.y + 2);
       g.globalAlpha = 1;
     }
     if (big && state.prop !== 'cat') {
-      g.font = font(Math.max(7, Math.min(cell * 0.19, fsz(10))));
+      g.font = font(Math.max(9, Math.min(cell * 0.26, fsz(12))));
       g.textAlign = 'center'; g.textBaseline = 'alphabetic';
       g.fillText(hid ? '?' : short(state.prop, P.value(Z, state.prop)), r.x + r.w / 2, r.y + r.h - 3);
     } else if (hid && !big) {
@@ -314,7 +347,7 @@
   }
   /** 表上方的空白區（第 3–12 族、第 1–3 週期）：放選取元素的放大卡 */
   function drawKey(g) {
-    const x = colX(3) + L.gap, y = rowY(1) + L.gap, w = L.cell * 10 - 2 * L.gap, h = L.cellH * 3 - 2 * L.gap - (L.narrow ? 0 : L.cellH * 0.15);
+    const x = colX(3) + L.gap, y = rowY(1) + L.gap, w = L.cell * 10 - 2 * L.gap, h = L.cellH * 3 - 2 * L.gap - Math.max(11, L.cellH * 0.32);
     const Z = state.Z, e = P.EL[Z];
     const bs = Math.min(h, w * 0.32);
     const bg = cellColor(Z), ink = inkOn(bg);
@@ -341,7 +374,7 @@
     if (state.prop === 'cat') line = T(P.CATS[e.cat][0], P.CATS[e.cat][1]);
     else line = propName(state.prop) + '  ' + (isHidden(Z, state.prop) ? '?' : fmt(state.prop, P.value(Z, state.prop), true));
     g.font = font(f2, '600'); g.fillStyle = state.prop === 'cat' ? col.text : col.accent;
-    g.fillText(fitText(g, line, tw), tx, y + h * 0.82);
+    drawNotation(g, line, tx, y + h * 0.82, g.fillStyle, 'left', 'alphabetic', g.font, tw);
     g.restore();
   }
   function fitText(g, s, w) {
@@ -414,7 +447,7 @@
     row(T('週期、族', 'Period, group'), q.period + T('、', ', ') + groupText(Z));
     row(T('區塊', 'Block'), P.block(Z) + T(' 區', '-block'));
     row(T('類別', 'Kind'), T(P.CATS[e.cat][0], P.CATS[e.cat][1]));
-    row(T('室溫狀態', 'State at 25 °C'), stateText(Z));
+    row(T('室溫狀態', 'State at 25 °C'), stateText(Z));
     NUM_PROPS.forEach(function (p) {
       const hid = isHidden(Z, p);
       let v = hid ? '?' : fmt(p, P.value(Z, p), true);
@@ -446,8 +479,8 @@
       r: T('原子半徑（單鍵共價半徑）：同週期往右變小，同族往下變大。', 'Atomic radius (single-bond covalent radius): smaller to the right of a period, larger down a group.'),
       IE: T('第一游離能：從氣態原子拿走一個電子所需的能量。同週期往右大致變大，同族往下變小。', 'First ionization energy: the energy to remove one electron from a gaseous atom. It roughly rises across a period and falls down a group.'),
       EN: T('電負度（鮑林）：原子在化學鍵中吸引共用電子的能力。右上角最大。', 'Electronegativity (Pauling): how strongly an atom pulls shared electrons in a bond. Largest at the top right.'),
-      mp: T('熔點（1 atm）：每個週期中間最高，鈍氣與鹼金屬很低。', 'Melting point (1 atm): highest in the middle of each period, low for noble gases and alkali metals.'),
-      rho: T('密度（室溫、1 atm）：用對數色階，氣體大約只有固體的千分之一。', 'Density (room temperature, 1 atm), on a logarithmic colour scale: the gases are about a thousand times less dense than the solids.'),
+      mp: T('熔點（1 atm）：每個週期中間最高，鈍氣與鹼金屬很低。', 'Melting point (1 atm): highest in the middle of each period, low for noble gases and alkali metals.'),
+      rho: T('密度（室溫、1 atm）：用對數色階，氣體大約只有固體的千分之一。', 'Density (room temperature, 1 atm), on a logarithmic colour scale: the gases are about a thousand times less dense than the solids.'),
       cat: T('元素類別：金屬在左下、非金屬在右上，類金屬在中間的斜線上。', 'Kinds of element: metals at the lower left, nonmetals at the upper right, metalloids along the staircase between them.')
     };
     $('propHint').textContent = H[state.prop];
@@ -500,7 +533,7 @@
     g.beginPath(); g.moveTo(X0, Y1); g.lineTo(X0, Y0); g.lineTo(X1, Y0); g.stroke();
     g.fillStyle = col.text; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     g.font = font(fsz(12), '600');
-    g.fillText(o.ylab, 6, 18);
+    drawNotation(g, o.ylab, 6, 18, col.text, 'left', 'alphabetic', g.font);
     if (o.xlab) { g.textAlign = 'right'; g.font = font(fsz(12)); g.fillStyle = col.muted; g.fillText(o.xlab, X1, gh - 6); }
     g.restore();
     return { sx: sx, sy: sy, X0: X0, X1: X1, Y0: Y0, Y1: Y1 };
@@ -597,7 +630,7 @@
       if (v != null && !(yr.log && v <= 0)) {
         LD.ball(g, x, Y(v), 5, col.accent);
         const right = x < (A.X0 + A.X1) / 2;
-        LD.pill(g, P.EL[state.Z].sym + ' ' + fmt(p, v, true), x + (right ? 9 : -9), Math.max(A.Y1 + 14, Y(v) - 8), col.text, right ? 'left' : 'right', '600 ' + fsz(12) + 'px ' + LD.FONT);
+        drawNotation(g, P.EL[state.Z].sym + ' ' + fmt(p, v, true), x + (right ? 9 : -9), Math.max(A.Y1 + 14, Y(v) - 8), col.text, right ? 'left' : 'right', 'alphabetic', '600 ' + fsz(12) + 'px ' + LD.FONT);
       }
     }
     g.restore();
@@ -756,7 +789,7 @@
     game.lastZ = game.Z;
     state.Z = game.Z;
     $('guess').value = '';
-    $('gameOut').textContent = '';
+    $('gameOut').innerHTML = formulaMarkup('');
     setGameUI();
     refreshAll();
     report();
@@ -770,7 +803,7 @@
     $('gameIn').hidden = !open;
     if (game.on) {
       const u = unitOf(game.prop);
-      $('guessLabel').textContent = T('你的預測', 'Your prediction') + (u ? (isEn() ? ' (' + u + ')' : '（' + u + '）') : '');
+      $('guessLabel').innerHTML = formulaMarkup(T('你的預測', 'Your prediction') + (u ? (isEn() ? ' (' + u + ')' : '（' + u + '）') : ''));
       $('gameQ').textContent = T('第 ' + game.n + ' 題：閃爍的「?」是 ' + nmFull(game.Z) + '。由鄰居推出它的' + propName(game.prop) + '。',
         'Round ' + game.n + ': the flashing “?” is ' + nmFull(game.Z) + '. Predict its ' + propName(game.prop).toLowerCase() + ' from its neighbours.') +
         (game.streak ? T('（目前連續猜中 ' + game.streak + ' 題）', ' (current streak: ' + game.streak + ')') : '');
@@ -787,9 +820,9 @@
     game.revealed = true;
     game.hist.unshift({ Z: game.Z, prop: game.prop, guess: g, actual: actual, err: err, hit: hit });
     if (game.hist.length > 12) game.hist.length = 12;
-    $('gameOut').textContent = T('實際值 ' + fmt(game.prop, actual, true) + '，你猜 ' + fmt(game.prop, g, true) + '，誤差 ' + pct(err) + '。',
+    $('gameOut').innerHTML = formulaMarkup(T('實際值 ' + fmt(game.prop, actual, true) + '，你猜 ' + fmt(game.prop, g, true) + '，誤差 ' + pct(err) + '。',
       'The actual value is ' + fmt(game.prop, actual, true) + '; you guessed ' + fmt(game.prop, g, true) + ', off by ' + pct(err) + '. ') +
-      (hit ? T('猜中了！連續猜中 ' + game.streak + ' 題。', 'A hit! Streak: ' + game.streak + '.') : T('差了一點，連續猜中歸零。看看它和鄰居的關係再試一題。', 'Not quite; the streak is reset. Compare it with its neighbours and try another.'));
+      (hit ? T('猜中了！連續猜中 ' + game.streak + ' 題。', 'A hit! Streak: ' + game.streak + '.') : T('差了一點，連續猜中歸零。看看它和鄰居的關係再試一題。', 'Not quite; the streak is reset. Compare it with its neighbours and try another.')));
     if (snd()) {
       if (hit) { window.LabSound.tone({ freq: 784, dur: 0.1, gain: 0.08 }); window.LabSound.tone({ freq: 1175, dur: 0.18, gain: 0.08, delay: 0.11 }); }
       else window.LabSound.tone({ freq: 392, dur: 0.16, gain: 0.07, type: 'triangle' });
@@ -802,18 +835,18 @@
     acted();
     const actual = P.value(game.Z, game.prop);
     game.revealed = true; game.streak = 0;
-    $('gameOut').textContent = T('答案是 ' + fmt(game.prop, actual, true) + '。連續猜中歸零。', 'The answer is ' + fmt(game.prop, actual, true) + '. The streak is reset.');
+    $('gameOut').innerHTML = formulaMarkup(T('答案是 ' + fmt(game.prop, actual, true) + '。連續猜中歸零。', 'The answer is ' + fmt(game.prop, actual, true) + '. The streak is reset.'));
     setGameUI(); refreshAll();
   }
   function endRound(msg) {
     game.revealed = true; game.streak = 0;
-    $('gameOut').textContent = msg;
+    $('gameOut').innerHTML = formulaMarkup(msg);
     setGameUI();
   }
   function clearGame() {
     acted();
     game.on = false; game.revealed = true; game.streak = 0; game.best = 0; game.hist = []; game.n = 0;
-    $('gameOut').textContent = '';
+    $('gameOut').innerHTML = formulaMarkup('');
     setGameUI(); renderGameTable(); refreshAll();
     setStatus(T('已清除猜猜看的紀錄與連勝。', 'The guesses and the streak have been cleared.'));
   }
@@ -947,7 +980,7 @@
   }
 
   // ======================= 事件 =======================
-  function canvasPoint(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function canvasPoint(c, ev) { const r = c.getBoundingClientRect(); return [(ev.clientX - r.left) * (c === cv ? cw / r.width : 1), (ev.clientY - r.top) * (c === cv ? ch / r.height : 1)]; }
   cv.addEventListener('click', function (ev) {
     const p = canvasPoint(cv, ev), Z = hitTable(p[0], p[1]);
     acted();
@@ -998,7 +1031,7 @@
           describe: function () {
             const Z = state.Z;
             return nmFull(Z) + T('，原子序 ', ', atomic number ') + Z + T('，第 ', ', period ') + P.pos(Z).period + T(' 週期，', ', ') +
-              (state.prop === 'cat' ? T(P.CATS[P.EL[Z].cat][0], P.CATS[P.EL[Z].cat][1]) : propName(state.prop) + ' ' + (isHidden(Z, state.prop) ? '?' : fmt(state.prop, P.value(Z, state.prop), true)));
+              (state.prop === 'cat' ? T(P.CATS[P.EL[Z].cat][0], P.CATS[P.EL[Z].cat][1]) : propName(state.prop) + ' ' + (isHidden(Z, state.prop) ? '?' : fmt(state.prop, P.value(Z, state.prop), true).replace(/<\/?sup>/g, '')));
           } },
         { name: function () { return T('著色的性質', 'Colour by'); },
           move: function (dx, dy) {
@@ -1026,7 +1059,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0, ls = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
     new ResizeObserver(function () { if (shcv.clientWidth !== ls) { ls = shcv.clientWidth; resizeShell(); drawShell(); } }).observe(shcv);
   } else window.addEventListener('resize', resize);

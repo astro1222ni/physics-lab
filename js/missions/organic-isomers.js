@@ -16,25 +16,25 @@
     {
       id: 'organic-isomers-1', level: 1,
       title: { zh: '三個碳', en: 'Three carbons' },
-      desc: { zh: '在格子上組出丙烷（C3H8）。', en: 'Build propane (C3H8) on the grid.' },
+      desc: { zh: '在格子上組出丙烷（C<sub>3</sub>H<sub>8</sub>）。', en: 'Build propane (C<sub>3</sub>H<sub>8</sub>) on the grid.' },
       check: is('propane')
     },
     {
       id: 'organic-isomers-2', level: 2,
       title: { zh: '分岔的丁烷', en: 'A branched butane' },
-      desc: { zh: '組出 2-甲基丙烷：分子式和丁烷一樣是 C4H10，碳骨架卻有分岔。', en: 'Build 2-methylpropane: the same formula C4H10 as butane, but with a branched skeleton.' },
+      desc: { zh: '組出 2-甲基丙烷：分子式和丁烷一樣是 C<sub>4</sub>H<sub>10</sub>，碳骨架卻有分岔。', en: 'Build 2-methylpropane: the same formula C<sub>4</sub>H<sub>10</sub> as butane, but with a branched skeleton.' },
       check: is('2-methylpropane')
     },
     {
       id: 'organic-isomers-3', level: 3,
       title: { zh: '最早沸騰的戊烷', en: 'The first pentane to boil' },
-      desc: { zh: '組出沸點最低的 C5H12 異構物。', en: 'Build the C5H12 isomer with the lowest boiling point.' },
+      desc: { zh: '組出沸點最低的 C<sub>5</sub>H<sub>12</sub> 異構物。', en: 'Build the C<sub>5</sub>H<sub>12</sub> isomer with the lowest boiling point.' },
       check: is('2,2-dimethylpropane')
     },
     {
       id: 'organic-isomers-4', level: 3,
       title: { zh: '戊烷收齊', en: 'All the pentanes' },
-      desc: { zh: '在異構物圖鑑的分子式選單選 C5H12，把它的烷類異構物全部「收進圖鑑」。', en: 'Choose C5H12 in the formula menu of the isomer collection and “Add to collection” every one of its alkane isomers.' },
+      desc: { zh: '在異構物圖鑑的分子式選單選 C<sub>5</sub>H<sub>12</sub>，把它的烷類異構物全部「收進圖鑑」。', en: 'Choose C<sub>5</sub>H<sub>12</sub> in the formula menu of the isomer collection and “Add to collection” every one of its alkane isomers.' },
       check: full('C5H12')
     },
     {
@@ -46,13 +46,13 @@
     {
       id: 'organic-isomers-6', level: 5,
       title: { zh: '酒精與它的雙胞胎', en: 'Alcohol and its twin' },
-      desc: { zh: '在異構物圖鑑的分子式選單選 C2H6O，把醇和醚都「收進圖鑑」。比一比它們的沸點。', en: 'Choose C2H6O in the formula menu of the isomer collection and “Add to collection” both the alcohol and the ether. Compare their boiling points.' },
+      desc: { zh: '在異構物圖鑑的分子式選單選 C<sub>2</sub>H<sub>6</sub>O，把醇和醚都「收進圖鑑」。比一比它們的沸點。', en: 'Choose C<sub>2</sub>H<sub>6</sub>O in the formula menu of the isomer collection and “Add to collection” both the alcohol and the ether. Compare their boiling points.' },
       check: full('C2H6O')
     },
     {
       id: 'organic-isomers-7', level: 6,
       title: { zh: '己烷五兄弟', en: 'Five hexanes' },
-      desc: { zh: '在異構物圖鑑的分子式選單選 C6H14，把 5 種烷類異構物全部「收進圖鑑」。', en: 'Choose C6H14 in the formula menu of the isomer collection and “Add to collection” all 5 alkane isomers.' },
+      desc: { zh: '在異構物圖鑑的分子式選單選 C<sub>6</sub>H<sub>14</sub>，把 5 種烷類異構物全部「收進圖鑑」。', en: 'Choose C<sub>6</sub>H<sub>14</sub> in the formula menu of the isomer collection and “Add to collection” all 5 alkane isomers.' },
       check: full('C6H14')
     },
     {
@@ -64,25 +64,25 @@
     {
       id: 'organic-isomers-9', level: 7,
       title: { zh: '環也算', en: 'Rings count too' },
-      desc: { zh: '選 C4H8 的「全部，含環與順反」，把烯類、環狀分子和順反異構物全部「收進圖鑑」。', en: 'Choose C4H8 “all, rings and cis/trans counted” and “Add to collection” every alkene, ring and cis–trans isomer.' },
+      desc: { zh: '選 C<sub>4</sub>H<sub>8</sub> 的「全部，含環與順反」，把烯類、環狀分子和順反異構物全部「收進圖鑑」。', en: 'Choose C<sub>4</sub>H<sub>8</sub> “all, rings and cis/trans counted” and “Add to collection” every alkene, ring and cis–trans isomer.' },
       check: full('C4H8')
     },
     {
       id: 'organic-isomers-10', level: 8,
       title: { zh: '四碳醇與醚', en: 'Four-carbon alcohols and ethers' },
-      desc: { zh: '選 C4H10O，把所有醇和醚（共 7 種）都「收進圖鑑」。', en: 'Choose C4H10O and “Add to collection” all the alcohols and ethers (7 in total).' },
+      desc: { zh: '選 C<sub>4</sub>H<sub>10</sub>O，把所有醇和醚（共 7 種）都「收進圖鑑」。', en: 'Choose C<sub>4</sub>H<sub>10</sub>O and “Add to collection” all the alcohols and ethers (7 in total).' },
       check: full('C4H10O')
     },
     {
       id: 'organic-isomers-11', level: 9,
       title: { zh: '庚烷九種', en: 'Nine heptanes' },
-      desc: { zh: '選 C7H16，把 9 種烷類異構物全部「收進圖鑑」。', en: 'Choose C7H16 and “Add to collection” all 9 alkane isomers.' },
+      desc: { zh: '選 C<sub>7</sub>H<sub>16</sub>，把 9 種烷類異構物全部「收進圖鑑」。', en: 'Choose C<sub>7</sub>H<sub>16</sub> and “Add to collection” all 9 alkane isomers.' },
       check: full('C7H16')
     },
     {
       id: 'organic-isomers-12', level: 10,
       title: { zh: '辛烷十八種', en: 'Eighteen octanes' },
-      desc: { zh: '選 C8H18，把 18 種烷類異構物全部「收進圖鑑」。', en: 'Choose C8H18 and “Add to collection” all 18 alkane isomers.' },
+      desc: { zh: '選 C<sub>8</sub>H<sub>18</sub>，把 18 種烷類異構物全部「收進圖鑑」。', en: 'Choose C<sub>8</sub>H<sub>18</sub> and “Add to collection” all 18 alkane isomers.' },
       check: full('C8H18')
     },
     {

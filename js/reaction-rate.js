@@ -37,7 +37,7 @@
     const p = sciParts(x, sig);
     return p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>';
   }
-  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(100 * x, d == null ? 1 : d) + '%'; }
+  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(100 * x, d == null ? 1 : d) + ' %'; }
 
   // ======================= 元素 =======================
   const cv = $('cv'), ctx = cv.getContext('2d');
@@ -197,7 +197,7 @@
     // 半生期
     if (!r.halfSaid && s.stats.tHalf != null) {
       r.halfSaid = true;
-      setStatus(T('A 已用掉一半：半生期 ', 'Half of A has reacted: half-life ') + num(s.stats.tHalf, 0) + ' ps' + T('。', '.'));
+      setStatus(T('A 已用掉一半：半生期 ', 'Half of A has reacted: half-life ') + num(s.stats.tHalf, 0) + ' ps' + T('。', '.'));
       if (window.LabSound && window.LabSound.enabled()) {
         window.LabSound.tone({ freq: 1047, dur: 0.12, gain: 0.16 });
         window.LabSound.tone({ freq: 1319, dur: 0.16, gain: 0.13, delay: 0.1 });
@@ -266,7 +266,9 @@
   const _o = {};
 
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -420,11 +422,11 @@
     const r = cur, s = r.sim;
     const heat = r.cfg.heat;
     return {
-      t: T('t = ', 't = ') + num(s.t, s.t < 100 ? 1 : 0) + ' ps',
-      temp: heat ? T('氣體 ', 'Gas ') + num(r.Tgas, 0) + ' K' : T('器壁 ', 'Walls ') + num(r.cfg.T, 0) + ' K',
+      t: T('t = ', 't = ') + num(s.t, s.t < 100 ? 1 : 0) + ' ps',
+      temp: heat ? T('氣體 ', 'Gas ') + num(r.Tgas, 0) + ' K' : T('器壁 ', 'Walls ') + num(r.cfg.T, 0) + ' K',
       tcol: tempColor(heat ? r.Tgas : r.cfg.T),
       paused: !state.running,
-      lag: state.running && lagEma < 0.7 ? T('這台裝置目前約 ', 'This device manages about ') + num(SPEEDS[state.speed] * lagEma, 0) + T(' ps/秒', ' ps/s') : ''
+      lag: state.running && lagEma < 0.7 ? T('這台裝置目前約 ', 'This device manages about ') + num(SPEEDS[state.speed] * lagEma, 0) + T(' ps/秒', ' ps/s') : ''
     };
   }
 
@@ -594,7 +596,7 @@
       for (let E = 0.02; E <= Emax; E += Emax / 160) pts.push([A.sx(E), A.sy(theory(E, prev))]);
       line(g, pts, LD.alpha(col.muted, 0.9), 1.5, [5, 4]);
       const E1 = Emax * 0.08 + 2 * K.RT(prev) * 0.5;
-      note(g, num(prev, 0) + ' K', A.sx(Math.min(Emax * 0.9, E1 + Emax * 0.05)), A.sy(theory(E1, prev)) - 6, col.muted, 'left');
+      note(g, num(prev, 0) + ' K', A.sx(Math.min(Emax * 0.9, E1 + Emax * 0.05)), A.sy(theory(E1, prev)) - 6, col.muted, 'left');
     }
     // 理論曲線，Ea 右邊塗色
     const pts = [];
@@ -612,7 +614,7 @@
       g.restore();
     }
     line(g, pts, col.accent, 2.4);
-    note(g, num(c.T, 0) + ' K', pts[Math.round(pts.length * 0.12)][0] + 8, pts[Math.round(pts.length * 0.12)][1] - 6, col.accent, 'left');
+    note(g, num(c.T, 0) + ' K', pts[Math.round(pts.length * 0.12)][0] + 8, pts[Math.round(pts.length * 0.12)][1] - 6, col.accent, 'left');
     // Ea 的位置
     if (!hide) {
       const mark = function (E, color, dash, lab) {
@@ -700,6 +702,13 @@
     const tmax = Math.max(50, s.t * 1.08);
     const cmax = K.molarity(Math.max(c.nA, c.nB)) * 1.1;
     const A = axes(g, { x0: 0, x1: tmax, y0: 0, y1: cmax, xl: [[T('時間 t（ps）', 'Time t (ps)'), 0]], yl: [[T('濃度（mol/L）', 'Concentration (mol/L)'), 0]], ydec: 2 });
+    // 公開任務的半生期範圍，只在橫軸走到相應時間後顯示。
+    if (tmax >= 250 && !c.mys) {
+      const left = A.sx(250), right = A.sx(Math.min(tmax, 350));
+      g.save(); g.fillStyle = LD.alpha(col.A, 0.08);
+      g.fillRect(left, A.Y0, right - left, A.Y1 - A.Y0); g.restore();
+      if (tmax >= 300) note(g, '300 ps', A.sx(300), A.Y1 + 13, col.muted, 'center');
+    }
     // 理論曲線（速率方程式的數值積分）
     if (!c.mys && !c.heat) {
       const th = K.theory({ T: c.T, Ea: c.Ea, dH: c.dH, cat: c.cat, steric: c.steric, nA: c.nA, nB: c.nB });
@@ -725,7 +734,7 @@
     if (s.stats.tHalf != null) {
       const X = A.sx(s.stats.tHalf);
       line(g, [[X, A.Y0], [X, A.Y1 + 4]], LD.alpha(col.text, 0.5), 1.2, [4, 4]);
-      rich(g, [['t', 0], ['1/2', -1], [' = ' + num(s.stats.tHalf, 0) + ' ps', 0]], X + 4, A.Y1 + 16, col.text, fsz(12), X > A.X1 - 110 ? 'right' : 'left');
+      rich(g, [['t', 0], ['1/2', -1], [' = ' + num(s.stats.tHalf, 0) + ' ps', 0]], X + 4, A.Y1 + 16, col.text, fsz(12), X > A.X1 - 110 ? 'right' : 'left');
     }
   }
 
@@ -749,7 +758,7 @@
     });
     const xpad = Math.max(0.3, (x1 - x0) * 0.12), ypad = Math.max(0.5, (y1 - y0) * 0.15);
     const A = axes(g, { x0: Math.max(0, x0 - xpad), x1: x1 + xpad, y0: y0 - ypad, y1: y1 + ypad, xl: [['1000/T（K', 0], ['−1', 1], ['）', 0]],
-      yl: [['ln k（k：L mol', 0], ['−1', 1], [' s', 0], ['−1', 1], ['）', 0]], xdec: 1, ydec: 1 });
+      yl: [['ln k（k：L mol', 0], ['−1', 1], [' s', 0], ['−1', 1], ['）', 0]], xdec: 1, ydec: 1 });
     const key = cur.key;
     const grp = arrGroup(rows, key, 10);
     rows.forEach(function (r) {
@@ -765,7 +774,7 @@
       const xa = A.sx(Math.max(0, x0 - xpad)), xb = A.sx(x1 + xpad);
       const yf = function (X) { const inv = (X - A.X0) / (A.X1 - A.X0) * ((x1 + xpad) - Math.max(0, x0 - xpad)) + Math.max(0, x0 - xpad); return fit.intercept + fit.slope * inv / 1000; };
       line(g, [[xa, A.sy(yf(xa))], [xb, A.sy(yf(xb))]], col.accent, 1.8, [6, 4]);
-      const parts = [[T('斜率 = ', 'slope = ') + num(fit.slope, 0) + ' K　', 0]].concat(EA).concat([[' = ' + num(fit.Ea, 2) + ' ± ' + num(fit.EaErr, 2) + ' kJ/mol', 0]]);
+      const parts = [[T('斜率 = ', 'slope = ') + num(fit.slope, 0) + ' K　', 0]].concat(EA).concat([[' = ' + num(fit.Ea, 2) + ' ± ' + num(fit.EaErr, 2) + ' kJ/mol', 0]]);
       rich(g, parts, A.X1, A.Y1 - 10, col.text, fsz(12), 'right', '600');
       if (!cur.cfg.mys) {
         const app = K.apparentEa(cur.sim.EaF, grp.map(function (r) { return { T: r.T, n: r.fwd }; }));
@@ -789,11 +798,11 @@
     const r = cur, s = r.sim, st = s.stats, c = r.cfg, m = K.measure(s);
     const names = [['A', col.A], ['B', col.B], ['C', col.C], ['D', col.D]];
     $('spRow').innerHTML = names.map(function (p, i) {
-      return '<div><span><i style="background:' + p[1] + '"></i>' + p[0] + '</span><b>' + s.count[i] + '</b>' + num(K.molarity(s.count[i]), 3) + ' M</div>';
+      return '<div><span><i style="background:' + p[1] + '"></i>' + p[0] + '</span><b>' + s.count[i] + '</b>' + num(K.molarity(s.count[i]), 3) + ' M</div>';
     }).join('');
     dl($('readout'), [
-      [T('經過時間', 'Elapsed time'), num(s.t, 1) + ' ps'],
-      [c.heat ? T('氣體溫度<small>反應熱留在氣體裡</small>', 'Gas temperature<small>heat stays in the gas</small>') : T('氣體溫度', 'Gas temperature'), num(r.Tgas, 0) + ' K'],
+      [T('經過時間', 'Elapsed time'), num(s.t, 1) + ' ps'],
+      [c.heat ? T('氣體溫度<small>反應熱留在氣體裡</small>', 'Gas temperature<small>heat stays in the gas</small>') : T('氣體溫度', 'Gas temperature'), num(r.Tgas, 0) + ' K'],
       [T('正反應 A + B → C + D', 'Forward A + B → C + D'), st.fwd + T(' 次', '')],
       [T('逆反應 C + D → A + B', 'Reverse C + D → A + B'), st.rev + T(' 次', '')]
     ]);
@@ -807,8 +816,8 @@
     rows.push([T('速率常數 k<small>L/(mol·s)', 'Rate constant k<small>L/(mol·s)') + (st.fwd ? T('，誤差約 ±', ', about ±') + pct(m.relErrF, 0) : '') + '</small>',
       st.fwd ? sciHTML(m.kF_SI, 3) : '—', 'big']);
     if (th && !c.heat) rows.push([T('k 的理論值', 'k in theory'), sciHTML(th.kF_SI, 3)]);
-    rows.push([T('初速率<small>mol/(L·s)，轉化 10% 前的平均</small>', 'Initial rate<small>mol/(L·s), mean over the first 10%</small>'), m.rate0 != null ? sciHTML(m.rate0, 3) : '—']);
-    rows.push([T('半生期', 'Half-life'), st.tHalf != null ? num(st.tHalf, 0) + ' ps' : '—']);
+    rows.push([T('初速率<small>mol/(L·s)，轉化 10 % 前的平均</small>', 'Initial rate<small>mol/(L·s), mean over the first 10 %</small>'), m.rate0 != null ? sciHTML(m.rate0, 3) : '—']);
+    rows.push([T('半生期', 'Half-life'), st.tHalf != null ? num(st.tHalf, 0) + ' ps' : '—']);
     if (!c.mys && (st.rev > 0 || s.count[K.C] > 0)) {
       const Q = s.count[K.A] * s.count[K.B] > 0 ? s.count[K.C] * s.count[K.DD] / (s.count[K.A] * s.count[K.B]) : null;
       rows.push([T('Q = [C][D]/[A][B]<small>平衡常數 K = ', 'Q = [C][D]/[A][B]<small>equilibrium constant K = ') + (th.K > 1000 ? sciHTML(th.K, 2) : num(th.K, th.K < 10 ? 2 : 0)) + '</small>',
@@ -821,7 +830,7 @@
     if (!cur) return;
     const s = cur.sim;
     cv.setAttribute('aria-label', T('反應容器（立體透視圖）：', 'Reaction box (perspective drawing): ') + 'A ' + s.count[0] + T('、B ', ', B ') + s.count[1] + T('、C ', ', C ') + s.count[2] + T('、D ', ', D ') + s.count[3] +
-      T(' 個分子，溫度 ', ' molecules, temperature ') + num(cur.Tgas, 0) + ' K' + T('，經過 ', ', time ') + num(s.t, 0) + ' ps' + T('。', '.'));
+      T(' 個分子，溫度 ', ' molecules, temperature ') + num(cur.Tgas, 0) + ' K' + T('，經過 ', ', time ') + num(s.t, 0) + ' ps' + T('。', '.'));
   }
 
   function renderTable() {
@@ -843,11 +852,11 @@
   }
 
   function refreshOutputs() {
-    $('tempo').textContent = num(val(elT), 0) + ' K';
-    $('eao').textContent = mys ? '?' : num(val(elEa), 1) + ' kJ/mol';
-    $('dho').textContent = num(mys ? -30 : val(elDH), 1) + ' kJ/mol';
-    $('nao').textContent = num(val(elNA), 0) + T(' 個', '');
-    $('nbo').textContent = num(val(elNB), 0) + T(' 個', '');
+    $('tempo').textContent = num(val(elT), 0) + ' K';
+    $('eao').textContent = mys ? '?' : num(val(elEa), 1) + ' kJ/mol';
+    $('dho').textContent = num(mys ? -30 : val(elDH), 1) + ' kJ/mol';
+    $('nao').textContent = num(val(elNA), 0) + T(' 個', '');
+    $('nbo').textContent = num(val(elNB), 0) + T(' 個', '');
   }
   function refreshAll() {
     refreshOutputs();
@@ -929,7 +938,7 @@
     $('ansEa').value = '';
     $('check').disabled = false;
     setMysUI();
-    $('mysOut').innerHTML = T('未知反應 ?', 'Unknown reaction ?') + mys.id + T('：', ': ') + T('ΔH = −30 kJ/mol，沒有催化劑，不考慮方向。改溫度做幾次實驗，看阿瑞尼斯圖。', 'ΔH = −30 kJ/mol, no catalyst, orientation ignored. Run it at several temperatures and look at the Arrhenius plot.');
+    $('mysOut').innerHTML = T('未知反應 ?', 'Unknown reaction ?') + mys.id + T('：', ': ') + T('ΔH = −30 kJ/mol，沒有催化劑，不考慮方向。改溫度做幾次實驗，看阿瑞尼斯圖。', 'ΔH = −30 kJ/mol, no catalyst, orientation ignored. Run it at several temperatures and look at the Arrhenius plot.');
     newRun(T('開始未知反應。', 'Unknown reaction started.'));
     setTab('arr');
   }
@@ -954,7 +963,7 @@
       mysSaved = null;
     }
     [elEa, elDH, elCat, elSt, elHeat].forEach(function (el) { el.disabled = on; });
-    $('condHint').textContent = on ? T('未知反應：活化能看不到，ΔH 固定 −30 kJ/mol；可以改溫度與分子數。', 'Unknown reaction: the activation energy is hidden and ΔH is −30 kJ/mol; you can change the temperature and the numbers of molecules.')
+    $('condHint').textContent = on ? T('未知反應：活化能看不到，ΔH 固定 −30 kJ/mol；可以改溫度與分子數。', 'Unknown reaction: the activation energy is hidden and ΔH is −30 kJ/mol; you can change the temperature and the numbers of molecules.')
       : T('改任何條件都會重新開始一次實驗。點一下數字可直接輸入。', 'Any change starts a new run. Tap a number to type an exact value.');
     refreshOutputs();
   }
@@ -993,8 +1002,8 @@
     mys.revealed = true;
     const rows = mysRows();
     const app = rows.length ? K.apparentEa(mys.E0, rows.map(function (r) { return { T: r.T, n: r.fwd }; })) : null;
-    $('mysOut').innerHTML = T('答案：門檻能量 ', 'Answer: threshold energy ') + 'E<sub>a</sub> = ' + num(mys.E0, 1) + ' kJ/mol' +
-      (app ? T('；用你量過的溫度，阿瑞尼斯圖應得 ', '; with the temperatures you used, the Arrhenius plot should give ') + num(app, 1) + ' kJ/mol' : '') + T('。（揭曉後不算任務）', '. (After revealing, this one no longer counts for missions.)');
+    $('mysOut').innerHTML = T('答案：門檻能量 ', 'Answer: threshold energy ') + 'E<sub>a</sub> = ' + num(mys.E0, 1) + ' kJ/mol' +
+      (app ? T('；用你量過的溫度，阿瑞尼斯圖應得 ', '; with the temperatures you used, the Arrhenius plot should give ') + num(app, 1) + ' kJ/mol' : '') + T('。（揭曉後不算任務）', '. (After revealing, this one no longer counts for missions.)');
   }
 
   // ======================= 3D 檢視 =======================
@@ -1176,7 +1185,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', resize);
   // 暫停時圖表仍要更新閃光淡出（反應進程的短橫線）：低頻重畫
@@ -1191,4 +1200,33 @@
   setRunning(state.running);
   resize();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

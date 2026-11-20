@@ -21,7 +21,6 @@
     const hudTL = document.createElement('div'), hudTR = document.createElement('div'), hudBL = document.createElement('div');
     hudTL.className = 'r3-hud tl'; hudTR.className = 'r3-hud tr'; hudBL.className = 'r3-hud bl';
     [hudTL, hudTR, hudBL].forEach(function (d) { d.setAttribute('aria-hidden', 'true'); host.appendChild(d); });
-    hudBL.textContent = T('拖曳旋轉・滾輪或雙指縮放', 'Drag to rotate · scroll or pinch to zoom');
 
     let renderer;
     try {
@@ -43,7 +42,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 12;
     controls.maxDistance = 120;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 14, T });
     controls.maxPolarAngle = Math.PI * 0.53;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x9a948a, 1.35));
@@ -183,14 +182,23 @@
       const span = 24;
       const dist = (span * 0.5) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1.2, Math.max(0.55, camera.aspect));
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         controls.target.set(CXT + 0.6, 9.5, 0);
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(380, w * 1.1)) : 470; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(380, w * 1.1)) : 470;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -213,7 +221,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; if (!H.animating()) renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -235,6 +243,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

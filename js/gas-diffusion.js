@@ -13,6 +13,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const G = window.GdCore, LD = window.LabDraw;
   if (!G || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -36,11 +46,11 @@
   }
   function clock(s) {
     if (!isFinite(s)) return '—';
-    if (s < 60) return num(s, 1) + ' s';
+    if (s < 60) return num(s, 1) + ' s';
     const m = Math.floor(s / 60), sec = Math.floor(s - 60 * m);
-    if (m < 60) return T(m + ' 分 ' + (sec < 10 ? '0' : '') + sec + ' 秒', m + ' min ' + (sec < 10 ? '0' : '') + sec + ' s');
+    if (m < 60) return T(m + ' 分 ' + (sec < 10 ? '0' : '') + sec + ' 秒', m + ' min ' + (sec < 10 ? '0' : '') + sec + ' s');
     const h = Math.floor(m / 60), mm = m - 60 * h;
-    return T(h + ' 小時 ' + (mm < 10 ? '0' : '') + mm + ' 分', h + ' h ' + (mm < 10 ? '0' : '') + mm + ' min');
+    return T(h + ' 小時 ' + (mm < 10 ? '0' : '') + mm + ' 分', h + ' h ' + (mm < 10 ? '0' : '') + mm + ' min');
   }
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
 
@@ -49,11 +59,13 @@
   function isUnk(id) { return id === 'X' || id === 'HX'; }
   function fH(id) {
     const g = GAS[id];
-    let h = g.f.replace(/(\d+)/g, '<sub>$1</sub>');
-    if (g.iso) h += T('（U-' + g.iso + '）', ' (U-' + g.iso + ')');
-    return h;
+    const mass = g.iso ? '<sup>' + g.iso + '</sup>' : '';
+    return mass + g.f.replace(/(\d+)/g, '<sub>$1</sub>');
   }
-  function fTxt(id) { const g = GAS[id]; return g.f + (g.iso ? ' (U-' + g.iso + ')' : ''); }
+  function fTxt(id) {
+    const g = GAS[id];
+    return g.f + (g.iso ? ' (U-' + g.iso + ')' : '');
+  }
   function nm(id) { return T(GAS[id].zh, GAS[id].en); }
   function srcName(id) {
     const z = { NH3: ['濃氨水', 'conc. ammonia'], CH3NH2: ['甲胺水溶液', 'methylamine solution'], HCl: ['濃鹽酸', 'conc. hydrochloric acid'],
@@ -344,7 +356,7 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   let W = 600, H = 460, dpr = 1, Lay = null;
   function resize() {
-    const w = cv.clientWidth || 600;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width'))) || 600;
     W = w; H = w < 560 ? 450 : 470;
     cv.style.height = H + 'px';
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -435,6 +447,11 @@
     }
     c.textAlign = 'left';
     c.fillText('cm', L.X1 + 15, ry - 1);
+    const mark62 = xpx(0.62 * Lcm);
+    c.strokeStyle = LD.alpha(col.accent, 0.65);
+    c.beginPath(); c.moveTo(mark62, ry); c.lineTo(mark62, ry + 7); c.stroke();
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillText('62 %', mark62, ry + 2);
     c.restore();
 
     // 管內氣體（顏色只是標示：真實的兩種氣體都無色）
@@ -510,7 +527,7 @@
       c.restore();
       LD.arrow(c, xr - 2, dy, L.X0 + 2, dy, gasColor(dr.o.base), 1.6);
       LD.arrow(c, xr + 2, dy, L.X1 - 2, dy, gasColor(dr.o.acid), 1.6);
-      const lb = num(dr.rg.x, 1) + ' cm', la = num(dr.o.L - dr.rg.x, 1) + ' cm';
+      const lb = num(dr.rg.x, 1) + ' cm', la = num(dr.o.L - dr.rg.x, 1) + ' cm';
       LD.pill(c, lb, (L.X0 + xr) / 2, dy - 4, gasColor(dr.o.base), 'center', '600 12px ' + FONT);
       LD.pill(c, la, (xr + L.X1) / 2, dy - 4, gasColor(dr.o.acid), 'center', '600 12px ' + FONT);
       // 格雷厄姆的預測（√M 比）
@@ -643,7 +660,7 @@
     c.restore();
     // 位置標示
     const xcm = state.lensU * (dr ? dr.o.L : state.L);
-    LD.pill(c, T('放大鏡：x = ', 'Magnifier: x = ') + num(xcm, 1) + ' cm', L.wx, L.wy + R + 26, col.accent, 'center', '600 12px ' + FONT);
+    LD.pill(c, T('放大鏡：x = ', 'Magnifier: x = ') + num(xcm, 1) + ' cm', L.wx, L.wy + R + 26, col.accent, 'center', '600 12px ' + FONT);
     if (L.info) drawLensInfo(xcm);
     else {
       LD.haloText(c, T('示意：分子放大、速率放慢', 'Not to scale: enlarged and slowed down'), L.wx, L.wy + R + 44, col.muted, 'center', 'alphabetic', '11px ' + FONT);
@@ -667,14 +684,14 @@
     };
     const B = dr ? dr.o.base : state.base, A = dr ? dr.o.acid : state.acid;
     const vB = G.meanSpeed(G.M(B), state.T), vA = isUnk(A) ? null : G.meanSpeed(G.M(A), state.T);
-    row(B, nm(B), T('相對濃度 ', 'relative conc. ') + num(cc[0], 3) + ' · v̄ = ' + num(vB, 0) + ' m/s');
-    row(A, isUnk(A) ? T('未知的酸', 'unknown acid') : nm(A), T('相對濃度 ', 'relative conc. ') + num(cc[1], 3) + ' · v̄ = ' + (vA ? num(vA, 0) + ' m/s' : '?'));
-    row('N2', T('空氣', 'Air'), 'v̄ ≈ ' + num(G.meanSpeed(28.96, state.T), 0) + ' m/s');
+    row(B, nm(B), T('相對濃度 ', 'relative conc. ') + num(cc[0], 3) + ' · v̄ = ' + num(vB, 0) + ' m/s');
+    row(A, isUnk(A) ? T('未知的酸', 'unknown acid') : nm(A), T('相對濃度 ', 'relative conc. ') + num(cc[1], 3) + ' · v̄ = ' + (vA ? num(vA, 0) + ' m/s' : '?'));
+    row('N2', T('空氣', 'Air'), 'v̄ ≈ ' + num(G.meanSpeed(28.96, state.T), 0) + ' m/s');
     drawCrystal(c, x + 12, y - 4, r0 * 1.1, 0.4, 1);
     const salt = (B === 'CH3NH2' ? 'CH3NH3' : 'NH4') + GAS[A].salt.slice(3);
     const w = drawF(c, salt, x + 32, y + 1, col.text, 13, '700', 'left');
     LD.haloText(c, T(' 晶體（白煙）', ' crystals (white smoke)'), x + 32 + w, y + 1, col.text, 'left', 'alphabetic', '13px ' + FONT);
-    if (dep > 0.01) LD.haloText(c, T('這裡的白煙 ', 'smoke here ') + num(100 * dep, 0) + '%', x + 32, y + 18, col.muted, 'left', 'alphabetic', '12px ' + FONT);
+    if (dep > 0.01) LD.haloText(c, T('這裡的白煙 ', 'smoke here ') + num(100 * dep, 0) + ' %', x + 32, y + 18, col.muted, 'left', 'alphabetic', '12px ' + FONT);
     y += 40;
     LD.haloText(c, T('示意：分子放大、速率放慢；', 'Not to scale: enlarged and slowed;'), x, y, col.muted, 'left', 'alphabetic', '11px ' + FONT);
     LD.haloText(c, T('數目依濃度的平方根畫出', 'numbers drawn as √(concentration)'), x, y + 15, col.muted, 'left', 'alphabetic', '11px ' + FONT);
@@ -742,21 +759,23 @@
     const tx = b.x + b.w / 2;
     if (id === 'X') LD.haloText(c, T('X（未知）', 'X (unknown)'), tx, b.y - 24, cc, 'center', 'alphabetic', '700 15px ' + FONT);
     else {
-      const w = fWidth(c, GAS[id].f, 15, '700');
-      const extra = GAS[id].iso ? ' (U-' + GAS[id].iso + ')' : '';
-      c.font = '600 12px ' + FONT;
-      const w2 = extra ? c.measureText(extra).width : 0;
-      drawF(c, GAS[id].f, tx - (w + w2) / 2, b.y - 24, cc, 15, '700', 'left');
-      if (extra) LD.haloText(c, extra, tx - (w + w2) / 2 + w, b.y - 24, cc, 'left', 'alphabetic', '600 12px ' + FONT);
+      const gas = GAS[id], mass = gas.iso ? String(gas.iso) : '';
+      const width = fWidth(c, gas.f, 15, '700');
+      const massFont = '700 10px ' + FONT;
+      c.font = massFont;
+      const massWidth = c.measureText(mass).width;
+      const left = tx - (massWidth + width) / 2;
+      if (mass) LD.haloText(c, mass, left, b.y - 30, cc, 'left', 'alphabetic', massFont);
+      drawF(c, gas.f, left + massWidth, b.y - 24, cc, 15, '700', 'left');
     }
-    LD.haloText(c, (k ? 'B · ' : 'A · ') + num(Tk, 0) + ' K', tx, b.y - 8, col.muted, 'center', 'alphabetic', '12px ' + FONT);
+    LD.haloText(c, (k ? 'B · ' : 'A · ') + num(Tk, 0) + ' K', tx, b.y - 8, col.muted, 'center', 'alphabetic', '12px ' + FONT);
     // 壓力計（底部長條）
     const gy = b.y + b.h - 22, gw = b.w - 28, gx = b.x + 14;
     LD.roundRect(c, gx, gy, gw, 8, 4); c.fillStyle = LD.alpha(col.text, 0.1); c.fill();
     LD.roundRect(c, gx, gy, Math.max(0, gw * P / er.P0), 8, 4); c.fillStyle = cc; c.fill();
     c.strokeStyle = LD.alpha(col.text, 0.5); c.lineWidth = 1; c.setLineDash([2, 2]);
     c.beginPath(); c.moveTo(gx + gw / 2 + 0.5, gy - 3); c.lineTo(gx + gw / 2 + 0.5, gy + 11); c.stroke(); c.setLineDash([]);
-    LD.pill(c, 'P = ' + sigf(P, 3) + ' Pa', b.x + b.w / 2, gy - 6, col.text, 'center', '600 12px ' + FONT);
+    LD.pill(c, 'P = ' + sigf(P, 3) + ' Pa', b.x + b.w / 2, gy - 6, col.text, 'center', '600 12px ' + FONT);
     if (got) LD.pill(c, 't½ = ' + clock(half), b.x + b.w / 2, b.y + 26, cc, 'center', '700 12px ' + FONT);
     const u = (now - (k ? halfFlashB : halfFlashA)) / 700;
     if (u >= 0 && u <= 1 && !reducedMotion) { c.save(); c.strokeStyle = LD.alpha(cc, 0.7 * (1 - u)); c.lineWidth = 3; LD.roundRect(c, b.x - 4 * u, b.y - 4 * u, b.w + 8 * u, b.h + 8 * u, 14); c.stroke(); c.restore(); }
@@ -772,7 +791,7 @@
       drawLens(now);
       const t = dr ? dr.t : 0;
       LD.pill(ctx, 't = ' + clock(t), 12, 24, col.text, 'left', '600 13px ' + FONT);
-      LD.pill(ctx, (Lay.narrow ? '' : (state.model === 'air' ? T('在空氣中擴散', 'Diffusion in air') : T('格雷厄姆（理想）', 'Graham (ideal)')) + ' · ') + num(state.T, 0) + ' K · ×' + SPEEDS[state.speed], W - 12, 24, col.muted, 'right', '600 12px ' + FONT);
+      LD.pill(ctx, (Lay.narrow ? '' : (state.model === 'air' ? T('在空氣中擴散', 'Diffusion in air') : T('格雷厄姆（理想）', 'Graham (ideal)')) + ' · ') + num(state.T, 0) + ' K · ×' + SPEEDS[state.speed], W - 12, 24, col.muted, 'right', '600 12px ' + FONT);
       if (dr && dr.ringSeen) {
         const s = T('白煙環出現在 ', 'Ring at ') + clock(dr.rg.t);
         if (!Lay.narrow) LD.pill(ctx, s, W / 2, 24, col.accent, 'center', '700 12px ' + FONT);
@@ -834,7 +853,7 @@
     const earlier = segRecords('diff');
     addRecord('diff', data);
     if (unk && isUnk(o.acid)) unk.nMeas++;
-    setStatus(T('白煙環出現了！距 ', 'The white ring has appeared, ') + num(rg.x, 1) + T(' cm（鹼端）、距 ', ' cm from the base end and ') + num(o.L - rg.x, 1) + T(' cm（酸端）。', ' cm from the acid end.'));
+    setStatus(T('白煙環出現了！距 ', 'The white ring has appeared, ') + num(rg.x, 1) + T(' cm（鹼端）、距 ', ' cm from the base end and ') + num(o.L - rg.x, 1) + T(' cm（酸端）。', ' cm from the acid end.'));
     if (userActed && started && window.LabMission) window.LabMission.emit('ring', Object.assign({ earlier: earlier }, data));
   }
   function onEffuse() {
@@ -882,12 +901,12 @@
   function setVal(el, v) { if (window.LabNum) window.LabNum.set(el, v); else el.value = el === elP ? p0Map.toPos(v) : v; }
   function acted() { userActed = true; }
   function refreshOutputs() {
-    $('tempo').textContent = num(val(elT), 1).replace(/\.0$/, '') + ' K' + T('（', ' (') + num(val(elT) - 273.15, 1) + ' °C' + T('）', ')');
-    $('leno').textContent = num(val(elL), 1).replace(/\.0$/, '') + ' cm';
-    $('tAo').textContent = num(val(elTA), 1).replace(/\.0$/, '') + ' K';
-    $('tBo').textContent = num(val(elTB), 1).replace(/\.0$/, '') + ' K';
-    $('holeo').textContent = num(val(elD), 1).replace(/\.0$/, '') + ' µm';
-    $('p0o').textContent = sigf(val(elP), 3) + ' Pa';
+    $('tempo').textContent = num(val(elT), 1).replace(/\.0$/, '') + ' K' + T('（', ' (') + num(val(elT) - 273.15, 1) + ' °C' + T('）', ')');
+    $('leno').textContent = num(val(elL), 1).replace(/\.0$/, '') + ' cm';
+    $('tAo').textContent = num(val(elTA), 1).replace(/\.0$/, '') + ' K';
+    $('tBo').textContent = num(val(elTB), 1).replace(/\.0$/, '') + ' K';
+    $('holeo').textContent = num(val(elD), 1).replace(/\.0$/, '') + ' µm';
+    $('p0o').textContent = sigf(val(elP), 3) + ' Pa';
   }
   function settingsChanged(msg) {
     resetRun();
@@ -918,7 +937,7 @@
     G.EFF.forEach(function (id) {
       const o = document.createElement('option');
       o.value = id;
-      o.textContent = nm(id) + ' ' + (GAS[id].iso ? '' : GAS[id].f) + T('（', ' (') + num(GAS[id].M, GAS[id].M < 10 ? 3 : 2) + ' g/mol' + T('）', ')');
+      o.textContent = nm(id) + ' ' + GAS[id].f + T('（', ' (') + num(GAS[id].M, GAS[id].M < 10 ? 3 : 2) + ' g/mol' + T('）', ')');
       el.appendChild(o);
     });
     if (withX) { const o = document.createElement('option'); o.value = 'X'; o.textContent = T('X（未知氣體）', 'X (unknown gas)'); el.appendChild(o); }
@@ -1057,9 +1076,9 @@
     unk.tries++;
     let msg;
     if (!unk.nMeas) msg = T('先做一次實驗再算吧：還沒有量到這個未知氣體。', 'Do the experiment first: nothing has been measured with this unknown yet.');
-    else if (err <= 0.01) msg = '<span class="ok">' + T('非常準確！誤差 ', 'Excellent! Error ') + num(100 * err, 2) + '%</span>';
-    else if (err <= 0.05) msg = '<span class="ok">' + T('正確！誤差 ', 'Correct! Error ') + num(100 * err, 1) + '%</span>' + T('。能更準嗎？', '. Can you get closer?');
-    else msg = '<span class="no">' + T('還不對', 'Not yet') + '</span>' + T('：差了 ', ': off by ') + num(100 * err, 0) + '%' + T('。檢查一下比值有沒有平方。', '. Check that the ratio is squared.');
+    else if (err <= 0.01) msg = '<span class="ok">' + T('非常準確！誤差 ', 'Excellent! Error ') + num(100 * err, 2) + ' %</span>';
+    else if (err <= 0.05) msg = '<span class="ok">' + T('正確！誤差 ', 'Correct! Error ') + num(100 * err, 1) + ' %</span>' + T('。能更準嗎？', '. Can you get closer?');
+    else msg = '<span class="no">' + T('還不對', 'Not yet') + '</span>' + T('：差了 ', ': off by ') + num(100 * err, 0) + ' %' + T('。檢查一下比值有沒有平方。', '. Check that the ratio is squared.');
     $('unkOut').innerHTML = msg;
     snd(unk.nMeas && err <= 0.05 ? 'ok' : 'no');
     if (window.LabMission && unk.nMeas) window.LabMission.emit('answer', { kind: unk.kind, ans: a, err: err, tries: unk.tries, nMeas: unk.nMeas, revealed: unk.revealed });
@@ -1068,7 +1087,7 @@
     if (!unk) return;
     acted();
     unk.revealed = true;
-    $('unkOut').innerHTML = T('答案：M = ' + num(G.M(unk.kind), 1) + ' g/mol。這一個已揭曉，按「換一個」再挑戰。', 'Answer: M = ' + num(G.M(unk.kind), 1) + ' g/mol. This one is revealed; press “Another one” to try again.');
+    $('unkOut').innerHTML = T('答案：M = ' + num(G.M(unk.kind), 1) + ' g/mol。這一個已揭曉，按「換一個」再挑戰。', 'Answer: M = ' + num(G.M(unk.kind), 1) + ' g/mol. This one is revealed; press “Another one” to try again.');
   }
   $('unkOn').addEventListener('click', startUnknown);
   $('unkNew').addEventListener('click', function () { const k = unk && unk.kind; const pa = unk && unk.prevAcid, pm = unk && unk.prevModel, pb = unk && unk.prevB; unk = null; startUnknown(); if (k === 'HX') { unk.prevAcid = pa; unk.prevModel = pm; } else unk.prevB = pb || unk.prevB; });
@@ -1091,50 +1110,53 @@
   }
   function rows(list) { return list.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[2] ? ' class="' + r[2] + '"' : '') + '>' + r[1] + '</dd>'; }).join(''); }
   function updateReadouts() {
+    $('gasAFormula').innerHTML = fH(state.gA);
+    $('gasBFormula').innerHTML = fH(state.gB);
     const out = [], th = [];
     if (state.mode === 'diff' && dr) {
       const o = dr.o, rg = dr.rg, u = isUnk(o.acid);
       out.push([T('時間 t', 'Time t'), clock(dr.t)]);
       if (dr.ringSeen) {
-        out.push([T('白煙環出現', 'Ring appeared at'), clock(rg.t) + '<small>' + sigf(rg.t, 4) + ' s</small>', 'big']);
-        out.push([T('距鹼端 x<sub>鹼</sub>', 'From base end x<sub>base</sub>'), num(rg.x, 1) + ' cm<small>' + num(100 * rg.frac, 1) + T('% 管長', '% of tube') + '</small>']);
-        out.push([T('距酸端 x<sub>酸</sub>', 'From acid end x<sub>acid</sub>'), num(o.L - rg.x, 1) + ' cm']);
+        out.push([T('白煙環出現', 'Ring appeared at'), clock(rg.t) + '<small>' + sigf(rg.t, 4) + ' s</small>', 'big']);
+        out.push([T('距鹼端 x<sub>鹼</sub>', 'From base end x<sub>base</sub>'), num(rg.x, 1) + ' cm<small>' + num(100 * rg.frac, 1) + T(' % 管長', ' % of tube') + '</small>']);
+        out.push([T('距酸端 x<sub>酸</sub>', 'From acid end x<sub>acid</sub>'), num(o.L - rg.x, 1) + ' cm']);
         out.push([T('距離比 x<sub>鹼</sub>/x<sub>酸</sub>', 'Distance ratio x<sub>base</sub>/x<sub>acid</sub>'), num(rg.ratio, 3), 'good']);
       } else {
         out.push([T('白煙環', 'White ring'), started ? T('還沒出現', 'not yet') : '—']);
       }
       out.push([T('擴散係數 D', 'Diffusion coefficient D') + '<small>' + (o.model === 'air' ? T('在空氣中', 'in air') : T('格雷厄姆模型', 'Graham model')) + '</small>',
-        fH(o.base) + ' ' + num(rg.DA, 3) + '<small>' + (u ? 'HX ?' : fH(o.acid) + ' ' + num(rg.DB, 3)) + ' cm²/s</small>']);
+        fH(o.base) + ' ' + num(rg.DA, 3) + '<small>' + (u ? 'HX ?' : fH(o.acid) + ' ' + num(rg.DB, 3)) + ' cm<sup>2</sup>/s</small>']);
       const vB = G.meanSpeed(G.M(o.base), o.T);
-      th.push([T('平均速率 v̄', 'Mean speed v̄') + '<small>√(8RT/πM)</small>', fH(o.base) + ' ' + num(vB, 0) + ' m/s<small>' + (u ? 'HX ?' : fH(o.acid) + ' ' + num(G.meanSpeed(G.M(o.acid), o.T), 0) + ' m/s') + '</small>']);
+      th.push([T('平均速率 v̄', 'Mean speed v̄') + '<small>√(8RT/πM)</small>', fH(o.base) + ' ' + num(vB, 0) + ' m/s<small>' + (u ? 'HX ?' : fH(o.acid) + ' ' + num(G.meanSpeed(G.M(o.acid), o.T), 0) + ' m/s') + '</small>']);
       th.push([T('格雷厄姆比 √(M<sub>酸</sub>/M<sub>鹼</sub>)', 'Graham ratio √(M<sub>acid</sub>/M<sub>base</sub>)'), u ? '?' : num(G.grahamFrac(o.base, o.acid) / (1 - G.grahamFrac(o.base, o.acid)), 3)]);
-      th.push([T('√M 預測的位置', 'Position from √M'), u ? '?' : num(100 * G.grahamFrac(o.base, o.acid), 1) + T('% 管長', '% of tube')]);
+      th.push([T('√M 預測的位置', 'Position from √M'), u ? '?' : num(100 * G.grahamFrac(o.base, o.acid), 1) + T(' % 管長', ' % of tube')]);
       if (!u) {
         const DAa = G.fullerD(o.base, o.T), DBa = G.fullerD(o.acid, o.T);
-        th.push([T('空氣中的擴散係數比', 'Ratio of D in air'), num(DAa / DBa, 3) + '<small>' + num(100 * DAa / (DAa + DBa), 1) + T('% 管長', '% of tube') + '</small>']);
+        th.push([T('空氣中的擴散係數比', 'Ratio of D in air'), num(DAa / DBa, 3) + '<small>' + num(100 * DAa / (DAa + DBa), 1) + T(' % 管長', ' % of tube') + '</small>']);
       }
     } else if (state.mode === 'eff' && er) {
       const PA = G.effP(er.P0, er.t, er.tauA), PB = G.effP(er.P0, er.t, er.tauB), ux = isUnk(er.B);
       out.push([T('時間 t', 'Time t'), clock(er.t)]);
-      out.push([T('壓力 P<sub>A</sub>／P<sub>B</sub>', 'Pressure P<sub>A</sub> / P<sub>B</sub>'), sigf(PA, 3) + ' / ' + sigf(PB, 3) + ' Pa']);
-      out.push([T('半衰時間 t½(A)', 'Half-time t½(A)'), er.gotA ? sigf(er.hA, 5) + ' s<small>' + clock(er.hA) + '</small>' : '—', er.gotA ? 'big' : '']);
-      out.push([T('半衰時間 t½(B)', 'Half-time t½(B)'), er.gotB ? sigf(er.hB, 5) + ' s<small>' + clock(er.hB) + '</small>' : '—', er.gotB ? 'big' : '']);
+      out.push([T('壓力 P<sub>A</sub>／P<sub>B</sub>', 'Pressure P<sub>A</sub> / P<sub>B</sub>'), sigf(PA, 3) + ' / ' + sigf(PB, 3) + ' Pa']);
+      out.push([T('半衰時間 t½(A)', 'Half-time t½(A)'), er.gotA ? sigf(er.hA, 5) + ' s<small>' + clock(er.hA) + '</small>' : '—', er.gotA ? 'big' : '']);
+      out.push([T('半衰時間 t½(B)', 'Half-time t½(B)'), er.gotB ? sigf(er.hB, 5) + ' s<small>' + clock(er.hB) + '</small>' : '—', er.gotB ? 'big' : '']);
       out.push([T('時間比 t½(B)/t½(A)', 'Ratio t½(B)/t½(A)'), er.gotA && er.gotB ? num(er.hB / er.hA, 4) : '—', er.gotA && er.gotB ? 'good' : '']);
       out.push([T('克努森數 Kn = λ/d', 'Knudsen number Kn = λ/d') + '<small>' + T('≫ 1 才是逸散', 'effusion needs ≫ 1') + '</small>', sigf(Math.min(G.knudsen(er.TA, er.P0, er.d), G.knudsen(er.TB, er.P0, er.d)), 3)]);
-      th.push([T('平均速率 v̄(A)', 'Mean speed v̄(A)'), num(G.meanSpeed(er.MA, er.TA), 0) + ' m/s']);
-      th.push([T('平均速率 v̄(B)', 'Mean speed v̄(B)'), ux ? '?' : num(G.meanSpeed(er.MB, er.TB), 0) + ' m/s']);
+      th.push([T('平均速率 v̄(A)', 'Mean speed v̄(A)'), num(G.meanSpeed(er.MA, er.TA), 0) + ' m/s']);
+      th.push([T('平均速率 v̄(B)', 'Mean speed v̄(B)'), ux ? '?' : num(G.meanSpeed(er.MB, er.TB), 0) + ' m/s']);
       th.push([T('理論時間比 √(M<sub>B</sub>T<sub>A</sub>/M<sub>A</sub>T<sub>B</sub>)', 'Predicted ratio √(M<sub>B</sub>T<sub>A</sub>/M<sub>A</sub>T<sub>B</sub>)'), ux ? '?' : num(Math.sqrt(er.MB * er.TA / (er.MA * er.TB)), 4)]);
-      th.push([T('時間常數 τ = 4V/(Av̄)', 'Time constant τ = 4V/(Av̄)'), sigf(er.tauA, 4) + ' s<small>B: ' + (ux ? '?' : sigf(er.tauB, 4) + ' s') + '</small>']);
+      th.push([T('時間常數 τ = 4V/(Av̄)', 'Time constant τ = 4V/(Av̄)'), sigf(er.tauA, 4) + ' s<small>B: ' + (ux ? '?' : sigf(er.tauB, 4) + ' s') + '</small>']);
     }
     $('readout').innerHTML = rows(out);
     $('theory').innerHTML = rows(th);
     if (!statusMsg) $('status').innerHTML = autoStatus();
   }
   function stageHint() {
+    $('fineLens').hidden = state.mode !== 'diff';
     $('stageHint').textContent = state.mode === 'diff' ?
       T('拖曳玻璃管上的圓圈（或選取畫面後按方向鍵）移動放大鏡。管中的顏色與小點只是標示兩種氣體的濃度：真實的氨與氯化氫都是無色的。',
         'Drag the circle on the tube (or focus the drawing and use the arrow keys) to move the magnifier. The colours and dots in the tube only mark the concentrations of the two gases: real ammonia and hydrogen chloride are colourless.') :
-      T('兩個 1.00 L 的容器底部各有一個相同的小孔，外面是真空。長條是壓力，虛線是一半的位置。', 'Each 1.00 L container has the same pinhole in its floor, with a vacuum outside. The bar shows the pressure; the dashed mark is half of the start.');
+      T('兩個 1.00 L 的容器底部各有一個相同的小孔，外面是真空。長條是壓力，虛線是一半的位置。', 'Each 1.00 L container has the same pinhole in its floor, with a vacuum outside. The bar shows the pressure; the dashed mark is half of the start.');
   }
 
   // ======================= 紀錄表 =======================
@@ -1277,7 +1299,7 @@
       [[er.tauA, col.A, er.hA, er.gotA, 1], [er.tauB, col.B, er.hB, er.gotB, -1]].forEach(function (p) {
         curve(c, function (x) { return Math.exp(-x * sc / p[0]); }, 0, tEnd / sc, 200, a.sx, a.sy, LD.alpha(p[1], 0.35), 1.5, [3, 3]);
         if (tn > 0) curve(c, function (x) { return Math.exp(-x * sc / p[0]); }, 0, Math.min(tn, tEnd) / sc, 200, a.sx, a.sy, p[1], 2.4);
-        if (p[3]) { LD.ball(c, a.sx(p[2] / sc), a.sy(0.5), 4.5, p[1], { shadow: false }); LD.pill(c, 't½ = ' + sigf(p[2], 4) + ' s', a.sx(p[2] / sc) + 6, a.sy(0.5) + (p[4] > 0 ? 24 : -10), p[1], 'left', '600 11px ' + FONT); }
+        if (p[3]) { LD.ball(c, a.sx(p[2] / sc), a.sy(0.5), 4.5, p[1], { shadow: false }); LD.pill(c, 't½ = ' + sigf(p[2], 4) + ' s', a.sx(p[2] / sc) + 6, a.sy(0.5) + (p[4] > 0 ? 24 : -10), p[1], 'left', '600 11px ' + FONT); }
       });
       c.save(); c.strokeStyle = col.accent; c.lineWidth = 1; c.beginPath(); c.moveTo(a.sx(tn / sc), box.y); c.lineTo(a.sx(tn / sc), box.y + box.h); c.stroke(); c.restore();
       legend([{ c: col.A, t: 'A ' + fH(er.A) }, { c: col.B, t: 'B ' + (isUnk(er.B) ? 'X' : fH(er.B)) }, { c: col.muted, t: T('虛線：之後的走向', 'dashed: what comes next'), dash: true }]);
@@ -1295,7 +1317,7 @@
         fmax = Math.max(fmax, G.maxwell(G.mpSpeed(Mg, g[1]), Mg, g[1]));
       });
       vmax = Math.min(vmax, 5000);
-      const a = axes(c, box, [0, vmax], [0, fmax * 1.12 * 1000], T('速率 v（m/s）', 'speed v (m/s)'), T('f(v)（每 1000 m/s）', 'f(v) (per 1000 m/s)'));
+      const a = axes(c, box, [0, vmax], [0, fmax * 1.12 * 1000], T('速率 v（m/s）', 'speed v (m/s)'), T('f(v)（每 1000 m/s）', 'f(v) (per 1000 m/s)'));
       gs.forEach(function (g) {
         if (isUnk(g[0])) return;
         const Mg = g[0] === 'air' ? G.M_AIR : G.M(g[0]);
@@ -1306,7 +1328,7 @@
           LD.pill(c, 'v̄ ' + num(vb, 0), a.sx(vb), a.sy(1000 * G.maxwell(vb, Mg, g[1])) - 6, g[2], 'center', '600 11px ' + FONT);
         }
       });
-      const lab = function (g) { return g[0] === 'air' ? T('空氣', 'air') : isUnk(g[0]) ? g[0] + T('（未知，不畫）', ' (unknown, not drawn)') : fH(g[0]) + (GAS[g[0]].iso ? ' U-' + GAS[g[0]].iso : '') + ' · ' + num(g[1], 0) + ' K'; };
+      const lab = function (g) { return g[0] === 'air' ? T('空氣', 'air') : isUnk(g[0]) ? g[0] + T('（未知，不畫）', ' (unknown, not drawn)') : fH(g[0]) + ' · ' + num(g[1], 0) + ' K'; };
       legend(gs.map(function (g) { return { c: g[2], t: lab(g), dash: g[0] === 'air' }; }));
       hint.textContent = T('馬克士威速率分布：同溫時越輕的分子分布越寬、越偏向高速；虛線標出平均速率 v̄ = √(8RT/πM)。',
         'Maxwell speed distribution: at the same temperature, lighter molecules spread to higher speeds; the dotted lines mark the mean speed v̄ = √(8RT/πM).');
@@ -1339,8 +1361,8 @@
       cham: function () { return cham; }, escaping: function () { return escaping; },
       tempTint: tempTint,
       hud: function () {
-        if (state.mode === 'diff') return { tl: 't = ' + clock(dr ? dr.t : 0) + (running || (dr && dr.done) ? '' : started ? T('（已暫停）', ' (paused)') : ''), tr: (dr && dr.ringSeen ? T('白煙環：距鹼端 ', 'Ring: ') + num(dr.rg.x, 1) + T(' cm', ' cm from the base end') : num(state.T, 0) + ' K · L = ' + num(state.L, 0) + ' cm') };
-        return { tl: 't = ' + clock(er ? er.t : 0), tr: er ? 'P(A) ' + sigf(G.effP(er.P0, er.t, er.tauA), 3) + ' Pa · P(B) ' + sigf(G.effP(er.P0, er.t, er.tauB), 3) + ' Pa' : '' };
+        if (state.mode === 'diff') return { tl: 't = ' + clock(dr ? dr.t : 0) + (running || (dr && dr.done) ? '' : started ? T('（已暫停）', ' (paused)') : ''), tr: (dr && dr.ringSeen ? T('白煙環：距鹼端 ', 'Ring: ') + num(dr.rg.x, 1) + T(' cm', ' cm from the base end') : num(state.T, 0) + ' K · L = ' + num(state.L, 0) + ' cm') };
+        return { tl: 't = ' + clock(er ? er.t : 0), tr: er ? 'P(A) ' + sigf(G.effP(er.P0, er.t, er.tauA), 3) + ' Pa · P(B) ' + sigf(G.effP(er.P0, er.t, er.tauB), 3) + ' Pa' : '' };
       },
       running: function () { return running || !reducedMotion; },
       contextLost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
@@ -1396,8 +1418,20 @@
 
   // ======================= 拖曳放大鏡、鍵盤 =======================
   let drag = false, kb = null;
-  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; }
+  function canvasXY(ev) {
+    const b = cv.getBoundingClientRect();
+    return [(ev.clientX - b.left) * W / b.width, (ev.clientY - b.top) * H / b.height];
+  }
   function onTube(x, y) { return state.mode === 'diff' && Lay && Math.abs(y - Lay.yt) < Lay.rt + 16 && x > Lay.X0 - 10 && x < Lay.X1 + 10; }
+  $('fineLens').querySelectorAll('button').forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (state.mode !== 'diff') return;
+      acted();
+      state.lensU = clamp(state.lensU + Number(button.dataset.delta) * 0.001, 0.01, 0.99);
+      lastComp = 0;
+      requestDraw();
+    });
+  });
   function moveLens(x) { state.lensU = clamp((x - Lay.X0) / (Lay.X1 - Lay.X0), 0.01, 0.99); lastComp = 0; requestDraw(); }
   cv.addEventListener('pointerdown', function (ev) {
     const p = canvasXY(ev);
@@ -1427,7 +1461,7 @@
           state.lensU = clamp(state.lensU + d * (big ? 0.1 : 0.02), 0.01, 0.99); lastComp = 0;
           return true;
         },
-        describe: function () { const x = state.lensU * (dr ? dr.o.L : state.L), c = concAt(x); return 'x = ' + num(x, 1) + ' cm · ' + GAS[dr ? dr.o.base : state.base].f + ' ' + num(c[0], 2) + ' · ' + (isUnk(state.acid) ? 'HX' : GAS[state.acid].f) + ' ' + num(c[1], 2); }
+        describe: function () { const x = state.lensU * (dr ? dr.o.L : state.L), c = concAt(x); return 'x = ' + num(x, 1) + ' cm · ' + fTxt(dr ? dr.o.base : state.base) + ' ' + num(c[0], 2) + ' · ' + (isUnk(state.acid) ? 'HX' : fTxt(state.acid)) + ' ' + num(c[1], 2); }
       }],
       onChange: function () { requestDraw(); }
     });
@@ -1476,4 +1510,17 @@
   setStatus('');
   startLoop();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：分子的動畫已關閉，實驗照常可以做。', 'Reduced motion is on: the molecular animation is off, but the experiment works as usual.'));
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('theory').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

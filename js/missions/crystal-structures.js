@@ -19,13 +19,13 @@
     {
       id: 'crystal-structures-1', level: 1,
       title: { zh: '晶胞裡有幾個原子', en: 'How many atoms in the cell?' },
-      desc: { zh: '選「面心立方」，勾「只看晶胞內的部分」，數出每個晶胞的 4 個原子。', en: 'Choose “Face-centred cubic” and tick “Only the part inside the cell” to count the 4 atoms per cell.' },
+      desc: { zh: '選「面心立方」，勾「只看晶胞內的部分」，數出每個晶胞的 4 個原子。', en: 'Choose “Face-centred cubic” and tick “Only the part inside the cell” to count the 4 atoms per cell.' },
       check: function (ev) { const d = cell(ev); return !!d && d.s === 'fcc' && d.cut; }
     },
     {
       id: 'crystal-structures-2', level: 2,
       title: { zh: '八個鄰居', en: 'Eight neighbours' },
-      desc: { zh: '選「體心立方」，勾「顯示配位數」，看一個原子被 8 個鄰居圍住。', en: 'Choose “Body-centred cubic” and tick “Show coordination”: one atom is surrounded by 8 neighbours.' },
+      desc: { zh: '選「體心立方」，勾「顯示配位數」，看一個原子被 8 個鄰居圍住。', en: 'Choose “Body-centred cubic” and tick “Show coordination”: one atom is surrounded by 8 neighbours.' },
       check: function (ev) { const d = cell(ev); return !!d && d.s === 'bcc' && d.coord && d.selCN === 8; }
     },
     {
@@ -43,7 +43,7 @@
     {
       id: 'crystal-structures-5', level: 3,
       title: { zh: '球與球之間的洞', en: 'The holes between the spheres' },
-      desc: { zh: '選「面心立方」，同時勾「八面體空隙」與「四面體空隙」，找出每個晶胞的 4 個八面體空隙與 8 個四面體空隙。', en: 'Choose “Face-centred cubic” and tick both “Octahedral holes” and “Tetrahedral holes”: find the 4 octahedral and 8 tetrahedral holes per cell.' },
+      desc: { zh: '選「面心立方」，同時勾「八面體空隙」與「四面體空隙」，找出每個晶胞的 4 個八面體空隙與 8 個四面體空隙。', en: 'Choose “Face-centred cubic” and tick both “Octahedral holes” and “Tetrahedral holes”: find the 4 octahedral and 8 tetrahedral holes per cell.' },
       check: function (ev) { const d = cell(ev); return !!d && d.s === 'fcc' && d.voids && d.voids.oct && d.voids.tet; }
     },
     {
@@ -66,25 +66,25 @@
     {
       id: 'crystal-structures-8', level: 5,
       title: { zh: '由晶格常數算密度', en: 'Density from the lattice constant' },
-      desc: { zh: '選「求密度」、按「出題」，在紙上算好填進去，誤差在 1% 以內。', en: 'Choose “Density”, press “New question”, work it out on paper and answer to within 1%.' },
+      desc: { zh: '選「求密度」、按「出題」，在紙上算好填進去，誤差在 1 % 以內。', en: 'Choose “Density”, press “New question”, work it out on paper and answer to within 1 %.' },
       check: function (ev) { const d = ans(ev); return !!d && d.type === 'rho' && d.ok && good(d, 0.01); }
     },
     {
       id: 'crystal-structures-9', level: 6,
       title: { zh: '由密度算原子半徑', en: 'Radius from the density' },
-      desc: { zh: '選「求原子半徑」、按「出題」，在紙上算好填進去，誤差在 1% 以內。', en: 'Choose “Atomic radius”, press “New question”, work it out on paper and answer to within 1%.' },
+      desc: { zh: '選「求原子半徑」、按「出題」，在紙上算好填進去，誤差在 1 % 以內。', en: 'Choose “Atomic radius”, press “New question”, work it out on paper and answer to within 1 %.' },
       check: function (ev) { const d = ans(ev); return !!d && d.type === 'r' && d.ok && good(d, 0.01); }
     },
     {
       id: 'crystal-structures-10', level: 7,
       title: { zh: '晶體裡數出亞佛加厥數', en: 'Avogadro\'s number from a crystal' },
-      desc: { zh: '選「求亞佛加厥數」、按「出題」，在紙上算好填進去，誤差在 1% 以內。', en: 'Choose “Avogadro’s number”, press “New question”, work it out on paper and answer to within 1%.' },
+      desc: { zh: '選「求亞佛加厥數」、按「出題」，在紙上算好填進去，誤差在 1 % 以內。', en: 'Choose “Avogadro’s number”, press “New question”, work it out on paper and answer to within 1 %.' },
       check: function (ev) { const d = ans(ev); return !!d && d.type === 'NA' && d.ok && good(d, 0.01); }
     },
     {
       id: 'crystal-structures-11', level: 8,
       title: { zh: '三種結構都算對', en: 'Three structures, all correct' },
-      desc: { zh: '「求密度」在三種不同的結構都答對（誤差 1% 以內；按「全部清除」重新計算）。', en: 'Answer “Density” correctly for three different structures (within 1%; “Clear all” starts the count again).' },
+      desc: { zh: '「求密度」在三種不同的結構都答對（誤差 1 % 以內；按「全部清除」重新計算）。', en: 'Answer “Density” correctly for three different structures (within 1 %; “Clear all” starts the count again).' },
       check: function (ev) { const d = ans(ev); return !!d && d.ok && d.rhoStructs && d.rhoStructs.length >= 3; }
     },
     {

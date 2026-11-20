@@ -61,9 +61,9 @@
   function fH(s) { return s.replace(/([A-Za-z\)])(\d+)/g, '$1<sub>$2</sub>'); }
   function concTxt(c) { return c >= 0.0995 ? num(c, 2) : c >= 0.00995 ? num(c, 3) : sigf(c, 3); }
   function timeTxt(t) {
-    if (t < 600) return num(t, t < 10 ? 2 : t < 100 ? 1 : 0) + ' s';
-    if (t < 36000) return num(t / 60, 1) + ' min';
-    if (t < 86400 * 3) return num(t / 3600, 2) + ' h';
+    if (t < 600) return num(t, t < 10 ? 2 : t < 100 ? 1 : 0) + ' s';
+    if (t < 36000) return num(t / 60, 1) + ' min';
+    if (t < 86400 * 3) return num(t / 3600, 2) + ' h';
     return num(t / 86400, 1) + ' d';
   }
 
@@ -291,7 +291,7 @@
         }
         ions[side].forEach(function (p) { moveIon(p, dtw, drift); });
       });
-      // 鹽橋中的離子：K⁺ 往陰極、NO3⁻ 往陽極
+      // 鹽橋中的離子：K^+ 往陰極、NO3^− 往陽極
       const v = Math.abs(I) > 1e-9 && cell.bridge ? 0.12 * Math.sign(I) * (0.4 + 0.6 * Math.min(1, Math.abs(I) / 0.1)) : 0;
       bridgeIons.forEach(function (b) {
         b.s += (b.k === 'K' ? v : -v) * dtw + rnd(-1, 1) * 0.02 * dtw;
@@ -338,7 +338,9 @@
   let cw = 0, ch = 0, dpr = 1, G = null;
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -613,9 +615,9 @@
       const P = I * I * cell.Rload;
       bulb(g, cw / 2, yW, br, Math.min(1, Math.sqrt(P / 0.03)));
       const aw = Math.min(G.mw * 0.8, 130), ah = Math.max(34, G.mh * 0.72);
-      lcd(g, cw / 2 - aw / 2, yW + br + 10, aw, ah, num(Math.abs(I) * 1000, Math.abs(I) < 0.01 ? 3 : 2) + ' mA', null);
+      lcd(g, cw / 2 - aw / 2, yW + br + 10, aw, ah, num(Math.abs(I) * 1000, Math.abs(I) < 0.01 ? 3 : 2) + ' mA', null);
     } else {
-      lcd(g, meterL, yW - G.mh / 2, G.mw, G.mh, (cell.bridge ? num(E, 3) : '0.000') + ' V', T('伏特計（右 − 左）', 'Voltmeter (right − left)'));
+      lcd(g, meterL, yW - G.mh / 2, G.mw, G.mh, (cell.bridge ? num(E, 3) : '0.000') + ' V', T('伏特計（右 − 左）', 'Voltmeter (right − left)'));
       terminal(g, meterL - 2, yW, col.text, '−'); terminal(g, meterR + 2, yW, col.pos, '+');
     }
     // 陽極／陰極
@@ -628,10 +630,10 @@
     } else if (!cell.bridge) {
       LD.pill(g, T('沒有鹽橋：電路不通', 'No salt bridge: open circuit'), cw / 2, G.top - G.bh * 0.06, col.muted, 'center', '600 ' + fsLab + 'px ' + LD.FONT);
     }
-    // 燒杯下方的標示：Zn｜Zn²⁺ 1.00 M
+    // 燒杯下方的標示：Zn｜Zn^2+ 1.00 M
     [['L', bL], ['R', bR]].forEach(function (a) {
       const h = cell[a[0]], bk = a[1];
-      const ps = [[h.metal + '｜', 0]].concat(ionP(h.metal)).concat([[' ' + concTxt(h.c) + ' M', 0]]);
+      const ps = [[h.metal + '｜', 0]].concat(ionP(h.metal)).concat([[' ' + concTxt(h.c) + ' M', 0]]);
       richPill(g, ps, bk.cx, G.bot + fsz(13) * 1.25 + 4, col.text, fsz(narrow ? 12 : 13), 'center', '600');
     });
   }
@@ -678,7 +680,7 @@
     LD.tube(g, wirePath([[xA, yTop - 4], [xA, yW], [sx, yW]]), wireCol, 4);
     LD.tube(g, wirePath([[sx + sw, yW], [xC, yW], [xC, yTop - 4]]), wireCol, 4);
     if (on) electrons(g, [[xA, yTop - 4], [xA, yW], [cw / 2, yW], [xC, yW], [xC, yTop - 4]], [[sx, yW - sh / 2, sw, sh]]);
-    const main = (on ? num(elx.I, 2) : '0.00') + ' A';
+    const main = (on ? num(elx.I, 2) : '0.00') + ' A';
     const sub = timeTxt(elx.t) + (timerOn() ? ' / ' + timeTxt(val(elTimer)) : '');
     lcd(g, sx, yW - sh / 2, sw, sh, main, sub);
     terminal(g, sx - 2, yW, col.pos, '+'); terminal(g, sx + sw + 2, yW, col.text, '−');
@@ -687,7 +689,7 @@
     LD.pill(g, T('陰極（−）', 'Cathode (−)'), xC, yTop - 14, col.neg, 'center', '600 ' + fsLab + 'px ' + LD.FONT);
     // 溶液標示
     const sol = unkE ? [['M', 0], ['2+', 1], [T('（未知）', ' (unknown)'), 0]] : [['CuSO', 0], ['4', -1]];
-    richPill(g, sol.concat([[' ' + concTxt(elx.c) + ' M · ' + num(elx.V * 1000, 0) + ' mL', 0]]), bk.cx, G.bot + fsz(13) * 1.25 + 4, col.text, fsz(G.narrow ? 12 : 13), 'center', '600');
+    richPill(g, sol.concat([[' ' + concTxt(elx.c) + ' M · ' + num(elx.V * 1000, 0) + ' mL', 0]]), bk.cx, G.bot + fsz(13) * 1.25 + 4, col.text, fsz(G.narrow ? 12 : 13), 'center', '600');
   }
 
   let kb = null;
@@ -802,6 +804,31 @@
     else drawFaraday(g);
   }
   function tUnit(span) { return span > 2 * 86400 ? [86400, 'd'] : span > 3 * 3600 ? [3600, 'h'] : span > 300 ? [60, 'min'] : [1, 's']; }
+  // 左右軸各標自己的量，只標在目前量程內，保留實驗曲線的原比例。
+  function targetTick(g, A, y, label, right) {
+    if (y < A.Y1 || y > A.Y0) return;
+    const edge = right ? A.X1 : A.X0, inward = right ? -1 : 1;
+    line(g, [[edge, y], [edge + inward * 18, y]], LD.alpha(col.muted, 0.7), 1.5);
+    const labelY = Math.max(A.Y1 + 7, Math.min(A.Y0 - 7, y));
+    LD.haloText(g, label, edge + inward * 20, labelY, col.muted, right ? 'right' : 'left', 'middle', '11px ' + LD.FONT);
+  }
+  function voltmeterTargets(g, A) {
+    const sign = emfNow() < 0 ? -1 : 1, prefix = sign < 0 ? '−' : '';
+    if (cell.L.metal === cell.R.metal) {
+      targetTick(g, A, A.sy(sign * 0.05), prefix + '0.050 V', false);
+      return;
+    }
+    targetTick(g, A, A.sy(sign * 0.1), prefix + '0.10 V', false);
+    targetTick(g, A, A.sy(sign * 3), prefix + '3.0 V', false);
+    const metals = [cell.L.metal, cell.R.metal];
+    if (!metals.includes('Zn') || !metals.includes('Cu')) return;
+    const a = A.sy(sign), b = A.sy(sign * 1.01);
+    const top = Math.max(A.Y1, Math.min(a, b)), bottom = Math.min(A.Y0, Math.max(a, b));
+    if (bottom < top) return;
+    g.save(); g.fillStyle = LD.alpha(col.accent, 0.12);
+    g.fillRect(A.X0, top, A.X1 - A.X0, Math.max(1, bottom - top)); g.restore();
+    targetTick(g, A, (top + bottom) / 2, '|E| 1.000–1.010 V', false);
+  }
   function drawTime(g) {
     const H = state.mode === 'cell' ? histC : histE;
     if (H.length < 2) { axes(g, { x0: 0, x1: 1, y0: 0, y1: 1, xl: [['t', 0]] }); drawMsg(g, T('按「播放」開始，圖會隨時間畫出來。', 'Press “Play”: the graph is drawn as time goes on.')); return; }
@@ -815,6 +842,10 @@
       const hasI = imax > 1e-9;
       const A = axes(g, { x0: t0 / u[0], x1: t1 / u[0], y0: lo, y1: hi, xl: [['t（' + u[1] + '）', 0]], yl: [['E（V）', 0]], ylc: col.accent,
         y2: hasI ? [0, imax * 1.1] : null, y2l: [['|I|（mA）', 0]], y2c: col.pos });
+      if (!unkC && $('targetScale').checked) {
+        if (hasI) targetTick(g, A, A.sy2(50), '50 mA', true);
+        if (cell.load === 'V') voltmeterTargets(g, A);
+      }
       line(g, H.map(function (h) { return [A.sx(h.t / u[0]), A.sy(h.E)]; }), col.accent, 2.2);
       if (hasI) line(g, H.map(function (h) { return [A.sx(h.t / u[0]), A.sy2(Math.abs(h.I))]; }), col.pos, 1.8, [6, 4]);
     } else {
@@ -823,6 +854,10 @@
       const ic = col.ion(unkE ? 'X' : 'Cu');
       const A = axes(g, { x0: t0 / u[0], x1: t1 / u[0], y0: 0, y1: Math.max(cmax * 1.1, 0.01), xl: [['t（' + u[1] + '）', 0]],
         yl: [['[', 0], [unkE ? 'M' : 'Cu', 0], ['2+', 1], [']（M）', 0]], ylc: ic, y2: [0, Math.max(dmax * 1.1, 0.01)], y2l: [['Δm（g）', 0]], y2c: col.pos });
+      if (!unkE && $('targetScale').checked) {
+        targetTick(g, A, A.sy2(1), '1.00 g', true);
+        if (elx.elec !== 'Cu') targetTick(g, A, A.sy(0.01), '0.010 M', false);
+      }
       line(g, H.map(function (h) { return [A.sx(h.t / u[0]), A.sy(h.c)]; }), ic, 2.2);
       line(g, H.map(function (h) { return [A.sx(h.t / u[0]), A.sy2(h.dep)]; }), col.pos, 1.8, [6, 4]);
     }
@@ -868,6 +903,11 @@
     const slopeT = C.massOf(metal, 1);
     if (known) mmax = Math.max(mmax, slopeT * qmax);
     const A = axes(g, { x0: 0, x1: qmax * 1.08, y0: 0, y1: Math.max(mmax * 1.1, 1e-3), xl: [['Q（C）', 0]], yl: [['Δm（g）', 0]] });
+    if (!unkE && $('targetScale').checked && mmax * 1.1 >= 1) {
+      const y = A.sy(1);
+      line(g, [[A.X0, y], [A.X1, y]], LD.alpha(col.muted, 0.45), 1, [3, 4]);
+      LD.haloText(g, '1.00 g', A.X1 - 4, y - 3, col.muted, 'right', 'bottom', '11px ' + LD.FONT);
+    }
     if (known) line(g, [[A.sx(0), A.sy(0)], [A.sx(qmax * 1.08), A.sy(slopeT * qmax * 1.08)]], LD.alpha(col.muted, 0.85), 1.5, [6, 4]);
     const H = histE.filter(function (h) { return h.q <= elx.q + 1e-9; });
     line(g, H.map(function (h) { return [A.sx(h.q), A.sy(h.dep)]; }), col.accent, 2);
@@ -889,15 +929,15 @@
       leg = '<span><span class="sp" style="background:' + col.pos + '"></span>' + T('記錄的數據', 'Recorded readings') + '</span><span><span class="ln" style="background:' + col.accent + '"></span>' + T('最佳直線', 'Best-fit line') + '</span>' +
         (!unkC || unkC.revealed ? '<span><span class="ln dash" style="color:' + col.muted + '"></span>' + T('能斯特方程式', 'Nernst equation') + '</span>' : '');
       const f = rs.length >= 2 ? C.fitLine(rs.map(function (r) { return { x: r.x, y: r.E }; })) : null;
-      hint = T('目前這組：', 'This pair: ') + metalL() + '｜' + ionH(metalL()) + ' ‖ ' + ionH(state.R) + '｜' + state.R + T('，n = ', ', n = ') + n + T('，理論斜率 −0.05916/n = ', '; theoretical slope −0.05916/n = ') + num(-C.KN / n, 4) + ' V' +
-        (f ? T('；你的斜率 = ', '; your slope = ') + num(f.b, 4) + ' V' + T('，截距 = ', ', intercept = ') + num(f.a, 4) + ' V' : '') + T('（共 ', ' (') + rs.length + T(' 筆）', ' readings)');
+      hint = T('目前這組：', 'This pair: ') + metalL() + '｜' + ionH(metalL()) + ' ‖ ' + ionH(state.R) + '｜' + state.R + T('，n = ', ', n = ') + n + T('，理論斜率 −0.05916/n = ', '; theoretical slope −0.05916/n = ') + num(-C.KN / n, 4) + ' V' +
+        (f ? T('；你的斜率 = ', '; your slope = ') + num(f.b, 4) + ' V' + T('，截距 = ', ', intercept = ') + num(f.a, 4) + ' V' : '') + T('（共 ', ' (') + rs.length + T(' 筆）', ' readings)');
     } else {
       const rs = rowsE.filter(function (r) { return r.unk === (unkE ? unkE.id : 0); });
       leg = '<span><span class="ln" style="background:' + col.accent + '"></span>' + T('電解過程', 'During electrolysis') + '</span><span><span class="sp" style="background:' + col.pos + '"></span>' + T('記錄的數據', 'Recorded readings') + '</span>' +
         (!unkE || unkE.revealed ? '<span><span class="ln dash" style="color:' + col.muted + '"></span>Δm = QM/(2F)</span>' : '');
       const last = rs[rs.length - 1];
       hint = T('斜率 = M/(zF)，所以 M = 斜率 × 2F。', 'Slope = M/(zF), so M = slope × 2F.') +
-        (last && last.q > 0 ? T('最後一筆：Δm/Q = ', ' Last reading: Δm/Q = ') + sciHTML(last.dep / last.q, 4) + ' g/C' : '');
+        (last && last.q > 0 ? T('最後一筆：Δm/Q = ', ' Last reading: Δm/Q = ') + sciHTML(last.dep / last.q, 4) + ' g/C' : '');
     }
     $('gLegend').innerHTML = leg;
     $('gHint').innerHTML = hint;
@@ -908,29 +948,29 @@
     const items = [];
     if (state.mode === 'cell') {
       const E = emfNow(), I = curNow();
-      items.push([T('伏特計讀數 E', 'Meter reading E') + '<small>' + T('右 − 左', 'right − left') + '</small>', cell.bridge ? num(E, 4) + ' V' : T('0（電路不通）', '0 (open circuit)'), 'big']);
+      items.push([T('伏特計讀數 E', 'Meter reading E') + '<small>' + T('右 − 左', 'right − left') + '</small>', cell.bridge ? num(E, 4) + ' V' : T('0（電路不通）', '0 (open circuit)'), 'big']);
       const known = !unkC || unkC.revealed;
-      items.push(['E°<sub>' + T('右', 'R') + '</sub> − E°<sub>' + T('左', 'L') + '</sub>', known ? num(C.stdEmf(cell.L.metal, cell.R.metal), 4) + ' V' : '?']);
+      items.push(['E°<sub>' + T('右', 'R') + '</sub> − E°<sub>' + T('左', 'L') + '</sub>', known ? num(C.stdEmf(cell.L.metal, cell.R.metal), 4) + ' V' : '?']);
       items.push(['n、log Q', C.nOf(cell.L.metal, cell.R.metal) + '、' + num(C.logQ(cell.L, cell.R), 3)]);
-      items.push([T('電流 I', 'Current I'), cell.load === 'R' && cell.bridge ? sigf(Math.abs(I) * 1000, 3) + ' mA' : '0']);
-      items.push([T('已通過的電量', 'Charge passed'), sigf(cell.qAbs, 3) + ' C']);
+      items.push([T('電流 I', 'Current I'), cell.load === 'R' && cell.bridge ? sigf(Math.abs(I) * 1000, 3) + ' mA' : '0']);
+      items.push([T('已通過的電量', 'Charge passed'), sigf(cell.qAbs, 3) + ' C']);
       items.push([T('時間', 'Time'), timeTxt(cell.t)]);
       ['L', 'R'].forEach(function (s) {
         const h = cell[s];
-        items.push([(s === 'L' ? T('左：', 'Left: ') : T('右：', 'Right: ')) + '[' + ionH(h.metal) + ']', concTxt(h.c) + ' M']);
-        items.push([(s === 'L' ? T('左電極', 'Left electrode') : T('右電極', 'Right electrode')) + '<small>' + T('變化', 'change') + ' ' + signed(h.m - h.m0, 4) + ' g</small>', num(h.m, 4) + ' g']);
+        items.push([(s === 'L' ? T('左：', 'Left: ') : T('右：', 'Right: ')) + '[' + ionH(h.metal) + ']', concTxt(h.c) + ' M']);
+        items.push([(s === 'L' ? T('左電極', 'Left electrode') : T('右電極', 'Right electrode')) + '<small>' + T('變化', 'change') + ' ' + signed(h.m - h.m0, 4) + ' g</small>', num(h.m, 4) + ' g']);
       });
     } else {
       const eff = C.cathodeEff(elx.c);
-      items.push([T('時間 t', 'Time t'), timeTxt(elx.t) + (elx.t >= 600 ? '<small>' + num(elx.t, 0) + ' s</small>' : ''), '']);
-      items.push([T('電量 Q = It', 'Charge Q = It'), sigf(elx.q, 4) + ' C', 'big']);
-      items.push([T('陰極增加 Δm', 'Gain of cathode Δm'), num(elx.mCath - elx.base, 4) + ' g', 'big']);
-      if (elx.elec === 'Cu') items.push([T('陽極減少', 'Loss of anode'), num(elx.base - elx.mAnode, 4) + ' g']);
-      else items.push([T('陽極產生 O<sub>2</sub>', 'O<sub>2</sub> at the anode'), sigf(elx.nO2 * C.VM * 1000, 3) + ' mL']);
-      items.push([T('陰極產生 H<sub>2</sub>', 'H<sub>2</sub> at the cathode'), sigf(elx.nH2 * C.VM * 1000, 3) + ' mL']);
-      items.push(['[' + (unkE ? 'M' : 'Cu') + '<sup>2+</sup>]', concTxt(elx.c) + ' M']);
-      if (elx.elec === 'C') items.push(['[H<sup>+</sup>]' + '<small>' + T('電解產生', 'from electrolysis') + '</small>', sciHTML(C.hplus(elx), 3) + ' M']);
-      items.push([T('陰極電流用於析出金屬', 'Cathode current used for metal'), num(100 * eff, 1) + '%']);
+      items.push([T('時間 t', 'Time t'), timeTxt(elx.t) + (elx.t >= 600 ? '<small>' + num(elx.t, 0) + ' s</small>' : ''), '']);
+      items.push([T('電量 Q = It', 'Charge Q = It'), sigf(elx.q, 4) + ' C', 'big']);
+      items.push([T('陰極增加 Δm', 'Gain of cathode Δm'), num(elx.mCath - elx.base, 4) + ' g', 'big']);
+      if (elx.elec === 'Cu') items.push([T('陽極減少', 'Loss of anode'), num(elx.base - elx.mAnode, 4) + ' g']);
+      else items.push([T('陽極產生 O<sub>2</sub>', 'O<sub>2</sub> at the anode'), sigf(elx.nO2 * C.VM * 1000, 3) + ' mL']);
+      items.push([T('陰極產生 H<sub>2</sub>', 'H<sub>2</sub> at the cathode'), sigf(elx.nH2 * C.VM * 1000, 3) + ' mL']);
+      items.push(['[' + (unkE ? 'M' : 'Cu') + '<sup>2+</sup>]', concTxt(elx.c) + ' M']);
+      if (elx.elec === 'C') items.push(['[H<sup>+</sup>]' + '<small>' + T('電解產生', 'from electrolysis') + '</small>', sciHTML(C.hplus(elx), 3) + ' M']);
+      items.push([T('陰極電流用於析出金屬', 'Cathode current used for metal'), num(100 * eff, 1) + ' %']);
     }
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
     cv.setAttribute('aria-label', describeCanvas());
@@ -938,10 +978,10 @@
   }
   function describeCanvas() {
     if (state.mode === 'cell') {
-      return T('化學電池：', 'Galvanic cell: ') + nm(cell.L.metal) + ' ' + concTxt(cell.L.c) + ' M ' + T('與', 'and ') + nm(cell.R.metal) + ' ' + concTxt(cell.R.c) + ' M。' +
-        (cell.bridge ? T('伏特計讀數 ', 'Meter reading ') + num(emfNow(), 3) + ' V' : T('沒有鹽橋', 'No salt bridge')) + '.';
+      return T('化學電池：', 'Galvanic cell: ') + nm(cell.L.metal) + ' ' + concTxt(cell.L.c) + ' M ' + T('與', 'and ') + nm(cell.R.metal) + ' ' + concTxt(cell.R.c) + ' M。' +
+        (cell.bridge ? T('伏特計讀數 ', 'Meter reading ') + num(emfNow(), 3) + ' V' : T('沒有鹽橋', 'No salt bridge')) + '.';
     }
-    return T('電解：', 'Electrolysis: ') + (elx.elec === 'Cu' ? T('銅電極', 'copper electrodes') : T('石墨電極', 'graphite electrodes')) + ', I = ' + num(elx.I, 2) + ' A, Q = ' + sigf(elx.q, 3) + ' C, Δm = ' + num(elx.dep, 3) + ' g.';
+    return T('電解：', 'Electrolysis: ') + (elx.elec === 'Cu' ? T('銅電極', 'copper electrodes') : T('石墨電極', 'graphite electrodes')) + ', I = ' + num(elx.I, 2) + ' A, Q = ' + sigf(elx.q, 3) + ' C, Δm = ' + num(elx.dep, 3) + ' g.';
   }
   function renderTable() {
     const el = $('tbl');
@@ -976,12 +1016,12 @@
       same.forEach(function (q) { lo = Math.min(lo, q.x); hi = Math.max(hi, q.x); });
       const f = same.length >= 2 ? C.fitLine(same.map(function (q) { return { x: q.x, y: q.E }; })) : null;
       if (userActed && window.LabMission) window.LabMission.emit('record', { pair: pairKey(r), count: same.length, span: hi - lo, slope: f ? f.b : null, theory: -C.KN / C.nOf(r.L, r.R), unk: !!r.unk });
-      setStatus(T('已記錄：E = ', 'Recorded: E = ') + num(r.E, 4) + ' V' + T('，log Q = ', ', log Q = ') + num(r.x, 3) + T('。', '.'));
+      setStatus(T('已記錄：E = ', 'Recorded: E = ') + num(r.E, 4) + ' V' + T('，log Q = ', ', log Q = ') + num(r.x, 3) + T('。', '.'));
     } else {
       const r = { id: ++rowSeq, seg: segId, elec: elx.elec, t: elx.t, I: elx.I, q: elx.q, dep: elx.dep, unk: unkE ? unkE.id : 0 };
       rowsE.push(r);
       if (rowsE.length > 200) rowsE.shift();
-      setStatus(T('已記錄：Q = ', 'Recorded: Q = ') + sigf(r.q, 4) + ' C' + T('，Δm = ', ', Δm = ') + num(r.dep, 4) + ' g' + T('。', '.'));
+      setStatus(T('已記錄：Q = ', 'Recorded: Q = ') + sigf(r.q, 4) + ' C' + T('，Δm = ', ', Δm = ') + num(r.dep, 4) + ' g' + T('。', '.'));
     }
     if (snd()) window.LabSound.tone({ freq: 880, dur: 0.1, gain: 0.1 });
     renderTable(); updateGraphText(); drawGraph();
@@ -1019,8 +1059,8 @@
     ['metL', 'metR'].forEach(function (id) {
       const box = $(id), side = id === 'metL' ? 'L' : 'R';
       box.innerHTML = REAL.map(function (k) {
-        return '<button type="button" data-m="' + k + '" aria-pressed="false" title="' + nm(k) + '">' + k + '<small>' + num(M[k].E, 2) + ' V</small></button>';
-      }).join('') + (side === 'L' ? '<button type="button" data-m="X" aria-pressed="false" hidden>X<small>? V</small></button>' : '');
+        return '<button type="button" data-m="' + k + '" aria-pressed="false" title="' + nm(k) + '">' + k + ' <small>' + num(M[k].E, 2) + ' V</small></button>';
+      }).join('') + (side === 'L' ? '<button type="button" data-m="X" aria-pressed="false" hidden>X <small>? V</small></button>' : '');
       box.querySelectorAll('button').forEach(function (b) {
         b.addEventListener('click', function () {
           acted();
@@ -1044,14 +1084,14 @@
     document.querySelectorAll('#metR button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.m === state.R)); });
   }
   function refreshOutputs() {
-    $('cLo').textContent = concTxt(val(elCL)) + ' M';
-    $('cRo').textContent = concTxt(val(elCR)) + ' M';
-    $('volo').textContent = num(val(elVol), 0) + ' mL';
-    $('rloado').textContent = sigf(val(elR), 3) + ' Ω';
-    $('cEo').textContent = concTxt(val(elCE)) + ' M';
-    $('volEo').textContent = num(val(elVE), 0) + ' mL';
-    $('ampo').textContent = num(val(elAmp), 2) + ' A';
-    $('timero').textContent = timerOn() ? num(val(elTimer), 0) + ' s' : T('不關', 'never');
+    $('cLo').textContent = concTxt(val(elCL)) + ' M';
+    $('cRo').textContent = concTxt(val(elCR)) + ' M';
+    $('volo').textContent = num(val(elVol), 0) + ' mL';
+    $('rloado').textContent = sigf(val(elR), 3) + ' Ω';
+    $('cEo').textContent = concTxt(val(elCE)) + ' M';
+    $('volEo').textContent = num(val(elVE), 0) + ' mL';
+    $('ampo').textContent = num(val(elAmp), 2) + ' A';
+    $('timero').textContent = timerOn() ? num(val(elTimer), 0) + ' s' : T('不關', 'never');
   }
   function refreshAll() {
     refreshOutputs();
@@ -1104,6 +1144,7 @@
     document.querySelectorAll('#elecSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.elec === e)); });
   }
   function setTab(t, quiet) {
+    $('targetScaleBox').hidden = t === 'nernst';
     state.tab = t;
     document.querySelectorAll('#tabs button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === t)); });
     if (!quiet) { updateGraphText(); drawGraph(); }
@@ -1130,8 +1171,8 @@
     const cellM = state.mode === 'cell', u = cellM ? unkC : unkE;
     $('unkTitle').textContent = cellM ? T('未知電極 X', 'Unknown electrode X') : T('未知金屬 M', 'Unknown metal M');
     $('unkHint').innerHTML = cellM ?
-      T('左邊換成未知金屬 X 浸在 X<sup>2+</sup> 溶液中。用右邊已知的半電池量電壓，求 X<sup>2+</sup>/X 的標準還原電位 E°（容許誤差 0.005 V，可核對 3 次）。', 'The left half-cell becomes an unknown metal X in X<sup>2+</sup> solution. Measure against a known half-cell on the right and find the standard reduction potential E° of X<sup>2+</sup>/X (within 0.005 V; three tries).') :
-      T('溶液換成未知的二價金屬離子 M<sup>2+</sup>（石墨電極）。電解後秤陰極，求 M 的莫耳質量（容許誤差 1%，可核對 3 次）。', 'The solution becomes an unknown metal ion M<sup>2+</sup> (graphite electrodes). Electrolyse, weigh the cathode and find the molar mass of M (within 1%; three tries).');
+      T('左邊換成未知金屬 X 浸在 X<sup>2+</sup> 溶液中。用右邊已知的半電池量電壓，求 X<sup>2+</sup>/X 的標準還原電位 E°（容許誤差 0.005 V，可核對 3 次）。', 'The left half-cell becomes an unknown metal X in X<sup>2+</sup> solution. Measure against a known half-cell on the right and find the standard reduction potential E° of X<sup>2+</sup>/X (within 0.005 V; three tries).') :
+      T('溶液換成未知的二價金屬離子 M<sup>2+</sup>（石墨電極）。電解後秤陰極，求 M 的莫耳質量（容許誤差 1 %，可核對 3 次）。', 'The solution becomes an unknown metal ion M<sup>2+</sup> (graphite electrodes). Electrolyse, weigh the cathode and find the molar mass of M (within 1 %; three tries).');
     $('ansLabel').innerHTML = cellM ? T('E°（V）', 'E° (V)') : T('M（g/mol）', 'M (g/mol)');
     $('unkBox').hidden = !u;
     $('unkOn').hidden = !!u;
@@ -1177,7 +1218,7 @@
     if (cellM) { err = Math.abs(a - u.E); ok = err <= 0.005 + 1e-9; }
     else { const tM = M[u.metal].M; err = Math.abs(a - tM) / tM; ok = err <= 0.01 + 1e-12; }
     if (window.LabMission) window.LabMission.emit(cellM ? 'answerE' : 'answerM', { ans: a, err: err, tries: u.tries, revealed: u.revealed });
-    $('unkOut').innerHTML = ok ? '<span class="ok">' + T('正確！', 'Correct!') + '</span> ' + (cellM ? 'E° = ' + num(u.E, 3) + ' V' : T('M = ', 'M = ') + num(M[u.metal].M, 2) + ' g/mol（' + nm(u.metal) + '）') :
+    $('unkOut').innerHTML = ok ? '<span class="ok">' + T('正確！', 'Correct!') + '</span> ' + (cellM ? 'E° = ' + num(u.E, 3) + ' V' : T('M = ', 'M = ') + num(M[u.metal].M, 2) + ' g/mol（' + nm(u.metal) + '）') :
       '<span class="no">' + T('還不對。', 'Not yet.') + '</span> ' + (u.tries < 3 ? T('還有 ', '') + (3 - u.tries) + T(' 次機會。', ' tries left.') : T('三次機會用完了。', 'No tries left.')) +
       (cellM ? T('提示：先算出 X 的電極電位，再用能斯特方程式扣掉濃度的影響。', ' Hint: find the electrode potential of X first, then remove the effect of concentration with the Nernst equation.') :
         T('提示：M = Δm × 2F ÷ Q；離子濃度太低時有一部分電流產生氫氣。', ' Hint: M = Δm × 2F ÷ Q; if the ions run low, part of the current gives hydrogen.'));
@@ -1188,8 +1229,8 @@
     const cellM = state.mode === 'cell', u = cellM ? unkC : unkE;
     if (!u) return;
     u.revealed = true;
-    $('unkOut').innerHTML = cellM ? T('答案：E°(X<sup>2+</sup>/X) = ', 'Answer: E°(X<sup>2+</sup>/X) = ') + num(u.E, 3) + ' V' :
-      T('答案：M 是', 'Answer: M is ') + nm(u.metal) + '，' + num(M[u.metal].M, 2) + ' g/mol';
+    $('unkOut').innerHTML = cellM ? T('答案：E°(X<sup>2+</sup>/X) = ', 'Answer: E°(X<sup>2+</sup>/X) = ') + num(u.E, 3) + ' V' :
+      T('答案：M 是', 'Answer: M is ') + nm(u.metal) + '，' + num(M[u.metal].M, 2) + ' g/mol';
     refreshAll();
   }
 
@@ -1234,6 +1275,7 @@
   });
   document.querySelectorAll('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { acted(); if (b.dataset.mode !== state.mode) setMode(b.dataset.mode); }); });
   document.querySelectorAll('#tabs button').forEach(function (b) { b.addEventListener('click', function () { acted(); setTab(b.dataset.tab); }); });
+  $('targetScale').addEventListener('change', drawGraph);
   $('play').addEventListener('click', function () { acted(); setRunning(!state.running); });
   $('restart').addEventListener('click', function () {
     acted();
@@ -1284,7 +1326,7 @@
             else setValUser(elAmp, Math.max(0, Math.min(2, Math.round((val(elAmp) + d * (big ? 0.1 : 0.01)) * 100) / 100)));
             return true;
           },
-          describe: function () { return state.mode === 'cell' ? '[' + metalL() + '] = ' + concTxt(cell.L.c) + ' M, E = ' + num(reading(), 3) + ' V' : 'I = ' + num(elx.I, 2) + ' A'; } },
+          describe: function () { return state.mode === 'cell' ? '[' + metalL() + '] = ' + concTxt(cell.L.c) + ' M, E = ' + num(reading(), 3) + ' V' : 'I = ' + num(elx.I, 2) + ' A'; } },
         { name: function () { return state.mode === 'cell' ? T('右半電池的濃度', 'Right concentration') : T('溶液濃度', 'Solution concentration'); },
           move: function (dx, dy, big) {
             const d = dx || -dy;
@@ -1293,7 +1335,7 @@
             else setValUser(elCE, Math.max(0.05, Math.min(1, Math.round((val(elCE) + d * (big ? 0.1 : 0.01)) * 100) / 100)));
             return true;
           },
-          describe: function () { return state.mode === 'cell' ? '[' + state.R + '] = ' + concTxt(cell.R.c) + ' M, E = ' + num(reading(), 3) + ' V' : 'c = ' + concTxt(elx.c) + ' M'; } }
+          describe: function () { return state.mode === 'cell' ? '[' + state.R + '] = ' + concTxt(cell.R.c) + ' M, E = ' + num(reading(), 3) + ' V' : 'c = ' + concTxt(elx.c) + ' M'; } }
       ],
       onChange: function () { drawStage(); }
     });
@@ -1324,7 +1366,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', resize);
   // 暫停時離子仍慢慢晃（低頻重畫）

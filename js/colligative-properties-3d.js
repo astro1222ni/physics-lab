@@ -30,7 +30,6 @@
     canvas.setAttribute('role', 'img');
     host.appendChild(canvas);
     const huds = ['tl', 'tr', 'bl', 'br'].map(function (p) { const d = document.createElement('div'); d.className = 'r3-hud ' + p; d.setAttribute('aria-hidden', 'true'); host.appendChild(d); return d; });
-    huds[2].textContent = T('拖曳旋轉・滾輪或雙指縮放', 'Drag to rotate · scroll or pinch to zoom');
 
     let renderer;
     try {
@@ -52,7 +51,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 8;
     controls.maxDistance = 60;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 12, T });
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.35));
     const sun = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -265,14 +264,23 @@
       const span = Math.max(W, HL + HV) * 1.25;
       const dist = (span * 0.6) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1.25, camera.aspect);
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         controls.target.set(0, (HL + HV) * 0.42, 0);
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(320, w * 0.95)) : 430; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(320, w * 0.95)) : 430;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -284,7 +292,7 @@
       fit(false);
       H.kick();
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', function () { H.kick(); });
     canvas.addEventListener('webglcontextlost', function (ev) {
@@ -309,6 +317,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

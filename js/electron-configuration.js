@@ -131,7 +131,9 @@
     return null;
   }
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -203,9 +205,9 @@
       const faded = ROWP[s] > Ptop && !occ[s];
       const a = faded ? 0.45 : 1;
       g.save();
-      g.globalAlpha = a;
       g.fillStyle = col.text; g.font = font(14, '700'); g.textAlign = 'right'; g.textBaseline = 'middle';
       g.fillText(S.label, LY.x0 - 8, y + LY.bh / 2);
+      g.globalAlpha = a;
       const diff = ghostOn && occOf(mad)[s] !== occ[s];
       for (let o = 0; o < S.m; o++) {
         const r = boxRect(s, o), e = b[s][o], n = e[0] + e[1];
@@ -237,8 +239,9 @@
         g.save(); g.strokeStyle = LD.alpha(col.pos, 0.85); g.lineWidth = 1.6; g.setLineDash([5, 3]);
         LD.roundRect(g, LY.x0 - 3, y - 3, S.m * LY.bw + 4, LY.bh + 6, 6); g.stroke(); g.restore();
       }
-      g.font = font(11); g.textAlign = 'left'; g.textBaseline = 'middle';
-      g.fillStyle = occ[s] === S.cap ? col.muted : occ[s] ? col.accent : LD.alpha(col.muted, 0.7);
+      g.globalAlpha = 1;
+      g.font = font(12, '600'); g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = occ[s] && occ[s] < S.cap ? col.accent : col.text;
       g.fillText(occ[s] + ' / ' + S.cap, Math.min(LY.cntX, LY.x0 + S.m * LY.bw + 8), y + LY.bh / 2);
       g.restore();
     }
@@ -261,7 +264,7 @@
       LD.roundRect(g, r.x - 4, r.y - 4, r.w + 8, r.h + 8, 6); g.stroke(); g.restore();
     }
     // 左上角：粒子與進度
-    const head = anim.on || stepNote ? stepNote : E.SYM[state.Z - 1] + (state.q ? T('（電荷 ' + qTxt(state.q) + '）', ' (charge ' + qTxt(state.q) + ')') : '') + T('：' + Nnow() + ' 個電子', ': ' + Nnow() + ' electrons');
+    const head = anim.on || stepNote ? stepNote : E.SYM[state.Z - 1] + (state.q ? T('（電荷 ' + qTxt(state.q) + '）', ' (charge ' + qTxt(state.q) + ')') : '') + T('：' + Nnow() + ' 個電子', ': ' + Nnow() + ' electrons');
     LD.pill(g, head, LY.pad + LY.axisW + 2, LY.pad + 15, col.text, 'left', '600 12px ' + LD.FONT);
   }
 
@@ -299,7 +302,7 @@
     shown = E.emptyBoxes();
     anim = { on: true, steps: st, k: 0, next: performance.now() + 350, dt: Math.max(70, Math.min(330, 7000 / Math.max(1, st.length))), lastPhase: null };
     stepNote = T('從空的原子開始', 'Starting from an empty atom');
-    setStatus(T('照構築原理，一個一個放進 ' + state.Z + ' 個電子…', 'Following the aufbau principle, ' + state.Z + ' electrons go in one by one…'));
+    setStatus(T('照構築原理，一個一個放進 ' + state.Z + ' 個電子…', 'Following the aufbau principle, ' + state.Z + ' electrons go in one by one…'));
     refresh();
     kick();
   }
@@ -316,7 +319,7 @@
       anim.lastPhase = st.phase;
     }
     if (st.type === 'add') {
-      stepNote = T('第 ' + nAdd + ' 個電子 → ' + SUB[st.s].label + ' ' + spinTxt(st.spin), 'Electron ' + nAdd + ' → ' + SUB[st.s].label + ' ' + spinTxt(st.spin));
+      stepNote = T('第 ' + nAdd + ' 個電子 → ' + SUB[st.s].label + ' ' + spinTxt(st.spin), 'Electron ' + nAdd + ' → ' + SUB[st.s].label + ' ' + spinTxt(st.spin));
       relayoutFor(st.s);
       if (dur) { const p = slotXY(st.s, st.o, st.spin); flyers.push({ x0: cw - LY.pad - 20, y0: LY.top - 6, x1: p[0], y1: p[1], t0: now, dur: dur, spin: st.spin, land: st }); }
       else { E.apply(shown, st); afterShownChange(); }
@@ -347,8 +350,8 @@
     flyers.forEach(land); flyers = [];
     shown = E.boxesOf(target());
     stepNote = '';
-    setStatus(T('填好了：' + spHTML(state.Z, state.q) + ' 的基態，共 ' + Nnow() + ' 個電子、' + E.unpaired(target()) + ' 個未成對電子。',
-      'Done: the ground state of ' + spHTML(state.Z, state.q) + ', ' + Nnow() + ' electrons, ' + E.unpaired(target()) + ' unpaired.'));
+    setStatus(T('填好了：' + spHTML(state.Z, state.q) + ' 的基態，共 ' + Nnow() + ' 個電子、' + E.unpaired(target()) + ' 個未成對電子。',
+      'Done: the ground state of ' + spHTML(state.Z, state.q) + ', ' + Nnow() + ' electrons, ' + E.unpaired(target()) + ' unpaired.'));
     if (snd()) { window.LabSound.tone({ freq: 659, dur: 0.1, gain: 0.07 }); window.LabSound.tone({ freq: 988, dur: 0.18, gain: 0.07, delay: 0.11 }); }
     emit('fill', { Z: state.Z, q: state.q, N: Nnow() });
     refresh();
@@ -388,8 +391,8 @@
         return;
       }
       if (r0.count >= r0.N) {
-        setBuildMsg(T(spHTML(state.Z, state.q) + ' 只有 ' + r0.N + ' 個電子，已經放滿了。要改就先擦掉一個。',
-          spHTML(state.Z, state.q) + ' has only ' + r0.N + ' electrons, and they are all placed. Erase one first to change it.'), 'bad');
+        setBuildMsg(T(spHTML(state.Z, state.q) + ' 只有 ' + r0.N + ' 個電子，已經放滿了。要改就先擦掉一個。',
+          spHTML(state.Z, state.q) + ' has only ' + r0.N + ' electrons, and they are all placed. Erase one first to change it.'), 'bad');
         return;
       }
       box[tool] = 1;
@@ -409,15 +412,15 @@
     r = r || buildEval();
     const nm = spHTML(state.Z, state.q);
     if (!r.N) { setBuildMsg(T(nm + ' 沒有電子，不用填。', nm + ' has no electrons to place.'), ''); return; }
-    if (!r.count) { setBuildMsg(T('點軌域的格子放電子。目標：' + nm + '，共 ' + r.N + ' 個電子。', 'Tap the boxes to place electrons. Goal: ' + nm + ', ' + r.N + ' electrons.'), ''); return; }
+    if (!r.count) { setBuildMsg(T('點軌域的格子放電子。目標：' + nm + '，共 ' + r.N + ' 個電子。', 'Tap the boxes to place electrons. Goal: ' + nm + ', ' + r.N + ' electrons.'), ''); return; }
     if (r.count < r.N) {
       const early = r.hundBad.filter(function (i) { const b = build[i]; return b.some(function (o) { return !o[0] && !o[1]; }) && b.some(function (o) { return o[0] && o[1]; }); });
-      let s = T('已放 ' + r.count + ' 個，還差 ' + (r.N - r.count) + ' 個。', r.count + ' placed, ' + (r.N - r.count) + ' to go.');
+      let s = T('已放 ' + r.count + ' 個，還差 ' + (r.N - r.count) + ' 個。', r.count + ' placed, ' + (r.N - r.count) + ' to go.');
       if (early.length) s += T('提醒：' + labels(early) + ' 還有空的軌域，電子卻先配對了（洪德定則）。', ' Note: ' + labels(early) + ' still has an empty orbital, yet electrons have paired (Hund\'s rule).');
       setBuildMsg(s, early.length ? 'bad' : '');
       return;
     }
-    if (r.ground) { setBuildMsg(T('✓ 這就是 ' + nm + ' 的基態！未成對電子 ' + r.unpaired + ' 個。', '✓ This is the ground state of ' + nm + '! ' + r.unpaired + ' unpaired electron' + (r.unpaired === 1 ? '' : 's') + '.'), 'ok'); return; }
+    if (r.ground) { setBuildMsg(T('✓ 這就是 ' + nm + ' 的基態！未成對電子 ' + r.unpaired + ' 個。', '✓ This is the ground state of ' + nm + '! ' + r.unpaired + ' unpaired electron' + (r.unpaired === 1 ? '' : 's') + '.'), 'ok'); return; }
     if (r.occMatch) {
       setBuildMsg(T('每個副層的電子數都對了，但 ' + labels(r.hundBad) + ' 違反洪德定則：電子要先一格一個、自旋平行，放滿一輪才配對。',
         'Every subshell has the right number of electrons, but ' + labels(r.hundBad) + ' breaks Hund\'s rule: one per orbital with parallel spins first, then pairing.'), 'bad');
@@ -425,8 +428,8 @@
     }
     const madN = E.key(E.aufbau(r.N)) === r.key;
     if (state.q > 0 && madN) {
-      setBuildMsg(T('這是「' + r.N + ' 個電子照 n + l 規則填」的結果，但陽離子是原子失去電子而來：先失去的是 n 最大的電子。',
-        'This is what ' + r.N + ' electrons give by the n + l rule, but a cation comes from an atom that loses electrons: the ones with the largest n go first.'), 'bad');
+      setBuildMsg(T('這是「' + r.N + ' 個電子照 n + l 規則填」的結果，但陽離子是原子失去電子而來：先失去的是 n 最大的電子。',
+        'This is what ' + r.N + ' electrons give by the n + l rule, but a cation comes from an atom that loses electrons: the ones with the largest n go first.'), 'bad');
       return;
     }
     if (!state.q && E.isException(state.Z) && madN) {
@@ -463,7 +466,7 @@
     $('elSym').style.background = blockColor(E.block(Z));
     $('elSym').style.color = inkOn(blockColor(E.block(Z)));
     $('elName').textContent = spName(Z, q);
-    $('elSub').textContent = T('原子序 ' + Z + '・' + N + ' 個電子', 'Atomic number ' + Z + ' · ' + N + ' electron' + (N === 1 ? '' : 's'));
+    $('elSub').textContent = T('原子序 ' + Z + '・' + N + ' 個電子', 'Atomic number ' + Z + ' · ' + N + ' electron' + (N === 1 ? '' : 's'));
     const rows = [];
     const row = function (dt, dd, cls) { rows.push('<dt>' + dt + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + dd + '</dd>'); };
     row(T('電子數', 'Electrons'), N + (q ? T('（' + Z + ' ' + (q > 0 ? '−' : '+') + ' ' + Math.abs(q) + '）', ' (' + Z + ' ' + (q > 0 ? '−' : '+') + ' ' + Math.abs(q) + ')') : ''));
@@ -541,8 +544,8 @@
     });
     t.innerHTML = h + '</tbody>';
     const iso = []; seen.forEach(function (k) { const a = k.split(','); if (+a[0] - +a[1] === N) iso.push(spHTML(+a[0], +a[1])); });
-    $('isoInfo').innerHTML = iso.length > 1 ? T('和 ' + spHTML(state.Z, state.q) + ' 一樣有 ' + N + ' 個電子的：' + iso.join('、') + '（' + iso.length + ' 種）',
-      'With ' + N + ' electrons, like ' + spHTML(state.Z, state.q) + ': ' + iso.join(', ') + ' (' + iso.length + ')') : '';
+    $('isoInfo').innerHTML = iso.length > 1 ? T('和 ' + spHTML(state.Z, state.q) + ' 一樣有 ' + N + ' 個電子的：' + iso.join('、') + '（' + iso.length + ' 種）',
+      'With ' + N + ' electrons, like ' + spHTML(state.Z, state.q) + ': ' + iso.join(', ') + ' (' + iso.length + ')') : '';
   }
   function clearAll() {
     acted();
@@ -597,7 +600,7 @@
       lg.addColorStop(0, 'rgba(255,255,255,' + (col.dark ? 0.08 : 0.25) + ')'); lg.addColorStop(1, 'rgba(0,0,0,' + (col.dark ? 0.12 : 0.05) + ')');
       g.fillStyle = lg; g.fill();
       if (PL.cell >= 14) {
-        g.fillStyle = inkOn(bg); g.font = font(Math.max(6.5, Math.min(11, PL.cell * 0.4)), sel ? '800' : '600');
+        g.fillStyle = inkOn(bg); g.font = font(Math.max(8.5, Math.min(15, PL.cell * 0.65)), sel ? '800' : '600');
         g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(E.SYM[Z - 1], r.x + r.w / 2, r.y + r.h / 2 + 0.5);
       }
@@ -864,7 +867,7 @@
   }
 
   // ======================= 事件 =======================
-  function canvasPoint(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function canvasPoint(c, ev) { const r = c.getBoundingClientRect(); return [(ev.clientX - r.left) * (c === cv ? cw / r.width : 1), (ev.clientY - r.top) * (c === cv ? chh / r.height : 1)]; }
   cv.addEventListener('click', function (ev) {
     if (state.mode !== 'build') return;
     const p = canvasPoint(cv, ev), h = hitBox(p[0], p[1]);
@@ -926,6 +929,10 @@
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && (anim.on || flyers.length)) kick(); });
 
+  function moveOrbitalCursor(dx, dy) {
+    cursor.s = Math.max(0, Math.min(LY ? LY.last : NS - 1, cursor.s + Math.sign(dy)));
+    cursor.o = Math.max(0, Math.min(SUB[cursor.s].m - 1, cursor.o + Math.sign(dx)));
+  }
   if (window.LabKeys) {
     kb = window.LabKeys.attach(cv, {
       label: T('軌域圖。自動填入時：← → 換元素、↑ ↓ 換電荷。自己填時：方向鍵移動游標，按 Enter 切到「放電子」，再按 ↑ 放 ↑、↓ 放 ↓、← 或 → 擦掉。',
@@ -936,12 +943,11 @@
             if (!dx && !dy) return false;
             acted();
             if (state.mode !== 'build') { if (dx) setSpecies(state.Z + Math.sign(dx), state.q); else setSpecies(state.Z, state.q + Math.sign(dy)); return true; }
-            if (dx) cursor.o = Math.max(0, Math.min(SUB[cursor.s].m - 1, cursor.o + Math.sign(dx)));
-            else { cursor.s = Math.max(0, Math.min(LY ? LY.last : NS - 1, cursor.s + Math.sign(dy))); cursor.o = Math.min(cursor.o, SUB[cursor.s].m - 1); }
+            moveOrbitalCursor(dx, dy);
             return true;
           },
           describe: function () {
-            if (state.mode !== 'build') return spName(state.Z, state.q) + T('，', ', ') + Nnow() + T(' 個電子，', ' electrons, ') + E.cfgText(target(), true);
+            if (state.mode !== 'build') return spName(state.Z, state.q) + T('，', ', ') + Nnow() + T(' 個電子，', ' electrons, ') + E.cfgText(target(), true);
             const e = build[cursor.s][cursor.o];
             return SUB[cursor.s].label + T(' 第 ' + (cursor.o + 1) + ' 格：', ' box ' + (cursor.o + 1) + ': ') + (e[0] ? '↑' : '') + (e[1] ? '↓' : '') + (!e[0] && !e[1] ? T('空的', 'empty') : '');
           } },
@@ -969,7 +975,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lp = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (ptcv.clientWidth !== lp) { lp = ptcv.clientWidth; resizePT(); drawPT(); } }).observe(ptcv);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', resize);
@@ -996,4 +1002,49 @@
   renderRecord();
   resize();
   refresh();
+  function mountKeypad() {
+    const label = T('軌域格游標', 'Orbital box cursor');
+    const pad = LabVPad.mount({
+      id: 'electron-configuration', canvas: cv, lens: false, objects: ['cursor'], steps: [1], step: 1,
+      selected: () => 'cursor', select: () => {},
+      move(dx, dy) {
+        acted(); cv.focus({ preventScroll: true });
+        moveOrbitalCursor(dx, dy); draw();
+      },
+      point() {
+        const r = cv.getBoundingClientRect();
+        if (!LY) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        const b = boxRect(cursor.s, cursor.o);
+        return { x: r.left + (b.x + b.w / 2) * r.width / cw, y: r.top + (b.y + b.h / 2) * r.height / chh };
+      },
+      record: () => {
+        acted(); cv.focus({ preventScroll: true }); place(cursor.s, cursor.o, state.tool);
+      },
+      visible() {
+        const r = cv.getBoundingClientRect();
+        return state.view === '2d' && state.mode === 'build' && getComputedStyle(cv).visibility === 'visible' && r.top < innerHeight && r.bottom > 0;
+      },
+      home(w, h) {
+        const r = cv.getBoundingClientRect();
+        return { x: r.right - w - 4, y: Math.min(r.bottom, innerHeight) - h - 4 };
+      },
+      viewport() {
+        const drawer = document.querySelector('html.labdeck-drawer .labdeck');
+        return { width: drawer ? drawer.getBoundingClientRect().left : innerWidth, height: innerHeight };
+      }
+    });
+    pad.element.setAttribute('aria-label', label);
+    const centre = document.createElement('span');
+    centre.className = 'keypad-centre'; centre.textContent = '◎'; centre.setAttribute('aria-hidden', 'true');
+    pad.element.querySelector('.vpad-select').replaceWith(centre);
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', label + ' ' + b.textContent));
+    pad.element.querySelector('.vpad-step').remove();
+    const applyButton = pad.element.querySelector('.vpad-record');
+    applyButton.textContent = T('套用工具', 'Apply tool');
+    applyButton.setAttribute('aria-label', T('在游標格使用選取的自旋或擦除工具', 'Apply the selected spin or eraser to this box'));
+    try {
+      if (!localStorage.getItem('lab-vpad:electron-configuration')) pad.collapse(true);
+    } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();

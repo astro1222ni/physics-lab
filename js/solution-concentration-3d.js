@@ -24,7 +24,7 @@
     const hudTL = document.createElement('div'), hudTR = document.createElement('div'), hudBL = document.createElement('div');
     hudTL.className = 'r3-hud tl'; hudTR.className = 'r3-hud tr'; hudBL.className = 'r3-hud bl';
     [hudTL, hudTR, hudBL].forEach(function (d) { d.setAttribute('aria-hidden', 'true'); host.appendChild(d); });
-    hudBL.textContent = T('拖曳旋轉・滾輪或雙指縮放・「重設視角」＝從眼睛的位置看', 'Drag to rotate · scroll or pinch to zoom · “Reset view” = look from your eye position');
+    hudBL.textContent = T('「重設視角」＝從眼睛的位置看', '“Reset view” = look from your eye position');
 
     let renderer;
     try {
@@ -43,7 +43,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 0.8;
     controls.maxDistance = 120;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 10, T });
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8d8573, 1.4));
     const sun = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -131,9 +131,9 @@
       const x2 = lc.getContext('2d');
       x2.fillStyle = colors.dark ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.92)';
       x2.font = '700 54px system-ui, sans-serif'; x2.textAlign = 'center'; x2.textBaseline = 'middle';
-      x2.fillText(g.Vf + ' mL', 128, 44);
+      x2.fillText(g.Vf + ' mL', 128, 44);
       x2.font = '600 34px system-ui, sans-serif';
-      x2.fillText('20 °C   A', 128, 100);
+      x2.fillText('20 °C   A', 128, 100);
       labelTex = new THREE.CanvasTexture(lc);
       labelTex.colorSpace = THREE.SRGBColorSpace || labelTex.colorSpace;
       labelMat.map = labelTex; labelMat.needsUpdate = true;
@@ -206,7 +206,7 @@
     }
 
     function eyeText(d) {
-      return Math.abs(d) < 0.5 ? T('平視', 'at eye level') : d > 0 ? T('俯視 ', 'looking down ') + Math.round(d) + '°' : T('仰視 ', 'looking up ') + Math.round(-d) + '°';
+      return Math.abs(d) < 0.5 ? T('平視', 'at eye level') : d > 0 ? T('俯視 ', 'looking down ') + Math.round(d) + ' °' : T('仰視 ', 'looking up ') + Math.round(-d) + ' °';
     }
     const v3 = new THREE.Vector3();
     function update() {
@@ -219,8 +219,8 @@
       if (!H.liquid().has) s = T('量瓶是空的', 'The flask is empty');
       else if (lv.z < g.zt) s = T('液面還在瓶身', 'The liquid is still in the bulb');
       else if (Math.abs(lv.h) < 0.05) s = T('液面最低點正好在刻度線', 'The bottom of the meniscus is on the mark');
-      else s = (lv.h < 0 ? T('液面最低點在刻度線下方 ', 'Bottom of the meniscus ') + Math.abs(lv.h).toFixed(2) + T(' mm', ' mm below the mark')
-        : T('液面最低點在刻度線上方 ', 'Bottom of the meniscus ') + lv.h.toFixed(2) + T(' mm', ' mm above the mark'));
+      else s = (lv.h < 0 ? T('液面最低點在刻度線下方 ', 'Bottom of the meniscus ') + Math.abs(lv.h).toFixed(2) + T(' mm', ' mm below the mark')
+        : T('液面最低點在刻度線上方 ', 'Bottom of the meniscus ') + lv.h.toFixed(2) + T(' mm', ' mm above the mark'));
       hudTL.textContent = s + T('（實際）', ' (actual)');
       // 鏡頭的仰俯角（相對刻度線的高度）
       v3.copy(camera.position).sub(new THREE.Vector3(0, g.zMark * U, 0));
@@ -234,6 +234,11 @@
     function fit(force) {
       if (!g) return;
       if (force) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         // 從眼睛的方向看刻度線：仰俯角 = 眼睛角度（正 = 俯視），稍微偏右一點讓瓶身有立體感
         const th = H.eye() * Math.PI / 180, az = 0.32;
         const H0 = g.zTop * U * 1.3;
@@ -244,10 +249,14 @@
         controls.target.copy(tgt).lerp(new THREE.Vector3(0, g.zTop * U * 0.5, 0), 0.6);
       }
       camera.updateProjectionMatrix();
+      if (force) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 600 ? 500 : 440; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 600 ? 500 : 440;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -270,7 +279,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -293,6 +302,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         clearFlask();
         const mats = new Set();

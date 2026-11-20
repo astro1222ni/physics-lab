@@ -36,7 +36,7 @@
 
   // 標準還原電位 E°（V，25 °C）：CRC Handbook of Chemistry and Physics「Electrochemical Series」（Vanýsek），
   // 與 OpenStax《Chemistry 2e》附錄 L 一致（銅用 0.337 V，和本站「化學電池與電解」相同）。M：IUPAC 標準原子量（g/mol）。
-  // 動力學常數 kd（置換）、ka（1 M 鹽酸）、kw（水）單位 s-¹，25 °C；都是教學示意值。
+  // 動力學常數 kd（置換）、ka（1 M 鹽酸）、kw（水）單位 s-^1，25 °C；都是教學示意值。
   const METALS = {
     K: { z: 1, E: -2.931, M: 39.0983, alk: true, kw: 2.0, Ew: 30 },
     Ca: { z: 2, E: -2.868, M: 40.078, alk: true, kw: 0.10, Ew: 30 },
@@ -120,7 +120,7 @@
     const tb = { metal: metal, liquid: liq, kind: kind, c: c, T: Tk - 273.15, Tk: Tk, salt: salt, n0: n0, V: V, type: type,
       m: mm.z, n: 0, A0: kind === 'ion' ? c * V : kind === 'acid' ? c * V : 0, A: 0, ppt0: [], hasCl: kind === 'acid' || salt,
       dE: null, logK: null, ne: null, eMax: 0, eEq: 0, lam: 0, tau: 0, unk: !!mm.unk || (kind === 'ion' && !!METALS[liq].unk) };
-    // 起始溶液裡的沉澱（食鹽的 Cl- 與 Ag+、Pb²+）
+    // 起始溶液裡的沉澱（食鹽的 Cl- 與 Ag+、Pb^2+）
     tb.A = tb.A0;
     if (kind === 'ion' && salt && (liq === 'Ag' || liq === 'Pb')) {
       const a = c, b = CL_SALT / V;

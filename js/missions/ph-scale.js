@@ -41,7 +41,7 @@
     {
       id: 'ph-scale-3', level: 2,
       title: { zh: '稀釋十倍', en: 'Ten times thinner' },
-      desc: { zh: '按「加水稀釋 10 倍」把鹽酸稀釋，讓 pH 剛好增加 1.00（差 0.02 以內）。', en: 'Press “Dilute 10 times with water” on hydrochloric acid so that its pH rises by exactly 1.00 (within 0.02).' },
+      desc: { zh: '按「加水稀釋 10 倍」把鹽酸稀釋，讓 pH 剛好增加 1.00（差 0.02 以內）。', en: 'Press “Dilute 10 times with water” on hydrochloric acid so that its pH rises by exactly 1.00 (within 0.02).' },
       check: function (ev) { const d = dl(ev); return !!d && d.sp === 'HCl' && Math.abs(d.dpH - 1) <= 0.02; }
     },
     {
@@ -59,13 +59,13 @@
     {
       id: 'ph-scale-6', level: 4,
       title: { zh: '醋酸放手了', en: 'Acetic acid lets go' },
-      desc: { zh: '讓醋酸的解離百分率達到 10% 以上，再按「測量並記錄」。', en: 'Make at least 10% of the acetic acid ionised, then press “Measure & record”.' },
+      desc: { zh: '讓醋酸的解離百分率達到 10 % 以上，再按「測量並記錄」。', en: 'Make at least 10 % of the acetic acid ionised, then press “Measure & record”.' },
       check: function (ev) { const d = ms(ev); return !!d && d.beakers.some(function (b) { return b.sp === 'CH3COOH' && b.alpha >= 0.10; }); }
     },
     {
       id: 'ph-scale-7', level: 4,
       title: { zh: '弱酸的稀釋', en: 'Diluting a weak acid' },
-      desc: { zh: '按「加水稀釋 10 倍」稀釋一種弱酸（稀釋前解離百分率小於 5%），讓 pH 增加 0.45～0.55。', en: 'Press “Dilute 10 times with water” on a weak acid that is less than 5% ionised, so that its pH rises by 0.45 to 0.55.' },
+      desc: { zh: '按「加水稀釋 10 倍」稀釋一種弱酸（稀釋前解離百分率小於 5 %），讓 pH 增加 0.45～0.55。', en: 'Press “Dilute 10 times with water” on a weak acid that is less than 5 % ionised, so that its pH rises by 0.45 to 0.55.' },
       check: function (ev) { const d = dl(ev); return !!d && d.kind === 'wa' && d.alphaPrev < 0.05 && d.dpH >= 0.45 && d.dpH <= 0.55; }
     },
     {
@@ -77,7 +77,7 @@
     {
       id: 'ph-scale-9', level: 5,
       title: { zh: 'pH 11 的氨水', en: 'Ammonia at pH 11' },
-      desc: { zh: '在 25 °C 調出 pH = 11.00 的氨水（差 0.01 以內），按「測量並記錄」。', en: 'At 25 °C, make ammonia solution with pH 11.00 (within 0.01) and press “Measure & record”.' },
+      desc: { zh: '在 25 °C 調出 pH = 11.00 的氨水（差 0.01 以內），按「測量並記錄」。', en: 'At 25 °C, make ammonia solution with pH 11.00 (within 0.01) and press “Measure & record”.' },
       check: function (ev) { const d = ms(ev); return !!d && Math.abs(d.T - 25) < 0.5 && d.beakers.some(function (b) { return b.sp === 'NH3' && Math.abs(b.pH - 11) <= 0.01; }); }
     },
     {

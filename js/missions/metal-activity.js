@@ -24,31 +24,31 @@
     {
       id: 'metal-activity-1', level: 1,
       title: { zh: '藍色褪去', en: 'The blue fades' },
-      desc: { zh: '把一種金屬放進 Cu2+ 溶液，讓銅析出，直到藍色的 Cu2+ 剩不到原來的 10%。', en: 'Put a metal into the Cu2+ solution so that copper is deposited, until less than 10% of the blue Cu2+ is left.' },
+      desc: { zh: '把一種金屬放進 Cu<sup>2+</sup> 溶液，讓銅析出，直到藍色的 Cu<sup>2+</sup> 剩不到原來的 10 %。', en: 'Put a metal into the Cu<sup>2+</sup> solution so that copper is deposited, until less than 10 % of the blue Cu<sup>2+</sup> is left.' },
       check: function (ev) { const r = isO(ev) && ev.data.rec; return !!r && r.liquid === 'Cu' && r.disp === 'yes' && r.oxFrac <= 0.1; }
     },
     {
       id: 'metal-activity-2', level: 2,
       title: { zh: '收集氫氣', en: 'Collect hydrogen' },
-      desc: { zh: '讓一支試管放出至少 20 mL 的氫氣（25 °C、1 atm）。', en: 'Make one test tube give off at least 20 mL of hydrogen (25 °C, 1 atm).' },
+      desc: { zh: '讓一支試管放出至少 20 mL 的氫氣（25 °C、1 atm）。', en: 'Make one test tube give off at least 20 mL of hydrogen (25 °C, 1 atm).' },
       check: function (ev) { return isO(ev) && ev.data.rec.h2 >= 20; }
     },
     {
       id: 'metal-activity-3', level: 2,
       title: { zh: '銀樹', en: 'A silver tree' },
-      desc: { zh: '把銅片放進 Ag+ 溶液，讓銅片上長出至少 50 mg 的銀。', en: 'Put a copper strip into the Ag+ solution and grow at least 50 mg of silver on it.' },
+      desc: { zh: '把銅片放進 Ag<sup>+</sup> 溶液，讓銅片上長出至少 50 mg 的銀。', en: 'Put a copper strip into the Ag<sup>+</sup> solution and grow at least 50 mg of silver on it.' },
       check: function (ev) { const r = isO(ev) && ev.data.rec; return !!r && r.metal === 'Cu' && r.liquid === 'Ag' && r.depMg >= 50; }
     },
     {
       id: 'metal-activity-4', level: 3,
       title: { zh: '不動如山', en: 'Nothing happens' },
-      desc: { zh: '把一種金屬放進活性比它大的金屬的離子溶液（兩者 E° 至少差 0.2 V），確認完全沒有反應。', en: 'Put a metal into a solution of the ions of a more reactive metal (E° at least 0.2 V apart) and confirm that nothing happens.' },
+      desc: { zh: '把一種金屬放進活性比它大的金屬的離子溶液（兩者 E° 至少差 0.2 V），確認完全沒有反應。', en: 'Put a metal into a solution of the ions of a more reactive metal (E° at least 0.2 V apart) and confirm that nothing happens.' },
       check: function (ev) { const r = isO(ev) && ev.data.rec; return !!r && r.disp === 'no' && r.dE <= -0.2; }
     },
     {
       id: 'metal-activity-5', level: 4,
       title: { zh: '變重的金屬片', en: 'A strip that gets heavier' },
-      desc: { zh: '做一個置換反應，讓金屬片（連同析出的金屬）比原來重至少 100 mg。', en: 'Carry out a displacement reaction in which the strip (with the deposited metal) ends up at least 100 mg heavier.' },
+      desc: { zh: '做一個置換反應，讓金屬片（連同析出的金屬）比原來重至少 100 mg。', en: 'Carry out a displacement reaction in which the strip (with the deposited metal) ends up at least 100 mg heavier.' },
       check: function (ev) { const r = isO(ev) && ev.data.rec; return !!r && r.disp === 'yes' && r.dm >= 100; }
     },
     {

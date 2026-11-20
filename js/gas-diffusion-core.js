@@ -3,23 +3,23 @@
  *
  * 一、分子速率（理想氣體、馬克士威分布）
  *   平均速率 v̄ = √(8RT/πM)、方均根速率 √(3RT/M)、最可能速率 √(2RT/M)；
- *   速率分布 f(v) = 4π (M/2πRT)^(3/2) v² exp(−Mv²/2RT)（M 用 kg/mol）。
+ *   速率分布 f(v) = 4π (M/2πRT)^(3/2) v^2 exp(−Mv^2/2RT)（M 用 kg/mol）。
  *
  * 二、逸散（小孔、分子自由徑遠大於孔徑）
- *   每秒逸出的分子數 = ¼ n v̄ A，所以容器內的壓力 P(t) = P₀ e^(−t/τ)，τ = 4V/(A v̄)；
+ *   每秒逸出的分子數 = ¼ n v̄ A，所以容器內的壓力 P(t) = P0 e^(−t/τ)，τ = 4V/(A v̄)；
  *   半衰時間 t½ = τ ln 2 ∝ √(M/T)：同溫時逸散時間比 = √(M_B/M_A)（格雷厄姆逸散定律）。
- *   平均自由徑 λ = kT/(√2 π d² P)，d 取空氣分子的有效直徑 0.37 nm；克努森數 Kn = λ/孔徑，Kn ≫ 1 才是逸散。
+ *   平均自由徑 λ = kT/(√2 π d^2 P)，d 取空氣分子的有效直徑 0.37 nm；克努森數 Kn = λ/孔徑，Kn ≫ 1 才是逸散。
  *
- * 三、長玻璃管的擴散（NH₃ 與 HCl 等，在 1 atm 的空氣中）
+ * 三、長玻璃管的擴散（NH3 與 HCl 等，在 1 atm 的空氣中）
  *   兩端的棉花維持固定的蒸氣濃度，氣體在管中一維擴散（erfc 解）；白煙環出現在兩股氣體第一次相遇的地方：
- *   x/(L − x) = D_A/D_B。出現時間：該處濃度乘積達到示意門檻 THETA 的時刻（∝ L²/D），
- *   校準成 1 m 長的管、NH₃／HCl、25 °C 約 17 分鐘出現白煙（課堂常見 15–20 分鐘）。
+ *   x/(L − x) = D_A/D_B。出現時間：該處濃度乘積達到示意門檻 THETA 的時刻（∝ L^2/D），
+ *   校準成 1 m 長的管、NH3／HCl、25 °C 約 17 分鐘出現白煙（課堂常見 15–20 分鐘）。
  *   擴散係數兩種模型：
- *     'graham'（理想）：D ∝ 1/√M（以 NH₃ 在空氣中的 D 為基準），白煙環位置就是單純的 √M 比；
+ *     'graham'（理想）：D ∝ 1/√M（以 NH3 在空氣中的 D 為基準），白煙環位置就是單純的 √M 比；
  *     'air'（空氣中擴散，較真實）：每種氣體對空氣的二元擴散係數，用 Fuller–Schettler–Giddings 式
- *       D = 0.00143 T^1.75 / (P √M_AB (Σv_A^(1/3) + Σv_B^(1/3))²)（cm²/s，P 用 bar，M_AB = 2/(1/M_A + 1/M_B)），
+ *       D = 0.00143 T^1.75 / (P √M_AB (Σv_A^(1/3) + Σv_B^(1/3))^2)（cm^2/s，P 用 bar，M_AB = 2/(1/M_A + 1/M_B)），
  *       擴散體積取自 Poling、Prausnitz、O'Connell《The Properties of Gases and Liquids》第 5 版表 11-1。
- *       NH₃ 0.220、HCl 0.172 cm²/s（25 °C），比值 1.28，和課堂實測常見的 1.27 相符（格雷厄姆比值是 1.46）。
+ *       NH3 0.220、HCl 0.172 cm^2/s（25 °C），比值 1.28，和課堂實測常見的 1.27 相符（格雷厄姆比值是 1.46）。
  *   兩種模型的溫度效應都是 D ∝ T^1.75。
  *
  * 分子量：IUPAC 2021 標準原子量（H 1.008、C 12.011、N 14.007、O 15.999、F 18.998、S 32.06、Cl 35.45、Br 79.904、I 126.90…）。
@@ -89,14 +89,14 @@
   function erf(x) { return x >= 0 ? 1 - erfc(x) : erfc(-x) - 1; }
 
   // ---------- 擴散係數 ----------
-  /** 對空氣的二元擴散係數（Fuller 式，cm²/s），P 用 bar */
+  /** 對空氣的二元擴散係數（Fuller 式，cm^2/s），P 用 bar */
   function fullerD(id, Tk, Pbar) {
     const g = GAS[id];
     const Mab = 2 / (1 / g.M + 1 / M_AIR);
     const s = Math.cbrt(g.v) + Math.cbrt(V_AIR);
     return 0.00143 * Math.pow(Tk, 1.75) / ((Pbar || P_ATM) * Math.sqrt(Mab) * s * s);
   }
-  /** 擴散係數（cm²/s）：model 'graham'（D ∝ 1/√M，以 NH₃ 為基準）或 'air'（Fuller） */
+  /** 擴散係數（cm^2/s）：model 'graham'（D ∝ 1/√M，以 NH3 為基準）或 'air'（Fuller） */
   function diffD(id, Tk, model) {
     if (model === 'air' && id !== 'HX') return fullerD(id, Tk);
     return fullerD('NH3', Tk) * Math.sqrt(GAS.NH3.M / M(id));
@@ -122,9 +122,9 @@
   // 兩端的棉花維持固定的蒸氣濃度（相對值 1），氣體向管內一維擴散（半無限長的解）：
   //   c_A(x, t) = erfc(x / 2√(D_A t))、c_B(x, t) = erfc((L − x) / 2√(D_B t))
   // 白煙出現的位置：兩股氣體第一次相遇的地方。乘積 c_A c_B 在門檻很小時最先超過門檻的位置，
-  //   由 ln erfc(z) ≈ −z² 得 x/D_A = (L − x)/D_B，也就是 x/(L − x) = D_A/D_B（與濃度、溫度、管長都無關）。
-  // 白煙出現的時間：該處 c_A c_B 達到「看得見」的門檻 THETA 的時刻（示意的門檻，校準成 1 m、NH₃／HCl、25 °C 約 17 分鐘）。
-  //   因為 z 只和 L²/(D t) 有關，出現時間 ∝ L²/D（嚴格成立）。
+  //   由 ln erfc(z) ≈ −z^2 得 x/D_A = (L − x)/D_B，也就是 x/(L − x) = D_A/D_B（與濃度、溫度、管長都無關）。
+  // 白煙出現的時間：該處 c_A c_B 達到「看得見」的門檻 THETA 的時刻（示意的門檻，校準成 1 m、NH3／HCl、25 °C 約 17 分鐘）。
+  //   因為 z 只和 L^2/(D t) 有關，出現時間 ∝ L^2/D（嚴格成立）。
   const THETA = 2e-4;
   /** ln erfc(z)（z ≥ 0 時用 Chebyshev 式直接取對數，大 z 也準確） */
   function lnErfc(z) {
@@ -142,7 +142,7 @@
   }
   /**
    * 一次擴散實驗。o = { base, acid, model, L（cm）, T（K） }
-   * 傳回 { DA, DB（cm²/s）, x（白煙環到鹼端的距離，cm）, frac（x/L）, t（出現時間，s）, ratio（距離比＝D_A/D_B）, graham（√M 比） }
+   * 傳回 { DA, DB（cm^2/s）, x（白煙環到鹼端的距離，cm）, frac（x/L）, t（出現時間，s）, ratio（距離比＝D_A/D_B）, graham（√M 比） }
    */
   function ring(o) {
     const DA = diffD(o.base, o.T, o.model), DB = diffD(o.acid, o.T, o.model);

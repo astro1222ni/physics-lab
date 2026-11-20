@@ -19,6 +19,7 @@
   const STIR_W = 2 * Math.PI * 2; // 攪拌子每秒 2 轉（畫面效果）
   const FF_SPEED = 20;            // 快轉等待：時間快 20 倍
   const HOLD = 30;                // 粉紅色維持 30 秒算終點
+  const MAGENTA_M = 4e-5;         // 到紫紅色時，顏色已深於終點的淡粉紅
   const VIS = 1.6;                // 畫面上的顏色加強（穿透率取 1.6 次方，淡粉紅色在螢幕上才看得出來；不影響任何計算）
 
   // ======================= 格式 =======================
@@ -164,7 +165,9 @@
   let L = null;
 
   function resizeBench() {
-    const W = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const W = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!W) return;
     const D = W >= 600 ? LAY.wide : LAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s);
@@ -772,23 +775,23 @@
   function flaskParts() {
     const p = state.run.p, sys = p.sys, parts = [{ t: T('錐形瓶：', 'Flask: ') }];
     if (sys === 'std') {
-      parts.push({ t: T('草酸晶體 ', 'oxalic acid ') + p.mass.toFixed(4) + ' g' + T('＋水 ', ' + water ') + p.Va.toFixed(1) + ' mL' });
+      parts.push({ t: T('草酸晶體 ', 'oxalic acid ') + p.mass.toFixed(4) + ' g' + T('＋水 ', ' + water ') + p.Va.toFixed(1) + ' mL' });
     } else {
       parts.push({ f: SYS[sys].f });
-      parts.push({ t: (sys === 'mx' ? T(' 濃度未知', ' (unknown c)') : ' ' + conc(p.Ca) + ' M') + T('・', ' · ') + p.Va.toFixed(2) + ' mL' });
+      parts.push({ t: (sys === 'mx' ? T(' 濃度未知', ' (unknown c)') : ' ' + conc(p.Ca) + ' M') + T('・', ' · ') + p.Va.toFixed(2) + ' mL' });
     }
-    parts.push({ t: p.Vacid > 0 ? T('＋3 M ', ' + 3 M ') : T('，沒有加酸', ', no acid') });
-    if (p.Vacid > 0) { parts.push({ f: 'H2SO4' }); parts.push({ t: ' ' + p.Vacid.toFixed(1) + ' mL' }); }
+    parts.push({ t: p.Vacid > 0 ? T('＋3 M ', ' + 3 M ') : T('，沒有加酸', ', no acid') });
+    if (p.Vacid > 0) { parts.push({ f: 'H2SO4' }); parts.push({ t: ' ' + p.Vacid.toFixed(1) + ' mL' }); }
     return parts;
   }
 
   function drawLabels(g) {
     const s = L.s, r = state.run, p = r.p;
     // 滴定管
-    const bur = [{ t: T('滴定管：', 'Burette: ') }, { f: 'KMnO4' }, { t: (p.sys === 'std' || p.sys === 'mx') ? T(' 濃度待標定', ' (to be standardised)') : ' ' + conc(p.Cb) + ' M' }];
-    richPill(g, bur, (L.xb + 16) * s, (VY.top + 56) * s, C.text);
+    const bur = [{ t: T('滴定管：', 'Burette: ') }, { f: 'KMnO4' }, { t: (p.sys === 'std' || p.sys === 'mx') ? T(' 濃度待標定', ' (to be standardised)') : ' ' + conc(p.Cb) + ' M' }];
+    richPill(g, bur, (L.xb + 31) * s, (VY.top + 31) * s, C.text);
     // 放大鏡的讀數
-    pillClamp(g, T('讀上緣 ', 'Top edge ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
+    pillClamp(g, T('讀上緣 ', 'Top edge ') + vRead(r.fill) + ' mL', L.mag[0] * s, (L.mag[1] + L.mag[2] + 24) * s, C.accent, 'center');
     // 電位計
     const lc = lcdRect();
     LD.haloText(g, 'V', (lc.x + lc.w - 3) * s, (lc.y + lc.h - 4) * s, LD.alpha(C.lcdInk, 0.95), 'right', 'alphabetic', '700 ' + (L.wide ? 11 : 9) + 'px ' + FF);
@@ -798,7 +801,7 @@
     else if (L.wide) mlab = T('鉑電極 E（對 SHE）', 'Pt electrode, E vs SHE');
     if (mlab) LD.haloText(g, mlab, ((L.meter[0] + L.meter[2]) / 2) * s, (L.meter[3] - (L.wide ? 8 : 6)) * s, C.muted, 'center', 'alphabetic', '10px ' + FF);
     // 加熱板的溫度顯示
-    LD.haloText(g, p.T.toFixed(0) + ' °C', L.xb * s, (VY.plate - 15.5) * s, p.T > 30 ? LD.mix(C.lcdInk, C.glow, 0.6) : C.lcdInk, 'center', 'middle', '700 ' + (L.wide ? 11 : 9) + 'px ' + FF);
+    LD.haloText(g, p.T.toFixed(0) + ' °C', L.xb * s, (VY.plate - 15.5) * s, p.T > 30 ? LD.mix(C.lcdInk, C.glow, 0.6) : C.lcdInk, 'center', 'middle', '700 ' + (L.wide ? 11 : 9) + 'px ' + FF);
     // 桌子前緣：錐形瓶裡有什麼
     const px = 12, line1 = VY.bench * s + 17, line2 = VY.bench * s + 35;
     const parts = flaskParts();
@@ -829,8 +832,8 @@
     }
     if (K.pink(r.f) && r.u > 0) {
       const hd = K.held(r.f);
-      pillClamp(g, (r.f.nA <= 0 ? T('粉紅色 ', 'pink ') : T('紫色持續 ', 'purple ')) + (hd >= 600 ? T('10 分鐘以上', '10 min +') : hd.toFixed(hd < 10 ? 1 : 0) + ' s') + (state.ff ? T('（快轉）', ' (fast)') : ''),
-        tx, (VY.by - 16) * s, hd >= HOLD && r.f.nA <= 0 ? C.probe : C.muted, 'left');
+      pillClamp(g, pinkLabel(r.f) + ' ' + (hd >= 600 ? T('10 分鐘以上', '10 min +') : hd.toFixed(hd < 10 ? 1 : 0) + ' s'),
+        tx, (VY.by - 16) * s, strongExcess(r.f) ? C.chem : hd >= HOLD && r.f.nA <= 0 ? C.probe : C.muted, 'left');
     }
   }
 
@@ -942,7 +945,6 @@
   function advanceChem(dt) {
     const r = state.run;
     if (!(dt > 0) || r.u === 0) return;
-    const wasHeld = K.held(r.f);
     const ev = K.tick(state.S, dt);
     handleFades(ev);
     // 草酸：電位與顏色隨時間改變，最後一個數據點跟著更新
@@ -956,12 +958,20 @@
     }
     // 終點的粉紅色維持 30 秒
     const hd = K.held(r.f);
-    if (r.f.nA <= 0 && K.pink(r.f) && wasHeld < HOLD && hd >= HOLD && !r.chimed30) {
+    if (r.f.nA <= 0 && K.pink(r.f) && hd >= HOLD && !r.chimed30) {
       r.chimed30 = true;
-      sndHold();
-      state.tag = { text: T('30 秒不褪色', 'Lasted 30 s'), t: 2 };
-      setStatus(T('淡粉紅色維持 30 秒都沒有褪去：這就是終點，按「記錄終點」。', 'The faint pink has lasted 30 s: this is the end point — press “Record end point”.'));
+      if (strongExcess(r.f)) {
+        state.tag = { text: T('已滴過終點', 'Past the end point'), t: 2 };
+        setStatus(T('顏色已持續 30 秒。', 'The colour has persisted for 30 s.'));
+      } else {
+        sndHold();
+        state.tag = { text: T('30 秒不褪色', 'Lasted 30 s'), t: 2 };
+        setStatus(T('淡粉紅色維持 30 秒都沒有褪去。', 'The faint pink has lasted 30 s.'));
+      }
       if (state.ff) setFF(false);
+      renderReadouts();
+    } else if (isFe(r.p.sys) && K.pink(r.f) && !r.chimed30 && performance.now() - lastChemDraw > 250) {
+      lastChemDraw = performance.now();
       renderReadouts();
     }
   }
@@ -970,10 +980,10 @@
     list.forEach(function (e) {
       emit('fade', K.fadeData(state.S, e, state.meter));
       if (!isFe(r.p.sys)) {
-        if (e.first) setStatus(T('第一段紫色等了 ' + e.dur.toFixed(1) + ' 秒才褪去。之後生成的 Mn2+ 會讓反應越來越快。', 'The first purple took ' + e.dur.toFixed(1) + ' s to fade. The Mn2+ it produced will make the next drops go faster.'));
-        else if (e.dur >= 3) routineStatus(T('紫色 ' + e.dur.toFixed(1) + ' 秒後褪去了。', 'The purple faded after ' + e.dur.toFixed(1) + ' s.'));
+        if (e.first) setStatus(T('第一段紫色等了 ' + e.dur.toFixed(1) + ' 秒才褪去。之後生成的 Mn<sup>2+</sup> 會讓反應越來越快。', 'The first purple took ' + e.dur.toFixed(1) + ' s to fade. The Mn<sup>2+</sup> it produced will make the next drops go faster.'));
+        else if (e.dur >= 3) routineStatus(T('紫色 ' + e.dur.toFixed(1) + ' 秒後褪去了。', 'The purple faded after ' + e.dur.toFixed(1) + ' s.'));
       } else if (r.f.nA > 0 && e.dur > 0.5) {
-        routineStatus(T('粉紅色褪去了：瓶中還有 Fe2+。', 'The pink has gone: there is still Fe2+ in the flask.'));
+        routineStatus(T('粉紅色褪去了：瓶中還有 Fe<sup>2+</sup>。', 'The pink has gone: there is still Fe<sup>2+</sup> in the flask.'));
       }
     });
   }
@@ -985,7 +995,7 @@
     if (left <= 0) { closeTap(); emptyNotice(); return 0; }
     if (r.p.Va + r.p.Vacid + (r.out + n) / U > VT_MAX) {
       closeTap();
-      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。換一瓶，或減少待測液、提高 KMnO4 的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Start a new flask, or use less sample or a more concentrated KMnO4.'), true);
+      setStatus(T('錐形瓶快滿了（' + VT_MAX + ' mL）。換一瓶，或減少待測液、提高 KMnO<sub>4</sub> 的濃度。', 'The flask is almost full (' + VT_MAX + ' mL). Start a new flask, or use less sample or a more concentrated KMnO<sub>4</sub>.'), true);
       return 0;
     }
     n = K.release(state.S, n, state.meter);
@@ -1019,27 +1029,27 @@
     }
     handleFades(ev);
     if (!hadMnO2 && f.nMnO2 / K.vTot(f) >= K.MNO2_SEEN) {
-      setStatus(T('溶液出現棕色混濁：酸不夠，MnO4− 只還原成 MnO2。', 'The solution turns brown and cloudy: there is not enough acid, so MnO4− is reduced only to MnO2.'), true);
+      setStatus(T('溶液出現棕色混濁：酸不夠，MnO<sub>4</sub><sup>−</sup> 只還原成 MnO<sub>2</sub>。', 'The solution turns brown and cloudy: there is not enough acid, so MnO<sub>4</sub><sup>−</sup> is reduced only to MnO<sub>2</sub>.'), true);
     } else if (!wasExcess && f.nA <= 0 && K.pink(f)) {
       colourChanged();
     } else if (!isFe(r.p.sys) && !wasPink && K.pink(f) && f.nA > 0 && !r.oxHint) {
       r.oxHint = true;
       setStatus(r.p.T < 50
-        ? T('紫色遲遲不褪：室溫下草酸和 MnO4− 反應很慢。把加熱板調到 60–70 °C 試試。', 'The purple will not fade: oxalic acid reacts very slowly with MnO4− at room temperature. Try 60–70 °C on the hot plate.')
-        : T('第一滴的紫色要等一會兒才褪：瓶中還沒有催化反應的 Mn2+。等它褪了再加下一滴。', 'The first drop takes a while to fade: there is no Mn2+ yet to catalyse the reaction. Wait for it before adding more.'));
+        ? T('紫色遲遲不褪：室溫下草酸和 MnO<sub>4</sub><sup>−</sup> 反應很慢。把加熱板調到 60–70 °C 試試。', 'The purple will not fade: oxalic acid reacts very slowly with MnO<sub>4</sub><sup>−</sup> at room temperature. Try 60–70 °C on the hot plate.')
+        : T('第一滴的紫色要等一會兒才褪：瓶中還沒有催化反應的 Mn<sup>2+</sup>。等它褪了再加下一滴。', 'The first drop takes a while to fade: there is no Mn<sup>2+</sup> yet to catalyse the reaction. Wait for it before adding more.'));
     }
     graphDirty = true;
   }
   function colourChanged() {
     state.flash = reduced ? 0 : 1;
     state.flashCol = rgbStr(flaskRGB(state.run.f));
-    state.tag = { text: T('出現粉紅色！', 'Pink!'), t: 1.8 };
+    state.tag = { text: T('停止加液，觀察 30 秒', 'Stop adding and watch for 30 s'), t: 1.8 };
     sndColour();
-    setStatus(T('整瓶溶液變成淡粉紅色：多出來的 MnO4− 沒有東西可以反應了。等 30 秒不褪色，就按「記錄終點」。', 'The whole flask has turned faint pink: the extra MnO4− has nothing left to react with. If it lasts 30 s, press “Record end point”.'));
+    setStatus(T('整瓶溶液變成淡粉紅色：多出來的 MnO<sub>4</sub><sup>−</sup> 沒有東西可以反應了。等 30 秒不褪色，就按「記錄終點」。', 'The whole flask has turned faint pink: the extra MnO<sub>4</sub><sup>−</sup> has nothing left to react with. If it lasts 30 s, press “Record end point”.'));
   }
   function emptyNotice() {
     sndEmpty();
-    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
+    setStatus(T('滴定管流空了（50.00 mL）。按「補充滴定液」重新裝滿再繼續。', 'The burette is empty (50.00 mL). Press “Refill burette” to fill it up and carry on.'), true);
   }
   function closeTap() {
     if (!state.tap) return;
@@ -1063,8 +1073,8 @@
     if (last) last.c = flaskRGB(r.f);
     latestRow = true;
     renderAll();
-    routineStatus(T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
-      (state.meter ? (r.E == null ? T('，電位不穩定', ', potential unstable') : T('，E = ' + fE(r.E) + ' V', ', E = ' + fE(r.E) + ' V')) : '') +
+    routineStatus(T('滴定管讀數 ' + vRead(r.fill) + ' mL', 'Burette reading ' + vRead(r.fill) + ' mL') +
+      (state.meter ? (r.E == null ? T('，電位不穩定', ', potential unstable') : T('，E = ' + fE(r.E) + ' V', ', E = ' + fE(r.E) + ' V')) : '') +
       T('，溶液' + colourName(r.f) + '。', ', solution ' + colourName(r.f) + '.'));
     emit('settle', data);
   }
@@ -1073,11 +1083,25 @@
     const brown = f.nMnO2 / V >= K.MNO2_SEEN;
     let s;
     if (c >= 3e-4) s = T('紫色', 'purple');
-    else if (c >= 4e-5) s = T('紫紅色', 'magenta');
+    else if (c >= MAGENTA_M) s = T('紫紅色', 'magenta');
     else if (c >= K.PINK_M) s = T('淡粉紅色', 'faint pink');
     else if (isFe(f.p.sys) && f.nP / V >= 0.01) s = T('淡黃色', 'pale yellow');
     else s = T('無色', 'colourless');
     return brown ? T('棕色混濁（', 'brown and cloudy (') + s + T('）', ')') : s;
+  }
+  function strongExcess(f) { return f.nA <= 0 && f.nMnO4 / K.vTot(f) >= MAGENTA_M; }
+  function pinkLabel(f) {
+    if (f.nA > 0) return T('暫時顯色', 'Transient colour');
+    if (strongExcess(f)) return T('已滴過終點', 'Past the end point');
+    return K.held(f) >= HOLD ? T('持續粉紅', 'Persistent pink') : T('粉紅待確認', 'Timing pink');
+  }
+  function pinkInstruction(f, recorded) {
+    if (!K.pink(f)) return '';
+    if (f.nA > 0) return T('暫時顯色，攪拌後會褪去。等顏色消失再加下一滴。', 'Transient colour fades as the flask is stirred. Wait for it to clear before adding another drop.');
+    if (strongExcess(f)) return T('整瓶已呈紫紅或紫色，滴定液過量。終點要取剛好維持 30 秒的淡粉紅色。', 'The whole flask is magenta or purple. Too much titrant was added. The end point is the first faint pink that persists for 30 s.');
+    if (recorded && K.held(f) >= HOLD) return T('本瓶終點已記錄，目前粉紅已持續 30 秒。', 'End point recorded for this flask. Pink has now persisted for 30 s.');
+    return K.held(f) >= HOLD ? T('粉紅已持續 30 秒，可以記錄終點。', 'Pink has persisted for 30 s. You can record the end point.')
+      : T('停止加液並繼續攪拌，觀察整瓶粉紅是否維持 30 秒。', 'Stop adding and keep stirring. Watch for pink throughout the flask for 30 s.');
   }
 
   // ======================= 圖：電位滴定曲線 =======================
@@ -1177,15 +1201,16 @@
     g.strokeStyle = LD.alpha(C.chem, 0.55);
     g.beginPath(); g.moveTo(x0, Math.round(Y(K.E_MN)) + 0.5); g.lineTo(x1, Math.round(Y(K.E_MN)) + 0.5); g.stroke();
     g.setLineDash([]);
-    graphRich(g, [{ t: 'E°(' }, { f: 'Fe^3+' }, { t: '/' }, { f: 'Fe^2+' }, { t: ') = 0.771 V' }], x1 - 6, Y(K.E_FE) - 5, C.neg, 'right');
-    graphRich(g, [{ t: 'E°(' }, { f: 'MnO4^−' }, { t: '/' }, { f: 'Mn^2+' }, { t: ') = 1.507 V' }], x1 - 6, Y(K.E_MN) - 5, C.chem, 'right');
+    graphRich(g, [{ t: 'E°(' }, { f: 'Fe^3+' }, { t: '/' }, { f: 'Fe^2+' }, { t: ') = 0.771 V' }], x1 - 6, Y(K.E_FE) - 5, C.neg, 'right');
+    graphRich(g, [{ t: 'E°(' }, { f: 'MnO4^−' }, { t: '/' }, { f: 'Mn^2+' }, { t: ') = 1.507 V' }], x1 - 6, Y(K.E_MN) - 5, C.chem, 'right');
     // 草酸：當量點前沒有可逆電對
     const Vnow = r.u / U;
     if (!isFe(p.sys)) {
       const xe = hid ? x1 : Math.min(x1, X(r.Veq));
       g.fillStyle = LD.alpha(C.muted, C.dark ? 0.1 : 0.08);
       g.fillRect(x0, y0, xe - x0, y1 - y0);
-      LD.haloText(g, T('當量點前：草酸／CO2 不是可逆電對，電位不穩定', 'Before equivalence: oxalic acid/CO2 is not a reversible couple, so the potential drifts'), x0 + 8, Y(1.05), C.muted, 'left', 'alphabetic', '11px ' + FF);
+      richText(g, [{ t: T('當量點前：草酸／', 'Before equivalence: oxalic acid/') }, { f: 'CO2' },
+        { t: T(' 不是可逆電對，電位不穩定', ' is not a reversible couple, so the potential drifts') }], x0 + 8, Y(1.05), C.muted, 11, 'left');
     }
     // 理論曲線
     if (state.theory && !hid) {
@@ -1218,7 +1243,7 @@
         g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
         g.beginPath(); g.moveTo(px, py); g.lineTo(px, y1); g.stroke(); g.restore();
         LD.ball(g, px, py, 4, C.sys[p.sys], { shadow: false });
-        pillGraph(g, T('半當量點 ' + fE(E) + ' V', 'half-equivalence ' + fE(E) + ' V'), px - 6, py + 26, C.text, 'right', x0, x1);
+        pillGraph(g, T('半當量點 ' + fE(E) + ' V', 'half-equivalence ' + fE(E) + ' V'), px - 6, py + 26, C.text, 'right', x0, x1);
       }
       if (state.theory || Vnow >= r.Veq) {
         const px = X(r.Veq);
@@ -1227,7 +1252,7 @@
           g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
           g.beginPath(); g.moveTo(px, Ep != null ? Y(Ep) : y0); g.lineTo(px, y1); g.stroke(); g.restore();
           if (Ep != null) LD.ball(g, px, Y(Ep), 4.8, C.sys[p.sys], { shadow: false });
-          const lab = Ep != null ? T('當量點 ' + r.Veq.toFixed(2) + ' mL・' + fE(Ep) + ' V', 'equivalence ' + r.Veq.toFixed(2) + ' mL, ' + fE(Ep) + ' V') : T('當量點 ' + r.Veq.toFixed(2) + ' mL', 'equivalence ' + r.Veq.toFixed(2) + ' mL');
+          const lab = Ep != null ? T('當量點 ' + r.Veq.toFixed(2) + ' mL・' + fE(Ep) + ' V', 'equivalence ' + r.Veq.toFixed(2) + ' mL, ' + fE(Ep) + ' V') : T('當量點 ' + r.Veq.toFixed(2) + ' mL', 'equivalence ' + r.Veq.toFixed(2) + ' mL');
           pillGraph(g, lab, px + 8, Ep != null ? Y(Ep) + 26 : y0 + 56, C.text, 'left', x0, x1);
         }
       }
@@ -1237,7 +1262,7 @@
       if (px <= x1) {
         g.strokeStyle = C.equi; g.lineWidth = 1.6;
         g.beginPath(); g.moveTo(px, y0); g.lineTo(px, y1); g.stroke();
-        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px + 5, y0 + 18, C.equi, 'left', x0, x1);
+        pillGraph(g, T('你的終點 ', 'your end point ') + vRead(r.endpoint * U) + ' mL', px + 5, y0 + 18, C.equi, 'left', x0, x1);
       }
     }
     // 座標軸
@@ -1312,12 +1337,12 @@
     let best = null, bd = 28;
     r.pts.forEach(function (q) { if (q.m && q.E != null) { const d = Math.abs(X(q.u / U) - hover.x); if (d < bd) { bd = d; best = q; } } });
     let v, E, lab;
-    if (best) { v = best.u / U; E = best.E; lab = 'V = ' + vRead(best.u) + ' mL' + T('・', ', ') + 'E = ' + fE(E) + ' V'; }
+    if (best) { v = best.u / U; E = best.E; lab = 'V = ' + vRead(best.u) + ' mL' + T('・', ', ') + 'E = ' + fE(E) + ' V'; }
     else if (state.theory && !mysteryHidden()) {
       v = Math.max(0, Math.min(G.xmax, (hover.x - G.x0) / (G.x1 - G.x0) * G.xmax));
       E = K.E_at(r.p, v);
       if (E == null) return;
-      lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL' + T('・', ', ') + 'E = ' + fE(E) + ' V';
+      lab = T('理論：', 'theory: ') + 'V = ' + v.toFixed(2) + ' mL' + T('・', ', ') + 'E = ' + fE(E) + ' V';
     } else return;
     const x = X(v), y = Y(E);
     g.strokeStyle = LD.alpha(C.text, 0.4); g.lineWidth = 1;
@@ -1342,55 +1367,85 @@
   }
   function renderReadouts() {
     const r = state.run, p = r.p, f = r.f, hid = mysteryHidden(), rows = [], V = K.vTot(f);
-    rows.push([T('滴定管讀數（上緣）', 'Burette reading (top edge)'), vRead(r.fill) + ' mL', 'big']);
-    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
-    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), V.toFixed(1) + ' mL']);
-    rows.push([T('溫度（加熱板）', 'Temperature (hot plate)'), p.T.toFixed(0) + ' °C']);
+    rows.push([T('滴定管讀數（上緣）', 'Burette reading (top edge)'), vRead(r.fill) + ' mL', 'big']);
+    if (r.out !== r.fill) rows.push([T('這一瓶累計流出', 'Run out into this flask'), vRead(r.out) + ' mL']);
+    rows.push([T('錐形瓶中的溶液', 'Solution in the flask'), V.toFixed(1) + ' mL']);
+    rows.push([T('溫度（加熱板）', 'Temperature (hot plate)'), p.T.toFixed(0) + ' °C']);
     if (state.meter) {
-      rows.push([T('電位 E（鉑電極）', 'Potential E (Pt electrode)'), r.E == null ? T('不穩定', 'unstable') + '<small>' + T('草酸還沒反應完', 'oxalic acid still left') + '</small>' : fE(r.E) + ' V', 'big']);
+      rows.push([T('電位 E（鉑電極）', 'Potential E (Pt electrode)'), r.E == null ? T('不穩定', 'unstable') + '<small>' + T('草酸還沒反應完', 'oxalic acid still left') + '</small>' : fE(r.E) + ' V', 'big']);
     } else {
       rows.push([T('電位 E', 'Potential E'), '—<small>' + T('電極不在瓶中', 'electrode not in the flask') + '</small>']);
     }
-    rows.push(['[H<sup>+</sup>]', sciHTML(K.hFree(f), 2) + ' M']);
+    rows.push(['[H<sup>+</sup>]', sciHTML(K.hFree(f), 2) + ' M']);
     rows.push([T('溶液的顏色', 'Colour of the solution'), colourName(f)]);
+    const instruction = pinkInstruction(f, r.endpoint != null);
+    if ($('pinkStatus').textContent !== instruction) $('pinkStatus').textContent = instruction;
     if (K.pink(f) && r.u > 0) {
       const hd = K.held(f);
-      rows.push([T(f.nA <= 0 ? '粉紅色已維持' : '紫色已持續', f.nA <= 0 ? 'Pink has lasted' : 'Purple has lasted'), (hd >= 600 ? '> 600' : hd.toFixed(1)) + ' s', f.nA <= 0 && hd >= HOLD ? 'good' : '']);
+      rows.push([pinkLabel(f), (hd >= 600 ? '> 600' : hd.toFixed(1)) + ' s', strongExcess(f) ? 'warn' : f.nA <= 0 && hd >= HOLD ? 'good' : '']);
+    }
+    if (!isFe(p.sys)) {
+      const last = f.fades[f.fades.length - 1];
+      rows.push([T('第一次／最近一次褪色', 'First / latest fade'), (r.firstDur == null ? '—' : r.firstDur.toFixed(1) + ' s') + ' / ' + (last ? last.dur.toFixed(1) + ' s' : '—')]);
+    }
+    if (r.sample) {
+      const used = r.sample.flasks;
+      rows.push([T('本組已用瓶數（標定／未知鐵）', 'Flasks used (standard / unknown iron)'), used.std + ' / ' + used.mx]);
+      rows.push([p.sys === 'std' ? T('目前標定瓶', 'Current standard flask') : T('目前未知鐵瓶', 'Current unknown iron flask'),
+        '#' + (used[p.sys] + (r.counted ? 0 : 1)) + (r.counted ? '' : '<small class="flask-note">' + T('加第一滴才計瓶', 'Counts on first drop') + '</small>')]);
     }
     if (!hid) {
       const red = isFe(p.sys) ? T('Fe<sup>2+</sup> 已氧化', 'Fe<sup>2+</sup> oxidised') : T('草酸已氧化', 'Oxalic acid oxidised');
-      rows.push([red, Math.min(100, (1 - f.nA / p.nA) * 100).toFixed(1) + '%']);
+      rows.push([red, Math.min(100, (1 - f.nA / p.nA) * 100).toFixed(1) + ' %']);
       const ex = f.nMnO4 / p.Cb;
-      if (f.nA <= 0 && ex > 0) rows.push([T('過量的 KMnO<sub>4</sub>', 'Excess KMnO<sub>4</sub>'), ex.toFixed(2) + ' mL']);
+      if (f.nA <= 0 && ex > 0) rows.push([T('過量的 KMnO<sub>4</sub>', 'Excess KMnO<sub>4</sub>'), ex.toFixed(2) + ' mL']);
     }
     const red2 = f.nMnO2 + f.nMn2;
-    if (f.nMnO2 / V >= K.MNO2_SEEN) rows.push([T('還原成 MnO<sub>2</sub> 的比例', 'Reduced only to MnO<sub>2</sub>'), (f.nMnO2 / red2 * 100).toFixed(0) + '%', 'warn']);
-    if (!isFe(p.sys) && f.dec > 1e-9) rows.push([T('分解掉的草酸', 'Oxalic acid decomposed'), (f.dec / p.nA * 100).toFixed(1) + '%', 'warn']);
+    if (f.nMnO2 / V >= K.MNO2_SEEN) rows.push([T('還原成 MnO<sub>2</sub> 的比例', 'Reduced only to MnO<sub>2</sub>'), (f.nMnO2 / red2 * 100).toFixed(0) + ' %', 'warn']);
+    if (!isFe(p.sys) && f.dec > 1e-9) rows.push([T('分解掉的草酸', 'Oxalic acid decomposed'), (f.dec / p.nA * 100).toFixed(1) + ' %', 'warn']);
     $('readout').innerHTML = dl(rows);
+  }
+  function renderSampleReadings() {
+    const r = state.run;
+    if (!r.sample) return;
+    const runs = [r].concat(state.S.archive);
+    const rows = [];
+    ['std', 'mx'].forEach(function (sys) {
+      const measured = runs.find(function (v) { return v.sample === r.sample && v.p.sys === sys && v.endpoint != null; });
+      const name = sys === 'std' ? T('草酸標定', 'Oxalic acid standard') : T('未知亞鐵', 'Unknown iron(II)');
+      const count = r.sample.flasks[sys];
+      const label = name + T('終點', ' end point') + '<small>' + T('已用 ' + count + ' 瓶', 'Flasks used: ' + count) + '</small>';
+      rows.push([label, measured ? measured.endpoint.toFixed(3) + ' mL' : T('尚未記錄', 'Not recorded')]);
+      if (measured) {
+        rows.push(sys === 'std' ? [T('標定用草酸晶體質量', 'Mass of oxalic acid crystals'), measured.p.mass.toFixed(4) + ' g']
+          : [T('未知亞鐵取樣體積', 'Volume of unknown iron aliquot'), measured.p.Va.toFixed(2) + ' mL']);
+      }
+    });
+    $('sampleReadings').innerHTML = dl(rows);
   }
   function renderAnalysis() {
     const r = state.run, p = r.p, hid = mysteryHidden(), rows = [], fe = isFe(p.sys);
     rows.push([T('莫耳數比', 'Mole ratio') + '<small>' + (fe ? 'n(MnO<sub>4</sub><sup>−</sup>) : n(Fe<sup>2+</sup>)' : 'n(MnO<sub>4</sub><sup>−</sup>) : n(H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>)') + '</small>', fe ? '1 : 5' : '2 : 5']);
-    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>' + (fe ? 'V<sub>eq</sub> = c<sub>Fe</sub>V<sub>Fe</sub> / 5c<sub>Mn</sub>' : 'V<sub>eq</sub> = 2n<sub>ox</sub> / 5c<sub>Mn</sub>') + '</small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
+    rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>' + (fe ? 'V<sub>eq</sub> = c<sub>Fe</sub>V<sub>Fe</sub> / 5c<sub>Mn</sub>' : 'V<sub>eq</sub> = 2n<sub>ox</sub> / 5c<sub>Mn</sub>') + '</small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
     if (fe) {
-      rows.push([T('半當量點的電位', 'E at half-equivalence') + '<small>= E°(Fe<sup>3+</sup>/Fe<sup>2+</sup>)</small>', hid ? '？' : fE(K.E_at(p, r.Veq / 2)) + ' V']);
-      rows.push([T('當量點的電位（加權平均）', 'E at equivalence (weighted mean)') + '<small>(E°<sub>Fe</sub> + 5E°′<sub>Mn</sub>) / 6</small>', hid ? '？' : fE(r.Eeq) + ' V']);
+      rows.push([T('半當量點的電位', 'E at half-equivalence') + '<small>= E°(Fe<sup>3+</sup>/Fe<sup>2+</sup>)</small>', hid ? '？' : fE(K.E_at(p, r.Veq / 2)) + ' V']);
+      rows.push([T('當量點的電位（加權平均）', 'E at equivalence (weighted mean)') + '<small>(E°<sub>Fe</sub> + 5E°′<sub>Mn</sub>) / 6</small>', hid ? '？' : fE(r.Eeq) + ' V']);
     }
-    if (p.sys === 'std') rows.push([T('草酸', 'Oxalic acid') + '<small>n = m / 126.07</small>', (p.nA).toFixed(4) + ' mmol']);
+    if (p.sys === 'std') rows.push([T('草酸', 'Oxalic acid') + '<small>n = m / 126.07</small>', (p.nA).toFixed(4) + ' mmol']);
     if (r.endpoint != null) {
-      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
+      rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
       if (!hid) {
         const err = r.endpoint - r.Veq;
-        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
+        rows.push([T('終點 − 當量點', 'End point − equivalence'), signed(err, 3) + ' mL', Math.abs(err) <= 0.1 + 1e-9 ? 'good' : 'warn']);
       } else {
         rows.push([T('計算', 'Work it out') + '<small>' + (p.sys === 'std' ? 'c<sub>Mn</sub> = 2n<sub>ox</sub> / 5V' : 'c<sub>Fe</sub> = 5c<sub>Mn</sub>V / V<sub>Fe</sub>') + '</small>', T('用你的終點', 'use your end point')]);
       }
     } else rows.push([T('你記錄的終點', 'Your end point'), T('還沒記錄', 'not yet')]);
     const ms = maxSlope(r);
-    rows.push([T('數據中斜率最大處', 'Steepest point in your data') + '<small>' + T('相鄰兩點 ΔE/ΔV 最大', 'largest ΔE/ΔV between neighbours') + '</small>', ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
+    rows.push([T('數據中斜率最大處', 'Steepest point in your data') + '<small>' + T('相鄰兩點 ΔE/ΔV 最大', 'largest ΔE/ΔV between neighbours') + '</small>', ms ? 'V ≈ ' + ms.v.toFixed(3) + ' mL' : '—']);
     if ((p.sys === 'std' || p.sys === 'mx') && state.S.sample.revealed) {
-      rows.push([T('KMnO<sub>4</sub> 的真正濃度', 'True c(KMnO<sub>4</sub>)'), state.S.sample.Cb.toFixed(4) + ' M', 'good']);
-      rows.push([T('未知 Fe<sup>2+</sup> 的真正濃度', 'True c(Fe<sup>2+</sup>)'), state.S.sample.CFe.toFixed(3) + ' M', 'good']);
+      rows.push([T('KMnO<sub>4</sub> 的真正濃度', 'True c(KMnO<sub>4</sub>)'), state.S.sample.Cb.toFixed(4) + ' M', 'good']);
+      rows.push([T('未知 Fe<sup>2+</sup> 的真正濃度', 'True c(Fe<sup>2+</sup>)'), state.S.sample.CFe.toFixed(3) + ' M', 'good']);
     }
     $('anaOut').innerHTML = dl(rows);
   }
@@ -1413,13 +1468,13 @@
     if (latestRow) wrap.scrollTop = wrap.scrollHeight;
   }
   function sysLabelHTML(p) {
-    if (p.sys === 'std') return T('草酸 ', 'oxalic acid ') + p.mass.toFixed(4) + ' g';
+    if (p.sys === 'std') return T('草酸 ', 'oxalic acid ') + p.mass.toFixed(4) + ' g';
     if (p.sys === 'mx') return T('未知 Fe<sup>2+</sup>', 'unknown Fe<sup>2+</sup>');
-    return (p.sys === 'fe' ? 'Fe<sup>2+</sup> ' : 'H<sub>2</sub>C<sub>2</sub>O<sub>4</sub> ') + conc(p.Ca) + ' M';
+    return (p.sys === 'fe' ? 'Fe<sup>2+</sup> ' : 'H<sub>2</sub>C<sub>2</sub>O<sub>4</sub> ') + conc(p.Ca) + ' M';
   }
   function runLabel(r, current) {
     const p = r.p;
-    return (current ? (r.no ? T('目前（#' + r.no + '）：', 'Now (#' + r.no + '): ') : T('目前：', 'Now: ')) : '#' + r.no + ' ') + sysLabelHTML(p) + T('＋硫酸 ', ' + acid ') + p.Vacid.toFixed(1) + ' mL' + T('・', ', ') + p.T.toFixed(0) + ' °C';
+    return (current ? (r.no ? T('目前（#' + r.no + '）：', 'Now (#' + r.no + '): ') : T('目前：', 'Now: ')) : '#' + r.no + ' ') + sysLabelHTML(p) + T('＋硫酸 ', ' + acid ') + p.Vacid.toFixed(1) + ' mL' + T('・', ', ') + p.T.toFixed(0) + ' °C';
   }
   function renderLegend() {
     const items = [], r = state.run, col = C.sys[r.p.sys];
@@ -1447,9 +1502,9 @@
     };
     const info = {
       fe: eq.fe + '<br>' + T('反應瞬間完成；溶液由淺綠（Fe<sup>2+</sup>）漸漸變成淡黃（Fe<sup>3+</sup>）。', 'Instant reaction; the solution goes from pale green (Fe<sup>2+</sup>) to pale yellow (Fe<sup>3+</sup>).'),
-      ox: eq.ox + '<br>' + T('室溫下很慢，要加熱到 60–70 °C；生成的 Mn<sup>2+</sup> 會催化反應。', 'Slow at room temperature: heat to 60–70 °C. The Mn<sup>2+</sup> produced catalyses the reaction.'),
-      std: eq.ox + '<br>' + T('精稱草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O（126.07 g/mol），求出 KMnO<sub>4</sub> 的濃度；答案欄在電位滴定曲線旁（手機在下方）。', 'Weigh oxalic acid dihydrate (126.07 g/mol) and work out c(KMnO<sub>4</sub>); the answer box is next to the titration curve (below it on a phone).'),
-      mx: eq.fe + '<br>' + T('25.00 mL 濃度未知的 Fe<sup>2+</sup>，用同一瓶 KMnO<sub>4</sub>（先標定）；答案欄在電位滴定曲線旁。', '25.00 mL of iron(II) of unknown concentration, with the same KMnO<sub>4</sub> (standardise it first); the answer box is next to the titration curve.')
+      ox: eq.ox + '<br>' + T('室溫下很慢，要加熱到 60–70 °C；生成的 Mn<sup>2+</sup> 會催化反應。', 'Slow at room temperature: heat to 60–70 °C. The Mn<sup>2+</sup> produced catalyses the reaction.'),
+      std: eq.ox + '<br>' + T('精稱草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O（126.07 g/mol），求出 KMnO<sub>4</sub> 的濃度；答案欄在電位滴定曲線旁（手機在下方）。', 'Weigh oxalic acid dihydrate (126.07 g/mol) and work out c(KMnO<sub>4</sub>); the answer box is next to the titration curve (below it on a phone).'),
+      mx: eq.fe + '<br>' + T('25.00 mL 濃度未知的 Fe<sup>2+</sup>，用同一瓶 KMnO<sub>4</sub>（先標定）；答案欄在電位滴定曲線旁。', '25.00 mL of iron(II) of unknown concentration, with the same KMnO<sub>4</sub> (standardise it first); the answer box is next to the titration curve.')
     }[sys];
     $('sysInfo').innerHTML = info;
     $('caRow').hidden = sys === 'std' || sys === 'mx';
@@ -1467,7 +1522,7 @@
     th.parentElement.title = th.disabled ? T('KMnO4 的濃度揭曉後才能看理論曲線', 'Available after the answers are revealed') : '';
   }
   function renderAll() {
-    renderReadouts(); renderAnalysis(); renderTable(); renderLegend(); renderSysInfo(); updateButtons();
+    renderReadouts(); renderAnalysis(); renderTable(); renderLegend(); renderSysInfo(); renderSampleReadings(); updateButtons();
     drawGraph(); kick();
   }
   function updateButtons() {
@@ -1478,7 +1533,18 @@
     tb.textContent = state.tap ? T('關閉活栓', 'Close stopcock') : T('打開活栓', 'Open stopcock');
     $('ffBtn').setAttribute('aria-pressed', String(state.ff));
     $('ffBtn').textContent = state.ff ? T('快轉等待中（按一下停止）', 'Fast-forward on (tap to stop)') : T('快轉等待', 'Fast-forward');
-    ['drop', 'half', 'tap'].forEach(function (id) { $(id).disabled = state.ff; });
+    $('ffHint').hidden = !state.ff;
+    ['drop', 'half', 'tap'].forEach(function (id) {
+      const button = $(id);
+      button.disabled = state.ff;
+      if (state.ff) {
+        button.title = $('ffHint').textContent;
+        button.setAttribute('aria-describedby', 'ffHint');
+      } else {
+        button.removeAttribute('title');
+        button.removeAttribute('aria-describedby');
+      }
+    });
     $('endBtn').disabled = r.endpoint != null;
     $('endBtn').title = r.endpoint != null ? T('這一瓶的終點已經記錄了；要重做請按「換一瓶」', 'The end point of this flask is recorded; press “New flask” to repeat') : '';
   }
@@ -1487,7 +1553,7 @@
   let holdUntil = 0;
   function showStatus(msg, warn) {
     const el = $('status');
-    el.textContent = msg;
+    $('statusMsg').innerHTML = msg;
     el.classList.toggle('warn', !!warn);
   }
   function setStatus(msg, warn) { showStatus(msg, warn); holdUntil = performance.now() + 3500; }
@@ -1544,13 +1610,13 @@
     state.Cb = clamp(val(cbEl), 0.001, 0.1);
     state.T = clamp(Math.round(val(tempEl)), 20, 95);
     state.rate = clamp(val(rateEl), 0.1, 2);
-    $('cao').textContent = conc(state.Ca) + ' M';
-    $('masso').textContent = state.mass.toFixed(4) + ' g';
-    $('vao').textContent = state.Va.toFixed(2) + ' mL';
-    $('vacido').textContent = state.Vacid.toFixed(1) + ' mL';
-    $('cbo').textContent = conc(state.Cb) + ' M';
-    $('tempo').textContent = state.T.toFixed(0) + ' °C';
-    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
+    $('cao').textContent = conc(state.Ca) + ' M';
+    $('masso').textContent = state.mass.toFixed(4) + ' g';
+    $('vao').textContent = state.Va.toFixed(2) + ' mL';
+    $('vacido').textContent = state.Vacid.toFixed(1) + ' mL';
+    $('cbo').textContent = conc(state.Cb) + ' M';
+    $('tempo').textContent = state.T.toFixed(0) + ' °C';
+    $('rateo').textContent = state.rate.toFixed(2) + ' mL/s';
   }
   function runOpts() {
     return { sys: state.sys, Ca: state.Ca, Va: state.Va, Vacid: state.Vacid, Cb: state.Cb, T: state.T, mass: state.mass, meter: state.meter };
@@ -1575,11 +1641,11 @@
   }
   function freshFlaskNote() {
     const r = state.run, p = r.p, room = VT_MAX - p.Va - p.Vacid, hid = mysteryHidden();
-    if (!hid && r.Veq > room) return T('注意：當量點需要的 KMnO4 超過錐形瓶的容量，到不了當量點。', 'Note: the flask cannot hold enough KMnO4 to reach the equivalence point.');
-    if (!hid && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
+    if (!hid && r.Veq > room) return T('注意：當量點需要的 KMnO<sub>4</sub> 超過錐形瓶的容量，到不了當量點。', 'Note: the flask cannot hold enough KMnO<sub>4</sub> to reach the equivalence point.');
+    if (!hid && r.Veq > K.BURETTE_ML) return T('當量點需要 ' + r.Veq.toFixed(2) + ' mL，超過滴定管的 50 mL：中途要按「補充滴定液」。', 'The equivalence point needs ' + r.Veq.toFixed(2) + ' mL, more than the 50 mL burette holds: refill it on the way.');
     if (p.Vacid === 0) return T('沒有加硫酸：看看會發生什麼事。', 'No sulfuric acid: see what happens.');
-    if (!isFe(p.sys) && p.T > K.T_DEC) return T('超過 85 °C：草酸會慢慢分解，結果會偏低。', 'Above 85 °C oxalic acid slowly decomposes and the result comes out low.');
-    if (!isFe(p.sys) && p.T < 50) return T('提醒：草酸要加熱到 60–70 °C 才反應得夠快。', 'Tip: oxalic acid needs 60–70 °C to react fast enough.');
+    if (!isFe(p.sys) && p.T > K.T_DEC) return T('超過 85 °C：草酸會慢慢分解，結果會偏低。', 'Above 85 °C oxalic acid slowly decomposes and the result comes out low.');
+    if (!isFe(p.sys) && p.T < 50) return T('提醒：草酸要加熱到 60–70 °C 才反應得夠快。', 'Tip: oxalic acid needs 60–70 °C to react fast enough.');
     return '';
   }
   [caEl, massEl, vaEl, vacidEl, cbEl, tempEl].forEach(function (el) {
@@ -1616,10 +1682,10 @@
       renderAll();
       const note = freshFlaskNote();
       const tips = {
-        fe: T('Fe2+＋KMnO4：每一滴立刻褪色，多出來的第一滴讓整瓶變粉紅。', 'Fe2+ + KMnO4: every drop loses its colour at once, and the first one in excess turns the flask pink.'),
-        ox: T('草酸＋KMnO4：加熱板調到 65 °C 了。注意第一滴褪色要多久，之後又多快。', 'Oxalic acid + KMnO4: the hot plate is at 65 °C. Watch how long the first drop takes to fade, and how fast later ones go.'),
-        std: T('標定：精稱的草酸晶體溶在水中，加硫酸、加熱，用濃度未知的 KMnO4 滴定。', 'Standardisation: weighed oxalic acid dissolved in water, acidified and heated, titrated with the KMnO4 of unknown concentration.'),
-        mx: T('未知 Fe2+：用同一瓶 KMnO4 滴定 25.00 mL 的未知樣品。', 'Unknown Fe2+: titrate 25.00 mL of the unknown with the same KMnO4.')
+        fe: T('Fe<sup>2+</sup>＋KMnO<sub>4</sub>：每一滴立刻褪色，多出來的第一滴讓整瓶變粉紅。', 'Fe<sup>2+</sup> + KMnO<sub>4</sub>: every drop loses its colour at once, and the first one in excess turns the flask pink.'),
+        ox: T('草酸＋KMnO<sub>4</sub>：加熱板調到 65 °C 了。注意第一滴褪色要多久，之後又多快。', 'Oxalic acid + KMnO<sub>4</sub>: the hot plate is at 65 °C. Watch how long the first drop takes to fade, and how fast later ones go.'),
+        std: T('標定：精稱的草酸晶體溶在水中，加硫酸、加熱，用濃度未知的 KMnO<sub>4</sub> 滴定。', 'Standardisation: weighed oxalic acid dissolved in water, acidified and heated, titrated with the KMnO<sub>4</sub> of unknown concentration.'),
+        mx: T('未知 Fe<sup>2+</sup>：用同一瓶 KMnO<sub>4</sub> 滴定 25.00 mL 的未知樣品。', 'Unknown Fe<sup>2+</sup>: titrate 25.00 mL of the unknown with the same KMnO<sub>4</sub>.')
       };
       setStatus(note && /容量|hold enough/.test(note) ? note : tips[sys], false);
     });
@@ -1662,8 +1728,8 @@
       closeTap();
       const air = state.drops.reduce(function (s, d) { return s + d.n; }, 0) / U;
       setStatus(air >= 0.05
-        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
-        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
+        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
+        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
       kick(); return;
     }
     if (K.BURETTE_UNITS - state.run.fill <= 0) { emptyNotice(); return; }
@@ -1671,21 +1737,21 @@
     sndClick();
     updateButtons();
     setStatus(isFe(state.run.p.sys)
-      ? T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。快到終點前記得關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it before the end point and go drop by drop.')
-      : T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。草酸一開始反應很慢，太快加紫色會積起來。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Oxalic acid reacts slowly at first: add too fast and the purple builds up.'));
+      ? T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。快到終點前記得關上，改成一滴一滴加。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Close it before the end point and go drop by drop.')
+      : T('活栓打開了，流速 ' + state.rate.toFixed(2) + ' mL/s。草酸一開始反應很慢，太快加紫色會積起來。', 'Stopcock open at ' + state.rate.toFixed(2) + ' mL/s. Oxalic acid reacts slowly at first: add too fast and the purple builds up.'));
     kick();
   });
   $('ffBtn').addEventListener('click', function () {
     const on = !state.ff;
-    if (on && state.run.u === 0) { setStatus(T('還沒有加入 KMnO4，沒有東西要等。', 'No KMnO4 added yet: nothing to wait for.')); return; }
+    if (on && state.run.u === 0) { setStatus(T('還沒有加入 KMnO<sub>4</sub>，沒有東西要等。', 'No KMnO<sub>4</sub> added yet: nothing to wait for.')); return; }
     setFF(on);
     sndClick();
-    if (on) setStatus(T('快轉等待：時間快 20 倍（活栓關上，暫時不能加液）。再按一下停止。', 'Fast-forward: time runs 20 times faster (stopcock closed, no titrant can be added). Tap again to stop.'));
+    if (on) setStatus(T('快轉等待：時間快 20 倍（活栓關上，暫時不能加液）。再按一下停止。', 'Fast-forward: time runs 20 times faster (stopcock closed, no titrant can be added). Tap again to stop.'));
   });
   $('endBtn').addEventListener('click', function () {
     const r = state.run;
     if (r.endpoint != null) return;
-    if (r.out === 0) { setStatus(T('還沒有加入 KMnO4。', 'No KMnO4 has been added yet.'), true); return; }
+    if (r.out === 0) { setStatus(T('還沒有加入 KMnO<sub>4</sub>。', 'No KMnO<sub>4</sub> has been added yet.'), true); return; }
     closeTap();
     if (state.ff) setFF(false);
     // 空中的液滴先落下（終點體積是滴定管流出的總量）
@@ -1695,20 +1761,20 @@
     sndRecord();
     renderAll();
     const hid = mysteryHidden();
-    setStatus(T('記錄終點：' + vRead(r.out) + ' mL', 'End point recorded: ' + vRead(r.out) + ' mL') +
+    setStatus(T('記錄終點：' + vRead(r.out) + ' mL', 'End point recorded: ' + vRead(r.out) + ' mL') +
       (hid ? T('。用它算出濃度，再填進答案欄。', '. Use it to work out the concentration and fill in the answer box.') :
-        T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(d.err, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(d.err, 3) + ' mL.')) +
-      (!d.pink ? T('（溶液還沒有變粉紅色）', ' (the solution is not pink yet)') : (d.held < HOLD ? T('（粉紅色還沒維持 30 秒）', ' (the pink has not lasted 30 s yet)') : '')));
+        T('；當量點 ' + r.Veq.toFixed(2) + ' mL，相差 ' + signed(d.err, 3) + ' mL。', '; equivalence point ' + r.Veq.toFixed(2) + ' mL, difference ' + signed(d.err, 3) + ' mL.')) +
+      (!d.pink ? T('（溶液還沒有變粉紅色）', ' (the solution is not pink yet)') : (d.held < HOLD ? T('（粉紅色還沒維持 30 秒）', ' (the pink has not lasted 30 s yet)') : '')));
     emit('endpoint', d);
   });
   $('refill').addEventListener('click', function () {
     const r = state.run;
-    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
+    if (r.fill === 0) { setStatus(T('滴定管已經是滿的（0.00 mL）。', 'The burette is already full (0.00 mL).')); return; }
     closeTap();
     r.fill = 0;
     sndRefill();
     renderAll();
-    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
+    setStatus(T('滴定管重新裝滿、調到 0.00 mL。終點的體積是每一管流出的量加起來（這裡自動累計）。', 'Burette refilled to 0.00 mL. The end-point volume is the sum of what each filling delivered (added up automatically here).'));
   });
   $('newFlask').addEventListener('click', function () {
     const had = state.run.u > 0;
@@ -1744,9 +1810,11 @@
     if (!okMn && !okFe) { $('mysOut').innerHTML = T('請填入 KMnO<sub>4</sub> 或 Fe<sup>2+</sup> 的濃度（M）。', 'Enter a concentration (M) for KMnO<sub>4</sub> or Fe<sup>2+</sup>.'); return; }
     const d = K.answer(state.S, okMn ? cMn : NaN, okFe ? cFe : NaN);
     const parts = [];
-    if (okMn) parts.push(Math.abs(d.errMn) <= 0.005 ? '<span class="ok">' + T('KMnO<sub>4</sub>：誤差在 0.5% 以內 ✓', 'KMnO<sub>4</sub>: within 0.5% ✓') + '</span>' : '<span class="no">' + T('KMnO<sub>4</sub>：誤差超過 0.5%', 'KMnO<sub>4</sub>: more than 0.5% off') + '</span>');
-    if (okFe) parts.push(Math.abs(d.errFe) <= 0.01 ? '<span class="ok">' + T('Fe<sup>2+</sup>：誤差在 1% 以內 ✓', 'Fe<sup>2+</sup>: within 1% ✓') + '</span>' : '<span class="no">' + T('Fe<sup>2+</sup>：誤差超過 1%', 'Fe<sup>2+</sup>: more than 1% off') + '</span>');
-    parts.push(T('這組樣品：標定用了 ' + s.flasks.std + ' 瓶，未知 Fe<sup>2+</sup> 用了 ' + s.flasks.mx + ' 瓶。', 'This set: ' + s.flasks.std + ' standardisation flask' + (s.flasks.std === 1 ? '' : 's') + ', ' + s.flasks.mx + ' unknown iron(II) flask' + (s.flasks.mx === 1 ? '' : 's') + '.') + (s.revealed ? T('（已揭曉，不算任務）', ' (revealed: no missions)') : ''));
+    if (okMn) parts.push(Math.abs(d.errMn) <= 0.005 ? '<span class="ok">' + T('KMnO<sub>4</sub>：誤差在 0.5 % 以內 ✓', 'KMnO<sub>4</sub>: within 0.5 % ✓') + '</span>' : '<span class="no">' + T('KMnO<sub>4</sub>：誤差超過 0.5 %', 'KMnO<sub>4</sub>: more than 0.5 % off') + '</span>');
+    if (okFe) parts.push(Math.abs(d.errFe) <= 0.01 ? '<span class="ok">' + T('Fe<sup>2+</sup>：誤差在 1 % 以內 ✓', 'Fe<sup>2+</sup>: within 1 % ✓') + '</span>' : '<span class="no">' + T('Fe<sup>2+</sup>：誤差超過 1 %', 'Fe<sup>2+</sup>: more than 1 % off') + '</span>');
+    const errors = [d.errMn, d.errFe].map(function (e) { return Number.isFinite(e) ? (Math.abs(e) * 100).toPrecision(4) + ' %' : '—'; });
+    parts.push(T('本次相對誤差（標定／未知鐵）', 'Relative errors (standard / unknown iron)') + ' ' + errors.join(' / '));
+    parts.push(T('兩瓶定案：兩欄須同時在 0.3 % 以內，各最多用一瓶。', 'Two-flask target: both errors at most 0.3 % in the same check, at most one flask each.') + (s.revealed ? T('（本組已揭曉）', ' (this set has been revealed)') : ''));
     $('mysOut').innerHTML = parts.join('<br>');
     sndCheck((!okMn || Math.abs(d.errMn) <= 0.005) && (!okFe || Math.abs(d.errFe) <= 0.01));
     emit('answer', d);
@@ -1755,14 +1823,14 @@
     const s = state.S.sample;
     s.revealed = true;
     renderAll();
-    $('mysOut').innerHTML = T('答案：c(KMnO<sub>4</sub>) = ', 'Answer: c(KMnO<sub>4</sub>) = ') + s.Cb.toFixed(4) + ' M' + T('、c(Fe<sup>2+</sup>) = ', ', c(Fe<sup>2+</sup>) = ') + s.CFe.toFixed(3) + ' M' +
+    $('mysOut').innerHTML = T('答案：c(KMnO<sub>4</sub>) = ', 'Answer: c(KMnO<sub>4</sub>) = ') + s.Cb.toFixed(4) + ' M' + T('、c(Fe<sup>2+</sup>) = ', ', c(Fe<sup>2+</sup>) = ') + s.CFe.toFixed(3) + ' M' +
       T('。圖上已標出當量點。', '. The equivalence point is now marked on the graph.');
   });
   $('newMys').addEventListener('click', function () {
     K.newSample(state.S);
     if (state.sys === 'std' || state.sys === 'mx') newRun();
     $('ansMn').value = ''; $('ansFe').value = '';
-    $('mysOut').textContent = T('換了一組新的未知樣品（第 ' + state.S.sample.no + ' 組）：KMnO4 和 Fe2+ 的濃度都換了。', 'A new set of unknowns (set ' + state.S.sample.no + '): both the KMnO4 and the Fe2+ concentrations have changed.');
+    $('mysOut').innerHTML = T('換了一組新的未知樣品（第 ' + state.S.sample.no + ' 組）：KMnO<sub>4</sub> 和 Fe<sup>2+</sup> 的濃度都換了。', 'A new set of unknowns (set ' + state.S.sample.no + '): both the KMnO<sub>4</sub> and the Fe<sup>2+</sup> concentrations have changed.');
     renderAll();
   });
   ['ansMn', 'ansFe'].forEach(function (id) {
@@ -1847,7 +1915,7 @@
   observe(gcv, resizeGraph);
   resizeBench(); resizeGraph();
   renderAll();
-  setStatus(T('預設：0.100 M Fe2+ 25.00 mL 加 10 mL 硫酸，滴定管裝 0.0200 M KMnO4。先打開活栓快速加，接近 25 mL 時改成一滴一滴。', 'Default: 25.00 mL of 0.100 M Fe2+ with 10 mL of sulfuric acid, 0.0200 M KMnO4 in the burette. Open the stopcock to add quickly, then go drop by drop near 25 mL.'));
+  setStatus(T('預設：0.100 M Fe<sup>2+</sup> 25.00 mL 加 10 mL 硫酸，滴定管裝 0.0200 M KMnO<sub>4</sub>。先打開活栓快速加，接近 25 mL 時改成一滴一滴。', 'Default: 25.00 mL of 0.100 M Fe<sup>2+</sup> with 10 mL of sulfuric acid, 0.0200 M KMnO<sub>4</sub> in the burette. Open the stopcock to add quickly, then go drop by drop near 25 mL.'));
   drawBench();
   kick();
 })();

@@ -26,55 +26,55 @@
     {
       id: 'phase-diagram-2', level: 2,
       title: { zh: '一大氣壓的沸點', en: 'Boiling at one atmosphere' },
-      desc: { zh: '在 1 atm（誤差 2% 內）下等壓加熱，讓水沸騰。', en: 'Heat water at 1 atm (within 2%) at constant pressure until it boils.' },
+      desc: { zh: '在 1 atm（誤差 2 % 內）下等壓加熱，讓水沸騰。', en: 'Heat water at 1 atm (within 2 %) at constant pressure until it boils.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'boil' && d.mode === 'heat' && near1(d.P, 0.02); }
     },
     {
       id: 'phase-diagram-3', level: 2,
       title: { zh: '乾冰不會濕', en: 'Dry ice stays dry' },
-      desc: { zh: '在 1 atm（誤差 5% 內）下等壓加熱固態二氧化碳，看它直接昇華成氣體。', en: 'Heat solid carbon dioxide at 1 atm (within 5%) at constant pressure and watch it sublime straight into a gas.' },
+      desc: { zh: '在 1 atm（誤差 5 % 內）下等壓加熱固態二氧化碳，看它直接昇華成氣體。', en: 'Heat solid carbon dioxide at 1 atm (within 5 %) at constant pressure and watch it sublime straight into a gas.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'co2' && d.kind === 'sublime' && d.mode === 'heat' && near1(d.P, 0.05); }
     },
     {
       id: 'phase-diagram-4', level: 3,
       title: { zh: '高山上煮飯', en: 'Cooking on a mountain' },
-      desc: { zh: '等壓加熱，讓水在 90 °C 以下就沸騰。', en: 'Heat water at constant pressure so that it boils below 90 °C.' },
+      desc: { zh: '等壓加熱，讓水在 90 °C 以下就沸騰。', en: 'Heat water at constant pressure so that it boils below 90 °C.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'boil' && d.mode === 'heat' && d.T <= 363.15; }
     },
     {
       id: 'phase-diagram-5', level: 3,
       title: { zh: '壓力鍋', en: 'Pressure cooker' },
-      desc: { zh: '等壓加熱，讓水到 120 °C 以上才沸騰。', en: 'Heat water at constant pressure so that it does not boil until 120 °C or more.' },
+      desc: { zh: '等壓加熱，讓水到 120 °C 以上才沸騰。', en: 'Heat water at constant pressure so that it does not boil until 120 °C or more.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'boil' && d.mode === 'heat' && d.T >= 393.15; }
     },
     {
       id: 'phase-diagram-6', level: 4,
       title: { zh: '滅火器裡的液體', en: 'The liquid in the extinguisher' },
-      desc: { zh: '讓二氧化碳在 25 °C（誤差 1 °C 內）成為液體。', en: 'Make carbon dioxide a liquid at 25 °C (within 1 °C).' },
+      desc: { zh: '讓二氧化碳在 25 °C（誤差 1 °C 內）成為液體。', en: 'Make carbon dioxide a liquid at 25 °C (within 1 °C).' },
       check: function (ev) { const d = st(ev); return !!d && d.sub === 'co2' && d.phase === 'liquid' && !d.line && Math.abs(d.T - 298.15) <= 1; }
     },
     {
       id: 'phase-diagram-7', level: 4,
       title: { zh: '碘也會熔化', en: 'Iodine can melt too' },
-      desc: { zh: '在 1 atm（誤差 5% 內）下等壓加熱固態碘，讓它熔化成液體。', en: 'Heat solid iodine at 1 atm (within 5%) at constant pressure until it melts.' },
+      desc: { zh: '在 1 atm（誤差 5 % 內）下等壓加熱固態碘，讓它熔化成液體。', en: 'Heat solid iodine at 1 atm (within 5 %) at constant pressure until it melts.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'iodine' && d.kind === 'melt' && d.mode === 'heat' && near1(d.P, 0.05); }
     },
     {
       id: 'phase-diagram-8', level: 5,
       title: { zh: '三相共存', en: 'Three phases at once' },
-      desc: { zh: '把任一種物質的狀態點放在三相點上（溫度差 0.1 K、壓力差 2% 以內），讓固、液、氣同時存在。', en: 'Put the state of any substance on its triple point (within 0.1 K and 2% in pressure) so that solid, liquid and gas exist together.' },
+      desc: { zh: '把任一種物質的狀態點放在三相點上（溫度差 0.1 K、壓力差 2 % 以內），讓固、液、氣同時存在。', en: 'Put the state of any substance on its triple point (within 0.1 K and 2 % in pressure) so that solid, liquid and gas exist together.' },
       check: function (ev) { const d = st(ev); return !!d && d.line === 'triple'; }
     },
     {
       id: 'phase-diagram-9', level: 6,
       title: { zh: '加壓熔冰', en: 'Melting ice by pressure' },
-      desc: { zh: '在 −1 °C 以下，用「等溫加壓」讓冰熔化。', en: 'At −1 °C or below, melt ice with “Compress (constant T)”.' },
+      desc: { zh: '在 −1 °C 以下，用「等溫加壓」讓冰熔化。', en: 'At −1 °C or below, melt ice with “Compress (constant T)”.' },
       check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'melt' && d.mode === 'press' && d.T <= 272.15; }
     },
     {
       id: 'phase-diagram-10', level: 6,
       title: { zh: '兩個沸點算汽化熱', en: 'Heat of vaporization from two boiling points' },
-      desc: { zh: '記錄水在兩個壓力（相差 2 倍以上）的沸點，兩個沸點都在 70–130 °C 之間；用兩點式算出的莫耳汽化熱與 40.65 kJ/mol 相差 3% 以內。', en: 'Record the boiling point of water at two pressures at least a factor of 2 apart, both between 70 and 130 °C; the molar heat of vaporization from the two-point equation must be within 3% of 40.65 kJ/mol.' },
+      desc: { zh: '記錄水在兩個壓力（相差 2 倍以上）的沸點，兩個沸點都在 70–130 °C 之間；用兩點式算出的莫耳汽化熱與 40.65 kJ/mol 相差 3 % 以內。', en: 'Record the boiling point of water at two pressures at least a factor of 2 apart, both between 70 and 130 °C; the molar heat of vaporization from the two-point equation must be within 3 % of 40.65 kJ/mol.' },
       check: function (ev) { const d = ev.type === 'clap' && ev.data; return !!d && d.sub === 'water' && d.kind === 'vap' && d.ratio >= 2 && Math.abs(d.err) <= 0.03 && Math.min(d.T1, d.T2) >= 343.15 && Math.max(d.T1, d.T2) <= 403.15; }
     },
     {
@@ -86,7 +86,7 @@
     {
       id: 'phase-diagram-12', level: 8,
       title: { zh: '臨界點', en: 'The critical point' },
-      desc: { zh: '把任一種物質的狀態點放在臨界點上（溫度差 0.2%、壓力差 1% 以內）。', en: 'Put the state of any substance on its critical point (within 0.2% in temperature and 1% in pressure).' },
+      desc: { zh: '把任一種物質的狀態點放在臨界點上（溫度差 0.2 %、壓力差 1 % 以內）。', en: 'Put the state of any substance on its critical point (within 0.2 % in temperature and 1 % in pressure).' },
       check: function (ev) { const d = st(ev); return !!d && d.line === 'critical'; }
     },
 

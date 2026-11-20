@@ -42,7 +42,7 @@
     if (/^-0(\.0+)?$/.test(s)) s = s.slice(1);
     return s.replace('-', '−');
   }
-  function deg(a) { return num(a, 1) + '°'; }
+  function deg(a) { return num(a, 1) + ' °'; }
 
   // ---------- 狀態 ----------
   let nextId = 1;
@@ -468,7 +468,7 @@
       const el = b.dataset.c;
       b.setAttribute('aria-pressed', String(el === state.spec.center));
       b.disabled = el !== state.spec.center && !canCenter(el);
-      b.title = b.disabled ? T('第二週期的原子價殼層最多 8 個電子', 'A period-2 atom holds at most 8 valence electrons') : '';
+      b.title = b.disabled ? T('第二週期的原子價殼層最多 8 個電子', 'A period-2 atom holds at most 8 valence electrons') : '';
     });
     aBox.querySelectorAll('button').forEach(function (b) { b.disabled = !canAdd(b.dataset.add); });
     lChips.querySelectorAll('button').forEach(function (b) { b.disabled = !canRemoveLig(); });
@@ -476,15 +476,15 @@
     $('lpDel').disabled = !canRemoveLP();
     const lw = VC.lewis(state.spec), c = VC.ELEMENTS[state.spec.center];
     const N = state.spec.ligs.length + state.spec.lp;
-    let s = T('中心原子 ', 'Central atom ') + state.spec.center + T(' 有 ', ' has ') + c.v + T(' 個價電子；', ' valence electrons; ') +
-      T('價殼層共 ', 'its valence shell holds ') + lw.shell + T(' 個電子（', ' electrons (') + N + T(' 個電子域）。', ' electron domains). ');
+    let s = T('中心原子 ', 'Central atom ') + state.spec.center + T(' 有 ', ' has ') + c.v + T(' 個價電子；', ' valence electrons; ') +
+      T('價殼層共 ', 'its valence shell holds ') + lw.shell + T(' 個電子（', ' electrons (') + N + T(' 個電子域）。', ' electron domains). ');
     const info = $('eInfo');
     info.classList.remove('warn');
     if (lw.charge === 0) s += T('電中性的分子。', 'A neutral molecule.');
     else if (Math.abs(lw.charge) === 1) s += T('要帶 ', 'This needs a charge of ') + (lw.charge > 0 ? '+1' : '−1') + T(' 的電荷，是離子。', ': it is an ion.');
     else { s += T('要帶 ', 'This needs a charge of ') + (lw.charge > 0 ? '+' : '−') + Math.abs(lw.charge) + T(' 的電荷，很少見。', ', which is very unusual.'); info.classList.add('warn'); }
-    if (N >= VC.MAX_DOMAINS) s += T('已經 6 個電子域，不能再加。', ' Six domains is the most.');
-    else if (c.period === 2 && lw.shell >= 8) s += T('第二週期的原子價殼層最多 8 個電子，不能再加。', ' A period-2 atom holds at most 8 valence electrons, so nothing more can be added.');
+    if (N >= VC.MAX_DOMAINS) s += T('已經 6 個電子域，不能再加。', ' Six domains is the most.');
+    else if (c.period === 2 && lw.shell >= 8) s += T('第二週期的原子價殼層最多 8 個電子，不能再加。', ' A period-2 atom holds at most 8 valence electrons, so nothing more can be added.');
     info.textContent = s;
   }
 
@@ -832,6 +832,13 @@
     for (let k = 0; k <= n; k++) { const v = VC.rotate(a, ax, th * k / n); out.push([v[0] * r, v[1] * r, v[2] * r]); }
     return { pts: out, th: th };
   }
+  function angleReading(angle) {
+    const spec = state.spec;
+    const water = spec.center === 'O' && spec.lp === 2 && spec.ligs.length === 2 && spec.ligs.every(el => el === 'H');
+    if (!water) return deg(angle);
+    const reference = VC.PRESETS.find(p => p.id === 'H2O').exp[0].a;
+    return deg(angle) + T('（實驗值 ', ' (measured ') + deg(reference) + T('）', ')');
+  }
   function drawAngleArc() {
     if (state.sel.length !== 2) return;
     const i = domIndex(state.sel[0]), j = domIndex(state.sel[1]);
@@ -848,7 +855,7 @@
     ctx.restore();
     const mid = A.pts[20], m3 = VC.unit(mid);
     const lab = proj([m3[0] * (r + 0.42), m3[1] * (r + 0.42), m3[2] * (r + 0.42)]);
-    D.pill(ctx, deg(A.th * VC.DEG), lab.x, lab.y + 9, C.accent, 'center', fnt(13, 700));
+    D.pill(ctx, angleReading(A.th * VC.DEG), lab.x, lab.y + 9, C.accent, 'center', fnt(13, 700));
   }
   /** 偶極箭頭：每個鍵的偶極（由 δ+ 指向 δ−，長度 ∝ 電負度差）與淨偶極 */
   const DIP_K = 1.1; // 每 1 單位電負度差畫成 1.1 Å
@@ -1103,8 +1110,23 @@
         }
       });
     });
+    const select = $('domainFine'), previous = select.value;
+    select.replaceChildren(...kbItems.slice(1).map((item, i) => new Option(item.name(), String(i + 1))));
+    if ([...select.options].some(option => option.value === previous)) select.value = previous;
+    showFineLabel();
     if (kb) kb.select(0);
   }
+  function showFineLabel() {
+    const i = Number($('domainFine').value) - 1;
+    $('domainFineFormula').innerHTML = labelHTML(ligLabels()[i]);
+  }
+  $('domainFine').addEventListener('change', showFineLabel);
+  document.querySelectorAll('[data-domain-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      const item = kbItems[Number($('domainFine').value)];
+      if (item) item.move(...button.dataset.domainStep.split(',').map(Number), false);
+    });
+  });
   function drawKbdFocus() {
     if (!kb || !kb.focused()) return;
     const k = kb.index();
@@ -1257,7 +1279,7 @@
     const Enow = pts.length ? pts[pts.length - 1].E : (state.info ? state.info.E : Eg);
     D.pill(g, 'E = ' + num(Enow, 3), 8, 24, C.accent, 'left', fnt(12.5, 700));
     D.pill(g, 'ΔE = ' + num(Math.max(0, Enow - Eg), 4), EW - 8, 24, C.muted, 'right', fnt(12, 600));
-    D.haloText(g, T('模擬時間（最近 8 秒）→', 'simulation time (last 8 s) →'), x0, EH - 8, C.muted, 'left', 'alphabetic', fnt(11.5, 500));
+    D.haloText(g, T('模擬時間（最近 8 秒）→', 'simulation time (last 8 s) →'), x0, EH - 8, C.muted, 'left', 'alphabetic', fnt(11.5, 500));
   }
 
   // =====================================================================
@@ -1269,7 +1291,7 @@
     VC: VC, T: T, D: D, state: state, reducedMotion: reducedMotion, LP_LEN: LP_LEN,
     colors: function () { return C; },
     bondLen: bondLen, ballR: ballR, ligLabels: ligLabels, labelHTML: labelHTML, shapeName: shapeName, num: num, deg: deg,
-    formulaHTML: formulaHTML, defaultView: defaultView,
+    formulaHTML: formulaHTML, angleReading, defaultView: defaultView,
     analyze: function () { return state.info || analyze(); },
     dipole: currentDipole, DIP_K: DIP_K,
     stateText: function () { return state.settled ? ((state.info && state.info.isGlobal) ? 'ok' : 'warn') : 'm'; },
@@ -1542,8 +1564,7 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:langchange', function () { buildBondChips(); buildLigChips(); updateBuilder(); updateReadouts(); fillCompare(); drawAll(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { const w = stage.clientWidth; if (w !== lastW) { lastW = w; resize(); } }).observe(stage);
+    new ResizeObserver(resize).observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   // 3D 是這個實驗的主角：瀏覽器支援 WebGL、而且使用者沒有選過 2D，就在頁面載入後自動切到 3D

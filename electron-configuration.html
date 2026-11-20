@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electron Configuration | Astro Ni Lab">電子組態｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,13 +30,13 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 電子組態頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ec canvas { aspect-ratio: auto; }
     .ec #cv { touch-action: manipulation; }
     .ec #cv.build { cursor: pointer; }
-    .ec #ptcv { width: 100%; display: block; border-radius: 8px; background: var(--canvas-bg); touch-action: manipulation; cursor: pointer; margin-top: 8px; }
+    #ptcv { width: 100%; display: block; border-radius: 8px; background: var(--canvas-bg); touch-action: manipulation; cursor: pointer; margin-top: 8px; }
     .ec #gcv { height: 300px; touch-action: manipulation; cursor: pointer; }
     .ec button { min-height: 44px; }
     .ec [hidden] { display: none !important; }
@@ -95,9 +95,9 @@
     .ec .elhead .sym sup { font-size: .5em; }
     .ec .elhead .nm { font-size: calc(18px * var(--fs, 1)); font-weight: 700; }
     .ec .elhead .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
-    .ec .navrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; margin: 4px 0 0; }
-    .ec .navrow input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; min-width: 0; }
-    .ec .navrow input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .navrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; margin: 4px 0 0; }
+    .navrow input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; min-width: 0; }
+    .navrow input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
     .ec .tabs { margin: 0 2px 8px; }
     .tablewrap { overflow: auto; margin: 10px 0 0; max-height: 300px; }
     table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
@@ -114,6 +114,44 @@
     .notes ol li, .notes ul li { margin: 3px 0; }
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    #view3 .r3-hud.bl, #view3 .m3-hud .bl { bottom: 62px; }
+    .keypad-centre { display: grid; place-items: center; color: var(--muted); }
+    .lab-vpad .vpad-footer { display: flex; }
+    .lab-vpad .vpad-footer button { flex: 1; }
+    .bench-pages { display: none; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bench-pages { display: flex; gap: 4px; margin: 8px 0; }
+      .bench-pages label { position: relative; display: flex; align-items: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+      .bench-pages input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+      .bench-pages label:has(:checked) { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+      .bench-pages label:focus-within { outline: 2px solid var(--accent); }
+      /* 未選的圖表保留排版寬度，切換時能直接沿用原來的座標與資料。 */
+      .bench-pages:not(:has(#bench-graphs:checked)) ~ [data-bench-section="graphs"],
+      .bench-pages:has(#bench-graphs:checked) ~ [data-bench-section="apparatus"] {
+        position: absolute; visibility: hidden; pointer-events: none; width: 100%; height: 0; overflow: hidden;
+      }
+      .wrap:has(.bench-pages) { position: relative; }
+      .bench-work { height: calc(100dvh - 12px); display: flex; flex-direction: column; }
+      .bench-visual { flex: 1 1 0; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+      .bench-visual #cv { width: auto; height: auto !important; max-width: 100%; max-height: 100%; aspect-ratio: auto; min-width: 0; }
+      .bench-visual #view3:empty { display: none; }
+      .bench-visual #view3, .bench-visual .m3-wrap { width: 100%; height: 100%; min-height: 0; }
+      .bench-visual #view3 canvas { width: 100%; height: 100% !important; aspect-ratio: auto; }
+      .bench-visual .v3nav-hint { display: none; }
+      .bench-actions { flex: none; }
+      /* 核心預填與清空共用一列，保留軌域圖的高度及每一鍵的觸控範圍。 */
+      .ec #buildBox:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; }
+      .ec #toolSeg, .ec #buildMsg { grid-column: 1 / -1; }
+      .ec #buildBox .checks, .ec #buildBox .ctl { margin: 2px 2px 0; }
+      .ec #buildBox .buildmsg { margin: 2px 4px 0; padding: 4px 8px; }
+      .bench-actions .playbar { gap: 4px; margin: 4px 0 0; }
+      .bench-actions button { min-height: 44px; }
+    }
+    .navrow > button { min-width: 44px; padding-inline: 5px; }
+    #ptcv { max-width: 100%; }
+    @media (min-width: 1040px) {
+      .lab.ec { grid-template-columns: minmax(0, 1fr) minmax(350px, 36%); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -121,11 +159,15 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;chemistry.html&quot;&gt;Chemistry&lt;/a&gt; / &lt;a href=&quot;chemistry.html#matter&quot;&gt;Matter and Structure&lt;/a&gt; / &lt;a href=&quot;chemistry.html#ch-atom&quot;&gt;Atomic Structure and the Periodic Table&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="chemistry.html">化學</a> / <a href="chemistry.html#matter">物質與結構</a> / <a href="chemistry.html#ch-atom">原子結構與週期表</a></nav>
       <h1 data-en="Electron Configuration">電子組態</h1>
-      <p data-en="How do electrons move into an atom? By the aufbau principle they fill the lowest subshell first, one at a time; the Pauli exclusion principle allows at most two electrons, of opposite spin, in each orbital; Hund's rule makes them spread out with parallel spins before they pair up. Watch the electrons of any of the 118 elements arrive one by one, catch the exceptions such as chromium and copper, work out the configurations of ions, and then fill the orbitals yourself. The 3D energy staircase stands the n + l rule up.">電子怎麼住進原子裡？照構築原理，電子從能量最低的副層開始一個一個填；包立不相容原理規定每個軌域最多住兩個自旋相反的電子；洪德定則讓電子先分開住、自旋平行，住滿一輪才配對。看 118 個元素的電子一個一個進場，抓出鉻、銅這些不守規矩的例外，算出離子的組態，再自己動手填填看。3D 能階階梯把 n + l 規則立起來。</p>
+      <p data-en="How do electrons move into an atom? By the aufbau principle they fill the lowest subshell first, one at a time; the Pauli exclusion principle allows at most two electrons, of opposite spin, in each orbital; Hund's rule makes them spread out with parallel spins before they pair up. Watch the electrons of any of the 118 elements arrive one by one, catch the exceptions such as chromium and copper, work out the configurations of ions, and then fill the orbitals yourself. The 3D energy staircase stands the n + l rule up.">電子怎麼住進原子裡？照構築原理，電子從能量最低的副層開始一個一個填；包立不相容原理規定每個軌域最多住兩個自旋相反的電子；洪德定則讓電子先分開住、自旋平行，住滿一輪才配對。看 118 個元素的電子一個一個進場，抓出鉻、銅這些不守規矩的例外，算出離子的組態，再自己動手填填看。3D 能階階梯把 n + l 規則立起來。</p>
     </header>
 
-    <p class="try-hint" data-en="Try it: set the atomic number to 24 (chromium) and press “Fill one by one”. The first 23 electrons follow the rules — watch what happens at the very end.">試試看：把原子序調到 24（鉻），按「逐一填入」。前 23 個電子都照規矩來，注意最後發生了什麼事。</p>
-    <div class="lab ec">
+    <p class="try-hint" data-en="Try it: set the atomic number to 24 (chromium) and press “Fill one by one”. The first 23 electrons follow the rules — watch what happens at the very end.">試試看：把原子序調到 24（鉻），按「逐一填入」。前 23 個電子都照規矩來，注意最後發生了什麼事。</p>
+    <div class="bench-pages" role="group" aria-label="實驗畫面" data-en-aria-label="Experiment view" data-share-skip>
+      <label><input type="radio" name="bench-page" value="apparatus" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input id="bench-graphs" type="radio" name="bench-page" value="graphs"><span data-en="Graphs and data">圖表與數據</span></label>
+    </div>
+    <div class="lab ec" data-bench-section="apparatus">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -140,27 +182,33 @@
           <button type="button" data-mode="auto" aria-pressed="true" data-en="Watch it fill">自動填入</button>
           <button type="button" data-mode="build" aria-pressed="false" data-en="Fill it yourself">自己填</button>
         </div>
-        <canvas id="cv" aria-label="軌域圖：每一列是一個副層，越上面能量越高；每一格是一個軌域，箭頭是電子與自旋" data-en-aria-label="Orbital diagram: each row is a subshell, higher rows have higher energy; each box is an orbital, and the arrows are electrons with their spins"></canvas>
-        <div id="view3"></div>
-        <p class="cfgline" id="cfgLine" aria-live="polite"></p>
-
-        <div id="autoBox">
-          <div class="ctl">
-            <button type="button" id="playBtn" class="primary" data-en="Fill one by one">逐一填入</button>
-            <button type="button" id="fillAll" data-en="Fill at once">一次填好</button>
+        <div class="bench-work">
+          <div class="bench-visual">
+            <canvas id="cv" aria-label="軌域圖：每一列是一個副層，越上面能量越高；每一格是一個軌域，箭頭是電子與自旋" data-en-aria-label="Orbital diagram: each row is a subshell, higher rows have higher energy; each box is an orbital, and the arrows are electrons with their spins"></canvas>
+            <div id="view3"></div>
           </div>
-          <div class="checks"><label><input id="ghostChk" type="checkbox"><span data-en="Show the aufbau prediction">顯示構築原理的預測</span></label></div>
-        </div>
+          <div class="bench-actions" data-stage-controls>
+            <p class="cfgline" id="cfgLine" aria-live="polite"></p>
 
-        <div id="buildBox" hidden>
-          <div class="seg3 toolseg ctl" id="toolSeg" role="group" aria-label="工具" data-en-aria-label="Tool">
-            <button type="button" data-tool="0" aria-pressed="true" data-en-aria-label="Place a spin-up electron" aria-label="放自旋向上的電子"><span class="ar" aria-hidden="true">↑</span> <span data-en="Up">放 ↑</span></button>
-            <button type="button" data-tool="1" aria-pressed="false" data-en-aria-label="Place a spin-down electron" aria-label="放自旋向下的電子"><span class="ar" aria-hidden="true">↓</span> <span data-en="Down">放 ↓</span></button>
-            <button type="button" data-tool="2" aria-pressed="false" data-en="Erase">擦掉</button>
+            <div id="autoBox">
+              <div class="ctl">
+                <button type="button" id="playBtn" class="primary" data-en="Fill one by one">逐一填入</button>
+                <button type="button" id="fillAll" data-en="Fill at once">一次填好</button>
+              </div>
+              <div class="checks"><label><input id="ghostChk" type="checkbox"><span data-en="Show the aufbau prediction">顯示構築原理的預測</span></label></div>
+            </div>
+
+            <div id="buildBox" hidden>
+              <div class="seg3 toolseg ctl" id="toolSeg" role="group" aria-label="工具" data-en-aria-label="Tool">
+                <button type="button" data-tool="0" aria-pressed="true" data-en-aria-label="Place a spin-up electron" aria-label="放自旋向上的電子"><span class="ar" aria-hidden="true">↑</span> <span data-en="Up">放 ↑</span></button>
+                <button type="button" data-tool="1" aria-pressed="false" data-en-aria-label="Place a spin-down electron" aria-label="放自旋向下的電子"><span class="ar" aria-hidden="true">↓</span> <span data-en="Down">放 ↓</span></button>
+                <button type="button" data-tool="2" aria-pressed="false" data-en="Erase">擦掉</button>
+              </div>
+              <div class="checks"><label><input id="coreChk" type="checkbox"><span data-en="Start with the noble-gas core filled">先填好鈍氣核心</span></label></div>
+              <div class="ctl"><button type="button" id="resetBuild" data-en="Start over">清空重填</button></div>
+              <p class="buildmsg" id="buildMsg" aria-live="polite"></p>
+            </div>
           </div>
-          <div class="checks"><label><input id="coreChk" type="checkbox"><span data-en="Start with the noble-gas core filled">先填好鈍氣核心</span></label></div>
-          <div class="ctl"><button type="button" id="resetBuild" data-en="Start over">清空重填</button></div>
-          <p class="buildmsg" id="buildMsg" aria-live="polite"></p>
         </div>
 
         <div class="legend" id="legend"></div>
@@ -191,7 +239,7 @@
       </aside>
     </div>
 
-    <div class="lab ec">
+    <div class="lab ec" data-bench-section="graphs">
       <div class="stage">
         <h2 data-en="Graphs">圖表</h2>
         <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -237,7 +285,7 @@
       </ul>
       <div class="formula">\[ u = \min\bigl(k,\; 2(2l+1) - k\bigr) \]</div>
       <h3 data-en="Exceptions">例外</h3>
-      <p data-en-html="4s and 3d (and likewise ns, (n−1)d and (n−2)f) are very close in energy. A half-filled (d&lt;sup&gt;5&lt;/sup&gt;, f&lt;sup&gt;7&lt;/sup&gt;) or filled (d&lt;sup&gt;10&lt;/sup&gt;) subshell has extra stability from its many parallel or paired spins, so chromium is [Ar]3d&lt;sup&gt;5&lt;/sup&gt;4s&lt;sup&gt;1&lt;/sup&gt; instead of [Ar]3d&lt;sup&gt;4&lt;/sup&gt;4s&lt;sup&gt;2&lt;/sup&gt;, and copper is [Ar]3d&lt;sup&gt;10&lt;/sup&gt;4s&lt;sup&gt;1&lt;/sup&gt;. Twenty of the 118 elements have such exceptions; turn on “Show the aufbau prediction” to compare.">4s 與 3d（同樣地 ns、(n−1)d、(n−2)f）的能量非常接近。半滿（d<sup>5</sup>、f<sup>7</sup>）或全滿（d<sup>10</sup>）的副層有許多平行或配對的自旋，特別穩定，所以鉻是 [Ar]3d<sup>5</sup>4s<sup>1</sup> 而不是 [Ar]3d<sup>4</sup>4s<sup>2</sup>，銅是 [Ar]3d<sup>10</sup>4s<sup>1</sup>。118 個元素中有 20 個這樣的例外；勾選「顯示構築原理的預測」可以對照。</p>
+      <p data-en-html="4s and 3d (and likewise ns, (n−1)d and (n−2)f) are very close in energy. A half-filled (d&lt;sup&gt;5&lt;/sup&gt;, f&lt;sup&gt;7&lt;/sup&gt;) or filled (d&lt;sup&gt;10&lt;/sup&gt;) subshell has extra stability from its many parallel or paired spins, so chromium is [Ar]3d&lt;sup&gt;5&lt;/sup&gt;4s&lt;sup&gt;1&lt;/sup&gt; instead of [Ar]3d&lt;sup&gt;4&lt;/sup&gt;4s&lt;sup&gt;2&lt;/sup&gt;, and copper is [Ar]3d&lt;sup&gt;10&lt;/sup&gt;4s&lt;sup&gt;1&lt;/sup&gt;. Twenty of the 118 elements have such exceptions; turn on “Show the aufbau prediction” to compare.">4s 與 3d（同樣地 ns、(n−1)d、(n−2)f）的能量非常接近。半滿（d<sup>5</sup>、f<sup>7</sup>）或全滿（d<sup>10</sup>）的副層有許多平行或配對的自旋，特別穩定，所以鉻是 [Ar]3d<sup>5</sup>4s<sup>1</sup> 而不是 [Ar]3d<sup>4</sup>4s<sup>2</sup>，銅是 [Ar]3d<sup>10</sup>4s<sup>1</sup>。118 個元素中有 20 個這樣的例外；勾選「顯示構築原理的預測」可以對照。</p>
       <h3 data-en="Ions">離子</h3>
       <p data-en-html="A cation loses its outermost electrons first: those with the largest \(n\) (and, for equal \(n\), the largest \(l\)). For a transition metal that means the 4s electrons go before the 3d electrons: Fe is [Ar]3d&lt;sup&gt;6&lt;/sup&gt;4s&lt;sup&gt;2&lt;/sup&gt;, but Fe&lt;sup&gt;2+&lt;/sup&gt; is [Ar]3d&lt;sup&gt;6&lt;/sup&gt;. An anion takes extra electrons into the next empty place by the \(n + l\) rule, usually reaching the configuration of the next noble gas.">陽離子先失去最外面的電子：\(n\) 最大的（\(n\) 相同時 \(l\) 最大的）。對過渡金屬來說，4s 電子比 3d 先失去：Fe 是 [Ar]3d<sup>6</sup>4s<sup>2</sup>，Fe<sup>2+</sup> 卻是 [Ar]3d<sup>6</sup>。陰離子把多的電子照 \(n + l\) 規則放進下一個空位，通常剛好變成下一個鈍氣的組態。</p>
 
@@ -246,7 +294,7 @@
         <li data-en="In period 4, potassium and calcium fill 4s, then scandium to zinc fill 3d, and only then does 4p begin at gallium.">第 4 週期：鉀、鈣先填 4s，鈧到鋅填 3d，填完才從鎵開始填 4p。</li>
         <li data-en="On the “Unpaired electrons” graph, each block rises to a peak at half-filling and falls back to zero at full: the p block peaks at group 15 (N, P), the d block in the middle.">「未成對電子」圖：每一區都升到半滿最高、全滿時回到 0；p 區的高峰在第 15 族（N、P），d 區在中間。</li>
         <li data-en="The exceptions are all in the d and f blocks, and elements in the same group do not always share the same exception.">例外全部在 d 區與 f 區，而且同一族的元素不一定有一樣的例外。</li>
-        <li data-en="Ions with the same number of electrons (isoelectronic) have the same configuration, for example Na+, Mg2+, F− and Ne." data-en-html="Ions with the same number of electrons (isoelectronic) have the same configuration, for example Na&lt;sup&gt;+&lt;/sup&gt;, Mg&lt;sup&gt;2+&lt;/sup&gt;, F&lt;sup&gt;−&lt;/sup&gt; and Ne.">電子數相同（等電子）的粒子，電子組態也相同，例如 Na<sup>+</sup>、Mg<sup>2+</sup>、F<sup>−</sup> 和 Ne。</li>
+        <li data-en-html="Ions with the same number of electrons (isoelectronic) have the same configuration, for example Na&lt;sup&gt;+&lt;/sup&gt;, Mg&lt;sup&gt;2+&lt;/sup&gt;, F&lt;sup&gt;−&lt;/sup&gt; and Ne." data-en-html="Ions with the same number of electrons (isoelectronic) have the same configuration, for example Na&lt;sup&gt;+&lt;/sup&gt;, Mg&lt;sup&gt;2+&lt;/sup&gt;, F&lt;sup&gt;−&lt;/sup&gt; and Ne.">電子數相同（等電子）的粒子，電子組態也相同，例如 Na<sup>+</sup>、Mg<sup>2+</sup>、F<sup>−</sup> 和 Ne。</li>
         <li data-en="In “Fill it yourself”, try to put two spin-up electrons into the same orbital, or pair up electrons too early, and read what the checker says.">在「自己填」裡，試著把兩個 ↑ 放進同一個軌域，或太早讓電子配對，看看檢查結果怎麼說。</li>
       </ul>
 
@@ -262,17 +310,17 @@
         <ol>
           <li data-en="A 4s electron spends part of its time very close to the nucleus (it penetrates the inner shells), so it is shielded less. For potassium this makes 4s lower in energy than 3d. (Once the 3d orbitals start to fill, from scandium on, 3d actually drops below 4s.)">4s 電子有一部分時間鑽到很靠近原子核的地方（穿透內層），受到的遮蔽比較少。對鉀來說，這讓 4s 的能量比 3d 低。（從鈧開始填 3d 以後，3d 的能量其實又降到 4s 以下。）</li>
           <li data-en="In the ion, the outermost electrons are the 4s ones (n = 4 is the outermost shell), and with the positive charge the 3d orbitals drop further below 4s. So the two 4s electrons are lost first.">離子中最外層是 n = 4 的 4s 電子；而且帶正電以後，3d 的能量降得比 4s 更多。所以先失去的是兩個 4s 電子。</li>
-          <li data-en-html="Its four 2p electrons follow Hund's rule: three go into the three 2p orbitals with parallel spins, and only the fourth pairs up. Two orbitals are left with one electron each. (This is also why O<sub>2</sub> is attracted by a magnet.)">4 個 2p 電子照洪德定則：前 3 個分別住進 3 個 2p 軌域、自旋平行，第 4 個才配對。剩下兩個軌域各有一個電子。（O<sub>2</sub> 會被磁鐵吸引也和未成對電子有關。）</li>
+          <li data-en-html="Its four 2p electrons follow Hund's rule: three go into the three 2p orbitals with parallel spins, and only the fourth pairs up. Two orbitals are left with one electron each. (This is also why O<sub>2</sub> is attracted by a magnet.)">4 個 2p 電子照洪德定則：前 3 個分別住進 3 個 2p 軌域、自旋平行，第 4 個才配對。剩下兩個軌域各有一個電子。（O<sub>2</sub> 會被磁鐵吸引也和未成對電子有關。）</li>
           <li data-en-html="Zn&lt;sup&gt;2+&lt;/sup&gt; is 3d&lt;sup&gt;10&lt;/sup&gt;: the d subshell is full, so no electron can jump from one d orbital to another. Cu&lt;sup&gt;2+&lt;/sup&gt; is 3d&lt;sup&gt;9&lt;/sup&gt;: there is a vacancy, so a d electron can absorb visible light and jump into it — the solution takes the complementary colour.">Zn<sup>2+</sup> 是 3d<sup>10</sup>：d 副層全滿，電子沒有空位可以在 d 軌域之間跳。Cu<sup>2+</sup> 是 3d<sup>9</sup>：有一個空位，d 電子吸收可見光就能跳上去，溶液呈現互補色。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="The order of filling is the n + l rule (Madelung rule) for the 19 subshells from 1s to 7p, which hold exactly 118 electrons. Electrons go in one at a time; inside a subshell they follow Hund's rule (spin-up first, one per orbital, then pairing).">填入順序用 n + l 規則（馬德隆規則），1s 到 7p 共 19 個副層，剛好放得下 118 個電子。電子一次放一個；同一副層內照洪德定則（先一格一個 ↑，再配對）。</li>
-        <li data-en="Ground-state configurations of neutral atoms come from the NIST Atomic Spectra Database. Twenty elements differ from the n + l rule: Cr, Cu, Nb, Mo, Ru, Rh, Pd, Ag, La, Ce, Gd, Pt, Au, Ac, Th, Pa, U, Np, Cm and Lr. In “Fill one by one” they first follow the rule, then the electrons that need to move jump to their real places. Elements 104 and above are theoretical predictions.">中性原子的基態組態取自 NIST 原子光譜資料庫。有 20 個元素和 n + l 規則不同：Cr、Cu、Nb、Mo、Ru、Rh、Pd、Ag、La、Ce、Gd、Pt、Au、Ac、Th、Pa、U、Np、Cm、Lr。「逐一填入」時它們先照規則填，最後再把要搬家的電子搬到真正的位置。104 號以後是理論預測。</li>
+        <li data-en="The order of filling is the n + l rule (Madelung rule) for the 19 subshells from 1s to 7p, which hold exactly 118 electrons. Electrons go in one at a time; inside a subshell they follow Hund's rule (spin-up first, one per orbital, then pairing).">填入順序用 n + l 規則（馬德隆規則），1s 到 7p 共 19 個副層，剛好放得下 118 個電子。電子一次放一個；同一副層內照洪德定則（先一格一個 ↑，再配對）。</li>
+        <li data-en="Ground-state configurations of neutral atoms come from the NIST Atomic Spectra Database. Twenty elements differ from the n + l rule: Cr, Cu, Nb, Mo, Ru, Rh, Pd, Ag, La, Ce, Gd, Pt, Au, Ac, Th, Pa, U, Np, Cm and Lr. In “Fill one by one” they first follow the rule, then the electrons that need to move jump to their real places. Elements 104 and above are theoretical predictions.">中性原子的基態組態取自 NIST 原子光譜資料庫。有 20 個元素和 n + l 規則不同：Cr、Cu、Nb、Mo、Ru、Rh、Pd、Ag、La、Ce、Gd、Pt、Au、Ac、Th、Pa、U、Np、Cm、Lr。「逐一填入」時它們先照規則填，最後再把要搬家的電子搬到真正的位置。104 號以後是理論預測。</li>
         <li data-en="Lawrencium is [Rn]5f14 7s2 7p1 in the NIST data (relativistic effects bring 7p below 6d), not the 6d1 found in many textbooks." data-en-html="Lawrencium is [Rn]5f&lt;sup&gt;14&lt;/sup&gt;7s&lt;sup&gt;2&lt;/sup&gt;7p&lt;sup&gt;1&lt;/sup&gt; in the NIST data (relativistic effects bring 7p below 6d), not the 6d&lt;sup&gt;1&lt;/sup&gt; found in many textbooks.">鐒（Lr）在 NIST 資料中是 [Rn]5f<sup>14</sup>7s<sup>2</sup>7p<sup>1</sup>（相對論效應讓 7p 低於 6d），不是很多課本寫的 6d<sup>1</sup>。</li>
-        <li data-en="Cations: the electrons outside the noble-gas core are removed first, largest n first and, for equal n, largest l first. This is the textbook rule; a few gaseous singly charged ions (such as V+ and La+) rearrange their electrons and are not treated here. Anions add electrons by the n + l rule and are offered only for hydrogen and groups 15–17, up to the next noble gas. Charges from +1 to +4 are offered for every element, even where such an ion is not common in chemistry." data-en-html="Cations: the electrons outside the noble-gas core are removed first, largest \(n\) first and, for equal \(n\), largest \(l\) first. This is the textbook rule; a few gaseous singly charged ions (such as V&lt;sup&gt;+&lt;/sup&gt; and La&lt;sup&gt;+&lt;/sup&gt;) rearrange their electrons and are not treated here. Anions add electrons by the \(n + l\) rule and are offered only for hydrogen and groups 15–17, up to the next noble gas. Charges from +1 to +4 are offered for every element, even where such an ion is not common in chemistry.">陽離子：先拿走鈍氣核心以外的電子，\(n\) 大的先、\(n\) 相同時 \(l\) 大的先。這是課本的規則；少數氣態一價離子（例如 V<sup>+</sup>、La<sup>+</sup>）的電子會重新排列，這裡不處理。陰離子照 \(n + l\) 規則加電子，只提供氫與第 15–17 族，最多補到下一個鈍氣。每個元素都可以選 +1 到 +4，即使某些離子在化學上並不常見。</li>
+        <li data-en-html="Cations: the electrons outside the noble-gas core are removed first, largest n first and, for equal n, largest l first. This is the textbook rule; a few gaseous singly charged ions (such as V&lt;sup&gt;+&lt;/sup&gt; and La&lt;sup&gt;+&lt;/sup&gt;) rearrange their electrons and are not treated here. Anions add electrons by the n + l rule and are offered only for hydrogen and groups 15–17, up to the next noble gas. Charges from +1 to +4 are offered for every element, even where such an ion is not common in chemistry." data-en-html="Cations: the electrons outside the noble-gas core are removed first, largest \(n\) first and, for equal \(n\), largest \(l\) first. This is the textbook rule; a few gaseous singly charged ions (such as V&lt;sup&gt;+&lt;/sup&gt; and La&lt;sup&gt;+&lt;/sup&gt;) rearrange their electrons and are not treated here. Anions add electrons by the \(n + l\) rule and are offered only for hydrogen and groups 15–17, up to the next noble gas. Charges from +1 to +4 are offered for every element, even where such an ion is not common in chemistry.">陽離子：先拿走鈍氣核心以外的電子，\(n\) 大的先、\(n\) 相同時 \(l\) 大的先。這是課本的規則；少數氣態一價離子（例如 V<sup>+</sup>、La<sup>+</sup>）的電子會重新排列，這裡不處理。陰離子照 \(n + l\) 規則加電子，只提供氫與第 15–17 族，最多補到下一個鈍氣。每個元素都可以選 +1 到 +4，即使某些離子在化學上並不常見。</li>
         <li data-en="The checker in “Fill it yourself” calls a diagram the ground state when the number of electrons in every subshell matches, and every subshell follows Hund's rule (the most unpaired electrons, all parallel). It does not compare spins between different subshells (real atoms usually keep those parallel too, cerium being an exception).">「自己填」的檢查：每個副層的電子數都和基態一樣，而且每個副層都照洪德定則（未成對電子最多、自旋平行），才算基態。不同副層之間的自旋方向不檢查（真實原子通常也平行，鈰是例外）。</li>
         <li data-en-html="The heights in the 2D diagram and in the 3D staircase show only the order of filling, not real orbital energies, which change from element to element. In 3D a subshell stands at height \(0.8\,(n + l - 1) + 0.16\,n\): the \(n + l\) terraces, with a small step for each \(n\).">2D 圖的上下位置與 3D 階梯的高度只代表填入的先後，不是真實的軌域能量（真實能量隨元素改變）。3D 裡每個副層的高度是 \(0.8\,(n + l - 1) + 0.16\,n\)：同一個 \(n + l\) 是一層平台，同一層裡 \(n\) 大的稍高一點。</li>
         <li data-en="Unpaired electrons are counted from the orbital diagram: an orbital with one electron counts as one. An atom or ion with unpaired electrons is paramagnetic (attracted by a magnet); one with none is diamagnetic.">未成對電子由軌域圖數：只有一個電子的軌域算一個。有未成對電子的原子或離子是順磁性（會被磁鐵吸引）；沒有的是反磁性。</li>
@@ -292,19 +340,21 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/electron-configuration-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/electron-configuration-3d.js?v=202611201125"></script>
-  <script src="js/electron-configuration.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="electron-configuration"></script>
-  <script src="js/missions/electron-configuration.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="electron-configuration"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/electron-configuration-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/electron-configuration-3d.js?v=202611201126"></script>
+  <script src="js/vpad.js?v=202611201126"></script>
+  <script src="js/electron-configuration.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="electron-configuration"></script>
+  <script src="js/missions/electron-configuration.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="electron-configuration"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

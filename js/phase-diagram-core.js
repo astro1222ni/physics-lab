@@ -25,7 +25,7 @@
       id: 'water', M: 18.015,
       Tt: 273.16, pt: 611.657, Tc: 647.096, pc: 22.064e6, rhoc: 322,
       Tb: 373.124,                       // 1 atm 的沸點（ITS-90，99.974 °C）
-      rhoS: 916.7, rhoL: 999.8,          // 0 °C 冰與水的密度 kg/m³（CRC）
+      rhoS: 916.7, rhoL: 999.8,          // 0 °C 冰與水的密度 kg/m^3（CRC）
       dHvapRef: 40.65e3, dHsubRef: 51.06e3, dHfusRef: 6.01e3, // 文獻值：汽化熱（100 °C）、昇華熱與熔化熱（0 °C）
       Tmin: 213.15, Tmax: 693.15,        // 頁面的溫度範圍（−60 ~ 420 °C）
       Pmin: 1, Pmax: 1e8,                // 頁面的壓力範圍（1 Pa ~ 100 MPa）
@@ -35,7 +35,7 @@
       id: 'co2', M: 44.0098,
       Tt: 216.592, pt: 0.51795e6, Tc: 304.1282, pc: 7.3773e6, rhoc: 467.6,
       Tsub1: 194.686,                    // 1 atm 的昇華溫度（−78.464 °C）
-      rhoS: 1562, rhoL: 1178.5,          // 乾冰（−78.5 °C）與三相點液體的密度 kg/m³
+      rhoS: 1562, rhoL: 1178.5,          // 乾冰（−78.5 °C）與三相點液體的密度 kg/m^3
       dHvapRef: 15.33e3, dHsubRef: 25.2e3, dHfusRef: 9.02e3, // 三相點附近（CRC；昇華熱取 1 atm 昇華點）
       Tmin: 153.15, Tmax: 353.15,        // −120 ~ 80 °C
       Pmin: 100, Pmax: 1e8               // 100 Pa ~ 100 MPa
@@ -44,7 +44,7 @@
       id: 'iodine', M: 253.809,
       Tt: 386.65, pt: 12.07e3, Tc: 819, pc: 11.7e6, rhoc: null,
       Tb: 457.55,                        // 1 atm 的沸點（184.4 °C，CRC）
-      rhoS: 4933, rhoL: 3960,            // 固體（20 °C）與熔點時液體的密度 kg/m³（CRC）
+      rhoS: 4933, rhoL: 3960,            // 固體（20 °C）與熔點時液體的密度 kg/m^3（CRC）
       dHvapRef: 41.57e3, dHsubRef: 62.42e3, dHfusRef: 15.52e3, // 汽化熱（沸點）、昇華熱（25 °C，NIST）、熔化熱（CRC）
       Tmin: 273.15, Tmax: 873.15,        // 0 ~ 600 °C
       Pmin: 1, Pmax: 1e8
@@ -104,11 +104,11 @@
 
   // ---------- 碘 ----------
   // 昇華：ΔsubH°(298.15 K) = 62.42 kJ/mol（NIST，等於 I2(g) 的標準生成焓），ΔCp = Cp(g) − Cp(s) = 36.89 − 54.44 J/(mol·K)；
-  // 以三相點為錨點積分克勞修斯—克拉佩龍方程式：ln(p/pt) = −(1/R)∫ΔH(T)/T² dT（從 Tt 到 T）
+  // 以三相點為錨點積分克勞修斯—克拉佩龍方程式：ln(p/pt) = −(1/R)∫ΔH(T)/T^2 dT（從 Tt 到 T）
   const I2_DH0 = 62.42e3, I2_DCP = 36.89 - 54.44, I2_T0 = 298.15;
   function iodinePsub(T) {
     const s = SUBS.iodine, a = I2_DH0 - I2_DCP * I2_T0; // ΔH(T) = a + ΔCp·T
-    // d ln p/dT = ΔH/(RT²)，∫(a + c·x)/x² dx = −a/x + c ln x，所以 ln p(T) − ln p(Tt) = [F(T) − F(Tt)]/R
+    // d ln p/dT = ΔH/(RT^2)，∫(a + c·x)/x^2 dx = −a/x + c ln x，所以 ln p(T) − ln p(Tt) = [F(T) − F(Tt)]/R
     const F = function (x) { return -a / x + I2_DCP * Math.log(x); };
     return s.pt * Math.exp((F(T) - F(s.Tt)) / R);
   }
@@ -131,7 +131,7 @@
   })();
   function iodinePvap(T) { return Math.exp(I2_VAP.A + I2_VAP.B / T + I2_VAP.C * Math.log(T)); }
   // 熔化：克拉佩龍 dP/dT = ΔfusH/(T ΔV)，ΔV = M(1/ρL − 1/ρS)
-  const I2_DV = SUBS.iodine.M / 1000 * (1 / SUBS.iodine.rhoL - 1 / SUBS.iodine.rhoS); // m³/mol
+  const I2_DV = SUBS.iodine.M / 1000 * (1 / SUBS.iodine.rhoL - 1 / SUBS.iodine.rhoS); // m^3/mol
   const I2_MSLOPE = SUBS.iodine.dHfusRef / (SUBS.iodine.Tt * I2_DV);                  // Pa/K
   function iodinePmelt(T) { return SUBS.iodine.pt + I2_MSLOPE * (T - SUBS.iodine.Tt); }
 
@@ -211,7 +211,7 @@
     }
     return bisect(function (T) { return pmelt(id, T) - P; }, s.Tt, s.Tt + 2000);
   }
-  /** 克勞修斯—克拉佩龍：由曲線的斜率算出的莫耳相變熱 ΔH = R T² d(ln P)/dT（假設氣體理想、凝相體積可忽略） */
+  /** 克勞修斯—克拉佩龍：由曲線的斜率算出的莫耳相變熱 ΔH = R T^2 d(ln P)/dT（假設氣體理想、凝相體積可忽略） */
   function dHslope(id, kind, T) {
     const f = kind === 'sub' ? psub : pvap, h = 1e-3;
     return R * T * T * (Math.log(f(id, T + h)) - Math.log(f(id, T - h))) / (2 * h);
@@ -222,7 +222,7 @@
     if (Math.abs(d) < 1e-12) return NaN;
     return R * Math.log(P2 / P1) / d;
   }
-  /** 飽和液體與飽和蒸氣的密度（kg/m³）；碘沒有可靠的方程式，傳回 null */
+  /** 飽和液體與飽和蒸氣的密度（kg/m^3）；碘沒有可靠的方程式，傳回 null */
   function satDensity(id, T) {
     const s = sub(id);
     if (T < s.Tt || T > s.Tc) return null;

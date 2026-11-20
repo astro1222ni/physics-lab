@@ -23,13 +23,13 @@
     {
       id: 'esterification-1', level: 1,
       title: { zh: '第一滴香味', en: 'The first whiff' },
-      desc: { zh: '按「開始加熱」，讓瓶中生成至少 0.05 mol 的酯。', en: 'Press “Start heating” and make at least 0.05 mol of ester in the flask.' },
+      desc: { zh: '按「開始加熱」，讓瓶中生成至少 0.05 mol 的酯。', en: 'Press “Start heating” and make at least 0.05 mol of ester in the flask.' },
       check: function (ev) { const d = tk(ev); return !!d && d.xi >= 0.05; }
     },
     {
       id: 'esterification-2', level: 2,
       title: { zh: '香蕉油', en: 'Banana oil' },
-      desc: { zh: '用乙酸和異戊醇，做出至少 0.10 mol 的乙酸異戊酯（香蕉的氣味）。', en: 'From acetic acid and isoamyl alcohol, make at least 0.10 mol of isoamyl acetate (the smell of bananas).' },
+      desc: { zh: '用乙酸和異戊醇，做出至少 0.10 mol 的乙酸異戊酯（香蕉的氣味）。', en: 'From acetic acid and isoamyl alcohol, make at least 0.10 mol of isoamyl acetate (the smell of bananas).' },
       check: function (ev) { const d = tk(ev); return !!d && d.acid === 'acetic' && d.alc === 'isoamyl' && d.xi >= 0.1; }
     },
     {
@@ -47,7 +47,7 @@
     {
       id: 'esterification-5', level: 5,
       title: { zh: '加水，酯變少', en: 'Add water, lose ester' },
-      desc: { zh: '達到平衡後只「加水」（溫度不變），等它再次平衡：酯比原來的平衡少 0.005 mol 以上。', en: 'Once at equilibrium, only “Add water” (same temperature) and wait for the new equilibrium: there must be at least 0.005 mol less ester than before.' },
+      desc: { zh: '達到平衡後只「加水」（溫度不變），等它再次平衡：酯比原來的平衡少 0.005 mol 以上。', en: 'Once at equilibrium, only “Add water” (same temperature) and wait for the new equilibrium: there must be at least 0.005 mol less ester than before.' },
       check: function (ev) {
         const d = sh(ev);
         return !!d && d.adds.W > 0 && d.adds.A + d.adds.B + d.adds.E < 1e-9 && d.sieves === 0 && same(d.T0, d.T1, 0.5) && d.now.n.E - d.base.n.E <= -0.005;
@@ -56,19 +56,19 @@
     {
       id: 'esterification-6', level: 5,
       title: { zh: '醇多一點', en: 'A little more alcohol' },
-      desc: { zh: '只從酸和醇出發，醇的莫耳數至少是酸的 1.5 倍（不加料、不加分子篩），平衡時的產率達到 85% 以上。', en: 'Start from acid and alcohol only, with at least 1.5 times as many moles of alcohol as acid (no additions, no sieves), and reach an equilibrium yield of 85% or more.' },
+      desc: { zh: '只從酸和醇出發，醇的莫耳數至少是酸的 1.5 倍（不加料、不加分子篩），平衡時的產率達到 85 % 以上。', en: 'Start from acid and alcohol only, with at least 1.5 times as many moles of alcohol as acid (no additions, no sieves), and reach an equilibrium yield of 85 % or more.' },
       check: function (ev) { const r = eqr(ev); return !!r && r.fresh && fromAB(r.n0) && r.n0.B >= 1.5 * r.n0.A - 1e-9 && r.yield >= 0.85; }
     },
     {
       id: 'esterification-7', level: 6,
       title: { zh: '十分鐘過半', en: 'Halfway in ten minutes' },
-      desc: { zh: '只從酸和醇出發、不加料也不加分子篩，讓產率在 600 秒（模擬時間）以內到達 50%。', en: 'Starting from acid and alcohol only, with no additions or sieves, reach a 50% yield within 600 s of simulated time.' },
+      desc: { zh: '只從酸和醇出發、不加料也不加分子篩，讓產率在 600 秒（模擬時間）以內到達 50 %。', en: 'Starting from acid and alcohol only, with no additions or sieves, reach a 50 % yield within 600 s of simulated time.' },
       check: function (ev) { const d = tk(ev); return !!d && d.t50 != null && d.t50 <= 600 && fromAB(d.n0); }
     },
     {
       id: 'esterification-8', level: 7,
       title: { zh: '把水拿走', en: 'Take the water away' },
-      desc: { zh: '用等莫耳的酸和醇（相差 5% 以內），不另外加酸或醇，靠分子篩讓產率超過 95%。', en: 'With equal moles of acid and alcohol (within 5%) and without adding more of either, use molecular sieves to push the yield above 95%.' },
+      desc: { zh: '用等莫耳的酸和醇（相差 5 % 以內），不另外加酸或醇，靠分子篩讓產率超過 95 %。', en: 'With equal moles of acid and alcohol (within 5 %) and without adding more of either, use molecular sieves to push the yield above 95 %.' },
       check: function (ev) {
         const d = tk(ev);
         return !!d && d.sieves >= 1 && fromAB(d.n0) && eqMol(d.n0, 0.05) && d.add.A + d.add.B < 1e-9 && d.yield >= 0.95;
@@ -77,7 +77,7 @@
     {
       id: 'esterification-9', level: 8,
       title: { zh: '殊途同歸', en: 'All roads lead here' },
-      desc: { zh: '從兩種不同的起始組成出發，但酸根、醇根、羥基的總量都相同（例如一次只放酸和醇、一次只放等量的酯和水），在同一溫度下兩次平衡的酯相差不到 0.005 mol。', en: 'Start from two different mixtures that contain the same total acid part, alcohol part and hydroxyl groups (for example acid and alcohol only, then the same amounts of ester and water only); at the same temperature the two equilibria must have less than 0.005 mol difference in ester.' },
+      desc: { zh: '從兩種不同的起始組成出發，但酸根、醇根、羥基的總量都相同（例如一次只放酸和醇、一次只放等量的酯和水），在同一溫度下兩次平衡的酯相差不到 0.005 mol。', en: 'Start from two different mixtures that contain the same total acid part, alcohol part and hydroxyl groups (for example acid and alcohol only, then the same amounts of ester and water only); at the same temperature the two equilibria must have less than 0.005 mol difference in ester.' },
       check: function (ev) {
         const r = eqr(ev);
         if (!r || !r.fresh) return false;
@@ -93,14 +93,14 @@
     },
     {
       id: 'esterification-10', level: 9,
-      title: { zh: '不用分子篩的 95%', en: '95% without sieves' },
-      desc: { zh: '只從酸和醇出發、不用分子篩，讓平衡時的產率達到 95% 以上。', en: 'Starting from acid and alcohol only and without molecular sieves, reach an equilibrium yield of 95% or more.' },
+      title: { zh: '不用分子篩的 95 %', en: '95 % without sieves' },
+      desc: { zh: '只從酸和醇出發、不用分子篩，讓平衡時的產率達到 95 % 以上。', en: 'Starting from acid and alcohol only and without molecular sieves, reach an equilibrium yield of 95 % or more.' },
       check: function (ev) { const r = eqr(ev); return !!r && r.sieves === 0 && fromAB(r.n0) && r.yield >= 0.95; }
     },
     {
       id: 'esterification-11', level: 10,
       title: { zh: '一滴不剩', en: 'Not a drop left' },
-      desc: { zh: '生成至少 0.20 mol 的酯，而且產率達到 99% 以上。', en: 'Make at least 0.20 mol of ester with a yield of 99% or more.' },
+      desc: { zh: '生成至少 0.20 mol 的酯，而且產率達到 99 % 以上。', en: 'Make at least 0.20 mol of ester with a yield of 99 % or more.' },
       check: function (ev) { const d = tk(ev); return !!d && d.xi >= 0.2 && d.yield >= 0.99; }
     },
     {

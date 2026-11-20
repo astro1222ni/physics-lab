@@ -9,6 +9,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#fineTemp');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.GibbsCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -290,7 +300,7 @@
 
   let cw = 0, ch = 0, dpr = 1, G = null;
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -475,8 +485,8 @@
       g.fillStyle = gl; g.fillRect(x0 - 30, y - 30, x1 - x0 + 60, 60);
     }
     LD.block(g, x0, y, x1 - x0, 9, LD.mix(col.muted, tc, 0.55), { r: 4 });
-    const lbl = 'T = ' + tK(s.T) + ' K（' + num(s.T - 273.15, 1) + ' °C）';
-    LD.pill(g, T(lbl, 'T = ' + tK(s.T) + ' K (' + num(s.T - 273.15, 1) + ' °C)'), (x0 + x1) / 2, y + 34, tc, 'center', '600 ' + 12.5 + 'px ' + LD.FONT);
+    const lbl = 'T = ' + tK(s.T) + ' K（' + num(s.T - 273.15, 1) + ' °C）';
+    LD.pill(g, T(lbl, 'T = ' + tK(s.T) + ' K (' + num(s.T - 273.15, 1) + ' °C)'), (x0 + x1) / 2, y + 34, tc, 'center', '600 ' + 12.5 + 'px ' + LD.FONT);
   }
   // 能量圖的縱軸範圍：依反應固定（不隨 T 改變），讓 −TΔS° 的長度變化看得出來
   function energyRange() {
@@ -514,7 +524,7 @@
     const bw = Math.min(46, cwid * 0.42);
     const zero = sy(0);
     // 0 這條線代表反應物的能量：標在縱軸刻度「0」的下面（放在圖內會被長條蓋住）
-    LD.haloText(g, T('反應物', 'reactants'), x0 - 5, zero + 13, col.muted, 'right', 'alphabetic', '9.5px ' + LD.FONT);
+    LD.haloText(g, T('反應物', 'reactants'), x0 - 9, zero + 19, col.muted, 'right', 'alphabetic', '9.5px ' + LD.FONT);
     if (isMys()) {
       [0, 1, 2].forEach(function (i) {
         LD.roundRect(g, cx(i) - bw / 2, sy(Y * 0.35), bw, sy(-Y * 0.35) - sy(Y * 0.35), 6);
@@ -681,7 +691,7 @@
     if (s.turn.T != null && s.turn.T >= C.TMIN && s.turn.T <= C.TMAX) {
       const x = A.sx(s.turn.T);
       LD.ball(g, x, z, 5, col.accent, { glow: 0.3 });
-      LD.pill(g, 'T* = ' + num(s.turn.T, 1) + ' K', x, z - 10, col.accent, x > A.X1 - 80 ? 'right' : x < A.X0 + 80 ? 'left' : 'center', '600 11.5px ' + LD.FONT);
+      LD.pill(g, 'T* = ' + num(s.turn.T, 1) + ' K', x, z - 10, col.accent, x > A.X1 - 80 ? 'right' : x < A.X0 + 80 ? 'left' : 'center', '600 11.5px ' + LD.FONT);
     }
     // 紀錄點
     curRows().forEach(function (r) { LD.ball(g, A.sx(r.T), A.sy(r.dG), 4.2, rxCol(r.rx), { glow: 0 }); });
@@ -729,7 +739,7 @@
     }
     // 線的名稱
     const lx = A.sx(xm * 0.55), ly = A.sy(xm * 0.55 * k);
-    LD.pill(g, 'ΔH° = TΔS°（T = ' + tK(s.T) + ' K）', Math.min(A.X1 - 4, lx), Math.max(A.Y1 + 20, Math.min(A.Y0 - 4, ly - 8)), tempColor(s.T), 'right', '600 11.5px ' + LD.FONT);
+    LD.pill(g, 'ΔH° = TΔS°（T = ' + tK(s.T) + ' K）', Math.min(A.X1 - 4, lx), Math.max(A.Y1 + 20, Math.min(A.Y0 - 4, ly - 8)), tempColor(s.T), 'right', '600 11.5px ' + LD.FONT);
     g.restore();
   }
   function drawLnK(g) {
@@ -751,7 +761,7 @@
     g.fillStyle = LD.alpha(col.muted, 0.08); g.fillRect(A.X0, A.Y1, A.sx(x0) - A.X0, A.Y0 - A.Y1);
     if (!isMys()) {
       line(g, [[A.sx(x0), A.sy(C.lnK(s.dH, s.dS, C.TMAX))], [A.sx(x1), A.sy(C.lnK(s.dH, s.dS, C.TMIN))]], rxCol(state.rx), 3);
-      LD.pill(g, T('斜率 −ΔH°/R = ', 'slope −ΔH°/R = ') + num(-s.dH * 1000 / C.R, 0) + ' K', A.X1 - 4, A.Y0 - 6, col.muted, 'right', '600 11px ' + LD.FONT);
+      LD.pill(g, T('斜率 −ΔH°/R = ', 'slope −ΔH°/R = ') + num(-s.dH * 1000 / C.R, 0) + ' K', A.X1 - 4, A.Y0 - 6, col.muted, 'right', '600 11px ' + LD.FONT);
     }
     rs.forEach(function (r) { LD.ball(g, A.sx(1000 / r.T), A.sy(r.lnK), 4.2, rxCol(r.rx), { glow: 0 }); });
     const x = A.sx(1000 / s.T);
@@ -768,61 +778,61 @@
     const items = [];
     const hide = isMys() && !mys.revealed;
     const q = '?';
-    items.push(['ΔH°', hide ? q : sgn(s.dH, 2) + ' kJ/mol']);
-    items.push(['ΔS°', hide ? q : sgn(s.dS, 1) + ' J/(mol·K)']);
-    items.push([T('溫度 T', 'Temperature T'), tK(s.T) + ' K<small>' + num(s.T - 273.15, 1) + ' °C</small>']);
-    items.push(['TΔS°', hide ? q : sgn(s.TdS, 2) + ' kJ/mol']);
-    items.push(['ΔG° = ΔH° − TΔS°', hide ? q : sgn(s.dG, 2) + ' kJ/mol', 'big']);
+    items.push(['ΔH°', hide ? q : sgn(s.dH, 2) + ' kJ/mol']);
+    items.push(['ΔS°', hide ? q : sgn(s.dS, 1) + ' J/(mol·K)']);
+    items.push([T('溫度 T', 'Temperature T'), tK(s.T) + ' K<small>' + num(s.T - 273.15, 1) + ' °C</small>']);
+    items.push(['TΔS°', hide ? q : sgn(s.TdS, 2) + ' kJ/mol']);
+    items.push(['ΔG° = ΔH° − TΔS°', hide ? q : sgn(s.dG, 2) + ' kJ/mol', 'big']);
     items.push([T('平衡常數 K', 'Equilibrium constant K') + '<small>K = e<sup>−ΔG°/RT</sup></small>', kHTML(s.log10K, 3), 'big']);
     let ts;
     if (hide) ts = q;
-    else if (s.turn.T != null) ts = num(s.turn.T, 1) + ' K<small>' + num(s.turn.T - 273.15, 1) + ' °C・' + (s.turn.kind === 'low' ? T('低於它才自發', 'spontaneous below it') : T('高於它才自發', 'spontaneous above it')) + '</small>';
+    else if (s.turn.T != null) ts = num(s.turn.T, 1) + ' K<small>' + num(s.turn.T - 273.15, 1) + ' °C・' + (s.turn.kind === 'low' ? T('低於它才自發', 'spontaneous below it') : T('高於它才自發', 'spontaneous above it')) + '</small>';
     else ts = s.turn.kind === 'always' ? T('沒有：任何溫度都自發', 'none: always spontaneous') : s.turn.kind === 'never' ? T('沒有：任何溫度都不自發', 'none: never spontaneous') : T('沒有：ΔG° 不隨溫度改變', 'none: ΔG° does not change with T');
     items.push([T('轉折溫度 T* = ΔH°/ΔS°', 'Turning temperature T* = ΔH°/ΔS°'), ts]);
     const vt = s.verdict === 'yes' ? T('自發', 'spontaneous') : s.verdict === 'no' ? T('不自發', 'not spontaneous') : T('平衡（K ≈ 1）', 'at equilibrium (K ≈ 1)');
     items.push([T('判斷', 'Verdict'), hide ? q : vt, hide ? '' : s.verdict === 'yes' ? 'yes' : s.verdict === 'no' ? 'no' : '']);
-    if (s.dn != null) items.push([T('氣體莫耳數變化 Δn', 'Change in moles of gas Δn'), sgn(s.dn, 0) + ' mol']);
+    if (s.dn != null) items.push([T('氣體莫耳數變化 Δn', 'Change in moles of gas Δn'), sgn(s.dn, 0) + ' mol']);
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
     // 適用範圍
     let w = '';
     if (!s.valid) {
       const why = C.RX[state.rx] && C.RX[state.rx].why;
-      w = T('注意：' + tK(s.T) + ' K 超出這個方程式的適用範圍（' + s.vr[0] + '–' + s.vr[1] + ' K）：' + (why ? why[0] : '') + '。這裡的結果只是數學上的外推。',
-        'Note: ' + tK(s.T) + ' K is outside the range where this equation makes sense (' + s.vr[0] + '–' + s.vr[1] + ' K): ' + (why ? why[1] : '') + '. The result here is only a mathematical extrapolation.');
+      w = T('注意：' + tK(s.T) + ' K 超出這個方程式的適用範圍（' + s.vr[0] + '–' + s.vr[1] + ' K）：' + (why ? why[0] : '') + '。這裡的結果只是數學上的外推。',
+        'Note: ' + tK(s.T) + ' K is outside the range where this equation makes sense (' + s.vr[0] + '–' + s.vr[1] + ' K): ' + (why ? why[1] : '') + '. The result here is only a mathematical extrapolation.');
     }
     $('warn').innerHTML = w;
     statusEl.innerHTML = autoStatus(s);
   }
   function autoStatus(s) {
-    if (state.sweeping) return T('溫度掃描中：', 'Sweeping the temperature: ') + 'T = ' + num(s.T, 0) + ' K';
+    if (state.sweeping) return T('溫度掃描中：', 'Sweeping the temperature: ') + 'T = ' + num(s.T, 0) + ' K';
     if (isMys()) return T('未知反應：只看得到 K。在幾個溫度按「記錄這一點」，再到右邊算出 ΔH° 與 ΔS°。', 'Unknown reaction: only K is visible. Press “Record this point” at a few temperatures, then work out ΔH° and ΔS° on the right.');
-    const g = 'ΔG° = ' + sgn(s.dG, 2) + ' kJ/mol';
-    if (s.verdict === 'yes') return T('在 ' + tK(s.T) + ' K，' + g + ' < 0：反應自發，平衡時偏向生成物。', 'At ' + tK(s.T) + ' K, ' + g + ' < 0: the reaction is spontaneous and the products are favoured.');
-    if (s.verdict === 'no') return T('在 ' + tK(s.T) + ' K，' + g + ' > 0：反應不自發，平衡時偏向反應物。', 'At ' + tK(s.T) + ' K, ' + g + ' > 0: the reaction is not spontaneous and the reactants are favoured.');
-    return T('在 ' + tK(s.T) + ' K，' + g + '，幾乎為零：反應物與生成物處於平衡，K ≈ 1。', 'At ' + tK(s.T) + ' K, ' + g + ', almost zero: reactants and products are at equilibrium, K ≈ 1.');
+    const g = 'ΔG° = ' + sgn(s.dG, 2) + ' kJ/mol';
+    if (s.verdict === 'yes') return T('在 ' + tK(s.T) + ' K，' + g + ' < 0：反應自發，平衡時偏向生成物。', 'At ' + tK(s.T) + ' K, ' + g + ' < 0: the reaction is spontaneous and the products are favoured.');
+    if (s.verdict === 'no') return T('在 ' + tK(s.T) + ' K，' + g + ' > 0：反應不自發，平衡時偏向反應物。', 'At ' + tK(s.T) + ' K, ' + g + ' > 0: the reaction is not spontaneous and the reactants are favoured.');
+    return T('在 ' + tK(s.T) + ' K，' + g + '，幾乎為零：反應物與生成物處於平衡，K ≈ 1。', 'At ' + tK(s.T) + ' K, ' + g + ', almost zero: reactants and products are at equilibrium, K ≈ 1.');
   }
   function rxInfoHTML() {
     if (isMys()) return '<span class="eqn">A(g) → B(g)</span>' + T('ΔH°、ΔS° 看不到；只能量 K。', 'ΔH° and ΔS° are hidden; only K can be measured.');
     if (isCustom()) return '<span class="eqn">' + eqHTML('custom') + '</span>' + T('用下面兩個滑桿設定 ΔH° 與 ΔS°。', 'Set ΔH° and ΔS° with the two sliders below.');
     const d = C.rxData(state.rx), t = C.turning(d.dH, d.dS);
     const desc = {
-      vap: ['K 就是水的蒸氣壓（bar）；ΔG° = 0 的溫度就是 1 bar 下的沸點。', 'K is the vapour pressure of water in bar; where ΔG° = 0 is the boiling point at 1 bar.'],
+      vap: ['K 就是水的蒸氣壓（bar）；ΔG° = 0 的溫度就是 1 bar 下的沸點。', 'K is the vapour pressure of water in bar; where ΔG° = 0 is the boiling point at 1 bar.'],
       nh4cl: ['溶解時溶液變冷（吸熱），卻會自己溶解。', 'The solution gets colder as it dissolves (endothermic), yet it dissolves by itself.'],
       n2o4: ['無色的 N<sub>2</sub>O<sub>4</sub> 拆成紅棕色的 NO<sub>2</sub>；和「化學平衡」實驗同一套數據。', 'Colourless N<sub>2</sub>O<sub>4</sub> splits into brown NO<sub>2</sub>; the same data as “Chemical Equilibrium”.'],
       caco3: ['燒石灰：K 就是 CO<sub>2</sub> 的分壓（bar）。', 'Burning lime: K is the pressure of CO<sub>2</sub> in bar.'],
       haber: ['哈柏法：放熱、氣體變少。', 'The Haber process: exothermic, fewer gas molecules.'],
       so3: ['製造硫酸的接觸法：放熱、氣體變少。', 'The contact process for sulfuric acid: exothermic, fewer gas molecules.'],
       h2o2: ['放熱又產生氣體：任何溫度都自發，但沒有催化劑時很慢。', 'Exothermic and makes a gas: always spontaneous, but slow without a catalyst.'],
-      diamond: ['在 1 bar 下，石墨比鑽石穩定。', 'At 1 bar, graphite is more stable than diamond.'],
+      diamond: ['在 1 bar 下，石墨比鑽石穩定。', 'At 1 bar, graphite is more stable than diamond.'],
       ozone: ['吸熱、氣體變少：任何溫度都不自發。', 'Endothermic with fewer gas molecules: never spontaneous.']
     }[state.rx];
-    return '<span class="eqn">' + eqHTML(state.rx) + '</span>ΔH° = ' + sgn(d.dH, 2) + ' kJ/mol' + T('，', ', ') + 'ΔS° = ' + sgn(d.dS, 1) + ' J/(mol·K)' +
-      (t.T != null ? T('，T* = ' + num(t.T, 1) + ' K', ', T* = ' + num(t.T, 1) + ' K') : '') + T('。', '. ') + T(desc[0], desc[1]);
+    return '<span class="eqn">' + eqHTML(state.rx) + '</span>ΔH° = ' + sgn(d.dH, 2) + ' kJ/mol' + T('，', ', ') + 'ΔS° = ' + sgn(d.dS, 1) + ' J/(mol·K)' +
+      (t.T != null ? T('，T* = ' + num(t.T, 1) + ' K', ', T* = ' + num(t.T, 1) + ' K') : '') + T('。', '. ') + T(desc[0], desc[1]);
   }
   function refreshOutputs() {
-    $('tempo').textContent = tK(state.T) + ' K';
-    $('cHo').textContent = num(state.cH, 2).replace(/\.?0+$/, '') + ' kJ/mol';
-    $('cSo').textContent = num(state.cS, 1).replace(/\.0$/, '') + ' J/(mol·K)';
+    $('tempo').textContent = tK(state.T) + ' K';
+    $('cHo').textContent = num(state.cH, 2).replace(/\.?0+$/, '') + ' kJ/mol';
+    $('cSo').textContent = num(state.cS, 1).replace(/\.0$/, '') + ' J/(mol·K)';
   }
   function refreshAll() {
     refreshOutputs();
@@ -846,7 +856,7 @@
       hint = T('每個點是一個反應。分界線 ΔH° = TΔS° 通過原點，斜率由溫度決定：溫度升高，線往逆時針轉，右上方（高溫才自發）的反應一個個掉進自發區。拖曳分界線可以改變溫度。', 'Each dot is a reaction. The dividing line ΔH° = TΔS° passes through the origin with a slope set by T: as T rises the line turns anticlockwise and the reactions in the upper right (spontaneous when hot) drop into the spontaneous region one by one. Drag the line to change the temperature.');
     } else {
       leg = '<span><span class="dot" style="background:' + rxCol(state.rx) + '"></span>' + T('紀錄點', 'recorded points') + '</span>';
-      hint = T('ln K = −(ΔH°/R)(1/T) + ΔS°/R：斜率求 ΔH°，與縱軸的截距求 ΔS°（凡特荷夫）。灰色區是 1500 K 以上，滑桿調不到。', 'ln K = −(ΔH°/R)(1/T) + ΔS°/R: the slope gives ΔH° and the intercept gives ΔS° (van \'t Hoff). The grey band is above 1500 K, beyond the slider.');
+      hint = T('ln K = −(ΔH°/R)(1/T) + ΔS°/R：斜率求 ΔH°，與縱軸的截距求 ΔS°（凡特荷夫）。灰色區是 1500 K 以上，滑桿調不到。', 'ln K = −(ΔH°/R)(1/T) + ΔS°/R: the slope gives ΔH° and the intercept gives ΔS° (van \'t Hoff). The grey band is above 1500 K, beyond the slider.');
     }
     $('gLegend').innerHTML = leg;
     $('gHint').textContent = hint;
@@ -913,7 +923,7 @@
     if (snd()) window.LabSound.tone({ freq: isMys() ? 587 : s.dG < 0 ? 784 : 440, dur: 0.09, type: 'triangle', gain: 0.1 });
     renderTable();
     drawGraph();
-    statusEl.innerHTML = T('已記錄第 ' + r.n + ' 筆：', 'Recorded #' + r.n + ': ') + rxNameHTML(r.rx) + T('，', ', ') + 'T = ' + tK(r.T) + ' K' + T('，', ', ') + (r.mode === 'mys' ? 'K = ' + kHTML(r.log10K, 3) : 'ΔG° = ' + sgn(r.dG, 2) + ' kJ/mol');
+    statusEl.innerHTML = T('已記錄第 ' + r.n + ' 筆：', 'Recorded #' + r.n + ': ') + rxNameHTML(r.rx) + T('，', ', ') + 'T = ' + tK(r.T) + ' K' + T('，', ', ') + (r.mode === 'mys' ? 'K = ' + kHTML(r.log10K, 3) : 'ΔG° = ' + sgn(r.dG, 2) + ' kJ/mol');
     if (userActed && window.LabMission) window.LabMission.emit('record', Object.assign(strip(r), { earlier: earlier }));
   }
   /** 給任務用的紀錄（未知反應的真值仍送出，但任務只用公開的欄位判定） */
@@ -993,12 +1003,12 @@
     const ts = {};
     rows.forEach(function (r) { if (r.mysId === mys.id) ts[r.T.toFixed(2)] = 1; });
     const nT = Object.keys(ts).length;
-    const pc = function (e) { return num(e * 100, e < 0.1 ? 2 : 1) + '%'; };
+    const pc = function (e) { return num(e * 100, e < 0.1 ? 2 : 1) + ' %'; };
     const okH = errH <= 0.05, okS = errS <= 0.05;
     let msg = 'ΔH°' + T('：誤差 ', ': off by ') + pc(errH) + (okH ? ' <span class="ok">✓</span>' : ' <span class="no">✗</span>') + T('；', '; ') +
       'ΔS°' + T('：誤差 ', ': off by ') + pc(errS) + (okS ? ' <span class="ok">✓</span>' : ' <span class="no">✗</span>');
     if (okH && okS) msg += T('。破解成功！', '. Cracked!');
-    else msg += T('。提示：每一筆先算 ΔG° = −RT ln K（R = 8.314 J/(mol·K)，記得換成 kJ），再看 ΔG° 對 T 的直線。', '. Hint: for each record work out ΔG° = −RT ln K (R = 8.314 J/(mol·K); convert to kJ), then look at the straight line of ΔG° against T.');
+    else msg += T('。提示：每一筆先算 ΔG° = −RT ln K（R = 8.314 J/(mol·K)，記得換成 kJ），再看 ΔG° 對 T 的直線。', '. Hint: for each record work out ΔG° = −RT ln K (R = 8.314 J/(mol·K); convert to kJ), then look at the straight line of ΔG° against T.');
     $('mysOut').innerHTML = msg;
     if (snd()) {
       if (okH && okS) { window.LabSound.tone({ freq: 880, dur: 0.12, gain: 0.18 }); window.LabSound.tone({ freq: 1320, dur: 0.16, gain: 0.14, delay: 0.1 }); }
@@ -1010,8 +1020,8 @@
     if (!mys) return;
     acted();
     mys.revealed = true;
-    $('mysOut').innerHTML = T('答案：ΔH° = ' + sgn(mys.dH, 1) + ' kJ/mol' + T('，', ', ') + 'ΔS° = ' + sgn(mys.dS, 1) + ' J/(mol·K)。這個反應已揭曉，按「換一個」再挑戰。',
-      'Answer: ΔH° = ' + sgn(mys.dH, 1) + ' kJ/mol, ΔS° = ' + sgn(mys.dS, 1) + ' J/(mol·K). This one is revealed; press “Another one” to try again.');
+    $('mysOut').innerHTML = T('答案：ΔH° = ' + sgn(mys.dH, 1) + ' kJ/mol' + T('，', ', ') + 'ΔS° = ' + sgn(mys.dS, 1) + ' J/(mol·K)。這個反應已揭曉，按「換一個」再挑戰。',
+      'Answer: ΔH° = ' + sgn(mys.dH, 1) + ' kJ/mol, ΔS° = ' + sgn(mys.dS, 1) + ' J/(mol·K). This one is revealed; press “Another one” to try again.');
     rows.forEach(function (r) { if (r.mysId === mys.id) r.revealed = true; });
     refreshAll();
   }
@@ -1095,6 +1105,12 @@
     const t = graphT(ev);
     if (t != null && isFinite(t)) setT(Math.round(t), true);
   });
+  $('fineTemp').querySelectorAll('button').forEach(function (button) {
+    button.addEventListener('click', function () {
+      acted(); stopSweep();
+      setT(state.T + Number(button.dataset.delta), true);
+    });
+  });
   function endDrag() { gdrag = false; }
   gcv.addEventListener('pointerup', endDrag);
   gcv.addEventListener('pointercancel', endDrag);
@@ -1102,7 +1118,7 @@
   function buildDataTables() {
     const rt = $('rxTable'), st = $('spTable');
     if (rt) {
-      let h = '<thead><tr><th class="l">' + T('反應', 'Reaction') + '</th><th>ΔH°<br><small>kJ/mol</small></th><th>ΔS°<br><small>J/(mol·K)</small></th><th>ΔG°(298 K)<br><small>kJ/mol</small></th><th>T*<br><small>K</small></th><th>Δn</th></tr></thead><tbody>';
+      let h = '<thead><tr><th class="l">' + T('反應', 'Reaction') + '</th><th>ΔH°<br><small>kJ/mol</small></th><th>ΔS°<br><small>J/(mol·K)</small></th><th>ΔG°(298 K)<br><small>kJ/mol</small></th><th>T*<br><small>K</small></th><th>Δn</th></tr></thead><tbody>';
       C.ORDER.forEach(function (id) {
         const d = C.rxData(id), t = C.turning(d.dH, d.dS);
         h += '<tr><td class="l">' + eqHTML(id) + '</td><td>' + sgn(d.dH, 2) + '</td><td>' + sgn(d.dS, 1) + '</td><td>' + sgn(C.dG(d.dH, d.dS, 298.15), 2) + '</td><td>' + (t.T != null ? num(t.T, 1) : '—') + '</td><td>' + sgn(d.dn, 0) + '</td></tr>';

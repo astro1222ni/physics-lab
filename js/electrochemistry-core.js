@@ -9,8 +9,8 @@
  *   電極電位（能斯特方程式）E = E° + (RT ln10 / zF)·log10[M^z+]，伏特計讀數 = E右 − E左。
  *   接負載時 I = (E右 − E左)/(R負載 + r內)；電流讓兩邊的濃度與電極質量依法拉第定律改變。
  * 電解：定電流電源、一杯含 M^z+ 的溶液、兩個銅電極或石墨電極。
- *   陰極：M^z+ + z e⁻ → M（離子快用完時改為 2H2O + 2e⁻ → H2 + 2OH⁻，以示意的極限濃度分配電流）。
- *   陽極：銅電極 Cu → Cu²⁺ + 2e⁻；石墨電極 2H2O → O2 + 4H⁺ + 4e⁻。電流效率 100%。
+ *   陰極：M^z+ + z e^− → M（離子快用完時改為 2H2O + 2e^− → H2 + 2OH^−，以示意的極限濃度分配電流）。
+ *   陽極：銅電極 Cu → Cu^2+ + 2e^−；石墨電極 2H2O → O2 + 4H^+ + 4e^−。電流效率 100%。
  */
 (function (root) {
   'use strict';
@@ -33,7 +33,7 @@
     Ag: { z: 1, E: 0.7996, M: 107.8682, col: null },
     X: { z: 2, E: 0, M: 100, col: null }        // 未知金屬（E° 由 newUnknownE 決定）
   };
-  const E_O2 = 1.229;   // O2 + 4H⁺ + 4e⁻ → 2H2O
+  const E_O2 = 1.229;   // O2 + 4H^+ + 4e^− → 2H2O
   const C_MIN = 1e-12;  // 濃度下限（mol/L），避免 log(0)
 
   function gcd(a, b) { return b ? gcd(b, a % b) : a; }
@@ -147,11 +147,11 @@
     if (left > 1e-12) s.t += left;
     return s;
   }
-  /** 溶液中 H⁺ 的濃度（mol/L；只算電解產生的部分） */
+  /** 溶液中 H^+ 的濃度（mol/L；只算電解產生的部分） */
   function hplus(s) { return s.nH / s.V; }
 
   // ---------------- 未知金屬 ----------------
-  /** 未知電極 X²⁺/X：E° 在 −1.200～+0.700 V，取到 0.001 V */
+  /** 未知電極 X^2+/X：E° 在 −1.200～+0.700 V，取到 0.001 V */
   function newUnknownE(r) { r = r || Math.random; METALS.X.E = Math.round(-1200 + r() * 1900) / 1000; return METALS.X.E; }
   function setUnknownE(E) { METALS.X.E = E; }
   /** 電解用的未知金屬（二價）：從 Fe、Ni、Cu、Zn、Sn、Pb 中抽一個 */

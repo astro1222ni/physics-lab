@@ -7,10 +7,10 @@
  * 標準狀態：氣體 1 bar、溶液 1 mol/L、純固體與純液體。
  *
  * 數據（298.15 K）：
- *   OpenStax《Chemistry 2e》附錄 G：H₂O(l)、H₂O(g)、H₂O₂(l)、O₂、O₃、SO₂、SO₃、NH₄Cl(s)、NH4+(aq)、Cl-(aq)、C（石墨、鑽石）。
- *   NIST Chemistry WebBook（NIST-JANAF 熱力學表）：N₂、H₂、NH₃、NO₂、N₂O₄（和「化學平衡」實驗同一套）。
- *   NIST Chemistry WebBook（CODATA 關鍵值）：CaO(s)、CO₂(g)；CRC Handbook：CaCO₃(s，方解石)。
- *   （OpenStax 附錄 G 的 CaCO₃ 列 −1220.0 kJ/mol、110.0 J/(mol·K)，和 CRC、CODATA 系統的方解石數據不合，所以不採用。）
+ *   OpenStax《Chemistry 2e》附錄 G：H2O(l)、H2O(g)、H2O2(l)、O2、O3、SO2、SO3、NH4Cl(s)、NH4+(aq)、Cl-(aq)、C（石墨、鑽石）。
+ *   NIST Chemistry WebBook（NIST-JANAF 熱力學表）：N2、H2、NH3、NO2、N2O4（和「化學平衡」實驗同一套）。
+ *   NIST Chemistry WebBook（CODATA 關鍵值）：CaO(s)、CO2(g)；CRC Handbook：CaCO3(s，方解石)。
+ *   （OpenStax 附錄 G 的 CaCO3 列 −1220.0 kJ/mol、110.0 J/(mol·K)，和 CRC、CODATA 系統的方解石數據不合，所以不採用。）
  * 單位：ΔH° 與 ΔG° 用 kJ/mol（每莫耳反應，依方程式的係數），S° 與 ΔS° 用 J/(mol·K)，T 用 K。
  */
 (function (root) {
@@ -43,21 +43,21 @@
     'CO2(g)': { H: -393.51, S: 213.79, G: null, ph: 'g', src: 'CODATA' },
     'CaCO3(s)': { H: -1207.6, S: 91.7, G: -1129.1, ph: 's', src: 'CRC' }
   };
-  // CRC 同表的 CaO、CO₂ 的 ΔfG°（交叉核對 CaCO₃ 分解的 ΔG°(298) 用）
+  // CRC 同表的 CaO、CO2 的 ΔfG°（交叉核對 CaCO3 分解的 ΔG°(298) 用）
   const CRC_G = { 'CaO(s)': -603.3, 'CO2(g)': -394.4 };
 
   // ---------- 反應 ----------
   // sp：[物種, 係數]（反應物係數為負）；valid：方程式寫的各相都合理的溫度範圍（K，1 bar 下；超出時頁面提醒「只是外推」）
   const RX = {
-    vap: { sp: [['H2O(l)', -1], ['H2O(g)', 1]], valid: [273, 450], why: ['低於 0 °C 水會結冰；高於約 177 °C 液態水在 1 bar 下早就沸騰光了', 'below 0 °C the water freezes; far above 100 °C liquid water cannot exist at 1 bar'] },
-    nh4cl: { sp: [['NH4Cl(s)', -1], ['NH4+(aq)', 1], ['Cl-(aq)', 1]], valid: [273, 373], why: ['水溶液只在 0–100 °C 之間存在', 'an aqueous solution only exists between 0 and 100 °C'] },
+    vap: { sp: [['H2O(l)', -1], ['H2O(g)', 1]], valid: [273, 450], why: ['低於 0 °C 水會結冰；高於約 177 °C 液態水在 1 bar 下早就沸騰光了', 'below 0 °C the water freezes; far above 100 °C liquid water cannot exist at 1 bar'] },
+    nh4cl: { sp: [['NH4Cl(s)', -1], ['NH4+(aq)', 1], ['Cl-(aq)', 1]], valid: [273, 373], why: ['水溶液只在 0–100 °C 之間存在', 'an aqueous solution only exists between 0 and 100 °C'] },
     n2o4: { sp: [['N2O4(g)', -1], ['NO2(g)', 2]], valid: [250, 600], why: ['NO<sub>2</sub> 在高溫會再分解成 NO 與 O<sub>2</sub>', 'at high temperature NO<sub>2</sub> breaks down further into NO and O<sub>2</sub>'] },
-    caco3: { sp: [['CaCO3(s)', -1], ['CaO(s)', 1], ['CO2(g)', 1]], valid: [298, 1500], why: ['只算 25 °C 以上', 'only computed above 25 °C'] },
-    haber: { sp: [['N2(g)', -1], ['H2(g)', -3], ['NH3(g)', 2]], valid: [240, 1500], why: ['低於 −33 °C 氨會液化', 'below −33 °C ammonia liquefies'] },
-    so3: { sp: [['SO2(g)', -2], ['O2(g)', -1], ['SO3(g)', 2]], valid: [320, 1500], why: ['低於 45 °C 三氧化硫會凝結', 'below 45 °C sulfur trioxide condenses'] },
-    h2o2: { sp: [['H2O2(l)', -2], ['H2O(l)', 2], ['O2(g)', 1]], valid: [273, 423], why: ['過氧化氫只在約 0–150 °C 是液體', 'hydrogen peroxide is only a liquid between about 0 and 150 °C'] },
+    caco3: { sp: [['CaCO3(s)', -1], ['CaO(s)', 1], ['CO2(g)', 1]], valid: [298, 1500], why: ['只算 25 °C 以上', 'only computed above 25 °C'] },
+    haber: { sp: [['N2(g)', -1], ['H2(g)', -3], ['NH3(g)', 2]], valid: [240, 1500], why: ['低於 −33 °C 氨會液化', 'below −33 °C ammonia liquefies'] },
+    so3: { sp: [['SO2(g)', -2], ['O2(g)', -1], ['SO3(g)', 2]], valid: [320, 1500], why: ['低於 45 °C 三氧化硫會凝結', 'below 45 °C sulfur trioxide condenses'] },
+    h2o2: { sp: [['H2O2(l)', -2], ['H2O(l)', 2], ['O2(g)', 1]], valid: [273, 423], why: ['過氧化氫只在約 0–150 °C 是液體', 'hydrogen peroxide is only a liquid between about 0 and 150 °C'] },
     diamond: { sp: [['C(dia)', -1], ['C(gr)', 1]], valid: [100, 1500], why: ['', ''] },
-    ozone: { sp: [['O2(g)', -3], ['O3(g)', 2]], valid: [162, 1500], why: ['低於 −111 °C 臭氧會液化', 'below −111 °C ozone liquefies'] }
+    ozone: { sp: [['O2(g)', -3], ['O3(g)', 2]], valid: [162, 1500], why: ['低於 −111 °C 臭氧會液化', 'below −111 °C ozone liquefies'] }
   };
   const ORDER = ['vap', 'nh4cl', 'n2o4', 'caco3', 'haber', 'so3', 'h2o2', 'diamond', 'ozone'];
 
@@ -123,7 +123,7 @@
     return { dH: a, dS: -b * 1000, n: n };
   }
 
-  /** 解離度：A₂(g) ⇌ 2A(g)（例如 N₂O₄），總壓 P（bar）時 K = 4α²P/(1 − α²) → α = √(K/(K + 4P)) */
+  /** 解離度：A2(g) ⇌ 2A(g)（例如 N2O4），總壓 P（bar）時 K = 4α^2P/(1 − α^2) → α = √(K/(K + 4P)) */
   function dissociation(Kv, P) { const p = P == null ? 1 : P; return Math.sqrt(Kv / (Kv + 4 * p)); }
 
   /** 未知反應：隨機 ΔH°、ΔS°（rand() 在 [0, 1)）。四種符號組合都可能；同號時讓 T* 落在 250–1350 K */

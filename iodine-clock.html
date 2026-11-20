@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Iodine Clock and Rate Laws | Astro Ni Lab">碘鐘反應與速率定律｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 碘鐘頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ic canvas { aspect-ratio: auto; touch-action: auto; }
@@ -114,6 +114,31 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
   </style>
 </head>
 <body data-en-ready>
@@ -125,7 +150,12 @@
     </header>
 
     <p class="try-hint" data-en-html="Try it: press “Mix and time” with the default recipe, then double only the potassium iodide and mix again. The blue comes in half the time — yet the equation has 2I&lt;sup&gt;−&lt;/sup&gt;. Is the reaction second order in iodide?">試試看：用預設配方按「混合並計時」，再只把碘化鉀加倍、重做一次。變藍的時間剛好減半——可是反應式裡寫的是 2I<sup>−</sup>，碘離子是二級嗎？</p>
-    <div class="lab ic">
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab ic" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -141,24 +171,28 @@
           </div>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="燒杯、水浴與碼錶" data-en-aria-label="Beaker, water bath and stopwatch"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="mix" class="primary" type="button" data-en="Mix and time">混合並計時</button>
-          <button id="fresh" type="button" data-en="New beaker" title="倒掉這一杯，用目前的配方準備新的一杯" data-en-title="Pour this beaker away and set up a new one with the current recipe">換一杯</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表與圖上的所有紀錄；配方與未知反應不變" data-en-title="Clear the table and every point on the graphs; the recipe and the unknown stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
-            <div class="seg4" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="true">×1</button>
-              <button type="button" id="sp1" aria-pressed="false">×10</button>
-              <button type="button" id="sp2" aria-pressed="false">×100</button>
-              <button type="button" id="sp3" aria-pressed="false">×1000</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="燒杯、水浴與碼錶" data-en-aria-label="Beaker, water bath and stopwatch"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar">
+            <button id="mix" class="primary" type="button" data-en="Mix and time">混合並計時</button>
+            <button id="fresh" type="button" data-en="New beaker" title="倒掉這一杯，用目前的配方準備新的一杯" data-en-title="Pour this beaker away and set up a new one with the current recipe">換一杯</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除數據表與圖上的所有紀錄；配方與未知反應不變" data-en-title="Clear the table and every point on the graphs; the recipe and the unknown stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
+              <div class="seg4" role="group" aria-labelledby="speedLabel">
+                <button type="button" id="sp0" aria-pressed="true">×1</button>
+                <button type="button" id="sp1" aria-pressed="false">×10</button>
+                <button type="button" id="sp2" aria-pressed="false">×100</button>
+                <button type="button" id="sp3" aria-pressed="false">×1000</button>
+              </div>
             </div>
           </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <p class="hint" id="stageHint" data-en-html="Beaker A holds the potassium iodide, the sodium thiosulfate, 1.0 mL of starch and the top-up solution; beaker B holds the oxidant. The stopwatch starts when B is poured in and stops by itself when the blue becomes visible. The bars on the right show what is left: while there is thiosulfate, every I&lt;sub&gt;2&lt;/sub&gt; formed is turned straight back into I&lt;sup&gt;−&lt;/sup&gt;.">A 杯裝碘化鉀、硫代硫酸鈉、1.0 mL 澱粉與補足液；B 杯裝氧化劑。B 倒進 A 的瞬間碼錶開始，看得到藍色時自動停錶。右邊的長條是剩下的量：只要還有硫代硫酸根，生成的 I<sub>2</sub> 立刻被變回 I<sup>−</sup>。</p>
+        <p class="hint" id="stageHint" data-en-html="Beaker A holds the potassium iodide, the sodium thiosulfate, 1.0 mL of starch and the top-up solution; beaker B holds the oxidant. The stopwatch starts when B is poured in and stops by itself when the blue becomes visible. The bars on the right show what is left: while there is thiosulfate, every I&lt;sub&gt;2&lt;/sub&gt; formed is turned straight back into I&lt;sup&gt;−&lt;/sup&gt;.">A 杯裝碘化鉀、硫代硫酸鈉、1.0 mL 澱粉與補足液；B 杯裝氧化劑。B 倒進 A 的瞬間碼錶開始，看得到藍色時自動停錶。右邊的長條是剩下的量：只要還有硫代硫酸根，生成的 I<sub>2</sub> 立刻被變回 I<sup>−</sup>。</p>
       </div>
 
       <aside class="panel">
@@ -172,12 +206,13 @@
         </section>
 
         <section class="card">
-          <h2 data-en="Recipe (total 50.0 mL)">配方（總體積 50.0 mL）</h2>
-          <div class="slider"><label for="vKI" data-en="0.200 M potassium iodide">0.200 M 碘化鉀</label><output id="vKIo"></output>
+          <h2 data-en="Recipe">配方</h2>
+          <p class="hint" data-en="Total volume: 50.0 mL">總體積 50.0 mL</p>
+          <div class="slider"><label for="vKI" data-en="0.200 M potassium iodide">0.200 M 碘化鉀</label><output id="vKIo"></output>
             <input id="vKI" type="range" min="0.5" max="20" step="0.5" value="10" data-decimals="2"></div>
-          <div class="slider"><label for="vP" id="vPlab" data-en="0.100 M ammonium persulfate">0.100 M 過硫酸銨</label><output id="vPo"></output>
+          <div class="slider"><label for="vP" id="vPlab" data-en="0.100 M ammonium persulfate">0.100 M 過硫酸銨</label><output id="vPo"></output>
             <input id="vP" type="range" min="0.5" max="20" step="0.5" value="10" data-decimals="2"></div>
-          <div class="slider"><label for="vS" data-en="0.0200 M sodium thiosulfate">0.0200 M 硫代硫酸鈉</label><output id="vSo"></output>
+          <div class="slider"><label for="vS" data-en="0.0200 M sodium thiosulfate">0.0200 M 硫代硫酸鈉</label><output id="vSo"></output>
             <input id="vS" type="range" min="0" max="9" step="0.5" value="2.5" data-decimals="2"></div>
           <div class="slider"><label for="temp" data-en="Water bath temperature">水浴溫度</label><output id="tempo"></output>
             <input id="temp" type="range" min="5" max="45" step="1" value="25" data-decimals="1"></div>
@@ -192,7 +227,7 @@
       </aside>
     </div>
 
-    <div class="lab ic">
+    <div class="lab ic" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Graphs and data table">圖表與數據表</h2>
         <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -218,7 +253,7 @@
             <select id="ansM"><option value="">—</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
           <div class="ans"><label for="ansN" data-en-html="Order in I&lt;sup&gt;−&lt;/sup&gt;, n">I<sup>−</sup> 的級數 n</label>
             <select id="ansN"><option value="">—</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
-          <div class="ans"><label for="ansK"><span data-en="k at 25 °C">25 °C 的 k</span><small id="kUnit"></small></label>
+          <div class="ans"><label for="ansK"><span data-en="k at 25 °C">25 °C 的 k</span><small id="kUnit"></small></label>
             <input id="ansK" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 3.5e-3" data-en-placeholder="e.g. 3.5e-3"></div>
           <div class="btns">
             <button id="check" class="primary" type="button" data-en="Check">核對</button>
@@ -261,14 +296,14 @@
         \[ \frac{r_2}{r_1} = \left(\frac{[\mathrm{I^-}]_2}{[\mathrm{I^-}]_1}\right)^{n} \]
         \[ \ln r = n\ln[\mathrm{I^-}] + C \]
       </div>
-      <p data-en-html="Keep everything the same except one concentration. If doubling it doubles the rate, that reactant is first order; if the rate becomes four times as fast, it is second order; if the rate does not change, it is zero order. With several runs, the slope of ln r against ln[I&lt;sup&gt;−&lt;/sup&gt;] is n. The orders do not have to equal the coefficients: here the equation has 2I&lt;sup&gt;−&lt;/sup&gt;, but the reaction is first order in I&lt;sup&gt;−&lt;/sup&gt;, because the slow step is a single S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt; meeting a single I&lt;sup&gt;−&lt;/sup&gt;.">其他條件都相同、只改一種濃度：濃度加倍、速率也加倍就是一級；速率變成 4 倍是二級；速率不變是零級。做好幾次時，ln r 對 ln[I<sup>−</sup>] 的斜率就是 n。級數不一定等於係數：反應式寫 2I<sup>−</sup>，碘離子卻是一級，因為最慢的一步是一個 S<sub>2</sub>O<sub>8</sub><sup>2−</sup> 碰上一個 I<sup>−</sup>。</p>
+      <p data-en-html="Keep everything the same except one concentration. If doubling it doubles the rate, that reactant is first order; if the rate becomes four times as fast, it is second order; if the rate does not change, it is zero order. With several runs, the slope of ln r against ln[I&lt;sup&gt;−&lt;/sup&gt;] is n. The orders do not have to equal the coefficients: here the equation has 2I&lt;sup&gt;−&lt;/sup&gt;, but the reaction is first order in I&lt;sup&gt;−&lt;/sup&gt;, because the slow step is a single S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt; meeting a single I&lt;sup&gt;−&lt;/sup&gt;.">其他條件都相同、只改一種濃度：濃度加倍、速率也加倍就是一級；速率變成 4 倍是二級；速率不變是零級。做好幾次時，ln r 對 ln[I<sup>−</sup>] 的斜率就是 n。級數不一定等於係數：反應式寫 2I<sup>−</sup>，碘離子卻是一級，因為最慢的一步是一個 S<sub>2</sub>O<sub>8</sub><sup>2−</sup> 碰上一個 I<sup>−</sup>。</p>
 
       <h3 data-en="Temperature">溫度</h3>
       <div class="formula multi">
         \[ k = A\,e^{-E_a/RT} \]
         \[ \ln\frac{1}{t} = -\frac{E_a}{R}\cdot\frac{1}{T} + C \]
       </div>
-      <p data-en-html="With the same recipe, t is inversely proportional to k, so a graph of ln(1/t) against 1/T has slope −E&lt;sub&gt;a&lt;/sub&gt;/R. For this reaction a rise of 10 °C near room temperature almost doubles the rate.">配方相同時 t 與 k 成反比，所以 ln(1/t) 對 1/T 作圖的斜率是 −E<sub>a</sub>/R。這個反應在室溫附近每升高 10 °C，速率幾乎加倍。</p>
+      <p data-en-html="With the same recipe, t is inversely proportional to k, so a graph of ln(1/t) against 1/T has slope −E&lt;sub&gt;a&lt;/sub&gt;/R. For this reaction a rise of 10 °C near room temperature almost doubles the rate.">配方相同時 t 與 k 成反比，所以 ln(1/t) 對 1/T 作圖的斜率是 −E<sub>a</sub>/R。這個反應在室溫附近每升高 10 °C，速率幾乎加倍。</p>
 
       <h3 data-en="Why keep the ionic strength?">為什麼要保持離子強度？</h3>
       <p data-en-html="S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt; and I&lt;sup&gt;−&lt;/sup&gt; are both negative and repel each other. Other ions in the solution screen this repulsion, so the more ions there are (the larger the ionic strength), the faster the reaction (the kinetic salt effect). In the real experiment the top-up liquid is not plain water but KCl and K&lt;sub&gt;2&lt;/sub&gt;SO&lt;sub&gt;4&lt;/sub&gt; solutions, so that every run has the same ionic strength and the same k. Untick “Keep the ionic strength” to top up with water instead and see what happens to the orders.">S<sub>2</sub>O<sub>8</sub><sup>2−</sup> 與 I<sup>−</sup> 都帶負電、互相排斥；溶液中其他離子會遮蔽這個排斥，所以離子越多（離子強度越大）反應越快（鹽效應）。真實實驗的補足液不是純水，而是 KCl 與 K<sub>2</sub>SO<sub>4</sub> 溶液，讓每一杯的離子強度相同、k 也相同。取消「保持離子強度」改用純水補足，看看級數會變成怎樣。</p>
@@ -279,10 +314,10 @@
 
       <h3 data-en="Procedure">實驗步驟</h3>
       <ol>
-        <li data-en="Choose the volumes of potassium iodide, ammonium persulfate and sodium thiosulfate; the top-up liquid makes every run 50.0 mL, so the concentrations after mixing are stock concentration × volume ÷ 50.0 mL.">選好碘化鉀、過硫酸銨、硫代硫酸鈉的體積；補足液讓每一杯都是 50.0 mL，所以混合後的濃度 = 儲備濃度 × 體積 ÷ 50.0 mL。</li>
+        <li data-en="Choose the volumes of potassium iodide, ammonium persulfate and sodium thiosulfate; the top-up liquid makes every run 50.0 mL, so the concentrations after mixing are stock concentration × volume ÷ 50.0 mL.">選好碘化鉀、過硫酸銨、硫代硫酸鈉的體積；補足液讓每一杯都是 50.0 mL，所以混合後的濃度 = 儲備濃度 × 體積 ÷ 50.0 mL。</li>
         <li data-en="Set the water bath temperature, press “Mix and time” and wait for the blue. The time and the rate go into the table.">設定水浴溫度，按「混合並計時」，等溶液變藍。時間與速率會記進數據表。</li>
         <li data-en="Change one volume at a time (at least three values each) to find the orders; repeat one recipe at several temperatures to find the activation energy.">每次只改一種體積（每種至少三個值）求級數；同一個配方在幾個溫度重做，求活化能。</li>
-        <li data-en="Enter your rate law and k at 25 °C in “Your rate law” and press “Check”.">在「你的速率定律」填入級數與 25 °C 的 k，按「核對」。</li>
+        <li data-en="Enter your rate law and k at 25 °C in “Your rate law” and press “Check”.">在「你的速率定律」填入級數與 25 °C 的 k，按「核對」。</li>
       </ol>
 
       <h3 data-en="Things to try">觀察重點</h3>
@@ -296,8 +331,8 @@
       <h3 data-en="Questions for discussion">想一想</h3>
       <ol>
         <li data-en-html="The balanced equation has 2I&lt;sup&gt;−&lt;/sup&gt;. Why is the reaction only first order in iodide?">反應式寫的是 2I<sup>−</sup>，為什麼碘離子只是一級？</li>
-        <li data-en-html="With 10.0 mL of 0.200 M KI, 10.0 mL of 0.100 M (NH&lt;sub&gt;4&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt; and 2.50 mL of 0.0200 M Na&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt; in 50.0 mL, the blue appears after 79.3 s. Find the initial rate and k.">50.0 mL 中有 0.200 M KI 10.0 mL、0.100 M (NH<sub>4</sub>)<sub>2</sub>S<sub>2</sub>O<sub>8</sub> 10.0 mL、0.0200 M Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub> 2.50 mL，79.3 s 後變藍。求初速率與 k。</li>
-        <li data-en="What would happen if you forgot the thiosulfate? What if you added more thiosulfate than twice the persulfate?">如果忘了加硫代硫酸鈉，會怎樣？如果硫代硫酸根比過硫酸根的 2 倍還多呢？</li>
+        <li data-en-html="With 10.0 mL of 0.200 M KI, 10.0 mL of 0.100 M (NH&lt;sub&gt;4&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt; and 2.50 mL of 0.0200 M Na&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt; in 50.0 mL, the blue appears after 79.3 s. Find the initial rate and k.">50.0 mL 中有 0.200 M KI 10.0 mL、0.100 M (NH<sub>4</sub>)<sub>2</sub>S<sub>2</sub>O<sub>8</sub> 10.0 mL、0.0200 M Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub> 2.50 mL，79.3 s 後變藍。求初速率與 k。</li>
+        <li data-en="What would happen if you forgot the thiosulfate? What if you added more thiosulfate than twice the persulfate?">如果忘了加硫代硫酸鈉，會怎樣？如果硫代硫酸根比過硫酸根的 2 倍還多呢？</li>
         <li data-en="Why must the total volume of every run be the same?">為什麼每一杯的總體積都要相同？</li>
         <li data-en="A student tops up with plain water and finds the order in iodide to be 1.2. What went wrong?">某同學用純水補足，量到碘離子的級數是 1.2，哪裡出了問題？</li>
       </ol>
@@ -305,8 +340,8 @@
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
           <li data-en-html="The rate law comes from the slowest step of the mechanism, not from the overall equation. Here the slow step is S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt; + I&lt;sup&gt;−&lt;/sup&gt; → (a single collision); the second I&lt;sup&gt;−&lt;/sup&gt; reacts later in a fast step. That is why orders must be measured.">速率定律由反應機構中最慢的一步決定，不是由總反應式決定。這裡的慢步驟是一個 S<sub>2</sub>O<sub>8</sub><sup>2−</sup> 與一個 I<sup>−</sup> 相碰；第二個 I<sup>−</sup> 在之後的快步驟才反應。所以級數一定要由實驗量。</li>
-          <li data-en-html="[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0200 × 2.50/50.0 = 1.00 × 10&lt;sup&gt;−3&lt;/sup&gt; M, so r = 5.00 × 10&lt;sup&gt;−4&lt;/sup&gt;/79.3 = 6.31 × 10&lt;sup&gt;−6&lt;/sup&gt; M/s. [I&lt;sup&gt;−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0400 M, [S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0200 M, k = r/(0.0200 × 0.0400) = 7.9 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt;.">[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub> = 0.0200 × 2.50/50.0 = 1.00 × 10<sup>−3</sup> M，r = 5.00 × 10<sup>−4</sup>/79.3 = 6.31 × 10<sup>−6</sup> M/s。[I<sup>−</sup>]<sub>0</sub> = 0.0400 M、[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]<sub>0</sub> = 0.0200 M，k = r/(0.0200 × 0.0400) = 7.9 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>。</li>
-          <li data-en-html="Without thiosulfate the I&lt;sub&gt;2&lt;/sub&gt; is not removed, so the solution turns blue almost at once and there is no clock. If the thiosulfate is more than twice the persulfate, all the persulfate is used up while thiosulfate is still left: no I&lt;sub&gt;2&lt;/sub&gt; ever survives and the solution never turns blue.">沒有硫代硫酸根，I<sub>2</sub> 沒有被消耗，溶液幾乎立刻變藍，就沒有計時的作用了。如果硫代硫酸根比過硫酸根的 2 倍還多，過硫酸根全部用完時硫代硫酸根還有剩，I<sub>2</sub> 永遠留不下來，溶液永遠不會變藍。</li>
+          <li data-en-html="[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0200 × 2.50/50.0 = 1.00 × 10&lt;sup&gt;−3&lt;/sup&gt; M, so r = 5.00 × 10&lt;sup&gt;−4&lt;/sup&gt;/79.3 = 6.31 × 10&lt;sup&gt;−6&lt;/sup&gt; M/s. [I&lt;sup&gt;−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0400 M, [S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt; = 0.0200 M, k = r/(0.0200 × 0.0400) = 7.9 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt;.">[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub> = 0.0200 × 2.50/50.0 = 1.00 × 10<sup>−3</sup> M，r = 5.00 × 10<sup>−4</sup>/79.3 = 6.31 × 10<sup>−6</sup> M/s。[I<sup>−</sup>]<sub>0</sub> = 0.0400 M、[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]<sub>0</sub> = 0.0200 M，k = r/(0.0200 × 0.0400) = 7.9 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>。</li>
+          <li data-en-html="Without thiosulfate the I&lt;sub&gt;2&lt;/sub&gt; is not removed, so the solution turns blue almost at once and there is no clock. If the thiosulfate is more than twice the persulfate, all the persulfate is used up while thiosulfate is still left: no I&lt;sub&gt;2&lt;/sub&gt; ever survives and the solution never turns blue.">沒有硫代硫酸根，I<sub>2</sub> 沒有被消耗，溶液幾乎立刻變藍，就沒有計時的作用了。如果硫代硫酸根比過硫酸根的 2 倍還多，過硫酸根全部用完時硫代硫酸根還有剩，I<sub>2</sub> 永遠留不下來，溶液永遠不會變藍。</li>
           <li data-en="The concentrations after mixing are stock concentration × volume ÷ total volume. With the same total volume, a doubled volume means a doubled concentration, and the other reactants are not diluted differently from run to run.">混合後的濃度 = 儲備濃度 × 體積 ÷ 總體積。總體積相同，體積加倍就是濃度加倍，其他反應物也不會因為每杯的稀釋程度不同而改變濃度。</li>
           <li data-en-html="With plain water, a run with more KI also has a larger ionic strength, and for two ions of the same charge that makes k larger. Each change in [I&lt;sup&gt;−&lt;/sup&gt;] then also changes k, so the rate grows faster than [I&lt;sup&gt;−&lt;/sup&gt;] and the apparent order is more than 1. Keeping the ionic strength constant removes this effect.">用純水補足時，KI 越多的那一杯離子強度也越大；兩個同號離子的反應，離子強度越大 k 越大。每次改變 [I<sup>−</sup>] 時 k 也跟著變，速率增加得比 [I<sup>−</sup>] 快，看起來的級數就大於 1。保持離子強度就能排除這個效應。</li>
         </ol>
@@ -314,11 +349,11 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Stock solutions: 0.200 M KI, 0.100 M (NH&lt;sub&gt;4&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt; (or X), 0.0200 M Na&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;, 1.0 mL of starch; the top-up liquid makes 50.0 mL. Mixing is instantaneous and complete, the temperature equals the water bath.">儲備溶液：0.200 M KI、0.100 M (NH<sub>4</sub>)<sub>2</sub>S<sub>2</sub>O<sub>8</sub>（或 X）、0.0200 M Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub>、澱粉 1.0 mL，補足液補到 50.0 mL。混合瞬間完成、完全均勻，溶液溫度等於水浴溫度。</li>
-        <li data-en-html="While thiosulfate remains, [I&lt;sup&gt;−&lt;/sup&gt;] is constant, so the persulfate follows the exact solution of d[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]/dt = −k[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;][I&lt;sup&gt;−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt;; the thiosulfate is used up at \(t^* = -\ln\!\left(1 - \frac{[\mathrm{S_2O_3^{2-}}]_0}{2[\mathrm{S_2O_8^{2-}}]_0}\right) \big/ k[\mathrm{I^-}]_0\). After that, all concentrations are integrated numerically (Runge–Kutta). The stopwatch stops when [I&lt;sub&gt;2&lt;/sub&gt;] reaches 1.0 × 10&lt;sup&gt;−6&lt;/sup&gt; M, a typical sensitivity of the starch test (illustrative), a fraction of a second after t*. The tests check this against an independent integration of the whole system with a very fast clock reaction.">還有硫代硫酸根時 [I<sup>−</sup>] 不變，過硫酸根照 d[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]/dt = −k[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>][I<sup>−</sup>]<sub>0</sub> 的精確解變化，硫代硫酸根在 \(t^* = -\ln\!\left(1 - \frac{[\mathrm{S_2O_3^{2-}}]_0}{2[\mathrm{S_2O_8^{2-}}]_0}\right) \big/ k[\mathrm{I^-}]_0\) 用完；之後所有濃度用龍格－庫塔法數值積分。[I<sub>2</sub>] 達到 1.0 × 10<sup>−6</sup> M（澱粉檢驗的典型靈敏度，示意值）時碼錶停止，比 t* 晚不到一秒。單元測試用「時鐘反應也寫成很快的速率方程式」的整個系統另外積分，結果一致。</li>
-        <li data-en-html="Rate constant: k = 8.0 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt; at 25 °C and ionic strength 0.22 M, E&lt;sub&gt;a&lt;/sub&gt; = 50 kJ/mol. These are representative values: published and student-lab values for this reaction spread widely (k about 4–12 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt; at room temperature, E&lt;sub&gt;a&lt;/sub&gt; about 40–57 kJ/mol) mainly because k depends strongly on the ionic strength. Salt effect: Brønsted–Bjerrum with the extended Debye–Hückel term (A = 0.509, z&lt;sub&gt;1&lt;/sub&gt;z&lt;sub&gt;2&lt;/sub&gt; = +2); “Keep the ionic strength” fixes μ at 0.22 M, plain water gives μ = [I&lt;sup&gt;−&lt;/sup&gt;] + 3[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;] + 3[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]. The temperature dependence of A is ignored.">速率常數：25 °C、離子強度 0.22 M 時 k = 8.0 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>，E<sub>a</sub> = 50 kJ/mol。這是代表值：這個反應的文獻與教學實驗數值相差很大（室溫的 k 約 4–12 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>、E<sub>a</sub> 約 40–57 kJ/mol），主要因為 k 受離子強度影響很大。鹽效應：布忍斯特－畢倫式加上延伸的德拜－休克耳項（A = 0.509、z<sub>1</sub>z<sub>2</sub> = +2）；「保持離子強度」時 μ 固定 0.22 M，純水補足時 μ = [I<sup>−</sup>] + 3[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>] + 3[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]；A 隨溫度的變化不考慮。</li>
-        <li data-en-html="The unknown oxidant X is invented: a neutral molecule (no salt effect) with r = k[X]&lt;sup&gt;m&lt;/sup&gt;[I&lt;sup&gt;−&lt;/sup&gt;]&lt;sup&gt;n&lt;/sup&gt;, m and n chosen at random from 0, 1, 2 (not both 0), each X giving one I&lt;sub&gt;2&lt;/sub&gt;; k is chosen so that the default recipe turns blue in 40–150 s, and E&lt;sub&gt;a&lt;/sub&gt; is 35–65 kJ/mol.">未知氧化劑 X 是虛構的：中性分子（沒有鹽效應），r = k[X]<sup>m</sup>[I<sup>−</sup>]<sup>n</sup>，m、n 從 0、1、2 隨機選（不同時為 0），每個 X 生成一個 I<sub>2</sub>；k 使預設配方在 40–150 s 變藍，E<sub>a</sub> 為 35–65 kJ/mol。</li>
-        <li data-en-html="Colour: Beer's law, absorbance = εcl with ε = 2.5 × 10&lt;sup&gt;4&lt;/sup&gt; L/(mol·cm) for the starch–iodine complex (illustrative) and a 4 cm path. The stirrer, the pouring and the colour of the water bath are only for display.">顏色：比爾定律，吸光度 = εcl，澱粉－碘錯合物取 ε = 2.5 × 10<sup>4</sup> L/(mol·cm)（示意值），光程 4 cm。攪拌子、倒入的動作與水浴的顏色只是示意。</li>
+        <li data-en-html="Stock solutions: 0.200 M KI, 0.100 M (NH&lt;sub&gt;4&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt; (or X), 0.0200 M Na&lt;sub&gt;2&lt;/sub&gt;S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;, 1.0 mL of starch; the top-up liquid makes 50.0 mL. Mixing is instantaneous and complete, the temperature equals the water bath.">儲備溶液：0.200 M KI、0.100 M (NH<sub>4</sub>)<sub>2</sub>S<sub>2</sub>O<sub>8</sub>（或 X）、0.0200 M Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub>、澱粉 1.0 mL，補足液補到 50.0 mL。混合瞬間完成、完全均勻，溶液溫度等於水浴溫度。</li>
+        <li data-en-html="While thiosulfate remains, [I&lt;sup&gt;−&lt;/sup&gt;] is constant, so the persulfate follows the exact solution of d[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]/dt = −k[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;][I&lt;sup&gt;−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt;; the thiosulfate is used up at \(t^* = -\ln\!\left(1 - \frac{[\mathrm{S_2O_3^{2-}}]_0}{2[\mathrm{S_2O_8^{2-}}]_0}\right) \big/ k[\mathrm{I^-}]_0\). After that, all concentrations are integrated numerically (Runge–Kutta). The stopwatch stops when [I&lt;sub&gt;2&lt;/sub&gt;] reaches 1.0 × 10&lt;sup&gt;−6&lt;/sup&gt; M, a typical sensitivity of the starch test (illustrative), a fraction of a second after t*. The tests check this against an independent integration of the whole system with a very fast clock reaction.">還有硫代硫酸根時 [I<sup>−</sup>] 不變，過硫酸根照 d[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]/dt = −k[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>][I<sup>−</sup>]<sub>0</sub> 的精確解變化，硫代硫酸根在 \(t^* = -\ln\!\left(1 - \frac{[\mathrm{S_2O_3^{2-}}]_0}{2[\mathrm{S_2O_8^{2-}}]_0}\right) \big/ k[\mathrm{I^-}]_0\) 用完；之後所有濃度用龍格－庫塔法數值積分。[I<sub>2</sub>] 達到 1.0 × 10<sup>−6</sup> M（澱粉檢驗的典型靈敏度，示意值）時碼錶停止，比 t* 晚不到一秒。單元測試用「時鐘反應也寫成很快的速率方程式」的整個系統另外積分，結果一致。</li>
+        <li data-en-html="Rate constant: k = 8.0 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt; at 25 °C and ionic strength 0.22 M, E&lt;sub&gt;a&lt;/sub&gt; = 50 kJ/mol. These are representative values: published and student-lab values for this reaction spread widely (k about 4–12 × 10&lt;sup&gt;−3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt; at room temperature, E&lt;sub&gt;a&lt;/sub&gt; about 40–57 kJ/mol) mainly because k depends strongly on the ionic strength. Salt effect: Brønsted–Bjerrum with the extended Debye–Hückel term (A = 0.509, z&lt;sub&gt;1&lt;/sub&gt;z&lt;sub&gt;2&lt;/sub&gt; = +2); “Keep the ionic strength” fixes μ at 0.22 M, plain water gives μ = [I&lt;sup&gt;−&lt;/sup&gt;] + 3[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;8&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;] + 3[S&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;]. The temperature dependence of A is ignored.">速率常數：25 °C、離子強度 0.22 M 時 k = 8.0 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>，E<sub>a</sub> = 50 kJ/mol。這是代表值：這個反應的文獻與教學實驗數值相差很大（室溫的 k 約 4–12 × 10<sup>−3</sup> M<sup>−1</sup> s<sup>−1</sup>、E<sub>a</sub> 約 40–57 kJ/mol），主要因為 k 受離子強度影響很大。鹽效應：布忍斯特－畢倫式加上延伸的德拜－休克耳項（A = 0.509、z<sub>1</sub>z<sub>2</sub> = +2）；「保持離子強度」時 μ 固定 0.22 M，純水補足時 μ = [I<sup>−</sup>] + 3[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>] + 3[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]；A 隨溫度的變化不考慮。</li>
+        <li data-en-html="The unknown oxidant X is invented: a neutral molecule (no salt effect) with r = k[X]&lt;sup&gt;m&lt;/sup&gt;[I&lt;sup&gt;−&lt;/sup&gt;]&lt;sup&gt;n&lt;/sup&gt;, m and n chosen at random from 0, 1, 2 (not both 0), each X giving one I&lt;sub&gt;2&lt;/sub&gt;; k is chosen so that the default recipe turns blue in 40–150 s, and E&lt;sub&gt;a&lt;/sub&gt; is 35–65 kJ/mol.">未知氧化劑 X 是虛構的：中性分子（沒有鹽效應），r = k[X]<sup>m</sup>[I<sup>−</sup>]<sup>n</sup>，m、n 從 0、1、2 隨機選（不同時為 0），每個 X 生成一個 I<sub>2</sub>；k 使預設配方在 40–150 s 變藍，E<sub>a</sub> 為 35–65 kJ/mol。</li>
+        <li data-en-html="Colour: Beer's law, absorbance = εcl with ε = 2.5 × 10&lt;sup&gt;4&lt;/sup&gt; L/(mol·cm) for the starch–iodine complex (illustrative) and a 4 cm path. The stirrer, the pouring and the colour of the water bath are only for display.">顏色：比爾定律，吸光度 = εcl，澱粉－碘錯合物取 ε = 2.5 × 10<sup>4</sup> L/(mol·cm)（示意值），光程 4 cm。攪拌子、倒入的動作與水浴的顏色只是示意。</li>
         <li data-en-html="The 3D view (three.js, MIT licence, downloaded only when you switch to it) draws the rate surface r([I&lt;sup&gt;−&lt;/sup&gt;]&lt;sub&gt;0&lt;/sub&gt;, [oxidant]&lt;sub&gt;0&lt;/sub&gt;) at the current temperature and your measured points (runs at that temperature). For persulfate the surface is the model; for X it is your own rate law after you press “Check”, and the true one after “Reveal”.">3D 速率曲面（three.js 函式庫，MIT 授權，切換時才下載）畫出目前溫度下的初速率 r([I<sup>−</sup>]<sub>0</sub>, [氧化劑]<sub>0</sub>) 與你在這個溫度量到的點。過硫酸根的曲面是模型本身；X 的曲面在按「核對」後是你答的速率定律，按「揭曉答案」後才是真正的速率定律。</li>
       </ul>
 
@@ -335,18 +370,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/iodine-clock-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/iodine-clock-3d.js?v=202611201125"></script>
-  <script src="js/iodine-clock.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="iodine-clock"></script>
-  <script src="js/missions/iodine-clock.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="iodine-clock"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/iodine-clock-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/iodine-clock-3d.js?v=202611201126"></script>
+  <script src="js/iodine-clock.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="iodine-clock"></script>
+  <script src="js/missions/iodine-clock.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="iodine-clock"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

@@ -42,19 +42,19 @@
     {
       id: 'molecular-shapes-2', level: 2,
       title: { zh: '甲烷的鍵角', en: 'The angle in methane' },
-      desc: { zh: '選甲烷 CH4，在「量鍵角」選兩個 C–H 鍵（或在畫面上點兩個 H），量出它們的夾角。', en: 'Choose methane, CH4, and use “Measure a bond angle” to pick two C–H bonds (or tap two H atoms in the picture) and measure the angle between them.' },
+      desc: { zh: '選甲烷 CH<sub>4</sub>，在「量鍵角」選兩個 C–H 鍵（或在畫面上點兩個 H），量出它們的夾角。', en: 'Choose methane, CH<sub>4</sub>, and use “Measure a bond angle” to pick two C–H bonds (or tap two H atoms in the picture) and measure the angle between them.' },
       check: function (ev) { const d = ev.data; return isM(ev) && sameLigs(d, 'C', ['H', 'H', 'H', 'H'], 0) && d.isGlobal && Math.abs(d.angle - 109.47) < 0.2; }
     },
     {
       id: 'molecular-shapes-3', level: 3,
       title: { zh: '自己組一個氨', en: 'Build ammonia yourself' },
-      desc: { zh: '不用常見分子的按鈕，用「自己組合」做出氨 NH3：中心原子 N、三個 H、一對孤對電子，等它穩定在能量最低的排列。', en: 'Without the common-molecule buttons, use “Build your own” to make ammonia, NH3: N in the centre, three H and one lone pair, and let it settle into the lowest-energy arrangement.' },
+      desc: { zh: '不用常見分子的按鈕，用「自己組合」做出氨 NH<sub>3</sub>：中心原子 N、三個 H、一對孤對電子，等它穩定在能量最低的排列。', en: 'Without the common-molecule buttons, use “Build your own” to make ammonia, NH<sub>3</sub>: N in the centre, three H and one lone pair, and let it settle into the lowest-energy arrangement.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.custom && sameLigs(d, 'N', ['H', 'H', 'H'], 1) && d.isGlobal; }
     },
     {
       id: 'molecular-shapes-4', level: 4,
       title: { zh: '孤對電子的排擠', en: 'Squeezed by lone pairs' },
-      desc: { zh: '孤對電子的排斥強度維持預設值，分別量出 CH4、NH3、H2O 的鍵角（三個都要量）。', en: 'With the lone-pair repulsion strength at its default, measure a bond angle in CH4, in NH3 and in H2O (all three).' },
+      desc: { zh: '孤對電子的排斥強度維持預設值，分別量出 CH<sub>4</sub>、NH<sub>3</sub>、H<sub>2</sub>O 的鍵角（三個都要量）。', en: 'With the lone-pair repulsion strength at its default, measure a bond angle in CH<sub>4</sub>, in NH<sub>3</sub> and in H<sub>2</sub>O (all three).' },
       check: function (ev, mem) {
         const d = ev.data;
         if (!isM(ev) || !d.isGlobal || !d.lamDefault) return false;
@@ -79,13 +79,13 @@
     {
       id: 'molecular-shapes-6', level: 5,
       title: { zh: '被擠窄的赤道', en: 'A squeezed equator' },
-      desc: { zh: '在蹺蹺板形的分子（例如 SF4）穩定在能量最低的排列時，量出赤道上兩個鍵的夾角：三角雙錐的赤道本來是 120°，看孤對電子把它擠到 120° 以下。', en: 'In a seesaw molecule (such as SF4) settled in its lowest-energy arrangement, measure the angle between the two equatorial bonds: on the equator of a trigonal bipyramid it would be 120°, but the lone pair squeezes it below 120°.' },
+      desc: { zh: '在蹺蹺板形的分子（例如 SF<sub>4</sub>）穩定在能量最低的排列時，量出赤道上兩個鍵的夾角：三角雙錐的赤道本來是 120°，看孤對電子把它擠到 120° 以下。', en: 'In a seesaw molecule (such as SF<sub>4</sub>) settled in its lowest-energy arrangement, measure the angle between the two equatorial bonds: on the equator of a trigonal bipyramid it would be 120°, but the lone pair squeezes it below 120°.' },
       check: function (ev) { const d = ev.data; return isM(ev) && d.axe === 'AX4E' && d.isGlobal && d.lpAxial === 0 && d.angle > 100 && d.angle < 119.5; }
     },
     {
       id: 'molecular-shapes-7', level: 6,
       title: { zh: '自己組出平面四方形', en: 'Build a square plane' },
-      desc: { zh: '用「自己組合」做出一個平面四方形的分子或離子（AX4E2），穩定在能量最低的排列。', en: 'Use “Build your own” to make a square-planar molecule or ion (AX4E2), settled in its lowest-energy arrangement.' },
+      desc: { zh: '用「自己組合」做出一個平面四方形的分子或離子（AX<sub>4</sub>E<sub>2</sub>），穩定在能量最低的排列。', en: 'Use “Build your own” to make a square-planar molecule or ion (AX<sub>4</sub>E<sub>2</sub>), settled in its lowest-energy arrangement.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.custom && d.m === 4 && d.n === 2 && ok(d); }
     },
     {
@@ -107,13 +107,13 @@
     {
       id: 'molecular-shapes-9', level: 7,
       title: { zh: '赤道上的孤對電子', en: 'Lone pairs on the equator' },
-      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF4），把孤對電子拖到一個軸向原子的位置上放手（兩個會交換位置），讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF4), drag a lone pair onto the place of an axial atom and let go (the two swap places) so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
+      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF<sub>4</sub>），把孤對電子拖到一個軸向原子的位置上放手（兩個會交換位置），讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF<sub>4</sub>), drag a lone pair onto the place of an axial atom and let go (the two swap places) so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.cause === 'shake' && d.N === 5 && d.n >= 1 && d.fromLocal && d.isGlobal; }
     },
     {
       id: 'molecular-shapes-10', level: 8,
       title: { zh: '調出水的實驗值', en: 'Tune to the real water' },
-      desc: { zh: '調整「孤對電子的排斥強度」，讓水分子 H2O 的鍵角剛好是實驗值 104.5°（誤差 0.05° 以內）。', en: 'Adjust the “Lone-pair repulsion strength” until the bond angle of water, H2O, is exactly the measured 104.5° (within 0.05°).' },
+      desc: { zh: '調整「孤對電子的排斥強度」，讓水分子 H<sub>2</sub>O 的鍵角剛好是實驗值 104.5°（誤差 0.05° 以內）。', en: 'Adjust the “Lone-pair repulsion strength” until the bond angle of water, H<sub>2</sub>O, is exactly the measured 104.5° (within 0.05°).' },
       check: function (ev) {
         const d = ev.data;
         return isS(ev) && !d.lamDefault && sameLigs(d, 'O', ['H', 'H'], 2) && d.isGlobal && d.angles.length === 1 && Math.abs(d.angles[0] - 104.5) <= 0.05 + E;
@@ -134,7 +134,7 @@
     {
       id: 'molecular-shapes-12', level: 10,
       title: { zh: 'VSEPR 全收集', en: 'Collect every VSEPR shape' },
-      desc: { zh: '用「自己組合」做出課本上全部 13 種 AXmEn 組合（AX2 到 AX4E2）的分子或離子，每一種都要穩定在能量最低的排列。', en: 'Use “Build your own” to make a molecule or ion for all 13 textbook AXmEn types (AX2 to AX4E2), each settled in its lowest-energy arrangement.' },
+      desc: { zh: '用「自己組合」做出課本上全部 13 種 AXmEn 組合（AX<sub>2</sub> 到 AX<sub>4</sub>E<sub>2</sub>）的分子或離子，每一種都要穩定在能量最低的排列。', en: 'Use “Build your own” to make a molecule or ion for all 13 textbook AXmEn types (AX<sub>2</sub> to AX<sub>4</sub>E<sub>2</sub>), each settled in its lowest-energy arrangement.' },
       check: function (ev, mem) {
         const d = ev.data;
         if (!isS(ev) || !d.custom || !ok(d)) return false;

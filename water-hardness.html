@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Water Hardness | Astro Ni Lab">水的硬度｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":3,"name":"有機與生活化學","item":"https://lab.astroni.org/chemistry.html#organic"},{"@type":"ListItem","position":4,"name":"生活中的化學","item":"https://lab.astroni.org/chemistry.html#ch-everyday"},{"@type":"ListItem","position":5,"name":"水的硬度","item":"https://lab.astroni.org/water-hardness.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 水的硬度頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .wh canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
@@ -121,6 +121,36 @@
     .r3-hud.br { bottom: 8px; right: 8px; text-align: right; }
     .r3-hud i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
     @media (max-width: 520px) { .r3-hud { max-width: 75%; } }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="titration"]:checked) ~ .lab:not([data-scene="titration"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    @media (max-width: 880px) and (orientation: portrait) {
+      .bench-screen:has(#bcv) { display: grid; justify-items: center; }
+      .bench-screen > #bcv { --drawing-min-width: 370; width: auto !important; height: auto !important; max-width: 100%; max-height: 56dvh; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -132,27 +162,37 @@
     </header>
 
     <!-- 第一部分：水樣、軟化與肥皂試驗 -->
-    <p class="try-hint" data-en-html="Try it: choose “Groundwater” and add soap one drop at a time — count the drops before the foam lasts. Then press “Boil 10 min” and test again.">試試看：選「地下水」，一滴一滴加肥皂水，數一數要幾滴才有持久的泡沫；再按「煮沸 10 分鐘」，重新試一次。</p>
-    <div class="lab wh">
+    <p class="try-hint" data-en-html="Try it: choose “Groundwater” and add soap one drop at a time — count the drops before the foam lasts. Then press “Boil 10 min” and test again.">試試看：選「地下水」，一滴一滴加肥皂水，數一數要幾滴才有持久的泡沫；再按「煮沸 10 分鐘」，重新試一次。</p>
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Sample">水樣與軟化</span></label>
+      <label><input type="radio" name="scene-page" value="titration"><span data-en="Titration">滴定</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab wh" data-scene="bench">
       <div class="stage">
         <h2 data-en="Water sample, softening and the soap test">水樣、軟化與肥皂試驗</h2>
-        <canvas id="bcv" role="img" aria-label="實驗桌：放大鏡下水中的離子、加熱板上的 1 L 燒杯、離子交換樹脂管柱，以及做肥皂泡沫試驗的試管" data-en-aria-label="The bench: the ions in the water under a magnifier, a 1 L beaker on a hot plate, an ion-exchange resin column, and a test tube for the soap test"></canvas>
-        <div class="playbar">
-          <button id="boilBtn" type="button" data-en="Boil 10 min">煮沸 10 分鐘</button>
-          <button id="sodaBtn" type="button" data-en="Add washing soda">加洗滌鹼</button>
-          <button id="resinBtn" type="button" data-en="Through the resin">通過樹脂</button>
-          <button id="regenBtn" type="button" data-en="Regenerate with brine">食鹽水再生</button>
-        </div>
-        <div class="playbar">
-          <button id="soapBtn" class="primary" type="button" data-en="Add a drop">加一滴</button>
-          <button id="tubeBtn" type="button" data-en="New test tube">換試管</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="bcv" role="img" aria-label="實驗桌：放大鏡下水中的離子、加熱板上的 1 L 燒杯、離子交換樹脂管柱，以及做肥皂泡沫試驗的試管" data-en-aria-label="The bench: the ions in the water under a magnifier, a 1 L beaker on a hot plate, an ion-exchange resin column, and a test tube for the soap test"></canvas>
+          </div>
+          <div class="playbar">
+            <button id="boilBtn" type="button" data-en="Boil 10 min">煮沸 10 分鐘</button>
+            <button id="sodaBtn" type="button" data-en="Add washing soda">加洗滌鹼</button>
+            <button id="resinBtn" type="button" data-en="Through the resin">通過樹脂</button>
+            <button id="regenBtn" type="button" data-en="Regenerate with brine">食鹽水再生</button>
+          </div>
+          <div class="playbar">
+            <button id="soapBtn" class="primary" type="button" data-en="Add a drop">加一滴</button>
+            <button id="tubeBtn" type="button" data-en="New test tube">換試管</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="checks">
           <label><input id="deterg" type="checkbox"><span data-en="Use synthetic detergent instead of soap">改用合成清潔劑</span></label>
         </div>
         <p class="status" id="bstatus" aria-live="polite"></p>
-        <p class="hint" data-en="Not to scale. The magnifier shows the cations in the water (one ball ≈ 0.05 mmol/L). Each treatment acts on the whole beaker; the soap test uses 5.00 mL of it in the test tube, with 0.050 M soap solution (one drop = 0.05 mL).">示意圖，未依比例。放大鏡畫出水中的陽離子（一顆約 0.05 mmol/L）。每種處理都作用在整杯水上；肥皂試驗從杯中取 5.00 mL 放進試管，肥皂水 0.050 M、一滴 0.05 mL。</p>
+        <p class="hint" data-en="Not to scale. The magnifier shows the cations in the water (one ball ≈ 0.05 mmol/L). Each treatment acts on the whole beaker; the soap test uses 5.00 mL of it in the test tube, with 0.050 M soap solution (one drop = 0.05 mL).">示意圖，未依比例。放大鏡畫出水中的陽離子（一顆約 0.05 mmol/L）。每種處理都作用在整杯水上；肥皂試驗從杯中取 5.00 mL 放進試管，肥皂水 0.050 M、一滴 0.05 mL。</p>
       </div>
 
       <aside class="panel">
@@ -167,15 +207,19 @@
             <button type="button" data-preset="mys" aria-pressed="false" data-en="Unknown">未知水樣</button>
           </div>
           <p class="info" id="presetInfo">—</p>
-          <div id="customBox">
+          <div class="btns">
+            <button id="answerEntry" type="button" disabled aria-controls="mysCard" data-en="Check">核對答案</button>
+          </div>
+        </section>
+        <section class="card" id="customBox">
+          <h2 data-en="Ion concentrations">離子濃度</h2>
             <div class="slider"><label for="ca" data-en-html="Ca&lt;sup&gt;2+&lt;/sup&gt; in the water">水中的 Ca<sup>2+</sup></label><output id="cao"></output>
               <input id="ca" type="range" min="0" max="200" step="0.5" value="36" data-decimals="2"></div>
             <div class="slider"><label for="mg" data-en-html="Mg&lt;sup&gt;2+&lt;/sup&gt; in the water">水中的 Mg<sup>2+</sup></label><output id="mgo"></output>
               <input id="mg" type="range" min="0" max="100" step="0.5" value="8.5" data-decimals="2"></div>
             <div class="slider"><label for="hco3" data-en-html="HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; in the water">水中的 HCO<sub>3</sub><sup>−</sup></label><output id="hco3o"></output>
               <input id="hco3" type="range" min="0" max="600" step="1" value="130" data-decimals="1"></div>
-            <p class="hint" data-en="Moving a slider makes a fresh 1 L of water with that composition (Na+ and other anions are not shown). Tap a number to type an exact value.">拉動滑桿會換一杯新的 1 L 水，組成照滑桿（Na<sup>+</sup> 與其他陰離子不另外調）。點一下數字可直接輸入精確數值。</p>
-          </div>
+            <p class="hint" data-en-html="Moving a slider makes a fresh 1 L of water with that composition (Na&lt;sup&gt;+&lt;/sup&gt; and other anions are not shown). Tap a number to type an exact value.">拉動滑桿會換一杯新的 1 L 水，組成照滑桿（Na<sup>+</sup> 與其他陰離子不另外調）。點一下數字可直接輸入精確數值。</p>
         </section>
 
         <section class="card">
@@ -188,7 +232,7 @@
           <div class="slider"><label for="dose" data-en-html="Na&lt;sub&gt;2&lt;/sub&gt;CO&lt;sub&gt;3&lt;/sub&gt; added per litre">每升加入的 Na<sub>2</sub>CO<sub>3</sub></label><output id="doseo"></output>
             <input id="dose" type="range" min="0" max="600" step="1" value="200" data-decimals="1"></div>
           <p class="info" id="resinInfo">—</p>
-          <p class="hint" data-en="After washing soda the precipitate is filtered off. The resin column holds 5.0 mmol of Ca2+ and Mg2+ (10 meq); regenerate it with brine when it is used up.">加洗滌鹼後，沉澱會濾掉。樹脂管柱最多抓 5.0 mmol 的 Ca<sup>2+</sup> 與 Mg<sup>2+</sup>（10 毫當量），用完要用食鹽水再生。</p>
+          <p class="hint" data-en-html="After washing soda the precipitate is filtered off. The resin column holds 5.0 mmol of Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt; (10 meq); regenerate it with brine when it is used up.">加洗滌鹼後，沉澱會濾掉。樹脂管柱最多抓 5.0 mmol 的 Ca<sup>2+</sup> 與 Mg<sup>2+</sup>（10 毫當量），用完要用食鹽水再生。</p>
         </section>
 
         <section class="card">
@@ -199,7 +243,7 @@
     </div>
 
     <!-- 第二部分：EDTA 滴定 -->
-    <div class="lab wh">
+    <div class="lab wh" data-scene="titration">
       <div class="stage" id="stage">
         <h2 data-en="EDTA titration">EDTA 滴定</h2>
         <div class="view-bar">
@@ -210,23 +254,27 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="滴定裝置：裝 EDTA 的滴定管、磁石攪拌器上的錐形瓶、鈣離子選擇性電極與讀數計，以及放大滴定管液面的放大鏡" data-en-aria-label="The titration set-up: a burette of EDTA, a conical flask on a magnetic stirrer, a calcium ion-selective electrode with its meter, and a magnifier showing the liquid level in the burette"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="drop" class="primary" type="button" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
-          <button id="half" type="button" data-en="½ drop">半滴</button>
-          <button id="tap" type="button" aria-pressed="false" data-share-skip data-en="Open stopcock">打開活栓</button>
-          <button id="endBtn" type="button" data-en="Record end point">記錄終點</button>
-        </div>
-        <div class="playbar">
-          <button id="refill" type="button" data-en="Refill burette">補充滴定液</button>
-          <button id="newFlask" type="button" data-en="New flask">換一瓶</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除圖上所有曲線、數據表與終點紀錄，換一瓶新的；水樣與滴定設定不變" data-en-title="Clear every curve, the data table and the end points, and start a fresh flask; the water sample and the settings stay as they are">全部清除</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="滴定裝置：裝 EDTA 的滴定管、磁石攪拌器上的錐形瓶、鈣離子選擇性電極與讀數計，以及放大滴定管液面的放大鏡" data-en-aria-label="The titration set-up: a burette of EDTA, a conical flask on a magnetic stirrer, a calcium ion-selective electrode with its meter, and a magnifier showing the liquid level in the burette"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar">
+            <button id="drop" class="primary" type="button" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
+            <button id="half" type="button" data-en="½ drop">半滴</button>
+            <button id="tap" type="button" aria-pressed="false" data-share-skip data-en="Open stopcock">打開活栓</button>
+            <button id="endBtn" type="button" data-en="Record end point">記錄終點</button>
+          </div>
+          <div class="playbar">
+            <button id="refill" type="button" data-en="Refill burette">補充滴定液</button>
+            <button id="newFlask" type="button" data-en="New flask">換一瓶</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除圖上所有曲線、數據表與終點紀錄，換一瓶新的；水樣與滴定設定不變" data-en-title="Clear every curve, the data table and the end points, and start a fresh flask; the water sample and the settings stay as they are">全部清除</button>
+          </div>
         </div>
         <div class="slider rate"><label for="rate" data-en="Stopcock opening (flow rate)">活栓開度（流速）</label><output id="rateo"></output>
           <input id="rate" type="range" min="0.1" max="2" step="0.05" value="0.5" data-decimals="2"></div>
         <p class="status" id="status" aria-live="polite"></p>
-        <p class="hint" data-en="Not to scale. One drop is 0.05 mL, half a drop 0.025 mL. EDTA is colourless: read the bottom of the meniscus with your eye level with it, to 0.01 mL (see the magnifier). The flask holds the sample taken from the beaker above, plus 2 mL of buffer (or NaOH) and the indicator.">示意圖，未依比例。一滴 0.05 mL、半滴 0.025 mL。EDTA 是無色的：讀彎月面的<strong>最低點</strong>，視線與它同高，估讀到 0.01 mL（看放大鏡）。錐形瓶裡是從上面燒杯取來的水樣，加 2 mL 緩衝液（或 NaOH）與指示劑。</p>
+        <p class="hint" data-en="Not to scale. One drop is 0.05 mL, half a drop 0.025 mL. EDTA is colourless: read the bottom of the meniscus with your eye level with it, to 0.01 mL (see the magnifier). The flask holds the sample taken from the beaker above, plus 2 mL of buffer (or NaOH) and the indicator.">示意圖，未依比例。一滴 0.05 mL、半滴 0.025 mL。EDTA 是無色的：讀彎月面的<strong>最低點</strong>，視線與它同高，估讀到 0.01 mL（看放大鏡）。錐形瓶裡是從上面燒杯取來的水樣，加 2 mL 緩衝液（或 NaOH）與指示劑。</p>
       </div>
 
       <aside class="panel">
@@ -256,13 +304,13 @@
           <div class="checks">
             <label><input id="meter" type="checkbox" checked><span data-en="Calcium electrode in the flask">鈣離子電極放在瓶中</span></label>
           </div>
-          <p class="hint" data-en="Changing these starts a fresh flask; the old curve stays on the graph (up to 4). The calcium ion-selective electrode reads pCa = −log[Ca2+] (converted from its voltage).">改這些設定會換一瓶新的，舊的曲線留在圖上（最多 4 條）。鈣離子選擇性電極的讀數換算成 pCa = −log[Ca<sup>2+</sup>]。</p>
+          <p class="hint" data-en-html="Changing these starts a fresh flask; the old curve stays on the graph (up to 4). The calcium ion-selective electrode reads pCa = −log[Ca&lt;sup&gt;2+&lt;/sup&gt;] (converted from its voltage).">改這些設定會換一瓶新的，舊的曲線留在圖上（最多 4 條）。鈣離子選擇性電極的讀數換算成 pCa = −log[Ca<sup>2+</sup>]。</p>
         </section>
       </aside>
     </div>
 
     <!-- 第三部分：滴定曲線、數據表與未知水樣 -->
-    <div class="lab wh">
+    <div class="lab wh" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Titration curve and data table">滴定曲線與數據表</h2>
         <p class="hint" data-en="pCa read by the calcium electrode against the volume of EDTA added; points appear only while the electrode is in the flask. The strip under the axis shows the colour of the flask.">縱軸是鈣離子電極量到的 pCa、橫軸是加入的 EDTA 體積；電極放在瓶中時才有數據點。橫軸下方的色條是每個體積時錐形瓶的顏色。</p>
@@ -282,7 +330,7 @@
         </section>
         <section class="card" id="mysCard" hidden data-share-skip>
           <h2 data-en="Your answers for the unknown water">未知水樣的答案</h2>
-          <p class="hint" data-en="Titrate the unknown water for its total hardness (pH 10, EBT) and its calcium hardness (pH 12), both in mg/L as CaCO3. Fill in one or both.">用 pH 10＋EBT 測總硬度、pH 12 測鈣硬度，單位都是 mg/L（以 CaCO<sub>3</sub> 計）。可以只填一個，也可以兩個都填。</p>
+          <p class="hint" data-en-html="Titrate the unknown water for its total hardness (pH 10, EBT) and its calcium hardness (pH 12), both in mg/L as CaCO&lt;sub&gt;3&lt;/sub&gt;. Fill in one or both.">用 pH 10＋EBT 測總硬度、pH 12 測鈣硬度，單位都是 mg/L（以 CaCO<sub>3</sub> 計）。可以只填一個，也可以兩個都填。</p>
           <div class="ans"><label for="ansH" data-en="Total hardness (mg/L)">總硬度（mg/L）</label><input id="ansH" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 185.3" data-en-placeholder="e.g. 185.3"></div>
           <div class="ans"><label for="ansCa" data-en="Calcium hardness (mg/L)">鈣硬度（mg/L）</label><input id="ansCa" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 120.4" data-en-placeholder="e.g. 120.4"></div>
           <div class="btns">
@@ -298,30 +346,30 @@
     <section class="notes">
       <h2 data-en="Purpose of the experiment">實驗目的</h2>
       <ol>
-        <li data-en="See how Ca2+ and Mg2+ make water hard: soap forms scum instead of lather, and boiling leaves scale.">認識 Ca<sup>2+</sup> 與 Mg<sup>2+</sup> 怎樣讓水變硬：肥皂變成浮渣而不起泡，煮水會留下水垢。</li>
+        <li data-en-html="See how Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt; make water hard: soap forms scum instead of lather, and boiling leaves scale.">認識 Ca<sup>2+</sup> 與 Mg<sup>2+</sup> 怎樣讓水變硬：肥皂變成浮渣而不起泡，煮水會留下水垢。</li>
         <li data-en="Tell temporary hardness (removed by boiling) from permanent hardness, and compare three ways of softening water.">分辨暫時硬度（煮沸可除去）與永久硬度，比較三種軟化水的方法。</li>
         <li data-en="Measure total hardness and calcium hardness by EDTA titration, and understand how the metal-ion indicator changes colour.">用 EDTA 滴定測出總硬度與鈣硬度，了解金屬指示劑變色的道理。</li>
       </ol>
 
       <h3 data-en="Apparatus">實驗器材</h3>
       <ul class="equip">
-        <li data-en="1 L beaker, hot plate, filter funnel and paper">1 L 燒杯、加熱板、漏斗與濾紙</li>
-        <li data-en="Ion-exchange resin (sodium form) in a column, 10% NaCl solution">鈉型離子交換樹脂管柱、10% 食鹽水</li>
+        <li data-en="1 L beaker, hot plate, filter funnel and paper">1 L 燒杯、加熱板、漏斗與濾紙</li>
+        <li data-en="Ion-exchange resin (sodium form) in a column, 10 % NaCl solution">鈉型離子交換樹脂管柱、10 % 食鹽水</li>
         <li data-en="Test tubes, dropper bottles of soap solution and synthetic detergent">試管、肥皂水與合成清潔劑的滴瓶</li>
         <li data-en="Washing soda (sodium carbonate)">洗滌鹼（碳酸鈉）</li>
-        <li data-en="50 mL burette, retort stand, 250 mL conical flask, pipette, magnetic stirrer">50 mL 滴定管、鐵架、250 mL 錐形瓶、移液管、磁石攪拌器</li>
-        <li data-en="0.0100 M Na2H2EDTA, pH 10 ammonia buffer, 1 M NaOH">0.0100 M EDTA 二鈉鹽溶液、pH 10 氨緩衝液、1 M NaOH</li>
+        <li data-en="50 mL burette, retort stand, 250 mL conical flask, pipette, magnetic stirrer">50 mL 滴定管、鐵架、250 mL 錐形瓶、移液管、磁石攪拌器</li>
+        <li data-en-html="0.0100 M Na&lt;sub&gt;2&lt;/sub&gt;H&lt;sub&gt;2&lt;/sub&gt;EDTA, pH 10 ammonia buffer, 1 M NaOH">0.0100 M EDTA 二鈉鹽溶液、pH 10 氨緩衝液、1 M NaOH</li>
         <li data-en="Eriochrome Black T (EBT) and a calcium indicator (Patton–Reeder)">指示劑 EBT（羊毛鉻黑 T）、鈣指示劑（NN 指示劑）</li>
         <li data-en="Calcium ion-selective electrode and meter (optional)">鈣離子選擇性電極與讀數計（選用）</li>
       </ul>
 
       <h2 style="margin-top:18px" data-en="Principle">原理</h2>
       <h3 data-en="What hardness means">硬度是什麼</h3>
-      <p data-en-html="Hardness \(H\) is the total concentration of Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt;, expressed as if it were all calcium carbonate (molar mass 100.09 g/mol), in mg/L:">硬度 \(H\) 是水中 Ca<sup>2+</sup> 與 Mg<sup>2+</sup> 的總濃度，習慣上把它們全部換算成碳酸鈣（莫耳質量 100.09 g/mol）的毫克數，單位 mg/L：</p>
+      <p data-en-html="Hardness \(H\) is the total concentration of Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt;, expressed as if it were all calcium carbonate (molar mass 100.09 g/mol), in mg/L:">硬度 \(H\) 是水中 Ca<sup>2+</sup> 與 Mg<sup>2+</sup> 的總濃度，習慣上把它們全部換算成碳酸鈣（莫耳質量 100.09 g/mol）的毫克數，單位 mg/L：</p>
       <div class="formula multi">
         \[ H = \big([\mathrm{Ca^{2+}}] + [\mathrm{Mg^{2+}}]\big)\times 100.09\ \mathrm{g/mol} \]
       </div>
-      <p data-en-html="with the concentrations in mmol/L. So 40.08 mg/L of Ca&lt;sup&gt;2+&lt;/sup&gt; or 24.31 mg/L of Mg&lt;sup&gt;2+&lt;/sup&gt; each counts as 100.09 mg/L. A common scale (US Geological Survey): 0–60 mg/L soft, 61–120 moderately hard, 121–180 hard, above 180 very hard. Taiwan’s drinking-water standard allows up to 300 mg/L. Hardness is not harmful to health, but it wastes soap and clogs kettles, boilers and pipes with scale.">濃度以 mmol/L 計算。所以 40.08 mg/L 的 Ca<sup>2+</sup>、或 24.31 mg/L 的 Mg<sup>2+</sup>，都相當於 100.09 mg/L 的硬度。常用的分級（美國地質調查所）：0–60 mg/L 軟水、61–120 中度硬水、121–180 硬水、180 以上極硬水。我國飲用水水質標準的總硬度上限是 300 mg/L。硬水對健康無害，但會浪費肥皂，水垢也會塞住水壺、鍋爐與管路。</p>
+      <p data-en-html="with the concentrations in mmol/L. So 40.08 mg/L of Ca&lt;sup&gt;2+&lt;/sup&gt; or 24.31 mg/L of Mg&lt;sup&gt;2+&lt;/sup&gt; each counts as 100.09 mg/L. A common scale (US Geological Survey): 0–60 mg/L soft, 61–120 moderately hard, 121–180 hard, above 180 very hard. Taiwan’s drinking-water standard allows up to 300 mg/L. Hardness is not harmful to health, but it wastes soap and clogs kettles, boilers and pipes with scale.">濃度以 mmol/L 計算。所以 40.08 mg/L 的 Ca<sup>2+</sup>、或 24.31 mg/L 的 Mg<sup>2+</sup>，都相當於 100.09 mg/L 的硬度。常用的分級（美國地質調查所）：0–60 mg/L 軟水、61–120 中度硬水、121–180 硬水、180 以上極硬水。我國飲用水水質標準的總硬度上限是 300 mg/L。硬水對健康無害，但會浪費肥皂，水垢也會塞住水壺、鍋爐與管路。</p>
 
       <h3 data-en="Temporary and permanent hardness">暫時硬度與永久硬度</h3>
       <p data-en-html="Rain water takes up CO&lt;sub&gt;2&lt;/sub&gt; and dissolves limestone as calcium hydrogencarbonate. On boiling the reaction runs backwards and calcium carbonate — the kettle scale — comes out:">雨水溶入 CO<sub>2</sub> 後溶解石灰岩，變成碳酸氫鈣；煮沸時反應倒過來，碳酸鈣（水垢）析出：</p>
@@ -355,22 +403,22 @@
       <div class="formula multi">
         \[ H\ (\mathrm{mg/L}) = \frac{c_{\mathrm{EDTA}}\,V_{\mathrm{EDTA}}}{V_{\mathrm{s}}}\times 100.09\times 1000 \]
       </div>
-      <p data-en-html="For 50.00 mL of water and 0.0100 M EDTA, every millilitre of EDTA means 20.02 mg/L of hardness. Only the Y&lt;sup&gt;4−&lt;/sup&gt; form binds metal, and at pH 10 just a fraction \(\alpha_{\mathrm{Y^{4-}}} \approx 0.30\) of the free EDTA is Y&lt;sup&gt;4−&lt;/sup&gt; (pK&lt;sub&gt;a6&lt;/sub&gt; = 10.37); the &lt;strong&gt;conditional formation constant&lt;/strong&gt; \(K_f' = \alpha_{\mathrm{Y^{4-}}}K_f\) is what counts. In acid solution it becomes too small, which is why the titration is buffered at pH 10.">取 50.00 mL 水樣、用 0.0100 M EDTA 時，每 1 mL EDTA 相當於 20.02 mg/L 的硬度。只有 Y<sup>4−</sup> 會抓金屬，pH 10 時游離的 EDTA 只有 \(\alpha_{\mathrm{Y^{4-}}} \approx 0.30\) 是 Y<sup>4−</sup>（pK<sub>a6</sub> = 10.37），真正有效的是<strong>條件生成常數</strong> \(K_f' = \alpha_{\mathrm{Y^{4-}}}K_f\)。在酸性溶液中它太小，所以要用緩衝液維持 pH 10。</p>
+      <p data-en-html="For 50.00 mL of water and 0.0100 M EDTA, every millilitre of EDTA means 20.02 mg/L of hardness. Only the Y&lt;sup&gt;4−&lt;/sup&gt; form binds metal, and at pH 10 just a fraction \(\alpha_{\mathrm{Y^{4-}}} \approx 0.30\) of the free EDTA is Y&lt;sup&gt;4−&lt;/sup&gt; (pK&lt;sub&gt;a6&lt;/sub&gt; = 10.37); the &lt;strong&gt;conditional formation constant&lt;/strong&gt; \(K_f' = \alpha_{\mathrm{Y^{4-}}}K_f\) is what counts. In acid solution it becomes too small, which is why the titration is buffered at pH 10.">取 50.00 mL 水樣、用 0.0100 M EDTA 時，每 1 mL EDTA 相當於 20.02 mg/L 的硬度。只有 Y<sup>4−</sup> 會抓金屬，pH 10 時游離的 EDTA 只有 \(\alpha_{\mathrm{Y^{4-}}} \approx 0.30\) 是 Y<sup>4−</sup>（pK<sub>a6</sub> = 10.37），真正有效的是<strong>條件生成常數</strong> \(K_f' = \alpha_{\mathrm{Y^{4-}}}K_f\)。在酸性溶液中它太小，所以要用緩衝液維持 pH 10。</p>
 
       <h3 data-en="How the indicator works">指示劑怎麼變色</h3>
       <p data-en-html="Eriochrome Black T is blue at pH 10 (HIn&lt;sup&gt;2−&lt;/sup&gt;) but wine red when it holds a metal ion. Its complex with Mg&lt;sup&gt;2+&lt;/sup&gt; is weaker than MgY&lt;sup&gt;2−&lt;/sup&gt;, so the last drops of EDTA pull the magnesium away from the indicator and the flask turns pure blue (MgIn&lt;sup&gt;−&lt;/sup&gt; wine red, HIn&lt;sup&gt;2−&lt;/sup&gt; blue):">EBT 在 pH 10 是藍色（HIn<sup>2−</sup>），抓住金屬離子時是酒紅色。它和 Mg<sup>2+</sup> 的錯合物比 MgY<sup>2−</sup> 弱，所以最後幾滴 EDTA 把鎂從指示劑手上搶走，溶液變成純藍色（MgIn<sup>−</sup> 酒紅、HIn<sup>2−</sup> 藍）：</p>
       <div class="formula multi">
         \[ \mathrm{MgIn^-} + \mathrm{HY^{3-}} \rightarrow \mathrm{MgY^{2-}} + \mathrm{HIn^{2-}} \]
       </div>
-      <p data-en-html="CaY&lt;sup&gt;2−&lt;/sup&gt; is about 72 times more stable than MgY&lt;sup&gt;2−&lt;/sup&gt;, so EDTA takes the calcium first and the magnesium last — and EBT binds Mg&lt;sup&gt;2+&lt;/sup&gt; 40 times more strongly than Ca&lt;sup&gt;2+&lt;/sup&gt;. With calcium alone, the weak CaIn&lt;sup&gt;−&lt;/sup&gt; lets go too early and the colour changes gradually before the equivalence point. A little Mg–EDTA in the buffer cures this: Ca&lt;sup&gt;2+&lt;/sup&gt; frees the Mg&lt;sup&gt;2+&lt;/sup&gt;, which colours the indicator and is titrated last, and the EDTA it came with balances the account exactly. At pH 12 Mg&lt;sup&gt;2+&lt;/sup&gt; precipitates as Mg(OH)&lt;sub&gt;2&lt;/sub&gt; (\(K_{sp} = 5.61\times10^{-12}\)), so a calcium indicator and EDTA measure the calcium alone; magnesium hardness = total − calcium hardness.">CaY<sup>2−</sup> 比 MgY<sup>2−</sup> 穩定約 72 倍，所以 EDTA 先抓鈣、最後才抓鎂；而 EBT 抓 Mg<sup>2+</sup> 比抓 Ca<sup>2+</sup> 緊 40 倍。水中只有鈣時，弱的 CaIn<sup>−</sup> 太早放手，顏色在當量點之前就慢慢變了。緩衝液裡加一點 Mg–EDTA 可以解決：Ca<sup>2+</sup> 把 Mg<sup>2+</sup> 換出來，由它讓指示劑呈紅色、最後才被滴定，而它帶進來的 EDTA 剛好抵銷，不影響結果。在 pH 12，Mg<sup>2+</sup> 沉澱成 Mg(OH)<sub>2</sub>（\(K_{sp} = 5.61\times10^{-12}\)），用鈣指示劑與 EDTA 只會測到鈣；鎂硬度 = 總硬度 − 鈣硬度。</p>
+      <p data-en-html="CaY&lt;sup&gt;2−&lt;/sup&gt; is about 72 times more stable than MgY&lt;sup&gt;2−&lt;/sup&gt;, so EDTA takes the calcium first and the magnesium last — and EBT binds Mg&lt;sup&gt;2+&lt;/sup&gt; 40 times more strongly than Ca&lt;sup&gt;2+&lt;/sup&gt;. With calcium alone, the weak CaIn&lt;sup&gt;−&lt;/sup&gt; lets go too early and the colour changes gradually before the equivalence point. A little Mg–EDTA in the buffer cures this: Ca&lt;sup&gt;2+&lt;/sup&gt; frees the Mg&lt;sup&gt;2+&lt;/sup&gt;, which colours the indicator and is titrated last, and the EDTA it came with balances the account exactly. At pH 12 Mg&lt;sup&gt;2+&lt;/sup&gt; precipitates as Mg(OH)&lt;sub&gt;2&lt;/sub&gt; (\(K_{sp} = 5.61\times10^{-12}\)), so a calcium indicator and EDTA measure the calcium alone; magnesium hardness = total − calcium hardness.">CaY<sup>2−</sup> 比 MgY<sup>2−</sup> 穩定約 72 倍，所以 EDTA 先抓鈣、最後才抓鎂；而 EBT 抓 Mg<sup>2+</sup> 比抓 Ca<sup>2+</sup> 緊 40 倍。水中只有鈣時，弱的 CaIn<sup>−</sup> 太早放手，顏色在當量點之前就慢慢變了。緩衝液裡加一點 Mg–EDTA 可以解決：Ca<sup>2+</sup> 把 Mg<sup>2+</sup> 換出來，由它讓指示劑呈紅色、最後才被滴定，而它帶進來的 EDTA 剛好抵銷，不影響結果。在 pH 12，Mg<sup>2+</sup> 沉澱成 Mg(OH)<sub>2</sub>（\(K_{sp} = 5.61\times10^{-12}\)），用鈣指示劑與 EDTA 只會測到鈣；鎂硬度 = 總硬度 − 鈣硬度。</p>
 
       <h3 data-en="Procedure">實驗步驟</h3>
       <ol>
-        <li data-en="Soap test: put 5 mL of each water in a test tube, add soap solution drop by drop and shake after each drop; count the drops until the lather lasts 30 seconds.">肥皂試驗：各取 5 mL 水樣放進試管，一滴一滴加肥皂水，每加一滴就搖一搖，數到泡沫能維持 30 秒為止。</li>
-        <li data-en="Boil a hard water for 10 minutes, cool, filter and test again; try washing soda and the resin column on fresh samples.">把硬水煮沸 10 分鐘，冷卻、過濾後再試一次；另取水樣試試洗滌鹼與樹脂管柱。</li>
-        <li data-en="Pipette 50.00 mL of water into a conical flask, add 2 mL of pH 10 buffer and two drops of EBT: the solution is wine red.">用移液管取 50.00 mL 水樣放進錐形瓶，加 2 mL pH 10 緩衝液與兩滴 EBT，溶液呈酒紅色。</li>
-        <li data-en="Titrate with 0.0100 M EDTA while stirring. Near the end the colour passes through purple; add single drops, then half drops, until the last trace of red has gone and the solution is pure blue.">一邊攪拌一邊用 0.0100 M EDTA 滴定。接近終點時溶液變成紫色，改成一滴一滴、最後半滴半滴地加，直到最後一點紅色消失、變成純藍色。</li>
-        <li data-en="For calcium hardness, add 2 mL of 1 M NaOH instead (pH about 12; Mg(OH)2 makes it slightly cloudy) and the calcium indicator, and titrate to blue in the same way.">測鈣硬度時改加 2 mL 的 1 M NaOH（pH 約 12，Mg(OH)<sub>2</sub> 讓溶液微微混濁）與鈣指示劑，同樣滴定到藍色。</li>
+        <li data-en="Soap test: put 5 mL of each water in a test tube, add soap solution drop by drop and shake after each drop; count the drops until the lather lasts 30 seconds.">肥皂試驗：各取 5 mL 水樣放進試管，一滴一滴加肥皂水，每加一滴就搖一搖，數到泡沫能維持 30 秒為止。</li>
+        <li data-en="Boil a hard water for 10 minutes, cool, filter and test again; try washing soda and the resin column on fresh samples.">把硬水煮沸 10 分鐘，冷卻、過濾後再試一次；另取水樣試試洗滌鹼與樹脂管柱。</li>
+        <li data-en="Pipette 50.00 mL of water into a conical flask, add 2 mL of pH 10 buffer and two drops of EBT: the solution is wine red.">用移液管取 50.00 mL 水樣放進錐形瓶，加 2 mL pH 10 緩衝液與兩滴 EBT，溶液呈酒紅色。</li>
+        <li data-en="Titrate with 0.0100 M EDTA while stirring. Near the end the colour passes through purple; add single drops, then half drops, until the last trace of red has gone and the solution is pure blue.">一邊攪拌一邊用 0.0100 M EDTA 滴定。接近終點時溶液變成紫色，改成一滴一滴、最後半滴半滴地加，直到最後一點紅色消失、變成純藍色。</li>
+        <li data-en-html="For calcium hardness, add 2 mL of 1 M NaOH instead (pH about 12; Mg(OH)&lt;sub&gt;2&lt;/sub&gt; makes it slightly cloudy) and the calcium indicator, and titrate to blue in the same way.">測鈣硬度時改加 2 mL 的 1 M NaOH（pH 約 12，Mg(OH)<sub>2</sub> 讓溶液微微混濁）與鈣指示劑，同樣滴定到藍色。</li>
       </ol>
 
       <h3 data-en="Things to watch out for">注意事項</h3>
@@ -382,8 +430,8 @@
 
       <h3 data-en="Questions for discussion">想一想</h3>
       <ol>
-        <li data-en="50.00 mL of tap water needs 6.25 mL of 0.0100 M EDTA at pH 10. What is the total hardness? Is it soft or hard?">50.00 mL 自來水在 pH 10 用去 0.0100 M EDTA 6.25 mL，總硬度是多少？算軟水還是硬水？</li>
-        <li data-en="The same water needs 4.49 mL at pH 12. What are the calcium and magnesium hardness, and how many mg/L of Mg2+ does it contain?">同一種水在 pH 12 用去 4.49 mL，鈣硬度、鎂硬度各是多少？水中有多少 mg/L 的 Mg<sup>2+</sup>？</li>
+        <li data-en="50.00 mL of tap water needs 6.25 mL of 0.0100 M EDTA at pH 10. What is the total hardness? Is it soft or hard?">50.00 mL 自來水在 pH 10 用去 0.0100 M EDTA 6.25 mL，總硬度是多少？算軟水還是硬水？</li>
+        <li data-en-html="The same water needs 4.49 mL at pH 12. What are the calcium and magnesium hardness, and how many mg/L of Mg&lt;sup&gt;2+&lt;/sup&gt; does it contain?">同一種水在 pH 12 用去 4.49 mL，鈣硬度、鎂硬度各是多少？水中有多少 mg/L 的 Mg<sup>2+</sup>？</li>
         <li data-en="Why does boiling remove only part of the hardness of some waters, and none of others?">為什麼煮沸只能除去某些水的一部分硬度，對另一些水卻完全沒用？</li>
         <li data-en="Why does washing soda remove calcium well but not magnesium?">為什麼洗滌鹼除得掉鈣，卻除不太掉鎂？</li>
         <li data-en="Why is the end point early and gradual when the water contains calcium but no magnesium, and how does Mg–EDTA in the buffer fix it?">水中只有鈣、沒有鎂時，終點為什麼會提早而且不明顯？緩衝液裡的 Mg–EDTA 怎樣解決這個問題？</li>
@@ -392,18 +440,18 @@
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="\(n = 0.0100 \times 6.25 = 0.0625\) mmol in 50.00 mL, i.e. 1.25 mmol/L; hardness \(= 1.25 \times 100.09 = 125\) mg/L — hard water on the USGS scale, but within the 300 mg/L drinking-water limit.">\(n = 0.0100 \times 6.25 = 0.0625\) mmol，在 50.00 mL 中是 1.25 mmol/L；硬度 \(= 1.25 \times 100.09 = 125\) mg/L，照美國地質調查所的分級算硬水，但在飲用水標準 300 mg/L 以內。</li>
-          <li data-en-html="Calcium hardness \(= 4.49 \times 20.02 = 89.9\) mg/L; magnesium hardness \(= 125 - 89.9 = 35.2\) mg/L, i.e. 0.352 mmol/L of Mg&lt;sup&gt;2+&lt;/sup&gt; \(= 0.352 \times 24.31 = 8.6\) mg/L.">鈣硬度 \(= 4.49 \times 20.02 = 89.9\) mg/L；鎂硬度 \(= 125 - 89.9 = 35.2\) mg/L，相當於 0.352 mmol/L 的 Mg<sup>2+</sup>，\(= 0.352 \times 24.31 = 8.6\) mg/L。</li>
-          <li data-en-html="Only hardness that is paired with hydrogencarbonate precipitates on boiling (two HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; for each Ca&lt;sup&gt;2+&lt;/sup&gt;). If there is more Ca&lt;sup&gt;2+&lt;/sup&gt; + Mg&lt;sup&gt;2+&lt;/sup&gt; than HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt;/2, the rest (balanced by Cl&lt;sup&gt;−&lt;/sup&gt; or SO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;) stays; water with no hydrogencarbonate keeps all its hardness — and even becomes harder as water evaporates. A little CaCO&lt;sub&gt;3&lt;/sub&gt; (about 13 mg/L) always stays dissolved.">煮沸時只有和碳酸氫根搭配的硬度會沉澱（每個 Ca<sup>2+</sup> 要兩個 HCO<sub>3</sub><sup>−</sup>）。Ca<sup>2+</sup> + Mg<sup>2+</sup> 比 HCO<sub>3</sub><sup>−</sup>/2 多的部分（與 Cl<sup>−</sup>、SO<sub>4</sub><sup>2−</sup> 搭配）留在水中；完全沒有碳酸氫根的水，硬度一點也不會減少，水蒸發後還會變得更硬。另外總有少量 CaCO<sub>3</sub>（約 13 mg/L）仍溶在水中。</li>
-          <li data-en-html="The solubility products differ a thousandfold: CaCO&lt;sub&gt;3&lt;/sub&gt; precipitates once \([\mathrm{Ca^{2+}}][\mathrm{CO_3^{2-}}]\) exceeds 3.36 × 10&lt;sup&gt;−9&lt;/sup&gt;, but MgCO&lt;sub&gt;3&lt;/sub&gt; needs 6.82 × 10&lt;sup&gt;−6&lt;/sup&gt; — with 1 mM Mg&lt;sup&gt;2+&lt;/sup&gt; that would take about 7 mM of carbonate left over. In water treatment, lime is used to remove magnesium as Mg(OH)&lt;sub&gt;2&lt;/sub&gt;.">兩者的溶度積差了上千倍：\([\mathrm{Ca^{2+}}][\mathrm{CO_3^{2-}}]\) 超過 3.36 × 10<sup>−9</sup> 就沉澱，碳酸鎂卻要超過 6.82 × 10<sup>−6</sup>——水中有 1 mM 的 Mg<sup>2+</sup> 時，要剩下約 7 mM 的碳酸根才會沉澱。淨水廠是用石灰讓鎂變成 Mg(OH)<sub>2</sub> 沉澱。</li>
-          <li data-en-html="EBT binds Ca&lt;sup&gt;2+&lt;/sup&gt; only weakly (\(K_f' \approx 7\times10^{3}\) at pH 10). Already when 85–90% of the calcium has been titrated, the free Ca&lt;sup&gt;2+&lt;/sup&gt; is too low to keep the indicator red, so the colour drifts through purple before the equivalence point. Mg–EDTA adds Mg&lt;sup&gt;2+&lt;/sup&gt; (which EBT holds 40 times more firmly) together with exactly the same amount of EDTA: calcium displaces the magnesium, the magnesium is titrated last and gives a sharp change right at the equivalence point.">EBT 抓 Ca<sup>2+</sup> 抓得不緊（pH 10 時 \(K_f' \approx 7\times10^{3}\)）。鈣才滴定了 85–90%，游離的 Ca<sup>2+</sup> 就已經不夠讓指示劑保持紅色，所以顏色在當量點前慢慢經過紫色變藍。Mg–EDTA 加進 Mg<sup>2+</sup>（EBT 抓它緊 40 倍）和等量的 EDTA：鈣把鎂換出來，鎂最後才被滴定，正好在當量點發生明顯的變色。</li>
+          <li data-en-html="\(n = 0.0100 \times 6.25 = 0.0625\) mmol in 50.00 mL, i.e. 1.25 mmol/L; hardness \(= 1.25 \times 100.09 = 125\) mg/L — hard water on the USGS scale, but within the 300 mg/L drinking-water limit.">\(n = 0.0100 \times 6.25 = 0.0625\) mmol，在 50.00 mL 中是 1.25 mmol/L；硬度 \(= 1.25 \times 100.09 = 125\) mg/L，照美國地質調查所的分級算硬水，但在飲用水標準 300 mg/L 以內。</li>
+          <li data-en-html="Calcium hardness \(= 4.49 \times 20.02 = 89.9\) mg/L; magnesium hardness \(= 125 - 89.9 = 35.2\) mg/L, i.e. 0.352 mmol/L of Mg&lt;sup&gt;2+&lt;/sup&gt; \(= 0.352 \times 24.31 = 8.6\) mg/L.">鈣硬度 \(= 4.49 \times 20.02 = 89.9\) mg/L；鎂硬度 \(= 125 - 89.9 = 35.2\) mg/L，相當於 0.352 mmol/L 的 Mg<sup>2+</sup>，\(= 0.352 \times 24.31 = 8.6\) mg/L。</li>
+          <li data-en-html="Only hardness that is paired with hydrogencarbonate precipitates on boiling (two HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; for each Ca&lt;sup&gt;2+&lt;/sup&gt;). If there is more Ca&lt;sup&gt;2+&lt;/sup&gt; + Mg&lt;sup&gt;2+&lt;/sup&gt; than HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt;/2, the rest (balanced by Cl&lt;sup&gt;−&lt;/sup&gt; or SO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;) stays; water with no hydrogencarbonate keeps all its hardness — and even becomes harder as water evaporates. A little CaCO&lt;sub&gt;3&lt;/sub&gt; (about 13 mg/L) always stays dissolved.">煮沸時只有和碳酸氫根搭配的硬度會沉澱（每個 Ca<sup>2+</sup> 要兩個 HCO<sub>3</sub><sup>−</sup>）。Ca<sup>2+</sup> + Mg<sup>2+</sup> 比 HCO<sub>3</sub><sup>−</sup>/2 多的部分（與 Cl<sup>−</sup>、SO<sub>4</sub><sup>2−</sup> 搭配）留在水中；完全沒有碳酸氫根的水，硬度一點也不會減少，水蒸發後還會變得更硬。另外總有少量 CaCO<sub>3</sub>（約 13 mg/L）仍溶在水中。</li>
+          <li data-en-html="The solubility products differ a thousandfold: CaCO&lt;sub&gt;3&lt;/sub&gt; precipitates once \([\mathrm{Ca^{2+}}][\mathrm{CO_3^{2-}}]\) exceeds 3.36 × 10&lt;sup&gt;−9&lt;/sup&gt;, but MgCO&lt;sub&gt;3&lt;/sub&gt; needs 6.82 × 10&lt;sup&gt;−6&lt;/sup&gt; — with 1 mM Mg&lt;sup&gt;2+&lt;/sup&gt; that would take about 7 mM of carbonate left over. In water treatment, lime is used to remove magnesium as Mg(OH)&lt;sub&gt;2&lt;/sub&gt;.">兩者的溶度積差了上千倍：\([\mathrm{Ca^{2+}}][\mathrm{CO_3^{2-}}]\) 超過 3.36 × 10<sup>−9</sup> 就沉澱，碳酸鎂卻要超過 6.82 × 10<sup>−6</sup>——水中有 1 mM 的 Mg<sup>2+</sup> 時，要剩下約 7 mM 的碳酸根才會沉澱。淨水廠是用石灰讓鎂變成 Mg(OH)<sub>2</sub> 沉澱。</li>
+          <li data-en-html="EBT binds Ca&lt;sup&gt;2+&lt;/sup&gt; only weakly (\(K_f' \approx 7\times10^{3}\) at pH 10). Already when 85–90 % of the calcium has been titrated, the free Ca&lt;sup&gt;2+&lt;/sup&gt; is too low to keep the indicator red, so the colour drifts through purple before the equivalence point. Mg–EDTA adds Mg&lt;sup&gt;2+&lt;/sup&gt; (which EBT holds 40 times more firmly) together with exactly the same amount of EDTA: calcium displaces the magnesium, the magnesium is titrated last and gives a sharp change right at the equivalence point.">EBT 抓 Ca<sup>2+</sup> 抓得不緊（pH 10 時 \(K_f' \approx 7\times10^{3}\)）。鈣才滴定了 85–90 %，游離的 Ca<sup>2+</sup> 就已經不夠讓指示劑保持紅色，所以顏色在當量點前慢慢經過紫色變藍。Mg–EDTA 加進 Mg<sup>2+</sup>（EBT 抓它緊 40 倍）和等量的 EDTA：鈣把鎂換出來，鎂最後才被滴定，正好在當量點發生明顯的變色。</li>
           <li data-en-html="No — each Ca&lt;sup&gt;2+&lt;/sup&gt; or Mg&lt;sup&gt;2+&lt;/sup&gt; is replaced by two Na&lt;sup&gt;+&lt;/sup&gt;, so the number of ions even goes up. Softening removes hardness, not salt: for that you need distillation or reverse osmosis.">沒有——每個 Ca<sup>2+</sup> 或 Mg<sup>2+</sup> 換成兩個 Na<sup>+</sup>，離子的數目反而變多。軟化除去的是硬度，不是鹽分；要除去鹽分得用蒸餾或逆滲透。</li>
         </ol>
       </details>
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en-html="&lt;strong&gt;Soap counts.&lt;/strong&gt; Count the drops of soap for distilled water, tap water and groundwater. Each extra 25 mg/L of hardness costs about one more drop — and leaves more scum."><strong>肥皂的帳</strong>：數一數蒸餾水、自來水、地下水各要幾滴肥皂才起泡。硬度每多約 25 mg/L 就要多一滴，浮渣也越多。</li>
+        <li data-en-html="&lt;strong&gt;Soap counts.&lt;/strong&gt; Count the drops of soap for distilled water, tap water and groundwater. Each extra 25 mg/L of hardness costs about one more drop — and leaves more scum."><strong>肥皂的帳</strong>：數一數蒸餾水、自來水、地下水各要幾滴肥皂才起泡。硬度每多約 25 mg/L 就要多一滴，浮渣也越多。</li>
         <li data-en-html="&lt;strong&gt;Temporary and permanent.&lt;/strong&gt; Boil the groundwater and watch the scale grow; then set HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; to zero and boil again."><strong>暫時與永久</strong>：煮沸地下水，看水垢長出來；再把 HCO<sub>3</sub><sup>−</sup> 調成 0 重煮一次，比較看看。</li>
         <li data-en-html="&lt;strong&gt;Washing soda.&lt;/strong&gt; Add washing soda to the mineral water: compare what happens to Ca&lt;sup&gt;2+&lt;/sup&gt; and to Mg&lt;sup&gt;2+&lt;/sup&gt;."><strong>洗滌鹼</strong>：在礦泉水中加洗滌鹼，比較 Ca<sup>2+</sup> 與 Mg<sup>2+</sup> 各剩多少。</li>
         <li data-en-html="&lt;strong&gt;Where the sodium comes from.&lt;/strong&gt; Run water through the resin and watch Na&lt;sup&gt;+&lt;/sup&gt; in the magnifier. Keep using it until hardness leaks through; which ion comes through first?"><strong>多出來的鈉</strong>：讓水通過樹脂，看放大鏡裡的 Na<sup>+</sup>。一直用到硬度漏出來：先漏出來的是哪一種離子？</li>
@@ -413,11 +461,11 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="EDTA acid constants (pK&lt;sub&gt;a&lt;/sub&gt; 0.0, 1.5, 2.00, 2.69, 6.13, 10.37) and formation constants (log K&lt;sub&gt;f&lt;/sub&gt; 10.65 for CaY&lt;sup&gt;2−&lt;/sup&gt;, 8.79 for MgY&lt;sup&gt;2−&lt;/sup&gt;) from Harris, &lt;em&gt;Quantitative Chemical Analysis&lt;/em&gt; (25 °C, ionic strength 0.1). Eriochrome Black T: pK&lt;sub&gt;a&lt;/sub&gt; 6.3 and 11.55, log K&lt;sub&gt;f&lt;/sub&gt; 7.0 for MgIn&lt;sup&gt;−&lt;/sup&gt; and 5.4 for CaIn&lt;sup&gt;−&lt;/sup&gt; (Skoog, &lt;em&gt;Fundamentals of Analytical Chemistry&lt;/em&gt;). The calcium indicator at pH 12 is given a conditional constant of 10&lt;sup&gt;5&lt;/sup&gt; for Ca&lt;sup&gt;2+&lt;/sup&gt; (a teaching value: published values vary). Solubility products at 25 °C from the CRC Handbook: CaCO&lt;sub&gt;3&lt;/sub&gt; (calcite) 3.36 × 10&lt;sup&gt;−9&lt;/sup&gt;, MgCO&lt;sub&gt;3&lt;/sub&gt; 6.82 × 10&lt;sup&gt;−6&lt;/sup&gt;, Mg(OH)&lt;sub&gt;2&lt;/sub&gt; 5.61 × 10&lt;sup&gt;−12&lt;/sup&gt;.">EDTA 的解離常數（pK<sub>a</sub> 0.0、1.5、2.00、2.69、6.13、10.37）與生成常數（CaY<sup>2−</sup> 的 log K<sub>f</sub> 10.65、MgY<sup>2−</sup> 8.79）取自 Harris《Quantitative Chemical Analysis》（25 °C、離子強度 0.1）。EBT：pK<sub>a</sub> 6.3 與 11.55，MgIn<sup>−</sup> 的 log K<sub>f</sub> 7.0、CaIn<sup>−</sup> 5.4（Skoog《Fundamentals of Analytical Chemistry》）。pH 12 的鈣指示劑與 Ca<sup>2+</sup> 的條件生成常數取 10<sup>5</sup>（教學取值，文獻數值不一）。溶度積（25 °C）取自 CRC Handbook：CaCO<sub>3</sub>（方解石）3.36 × 10<sup>−9</sup>、MgCO<sub>3</sub> 6.82 × 10<sup>−6</sup>、Mg(OH)<sub>2</sub> 5.61 × 10<sup>−12</sup>。</li>
-        <li data-en-html="After every drop the four mass balances (calcium, magnesium, EDTA and indicator) are solved with the conditional constants by nested bisection, so the curve is exact at the equivalence point as well; at pH 12 free Mg&lt;sup&gt;2+&lt;/sup&gt; is held at the saturation of Mg(OH)&lt;sub&gt;2&lt;/sub&gt; (in reality Mg(OH)&lt;sub&gt;2&lt;/sub&gt; redissolves only slowly). The tests check it against the exact results for calcium alone: free Ca&lt;sup&gt;2+&lt;/sup&gt; = \(\sqrt{c/K_f'}\) at the equivalence point and pCa = log K&lt;sub&gt;f&lt;/sub&gt;′ at twice that volume. The pH is held fixed by the buffer; activity coefficients are 1; the indicator is 5 × 10&lt;sup&gt;−4&lt;/sup&gt; mmol per flask and the Mg–EDTA 0.010 mmol. “Pure blue” means at most 10% of the indicator still holds a metal ion.">每加一滴，就用條件生成常數、以巢狀二分法解鈣、鎂、EDTA、指示劑四個質量平衡，所以當量點也是精確解；pH 12 時游離的 Mg<sup>2+</sup> 維持在 Mg(OH)<sub>2</sub> 的飽和濃度（實際上 Mg(OH)<sub>2</sub> 溶回去很慢）。測試用只有鈣時的精確結果核對：當量點的游離 Ca<sup>2+</sup> = \(\sqrt{c/K_f'}\)，兩倍當量點時 pCa = log K<sub>f</sub>′。pH 由緩衝液固定；活性係數當成 1；每瓶指示劑 5 × 10<sup>−4</sup> mmol、Mg–EDTA 0.010 mmol。「純藍色」指仍和金屬結合的指示劑不超過 10%。</li>
-        <li data-en-html="Boiling for 10 minutes evaporates 100 mL and precipitates as much Ca&lt;sup&gt;2+&lt;/sup&gt; (then Mg&lt;sup&gt;2+&lt;/sup&gt;) as the hydrogencarbonate allows, leaving 0.13 mmol/L dissolved (the solubility of CaCO&lt;sub&gt;3&lt;/sub&gt;, about 13 mg/L) — a simplification of the real carbonate equilibrium. Washing soda: CaCO&lt;sub&gt;3&lt;/sub&gt; and MgCO&lt;sub&gt;3&lt;/sub&gt; precipitate to their K&lt;sub&gt;sp&lt;/sub&gt;, ignoring the hydrolysis of carbonate. The resin holds 5.0 mmol of divalent ions, takes Ca&lt;sup&gt;2+&lt;/sup&gt; before Mg&lt;sup&gt;2+&lt;/sup&gt; and lets 0.2% through even when fresh.">煮沸 10 分鐘蒸發 100 mL，碳酸氫根夠多少就沉澱多少 Ca<sup>2+</sup>（再來是 Mg<sup>2+</sup>），仍溶有 0.13 mmol/L（CaCO<sub>3</sub> 的溶解度，約 13 mg/L）——這是把真實的碳酸鹽平衡簡化。洗滌鹼：CaCO<sub>3</sub>、MgCO<sub>3</sub> 照溶度積沉澱，忽略碳酸根的水解。樹脂最多抓 5.0 mmol 二價離子，先抓 Ca<sup>2+</sup> 再抓 Mg<sup>2+</sup>，新鮮時也有 0.2% 漏過。</li>
-        <li data-en-html="Soap test: the soap (0.050 M) precipitates Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt; completely in a 2 : 1 ratio; lather lasts once the soap left over reaches 3 × 10&lt;sup&gt;−4&lt;/sup&gt; M (about its critical micelle concentration). The detergent is treated as forming no precipitate. These are teaching approximations.">肥皂試驗：肥皂（0.050 M）與 Ca<sup>2+</sup>、Mg<sup>2+</sup> 以 2 : 1 完全沉澱；多出來的肥皂達到 3 × 10<sup>−4</sup> M（約為它的臨界微胞濃度）就有持久的泡沫。合成清潔劑當成完全不沉澱。這些是教學近似。</li>
-        <li data-en-html="Colours: the absorbances of the metal–indicator complex (wine red), the free indicator (blue) and, for EBT, its orange In&lt;sup&gt;3−&lt;/sup&gt; form in red, green and blue light (approximate teaching values) are added over a 4 cm path and turned into transmitted light (Beer’s law). The water samples are typical compositions, not measurements of any particular place. The 3D view draws 40 metal ions and 8 indicator molecules in the same proportions as the flask (which ions are caged by EDTA, which indicator molecules still hold a metal); the cage is a simplified octahedral EDTA with two N and four O around the metal.">顏色：金屬–指示劑錯合物（酒紅）、游離指示劑（藍）以及 EBT 的 In<sup>3−</sup>（橙）在紅、綠、藍光的吸光度（教學用近似值）以 4 cm 光程相加，再換成穿透光的顏色（比爾定律）。各種水樣是典型的組成，不是特定地點的實測值。3D 微觀畫 40 個金屬離子與 8 個指示劑分子，比例和瓶中相同（哪些離子被 EDTA 包住、哪些指示劑還抓著金屬）；籠子是簡化的八面體 EDTA：金屬周圍兩個 N、四個 O。</li>
+        <li data-en-html="EDTA acid constants (pK&lt;sub&gt;a&lt;/sub&gt; 0.0, 1.5, 2.00, 2.69, 6.13, 10.37) and formation constants (log K&lt;sub&gt;f&lt;/sub&gt; 10.65 for CaY&lt;sup&gt;2−&lt;/sup&gt;, 8.79 for MgY&lt;sup&gt;2−&lt;/sup&gt;) from Harris, &lt;em&gt;Quantitative Chemical Analysis&lt;/em&gt; (25 °C, ionic strength 0.1). Eriochrome Black T: pK&lt;sub&gt;a&lt;/sub&gt; 6.3 and 11.55, log K&lt;sub&gt;f&lt;/sub&gt; 7.0 for MgIn&lt;sup&gt;−&lt;/sup&gt; and 5.4 for CaIn&lt;sup&gt;−&lt;/sup&gt; (Skoog, &lt;em&gt;Fundamentals of Analytical Chemistry&lt;/em&gt;). The calcium indicator at pH 12 is given a conditional constant of 10&lt;sup&gt;5&lt;/sup&gt; for Ca&lt;sup&gt;2+&lt;/sup&gt; (a teaching value: published values vary). Solubility products at 25 °C from the CRC Handbook: CaCO&lt;sub&gt;3&lt;/sub&gt; (calcite) 3.36 × 10&lt;sup&gt;−9&lt;/sup&gt;, MgCO&lt;sub&gt;3&lt;/sub&gt; 6.82 × 10&lt;sup&gt;−6&lt;/sup&gt;, Mg(OH)&lt;sub&gt;2&lt;/sub&gt; 5.61 × 10&lt;sup&gt;−12&lt;/sup&gt;.">EDTA 的解離常數（pK<sub>a</sub> 0.0、1.5、2.00、2.69、6.13、10.37）與生成常數（CaY<sup>2−</sup> 的 log K<sub>f</sub> 10.65、MgY<sup>2−</sup> 8.79）取自 Harris《Quantitative Chemical Analysis》（25 °C、離子強度 0.1）。EBT：pK<sub>a</sub> 6.3 與 11.55，MgIn<sup>−</sup> 的 log K<sub>f</sub> 7.0、CaIn<sup>−</sup> 5.4（Skoog《Fundamentals of Analytical Chemistry》）。pH 12 的鈣指示劑與 Ca<sup>2+</sup> 的條件生成常數取 10<sup>5</sup>（教學取值，文獻數值不一）。溶度積（25 °C）取自 CRC Handbook：CaCO<sub>3</sub>（方解石）3.36 × 10<sup>−9</sup>、MgCO<sub>3</sub> 6.82 × 10<sup>−6</sup>、Mg(OH)<sub>2</sub> 5.61 × 10<sup>−12</sup>。</li>
+        <li data-en-html="After every drop the four mass balances (calcium, magnesium, EDTA and indicator) are solved with the conditional constants by nested bisection, so the curve is exact at the equivalence point as well; at pH 12 free Mg&lt;sup&gt;2+&lt;/sup&gt; is held at the saturation of Mg(OH)&lt;sub&gt;2&lt;/sub&gt; (in reality Mg(OH)&lt;sub&gt;2&lt;/sub&gt; redissolves only slowly). The tests check it against the exact results for calcium alone: free Ca&lt;sup&gt;2+&lt;/sup&gt; = \(\sqrt{c/K_f'}\) at the equivalence point and pCa = log K&lt;sub&gt;f&lt;/sub&gt;′ at twice that volume. The pH is held fixed by the buffer; activity coefficients are 1; the indicator is 5 × 10&lt;sup&gt;−4&lt;/sup&gt; mmol per flask and the Mg–EDTA 0.010 mmol. “Pure blue” means at most 10 % of the indicator still holds a metal ion.">每加一滴，就用條件生成常數、以巢狀二分法解鈣、鎂、EDTA、指示劑四個質量平衡，所以當量點也是精確解；pH 12 時游離的 Mg<sup>2+</sup> 維持在 Mg(OH)<sub>2</sub> 的飽和濃度（實際上 Mg(OH)<sub>2</sub> 溶回去很慢）。測試用只有鈣時的精確結果核對：當量點的游離 Ca<sup>2+</sup> = \(\sqrt{c/K_f'}\)，兩倍當量點時 pCa = log K<sub>f</sub>′。pH 由緩衝液固定；活性係數當成 1；每瓶指示劑 5 × 10<sup>−4</sup> mmol、Mg–EDTA 0.010 mmol。「純藍色」指仍和金屬結合的指示劑不超過 10 %。</li>
+        <li data-en-html="Boiling for 10 minutes evaporates 100 mL and precipitates as much Ca&lt;sup&gt;2+&lt;/sup&gt; (then Mg&lt;sup&gt;2+&lt;/sup&gt;) as the hydrogencarbonate allows, leaving 0.13 mmol/L dissolved (the solubility of CaCO&lt;sub&gt;3&lt;/sub&gt;, about 13 mg/L) — a simplification of the real carbonate equilibrium. Washing soda: CaCO&lt;sub&gt;3&lt;/sub&gt; and MgCO&lt;sub&gt;3&lt;/sub&gt; precipitate to their K&lt;sub&gt;sp&lt;/sub&gt;, ignoring the hydrolysis of carbonate. The resin holds 5.0 mmol of divalent ions, takes Ca&lt;sup&gt;2+&lt;/sup&gt; before Mg&lt;sup&gt;2+&lt;/sup&gt; and lets 0.2 % through even when fresh.">煮沸 10 分鐘蒸發 100 mL，碳酸氫根夠多少就沉澱多少 Ca<sup>2+</sup>（再來是 Mg<sup>2+</sup>），仍溶有 0.13 mmol/L（CaCO<sub>3</sub> 的溶解度，約 13 mg/L）——這是把真實的碳酸鹽平衡簡化。洗滌鹼：CaCO<sub>3</sub>、MgCO<sub>3</sub> 照溶度積沉澱，忽略碳酸根的水解。樹脂最多抓 5.0 mmol 二價離子，先抓 Ca<sup>2+</sup> 再抓 Mg<sup>2+</sup>，新鮮時也有 0.2 % 漏過。</li>
+        <li data-en-html="Soap test: the soap (0.050 M) precipitates Ca&lt;sup&gt;2+&lt;/sup&gt; and Mg&lt;sup&gt;2+&lt;/sup&gt; completely in a 2 : 1 ratio; lather lasts once the soap left over reaches 3 × 10&lt;sup&gt;−4&lt;/sup&gt; M (about its critical micelle concentration). The detergent is treated as forming no precipitate. These are teaching approximations.">肥皂試驗：肥皂（0.050 M）與 Ca<sup>2+</sup>、Mg<sup>2+</sup> 以 2 : 1 完全沉澱；多出來的肥皂達到 3 × 10<sup>−4</sup> M（約為它的臨界微胞濃度）就有持久的泡沫。合成清潔劑當成完全不沉澱。這些是教學近似。</li>
+        <li data-en-html="Colours: the absorbances of the metal–indicator complex (wine red), the free indicator (blue) and, for EBT, its orange In&lt;sup&gt;3−&lt;/sup&gt; form in red, green and blue light (approximate teaching values) are added over a 4 cm path and turned into transmitted light (Beer’s law). The water samples are typical compositions, not measurements of any particular place. The 3D view draws 40 metal ions and 8 indicator molecules in the same proportions as the flask (which ions are caged by EDTA, which indicator molecules still hold a metal); the cage is a simplified octahedral EDTA with two N and four O around the metal.">顏色：金屬–指示劑錯合物（酒紅）、游離指示劑（藍）以及 EBT 的 In<sup>3−</sup>（橙）在紅、綠、藍光的吸光度（教學用近似值）以 4 cm 光程相加，再換成穿透光的顏色（比爾定律）。各種水樣是典型的組成，不是特定地點的實測值。3D 微觀畫 40 個金屬離子與 8 個指示劑分子，比例和瓶中相同（哪些離子被 EDTA 包住、哪些指示劑還抓著金屬）；籠子是簡化的八面體 EDTA：金屬周圍兩個 N、四個 O。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>
@@ -434,18 +482,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/water-hardness-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/water-hardness-3d.js?v=202611201125"></script>
-  <script src="js/water-hardness.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="water-hardness"></script>
-  <script src="js/missions/water-hardness.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="water-hardness"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/water-hardness-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/water-hardness-3d.js?v=202611201126"></script>
+  <script src="js/water-hardness.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="water-hardness"></script>
+  <script src="js/missions/water-hardness.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="water-hardness"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

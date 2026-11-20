@@ -25,19 +25,19 @@
     {
       id: 'gibbs-free-energy-2', level: 2,
       title: { zh: '吸熱也能自發', en: 'Endothermic, yet spontaneous' },
-      desc: { zh: '選「氯化銨溶解」，在 10–40 °C 之間記錄一筆：它吸熱（ΔH° > 0），卻是自發的（ΔG° < 0）。', en: 'Choose “NH4Cl dissolves” and record a point between 10 and 40 °C: it absorbs heat (ΔH° > 0) yet it is spontaneous (ΔG° < 0).' },
+      desc: { zh: '選「氯化銨溶解」，在 10–40 °C 之間記錄一筆：它吸熱（ΔH° > 0），卻是自發的（ΔG° < 0）。', en: 'Choose “NH<sub>4</sub>Cl dissolves” and record a point between 10 and 40 °C: it absorbs heat (ΔH° > 0) yet it is spontaneous (ΔG° < 0).' },
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'nh4cl' && d.T >= 283.15 && d.T <= 313.15 && d.dH > 0 && d.dG < 0; }
     },
     {
       id: 'gibbs-free-energy-3', level: 3,
       title: { zh: '找到轉折溫度', en: 'Find the turning point' },
-      desc: { zh: '選一個真實的反應，把溫度調到 |ΔG°| ≤ 1.0 kJ/mol（快要平衡了），按「記錄這一點」。', en: 'Choose a real reaction, tune the temperature until |ΔG°| ≤ 1.0 kJ/mol (almost at equilibrium) and press “Record this point”.' },
+      desc: { zh: '選一個真實的反應，把溫度調到 |ΔG°| ≤ 1.0 kJ/mol（快要平衡了），按「記錄這一點」。', en: 'Choose a real reaction, tune the temperature until |ΔG°| ≤ 1.0 kJ/mol (almost at equilibrium) and press “Record this point”.' },
       check: function (ev) { const d = rec(ev); return real(d) && Math.abs(d.dG) <= 1.0; }
     },
     {
       id: 'gibbs-free-energy-4', level: 3,
       title: { zh: '臭氧不會自己長出來', en: 'Ozone will not make itself' },
-      desc: { zh: '選「氧變成臭氧」，在同一段紀錄裡分別在 300 K 以下與 1200 K 以上各記錄一筆，兩筆都是 ΔG° > 0。', en: 'Choose “Oxygen to ozone” and, in the same set of records, record one point below 300 K and one above 1200 K, both with ΔG° > 0.' },
+      desc: { zh: '選「氧變成臭氧」，在同一段紀錄裡分別在 300 K 以下與 1200 K 以上各記錄一筆，兩筆都是 ΔG° > 0。', en: 'Choose “Oxygen to ozone” and, in the same set of records, record one point below 300 K and one above 1200 K, both with ΔG° > 0.' },
       check: function (ev) {
         const d = rec(ev);
         if (!real(d) || d.rx !== 'ozone') return false;
@@ -48,7 +48,7 @@
     {
       id: 'gibbs-free-energy-5', level: 4,
       title: { zh: '石灰窯', en: 'The lime kiln' },
-      desc: { zh: '選「石灰石分解」，用剛好夠的溫度讓它自發：ΔG° < 0，而且溫度不超過轉折溫度 T* 加 5 K。', en: 'Choose “Limestone breaks down” and make it spontaneous with just enough heat: ΔG° < 0, at no more than 5 K above the turning temperature T*.' },
+      desc: { zh: '選「石灰石分解」，用剛好夠的溫度讓它自發：ΔG° < 0，而且溫度不超過轉折溫度 T* 加 5 K。', en: 'Choose “Limestone breaks down” and make it spontaneous with just enough heat: ΔG° < 0, at no more than 5 K above the turning temperature T*.' },
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'caco3' && d.dG < 0 && d.T <= tstar(d) + 5; }
     },
     {
@@ -83,7 +83,7 @@
     {
       id: 'gibbs-free-energy-9', level: 6,
       title: { zh: '設計一個反應', en: 'Design a reaction' },
-      desc: { zh: '選「自訂反應」，設計一個低溫自發、高溫不自發，轉折溫度在 495–505 K 的反應；同一組 ΔH°、ΔS° 在 450 K 以下記錄一筆自發的、550 K 以上記錄一筆不自發的。', en: 'Choose “Custom reaction” and design one that is spontaneous when cold but not when hot, turning at 495–505 K; with the same ΔH° and ΔS°, record a spontaneous point below 450 K and a non-spontaneous one above 550 K.' },
+      desc: { zh: '選「自訂反應」，設計一個低溫自發、高溫不自發，轉折溫度在 495–505 K 的反應；同一組 ΔH°、ΔS° 在 450 K 以下記錄一筆自發的、550 K 以上記錄一筆不自發的。', en: 'Choose “Custom reaction” and design one that is spontaneous when cold but not when hot, turning at 495–505 K; with the same ΔH° and ΔS°, record a spontaneous point below 450 K and a non-spontaneous one above 550 K.' },
       check: function (ev) {
         const d = rec(ev);
         if (!d || d.mode !== 'custom' || !(d.dH < 0 && d.dS < 0)) return false;
@@ -96,19 +96,19 @@
     {
       id: 'gibbs-free-energy-10', level: 7,
       title: { zh: '破解未知反應', en: 'Crack the unknown reaction' },
-      desc: { zh: '在下方的未知反應卡片按「開始」，在幾個溫度記錄 K，自己由 ΔG° = −RT ln K 算出 ΔH°，誤差在 5% 以內（揭曉答案之前）。', en: 'Press “Start” on the unknown-reaction card below, record K at several temperatures, work out ΔH° yourself from ΔG° = −RT ln K, within 5% (before revealing the answer).' },
+      desc: { zh: '在下方的未知反應卡片按「開始」，在幾個溫度記錄 K，自己由 ΔG° = −RT ln K 算出 ΔH°，誤差在 5 % 以內（揭曉答案之前）。', en: 'Press “Start” on the unknown-reaction card below, record K at several temperatures, work out ΔH° yourself from ΔG° = −RT ln K, within 5 % (before revealing the answer).' },
       check: function (ev) { const d = ans(ev); return !!d && !d.revealed && d.errH <= 0.05; }
     },
     {
       id: 'gibbs-free-energy-11', level: 8,
       title: { zh: '完全破解', en: 'Fully cracked' },
-      desc: { zh: '未知反應的 ΔH° 與 ΔS° 都算到誤差 2% 以內（揭曉答案之前）。', en: 'Find both ΔH° and ΔS° of the unknown reaction within 2% (before revealing the answer).' },
+      desc: { zh: '未知反應的 ΔH° 與 ΔS° 都算到誤差 2 % 以內（揭曉答案之前）。', en: 'Find both ΔH° and ΔS° of the unknown reaction within 2 % (before revealing the answer).' },
       check: function (ev) { const d = ans(ev); return !!d && !d.revealed && d.errH <= 0.02 && d.errS <= 0.02; }
     },
     {
       id: 'gibbs-free-energy-12', level: 10,
       title: { zh: '兩點定江山', en: 'Two points are enough' },
-      desc: { zh: '這個未知反應只記錄兩個不同的溫度，就把 ΔH° 與 ΔS° 都算到誤差 1% 以內（揭曉答案之前）。', en: 'Record the unknown reaction at only two different temperatures and still find both ΔH° and ΔS° within 1% (before revealing the answer).' },
+      desc: { zh: '這個未知反應只記錄兩個不同的溫度，就把 ΔH° 與 ΔS° 都算到誤差 1 % 以內（揭曉答案之前）。', en: 'Record the unknown reaction at only two different temperatures and still find both ΔH° and ΔS° within 1 % (before revealing the answer).' },
       check: function (ev) { const d = ans(ev); return !!d && !d.revealed && d.nT === 2 && d.errH <= 0.01 && d.errS <= 0.01; }
     },
 
@@ -120,7 +120,7 @@
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'nh4cl' && d.valid && d.T <= 278.15 && d.dG < 0; }
     },
     {
-      // 同樣約 700 K（400–450 °C 的工廠爐溫）：接觸法 2SO₂ + O₂ → 2SO₃ 自發，哈柏法 ΔG° > 0（K < 1），工廠仍為了速率用這個溫度
+      // 同樣約 700 K（400–450 °C 的工廠爐溫）：接觸法 2SO2 + O2 → 2SO3 自發，哈柏法 ΔG° > 0（K < 1），工廠仍為了速率用這個溫度
       id: 'gibbs-free-energy-h2', level: 4, hidden: true,
       riddle: { zh: '同一座爐火旁，一家欣然點頭；另一家明知帳面吃虧，仍為了快一點而留下。', en: 'Beside the same furnace, one maker nods gladly; the other stays on, knowing the books are against it, just to be quicker.' },
       check: function (ev) {
@@ -144,7 +144,7 @@
       }
     },
     {
-      // 3O₂ → 2O₃：ΔH° > 0、ΔS° < 0，K 在低溫小到 10 的 −98 次方以下（約 162–164 K，臭氧沸點之上的最冷處）
+      // 3O2 → 2O3：ΔH° > 0、ΔS° < 0，K 在低溫小到 10 的 −98 次方以下（約 162–164 K，臭氧沸點之上的最冷處）
       id: 'gibbs-free-energy-h4', level: 6, hidden: true,
       riddle: { zh: '替天空縫一面盾，挑最冷的夜晚動手：成功的機會，小得數不完那一長串零。', en: 'Sew a shield for the sky on the coldest night you can: the odds have more zeros than you could ever count.' },
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'ozone' && d.valid && d.log10K <= -98; }
@@ -184,7 +184,7 @@
       }
     },
     {
-      // 開放的窯：空氣中 CO₂ 分壓約 4.2 × 10^−4 bar，K = P(CO₂) 達到它時石灰石就開始分解（約 797 K，比 T* 低三百多度）
+      // 開放的窯：空氣中 CO2 分壓約 4.2 × 10^−4 bar，K = P(CO2) 達到它時石灰石就開始分解（約 797 K，比 T* 低三百多度）
       id: 'gibbs-free-energy-h8', level: 8, hidden: true,
       riddle: { zh: '窯不必燒到書上說的那麼熱——只要天空肯收下它吐出的那一口氣。', en: 'The kiln need not be as hot as the book says — only hot enough for the sky to accept the breath it lets out.' },
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'caco3' && d.lnK >= Math.log(4.0e-4) && d.lnK <= Math.log(4.4e-4); }
@@ -196,7 +196,7 @@
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'vap' && d.lnK >= Math.log(0.32) && d.lnK <= Math.log(0.355); }
     },
     {
-      // N₂O₄ ⇌ 2NO₂ 在總壓 1 bar 下一半解離：α = 0.5 → K = 4α²/(1 − α²) = 4/3（約 329.6 K）
+      // N2O4 ⇌ 2NO2 在總壓 1 bar 下一半解離：α = 0.5 → K = 4α^2/(1 − α^2) = 4/3（約 329.6 K）
       id: 'gibbs-free-energy-h10', level: 10, hidden: true,
       riddle: { zh: '紅棕色的煙裡，正好一半的伴侶已經分手。', en: 'In the brown smoke, exactly half of the couples have already parted.' },
       check: function (ev) { const d = rec(ev); return real(d) && d.rx === 'n2o4' && d.valid && d.lnK >= Math.log(1.30) && d.lnK <= Math.log(1.37); }

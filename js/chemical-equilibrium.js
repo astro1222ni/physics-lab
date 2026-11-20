@@ -55,9 +55,9 @@
   }
   const NAME = {
     N2O4: ['四氧化二氮', 'dinitrogen tetroxide'], NO2: ['二氧化氮', 'nitrogen dioxide'], N2: ['氮氣', 'nitrogen'], H2: ['氫氣', 'hydrogen'],
-    NH3: ['氨', 'ammonia'], HI: ['碘化氫', 'hydrogen iodide'], I2: ['碘蒸氣', 'iodine vapour'], A2: ['A2', 'A2'], A: ['A', 'A'], Ar: ['氬氣', 'argon']
+    NH3: ['氨', 'ammonia'], HI: ['碘化氫', 'hydrogen iodide'], I2: ['碘蒸氣', 'iodine vapour'], A: ['A', 'A'], Ar: ['氬氣', 'argon']
   };
-  function nm(sp) { return T(NAME[sp][0], NAME[sp][1]); }
+  function nm(sp) { if (sp === 'A2') return sp; return T(NAME[sp][0], NAME[sp][1]); }
   // 分子由原子小球組成：[原子, x, y]（以原子半徑單位 r0 計）
   const MOL = {
     NO2: [['N', 0, -0.2], ['O', -1.15, 0.5], ['O', 1.15, 0.5]],
@@ -457,7 +457,9 @@
 
   let cw = 0, ch = 0, dpr = 1, G = null;
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -574,9 +576,9 @@
     for (let v = 0; v <= Vmax + 1e-9; v += stepV / 2) {
       const X = Math.round(bx0 + L * v / Vmax) + 0.5, major = Math.abs(v / stepV - Math.round(v / stepV)) < 1e-9;
       g.beginPath(); g.moveTo(X, top); g.lineTo(X, top + (major ? 9 : 5)); g.stroke();
-      if (major && v > 0 && (cw >= 480 || (v / stepV) % 2 === 0)) g.fillText(num(v, 0), X, top - 2 - jw * 0.05);
+      if (major && v > 0 && (cw >= 480 || (v / stepV) % 2 === 0)) g.fillText(num(v, 0), v === Vmax ? X - 10 : X, top - 2 - jw * 0.05);
     }
-    g.fillText('mL', bx0, top - 2 - jw * 0.05);
+    g.fillText('mL', bx0 + 13, top - 2 - jw * 0.05);
     g.restore();
     // ---- 玻璃的外框與反光 ----
     g.save();
@@ -597,11 +599,11 @@
     // ---- 文字 ----
     const o = opts(), pr = E.props(state.rx, n, o);
     const fnt = fsz(12) + 'px ' + LD.FONT;
-    LD.pill(g, 'T = ' + num(state.T, 0) + ' K', jx + jW - 4, jy + jH + 18, tcol, 'right', fnt);
-    LD.pill(g, 'V = ' + sigf(pr.V * 1000, 3) + ' mL', bx0 + 2, jy + jH + 18, col.text, 'left', fnt);
+    LD.pill(g, 'T = ' + num(state.T, 0) + ' K', jx + jW - 4, jy + jH + 18, tcol, 'right', fnt);
+    LD.pill(g, 'V = ' + sigf(pr.V * 1000, 3) + ' mL', bx0 + 2, jy + jH + 18, col.text, 'left', fnt);
     if (o.stop) LD.pill(g, o.stop > 0 ? T('活塞已拉到底', 'Piston at the end') : T('活塞已推到底', 'Piston fully in'), Math.min(px, cw - 70), top - jw - 18, col.pos, 'center', fnt);
     const stTxt = waiting ? T('先預測！', 'Predict first!') : !state.running ? T('已暫停', 'Paused') : pending ? T('反應中…', 'Reacting…') : T('已平衡', 'At equilibrium');
-    LD.pill(g, stTxt + '  t = ' + sigf(simT, 3) + ' s', cw - G.pad, 18, waiting ? col.accent : pending ? col.text : col.probe, 'right', fnt);
+    LD.pill(g, stTxt + '  t = ' + sigf(simT, 3) + ' s', cw - G.pad, 18, waiting ? col.accent : pending ? col.text : col.probe, 'right', fnt);
     drawMeter(g);
     // 鍵盤焦點
     if (kb && kb.focused()) {
@@ -652,7 +654,7 @@
     g.fill(); g.stroke();
     // 細管接到壓力錶
     g.strokeStyle = col.dark ? '#7d8996' : '#9aa5b1'; g.lineWidth = Math.max(3, Hb * 0.05); g.lineCap = 'round';
-    g.beginPath(); g.moveTo(bx0 - noz * 0.55, yc); g.lineTo(gx, yc); g.lineTo(gx, gy + gr); g.stroke();
+    g.beginPath(); g.moveTo(bx0 - noz * 0.55, yc); g.lineTo(bx0 - noz - 4, yc); g.lineTo(bx0 - noz - 4, gy + gr * 0.65); g.lineTo(gx, gy + gr * 0.65); g.stroke();
     g.restore();
   }
   function drawGauge(g) {
@@ -680,7 +682,7 @@
     g.fillText(num(Pmax, 0), gx + gr * 0.5 * Math.cos(a1), gy + gr * 0.5 * Math.sin(a1));
     g.fillText('bar', gx, gy - gr * 0.38);
     g.restore();
-    LD.pill(g, 'P = ' + sigf(P, 3) + ' bar', gx + gr + 8, gy + 4, col.text, 'left', fsz(12) + 'px ' + LD.FONT);
+    LD.pill(g, 'P = ' + sigf(P, 3) + ' bar', gx + gr + 8, gy + 4, col.text, 'left', fsz(12) + 'px ' + LD.FONT);
   }
   function drawPiston(g, px) {
     const { yc, Hb, L } = G;
@@ -856,7 +858,7 @@
     if (!isFinite(lo)) { lo = -1; hi = 1; }
     if (hi - lo < 1) { const m = (hi + lo) / 2; lo = m - 0.5; hi = m + 0.5; }
     const pad = (hi - lo) * 0.12;
-    const A = axes(g, { x0: tr[0], x1: tr[1], y0: lo - pad, y1: hi + pad, xl: [[T('時間 t（s，模擬時間）', 'time t (s, simulated)'), 0]], yl: [['log', 0], ['10', -1], [' Q ' + T('與', 'and') + ' log', 0], ['10', -1], [' K', 0]] });
+    const A = axes(g, { x0: tr[0], x1: tr[1], y0: lo - pad, y1: hi + pad, xl: [[T('時間 t（s，模擬時間）', 'time t (s, simulated)'), 0]], yl: [['log', 0], ['10', -1], [' Q ' + T('與', 'and') + ' log', 0], ['10', -1], [' K', 0]] });
     A.x0v = tr[0]; A.x1v = tr[1];
     drawEvents(g, A);
     line(g, hist.map(function (h) { return [A.sx(h.t), A.sy(h.lk)]; }), col.accent, 2, [7, 5]);
@@ -919,7 +921,7 @@
     if (f && nT >= 2) {
       const xa = xs0 - padX, xb = xs1 + padX;
       line(g, [[A.sx(xa), A.sy(f.intercept + f.slope * xa / 1000)], [A.sx(xb), A.sy(f.intercept + f.slope * xb / 1000)]], col.pos, 1.8);
-      note(g, T('由 ' + nT + ' 個溫度：ΔH° ≈ ' + num(f.dH, 1) + ' kJ/mol', 'From ' + nT + ' temperatures: ΔH° ≈ ' + num(f.dH, 1) + ' kJ/mol'), A.X0 + 8, A.Y1 + 16, col.pos);
+      note(g, T('由 ' + nT + ' 個溫度：ΔH° ≈ ' + num(f.dH, 1) + ' kJ/mol', 'From ' + nT + ' temperatures: ΔH° ≈ ' + num(f.dH, 1) + ' kJ/mol'), A.X0 + 8, A.Y1 + 16, col.pos);
     } else note(g, T('虛線：由 NIST 數據算出的 ln K。點：你量到的平衡。', 'Dashed: ln K from the NIST data. Dots: your equilibria.'), A.X0 + 8, A.Y1 + 16, col.muted);
   }
   function distinctT(rs) { const s = {}; rs.forEach(function (r) { s[r.T] = 1; }); return Object.keys(s).length; }
@@ -940,8 +942,8 @@
     const K = E.K(state.rx, state.T), Kc = E.Kc(state.rx, state.T);
     const q = canReact() ? E.Q(state.rx, n, o) : NaN;
     const items = [
-      [T('總壓力 P', 'Total pressure P'), sigf(pr.P, 3) + ' bar'],
-      [T('體積 V', 'Volume V'), sigf(pr.V * 1000, 3) + ' mL'],
+      [T('總壓力 P', 'Total pressure P'), sigf(pr.P, 3) + ' bar'],
+      [T('體積 V', 'Volume V'), sigf(pr.V * 1000, 3) + ' mL'],
       [T('平衡常數 K<sub>p</sub>', 'Equilibrium constant K<sub>p</sub>') + '<small>' + T('（以 bar 計）', '(pressures in bar)') + '</small>', hide ? '?' : sciHTML(K, 3), 'big'],
       ['K<sub>c</sub><small>' + T('（以 mol/L 計）', '(concentrations in mol/L)') + '</small>', hide ? '?' : sciHTML(Kc, 3)],
       [T('反應商 Q', 'Reaction quotient Q'), hide || wait ? '?' : q === 0 ? '0' : !isFinite(q) ? '∞' : sciHTML(q, 3)]
@@ -957,7 +959,7 @@
     else { box.className = 'qk left'; box.textContent = T('← Q > K：向左進行', '← Q > K: goes to the left'); }
     document.querySelectorAll('#amts .amt').forEach(function (row) {
       const s = row.dataset.sp;
-      row.querySelector('.v').textContent = sigf(1000 * (n[s] || 0), 3) + ' mmol';
+      row.querySelector('.v').textContent = sigf(1000 * (n[s] || 0), 3) + ' mmol';
       const step = rxd().step;
       row.querySelector('[data-d="-1"]').disabled = !((n[s] || 0) > 1e-15);
       row.querySelector('[data-d="1"]').disabled = (n[s] || 0) >= 20 * step - 1e-12;
@@ -967,8 +969,8 @@
   }
   function describeCanvas() {
     const pr = E.props(state.rx, n, opts());
-    cv.setAttribute('aria-label', T('注射筒：', 'Syringe: ') + 'T = ' + num(state.T, 0) + ' K, V = ' + sigf(pr.V * 1000, 3) + ' mL, P = ' + sigf(pr.P, 3) + ' bar. ' +
-      listSpecies().map(function (s) { return nm(s) + ' ' + sigf(1000 * (n[s] || 0), 3) + ' mmol'; }).join(', ') + '. ' +
+    cv.setAttribute('aria-label', T('注射筒：', 'Syringe: ') + 'T = ' + num(state.T, 0) + ' K, V = ' + sigf(pr.V * 1000, 3) + ' mL, P = ' + sigf(pr.P, 3) + ' bar. ' +
+      listSpecies().map(function (s) { return nm(s) + ' ' + sigf(1000 * (n[s] || 0), 3) + ' mmol'; }).join(', ') + '. ' +
       T('拖曳活塞或按 Enter 選取後用方向鍵改變體積與溫度。', 'Drag the piston, or press Enter and use the arrow keys to change the volume and temperature.'));
   }
   function renderTable() {
@@ -1000,10 +1002,10 @@
     }).join(T('、', ', '));
   }
   function refreshOutputs() {
-    $('tempo').textContent = num(val(elT), 0) + ' K';
-    $('volo').textContent = sigf(val(elV), 3) + ' mL';
+    $('tempo').textContent = num(val(elT), 0) + ' K';
+    $('volo').textContent = sigf(val(elV), 3) + ' mL';
     const P = pFromSlider();
-    $('preso').textContent = (P >= 100 ? num(P, 0) : num(P, 2)) + ' bar';
+    $('preso').textContent = (P >= 100 ? num(P, 0) : num(P, 2)) + ' bar';
   }
   function refreshAll() {
     refreshOutputs();
@@ -1015,14 +1017,14 @@
   }
   function rxInfoHTML() {
     const rx = state.rx;
-    if (rx === 'mys') return T(fH('A2') + ' ⇌ 2A：吸熱反應，ΔH° 未知（40～80 kJ/mol 之間），Δn = +1。A 是藍綠色的氣體，' + fH('A2') + ' 無色。',
-      fH('A2') + ' ⇌ 2A: endothermic, ΔH° unknown (between 40 and 80 kJ/mol), Δn = +1. A is a blue-green gas; ' + fH('A2') + ' is colourless.');
+    if (rx === 'mys') return T(fH('A2') + ' ⇌ 2A：吸熱反應，ΔH° 未知（40～80 kJ/mol 之間），Δn = +1。A 是藍綠色的氣體，' + fH('A2') + ' 無色。',
+      fH('A2') + ' ⇌ 2A: endothermic, ΔH° unknown (between 40 and 80 kJ/mol), Δn = +1. A is a blue-green gas; ' + fH('A2') + ' is colourless.');
     const th = E.thermo(rx, 298.15), d = E.dn(rx), dHs = (th.dH > 0 ? '+' : '') + num(th.dH, 1);
     const kind = th.dH > 0 ? T('吸熱', 'endothermic') : T('放熱', 'exothermic');
     const colour = { n2o4: T(fH('NO2') + ' 紅棕色、' + fH('N2O4') + ' 無色。', fH('NO2') + ' is red-brown; ' + fH('N2O4') + ' is colourless.'),
       haber: T('三種氣體都無色；工業上用鐵催化劑。', 'All three gases are colourless; industry uses an iron catalyst.'),
       hi: T(fH('I2') + ' 蒸氣是紫色，' + fH('H2') + ' 與 HI 無色。', fH('I2') + ' vapour is violet; ' + fH('H2') + ' and HI are colourless.') }[rx];
-    return eqHTML(rx) + T('：ΔH°(298 K) = ' + dHs + ' kJ/mol（' + kind + '），Δn = ' + (d > 0 ? '+' : '') + num(d, 0) + '。', ': ΔH°(298 K) = ' + dHs + ' kJ/mol (' + kind + '), Δn = ' + (d > 0 ? '+' : '') + num(d, 0) + '. ') + colour;
+    return eqHTML(rx) + T('：ΔH°(298 K) = ' + dHs + ' kJ/mol（' + kind + '），Δn = ' + (d > 0 ? '+' : '') + num(d, 0) + '。', ': ΔH°(298 K) = ' + dHs + ' kJ/mol (' + kind + '), Δn = ' + (d > 0 ? '+' : '') + num(d, 0) + '. ') + colour;
   }
   function eqHTML(rx) {
     const r = E.RX[rx];
@@ -1044,7 +1046,7 @@
     box.querySelectorAll('button').forEach(function (b) {
       b.addEventListener('click', function () { amount(b.parentNode.dataset.sp, +b.dataset.d); });
     });
-    $('amtHint').textContent = T('每按一次加入或移出 ' + sigf(r.step * 1000, 3) + ' mmol（氣體從針頭進出，溫度不變）。', 'Each press adds or removes ' + sigf(r.step * 1000, 3) + ' mmol (through the needle, at the same temperature).');
+    $('amtHint').textContent = T('每按一次加入或移出 ' + sigf(r.step * 1000, 3) + ' mmol（氣體從針頭進出，溫度不變）。', 'Each press adds or removes ' + sigf(r.step * 1000, 3) + ' mmol (through the needle, at the same temperature).');
     $('rxInfo').innerHTML = rxInfoHTML();
   }
   function amount(sp, d) {
@@ -1070,7 +1072,7 @@
       MOL[s].forEach(function (a) { atoms[a[0]] = 1; });
       return '<span><span class="sp" style="background:' + col.sp[s] + '"></span>' + fH(s) + '</span>';
     }).join('') + '<span>' + T('原子：', 'Atoms: ') + atomLegend() + '</span>' +
-      '<span>' + T('每個分子代表 ', 'each molecule = ') + sigf(unit * 1000, 2) + ' mmol</span>';
+      '<span>' + T('每個分子代表 ', 'each molecule = ') + sigf(unit * 1000, 2) + ' mmol</span>';
   }
   function atomLegend() {
     const used = {};
@@ -1091,7 +1093,7 @@
     } else {
       leg = isMys() ? '<span><span class="sp" style="background:' + col.pos + '"></span>' + T('你量到的平衡', 'your equilibria') + '</span>' :
         '<span><span class="ln dash" style="color:' + col.muted + '"></span>' + T('NIST 數據', 'NIST data') + '</span><span><span class="sp" style="background:' + col.pos + '"></span>' + T('你量到的平衡與擬合直線', 'your equilibria and fitted line') + '</span>';
-      hint = isMys() ? T('點的 ln K 由紀錄表的分壓算出。斜率 = −ΔH°/R，R = 8.314 J/(mol·K)。', 'Each point’s ln K comes from the partial pressures in the table. Slope = −ΔH°/R, with R = 8.314 J/(mol·K).') :
+      hint = isMys() ? T('點的 ln K 由紀錄表的分壓算出。斜率 = −ΔH°/R，R = 8.314 J/(mol·K)。', 'Each point’s ln K comes from the partial pressures in the table. Slope = −ΔH°/R, with R = 8.314 J/(mol·K).') :
         T('在幾個不同的溫度達到平衡，點會落在直線上；斜率 = −ΔH°/R。', 'Reach equilibrium at several temperatures: the points lie on a line with slope −ΔH°/R.');
     }
     $('gLegend').innerHTML = leg;
@@ -1140,7 +1142,7 @@
     const ok = err <= 0.1;
     if (ok) mys.solved = true;
     $('mysOut').innerHTML = (ok ? '<span class="ok">' + T('很接近！', 'Close!') + '</span> ' : '<span class="no">' + T('還差一些。', 'Not yet.') + '</span> ') +
-      T('相對誤差 ' + num(100 * err, 1) + '%（用了 ' + st.nT + ' 個溫度）。', 'Relative error ' + num(100 * err, 1) + '% (from ' + st.nT + ' temperatures).') +
+      T('相對誤差 ' + num(100 * err, 1) + ' %（用了 ' + st.nT + ' 個溫度）。', 'Relative error ' + num(100 * err, 1) + ' % (from ' + st.nT + ' temperatures).') +
       (ok ? '' : T(a > truth ? '你的答案偏大。' : '你的答案偏小。', a > truth ? ' Your answer is too large.' : ' Your answer is too small.')) +
       T('（剩 ' + Math.max(0, 3 - mys.tries) + ' 次）', ' (' + Math.max(0, 3 - mys.tries) + ' checks left)');
     if (window.LabSound && window.LabSound.enabled()) {
@@ -1153,8 +1155,8 @@
     if (!mys) return;
     acted();
     mys.revealed = true;
-    $('mysOut').innerHTML = T('答案：ΔH° = ' + num(E.mysParams.dH, 1) + ' kJ/mol，ΔS° = ' + num(E.mysParams.dS, 1) + ' J/(mol·K)。這個反應已揭曉，換一個再挑戰。',
-      'Answer: ΔH° = ' + num(E.mysParams.dH, 1) + ' kJ/mol, ΔS° = ' + num(E.mysParams.dS, 1) + ' J/(mol·K). This one is revealed; try another.');
+    $('mysOut').innerHTML = T('答案：ΔH° = ' + num(E.mysParams.dH, 1) + ' kJ/mol，ΔS° = ' + num(E.mysParams.dS, 1) + ' J/(mol·K)。這個反應已揭曉，換一個再挑戰。',
+      'Answer: ΔH° = ' + num(E.mysParams.dH, 1) + ' kJ/mol, ΔS° = ' + num(E.mysParams.dS, 1) + ' J/(mol·K). This one is revealed; try another.');
   }
 
   // ======================= 3D 檢視 =======================
@@ -1186,8 +1188,8 @@
       tempColor: function () { return tempColor(state.T); },
       hud: function () {
         const pr = E.props(state.rx, n, opts());
-        return { tl: 't = ' + sigf(simT, 3) + ' s' + (waiting ? T('（先預測）', ' (predict first)') : !state.running ? T('（已暫停）', ' (paused)') : ''),
-          tr: 'T = ' + num(state.T, 0) + ' K · P = ' + sigf(pr.P, 3) + ' bar · V = ' + sigf(pr.V * 1000, 3) + ' mL', tcol: tempColor(state.T) };
+        return { tl: 't = ' + sigf(simT, 3) + ' s' + (waiting ? T('（先預測）', ' (predict first)') : !state.running ? T('（已暫停）', ' (paused)') : ''),
+          tr: 'T = ' + num(state.T, 0) + ' K · P = ' + sigf(pr.P, 3) + ' bar · V = ' + sigf(pr.V * 1000, 3) + ' mL', tcol: tempColor(state.T) };
       },
       running: function () { return state.running; },
       contextLost: function () {
@@ -1337,9 +1339,17 @@
   $('view3d').addEventListener('click', function () { acted(); setView('3d'); });
   $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
 
+  document.querySelectorAll('[data-piston-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (state.mode !== 'V' || elV.disabled) return;
+      acted();
+      const range = rxd().Vr;
+      setVal(elV, Math.max(range[0], Math.min(range[1], val(elV) + Number(button.dataset.pistonStep) * 0.1)));
+    });
+  });
   // 拖曳活塞（定容時）
   let drag = null;
-  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; }
+  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [(ev.clientX - b.left) * cw / b.width, (ev.clientY - b.top) * ch / b.height]; }
   function onPiston(x, y) {
     const px = pistonX();
     return G && Math.abs(y - G.yc) < G.Hb / 2 + G.jw && x > px - 22 && x < px + G.L;
@@ -1374,7 +1384,7 @@
             else { const Pr = rxd().Pr, f = Math.pow(Pr[1] / Pr[0], (big ? 0.05 : 0.01) * -d); setVal(elP, Math.max(Pr[0], Math.min(Pr[1], state.P * f))); }
             return true;
           },
-          describe: function () { const pr = E.props(state.rx, n, opts()); return 'V = ' + sigf(pr.V * 1000, 3) + ' mL, P = ' + sigf(pr.P, 3) + ' bar'; } },
+          describe: function () { const pr = E.props(state.rx, n, opts()); return 'V = ' + sigf(pr.V * 1000, 3) + ' mL, P = ' + sigf(pr.P, 3) + ' bar'; } },
         { name: function () { return T('水浴溫度', 'Water-bath temperature'); },
           move: function (dx, dy, big) {
             const d = dy || dx;
@@ -1383,7 +1393,7 @@
             setVal(elT, Math.max(r.Tmin, Math.min(r.Tmax, state.T + d * (big ? 10 : 1))));
             return true;
           },
-          describe: function () { return 'T = ' + num(state.T, 0) + ' K'; } }
+          describe: function () { return 'T = ' + num(state.T, 0) + ' K'; } }
       ],
       onChange: function () { drawAll(); }
     });
@@ -1393,11 +1403,11 @@
     const el = $('rxTable');
     if (!el) return;
     const temps = { n2o4: [273, 298, 373], haber: [500, 700, 900], hi: [500, 700, 800] };
-    let h = '<thead><tr><th>' + T('反應', 'Reaction') + '</th><th>ΔH°(298 K)<br><small>kJ/mol</small></th><th>ΔS°(298 K)<br><small>J/(mol·K)</small></th><th>Δn</th><th>K<sub>p</sub></th></tr></thead><tbody>';
+    let h = '<thead><tr><th>' + T('反應', 'Reaction') + '</th><th>ΔH°(298 K)<br><small>kJ/mol</small></th><th>ΔS°(298 K)<br><small>J/(mol·K)</small></th><th>Δn</th><th>K<sub>p</sub></th></tr></thead><tbody>';
     ['n2o4', 'haber', 'hi'].forEach(function (rx) {
       const th = E.thermo(rx, 298.15), d = E.dn(rx);
       h += '<tr><td>' + eqHTML(rx) + '</td><td>' + num(th.dH, 1) + '</td><td>' + num(th.dS, 1) + '</td><td>' + (d > 0 ? '+' : '') + num(d, 0) + '</td><td>' +
-        temps[rx].map(function (Tk) { return Tk + ' K' + T('：', ': ') + sciHTML(E.K(rx, Tk), 3); }).join('<br>') + '</td></tr>';
+        temps[rx].map(function (Tk) { return Tk + ' K' + T('：', ': ') + sciHTML(E.K(rx, Tk), 3); }).join('<br>') + '</td></tr>';
     });
     el.innerHTML = h + '</tbody>';
     el.querySelectorAll('td').forEach(function (td) { td.style.textAlign = td.cellIndex === 0 ? 'left' : 'right'; });
@@ -1417,7 +1427,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', resize);
   // 暫停時仍讓分子慢慢晃、閃光淡出（低頻重畫）
@@ -1442,4 +1452,17 @@
   setRunning(state.running);
   resize();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('nowTbl').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

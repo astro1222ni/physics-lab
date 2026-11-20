@@ -9,6 +9,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const S = window.SolCore, LD = window.LabDraw;
   if (!S || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -38,7 +48,7 @@
     return { m: num(m, (sig || 3) - 1), e: e };
   }
   function sciHTML(x, sig) { const p = sciParts(x, sig); return p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>'; }
-  function pct(e, d) { if (e == null || !isFinite(e)) return '—'; return (e > 0 ? '+' : '') + num(e * 100, d == null ? 2 : d) + '%'; }
+  function pct(e, d) { if (e == null || !isFinite(e)) return '—'; return (e > 0 ? '+' : '') + num(e * 100, d == null ? 2 : d) + ' %'; }
   function fH(s) { return s.replace(/([A-Za-z\)])(\d+)/g, '$1<sub>$2</sub>'); }
 
   // ======================= 名稱 =======================
@@ -118,7 +128,7 @@
   let cw = 600, ch = 440, dpr = 1;
   const L = {};
   function resize() {
-    const w = cv.clientWidth || (view3 ? $('view3').clientWidth : 0);
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width'))) || (view3 ? $('view3').clientWidth : 0);
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -275,9 +285,9 @@
       c.font = '600 ' + Math.max(9, Math.min(13, g.R * k * 0.2)).toFixed(1) + 'px ' + FONT;
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillStyle = LD.alpha(col.text, 0.55);
-      c.fillText(P.Vf + ' mL', x, yb - g.zc * k + g.R * k * 0.15);
+      c.fillText(P.Vf + ' mL', x, yb - g.zc * k + g.R * k * 0.15);
       c.font = Math.max(8, Math.min(11, g.R * k * 0.16)).toFixed(1) + 'px ' + FONT;
-      c.fillText('20 °C  A', x, yb - g.zc * k + g.R * k * 0.38);
+      c.fillText('20 °C  A', x, yb - g.zc * k + g.R * k * 0.38);
     }
     // 瓶塞（搖勻時與完成後）
     if ((anim && anim.kind === 'shake') || P.done || P.shaken) {
@@ -293,7 +303,7 @@
     if (P.done && opts.label) {
       const r = S.result(P);
       const lx = x, ly = yb - g.zc * k - g.R * k * 0.25;
-      const txt = sigf(r.C, 4) + ' M';
+      const txt = sigf(r.C, 4) + ' M';
       c.font = '700 12px ' + FONT;
       const tw = Math.max(c.measureText(txt).width, 46) + 14;
       LD.roundRect(c, lx - tw / 2, ly - 16, tw, 32, 4);
@@ -314,7 +324,7 @@
     LD.block(c, x - w / 2, top, w, h, col.body, { r: 6 });
     // 顯示幕
     const shown = P.mode === 'weigh' && !P.dissolved ? P.mass : 0;
-    lcd(c, x - w * 0.38, top + h * 0.38, w * 0.76, h * 0.42, num(shown, 3) + ' g', Math.max(9, Math.min(13, w * 0.1)));
+    lcd(c, x - w * 0.38, top + h * 0.38, w * 0.76, h * 0.42, num(shown, 3) + ' g', Math.max(9, Math.min(13, w * 0.1)));
     // 秤盤
     const py = top - 4;
     c.beginPath(); c.ellipse(x, py, w * 0.36, 4.5, 0, 0, Math.PI * 2);
@@ -337,7 +347,7 @@
       c.fillStyle = 'rgba(255,255,255,0.7)';
       for (let i = 0; i < 5; i++) { const u = (i * 0.37 + 0.11) % 1; c.fillRect(x - pw * 0.35 + u * pw * 0.7, py - 4 - ph * (0.2 + 0.5 * ((i * 0.61) % 1)), 1.5, 1.5); }
     }
-    LD.haloText(c, T('天平', 'Balance'), x, yb + 14, col.muted, 'center', 'alphabetic', '11px ' + FONT);
+    LD.haloText(c, T('天平', 'Balance'), x, yb + 14, col.text, 'center', 'alphabetic', '11px ' + FONT);
   }
   function beakerGeom() {
     const rb = S.beakerR(P.Vf), Hb = 2.8 * rb;
@@ -381,11 +391,11 @@
     c.strokeStyle = col.glassHi; c.lineWidth = 1; c.stroke();
     // 溫度計讀數
     if (P.mode === 'weigh' && P.beaker) {
-      lcd(c, x - 26, top - 24, 52, 16, num(lq.T, 1) + ' °C', 10.5);
+      lcd(c, x - 26, top - 24, 52, 16, num(lq.T, 1) + ' °C', 10.5);
       c.strokeStyle = LD.alpha(col.metal, 0.9); c.lineWidth = 2;
       c.beginPath(); c.moveTo(x - w * 0.1, top - 8); c.lineTo(x - w * 0.1, yb - Math.max(6, hl * 0.5)); c.stroke();
     }
-    LD.haloText(c, T('燒杯', 'Beaker'), x, yb + 14, col.muted, 'center', 'alphabetic', '11px ' + FONT);
+    LD.haloText(c, T('燒杯', 'Beaker'), x, yb + 14, col.text, 'center', 'alphabetic', '11px ' + FONT);
     return { top: top, w: w };
   }
   function drawStock(c, x, yb) {
@@ -402,7 +412,7 @@
     LD.roundRect(c, x - w * 0.85, top + h * 0.38, w * 1.7, h * 0.36, 3);
     c.fillStyle = col.dark ? '#f4f1ea' : '#fffdf6'; c.fill(); c.strokeStyle = 'rgba(0,0,0,0.2)'; c.stroke();
     c.fillStyle = '#222'; c.font = '700 ' + Math.max(9, Math.min(12, w * 0.32)).toFixed(1) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(sciPlain(st.c) + ' M', x, top + h * 0.48);
+    c.fillText(sciPlain(st.c) + ' M', x, top + h * 0.48);
     formula(c, st.sp, x, top + h * 0.66, '#222', Math.max(9, Math.min(11, w * 0.3)), 'center');
     LD.haloText(c, state.stock === 'last' ? T('上一瓶', 'Last flask') : T('原液', 'Stock'), x, yb + 14, col.muted, 'center', 'alphabetic', '11px ' + FONT);
     return { top: top, w: w };
@@ -497,7 +507,7 @@
     // 標題與眼睛
     LD.pill(c, T('眼睛看到的刻度線', 'The mark as your eye sees it'), I.x + I.w / 2, I.y + 22, col.accent, 'center', '600 11.5px ' + FONT);
     const deg = eye();
-    const eyeTxt = Math.abs(deg) < 0.5 ? T('平視', 'eye level') : deg > 0 ? T('俯視 ', 'looking down ') + num(deg, 0) + '°' : T('仰視 ', 'looking up ') + num(-deg, 0) + '°';
+    const eyeTxt = Math.abs(deg) < 0.5 ? T('平視', 'eye level') : deg > 0 ? T('俯視 ', 'looking down ') + num(deg, 0) + ' °' : T('仰視 ', 'looking up ') + num(-deg, 0) + ' °';
     LD.pill(c, eyeTxt, I.x + I.w / 2, I.y + I.h - 6, Math.abs(deg) < 0.5 ? col.probe : col.pos, 'center', '600 11px ' + FONT);
   }
   /** 主畫面：眼睛與視線（示意：眼睛畫在刻度線旁，視線穿過刻度線的前緣） */
@@ -547,7 +557,7 @@
     drawAnim(ctx, src, fl);
     drawInset(ctx);
     // 量瓶的溫度
-    if (P.flask.mw > 0 && Math.abs(P.flask.T - 20) > 0.05) LD.pill(ctx, num(P.flask.T, 1) + ' °C', L.fx, yb - 6, P.flask.T > 20 ? col.pos : col.neg, 'center', '600 11px ' + FONT);
+    if (P.flask.mw > 0 && Math.abs(P.flask.T - 20) > 0.05) LD.pill(ctx, num(P.flask.T, 1) + ' °C', L.fx, yb - 6, P.flask.T > 20 ? col.pos : col.neg, 'center', '600 11px ' + FONT);
   }
   function drawAnim(c, src, fl) {
     if (!anim) return;
@@ -604,7 +614,7 @@
     const fx = narrow ? W * 0.3 : W * 0.2;
     const topRoom = narrow ? 330 : 70;          // 窄螢幕上半部留給文字
     const kk = Math.min((narrow ? 0.5 : 0.3) * W / (2 * g.R), (yb - balH - 6 - topRoom) / (g.zTop * 0.92));
-    drawBalanceOnly(c, fx, yb, balW, num(s.mass, 1) + ' g');
+    drawBalanceOnly(c, fx, yb, balW, num(s.mass, 1) + ' g');
     const fb = yb - balW * 0.34 - 6;
     const pts = flaskPoints(g, fx, fb, kk * 0.92);
     c.save(); flaskPath(c, pts, fx, 0); c.clip();
@@ -617,22 +627,22 @@
     const yM = fb - g.zMark * kk * 0.92;
     c.beginPath(); c.moveTo(fx - g.rn * kk - 3, yM); c.lineTo(fx + g.rn * kk + 3, yM); c.strokeStyle = col.text; c.lineWidth = 1.4; c.stroke();
     const yTopF = fb - g.zTop * kk * 0.92, lx = narrow ? Math.min(W - 80, fx + g.R * kk + 8) : fx, la = narrow ? 'left' : 'center';
-    LD.pill(c, T('1.000 L 溶液（20 °C）', '1.000 L of solution (20 °C)'), lx, narrow ? yTopF + 40 : yTopF - 34, col.accent, la, '600 12px ' + FONT);
+    LD.pill(c, T('1.000 L 溶液（20 °C）', '1.000 L of solution (20 °C)'), lx, narrow ? yTopF + 40 : yTopF - 34, col.accent, la, '600 12px ' + FONT);
     // 右：質量長條＋算式
     const x0 = narrow ? 12 : W * 0.42, x1 = W - 14, bw = x1 - x0;
     const y0 = narrow ? 18 : 36;
-    LD.haloText(c, T('這 1 L 溶液的組成', 'What is in this 1 L'), x0, y0, col.text, 'left', 'alphabetic', '700 13px ' + FONT);
+    LD.haloText(c, T('這 1 L 溶液的組成', 'What is in this 1 L'), x0, y0, col.text, 'left', 'alphabetic', '700 13px ' + FONT);
     const by = y0 + 12, bh = 26, fS = s.ms / s.mass;
     LD.block(c, x0, by, bw, bh, col.dark ? '#5d7f97' : '#bcd9ec', { r: 5 });
     if (fS > 0) LD.block(c, x0, by, Math.max(3, bw * fS), bh, state.sp === 'CuSO4' ? '#2f7fd8' : (col.dark ? '#d7c9a6' : '#e6d6ae'), { r: 5 });
-    const lab1 = T('溶質 ', 'solute ') + num(s.ms, 1) + ' g', lab2 = T('水 ', 'water ') + num(s.mw, 1) + ' g';
+    const lab1 = T('溶質 ', 'solute ') + num(s.ms, 1) + ' g', lab2 = T('水 ', 'water ') + num(s.mw, 1) + ' g';
     LD.haloText(c, lab1, x0, by + bh + 16, col.text, 'left', 'alphabetic', '600 12px ' + FONT);
     LD.haloText(c, lab2, x1, by + bh + 16, col.text, 'right', 'alphabetic', '600 12px ' + FONT);
     const rows = [
-      [T('莫耳數', 'Moles'), 'n = ' + num(s.ms, 1) + ' ÷ ' + num(S.SPECIES[state.sp].M, 2) + ' = ' + sigf(s.n, 4) + ' mol'],
-      [T('體積莫耳濃度', 'Molarity'), sigf(s.n, 4) + ' mol ÷ 1.000 L = ' + sigf(s.p.C, 4) + ' M'],
-      [T('重量莫耳濃度', 'Molality'), sigf(s.n, 4) + ' mol ÷ ' + num(s.mw / 1000, 4) + ' kg = ' + sigf(s.p.m, 4) + ' mol/kg'],
-      [T('重量百分率', 'Mass %'), num(s.ms, 1) + ' ÷ ' + num(s.mass, 1) + ' × 100% = ' + num(s.w * 100, 2) + '%'],
+      [T('莫耳數', 'Moles'), 'n = ' + num(s.ms, 1) + ' ÷ ' + num(S.SPECIES[state.sp].M, 2) + ' = ' + sigf(s.n, 4) + ' mol'],
+      [T('體積莫耳濃度', 'Molarity'), sigf(s.n, 4) + ' mol ÷ 1.000 L = ' + sigf(s.p.C, 4) + ' M'],
+      [T('重量莫耳濃度', 'Molality'), sigf(s.n, 4) + ' mol ÷ ' + num(s.mw / 1000, 4) + ' kg = ' + sigf(s.p.m, 4) + ' mol/kg'],
+      [T('重量百分率', 'Mass %'), num(s.ms, 1) + ' ÷ ' + num(s.mass, 1) + ' × 100 % = ' + num(s.w * 100, 2) + ' %'],
       [T('莫耳分率', 'Mole fraction'), sigf(s.p.x, 3)],
       ['ppm', sciPlain(s.p.ppm) + (s.p.ppmCu != null ? T('（含銅 ', ' (Cu ') + sciPlain(s.p.ppmCu) + T('）', ')') : '')]
     ];
@@ -645,8 +655,8 @@
       yy += lh;
     });
     // 密度
-    LD.pill(c, T('密度 ', 'density ') + num(s.p.rho, 4) + ' g/mL', lx, narrow ? yTopF + 66 : yTopF - 8, col.text, la, '600 12px ' + FONT);
-    if (s.w * 100 >= S.SPECIES[state.sp].sat - 0.05) LD.pill(c, T('20 °C 飽和', 'saturated at 20 °C'), lx, narrow ? yTopF + 92 : yM + 30, col.pos, la, '600 12px ' + FONT);
+    LD.pill(c, T('密度 ', 'density ') + num(s.p.rho, 4) + ' g/mL', lx, narrow ? yTopF + 66 : yTopF - 8, col.text, la, '600 12px ' + FONT);
+    if (s.w * 100 >= S.SPECIES[state.sp].sat - 0.05) LD.pill(c, T('20 °C 飽和', 'saturated at 20 °C'), lx, narrow ? yTopF + 92 : yM + 30, col.pos, la, '600 12px ' + FONT);
   }
   function drawBalanceOnly(c, x, yb, w, text) {
     const h = w * 0.34, top = yb - h;
@@ -665,7 +675,7 @@
     const a = S.apparent(P, eye());
     const drop = S.DROP * 1000 / (Math.PI * P.g.rn * P.g.rn);
     if (Math.abs(a) <= drop * 0.5) return T('對齊刻度線', 'level with the mark');
-    return a < 0 ? T('刻度線下方 ', 'below the mark by ') + num(-a, 1) + ' mm' : T('刻度線上方 ', 'above the mark by ') + num(a, 1) + ' mm';
+    return a < 0 ? T('刻度線下方 ', 'below the mark by ') + num(-a, 1) + ' mm' : T('刻度線上方 ', 'above the mark by ') + num(a, 1) + ' mm';
   }
   function updateReadouts() {
     const out = $('readout');
@@ -673,13 +683,13 @@
       const s = convState(), p = s.p;
       out.innerHTML = dl([
         [T('溶質', 'Solute'), fH(state.sp)],
-        [T('重量百分率', 'Mass percentage'), num(s.w * 100, 2) + '%', 'big'],
-        [T('密度（20 °C）', 'Density (20 °C)'), num(p.rho, 4) + ' g/mL'],
-        [T('體積莫耳濃度', 'Molarity'), sigf(p.C, 4) + ' M', 'big'],
-        [T('重量莫耳濃度', 'Molality'), sigf(p.m, 4) + ' mol/kg', 'big'],
+        [T('重量百分率', 'Mass percentage'), num(s.w * 100, 2) + ' %', 'big'],
+        [T('密度（20 °C）', 'Density (20 °C)'), num(p.rho, 4) + ' g/mL'],
+        [T('體積莫耳濃度', 'Molarity'), sigf(p.C, 4) + ' M', 'big'],
+        [T('重量莫耳濃度', 'Molality'), sigf(p.m, 4) + ' mol/kg', 'big'],
         [T('莫耳分率', 'Mole fraction'), sigf(p.x, 3)],
         ['ppm' + T('（溶質）', ' (solute)'), sciHTML(p.ppm, 3)],
-        p.ppmCu != null ? ['ppm' + T('（銅）', ' (copper)'), sciHTML(p.ppmCu, 3)] : [T('每公升溶質', 'Solute per litre'), num(p.gL, 1) + ' g/L']
+        p.ppmCu != null ? ['ppm' + T('（銅）', ' (copper)'), sciHTML(p.ppmCu, 3)] : [T('每公升溶質', 'Solute per litre'), num(p.gL, 1) + ' g/L']
       ]);
       return;
     }
@@ -687,37 +697,37 @@
     if (P.mode === 'weigh') {
       const Sd = S.SOLIDS[P.solid];
       rows.push([T('固體', 'Solid'), fH(FORMULA[P.solid])]);
-      rows.push([T('莫耳質量', 'Molar mass'), num(Sd.M, 2) + ' g/mol']);
-      rows.push([T('天平上的質量', 'Mass on the balance'), num(P.mass, 3) + ' g']);
-      if (P.beaker) rows.push([T('燒杯溫度', 'Beaker temperature'), num(P.beaker.T, 1) + ' °C', Math.abs(P.beaker.T - 20) > 0.5 ? 'bad' : '']);
+      rows.push([T('莫耳質量', 'Molar mass'), num(Sd.M, 2) + ' g/mol']);
+      rows.push([T('天平上的質量', 'Mass on the balance'), num(P.mass, 3) + ' g']);
+      if (P.beaker) rows.push([T('燒杯溫度', 'Beaker temperature'), num(P.beaker.T, 1) + ' °C', Math.abs(P.beaker.T - 20) > 0.5 ? 'bad' : '']);
     } else {
-      rows.push([T('原液', 'Stock'), sciHTML(P.stock.c, 3) + ' M ' + fH(P.stock.sp)]);
-      rows.push([T('已吸取放入', 'Pipetted in so far'), num(P.nIn / P.stock.c * 1000, 2) + ' mL']);
+      rows.push([T('原液', 'Stock'), sciHTML(P.stock.c, 3) + ' M ' + fH(P.stock.sp)]);
+      rows.push([T('已吸取放入', 'Pipetted in so far'), num(P.nIn / P.stock.c * 1000, 2) + ' mL']);
     }
-    rows.push([T('量瓶', 'Flask'), P.Vf + ' mL']);
-    if (P.flask.mw > 0) rows.push([T('量瓶裡的溫度', 'Temperature in the flask'), num(P.flask.T, 1) + ' °C', Math.abs(P.flask.T - 20) > 0.5 ? 'bad' : '']);
+    rows.push([T('量瓶', 'Flask'), P.Vf + ' mL']);
+    if (P.flask.mw > 0) rows.push([T('量瓶裡的溫度', 'Temperature in the flask'), num(P.flask.T, 1) + ' °C', Math.abs(P.flask.T - 20) > 0.5 ? 'bad' : '']);
     rows.push([T('液面（你看到的）', 'Meniscus (as you see it)'), levelText(), 'big']);
-    rows.push([T('目標濃度', 'Target'), sciHTML(P.target, 3) + ' M']);
+    rows.push([T('目標濃度', 'Target'), sciHTML(P.target, 3) + ' M']);
     rows.push([T('狀態', 'State'), P.done ? T('已完成', 'done') : P.shaken ? T('已搖勻', 'mixed') : P.everShaken ? T('補水後還沒搖勻', 'not mixed since adding water') : T('還沒搖勻', 'not mixed yet')]);
     out.innerHTML = dl(rows);
   }
   function infoLines() {
     const Sd = S.SOLIDS[state.solid];
-    $('solidInfo').innerHTML = solidName(state.solid) + '，' .replace('，', T('，', ', ')) + T('莫耳質量 ', 'molar mass ') + num(Sd.M, 2) + ' g/mol' +
+    $('solidInfo').innerHTML = solidName(state.solid) + '，' .replace('，', T('，', ', ')) + T('莫耳質量 ', 'molar mass ') + num(Sd.M, 2) + ' g/mol' +
       (state.solid === 'CuSO4' ? T('（白色粉末，溶於水才變藍）', ' (a white powder that turns blue in water)') : '') +
-      T('。溶解用的水：', '. Water for dissolving: ') + num(S.dissolveWater(state.Vf), 0) + ' mL';
+      T('。溶解用的水：', '. Water for dissolving: ') + num(S.dissolveWater(state.Vf), 0) + ' mL';
     const st = stockObj();
-    $('stockInfo').innerHTML = (state.stock === 'last' ? T('上一瓶：', 'Last flask: ') : '') + sciHTML(st.c, 4) + ' M ' + fH(st.sp) +
-      T('。吸量管一次最多 50 mL，可以吸好幾次。', '. Up to 50 mL per fill; you may pipette several times.');
+    $('stockInfo').innerHTML = (state.stock === 'last' ? T('上一瓶：', 'Last flask: ') : '') + sciHTML(st.c, 4) + ' M ' + fH(st.sp) +
+      T('。吸量管一次最多 50 mL，可以吸好幾次。', '. Up to 50 mL per fill; you may pipette several times.');
     const sat = S.SPECIES[state.sp].sat;
-    $('convInfo').innerHTML = T('20 °C 時 ', 'At 20 °C ') + fH(state.sp) + T(' 的溶解度約 ', ' dissolves up to about ') + num(sat, 1) + '%' +
-      (state.sp === 'NaOH' ? T('（密度表只到 50%）', ' (density table to 50%)') : '') + T('；滑桿的上限就是飽和。', '; the end of the slider is saturation.');
+    $('convInfo').innerHTML = T('20 °C 時 ', 'At 20 °C ') + fH(state.sp) + T(' 的溶解度約 ', ' dissolves up to about ') + num(sat, 1) + ' %' +
+      (state.sp === 'NaOH' ? T('（密度表只到 50 %）', ' (density table to 50 %)') : '') + T('；滑桿的上限就是飽和。', '; the end of the slider is saturation.');
   }
 
   // ======================= 按鈕狀態 =======================
   function updateButtons() {
     const weigh = P.mode === 'weigh', conv = state.mode === 'convert';
-    $('stepBar').hidden = conv; $('bNew').hidden = conv;
+    $('stepBar').closest('.card').hidden = conv; $('bNew').hidden = conv;
     $('stageHint').hidden = conv;
     ['bDissolve', 'bCool', 'bTransfer', 'bRinse'].forEach(function (id) { $(id).hidden = !weigh; });
     $('bPipette').hidden = weigh;
@@ -763,8 +773,8 @@
   }
   const FAIL = {
     nomass: function () { return T('天平上還沒有固體：先把質量調大於 0。', 'There is nothing on the balance yet: set a mass above 0.'); },
-    sat: function (r) { return T('燒杯裡 ' + num(S.dissolveWater(P.Vf), 0) + ' mL 的水在 20 °C 最多只能溶 ' + num(r.maxMass, 2) + ' g，溶不完。請減少質量或換大一點的量瓶。',
-      'The ' + num(S.dissolveWater(P.Vf), 0) + ' mL of water in the beaker can dissolve at most ' + num(r.maxMass, 2) + ' g at 20 °C. Use less solid or a bigger flask.'); },
+    sat: function (r) { return T('燒杯裡 ' + num(S.dissolveWater(P.Vf), 0) + ' mL 的水在 20 °C 最多只能溶 ' + num(r.maxMass, 2) + ' g，溶不完。請減少質量或換大一點的量瓶。',
+      'The ' + num(S.dissolveWater(P.Vf), 0) + ' mL of water in the beaker can dissolve at most ' + num(r.maxMass, 2) + ' g at 20 °C. Use less solid or a bigger flask.'); },
     overflow: function () { return T('再加就會從量瓶滿出來了！', 'Any more and the flask would overflow!'); },
     high: function () { return T('液面已經到瓶頸了，改用洗瓶或滴管慢慢加。', 'The liquid is already in the neck: use the wash bottle or the dropper.'); },
     low: function () { return T('液面看起來沒有超過刻度線，不需要吸出。', 'The meniscus does not look above the mark; nothing to draw off.'); },
@@ -790,14 +800,14 @@
       if (!r.ok) return failed(r);
       const dT = r.dT;
       setStatus(T('固體溶解了。', 'The solid has dissolved. ') + (Math.abs(dT) < 0.5 ? T('溫度幾乎沒變。', 'The temperature hardly changed.') :
-        dT > 0 ? T('溶解放熱，燒杯變熱了（' + num(P.beaker.T, 1) + ' °C）。', 'Dissolving is exothermic: the beaker is now warm (' + num(P.beaker.T, 1) + ' °C).')
-          : T('溶解吸熱，燒杯變涼了（' + num(P.beaker.T, 1) + ' °C）。', 'Dissolving is endothermic: the beaker is now cooler (' + num(P.beaker.T, 1) + ' °C).')));
+        dT > 0 ? T('溶解放熱，燒杯變熱了（' + num(P.beaker.T, 1) + ' °C）。', 'Dissolving is exothermic: the beaker is now warm (' + num(P.beaker.T, 1) + ' °C).')
+          : T('溶解吸熱，燒杯變涼了（' + num(P.beaker.T, 1) + ' °C）。', 'Dissolving is endothermic: the beaker is now cooler (' + num(P.beaker.T, 1) + ' °C).')));
       if (snd()) { window.LabSound.noise({ dur: 0.5, gain: 0.08, filter: 2200, q: 1.1 }); if (Math.abs(dT) > 1) window.LabSound.sweep({ from: dT > 0 ? 420 : 760, to: dT > 0 ? 760 : 420, dur: 0.5, gain: 0.05, type: 'sine', delay: 0.3 }); }
       startAnim('dissolve', 900);
     } else if (id === 'bCool') {
       r = S.cool(P);
       if (!r.ok) return failed(r);
-      setStatus(T('等了一會兒，溶液回到 20 °C。', 'After a while the solution is back at 20 °C.'));
+      setStatus(T('等了一會兒，溶液回到 20 °C。', 'After a while the solution is back at 20 °C.'));
       if (snd()) window.LabSound.sweep({ from: 600, to: 420, dur: 0.4, gain: 0.05, type: 'sine' });
     } else if (id === 'bTransfer') {
       r = S.transfer(P);
@@ -808,21 +818,21 @@
     } else if (id === 'bRinse') {
       r = S.rinse(P);
       if (!r.ok) return failed(r);
-      setStatus(T('用 ' + num(S.rinseWater(P.Vf), 0) + ' mL 蒸餾水洗燒杯與玻棒，洗液也倒進量瓶（第 ' + P.rinses + ' 次）。', 'Rinsed the beaker and rod with ' + num(S.rinseWater(P.Vf), 0) + ' mL of distilled water and added the rinsings to the flask (rinse ' + P.rinses + ').'));
+      setStatus(T('用 ' + num(S.rinseWater(P.Vf), 0) + ' mL 蒸餾水洗燒杯與玻棒，洗液也倒進量瓶（第 ' + P.rinses + ' 次）。', 'Rinsed the beaker and rod with ' + num(S.rinseWater(P.Vf), 0) + ' mL of distilled water and added the rinsings to the flask (rinse ' + P.rinses + ').'));
       if (snd()) window.LabSound.noise({ dur: 0.5, gain: 0.06, filter: 1300, q: 0.9 });
       startAnim('pour', 700);
     } else if (id === 'bPipette') {
       const V1 = Math.round(val(el.V1) * 100) / 100;
       r = S.pipette(P, V1, el.pipRinse.checked);
       if (!r.ok) return failed(r);
-      setStatus(T('吸取 ' + num(V1, 2) + ' mL 原液放進量瓶。', 'Pipetted ' + num(V1, 2) + ' mL of stock into the flask.') +
+      setStatus(T('吸取 ' + num(V1, 2) + ' mL 原液放進量瓶。', 'Pipetted ' + num(V1, 2) + ' mL of stock into the flask.') +
         (r.vw > 0 ? T('吸量管裡原本有水，吸上來的原液被稀釋了一點。', ' The pipette was wet with water, which diluted the stock a little.') : ''));
       if (snd()) window.LabSound.sweep({ from: 380, to: 700, dur: 0.5, gain: 0.05, type: 'sine' });
       startAnim('pipette', 1100);
     } else if (id === 'bPour') {
       r = S.pourToNeck(P, eye());
       if (!r.ok) return failed(r);
-      setStatus(T('加水到瓶頸，離刻度線還有約 ' + S.NECK_GAP + ' mm。', 'Filled up into the neck, about ' + S.NECK_GAP + ' mm below the mark.'));
+      setStatus(T('加水到瓶頸，離刻度線還有約 ' + S.NECK_GAP + ' mm。', 'Filled up into the neck, about ' + S.NECK_GAP + ' mm below the mark.'));
       if (snd()) window.LabSound.noise({ dur: 0.8, gain: 0.07, filter: 800, q: 0.7 });
       startAnim('water', 900);
     } else if (id === 'bSquirt' || id === 'bDrop') {
@@ -839,7 +849,7 @@
     } else if (id === 'bDraw') {
       r = S.drawOut(P, eye());
       if (!r.ok) return failed(r);
-      setStatus(T('用滴管吸出 ' + num(r.mL, 2) + ' mL，液面看起來回到刻度線。吸出的溶液裡也有溶質……', 'Drew off ' + num(r.mL, 2) + ' mL with the dropper; the meniscus looks level again. But that liquid contained solute…'));
+      setStatus(T('用滴管吸出 ' + num(r.mL, 2) + ' mL，液面看起來回到刻度線。吸出的溶液裡也有溶質……', 'Drew off ' + num(r.mL, 2) + ' mL with the dropper; the meniscus looks level again. But that liquid contained solute…'));
       if (snd()) window.LabSound.sweep({ from: 700, to: 420, dur: 0.3, gain: 0.05, type: 'sine' });
       startAnim('draw', 500);
     } else if (id === 'bShake') {
@@ -868,7 +878,7 @@
     if (state.stock === 'last') infoLines();
     renderResult(b); renderTable(); drawGraph();
     const good = Math.abs(r.eTotal) <= 0.005;
-    setStatus(T('第 ' + seq + ' 瓶完成：', 'Flask ' + seq + ' done: ') + sigf(r.C, 4) + ' M，' .replace('，', T('，', ', ')) + T('和目標差 ', 'off target by ') + pct(r.eTotal) + T('。可以在「稀釋」選「上一瓶」當原液。', '. In “Dilute” you can use “Last flask” as the stock.'));
+    setStatus(T('第 ' + seq + ' 瓶完成：', 'Flask ' + seq + ' done: ') + sigf(r.C, 4) + ' M，' .replace('，', T('，', ', ')) + T('和目標差 ', 'off target by ') + pct(r.eTotal) + T('。可以在「稀釋」選「上一瓶」當原液。', '. In “Dilute” you can use “Last flask” as the stock.'));
     if (snd()) {
       if (good) { window.LabSound.tone({ freq: 784, dur: 0.1, gain: 0.08 }); window.LabSound.tone({ freq: 1175, dur: 0.18, gain: 0.08, delay: 0.11 }); }
       else window.LabSound.tone({ freq: 392, dur: 0.18, gain: 0.07, type: 'triangle' });
@@ -894,11 +904,11 @@
     if (!b) { out.innerHTML = '<p class="hint">' + T('倒轉搖勻後按「完成」，就會看到濃度與誤差來自哪裡。', 'Press “Done” after inverting the flask to see the concentration and where the error came from.') + '</p>'; return; }
     const r = b.r;
     let h = '<dl class="readout">' + dl([
-      [T('實際濃度', 'Actual concentration'), sciHTML(r.C, 4) + ' M', 'big'],
-      [T('目標', 'Target'), sciHTML(r.target, 3) + ' M'],
+      [T('實際濃度', 'Actual concentration'), sciHTML(r.C, 4) + ' M', 'big'],
+      [T('目標', 'Target'), sciHTML(r.target, 3) + ' M'],
       [T('和目標差', 'Off target by'), pct(r.eTotal), Math.abs(r.eTotal) <= 0.005 ? 'good' : 'bad'],
       [b.mode === 'weigh' ? T('應秤', 'You should weigh') : T('應吸取', 'You should pipette'),
-        b.mode === 'weigh' ? num(r.massNeeded, 3) + ' g' : num(r.V1Needed, 2) + ' mL']
+        b.mode === 'weigh' ? num(r.massNeeded, 3) + ' g' : num(r.V1Needed, 2) + ' mL']
     ]) + '</dl>';
     h += '<h3>' + T('誤差來自哪裡', 'Where the error came from') + '</h3><div class="bar-e">';
     COMP.forEach(function (c) {
@@ -907,10 +917,10 @@
     });
     h += '</div>';
     h += '<h3>' + T('這瓶溶液的濃度', 'This solution') + '</h3><dl class="readout">' + dl([
-      [T('重量百分率', 'Mass percentage'), num(r.w * 100, 3) + '%'],
-      [T('重量莫耳濃度', 'Molality'), sciHTML(r.molal, 4) + ' mol/kg'],
-      [T('密度', 'Density'), num(r.rho, 4) + ' g/mL'],
-      [T('每公升溶質', 'Solute per litre'), sciHTML(r.gL, 4) + ' g/L'],
+      [T('重量百分率', 'Mass percentage'), num(r.w * 100, 3) + ' %'],
+      [T('重量莫耳濃度', 'Molality'), sciHTML(r.molal, 4) + ' mol/kg'],
+      [T('密度', 'Density'), num(r.rho, 4) + ' g/mL'],
+      [T('每公升溶質', 'Solute per litre'), sciHTML(r.gL, 4) + ' g/L'],
       r.ppmCu != null ? ['ppm' + T('（銅）', ' (copper)'), sciHTML(r.ppmCu, 3)] : ['ppm', sciHTML(r.ppm, 3)]
     ]) + '</dl>';
     out.innerHTML = h;
@@ -921,8 +931,8 @@
       T('實際', 'Actual') + '<br><small>M</small></th><th>' + T('和目標差', 'Off target') + '</th><th>' + T('操作誤差', 'Procedure') + '</th><th class="l">' + T('主要原因', 'Main cause') + '</th></tr></thead><tbody>';
     if (!bottles.length) h += '<tr class="empty"><td colspan="8">' + T('還沒有配好的溶液。', 'No finished solutions yet.') + '</td></tr>';
     bottles.forEach(function (b) {
-      const how = b.mode === 'weigh' ? fH(FORMULA[b.solid]) + T(' 秤量', ' weighed') : T('稀釋 ', 'from ') + sciHTML(b.stockC, 3) + ' M';
-      h += '<tr><td>' + b.seq + '</td><td class="l">' + b.Vf + ' mL ' + fH(b.sp) + '</td><td class="l">' + how + '</td><td>' + sciHTML(b.r.target, 3) + '</td><td>' + sciHTML(b.r.C, 4) +
+      const how = b.mode === 'weigh' ? fH(FORMULA[b.solid]) + T(' 秤量', ' weighed') : T('稀釋 ', 'from ') + sciHTML(b.stockC, 3) + ' M';
+      h += '<tr><td>' + b.seq + '</td><td class="l">' + b.Vf + ' mL ' + fH(b.sp) + '</td><td class="l">' + how + '</td><td>' + sciHTML(b.r.target, 3) + '</td><td>' + sciHTML(b.r.C, 4) +
         '</td><td>' + pct(b.r.eTotal) + '</td><td>' + pct(b.r.eProc) + '</td><td class="l">' + mainCause(b) + '</td></tr>';
     });
     t.innerHTML = h + '</tbody>';
@@ -992,7 +1002,7 @@
     c.strokeStyle = LD.alpha(col.text, 0.5); c.lineWidth = 1;
     c.beginPath(); c.moveTo(x0, yT); c.lineTo(x0, yB); c.lineTo(x1, yB); c.stroke();
     const xs = wMax > 30 ? 10 : 5;
-    for (let v = 0; v <= wMax + 1e-9; v += xs) LD.haloText(c, num(v, 0) + '%', X(v), yB + 14, col.muted, 'center', 'alphabetic', '10.5px ' + FONT);
+    for (let v = 0; v <= wMax + 1e-9; v += xs) LD.haloText(c, num(v, 0) + ' %', X(v), yB + 14, col.muted, 'center', 'alphabetic', '10.5px ' + FONT);
     for (let i = 0; i <= 5; i++) LD.haloText(c, num(yMax * i / 5, yMax < 5 ? 1 : 0), x0 - 4, Y(yMax * i / 5), col.muted, 'right', 'middle', '10.5px ' + FONT);
     LD.haloText(c, T('重量百分率', 'Mass percentage'), (x0 + x1) / 2, gh - 8, col.muted, 'center', 'alphabetic', '11px ' + FONT);
     const line = function (key, color, dash) {
@@ -1009,12 +1019,12 @@
     if (w != null && w <= wMax + 1e-9) {
       const p = S.props(sp, w / 100);
       [['C', col.accent], ['m', col.pos]].forEach(function (k) { LD.ball(c, X(w), Y(p[k[0]]), 5, k[1]); });
-      LD.pill(c, num(w, 2) + '%：' .replace('：', T('：', ': ')) + sigf(p.C, 3) + ' M · ' + sigf(p.m, 3) + ' mol/kg', Math.min(Math.max(X(w), x0 + 90), x1 - 90), Math.max(yT + 18, Y(Math.max(p.C, p.m)) - 10), col.text, 'center', '600 11px ' + FONT);
+      LD.pill(c, num(w, 2) + ' %' + T('：', ': ') + sigf(p.C, 3) + ' M · ' + sigf(p.m, 3) + ' mol/kg', Math.min(Math.max(X(w), x0 + 90), x1 - 90), Math.max(yT + 18, Y(Math.max(p.C, p.m)) - 10), col.text, 'center', '600 11px ' + FONT);
     }
     formula(c, sp, x0 + 8, yT + 14, col.text, 13, 'left');
     $('gLegend').innerHTML = '<span><span class="ln" style="background:' + col.accent + '"></span>' + T('體積莫耳濃度（mol/L）', 'Molarity (mol/L)') + '</span>' +
       '<span style="color:' + col.pos + '"><span class="ln dash"></span><span style="color:var(--muted)">' + T('重量莫耳濃度（mol/kg）', 'Molality (mol/kg)') + '</span></span>' +
-      '<span>' + T('右端是 20 °C 的飽和濃度', 'The right end is saturation at 20 °C') + '</span>';
+      '<span>' + T('右端是 20 °C 的飽和濃度', 'The right end is saturation at 20 °C') + '</span>';
   }
 
   // ======================= 數據表（模擬方法） =======================
@@ -1022,7 +1032,7 @@
     const t = $('dataTable');
     if (!t) return;
     let h = '<thead><tr><th class="l">' + T('物質', 'Substance') + '</th><th>' + T('莫耳質量', 'Molar mass') + '<br><small>g/mol</small></th><th>' + T('溶解熱', 'ΔH soln') + '<br><small>kJ/mol</small></th><th>' +
-      T('20 °C 溶解度', 'Solubility 20 °C') + '<br><small>' + T('重量 %', 'mass %') + '</small></th><th>' + T('10% 溶液密度', 'Density at 10%') + '<br><small>g/mL</small></th></tr></thead><tbody>';
+      T('20 °C 溶解度', 'Solubility 20 °C') + '<br><small>' + T('重量 %', 'mass %') + '</small></th><th>' + T('10 % 溶液密度', 'Density at 10 %') + '<br><small>g/mL</small></th></tr></thead><tbody>';
     ['CuSO4-5H2O', 'CuSO4', 'NaCl', 'NaOH'].forEach(function (k) {
       const Sd = S.SOLIDS[k], sp = S.SPECIES[Sd.sp];
       h += '<tr><td class="l">' + fH(FORMULA[k]) + '</td><td>' + num(Sd.M, 2) + '</td><td>' + (Sd.dH > 0 ? '+' : '') + num(Sd.dH, 2) + '</td><td>' + num(sp.sat, 1) + T('（以 ', ' (as ') + fH(Sd.sp) + T(' 計）', ')') + '</td><td>' + num(S.rho(Sd.sp, 0.1), 4) + '</td></tr>';
@@ -1045,12 +1055,12 @@
     $('view3d').disabled = state.mode === 'convert';
   }
   function outputs() {
-    $('masso').textContent = num(val(el.mass), 3) + ' g';
-    $('V1o').textContent = num(val(el.V1), 2) + ' mL';
-    $('targeto').textContent = sigf(targetVal(), 3) + ' M';
+    $('masso').textContent = num(val(el.mass), 3) + ' g';
+    $('V1o').textContent = num(val(el.V1), 2) + ' mL';
+    $('targeto').textContent = sigf(targetVal(), 3) + ' M';
     const e = val(el.eye);
-    $('eyeo').textContent = (e > 0 ? '+' : '') + num(e, 1) + '°';
-    $('wto').textContent = num(val(el.wt), 2) + '%';
+    $('eyeo').textContent = (e > 0 ? '+' : '') + num(e, 1) + ' °';
+    $('wto').textContent = num(val(el.wt), 2) + ' %';
   }
   function setWtRange() {
     const sat = S.SPECIES[state.sp].sat, mx = state.sp === 'NaOH' ? 50 : sat;
@@ -1231,4 +1241,33 @@
   updateSoundButton();
   resize();
   refresh();
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

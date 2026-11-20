@@ -36,7 +36,7 @@
     return num(x, Math.max(0, Math.min(6, (sig || 3) - 1 - e)));
   }
   function signed(x, d) { return (x > 0 ? '+' : '') + num(x, d); }
-  function pct(x) { return signed(x * 100, Math.abs(x) < 0.1 ? 1 : 0) + '%'; }
+  function pct(x) { return signed(x * 100, Math.abs(x) < 0.1 ? 1 : 0) + ' %'; }
   function parseNum(s) {
     s = String(s || '').normalize('NFKC').replace(/[，,]/g, '.').replace(/[−–—]/g, '-').replace(/\s+/g, '');
     s = s.replace(/[x×]10\^?([-+]?\d+)$/i, 'e$1');
@@ -140,7 +140,7 @@
     if (run.t >= T_MAX - 1e-9) {
       state.recording = false;
       updatePlay();
-      setStatus(T('已經記錄 60 分鐘，停止記錄。可以分析這次的數據，或按「重做一次」。', 'An hour has been recorded, so recording has stopped. Analyse the data, or press “New run”.'));
+      setStatus(T('已經記錄 60 分鐘，停止記錄。可以分析這次的數據，或按「重做一次」。', 'An hour has been recorded, so recording has stopped. Analyse the data, or press “New run”.'));
       if (snd()) window.LabSound.sweep({ from: 660, to: 330, dur: 0.4, gain: 0.08, type: 'triangle' });
     }
   }
@@ -179,7 +179,7 @@
     startLoop();
   }
   function togglePlay() {
-    if (run.t >= T_MAX - 1e-9) { setStatus(T('已經記錄 60 分鐘了：按「重做一次」重新開始。', 'An hour has already been recorded: press “New run” to start again.')); return; }
+    if (run.t >= T_MAX - 1e-9) { setStatus(T('已經記錄 60 分鐘了：按「重做一次」重新開始。', 'An hour has already been recorded: press “New run” to start again.')); return; }
     if (state.recording) { state.recording = false; updatePlay(); setStatus(''); }
     else startRec();
   }
@@ -263,7 +263,7 @@
     const out = $('calcOut');
     const A = analysis();
     if (!A) { out.innerHTML = T('還沒有加入後的數據：先按「加入」並記錄一段時間。', 'There is no data after adding yet: press “Add” and record for a while.'); return; }
-    if (A.dT == null) { out.innerHTML = T('擬合範圍內的點太少：等冷卻記錄久一點，或把擬合範圍拉大（至少 10 s、5 個點）。', 'Too few points in the fitting range: record more of the cooling, or widen the range (at least 10 s and 5 points).'); return; }
+    if (A.dT == null) { out.innerHTML = T('擬合範圍內的點太少：等冷卻記錄久一點，或把擬合範圍拉大（至少 10 s、5 個點）。', 'Too few points in the fitting range: record more of the cooling, or widen the range (at least 10 s and 5 points).'); return; }
     const meth = state.meth;
     if (run.mode === 'cal') {
       const Tf = A.T0 + A.dT;
@@ -271,8 +271,8 @@
       const err = C - H.C_CAL;
       out.innerHTML = T('熱水放出的熱 = 冷水吸收的熱 + 卡計吸收的熱', 'Heat lost by the hot water = heat gained by the cold water + heat gained by the calorimeter') + '<br>' +
         'C = [' + num(run.cal.Vh, 1) + ' × 4.18 × (' + num(run.cal.Th, 1) + ' − ' + num(Tf, 2) + ') − ' + num(run.cal.Vc, 1) + ' × 4.18 × ' + num(A.dT, 2) + '] ÷ ' + num(A.dT, 2) +
-        ' = <span class="res">' + num(C, 1) + ' J/K</span><br>' +
-        T('（模擬的設定值是 ' + H.C_CAL + ' J/K，相差 ', '(the value set in the simulation is ' + H.C_CAL + ' J/K: off by ') + signed(err, 1) + ' J/K' + T('）已填入熱容量欄。', '.) It has been entered in the heat-capacity box.');
+        ' = <span class="res">' + num(C, 1) + ' J/K</span><br>' +
+        T('（模擬的設定值是 ' + H.C_CAL + ' J/K，相差 ', '(the value set in the simulation is ' + H.C_CAL + ' J/K: off by ') + signed(err, 1) + ' J/K' + T('）已填入熱容量欄。', '.) It has been entered in the heat-capacity box.');
       $('inC').value = num(C, 1).replace('−', '-');
       addRow({ kind: 'cal', meth: meth, dT: A.dT, C: C, n: null, dH: null, ref: null, err: null, Ccal: C });
       if (userActed && window.LabMission) window.LabMission.emit('calib', { C: C, err: err, method: meth, dTraw: A.dTraw, dText: A.fitOk ? A.dText : null });
@@ -289,11 +289,11 @@
     const k = kindOf();
     const err = ref ? dH / ref.dH - 1 : null;
     const hidden = k === 'dis-X' && unk && !unk.revealed;
-    let h = 'q = (m c + C) ΔT = (' + num(A.m, 1) + ' × 4.18 + ' + sigf(Cin, 3) + ') × ' + num(A.dT, 2) + ' = ' + num(q, 0) + ' J<br>' +
-      'ΔH = −q ÷ n = ' + num(-q, 0) + ' ÷ ' + sigf(n, 3) + ' = <span class="res">' + num(dH, 1) + ' kJ/mol</span><br>';
+    let h = 'q = (m c + C) ΔT = (' + num(A.m, 1) + ' × 4.18 + ' + sigf(Cin, 3) + ') × ' + num(A.dT, 2) + ' = ' + num(q, 0) + ' J<br>' +
+      'ΔH = −q ÷ n = ' + num(-q, 0) + ' ÷ ' + sigf(n, 3) + ' = <span class="res">' + num(dH, 1) + ' kJ/mol</span><br>';
     if (!ref) h += T('這次 NaOH 比 HCl 多：放出的熱一部分是溶解熱、一部分是中和熱，沒有單一的參考值。', 'This time there is more NaOH than HCl: part of the heat is heat of solution and part is heat of neutralisation, so there is no single reference value.');
     else if (hidden) h += T('參考值：按「揭曉答案」後顯示。', 'Reference value: shown after you press “Reveal”.');
-    else h += T('參考值 ', 'Reference ') + num(ref.dH, 2) + ' kJ/mol' + T('，誤差 ', '; error ') + pct(err);
+    else h += T('參考值 ', 'Reference ') + num(ref.dH, 2) + ' kJ/mol' + T('，誤差 ', '; error ') + pct(err);
     out.innerHTML = h;
     const r = addRow({ kind: k, meth: meth, dT: A.dT, C: Cin, n: n, dH: dH, ref: ref ? ref.dH : null, err: err });
     const excess = run.mode === 'mix' ? Math.max(run.nb, run.na) / Math.min(run.nb, run.na) : null;
@@ -350,8 +350,8 @@
     $('unkNew').hidden = $('reveal').hidden = $('unkOff').hidden = !unk;
     $('reveal').disabled = !!(unk && unk.revealed);
     $('unkOut').innerHTML = !unk ? '' :
-      T('X 的莫耳質量 M = ', 'Molar mass of X: M = ') + num(unk.M, 1) + ' g/mol' +
-      (unk.revealed ? '<br>' + T('答案：ΔH = ', 'Answer: ΔH = ') + '<strong>' + signed(unk.dH, 1) + ' kJ/mol</strong>' + (unk.dH < 0 ? T('（放熱）', ' (exothermic)') : T('（吸熱）', ' (endothermic)')) : '');
+      T('X 的莫耳質量 M = ', 'Molar mass of X: M = ') + num(unk.M, 1) + ' g/mol' +
+      (unk.revealed ? '<br>' + T('答案：ΔH = ', 'Answer: ΔH = ') + '<strong>' + signed(unk.dH, 1) + ' kJ/mol</strong>' + (unk.dH < 0 ? T('（放熱）', ' (exothermic)') : T('（吸熱）', ' (endothermic)')) : '');
   }
 
   // ======================= 藥粒與動畫 =======================
@@ -367,7 +367,9 @@
   let cw = 0, ch = 0, dpr = 1, G = null;
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function resize() {
-    const w = cv.clientWidth;
+    const frameWidth = cv.parentElement.clientWidth;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+      ? Math.max(640, frameWidth) : cv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -635,7 +637,7 @@
       g.restore();
       if (!run.added) pellets.forEach(function (p) { drawPellet(g, x + p.gx * 52, by - 44 - p.gy * 4 + Math.abs(p.gx) * 6, 5.2 * p.r, p.rot); });
       const kind = run.solid.kind;
-      richPill(g, kind === 'X' ? [['X ' + num(run.solid.mass, 2) + ' g', 0]] : fP(kind).concat([[' ' + num(run.solid.mass, 2) + ' g', 0]]), x, by + fsz(13) * 1.25 + 4, col.text, fsz(G.narrow ? 11.5 : 12.5), 'center', '600');
+      richPill(g, kind === 'X' ? [['X ' + num(run.solid.mass, 2) + ' g', 0]] : fP(kind).concat([[' ' + num(run.solid.mass, 2) + ' g', 0]]), x, by + fsz(13) * 1.25 + 4, col.text, fsz(G.narrow ? 11.5 : 12.5), 'center', '600');
       return;
     }
     // 燒杯（HCl 或熱水）
@@ -697,18 +699,18 @@
       g.restore();
     }
     if (lift === 0) {
-      const lbl = hot ? [[T('熱水 ', 'Hot water ') + num(run.cal.Th, 1) + ' °C · ' + num(V, 0) + ' mL', 0]] :
-        [['HCl ' + num(run.mix.ca, 2) + ' M · ' + num(V, 0) + ' mL', 0]];
+      const lbl = hot ? [[T('熱水 ', 'Hot water ') + num(run.cal.Th, 1) + ' °C · ' + num(V, 0) + ' mL', 0]] :
+        [['HCl ' + num(run.mix.ca, 2) + ' M · ' + num(V, 0) + ' mL', 0]];
       richPill(g, lbl, x, by + fsz(13) * 1.25 + 4, hot ? col.hot : col.text, fsz(G.narrow ? 11.5 : 12.5), 'center', '600');
     }
   }
   function cupLabel() {
     if (run.mode === 'solid') {
-      const lq = run.liquid.kind === 'water' ? [[num(run.liquid.V, 0) + ' mL ' + T('水', 'water'), 0]] : [['HCl ' + num(run.liquid.c, 2) + ' M · ' + num(run.liquid.V, 0) + ' mL', 0]];
+      const lq = run.liquid.kind === 'water' ? [[num(run.liquid.V, 0) + ' mL ' + T('水', 'water'), 0]] : [['HCl ' + num(run.liquid.c, 2) + ' M · ' + num(run.liquid.V, 0) + ' mL', 0]];
       return lq;
     }
-    if (run.mode === 'mix') return [['NaOH ' + num(run.mix.cb, 2) + ' M · ' + num(run.mix.Vb, 0) + ' mL', 0]];
-    return [[T('冷水 ', 'Cold water ') + num(run.cal.Vc, 0) + ' mL', 0]];
+    if (run.mode === 'mix') return [['NaOH ' + num(run.mix.cb, 2) + ' M · ' + num(run.mix.Vb, 0) + ' mL', 0]];
+    return [[T('冷水 ', 'Cold water ') + num(run.cal.Vc, 0) + ' mL', 0]];
   }
   let kb = null;
   function drawStage() {
@@ -758,11 +760,11 @@
     // 攪拌棒的握把
     g.save(); g.strokeStyle = col.steel; g.lineWidth = 2.4; g.beginPath(); g.arc(sxr, rTop - 6, 6, 0, 7); g.stroke(); g.restore();
     // 溫度計
-    lcd(g, G.px - G.mw / 2, G.my, G.mw, G.mh, num(H.reading(run), 1) + ' °C',
-      state.recording ? 't = ' + num(run.t, 0) + ' s' : state.started ? T('暫停', 'Paused') + ' · t = ' + num(run.t, 0) + ' s' : T('待命', 'Ready'));
+    lcd(g, G.px - G.mw / 2, G.my, G.mw, G.mh, num(H.reading(run), 1) + ' °C',
+      state.recording ? 't = ' + num(run.t, 0) + ' s' : state.started ? T('暫停', 'Paused') + ' · t = ' + num(run.t, 0) + ' s' : T('待命', 'Ready'));
     drawLeft(g);
     // 室溫
-    richPill(g, [[T('室溫 ', 'Room ') + num(run.Troom, 1) + ' °C', 0]], G.pad + 6, G.pad + fsz(12) + 6, col.muted, fsz(12), 'left');
+    richPill(g, [[T('室溫 ', 'Room ') + num(run.Troom, 1) + ' °C', 0]], G.pad + 6, G.pad + fsz(12) + 6, col.muted, fsz(12), 'left');
     // 杯子的標籤
     richPill(g, cupLabel(), G.cx, G.bot + fsz(13) * 1.25 + 4, col.text, fsz(G.narrow ? 11.5 : 12.5), 'center', '600');
     if (kb && kb.focused()) {
@@ -901,7 +903,7 @@
     g.restore();
     if (run.added) LD.pill(g, T('加入', 'Added'), Ax.sx(run.tAdd) + 4, Ax.Y1 + 14, col.muted, 'left', fsz(11) + 'px ' + LD.FONT);
     if (A && A.dT != null) {
-      const txt = 'ΔT = ' + signed(A.dT, 2) + ' °C';
+      const txt = 'ΔT = ' + signed(A.dT, 2) + ' °C';
       LD.pill(g, txt, Ax.X1 - 4, Ax.Y1 + 14, state.meth === 'ext' ? col.probe : col.accent, 'right', '600 ' + fsz(12) + 'px ' + LD.FONT);
     }
   }
@@ -967,16 +969,16 @@
   function updateReadouts() {
     if (!run) return;
     const r = H.reading(run);
-    const items = [[T('溫度計讀數', 'Thermometer'), num(r, 1) + ' °C', 'big'], [T('記錄時間', 'Time recorded'), num(run.t, 0) + ' s']];
-    if (run.added) items.push([T('加入後', 'Since adding'), num(run.t - run.tAdd, 0) + ' s']);
+    const items = [[T('溫度計讀數', 'Thermometer'), num(r, 1) + ' °C', 'big'], [T('記錄時間', 'Time recorded'), num(run.t, 0) + ' s']];
+    if (run.added) items.push([T('加入後', 'Since adding'), num(run.t - run.tAdd, 0) + ' s']);
     if (run.mode === 'solid') {
       const f = run.added ? run.nDis / run.solid.n : 0;
-      items.push([T('已溶解', 'Dissolved'), num(f * 100, f > 0.995 ? 0 : 1) + '%']);
-    } else if (run.added) items.push([T('已混合', 'Mixed'), num(run.x * 100, run.x > 0.995 ? 0 : 1) + '%']);
+      items.push([T('已溶解', 'Dissolved'), num(f * 100, f > 0.995 ? 0 : 1) + ' %']);
+    } else if (run.added) items.push([T('已混合', 'Mixed'), num(run.x * 100, run.x > 0.995 ? 0 : 1) + ' %']);
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
     updateAna();
     if (!statusOverride) statusEl.innerHTML = autoStatus();
-    cv.setAttribute('aria-label', T('簡易卡計，溫度計讀數 ', 'Simple calorimeter; thermometer reads ') + num(r, 1) + ' °C');
+    cv.setAttribute('aria-label', T('簡易卡計，溫度計讀數 ', 'Simple calorimeter; thermometer reads ') + num(r, 1) + ' °C');
   }
   function updateAna() {
     const A = analysis();
@@ -984,11 +986,11 @@
     $('fitRows').hidden = state.meth !== 'ext';
     if (!A) out.push([T('先記錄、加入，再分析', 'Record and add first'), '—']);
     else {
-      out.push([T('加入前的溫度 T<sub>0</sub>', 'Starting temperature T<sub>0</sub>'), num(A.T0, 2) + ' °C']);
-      out.push([(A.exo ? T('最高讀數', 'Highest reading') : T('最低讀數', 'Lowest reading')) + '<small>t = ' + num(A.tExt, 0) + ' s</small>', num(A.Text, 1) + ' °C']);
-      if (state.meth === 'ext') out.push([T('外插到加入時刻', 'Extrapolated to the moment of adding'), A.fitOk ? num(A.T0 + A.dText, 2) + ' °C' : T('點太少', 'too few points')]);
-      out.push(['ΔT', A.dT == null ? '—' : signed(A.dT, 2) + ' °C', 'big']);
-      out.push([run.mode === 'cal' ? T('冷水 + 熱水的質量', 'Mass of cold + hot water') : T('溶液的質量 m', 'Mass of solution m') + (run.mode === 'solid' ? '<small>' + T('含溶入的固體', 'including the dissolved solid') + '</small>' : ''), num(A.m, 2) + ' g']);
+      out.push([T('加入前的溫度 T<sub>0</sub>', 'Starting temperature T<sub>0</sub>'), num(A.T0, 2) + ' °C']);
+      out.push([(A.exo ? T('最高讀數', 'Highest reading') : T('最低讀數', 'Lowest reading')) + '<small>t = ' + num(A.tExt, 0) + ' s</small>', num(A.Text, 1) + ' °C']);
+      if (state.meth === 'ext') out.push([T('外插到加入時刻', 'Extrapolated to the moment of adding'), A.fitOk ? num(A.T0 + A.dText, 2) + ' °C' : T('點太少', 'too few points')]);
+      out.push(['ΔT', A.dT == null ? '—' : signed(A.dT, 2) + ' °C', 'big']);
+      out.push([run.mode === 'cal' ? T('冷水 + 熱水的質量', 'Mass of cold + hot water') : T('溶液的質量 m', 'Mass of solution m') + (run.mode === 'solid' ? '<small>' + T('含溶入的固體', 'including the dissolved solid') + '</small>' : ''), num(A.m, 2) + ' g']);
     }
     $('anaOut').innerHTML = out.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
     $('anaInputs').hidden = run.mode === 'cal';
@@ -1002,7 +1004,7 @@
     if (!results.length) h += '<tr class="empty"><td colspan="8">' + T('還沒有結果：「分析」卡按「計算」後會列在這裡。', 'No results yet: they are listed here after you press “Calculate” on the “Analysis” card.') + '</td></tr>';
     results.forEach(function (r, i) {
       const hideRef = r.kind === 'dis-X' && unk && r.unkId === unk.id && !unk.revealed;
-      const refTxt = r.kind === 'cal' ? T('設定 ', 'set ') + H.C_CAL + ' J/K' : r.ref == null ? '—' : hideRef ? '?' : num(r.ref, 2) + ' <small>(' + pct(r.err) + ')</small>';
+      const refTxt = r.kind === 'cal' ? T('設定 ', 'set ') + H.C_CAL + ' J/K' : r.ref == null ? '—' : hideRef ? '?' : num(r.ref, 2) + ' <small>(' + pct(r.err) + ')</small>';
       h += '<tr' + (r.seg !== seg ? ' style="opacity:.55"' : '') + '><td>' + (i + 1) + '</td><td class="l">' + kindLabel(r.kind, r) + '</td><td>' + (r.meth === 'ext' ? T('外插', 'extrap.') : T('最高', 'peak')) + '</td><td>' + signed(r.dT, 2) + '</td><td>' +
         (r.kind === 'cal' ? '<strong>' + num(r.Ccal, 1) + '</strong>' : sigf(r.C, 3)) + '</td><td>' + (r.n == null ? '—' : sigf(r.n, 3)) + '</td><td>' + (r.dH == null ? '—' : '<strong>' + num(r.dH, 1) + '</strong>') + '</td><td>' + refTxt + '</td></tr>';
     });
@@ -1012,9 +1014,9 @@
   function setStatus(s) { statusOverride = s; statusEl.innerHTML = s || autoStatus(); }
   function autoStatus() {
     if (!run) return '';
-    if (!state.started) return T('按「開始記錄」，先記錄 30 秒左右加入前的溫度，再按「加入」。', 'Press “Start recording”, record about 30 s before adding, then press “Add”.');
-    if (!run.added) return state.recording ? T('正在記錄加入前的溫度（', 'Recording the starting temperature (') + num(run.t, 0) + ' s' + T('）……準備好就按「加入」。', ')… press “Add” when you are ready.') : T('暫停中。', 'Paused.');
-    return state.recording ? T('記錄中：溫度計每 2 秒記一筆。', 'Recording: one reading every 2 s.') : T('暫停中：可以先分析已記錄的數據。', 'Paused: you can analyse the data recorded so far.');
+    if (!state.started) return T('按「開始記錄」，先記錄 30 秒左右加入前的溫度，再按「加入」。', 'Press “Start recording”, record about 30 s before adding, then press “Add”.');
+    if (!run.added) return state.recording ? T('正在記錄加入前的溫度（', 'Recording the starting temperature (') + num(run.t, 0) + ' s' + T('）……準備好就按「加入」。', ')… press “Add” when you are ready.') : T('暫停中。', 'Paused.');
+    return state.recording ? T('記錄中：溫度計每 2 秒記一筆。', 'Recording: one reading every 2 s.') : T('暫停中：可以先分析已記錄的數據。', 'Paused: you can analyse the data recorded so far.');
   }
 
   // ======================= 切換 =======================
@@ -1030,7 +1032,19 @@
     $('calCtl').hidden = state.mode !== 'cal';
     $('liqCRow').hidden = state.liq !== 'HCl';
   }
+  // 滑桿標題右邊的數值欄（LabNum 把 <output> 變成可點擊輸入的鈕，但數字要由本頁寫入；
+  // 試玩串 11/20：1280×800 時「固體的質量」「體積」右邊只剩一個小點）
+  const OUT_UNITS = { mass: [2, ' g'], liqV: [0, ' mL'], liqC: [2, ' mol/L'], cb: [2, ' mol/L'], Vb: [0, ' mL'], ca: [2, ' mol/L'], Va: [0, ' mL'],
+    Vc: [0, ' mL'], Vh: [0, ' mL'], Th: [1, ' °C'], Troom: [1, ' °C'], ta: [0, ' s'], tb: [0, ' s'] };
+  function updateOutputs() {
+    Object.keys(OUT_UNITS).forEach(function (k) {
+      const o = $(k + 'o'); if (!o || !el[k]) return;
+      const s = num(val(el[k]), OUT_UNITS[k][0]) + OUT_UNITS[k][1];
+      if (o.textContent !== s) o.textContent = s;
+    });
+  }
   function refreshAll() {
+    updateOutputs();
     updateReadouts();
     renderTable();
     drawStage();
@@ -1051,11 +1065,12 @@
 
   // ======================= 事件 =======================
   [el.mass, el.liqV, el.liqC, el.cb, el.Vb, el.ca, el.Va, el.Vc, el.Vh, el.Th, el.Troom].forEach(function (e) {
-    e.addEventListener('input', function () { if (!syncing) changed(); });
+    e.addEventListener('input', function () { updateOutputs(); if (!syncing) changed(); });
   });
   [el.lid, el.stir].forEach(function (e) { e.addEventListener('change', function () { changed(); }); });
   [el.ta, el.tb].forEach(function (e) {
     e.addEventListener('input', function () {
+      updateOutputs();
       if (syncing) return;
       acted(); fitTouched = true;
       if (val(el.ta) > val(el.tb)) { if (e === el.ta) setVal(el.tb, val(el.ta)); else setVal(el.ta, val(el.tb)); }
@@ -1105,10 +1120,10 @@
       items: [
         { name: function () { return state.mode === 'solid' ? T('固體的質量', 'Mass of solid') : state.mode === 'mix' ? T('倒入的鹽酸體積', 'Volume of HCl poured in') : T('熱水的溫度', 'Temperature of the hot water'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(mainEl(), d, big); return true; },
-          describe: function () { const e = mainEl(); return (state.mode === 'solid' ? num(val(e), 2) + ' g' : state.mode === 'mix' ? num(val(e), 0) + ' mL' : num(val(e), 1) + ' °C') + T('，讀數 ', ', reading ') + num(H.reading(run), 1) + ' °C'; } },
+          describe: function () { const e = mainEl(); return (state.mode === 'solid' ? num(val(e), 2) + ' g' : state.mode === 'mix' ? num(val(e), 0) + ' mL' : num(val(e), 1) + ' °C') + T('，讀數 ', ', reading ') + num(H.reading(run), 1) + ' °C'; } },
         { name: function () { return T('室溫', 'Room temperature'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(el.Troom, d, big); return true; },
-          describe: function () { return num(val(el.Troom), 1) + ' °C'; } }
+          describe: function () { return num(val(el.Troom), 1) + ' °C'; } }
       ],
       onChange: function () { drawStage(); }
     });
@@ -1141,7 +1156,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
     let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(function () { if (cv.parentElement.clientWidth && cv.parentElement.clientWidth !== lw) { lw = cv.parentElement.clientWidth; resize(); } }).observe(cv.parentElement);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', resize);
 

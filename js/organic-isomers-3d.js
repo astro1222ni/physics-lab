@@ -4,11 +4,18 @@
  * three.js 由 organic-isomers.js 在切換到 3D 時才以 import() 動態載入，再傳進 OI3D.create(lib, bridge)。
  * 這個檔案只「讀」頁面算好的 3D 座標（OICore.embed3D 的結果，單位 Å；繞鍵旋轉後的座標也由頁面算），不改變任何化學數據。
  * 原子半徑（Å，球棍模型縮小後的大小）：C 0.36、O 0.33、H 0.22；鍵的兩半分別塗上兩端原子的顏色。
- * 雙鍵畫兩根並排的棍子，放在雙鍵碳的平面內；扭轉雙鍵時第二根（π 鍵）依 cos²θ 變淡、兩根往中間合併。
+ * 雙鍵畫兩根並排的棍子，放在雙鍵碳的平面內；扭轉雙鍵時第二根（π 鍵）依 cos^2θ 變淡、兩根往中間合併。
  * 2D 格子的 y 朝下，這裡把 y 反過來，讓 3D 一開始的方向和 2D 畫法相同。
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+
   const RAD = { C: 0.36, O: 0.33, H: 0.22 };
 
   function create(lib, H) {
@@ -16,6 +23,7 @@
     const T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', T('分子的 3D 球棍模型：灰色是碳、紅色是氧、白色是氫（拖曳旋轉、雙指或滾輪縮放、點鍵選取）',
       '3D ball-and-stick model: grey is carbon, red is oxygen, white is hydrogen (drag to rotate, pinch or scroll to zoom, tap a bond to choose it)'));
@@ -41,7 +49,7 @@
     const controls = new lib.OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: 8, T });
     controls.minDistance = 3;
     controls.maxDistance = 60;
 
@@ -185,16 +193,21 @@
       if (force) {
         const dist = radius / Math.sin(camera.fov * Math.PI / 360) / Math.min(1, camera.aspect) * 1.02;
         controls.target.set(0, 0, 0);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(Math.max(4, dist));
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, raf = 0;
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return Math.round(w * 0.8);
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
-      const h = Math.round(w * 0.8);
+      const h = canvasHeight(w);
       canvas.style.height = h + 'px';
       vw = w;
       renderer.setSize(w, h, false);
@@ -204,7 +217,7 @@
     }
     function hud() {
       const d = H.hud();
-      hudTL.textContent = d.tl || '';
+      hudTL.innerHTML = formulaMarkup(d.tl || '');
       hudTR.textContent = d.tr || '';
     }
     function renderNow() {
@@ -218,7 +231,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -245,6 +258,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         group.clear();
         [sphere, cyl, torus, cone].forEach(function (g) { g.dispose(); });
@@ -258,7 +272,7 @@
     applyColors();
     const w0 = host.clientWidth;
     if (w0) {
-      const h0 = Math.round(w0 * 0.8);
+      const h0 = canvasHeight(w0);
       canvas.style.height = h0 + 'px';
       vw = w0;
       renderer.setSize(w0, h0, false);

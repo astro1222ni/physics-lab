@@ -17,6 +17,7 @@
     const T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', T('注射筒的 3D 立體檢視：玻璃筒裡的分子、活塞與水浴（拖曳旋轉、雙指或滾輪縮放）',
       '3D view of the syringe: the molecules in the glass barrel, the piston and the water bath (drag to rotate, pinch or scroll to zoom)'));
     canvas.setAttribute('role', 'img');
@@ -44,7 +45,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 4;
     controls.maxDistance = 40;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: 5, T });
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.5));
     const sun = new THREE.DirectionalLight(0xffffff, 1.9);
@@ -222,13 +223,17 @@
       const dist = (span * 0.45) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1.25, camera.aspect);
       if (force) {
         controls.target.set(0.9, 0, 0);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(300, w * 0.84)) : 400; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(300, w * 0.84)) : 400;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -251,7 +256,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; if (!H.running()) renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -272,6 +277,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

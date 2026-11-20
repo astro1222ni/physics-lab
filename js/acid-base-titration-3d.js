@@ -35,6 +35,7 @@
     const FL = H.flask;                  // { Rb, Rn, Hc, Hn }（cm）
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', T('滴定裝置的 3D 立體檢視：鐵架上的滴定管、磁石攪拌器上的錐形瓶、pH 計與電極；溶液顏色與 2D 相同（拖曳旋轉、滾輪或雙指縮放、右鍵或雙指拖曳平移）',
       '3D view of the titration set-up: the burette on its stand, the conical flask on the magnetic stirrer, the pH meter and electrode; the solution has the same colour as in 2D (drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan)'));
@@ -69,7 +70,7 @@
     controls.minDistance = 4;
     controls.maxDistance = 220;
     controls.maxPolarAngle = Math.PI * 0.53;
-    controls.screenSpacePanning = true;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: TUBE_TOP / 2, T });
 
     // ---------- 環境反射：簡單的攝影棚（幾片柔光板），讓玻璃有真實的高光 ----------
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -292,7 +293,7 @@
         g.lineWidth = 3.5; g.beginPath(); g.moveTo(54, y); g.lineTo(96, y); g.stroke();
       });
       g.font = '700 34px system-ui, sans-serif'; g.textAlign = 'center';
-      g.fillText('250 mL', 130, top + 32);
+      g.fillText('250 mL', 130, top + 32);
       if (G.mat.map) G.mat.map.dispose();
       G.mat.map = canvasTex(c);
       G.mat.needsUpdate = true;
@@ -560,7 +561,7 @@
       g.fillStyle = on; g.font = '700 40px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
       g.fillText('pH', Wd - 22, Hd - 28);
       g.font = '600 22px system-ui, sans-serif';
-      g.fillText('25.0 °C', Wd - 22, 46);
+      g.fillText('25.0 °C', Wd - 22, 46);
       lcdTex.needsUpdate = true;
     }
 
@@ -804,6 +805,7 @@
       else if (m === 'eye') { tgt.set(0, ym, 0); dir = new THREE.Vector3(0, 0, 1); dist = fitH(5, 5); }
       else { tgt.set(2.5, (TUBE_TOP + 8) / 2, 0); dir = new THREE.Vector3(0.36, 0.24, 1); dist = fitH(TUBE_TOP + 12, asp < 1 ? 24 : 42); }
       controls.target.copy(tgt);
+      nav.home();
       camera.position.copy(dir.normalize()).multiplyScalar(dist).add(tgt);
       camera.updateProjectionMatrix();
       controls.update();
@@ -815,7 +817,10 @@
 
     // ======================= 大小、繪製、釋放 =======================
     let vw = 0, inRender = false;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(380, Math.min(560, w * 1.25))) : Math.round(Math.max(400, Math.min(580, w * 0.7))); }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(380, Math.min(560, w * 1.25))) : Math.round(Math.max(400, Math.min(580, w * 0.7)));
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -840,7 +845,7 @@
         renderer.render(scene, camera);
       } finally { inRender = false; }
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     canvas.addEventListener('webglcontextlost', function (ev) {
       ev.preventDefault();
@@ -858,6 +863,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         const mats = new Set(), geos = new Set();
         scene.traverse(function (o) {

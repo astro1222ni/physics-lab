@@ -10,6 +10,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.IodineCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -48,7 +58,7 @@
     const ss = (s < 10 ? '0' : '') + s.toFixed(2);
     return h ? h + ':' + (m < 10 ? '0' : '') + m + ':' + ss : m + ':' + ss;
   }
-  function secText(t) { return t == null || !isFinite(t) ? '—' : (t >= 1000 ? num(t, 1) : num(t, 2)) + ' s'; }
+  function secText(t) { return t == null || !isFinite(t) ? '—' : (t >= 1000 ? num(t, 1) : num(t, 2)) + ' s'; }
 
   // ======================= 化學式（畫布用）：數字下標、^ 之後上標 =======================
   function parseChem(str) {
@@ -163,7 +173,7 @@
     acted();
     if (!beaker || beaker.phase !== 'ready') prepare();
     const b = beaker;
-    if (!C.mix(b.o).ok) { setStatus(T('體積加起來超過 50.0 mL，請減少用量。', 'The volumes add up to more than 50.0 mL; use less.')); return; }
+    if (!C.mix(b.o).ok) { setStatus(T('體積加起來超過 50.0 mL，請減少用量。', 'The volumes add up to more than 50.0 mL; use less.')); return; }
     b.pl = C.plan(b.p);
     b.live = C.createRun(b.p);
     b.samples = sampleRun(b.p, b.pl);
@@ -206,7 +216,7 @@
     runs.push(rec); b.rec = rec; lastRec = rec;
     if (rec.rx === 'x' && unk) unk.total++;
     if (window.LabSound && window.LabSound.enabled()) window.LabSound.tone({ freq: 330, dur: 0.3, type: 'triangle', gain: 0.14 });
-    setStatus(T('氧化劑已經用掉 99%，硫代硫酸根還有剩：這一杯永遠不會變藍。', '99% of the oxidant is used up and thiosulfate is still left: this beaker will never turn blue.'));
+    setStatus(T('氧化劑已經用掉 99 %，硫代硫酸根還有剩：這一杯永遠不會變藍。', '99 % of the oxidant is used up and thiosulfate is still left: this beaker will never turn blue.'));
     if (window.LabMission) window.LabMission.emit('never', { rx: rec.rx, unk: rec.unk, T: rec.T, salt: rec.salt, I0: rec.I0, P0: rec.P0, S0: rec.S0, ratio: rec.S0 / (2 * rec.P0) });
     refreshAll();
   }
@@ -214,7 +224,7 @@
   function statusHTML(rec) {
     if (!rec || !rec.rate) return;
     $('status').innerHTML = T('變藍了！碼錶停在 ', 'Blue! The stopwatch stopped at ') + secText(rec.t) + T('。初速率 ≈ ', '. Initial rate ≈ ') +
-      '[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub> ÷ 2t = ' + sciHTML(rec.rate, 3) + ' M/s';
+      '[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub> ÷ 2t = ' + sciHTML(rec.rate, 3) + ' M/s';
   }
 
   // ======================= 動畫迴圈（同一時間只有一條） =======================
@@ -253,7 +263,7 @@
   // ======================= 主畫面 =======================
   let G = null;
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -316,7 +326,7 @@
       ctx.strokeStyle = LD.alpha(col.border, 0.8); ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(10, G.rc.y + 0.5); ctx.lineTo(cw - 10, G.rc.y + 0.5); ctx.stroke();
     }
-    cv.setAttribute('aria-label', T('實驗桌：水浴 ' + num(beaker ? beaker.o.T : 25, 1) + ' °C 中的燒杯', 'Bench: a beaker in a ' + num(beaker ? beaker.o.T : 25, 1) + ' °C water bath') +
+    cv.setAttribute('aria-label', T('實驗桌：水浴 ' + num(beaker ? beaker.o.T : 25, 1) + ' °C 中的燒杯', 'Bench: a beaker in a ' + num(beaker ? beaker.o.T : 25, 1) + ' °C water bath') +
       (cur.mixed ? T('，碼錶 ' + secText(dispTime()) + (cur.B > 0.15 ? '，溶液已變藍' : '，溶液無色'), ', stopwatch ' + secText(dispTime()) + (cur.B > 0.15 ? ', the solution is blue' : ', the solution is colourless')) : T('，尚未混合', ', not mixed yet')));
   }
   function drawBench() {
@@ -528,7 +538,7 @@
       const name = state.rx === 'x' ? 'X' : '(NH4)2S2O8';
       chemPill(ctx, 'B  ' + name, cx, G.benchY - G.BH - 16, G.fs - 1, state.rx === 'x' ? col.accent : col.ox, 'center');
       ctx.fillStyle = col.muted; ctx.font = '500 ' + (G.fs - 1) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText(mixed ? T('（已倒入）', '(poured in)') : num(VP, 2).replace(/0$/, '') + ' mL', cx, G.benchY + 5);
+      ctx.fillText(mixed ? T('（已倒入）', '(poured in)') : num(VP, 2).replace(/0$/, '') + ' mL', cx, G.benchY + 5);
     }
   }
   function drawThermometer() {
@@ -544,7 +554,7 @@
     LD.ball(ctx, x, yBot + bulb - 2, bulb, '#d6453b');
     ctx.strokeStyle = LD.alpha(col.text, 0.35); ctx.lineWidth = 1;
     for (let k = 0; k <= 6; k++) { const yy = yBot - (yBot - yTop - 8) * (k * 10 + 10) / 70; ctx.beginPath(); ctx.moveTo(x + tw / 2, yy + 0.5); ctx.lineTo(x + tw / 2 + (k % 2 ? 3 : 5), yy + 0.5); ctx.stroke(); }
-    LD.pill(ctx, num(Tc, 1) + ' °C', x + 7, yTop + 16, col.text, 'left');
+    LD.pill(ctx, num(Tc, 1) + ' °C', x + 7, yTop + 16, col.text, 'left');
   }
   function dispTime() {
     const b = beaker;
@@ -580,7 +590,7 @@
       ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2); ctx.stroke();
     }
     ctx.fillStyle = col.text; ctx.font = '600 ' + Math.max(9, R * 0.13) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let k = 0; k < 60; k += 10) { const a = k / 60 * 2 * Math.PI - Math.PI / 2; ctx.fillText(String(k), cx + Math.cos(a) * R * 0.68, cy + Math.sin(a) * R * 0.68); }
+    for (let k = 0; k < 60; k += 10) { const a = k / 60 * 2 * Math.PI - Math.PI / 2; ctx.fillText(String(k), cx + Math.cos(a) * R * 0.68 + (k === 0 ? R * 0.13 : 0), cy + Math.sin(a) * R * 0.68); }
     // 分鐘小錶盤（0–30 分）
     const sr = R * 0.24, sy = cy + R * 0.36;
     ctx.beginPath(); ctx.arc(cx, sy, sr, 0, 2 * Math.PI); ctx.strokeStyle = LD.alpha(col.text, 0.35); ctx.lineWidth = 1; ctx.stroke();
@@ -630,7 +640,7 @@
         LD.roundRect(ctx, B.x, by, Math.max(w, 5), bh, 5); ctx.fillStyle = gg; ctx.fill();
       }
       ctx.fillStyle = col.text; ctx.font = '600 ' + (fs - 1) + 'px ' + FONT; ctx.textAlign = 'right';
-      ctx.fillText(num(100 * Math.max(0, r.v), r.v > 0.995 || r.v < 0.005 ? 0 : 1) + '%', B.x + B.w, y + fs * 0.4);
+      ctx.fillText(num(100 * Math.max(0, r.v), r.v > 0.995 || r.v < 0.005 ? 0 : 1) + ' %', B.x + B.w, y + fs * 0.4);
       ctx.textAlign = 'left';
     });
   }
@@ -688,11 +698,19 @@
     const f = frameBox(), c = gctx, tE = b.samples.tEnd;
     const X = function (t) { return f.x0 + (f.x1 - f.x0) * t / tE; }, Y = function (v) { return f.y1 - (f.y1 - f.y0) * v; };
     const st = niceStep(tE, gw < 520 ? 4 : 6);
+    // 公開任務的一分鐘觀測區間；只標出目前時間軸涵蓋的部分。
+    if (tE >= 57) {
+      c.save();
+      c.fillStyle = LD.alpha(col.iod, 0.1);
+      c.fillRect(X(57), f.y0, X(Math.min(63, tE)) - X(57), f.y1 - f.y0);
+      if (tE >= 60) LD.haloText(c, '60 s', X(60) - 3, f.y1 - 8, col.muted, 'right', 'alphabetic', '11px ' + FONT);
+      c.restore();
+    }
     c.strokeStyle = LD.alpha(col.text, 0.08); c.lineWidth = 1;
     c.fillStyle = col.muted; c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
     for (let t = 0; t <= tE + 1e-9; t += st) { const x = Math.round(X(t)) + 0.5; c.beginPath(); c.moveTo(x, f.y0); c.lineTo(x, f.y1); c.stroke(); c.fillText(num(t, st >= 1 ? 0 : Math.ceil(-Math.log10(st) - 1e-9)), x, f.y1 + 4); }
     c.textAlign = 'right'; c.textBaseline = 'middle';
-    for (let v = 0; v <= 1.0001; v += 0.25) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(f.x0, y); c.lineTo(f.x1, y); c.stroke(); c.fillText(num(v * 100, 0) + '%', f.x0 - 4, y); }
+    for (let v = 0; v <= 1.0001; v += 0.25) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(f.x0, y); c.lineTo(f.x1, y); c.stroke(); c.fillText(num(v * 100, 0) + ' %', f.x0 - 4, y); }
     axesFrame(f, T('時間 t（s）', 'time t (s)'), T('對初濃度的比例', 'fraction of start'));
     const pts = b.samples.pts, upto = b.phase === 'ready' ? 0 : b.simT;
     const series = [
@@ -792,7 +810,7 @@
     for (let v = Math.ceil(xlo / sx) * sx; v <= xhi; v += sx) { const x = Math.round(X(v)) + 0.5; c.beginPath(); c.moveTo(x, f.y0); c.lineTo(x, f.y1); c.stroke(); c.fillText(num(v, sx < 0.01 ? 3 : 2), x, f.y1 + 4); }
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let v = Math.ceil(ylo / sy) * sy; v <= yhi; v += sy) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(f.x0, y); c.lineTo(f.x1, y); c.stroke(); c.fillText(num(v, sy < 1 ? 1 : 0), f.x0 - 4, y); }
-    axesFrame(f, T('1/T（10^−3 K^−1）', '1/T (10^−3 K^−1)'), 'ln(1/t)');
+    axesFrame(f, T('1/T（10^−3 K^−1）', '1/T (10^−3 K^−1)'), 'ln(1/t)');
     list.forEach(function (r) {
       const on = g && g.pts.indexOf(r) >= 0, x = X(1000 / (r.T + 273.15)), y = Y(Math.log(1 / r.t));
       if (on) LD.ball(c, x, y, 6, col.pos);
@@ -803,7 +821,7 @@
       const yv = function (v) { return g.fit.intercept + g.fit.slope * v / 1000; };
       c.strokeStyle = col.pos; c.lineWidth = 2; c.setLineDash([7, 5]);
       c.beginPath(); c.moveTo(X(xa), Y(yv(xa))); c.lineTo(X(xb), Y(yv(xb))); c.stroke(); c.setLineDash([]);
-      LD.pill(c, 'Ea = ' + num(g.Ea, 1) + ' kJ/mol' + T('（' + g.nT + ' 個溫度）', ' (' + g.nT + ' temperatures)'), f.x1 - 10, f.y0 + 14, col.pos, 'right');
+      LD.pill(c, 'Ea = ' + num(g.Ea, 1) + ' kJ/mol' + T('（' + g.nT + ' 個溫度）', ' (' + g.nT + ' temperatures)'), f.x1 - 10, f.y0 + 14, col.pos, 'right');
     }
   }
   function updateGraphText() {
@@ -843,34 +861,34 @@
 
   // ======================= 讀數與文字 =======================
   function refreshOutputs() {
-    $('vKIo').textContent = num(val(elKI), 2) + ' mL';
-    $('vPo').textContent = num(val(elP), 2) + ' mL';
-    $('vSo').textContent = num(val(elS), 2) + ' mL';
-    $('tempo').textContent = num(val(elT), 1) + ' °C';
+    $('vKIo').textContent = num(val(elKI), 2) + ' mL';
+    $('vPo').textContent = num(val(elP), 2) + ' mL';
+    $('vSo').textContent = num(val(elS), 2) + ' mL';
+    $('tempo').textContent = num(val(elT), 1) + ' °C';
   }
   function updateReadouts() {
     const o = recipe(), c = C.mix(o);
     const ox = state.rx === 'x' ? '[X]<sub>0</sub>' : '[S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]<sub>0</sub>';
     const mu = state.rx === 'x' ? null : C.ionicStrength(c, saltPS);
     $('readout').innerHTML =
-      '<dt>[I<sup>−</sup>]<sub>0</sub></dt><dd>' + sigf(c.I0, 3) + ' M</dd>' +
-      '<dt>' + ox + '</dt><dd>' + sigf(c.P0, 3) + ' M</dd>' +
-      '<dt>[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub></dt><dd>' + sciHTML(c.S0, 3) + ' M</dd>' +
-      '<dt>' + T('補足液', 'Top-up') + '<br><small>' + (state.rx === 'x' ? T('（X 沒有鹽效應）', '(X has no salt effect)') : saltPS ? T('KCl／K<sub>2</sub>SO<sub>4</sub> 鹽溶液', 'KCl / K<sub>2</sub>SO<sub>4</sub> solution') : T('純水', 'plain water')) + '</small></dt><dd>' + (c.ok ? num(c.fill, 2) : '<span style="color:var(--pos)">' + num(c.fill, 2) + '</span>') + ' mL</dd>' +
-      '<dt>' + T('離子強度 μ', 'Ionic strength μ') + '</dt><dd>' + (mu == null ? '—' : sigf(mu, 3) + ' M') + '</dd>' +
+      '<dt>[I<sup>−</sup>]<sub>0</sub></dt><dd>' + sigf(c.I0, 3) + ' M</dd>' +
+      '<dt>' + ox + '</dt><dd>' + sigf(c.P0, 3) + ' M</dd>' +
+      '<dt>[S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub></dt><dd>' + sciHTML(c.S0, 3) + ' M</dd>' +
+      '<dt>' + T('補足液', 'Top-up') + '<br><small>' + (state.rx === 'x' ? T('（X 沒有鹽效應）', '(X has no salt effect)') : saltPS ? T('KCl／K<sub>2</sub>SO<sub>4</sub> 鹽溶液', 'KCl / K<sub>2</sub>SO<sub>4</sub> solution') : T('純水', 'plain water')) + '</small></dt><dd>' + (c.ok ? num(c.fill, 2) : '<span style="color:var(--pos)">' + num(c.fill, 2) + '</span>') + ' mL</dd>' +
+      '<dt>' + T('離子強度 μ', 'Ionic strength μ') + '</dt><dd>' + (mu == null ? '—' : sigf(mu, 3) + ' M') + '</dd>' +
       '<dt>' + T('碼錶', 'Stopwatch') + '</dt><dd class="big">' + (beaker && beaker.rec && beaker.rec.t != null ? secText(beaker.rec.t) : beaker && beaker.phase === 'never' ? T('不變藍', 'never blue') : beaker && beaker.phase === 'run' ? T('計時中', 'running') : '—') + '</dd>';
     $('fillHint').innerHTML = c.ok ? (state.rx === 'x' ? T('X 是中性分子，沒有鹽效應，「保持離子強度」對它沒有影響。', 'X is a neutral molecule with no salt effect, so “Keep the ionic strength” does not affect it.') :
-      saltPS ? T('補足液是 KCl 與 K<sub>2</sub>SO<sub>4</sub> 溶液，每一杯的離子強度都是 0.22 M。', 'The top-up is KCl and K<sub>2</sub>SO<sub>4</sub> solution, so every beaker has an ionic strength of 0.22 M.') :
+      saltPS ? T('補足液是 KCl 與 K<sub>2</sub>SO<sub>4</sub> 溶液，每一杯的離子強度都是 0.22 M。', 'The top-up is KCl and K<sub>2</sub>SO<sub>4</sub> solution, so every beaker has an ionic strength of 0.22 M.') :
         T('補足液是純水：離子強度隨配方改變。', 'The top-up is plain water: the ionic strength changes with the recipe.')) :
-      T('體積加起來超過 50.0 mL，請減少用量。', 'The volumes add up to more than 50.0 mL; use less.');
+      T('體積加起來超過 50.0 mL，請減少用量。', 'The volumes add up to more than 50.0 mL; use less.');
   }
   function updateRxText() {
     const x = state.rx === 'x';
     $('rxInfo').innerHTML = x ?
       T('虛構的氧化劑 X：X + 2I<sup>−</sup> → I<sub>2</sub> + …，速率定律未知。用初速率法找出 m、n 與 k。', 'An invented oxidant X: X + 2I<sup>−</sup> → I<sub>2</sub> + …, with an unknown rate law. Use initial rates to find m, n and k.') +
-        (unk ? T('（第 ' + unk.id + ' 個未知反應' + (unk.revealed ? '，已揭曉' : '') + '）', ' (unknown no. ' + unk.id + (unk.revealed ? ', revealed' : '') + ')') : '') :
+        (unk ? T('（第 ' + unk.id + ' 個未知反應' + (unk.revealed ? '，已揭曉' : '') + '）', ' (unknown no. ' + unk.id + (unk.revealed ? ', revealed' : '') + ')') : '') :
       'S<sub>2</sub>O<sub>8</sub><sup>2−</sup> + 2I<sup>−</sup> → 2SO<sub>4</sub><sup>2−</sup> + I<sub>2</sub>' + T('，碘鐘：I<sub>2</sub> + 2S<sub>2</sub>O<sub>3</sub><sup>2−</sup> → 2I<sup>−</sup> + S<sub>4</sub>O<sub>6</sub><sup>2−</sup>。', '; clock: I<sub>2</sub> + 2S<sub>2</sub>O<sub>3</sub><sup>2−</sup> → 2I<sup>−</sup> + S<sub>4</sub>O<sub>6</sub><sup>2−</sup>.');
-    $('vPlab').textContent = x ? T('0.100 M 氧化劑 X', '0.100 M oxidant X') : T('0.100 M 過硫酸銨', '0.100 M ammonium persulfate');
+    $('vPlab').textContent = x ? T('0.100 M 氧化劑 X', '0.100 M oxidant X') : T('0.100 M 過硫酸銨', '0.100 M ammonium persulfate');
     $('axP').innerHTML = x ? T('對 [X]<sub>0</sub>', 'Against [X]<sub>0</sub>') : T('對 [S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]<sub>0</sub>', 'Against [S<sub>2</sub>O<sub>8</sub><sup>2−</sup>]<sub>0</sub>');
     $('lawText').innerHTML = 'r = k[' + (x ? 'X' : 'S<sub>2</sub>O<sub>8</sub><sup>2−</sup>') + ']<sup>m</sup>[I<sup>−</sup>]<sup>n</sup>';
     $('ansMLab').innerHTML = x ? T('X 的級數 m', 'Order in X, m') : T('S<sub>2</sub>O<sub>8</sub><sup>2−</sup> 的級數 m', 'Order in S<sub>2</sub>O<sub>8</sub><sup>2−</sup>, m');
@@ -888,10 +906,10 @@
   function updateLast() {
     const r = lastRec, el = $('lastOut');
     if (!r) { el.textContent = T('還沒有紀錄。按「混合並計時」開始。', 'No runs yet. Press “Mix and time”.'); return; }
-    if (r.never) { el.innerHTML = T('第 ' + r.id + ' 杯：硫代硫酸根 ≥ 2 倍氧化劑，永遠不會變藍。', 'Run ' + r.id + ': the thiosulfate is at least twice the oxidant, so it never turns blue.'); return; }
+    if (r.never) { el.innerHTML = T('第 ' + r.id + ' 杯：硫代硫酸根 ≥ 2 倍氧化劑，永遠不會變藍。', 'Run ' + r.id + ': the thiosulfate is at least twice the oxidant, so it never turns blue.'); return; }
     const half = r.S0 / 2;
-    el.innerHTML = T('第 ' + r.id + ' 杯：t = ', 'Run ' + r.id + ': t = ') + secText(r.t) + '<br>Δ[' + (r.rx === 'x' ? 'X' : 'S<sub>2</sub>O<sub>8</sub><sup>2−</sup>') + '] = [S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub>/2 = ' + sciHTML(half, 3) + ' M' +
-      (r.rate ? '<br>' + T('初速率 ≈ Δ/t = ', 'initial rate ≈ Δ/t = ') + sciHTML(r.rate, 3) + ' M/s' : '<br>' + T('沒有硫代硫酸根，無法算速率。', 'No thiosulfate, so no rate can be worked out.'));
+    el.innerHTML = T('第 ' + r.id + ' 杯：t = ', 'Run ' + r.id + ': t = ') + secText(r.t) + '<br>Δ[' + (r.rx === 'x' ? 'X' : 'S<sub>2</sub>O<sub>8</sub><sup>2−</sup>') + '] = [S<sub>2</sub>O<sub>3</sub><sup>2−</sup>]<sub>0</sub>/2 = ' + sciHTML(half, 3) + ' M' +
+      (r.rate ? '<br>' + T('初速率 ≈ Δ/t = ', 'initial rate ≈ Δ/t = ') + sciHTML(r.rate, 3) + ' M/s' : '<br>' + T('沒有硫代硫酸根，無法算速率。', 'No thiosulfate, so no rate can be worked out.'));
   }
   function setStatus(s) { $('status').textContent = s; }
   function refreshAll() {
@@ -925,8 +943,8 @@
       (nOk ? '<span class="ok">' + T('n 正確', 'n is right') + '</span>' : '<span class="no">' + T('n 不對', 'n is wrong') + '</span>') + T('。', '.');
     if (kErr == null) h += T('（沒有填 k，或看不懂這個數字。）', ' (No k given, or the number could not be read.)');
     else if (!(mOk && nOk)) h += T('級數不對時，k 的數值與單位都不會對。', ' With wrong orders, k cannot be right either.');
-    else if (kErr <= 0.05) h += ' <span class="ok">' + T('k 也對了', 'k is right too') + '</span>' + T('（誤差 ' + num(kErr * 100, 1) + '%）。', ' (error ' + num(kErr * 100, 1) + '%).');
-    else h += T(' k 的誤差 ' + num(kErr * 100, 1) + '%，' + (kv > truth.k25 ? '偏大' : '偏小') + '。', ' k is off by ' + num(kErr * 100, 1) + '%: too ' + (kv > truth.k25 ? 'large' : 'small') + '.');
+    else if (kErr <= 0.05) h += ' <span class="ok">' + T('k 也對了', 'k is right too') + '</span>' + T('（誤差 ' + num(kErr * 100, 1) + ' %）。', ' (error ' + num(kErr * 100, 1) + ' %).');
+    else h += T(' k 的誤差 ' + num(kErr * 100, 1) + ' %，' + (kv > truth.k25 ? '偏大' : '偏小') + '。', ' k is off by ' + num(kErr * 100, 1) + ' %: too ' + (kv > truth.k25 ? 'large' : 'small') + '.');
     if (!x && mOk && nOk && !(stats.nI >= 2 && stats.nP >= 2)) h += T('（提醒：級數要由實驗決定，至少各改兩種濃度做做看。）', ' (Remember: the orders must come from experiments — try at least two of each concentration.)');
     if (x) h += T('（第 ' + tries + ' 次核對）', ' (check no. ' + tries + ')');
     out.innerHTML = h;
@@ -943,8 +961,8 @@
     if (!unk) return;
     unk.revealed = true;
     const u = unk.u, p = C.kUnitPow(u.m, u.n);
-    $('ansOut').innerHTML = T('答案：', 'Answer: ') + 'r = k[X]<sup>' + u.m + '</sup>[I<sup>−</sup>]<sup>' + u.n + '</sup>' + T('，25 °C 的 k = ', ', k at 25 °C = ') + sciHTML(u.k25, 3) + ' ' +
-      (p === 0 ? '' : 'M' + (p === 1 ? '' : '<sup>' + num(p, 0) + '</sup>') + ' ') + 's<sup>−1</sup>' + T('，Ea = ', ', Ea = ') + u.Ea + ' kJ/mol' + T('。這個已揭曉，換一個再挑戰。', '. This one is revealed; try another.');
+    $('ansOut').innerHTML = T('答案：', 'Answer: ') + 'r = k[X]<sup>' + u.m + '</sup>[I<sup>−</sup>]<sup>' + u.n + '</sup>' + T('，25 °C 的 k = ', ', k at 25 °C = ') + sciHTML(u.k25, 3) + ' ' +
+      (p === 0 ? '' : 'M' + (p === 1 ? '' : '<sup>' + num(p, 0) + '</sup>') + ' ') + 's<sup>−1</sup>' + T('，Ea = ', ', Ea = ') + u.Ea + ' kJ/mol' + T('。這個已揭曉，換一個再挑戰。', '. This one is revealed; try another.');
     updateRxText();
     if (view3 && view3.active) view3.rebuild();
   }
@@ -1172,4 +1190,33 @@
   resize();
   resizeGraph();
   refreshAll();
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

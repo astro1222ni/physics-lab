@@ -12,6 +12,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.EsterCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -44,12 +54,12 @@
     const e = Math.floor(Math.log10(Math.abs(x)));
     return num(x, Math.max(0, Math.min(6, (sig || 3) - 1 - e)));
   }
-  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(x * 100, d == null ? 1 : d) + '%'; }
+  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(x * 100, d == null ? 1 : d) + ' %'; }
   function fmtT(t) {
-    if (t < 120) return num(t, 0) + ' ' + T('秒', 's');
-    if (t < 7200) return num(t / 60, t < 600 ? 1 : 0) + ' ' + T('分鐘', 'min');
-    if (t < 172800) return num(t / 3600, 1) + ' ' + T('小時', 'h');
-    return num(t / 86400, 1) + ' ' + T('天', 'days');
+    if (t < 120) return num(t, 0) + ' ' + T('秒', 's');
+    if (t < 7200) return num(t / 60, t < 600 ? 1 : 0) + ' ' + T('分鐘', 'min');
+    if (t < 172800) return num(t / 3600, 1) + ' ' + T('小時', 'h');
+    return num(t / 86400, 1) + ' ' + T('天', 'days');
   }
   /** 示性式 → HTML（數字下標） */
   function fH(s) { return s.replace(/([A-Za-z\)])(\d+)/g, '$1<sub>$2</sub>'); }
@@ -153,8 +163,8 @@
       emit('shift', { base: pend.base, now: r, adds: pend.adds, sieves: pend.sieves, T0: pend.T0, T1: run.T });
       const d = r.n.E - pend.base.n.E;
       setStatus(Math.abs(d) < 0.0005 ? T('又回到平衡了，而且酯的量幾乎沒變。', 'Back at equilibrium — and the amount of ester has hardly changed.') :
-        d > 0 ? T('又回到平衡：這次酯多了 ', 'Back at equilibrium: there is now ') + num(d, 3) + T(' mol。', ' mol more ester.') :
-          T('又回到平衡：這次酯少了 ', 'Back at equilibrium: there is now ') + num(-d, 3) + T(' mol。', ' mol less ester.'), 'good');
+        d > 0 ? T('又回到平衡：這次酯多了 ', 'Back at equilibrium: there is now ') + num(d, 3) + T(' mol。', ' mol more ester.') :
+          T('又回到平衡：這次酯少了 ', 'Back at equilibrium: there is now ') + num(-d, 3) + T(' mol。', ' mol less ester.'), 'good');
     } else {
       setStatus(T('達到平衡了：Q 等於 K，正反應和逆反應一樣快，酯不再增加。', 'Equilibrium: Q equals K, the forward and backward reactions run equally fast, and the ester stops increasing.'), 'good');
     }
@@ -248,8 +258,8 @@
   }
   function togglePlay() {
     if (worked) return;
-    if (!(run.A + run.B > 0 && run.E + run.W >= 0) || (run.A === 0 && run.E === 0) || (run.B === 0 && run.W === 0) || (run.A * run.B === 0 && run.E * run.W === 0)) {
-      setStatus(T('瓶裡沒有可以反應的組合：要有酸和醇，或酯和水。', 'Nothing in the flask can react: you need acid and alcohol, or ester and water.'), 'warn');
+    if (!C.canHeat(run)) {
+      setStatus(T('請先加入酸、醇、酯或水，再開始加熱。', 'Add acid, alcohol, ester or water before starting the heat.'), 'warn');
       if (snd()) window.LabSound.tone({ freq: 300, dur: 0.15, gain: 0.06, type: 'triangle' });
       return;
     }
@@ -266,7 +276,7 @@
     if (worked) return;
     acted();
     if (!C.addSpecies(run, sp)) {
-      setStatus(T('燒瓶已經快滿了（超過六分滿），不能再加。', 'The flask is nearly full (over 60%) — no more can go in.'), 'warn');
+      setStatus(T('燒瓶已經快滿了（超過六分滿），不能再加。', 'The flask is nearly full (over 60 %) — no more can go in.'), 'warn');
       if (snd()) window.LabSound.tone({ freq: 300, dur: 0.15, gain: 0.06, type: 'triangle' });
       return;
     }
@@ -275,7 +285,7 @@
     sample(true);
     syncMols(false);
     const dir = C.direction(run);
-    setStatus(T('加入 0.10 mol ', 'Added 0.10 mol of ') + spName(sp) + T('。', '. ') +
+    setStatus(T('加入 0.10 mol ', 'Added 0.10 mol of ') + spName(sp) + T('。', '. ') +
       (dir === 'fwd' ? T('現在 Q < K：反應向右，酯會變多。', 'Now Q < K: the reaction moves forward and the ester increases.') :
         dir === 'rev' ? T('現在 Q > K：反應向左，酯會水解變少。', 'Now Q > K: the reaction moves backward and some ester is hydrolysed.') : ''));
     if (snd()) window.LabSound.sweep({ from: 760, to: 380, dur: 0.16, gain: 0.07 });
@@ -286,9 +296,9 @@
   function doSieves() {
     if (worked) return;
     acted();
-    if (!C.addSieves(run)) { setStatus(T('分子篩最多加 5 次（100 g）。', 'At most 5 portions (100 g) of molecular sieves.'), 'warn'); return; }
+    if (!C.addSieves(run)) { setStatus(T('分子篩最多加 5 次（100 g）。', 'At most 5 portions (100 g) of molecular sieves.'), 'warn'); return; }
     if (run.t > 0) perturb('sieve'); else pure = false;
-    setStatus(T('加入 20 g 分子篩：它的小孔只容得下水分子，會把水慢慢吸走。', 'Added 20 g of molecular sieves: their pores only fit water molecules, so they slowly soak the water up.'));
+    setStatus(T('加入 20 g 分子篩：它的小孔只容得下水分子，會把水慢慢吸走。', 'Added 20 g of molecular sieves: their pores only fit water molecules, so they slowly soak the water up.'));
     if (snd()) window.LabSound.noise({ dur: 0.25, gain: 0.25, filter: 3200, q: 1.5 });
     fx.push({ kind: 'drop', u: 0, dur: 0.6 });
     refreshAll();
@@ -306,7 +316,7 @@
     const y = C.yieldOf(run);
     emit('workup', { acid: run.acid, alc: run.alc, label: run.label, esterMol: run.E, esterMass: worked.esterMass, yield: y, xi: run.xi, t: run.t });
     setStatus(T('倒進飽和碳酸鈉溶液：剩下的酸被中和、冒出二氧化碳；酯浮在上層，大約 ', 'Poured into saturated sodium carbonate: the leftover acids are neutralised and fizz out carbon dioxide; the ester floats on top — about ') +
-      num(worked.esterVol, 1) + T(' mL。聞起來像', ' mL. It smells of ') + T(worked.smell[0], worked.smell[1]) + T('。', '.'), 'good');
+      num(worked.esterVol, 1) + T(' mL。聞起來像', ' mL. It smells of ') + T(worked.smell[0], worked.smell[1]) + T('。', '.'), 'good');
     if (snd()) window.LabSound.noise({ dur: 1.2, gain: 0.2, filter: 2400, q: 0.8 });
     updateButtons();
     refreshAll();
@@ -490,7 +500,7 @@
   let cw = 0, ch = 0, dpr = 1, G = null;
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -594,7 +604,7 @@
     g.fillStyle = '#17201f'; g.fill();
     g.font = '600 ' + Math.min(fsz(12), lh * 0.72) + 'px ' + LD.FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = state.running ? '#ffb38a' : '#8ef0c4';
-    g.fillText(num(run.T, 0) + ' °C', cx + plateW / 2 - lw / 2 - 10, plateY + plateH / 2 + 0.5);
+    g.fillText(num(run.T, 0) + ' °C', cx + plateW / 2 - lw / 2 - 10, plateY + plateH / 2 + 0.5);
     // 水浴燒杯（後壁）
     const bx0 = cx - bathW / 2, bx1 = cx + bathW / 2;
     g.save();
@@ -646,16 +656,16 @@
     const tf = (run.T - 0) / 100, ty = tBot - (tBot - tTop - 8) * tf;
     g.fillStyle = col.hot; g.fillRect(tx - 1.2, ty, 2.4, tBot - ty);
     LD.ball(g, tx, tBot, 5, col.hot, { shadow: false, glow: 0 });
-    LD.pill(g, T('水浴 ', 'Bath ') + num(run.T, 0) + ' °C', tx - 6, tTop - 3, col.hot, 'left', '600 ' + fsz(12) + 'px ' + LD.FONT);
+    LD.pill(g, T('水浴 ', 'Bath ') + num(run.T, 0) + ' °C', tx - 6, tTop - 3, col.hot, 'left', '600 ' + fsz(12) + 'px ' + LD.FONT);
     // 冷凝管
     drawCondenser(g, cx, condTop, neckTop, condW, neckW, heat);
     // 標籤
     const f12 = '600 ' + fsz(12) + 'px ' + LD.FONT;
     LD.pill(g, T('迴流冷凝管', 'Reflux condenser'), cx + condW / 2 + 8, condTop + (neckTop - condTop) * 0.42, col.muted, 'left', f12);
-    const fl = T('圓底燒瓶 ', 'Flask ') + run.flask + ' mL';
+    const fl = T('圓底燒瓶 ', 'Flask ') + run.flask + ' mL';
     LD.pill(g, fl, cx + rf + 10, fy - rf * 0.15, col.muted, 'left', f12);
-    if (run.cat > 0) LD.pill(g, T('濃硫酸 ', 'Sulfuric acid ') + num(run.cat, 1) + ' mL', cx + rf + 10, fy - rf * 0.15 + fsz(12) * 1.5 + 4, col.muted, 'left', f12);
-    if (run.sieves) LD.pill(g, T('分子篩 ', 'Sieves ') + run.sieves * 20 + ' g', cx + rf + 10, fy - rf * 0.15 + fsz(12) * 3 + 8, col.muted, 'left', f12);
+    if (run.cat > 0) LD.pill(g, T('濃硫酸 ', 'Sulfuric acid ') + num(run.cat, 1) + ' mL', cx + rf + 10, fy - rf * 0.15 + fsz(12) * 1.5 + 4, col.muted, 'left', f12);
+    if (run.sieves) LD.pill(g, T('分子篩 ', 'Sieves ') + run.sieves * 20 + ' g', cx + rf + 10, fy - rf * 0.15 + fsz(12) * 3 + 8, col.muted, 'left', f12);
   }
   function drawFlask(g, cx, fy, rf, neckW, neckTop, heat) {
     const Vt = C.volume(run), f = Math.min(1, Vt / run.flask);
@@ -717,7 +727,7 @@
       if (y < ly) LD.ball(g, cx + 1, y, 1.8, LD.mix(col.liq, col.ester, 0.4), { shadow: false, glow: 0 });
     }
     // 起始時的提示：液體體積
-    LD.haloText(g, num(Vt, Vt < 10 ? 1 : 0) + ' mL', cx, fy + rf * 0.55, col.text, 'center', 'middle', '600 ' + fsz(12) + 'px ' + LD.FONT);
+    LD.haloText(g, num(Vt, Vt < 10 ? 1 : 0) + ' mL', cx, fy + rf * 0.55, col.text, 'center', 'middle', '600 ' + fsz(12) + 'px ' + LD.FONT);
   }
   function drawCondenser(g, cx, top, bot, W, neckW, heat) {
     const jx0 = cx - W / 2, jTop = top + 8, jBot = bot - 10;
@@ -828,12 +838,12 @@
     };
     const ym = (liqTop + yInt) / 2;
     fit(T('上層：', 'Top: ') + worked.name, lx, ym - 2, col.E, lw);
-    fit(num(worked.esterVol, 1) + ' mL', lx, ym + fsz(12) * 1.5 + 2, col.E, lw);
+    fit(num(worked.esterVol, 1) + ' mL', lx, ym + fsz(12) * 1.5 + 2, col.E, lw);
     fit(T('下層：水溶液', 'Bottom: aqueous'), lx, Math.max((yInt + bot) / 2 + 6, ym + fsz(12) * 3.2 + 6), col.B, lw);
     const mx = G.narrow ? A.x + A.w / 2 : cx, fw = G.narrow ? A.w - 8 : Math.min(A.w - 8, 2 * (cx - A.x) - 8);
-    rich(g, [[T('放出 ', '')], ['CO'], ['2', -1], [T(' ', ' given off: ') + num(worked.co2, 3) + ' mol']], mx, bot + 54, col.muted, fsz(12), 'center');
+    rich(g, [[T('放出 ', '')], ['CO'], ['2', -1], [T(' ', ' given off: ') + num(worked.co2, 3) + ' mol']], mx, bot + 54, col.muted, fsz(12), 'center');
     fit(T('氣味：', 'Smell: ') + T(worked.smell[0], worked.smell[1]), mx, bot + 54 + fsz(12) * 1.9, col.E, fw, 'center');
-    if (worked.label) fit(T('酯的莫耳質量 ', 'Ester molar mass ') + num(C.esterM(run), 2) + T(' g/mol（含氧-18）', ' g/mol (with O-18)'), mx, bot + 54 + fsz(12) * 3.8, col.el18, fw, 'center');
+    if (worked.label) fit(T('酯的莫耳質量 ', 'Ester molar mass ') + num(C.esterM(run), 2) + T(' g/mol（含氧-18）', ' g/mol (with O-18)'), mx, bot + 54 + fsz(12) * 3.8, col.el18, fw, 'center');
   }
 
   // ======================= 畫布：分子圓 =======================
@@ -918,7 +928,7 @@
     const dir = C.direction(run);
     const dtxt = dir === 'fwd' ? T('Q < K → 向右（生成酯）', 'Q < K → forward (ester forms)') : dir === 'rev' ? T('Q > K → 向左（酯水解）', 'Q > K → backward (ester hydrolyses)') :
       dir === 'eq' ? T('Q = K：平衡', 'Q = K: equilibrium') : '';
-    LD.haloText(g, 'Q = ' + (isFinite(q) ? sigf(q, 3) : q === 0 ? '0' : '∞') + '    K = ' + num(k, 2), cx, y + h + f11 + 6, col.text, 'center', 'alphabetic', '600 ' + f11 + 'px ' + LD.FONT);
+    LD.haloText(g, 'Q = ' + (isFinite(q) ? sigf(q, 3) : q === 0 ? '0' : '∞') + ' K = ' + num(k, 2), cx, y + h + f11 + 6, col.text, 'center', 'alphabetic', '600 ' + f11 + 'px ' + LD.FONT);
     if (dtxt) LD.haloText(g, dtxt, cx, y + h + f11 * 2.3 + 8, dir === 'rev' ? col.A : col.E, 'center', 'alphabetic', '600 ' + f11 + 'px ' + LD.FONT);
   }
 
@@ -1051,7 +1061,7 @@
     line(g, pts25, ax.X, ax.Y, col.muted, 1.2, [3, 5]);
     line(g, pts, ax.X, ax.Y, col.E, 2.6);
     const f11 = fsz(11) + 'px ' + LD.FONT;
-    LD.haloText(g, 'K = ' + num(Kv, 2) + T('（', ' (') + num(run.T, 0) + T(' °C）', ' °C)'), ax.X(5), ax.Y(100 * C.yieldAtRatio(5, Kv)) + 16, col.E, 'center', 'alphabetic', '600 ' + f11);
+    LD.haloText(g, 'K = ' + num(Kv, 2) + T('（', ' (') + num(run.T, 0) + T(' °C）', ' °C)'), ax.X(5), ax.Y(100 * C.yieldAtRatio(5, Kv)) + 16, col.E, 'center', 'alphabetic', '600 ' + f11);
     LD.haloText(g, T('K 非常大時', 'if K were huge'), ax.X(3), ax.Y(100) + 14, col.muted, 'center', 'alphabetic', f11);
     // 平衡紀錄（從酸＋醇出發、沒有加料與分子篩）
     eqLog.forEach(function (r) {
@@ -1094,41 +1104,49 @@
     eqLog.forEach(function (r, i) {
       const s = function (n) { return [n.A, n.B, n.E, n.W].map(function (v) { return num(v, 3); }).join(T('／', ' / ')); };
       const kk = r.n.E * r.n.W / (r.n.A * r.n.B);
+      const added = { A: r.n0.A + r.add.A, B: r.n0.B + r.add.B, E: r.n0.E + r.add.E, W: r.n0.W + r.add.W };
       h += '<tr><td>' + (i + 1) + '</td><td class="l">' + esterName(r.acid, r.alc) + (r.sieves ? T('（分子篩）', ' (sieves)') : '') + '</td><td>' + num(r.T, 0) + '</td><td>' + num(r.cat, 1) + '</td><td>' +
-        s({ A: r.n0.A + r.add.A, B: r.n0.B + r.add.B, E: r.n0.E + r.add.E, W: r.n0.W + r.add.W }) + '</td><td>' + s(r.n) + '</td><td>' + sigf(kk, 3) + '</td><td>' + (r.yield == null ? '—' : pct(r.yield, 1)) + '</td></tr>';
+        s(added) + '</td><td>' + s(r.n) + '</td><td>' + sigf(kk, 3) + '</td><td>' + yieldText(r.xi, Math.min(added.A, added.B), added.E) + '</td></tr>';
     });
     t.innerHTML = h + '</tbody>';
   }
 
   // ======================= 讀數與卡片 =======================
+  function yieldText(extent, limiting, esterAdded) {
+    if (esterAdded > 1e-9 && (extent < 0 || limiting <= 1e-9)) {
+      return T('水解 ', 'hydrolysed ') + pct(Math.max(0, -extent) / esterAdded, 1);
+    }
+    return limiting > 1e-9 ? pct(extent / limiting, 1) : '—';
+  }
   function updateReadouts() {
     if (!run) return;
-    const q = C.Q(run), k = C.K(run.T), y = C.yieldOf(run), hy = C.hydrolysisOf(run);
+    const q = C.Q(run), k = C.K(run.T);
     const eq = C.equilibrium(run, run.T);
     const inA = C.inTotal(run, 'A'), inB = C.inTotal(run, 'B'), base = Math.min(inA, inB);
+    const esterAdded = C.inTotal(run, 'E');
     const r = C.rate(run) * 60;
     const sw = function (k2) { return '<span class="sw" style="background:' + col[k2] + '"></span>'; };
     const rows = [
       [T('時間', 'Time'), fmtT(run.t)],
-      [T('平衡常數 K', 'Equilibrium constant K') + '<small>' + num(run.T, 0) + ' °C</small>', num(k, 2)],
+      [T('平衡常數 K', 'Equilibrium constant K') + '<small>' + num(run.T, 0) + ' °C</small>', num(k, 2)],
       [T('反應商 Q', 'Reaction quotient Q'), isFinite(q) ? sigf(q, 3) : q === 0 ? '0' : '∞'],
-      [sw('A') + acidName(), num(run.A, 3) + ' mol'],
-      [sw('B') + alcName(), num(run.B, 3) + ' mol'],
-      [sw('E') + esterName(), num(run.E, 3) + ' mol'],
-      [sw('W') + T('水', 'Water') + (run.sieves ? '<small>' + T('分子篩已吸走 ', 'sieves have taken ') + num(run.bound, 3) + ' / ' + num(run.cap, 3) + ' mol</small>' : ''), num(run.W, 3) + ' mol'],
-      [T('生成的酯（反應進度）', 'Ester formed (extent)'), (run.xi >= 0 ? '' : '') + num(run.xi, 3) + ' mol'],
-      [T('產率', 'Yield') + '<small>' + T('以限量的反應物計', 'based on the limiting reactant') + '</small>', y == null ? (hy == null ? '—' : T('水解 ', 'hydrolysed ') + pct(hy, 1)) : y < 0 ? T('逆向進行', 'going backward') : pct(y, 1), 'big'],
-      [T('平衡時的產率（預測）', 'Yield at equilibrium (predicted)') + (run.sieves ? '<small>' + T('不計分子篩', 'ignoring the sieves') + '</small>' : ''), base > 1e-9 ? pct((eq.E - C.inTotal(run, 'E')) / base, 1) : '—'],
-      [T('淨反應速率', 'Net rate'), Math.abs(r) < 1e-12 ? '0' : sciHTML(r, 2) + ' mol/min'],
-      [T('混合液體積', 'Volume of mixture'), num(C.volume(run), 1) + ' mL'],
-      [T('硫酸濃度', 'Sulfuric acid concentration'), num(C.cH(run), 2) + ' M']
+      [sw('A') + acidName(), num(run.A, 3) + ' mol'],
+      [sw('B') + alcName(), num(run.B, 3) + ' mol'],
+      [sw('E') + esterName(), num(run.E, 3) + ' mol'],
+      [sw('W') + T('水', 'Water') + (run.sieves ? '<small>' + T('分子篩已吸走 ', 'sieves have taken ') + num(run.bound, 3) + ' / ' + num(run.cap, 3) + ' mol</small>' : ''), num(run.W, 3) + ' mol'],
+      [T('生成的酯（反應進度）', 'Ester formed (extent)'), (run.xi >= 0 ? '' : '') + num(run.xi, 3) + ' mol'],
+      [T('產率', 'Yield') + '<small>' + T('正向以限量反應物計，水解以投入的酯計', 'Forward: based on the limiting reactant. Hydrolysis: based on the ester added.') + '</small>', yieldText(run.xi, base, esterAdded), 'big'],
+      [T('平衡時的產率（預測）', 'Yield at equilibrium (predicted)') + (run.sieves ? '<small>' + T('不計分子篩', 'ignoring the sieves') + '</small>' : ''), yieldText(eq.E - esterAdded, base, esterAdded)],
+      [T('淨反應速率', 'Net rate'), Math.abs(r) < 1e-12 ? '0' : sciHTML(r, 2) + ' mol/min'],
+      [T('混合液體積', 'Volume of mixture'), num(C.volume(run), 1) + ' mL'],
+      [T('硫酸濃度', 'Sulfuric acid concentration'), num(C.cH(run), 2) + ' M']
     ];
     $('readout').innerHTML = rows.map(function (rw) { return '<dt>' + rw[0] + '</dt><dd' + (rw[2] ? ' class="' + rw[2] + '"' : '') + '>' + rw[1] + '</dd>'; }).join('');
     // 自己算 K
     const kc = $('kCalc');
     if (run.A > 0 && run.B > 0) {
       kc.innerHTML = 'Q = <span style="color:' + col.E + '">' + num(run.E, 3) + '</span> × <span style="color:' + col.W + '">' + num(run.W, 3) + '</span> ÷ (<span style="color:' + col.A + '">' + num(run.A, 3) + '</span> × <span style="color:' + col.B + '">' + num(run.B, 3) + '</span>) = <span class="res">' + (isFinite(q) ? sigf(q, 3) : '—') + '</span><br>' +
-        T('平衡常數 K（', 'Equilibrium constant K (') + num(run.T, 0) + ' °C）= <span class="res">' + num(k, 2) + '</span><br>' +
+        T('平衡常數 K（', 'Equilibrium constant K (') + num(run.T, 0) + ' °C）= <span class="res">' + num(k, 2) + '</span><br>' +
         (C.atEquilibrium(run) ? T('Q = K：已達平衡，這就是 K 的實驗值。', 'Q = K: at equilibrium, so this is an experimental value of K.') :
           C.direction(run) === 'fwd' ? T('Q < K：還沒到平衡，反應向右。', 'Q < K: not at equilibrium yet; the reaction goes forward.') : T('Q > K：反應向左（水解）。', 'Q > K: the reaction goes backward (hydrolysis).'));
     } else kc.textContent = T('酸或醇是 0，Q 沒有意義（分母為 0）。', 'With no acid or no alcohol, Q has no meaning (division by zero).');
@@ -1141,19 +1159,19 @@
     $('esterName').innerHTML = '<b>' + esterName() + '</b><br>' + fH(e.cond);
     $('esterSmell').textContent = T('聞起來像：', 'Smells of: ') + T(e.smell[0], e.smell[1]);
     const rows = [
-      [T('莫耳質量', 'Molar mass'), num(e.M + (lab ? C.O18 : 0), 2) + ' g/mol' + (lab ? T('（含 O-18）', ' (with O-18)') : '')],
-      [T('密度', 'Density'), num(e.rho, 3) + ' g/mL'],
-      [T('沸點', 'Boiling point'), num(e.bp, 1) + ' °C'],
+      [T('莫耳質量', 'Molar mass'), num(e.M + (lab ? C.O18 : 0), 2) + ' g/mol' + (lab ? T('（含 O-18）', ' (with O-18)') : '')],
+      [T('密度', 'Density'), num(e.rho, 3) + ' g/mL'],
+      [T('沸點', 'Boiling point'), num(e.bp, 1) + ' °C'],
       [acidName() + T('的氣味', ' smells of'), T(a.smell[0], a.smell[1])],
-      [alcName() + T('的沸點', ' boils at'), num(b.bp, 1) + ' °C']
+      [alcName() + T('的沸點', ' boils at'), num(b.bp, 1) + ' °C']
     ];
     $('esterInfo').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd style="white-space:normal">' + r[1] + '</dd>'; }).join('');
     $('nALbl').textContent = acidName(); $('nBLbl').textContent = alcName(); $('nELbl').textContent = esterName();
   }
   function updateOutputs() {
-    ['nA', 'nB', 'nE', 'nW'].forEach(function (id) { $(id + 'o').textContent = num(val(el[id]), 2) + ' mol'; });
-    $('cato').textContent = num(val(el.cat), 1) + ' mL';
-    $('tempo').textContent = num(val(el.temp), 0) + ' °C';
+    ['nA', 'nB', 'nE', 'nW'].forEach(function (id) { $(id + 'o').textContent = num(val(el[id]), 2) + ' mol'; });
+    $('cato').textContent = num(val(el.cat), 1) + ' mL';
+    $('tempo').textContent = num(val(el.temp), 0) + ' °C';
   }
   function updateButtons() {
     $('play').textContent = worked ? T('已分液', 'Separated') : state.running ? T('暫停', 'Pause') : run && run.t > 0 ? T('繼續加熱', 'Keep heating') : T('開始加熱', 'Start heating');
@@ -1216,7 +1234,7 @@
         const r = { acid: state.acid, alc: state.alc, label: lab };
         let tr = '';
         if (mech.p >= 0.75) {
-          tr = T('酯 ', 'Ester ') + num(C.esterM(r, mode), 2) + ' g/mol<br>' + T('水 ', 'Water ') + num(C.waterM(r, mode), 2) + ' g/mol';
+          tr = T('酯 ', 'Ester ') + num(C.esterM(r, mode), 2) + ' g/mol<br>' + T('水 ', 'Water ') + num(C.waterM(r, mode), 2) + ' g/mol';
           if (lab) tr += '<br><span class="lab18">' + (mode === 'acyl' ? T('氧-18 在酯裡', 'O-18 is in the ester') : T('氧-18 在水裡', 'O-18 is in the water')) + '</span>';
         } else if (lab) tr = '<span class="lab18">' + T('金色 = 醇的氧-18', 'gold = the alcohol’s O-18') + '</span>';
         return { tl: tl + (mech.alt ? T('（錯誤的猜想）', ' (wrong guess)') : ''), tr: tr, e: e };
@@ -1271,7 +1289,7 @@
   function setMechP(p, fromSlider) {
     mech.p = Math.max(0, Math.min(1, p));
     if (!fromSlider) setVal($('mechP'), Math.round(mech.p * 100));
-    $('mechPo').textContent = num(mech.p * 100, 0) + '%';
+    $('mechPo').textContent = num(mech.p * 100, 0) + ' %';
     if (view3) view3.update(false);
   }
   function stopMech() { mech.playing = false; if (mech.raf) cancelAnimationFrame(mech.raf); mech.raf = 0; $('mechPlay').textContent = T('播放反應', 'Play the reaction'); }
@@ -1363,7 +1381,7 @@
       items: [
         { name: function () { return T('水浴溫度', 'Bath temperature'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; const v = Math.max(20, Math.min(80, val(el.temp) + d * (big ? 10 : 1))); if (window.LabNum) window.LabNum.set(el.temp, v); else { el.temp.value = v; el.temp.dispatchEvent(new Event('input')); } return true; },
-          describe: function () { return num(run.T, 0) + T(' °C，', ' °C, ') + esterName() + ' ' + num(run.E, 3) + ' mol'; } }
+          describe: function () { return num(run.T, 0) + T(' °C，', ' °C, ') + esterName() + ' ' + num(run.E, 3) + ' mol'; } }
       ],
       onChange: function () { drawStage(); }
     });
@@ -1392,4 +1410,33 @@
   resizeGraph();
   refreshAll();
   startLoop();
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

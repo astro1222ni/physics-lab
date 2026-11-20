@@ -13,6 +13,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const S = window.StoichCore, LD = window.LabDraw;
   if (!S || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -34,7 +44,7 @@
     return num(x, Math.max(0, Math.min(8, (sig || 3) - 1 - e)));
   }
   function signed(x, d) { return (x > 0 ? '+' : '') + num(x, d); }
-  function pct(x) { return x == null || !isFinite(x) ? '—' : signed(x * 100, Math.abs(x) < 0.01 ? 2 : 1) + '%'; }
+  function pct(x) { return x == null || !isFinite(x) ? '—' : signed(x * 100, Math.abs(x) < 0.01 ? 2 : 1) + ' %'; }
   /** 科學記號（HTML，上標用 <sup>） */
   function sci(x, sig) {
     if (x == null || !isFinite(x)) return '—';
@@ -237,32 +247,32 @@
     const onScale = S.onScale(o.cyl, g.V);
     const valid = run.ended && !run.escaped && onScale && readErr <= 0.5;
     const L = [];
-    L.push(T('T = ', 'T = ') + num(o.T, 1) + ' + 273.15 = ' + num(a.TK, 2) + ' K');
+    L.push(T('T = ', 'T = ') + num(o.T, 1) + ' + 273.15 = ' + num(a.TK, 2) + ' K');
     L.push(el.vap.checked
-      ? 'P(H<sub>2</sub>) = P − P(H<sub>2</sub>O) = ' + num(o.P, 1) + ' − ' + num(a.Pw, 2) + ' = ' + num(a.PH2, 2) + ' mmHg'
-      : 'P(H<sub>2</sub>) = P = ' + num(o.P, 1) + ' mmHg' + T('（沒有扣除水蒸氣壓）', ' (vapour pressure not subtracted)'));
-    L.push('n(H<sub>2</sub>) = PV/RT = ' + num(a.PH2, 2) + ' × ' + sigf(reading, 4) + ' ÷ (62363.6 × ' + num(a.TK, 2) + ') = ' + sci(a.nH2, 4) + ' mol');
-    L.push('V<sub>STP</sub> = ' + sigf(reading, 4) + ' × (' + num(a.PH2, 2) + ' ÷ 760) × (273.15 ÷ ' + num(a.TK, 2) + ') = ' + num(a.Vstp, 2) + ' mL');
+      ? 'P(H<sub>2</sub>) = P − P(H<sub>2</sub>O) = ' + num(o.P, 1) + ' − ' + num(a.Pw, 2) + ' = ' + num(a.PH2, 2) + ' mmHg'
+      : 'P(H<sub>2</sub>) = P = ' + num(o.P, 1) + ' mmHg' + T('（沒有扣除水蒸氣壓）', ' (vapour pressure not subtracted)'));
+    L.push('n(H<sub>2</sub>) = PV/RT = ' + num(a.PH2, 2) + ' × ' + sigf(reading, 4) + ' ÷ (62363.6 × ' + num(a.TK, 2) + ') = ' + sci(a.nH2, 4) + ' mol');
+    L.push('V<sub>STP</sub> = ' + sigf(reading, 4) + ' × (' + num(a.PH2, 2) + ' ÷ 760) × (273.15 ÷ ' + num(a.TK, 2) + ') = ' + num(a.Vstp, 2) + ' mL');
     let good = false;
     if (state.lim === 'Mg') {
-      L.push('n(Mg) = ' + sigf(o.m, 4) + ' ÷ 24.305 = ' + sci(a.nMgS, 4) + ' mol');
-      L.push(T('莫耳體積 V<sub>m</sub> = V<sub>STP</sub> ÷ n(Mg) = ', 'Molar volume V<sub>m</sub> = V<sub>STP</sub> ÷ n(Mg) = ') + '<span class="res">' + num(a.Vm, 3) + ' L/mol</span>' + T('（公認值 22.414，誤差 ', ' (accepted 22.414, error ') + pct(a.VmErr) + T('）', ')'));
+      L.push('n(Mg) = ' + sigf(o.m, 4) + ' ÷ 24.305 = ' + sci(a.nMgS, 4) + ' mol');
+      L.push(T('莫耳體積 V<sub>m</sub> = V<sub>STP</sub> ÷ n(Mg) = ', 'Molar volume V<sub>m</sub> = V<sub>STP</sub> ÷ n(Mg) = ') + '<span class="res">' + num(a.Vm, 3) + ' L/mol</span>' + T('（公認值 22.414，誤差 ', ' (accepted 22.414, error ') + pct(a.VmErr) + T('）', ')'));
       L.push(T('鎂的原子量 = m ÷ n(H<sub>2</sub>) = ', 'Atomic mass of Mg = m ÷ n(H<sub>2</sub>) = ') + '<span class="res">' + num(a.M, 3) + '</span>' + T('（公認值 24.305，誤差 ', ' (accepted 24.305, error ') + pct(a.Merr) + T('）', ')'));
       good = Math.abs(a.Merr) <= 0.02;
     } else {
-      L.push('n(HCl) = ' + sigf(o.c, 4) + ' M × ' + sigf(o.V, 4) + ' mL = ' + sci(a.nHClS, 4) + ' mol');
-      L.push(T('莫耳體積 V<sub>m</sub> = V<sub>STP</sub> ÷ (n(HCl) ÷ 2) = ', 'Molar volume V<sub>m</sub> = V<sub>STP</sub> ÷ (n(HCl) ÷ 2) = ') + '<span class="res">' + num(a.Vm, 3) + ' L/mol</span>' + T('（誤差 ', ' (error ') + pct(a.VmErr) + T('）', ')'));
-      L.push(T('鹽酸濃度 = 2n(H<sub>2</sub>) ÷ V = ', 'Concentration of the acid = 2n(H<sub>2</sub>) ÷ V = ') + '<span class="res">' + num(a.cHCl, 4) + ' M</span>' + T('（標示 ', ' (label ') + num(o.c, 3) + ' M' + T('，誤差 ', ', error ') + pct(a.cErr) + T('）', ')'));
+      L.push('n(HCl) = ' + sigf(o.c, 4) + ' M × ' + sigf(o.V, 4) + ' mL = ' + sci(a.nHClS, 4) + ' mol');
+      L.push(T('莫耳體積 V<sub>m</sub> = V<sub>STP</sub> ÷ (n(HCl) ÷ 2) = ', 'Molar volume V<sub>m</sub> = V<sub>STP</sub> ÷ (n(HCl) ÷ 2) = ') + '<span class="res">' + num(a.Vm, 3) + ' L/mol</span>' + T('（誤差 ', ' (error ') + pct(a.VmErr) + T('）', ')'));
+      L.push(T('鹽酸濃度 = 2n(H<sub>2</sub>) ÷ V = ', 'Concentration of the acid = 2n(H<sub>2</sub>) ÷ V = ') + '<span class="res">' + num(a.cHCl, 4) + ' M</span>' + T('（標示 ', ' (label ') + num(o.c, 3) + ' M' + T('，誤差 ', ', error ') + pct(a.cErr) + T('）', ')'));
       good = Math.abs(a.cErr) <= 0.02;
     }
-    L.push(T('產率 = ', 'Yield = ') + num(a.yieldPct, 1) + '%');
+    L.push(T('產率 = ', 'Yield = ') + num(a.yieldPct, 1) + ' %');
     const W = [];
     if (!run.ended) W.push(T('反應還沒結束（還在冒泡），氫氣還沒收集完。', 'The reaction is not over yet (still bubbling): not all the hydrogen has been collected.'));
     if (run.escaped) W.push(T('有氣體從量筒冒走了，收集到的比產生的少。', 'Some gas escaped from the cylinder, so you collected less than was made.'));
     if (!state.aligned) W.push(T('量筒內外液面不相平：氣體壓力不等於大氣壓。', 'The water levels are not equal: the gas is not at atmospheric pressure.'));
     if (!onScale) W.push(g.V < C0.low ? T('氣體體積在最低刻度以下，讀不準：換小一點的量筒或多放一點鎂。', 'The gas is below the lowest mark and cannot be read well: use a smaller cylinder or more magnesium.') : T('氣體超出刻度範圍。', 'The gas is beyond the scale.'));
     else if (readErr > 0.5) W.push(T('你的讀數和刻度對不太上，再仔細看一次放大鏡（讀彎月面最低點）。', 'Your reading does not match the scale; look at the magnifier again (read the bottom of the meniscus).'));
-    if (a.yieldPct > 103) W.push(T('產率超過 100%，限量試劑選對了嗎？', 'A yield above 100%: did you pick the right limiting reactant?'));
+    if (a.yieldPct > 103) W.push(T('產率超過 100 %，限量試劑選對了嗎？', 'A yield above 100 %: did you pick the right limiting reactant?'));
     out.innerHTML = L.join('<br>') + (W.length ? '<br><span class="warn">' + W.join('<br>') + '</span>' : '');
     results.push({
       seg: seg, runId: runId, m: o.m, c: o.c, V: o.V, T: o.T, P: o.P, cyl: o.cyl, reading: reading, aligned: state.aligned, vap: el.vap.checked,
@@ -288,7 +298,7 @@
     const list = results.filter(function (r) { return r.seg === seg; });
     if (!list.length) h += '<tr class="empty"><td colspan="11">' + T('還沒有結果：反應結束後讀出量筒刻度，在「分析」卡按「計算」。', 'No results yet: when the reaction is over, read the cylinder and press “Calculate” in the “Analysis” card.') + '</td></tr>';
     list.forEach(function (r, i) {
-      const res = r.lim === 'Mg' ? T('原子量 ', 'Mg ') + num(r.M, 3) : 'c = ' + num(r.cHCl, 3) + ' M';
+      const res = r.lim === 'Mg' ? T('原子量 ', 'Mg ') + num(r.M, 3) : 'c = ' + num(r.cHCl, 3) + ' M';
       h += '<tr><td>' + (i + 1) + '</td><td>' + num(r.m, 4) + '</td><td>' + sigf(r.V, 3) + ' × ' + num(r.c, 2) + '</td><td>' + num(r.T, 1) + '</td><td>' + num(r.P, 0) + '</td><td>' + sigf(r.reading, 4)
         + '</td><td>' + (r.aligned ? '✓' : '✗') + '</td><td>' + (r.vap ? '✓' : '✗') + '</td><td class="l">' + res + '</td><td>' + num(r.Vm, 3) + '</td><td>' + pct(r.err) + '</td></tr>';
     });
@@ -300,19 +310,19 @@
     const A = run.A, g = S.gas(run), lf = S.left(run), C0 = C();
     const pr = run.tEnd > 0 && A.xiMax > 0 ? Math.min(1, run.nMade / A.xiMax) : 0;
     const vRound = Math.round(g.V / C0.div) * C0.div;
-    const vTxt = !run.started ? T('（還沒開始）', '(not started)') : g.V < C0.low ? T('低於最低刻度', 'below the lowest mark') : g.V > C0.cap ? T('超出刻度', 'beyond the scale') : T('約 ', 'about ') + num(vRound, C0.div < 1 ? 1 : 0) + ' mL';
+    const vTxt = !run.started ? T('（還沒開始）', '(not started)') : g.V < C0.low ? T('低於最低刻度', 'below the lowest mark') : g.V > C0.cap ? T('超出刻度', 'beyond the scale') : T('約 ', 'about ') + num(vRound, C0.div < 1 ? 1 : 0) + ' mL';
     const items = [
-      [T('時間', 'Time'), num(run.t, run.t < 100 ? 1 : 0) + ' s'],
-      [T('反應進度', 'Progress'), num(pr * 100, 1) + '%' + (run.ended ? T('（結束）', ' (over)') : '')],
-      [T('鎂', 'Magnesium') + '<small>' + T('莫耳數（當成純鎂）', 'amount (taken as pure Mg)') + '</small>', sci(run.o.m / S.M_MG, 4) + ' mol'],
-      [T('HCl', 'HCl') + '<small>' + T('莫耳數 = 濃度 × 體積', 'amount = concentration × volume') + '</small>', sci(A.nHCl, 4) + ' mol'],
-      [T('剩下的鎂', 'Magnesium left'), num(lf.mMg, 4) + ' g'],
-      [T('剩下的 HCl', 'HCl left'), sci(lf.nHCl, 3) + ' mol'],
+      [T('時間', 'Time'), num(run.t, run.t < 100 ? 1 : 0) + ' s'],
+      [T('反應進度', 'Progress'), num(pr * 100, 1) + ' %' + (run.ended ? T('（結束）', ' (over)') : '')],
+      [T('鎂', 'Magnesium') + '<small>' + T('莫耳數（當成純鎂）', 'amount (taken as pure Mg)') + '</small>', sci(run.o.m / S.M_MG, 4) + ' mol'],
+      [T('HCl', 'HCl') + '<small>' + T('莫耳數 = 濃度 × 體積', 'amount = concentration × volume') + '</small>', sci(A.nHCl, 4) + ' mol'],
+      [T('剩下的鎂', 'Magnesium left'), num(lf.mMg, 4) + ' g'],
+      [T('剩下的 HCl', 'HCl left'), sci(lf.nHCl, 3) + ' mol'],
       [T('量筒內的氣體', 'Gas in the cylinder') + '<small>' + T('精確讀數請看放大鏡', 'read the magnifier for the exact value') + '</small>', vTxt],
-      [T('內外液面差 h', 'Level difference h') + '<small>' + T('筒內水面比外面高', 'water inside above outside') + '</small>', state.aligned ? T('0（已對齊）', '0 (levelled)') : num(g.h, 1) + ' cm'],
-      [T('量筒內氣體的壓力', 'Pressure of the gas'), num(g.Pgas, 1) + ' mmHg'],
-      [T('水的飽和蒸氣壓', 'Vapour pressure of water') + '<small>' + num(run.o.T, 1) + ' °C</small>', num(g.Pw, 2) + ' mmHg'],
-      [T('氫氣的分壓', 'Partial pressure of H<sub>2</sub>'), num(g.Pdry, 1) + ' mmHg']
+      [T('內外液面差 h', 'Level difference h') + '<small>' + T('筒內水面比外面高', 'water inside above outside') + '</small>', state.aligned ? T('0（已對齊）', '0 (levelled)') : num(g.h, 1) + ' cm'],
+      [T('量筒內氣體的壓力', 'Pressure of the gas'), num(g.Pgas, 1) + ' mmHg'],
+      [T('水的飽和蒸氣壓', 'Vapour pressure of water') + '<small>' + num(run.o.T, 1) + ' °C</small>', num(g.Pw, 2) + ' mmHg'],
+      [T('氫氣的分壓', 'Partial pressure of H<sub>2</sub>'), num(g.Pdry, 1) + ' mmHg']
     ];
     $('readout').innerHTML = items.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
   }
@@ -321,7 +331,7 @@
   let cw = 0, ch = 0, dpr = 1, G = null;
   function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -531,7 +541,7 @@
     // 筒內氣泡
     tBubbles.forEach(function (b) { drawBubble(c, b.x, b.y, b.r); });
     c.restore();
-    // 刻度（主畫面只畫較粗的格；數字倒著寫，跟真的倒立量筒一樣）
+    // 倒立量筒的刻度向下遞增，讀值標在筒壁外側。
     const step = C0.cap === 25 ? 1 : C0.cap === 100 ? 5 : 10, lab = C0.cap === 25 ? 5 : C0.cap === 100 ? 20 : 50;
     c.save();
     c.strokeStyle = LD.alpha(col.text, 0.55); c.lineWidth = 1;
@@ -542,10 +552,10 @@
     }
     c.stroke();
     c.fillStyle = LD.alpha(col.text, 0.7);
-    c.font = '600 ' + fsz(8.5).toFixed(1) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '600 ' + fsz(10.5).toFixed(1) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let v = Math.ceil(C0.low / lab) * lab; v <= C0.cap + 1e-9; v += lab) {
       const y = cg.yTop + v / C0.A * g.s;
-      c.save(); c.translate(x0 + g.rIn * 1.25, y); c.rotate(Math.PI); c.fillText(String(v), 0, 0); c.restore();
+      LD.haloText(c, String(v), x1 + 4, y, col.text, 'left', 'middle', c.font);
     }
     c.restore();
     // 玻璃壁
@@ -681,7 +691,7 @@
     const bx = cg.x0 - 14;
     c.beginPath(); c.moveTo(bx, g.waterY); c.lineTo(bx, cg.yMen); c.moveTo(bx - 4, g.waterY); c.lineTo(bx + 4, g.waterY); c.moveTo(bx - 4, cg.yMen); c.lineTo(bx + 4, cg.yMen); c.stroke();
     c.restore();
-    LD.pill(c, 'h = ' + num(h, 1) + ' cm', bx - 4, (g.waterY + cg.yMen) / 2 + 8, col.accent, 'right', '600 ' + fsz(11).toFixed(1) + 'px ' + FONT);
+    LD.pill(c, 'h = ' + num(h, 1) + ' cm', bx - 4, (g.waterY + cg.yMen) / 2 + 8, col.accent, 'right', '600 ' + fsz(11).toFixed(1) + 'px ' + FONT);
   }
   /** 放大鏡：彎月面附近的刻度（精確），數字正著寫方便讀 */
   function drawMagnifier(c) {
@@ -697,7 +707,7 @@
     const Z = Math.max(15, Math.min(26, (h - fsz(12) * 1.5 - 6) / 6));   // 每一格的像素（至少看得到 6 格，一定有一個數字）
     const titleH = fsz(12) * 1.5 + 6;
     const midY = y + titleH + (h - titleH) / 2;
-    const Vc = run.started ? Vt : C0.low + 3 * C0.div;
+    const Vc = run.started ? Vt : C0.low + 2 * C0.div;
     const yOf = function (v) { return midY + (v - Vc) / C0.div * Z; };
     const sx0 = x + 10, sx1 = x + w - 10;
     const yM = yOf(Vt);
@@ -725,7 +735,7 @@
       const L = big ? (sx1 - sx0) * 0.42 : mid ? (sx1 - sx0) * 0.32 : (sx1 - sx0) * 0.2;
       c.strokeStyle = col.text; c.lineWidth = 1.2;
       c.beginPath(); c.moveTo(sx0, yy); c.lineTo(sx0 + L, yy); c.stroke();
-      if (big || mid) LD.haloText(c, num(v, Math.abs(v - Math.round(v)) > 1e-9 ? 1 : 0), sx0 + L + 5, yy, col.text, 'left', 'middle', (big ? '700 ' : '600 ') + fsz(11).toFixed(1) + 'px ' + FONT);
+      if ((big || mid) && yy >= y + titleH + 7 && yy <= y + h - 7) LD.haloText(c, num(v, Math.abs(v - Math.round(v)) > 1e-9 ? 1 : 0), sx0 + L + 5, yy, col.text, 'left', 'middle', (big ? '700 ' : '600 ') + fsz(11).toFixed(1) + 'px ' + FONT);
     }
     // 玻璃壁
     c.fillStyle = LD.alpha(col.glass, 0.35); c.fillRect(x, y + titleH, 10, h - titleH);
@@ -753,22 +763,22 @@
     const yb = ch - 6, rx = cw - g.pad;
     // 大氣壓、水溫（窄螢幕：大氣壓放到桌面那一行，水溫放進水槽裡）
     if (g.narrow) {
-      LD.haloText(c, 'P = ' + num(run.o.P, 0) + ' mmHg', rx, yb, col.text, 'right', 'alphabetic', f);
-      LD.pill(c, num(run.o.T, 1) + ' °C', g.tx0 + 4, g.waterY + 9.5 * g.s, col.pos, 'left', f2);
+      LD.haloText(c, 'P = ' + num(run.o.P, 0) + ' mmHg', rx, yb, col.text, 'right', 'alphabetic', f);
+      LD.pill(c, num(run.o.T, 1) + ' °C', g.tx0 + 4, g.waterY + 9.5 * g.s, col.pos, 'left', f2);
     } else {
-      LD.pill(c, T('大氣壓 ', 'Air pressure ') + num(run.o.P, 0) + ' mmHg', rx, g.pad + fsz(12) * 1.5 + 2, col.text, 'right', f);
-      LD.pill(c, num(run.o.T, 1) + ' °C', g.tx0 + 6, g.rimY - 2.8 * g.s, col.pos, 'left', f2);
+      LD.pill(c, T('大氣壓 ', 'Air pressure ') + num(run.o.P, 0) + ' mmHg', rx, g.pad + fsz(12) * 1.5 + 2, col.text, 'right', f);
+      LD.pill(c, num(run.o.T, 1) + ' °C', g.tx0 + 6, g.rimY - 2.8 * g.s, col.pos, 'left', f2);
       LD.haloText(c, T('示意圖（器材未依比例）', 'Schematic (not to scale)'), g.tx1, yb, col.muted, 'right', 'alphabetic', f2);
     }
     // 錐形瓶的內容
     c.font = f;
-    const mgTxt = 'Mg ' + num(run.o.m, 4) + ' g', mgW = c.measureText(mgTxt).width;
+    const mgTxt = 'Mg ' + num(run.o.m, 4) + ' g', mgW = c.measureText(mgTxt).width;
     LD.haloText(c, mgTxt, Math.max(g.pad + mgW / 2, g.fx), yb, col.text, 'center', 'alphabetic', f);
     const lyy = g.benchY - 3 - liquidHeight(run.o.V);
-    if (g.narrow) LD.pill(c, num(run.o.c, 2) + ' M · ' + num(run.o.V, 1) + ' mL', g.pad, Math.max(g.neckTop + 40, lyy - 4), col.text, 'left', f2);
+    if (g.narrow) LD.pill(c, num(run.o.c, 2) + ' M · ' + num(run.o.V, 1) + ' mL', g.pad, Math.max(g.neckTop + 40, lyy - 4), col.text, 'left', f2);
     else {
-      LD.pill(c, 'HCl ' + num(run.o.c, 2) + ' M', g.fx + g.fnw + 10, g.neckTop + 30, col.text, 'left', f2);
-      LD.pill(c, num(run.o.V, 1) + ' mL', g.fx + g.fnw + 10, g.neckTop + 30 + fsz(11) * 1.5 + 6, col.muted, 'left', f2);
+      LD.pill(c, 'HCl ' + num(run.o.c, 2) + ' M', g.fx + g.fnw + 10, g.neckTop + 30, col.text, 'left', f2);
+      LD.pill(c, num(run.o.V, 1) + ' mL', g.fx + g.fnw + 10, g.neckTop + 30 + fsz(11) * 1.5 + 6, col.muted, 'left', f2);
     }
     // 反應中的狀態
     const sx = g.narrow ? g.pad : g.fx, sa = g.narrow ? 'left' : 'center';
@@ -892,8 +902,8 @@
     }
     c.restore();
     const f = '600 ' + fsz(11).toFixed(1) + 'px ' + FONT;
-    LD.pill(c, T('量筒容量 ', 'capacity ') + C0.cap + ' mL', box.x1 - 4, Y(C0.cap) - 2, col.pos, 'right', f);
-    LD.pill(c, T('理論產量 ', 'theoretical ') + num(gFinal.V, 1) + ' mL', box.x1 - 4, Y(gFinal.V) + (Math.abs(Y(gFinal.V) - Y(C0.cap)) < 22 ? 22 : -2), col.probe, 'right', f);
+    LD.pill(c, T('量筒容量 ', 'capacity ') + C0.cap + ' mL', box.x1 - 4, Y(C0.cap) - 2, col.pos, 'right', f);
+    LD.pill(c, T('理論產量 ', 'theoretical ') + num(gFinal.V, 1) + ' mL', box.x1 - 4, Y(gFinal.V) + (Math.abs(Y(gFinal.V) - Y(C0.cap)) < 22 ? 22 : -2), col.probe, 'right', f);
     $('gLegend').innerHTML = '<span><span class="ln" style="background:' + col.neg + '"></span>' + T('量筒內氣體的體積', 'gas in the cylinder') + '</span>'
       + '<span style="color:' + col.probe + '"><span class="ln dash"></span>' + T('理論產量（目前的液面狀態）', 'theoretical yield (present water levels)') + '</span>';
     $('gHint').textContent = T('理論產量 = 限量試劑決定的氫氣莫耳數，換算成量筒裡的體積（含水蒸氣）。氣泡越來越慢，是因為反應物越來越少。',
@@ -924,13 +934,13 @@
     const f = '600 ' + fsz(11).toFixed(1) + 'px ' + FONT;
     if (Vk > 0 && Vk < Vmax) {
       LD.ball(c, X(Vk), Y(theo(Vk)), 3.5, col.probe, { shadow: false });
-      LD.pill(c, T('轉折點 ', 'corner ') + num(Vk, 1) + ' mL', X(Vk) + (X(Vk) > (box.x0 + box.x1) / 2 ? -6 : 6), Y(theo(Vk)) - 8, col.probe, X(Vk) > (box.x0 + box.x1) / 2 ? 'right' : 'left', f);
+      LD.pill(c, T('轉折點 ', 'corner ') + num(Vk, 1) + ' mL', X(Vk) + (X(Vk) > (box.x0 + box.x1) / 2 ? -6 : 6), Y(theo(Vk)) - 8, col.probe, X(Vk) > (box.x0 + box.x1) / 2 ? 'right' : 'left', f);
     }
     $('gLegend').innerHTML = '<span style="color:' + col.probe + '"><span class="ln" style="background:' + col.probe + '"></span>' + T('理論產量', 'theoretical yield') + '</span>'
       + '<span><span class="dot" style="background:' + col.neg + '"></span>' + T('實驗：鹽酸是限量試劑', 'run: acid limiting') + '</span>'
       + '<span><span class="dot" style="background:' + col.pos + '"></span>' + T('實驗：鎂是限量試劑', 'run: magnesium limiting') + '</span>';
     const other = doneRuns.filter(function (d) { return d.seg === seg && !sameMC(d); }).length;
-    $('gHint').textContent = T('鎂的質量 ', 'Magnesium ') + num(o.m, 4) + ' g' + T('、鹽酸 ', ', acid ') + num(o.c, 2) + ' M' + T('：鹽酸少於轉折點時由鹽酸決定產量，多於轉折點時由鎂決定。圖上的點是做完的實驗（量筒內收集到的氫氣）', ': below the corner the acid sets the yield; above it the magnesium does. The dots are finished runs (hydrogen collected)')
+    $('gHint').textContent = T('鎂的質量 ', 'Magnesium ') + num(o.m, 4) + ' g' + T('、鹽酸 ', ', acid ') + num(o.c, 2) + ' M' + T('：鹽酸少於轉折點時由鹽酸決定產量，多於轉折點時由鎂決定。圖上的點是做完的實驗（量筒內收集到的氫氣）', ': below the corner the acid sets the yield; above it the magnesium does. The dots are finished runs (hydrogen collected)')
       + (other ? T('；另有 ' + other + ' 次條件不同，沒有畫出。', '; ' + other + ' run(s) with other conditions are not shown.') : T('。', '.'));
   }
 
@@ -944,11 +954,11 @@
   }
   function outputs() {
     const set = function (id, txt) { const o = $(id); if (o && document.activeElement !== o) o.textContent = txt; };
-    set('masso', num(val(el.mass), 4) + ' g');
-    set('conco', num(val(el.conc), 2) + ' M');
-    set('volo', num(val(el.vol), 1) + ' mL');
-    set('tempo', num(val(el.temp), 1) + ' °C');
-    set('preso', num(val(el.pres), 0) + ' mmHg');
+    set('masso', num(val(el.mass), 4) + ' g');
+    set('conco', num(val(el.conc), 2) + ' M');
+    set('volo', num(val(el.vol), 1) + ' mL');
+    set('tempo', num(val(el.temp), 1) + ' °C');
+    set('preso', num(val(el.pres), 0) + ' mmHg');
   }
   function refreshAll() {
     outputs(); syncSegs(); updatePlay(); updateReadouts(); renderTable();
@@ -1015,10 +1025,10 @@
       items: [
         { name: function () { return T('鎂的質量', 'Mass of magnesium'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(el.mass, d, big); return true; },
-          describe: function () { return num(val(el.mass), 4) + ' g'; } },
+          describe: function () { return num(val(el.mass), 4) + ' g'; } },
         { name: function () { return T('鹽酸的體積', 'Volume of acid'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(el.vol, d, big); return true; },
-          describe: function () { const g = S.gas(run); return num(val(el.vol), 1) + ' mL' + T('，量筒內氣體約 ', ', gas about ') + num(g.V, 0) + ' mL'; } }
+          describe: function () { const g = S.gas(run); return num(val(el.vol), 1) + ' mL' + T('，量筒內氣體約 ', ', gas about ') + num(g.V, 0) + ' mL'; } }
       ],
       onChange: function () { drawStage(); }
     });
@@ -1066,4 +1076,17 @@
   resize();
   refreshAll();
   startLoop();
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('readout').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

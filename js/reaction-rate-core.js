@@ -2,7 +2,7 @@
  * reaction-rate-core.js — 「反應速率與碰撞學說」的化學核心（與畫面無關，Node 可直接 require）
  *
  * 模型：立方容器裡的 A、B、C、D 四種氣體分子，都是直徑 D、莫耳質量 M 的硬球（完全彈性碰撞）。
- *   正反應  A + B → C + D：兩分子碰撞時，「沿連心線方向的相對動能」E = ½μg²（μ = M/2，g = 連心線方向的接近速率）
+ *   正反應  A + B → C + D：兩分子碰撞時，「沿連心線方向的相對動能」E = ½μg^2（μ = M/2，g = 連心線方向的接近速率）
  *                           至少等於活化能 Ea 才反應（碰撞學說的「連心線模型」）。
  *   逆反應  C + D → A + B：門檻是逆反應的活化能 Ea − ΔH。
  *   反應熱 ΔH：預設由容器（恆溫槽）立刻吸收或供給，產物照彈性碰撞分開，氣體溫度不變（等溫反應器）；
@@ -13,14 +13,14 @@
  *   催化劑：提供活化能較低的途徑；本模擬讓活化能高出 max(0, ΔH) 的部分變成原來的 40%，正、逆反應一起降低，ΔH 不變。
  *   器壁是恆溫槽（分子撞牆後，依器壁溫度重新抽一個速度），所以容器維持設定的溫度。
  *
- * 單位：長度 nm、時間 ps、質量 g/mol、能量 kJ/mol（每莫耳分子）。1 g/mol × (nm/ps)² = 1 kJ/mol，所以 E = ½Mv² 直接是 kJ/mol。
- * 容器容積 V = L³ 是「分子中心能到達的空間」（畫面上的器壁再往外畫半個分子直徑）。
+ * 單位：長度 nm、時間 ps、質量 g/mol、能量 kJ/mol（每莫耳分子）。1 g/mol × (nm/ps)^2 = 1 kJ/mol，所以 E = ½Mv^2 直接是 kJ/mol。
+ * 容器容積 V = L^3 是「分子中心能到達的空間」（畫面上的器壁再往外畫半個分子直徑）。
  *
  * 精確的理論（測試中與模擬對照）：
- *   碰撞次數   Z_AB = k_coll [A][B]，k_coll = χ·f·πD²·⟨v_rel⟩，⟨v_rel⟩ = √(8RT/πμ)，
+ *   碰撞次數   Z_AB = k_coll [A][B]，k_coll = χ·f·πD^2·⟨v_rel⟩，⟨v_rel⟩ = √(8RT/πμ)，
  *              χ = 稠密修正（Carnahan–Starling，體積分率 2% 時約 1.05），f = 器壁修正（容器很小，0.927）
  *   能量足夠的碰撞所占比例 = e^(−Ea/RT)（連心線模型在三維空間的精確結果）
- *   速率常數 k = p·χ·πD²·⟨v_rel⟩·e^(−Ea/RT)（p：方向因子），正是阿瑞尼斯的形式（指數前因子隨 √T 緩慢變大）
+ *   速率常數 k = p·χ·πD^2·⟨v_rel⟩·e^(−Ea/RT)（p：方向因子），正是阿瑞尼斯的形式（指數前因子隨 √T 緩慢變大）
  *   平衡常數 K = k正/k逆 = e^(−ΔH/RT)（四種分子大小、質量相同，所以熵的變化是 0）
  */
 (function (root) {
@@ -30,11 +30,11 @@
   const R = 8.314462618e-3;    // 氣體常數 kJ/(mol·K)（CODATA 2018 起為定義值）
   const NA = 6.02214076e23;    // 亞佛加厥常數（定義值）
   const L = 12;                // nm：分子中心可到達的立方空間的邊長
-  const V = L * L * L;         // nm³ = 1.728 × 10^-21 L
+  const V = L * L * L;         // nm^3 = 1.728 × 10^-21 L
   const D = 0.6;               // nm：分子直徑
   const M = 40;                // g/mol：A、B、C、D 都一樣
   const MU = M / 2;            // 約化質量
-  const INERTIA = 0.4 * M * (D / 2) * (D / 2); // 實心球的轉動慣量 g/mol·nm²（只決定方向轉動的快慢）
+  const INERTIA = 0.4 * M * (D / 2) * (D / 2); // 實心球的轉動慣量 g/mol·nm^2（只決定方向轉動的快慢）
   const CAT = 0.4;             // 催化劑：活化能高出 max(0, ΔH) 的部分乘以 0.4
   const PATCH_DEG = 60;        // 方向因子：能反應的一端（圓錐的半頂角）
   const PATCH_COS = Math.cos(PATCH_DEG * Math.PI / 180);
@@ -73,17 +73,17 @@
   function meanRelSpeed(T) { return Math.sqrt(8 * R * T / (Math.PI * MU)); }
   /** 方均根速率 √(3RT/M)（nm/ps） */
   function rmsSpeed(T) { return Math.sqrt(3 * R * T / M); }
-  /** 分子所占的體積分率 φ = N·πD³/6 ÷ V */
+  /** 分子所占的體積分率 φ = N·πD^3/6 ÷ V */
   function packing(N) { return (N || 0) * Math.PI * D * D * D / 6 / V; }
   /** 硬球流體在接觸距離的對分布函數（Carnahan–Starling）：碰撞頻率比稀薄氣體多出的倍數 */
   function contactFactor(phi) { return (1 - phi / 2) / Math.pow(1 - phi, 3); }
   /**
    * 器壁修正：分子中心限制在邊長 L 的立方體內，靠近器壁的分子有一側沒有碰撞對象。
    * 兩個均勻分布的點相距 D 的機會，比無限大空間少了 ⟨Π(1 − (D/L)|n_i|)⟩（n 為隨機方向的單位向量）
-   * = 1 − (3/2)ε + (2/π)ε² − ε³/(4π)，ε = D/L。L = 12 nm、D = 0.6 nm 時為 0.927。
+   * = 1 − (3/2)ε + (2/π)ε^2 − ε^3/(4π)，ε = D/L。L = 12 nm、D = 0.6 nm 時為 0.927。
    */
   function wallFactor() { const e = D / L; return 1 - 1.5 * e + 2 / Math.PI * e * e - e * e * e / (4 * Math.PI); }
-  /** 碰撞速率常數 k_coll（nm³/ps）：每 ps 的 A–B 碰撞次數 = k_coll × N_A × N_B ÷ V。Ntot：容器內分子總數（稠密修正用） */
+  /** 碰撞速率常數 k_coll（nm^3/ps）：每 ps 的 A–B 碰撞次數 = k_coll × N_A × N_B ÷ V。Ntot：容器內分子總數（稠密修正用） */
   function collisionK(T, Ntot) { return Math.PI * D * D * meanRelSpeed(T) * contactFactor(packing(Ntot)) * wallFactor(); }
   /** 能量足夠（連心線方向的相對動能 ≥ Ea）的碰撞所占比例 */
   function fracAbove(Ea, T) { return Ea <= 0 ? 1 : Math.exp(-Ea / RT(T)); }
@@ -97,7 +97,7 @@
   }
   /** 逆反應的活化能 = 正反應的活化能 − ΔH */
   function reverseEa(EaF, dH) { return Math.max(0, EaF - (dH || 0)); }
-  /** 正反應速率常數（nm³/ps）。o：{ T, Ea, dH, cat, steric, Ntot } */
+  /** 正反應速率常數（nm^3/ps）。o：{ T, Ea, dH, cat, steric, Ntot } */
   function kForward(o) { return stericFactor(o.steric) * collisionK(o.T, o.Ntot) * fracAbove(effectiveEa(o.Ea, o.dH, o.cat), o.T); }
   function kReverse(o) {
     const EaF = effectiveEa(o.Ea, o.dH, o.cat);
@@ -105,9 +105,9 @@
   }
   /** 平衡常數 K = [C][D]/([A][B]) = e^(−ΔH/RT) */
   function Keq(dH, T) { return Math.exp(-(dH || 0) / RT(T)); }
-  /** nm³/ps（每個分子）→ L/(mol·s) */
+  /** nm^3/ps（每個分子）→ L/(mol·s) */
   function toLmolS(kc) { return kc * NA * 1e-24 * 1e12; }
-  /** 分子數 → 濃度 mol/L（容器容積 V nm³ = V × 10^-24 L） */
+  /** 分子數 → 濃度 mol/L（容器容積 V nm^3 = V × 10^-24 L） */
   function molarity(n) { return n / (NA * V * 1e-24); }
   /** 由「分子數／ps」換成 mol/(L·s) */
   function rateToMs(perPs) { return molarity(perPs) * 1e12; }
@@ -129,7 +129,7 @@
 
   /**
    * 加權最小平方法擬合直線 y = a + b x。pts：[{ x, y, w }]（w 預設 1）。
-   * 傳回 { a, b, r2, se（斜率的標準誤，假設 w = 1/σ²）, n }。
+   * 傳回 { a, b, r2, se（斜率的標準誤，假設 w = 1/σ^2）, n }。
    */
   function fitLine(pts) {
     let W = 0, X = 0, Y = 0;
@@ -292,7 +292,7 @@
     _n[0] = cx / cl; _n[1] = cy / cl; _n[2] = cz / cl;
     const g = -(dvx * _n[0] + dvy * _n[1] + dvz * _n[2]);  // i 相對 j 沿連心線的接近速率
     if (!(g > 0)) return;
-    const E = M * g * g / 4;                     // 沿連心線的相對動能 ½μg²（kJ/mol）
+    const E = M * g * g / 4;                     // 沿連心線的相對動能 ½μg^2（kJ/mol）
     const si = s.sp[i], sj = s.sp[j], st = s.stats;
     st.collAll++;
     let gOut = g, kind = 0;                      // 0 一般碰撞、1 能量夠但方向不對、2 正反應、3 逆反應
@@ -405,7 +405,7 @@
     let left = total;
     while (left > 1e-9) { const d = Math.min(DT, left); step(s, d); left -= d; }
   }
-  /** 容器內氣體的動力學溫度 T = M⟨v²⟩/(3R) */
+  /** 容器內氣體的動力學溫度 T = M⟨v^2⟩/(3R) */
   function kineticTemp(s) {
     let sum = 0;
     for (let i = 0; i < s.N; i++) sum += s.vx[i] * s.vx[i] + s.vy[i] * s.vy[i] + s.vz[i] * s.vz[i];

@@ -28,25 +28,25 @@
     {
       id: 'polymerization-1', level: 1,
       title: { zh: '一串接一串', en: 'One after another' },
-      desc: { zh: '做一次加成聚合，讓單體的轉化率達到 50% 以上。', en: 'Run an addition polymerisation until at least 50% of the monomer has reacted.' },
+      desc: { zh: '做一次加成聚合，讓單體的轉化率達到 50 % 以上。', en: 'Run an addition polymerisation until at least 50 % of the monomer has reacted.' },
       check: function (ev) { const d = tk(ev); return isAdd(d) && d.conv >= 0.5; }
     },
     {
       id: 'polymerization-2', level: 2,
       title: { zh: '每接一手，掉一滴水', en: 'A drop of water per link' },
-      desc: { zh: '做一次縮合聚合，讓收集管收集到 1.00 g 以上的水。', en: 'Run a condensation polymerisation and collect at least 1.00 g of water in the receiver.' },
+      desc: { zh: '做一次縮合聚合，讓收集管收集到 1.00 g 以上的水。', en: 'Run a condensation polymerisation and collect at least 1.00 g of water in the receiver.' },
       check: function (ev) { const d = tk(ev); return isCond(d) && fin(d.waterOut) && d.waterOut >= 1.0; }
     },
     {
       id: 'polymerization-3', level: 3,
       title: { zh: '不沾鍋的長鏈', en: 'Non-stick giants' },
-      desc: { zh: '用四氟乙烯做加成聚合，在轉化率 10% 以上時，讓數量平均分子量 Mn 達到 100 000 g/mol 以上。', en: 'Polymerise tetrafluoroethylene so that, at 10% conversion or more, the number-average molar mass Mn is at least 100 000 g/mol.' },
+      desc: { zh: '用四氟乙烯做加成聚合，在轉化率 10 % 以上時，讓數量平均分子量 Mn 達到 100 000 g/mol 以上。', en: 'Polymerise tetrafluoroethylene so that, at 10 % conversion or more, the number-average molar mass Mn is at least 100 000 g/mol.' },
       check: function (ev) { const d = any(ev); return isAdd(d) && d.mon === 'tfe' && d.conv >= 0.1 && d.Mn >= 100000; }
     },
     {
       id: 'polymerization-4', level: 3,
       title: { zh: '越聚越擠', en: 'Packing closer' },
-      desc: { zh: '用液體單體做加成聚合，讓體積收縮 10% 以上。', en: 'Polymerise a liquid monomer until its volume has shrunk by 10% or more.' },
+      desc: { zh: '用液體單體做加成聚合，讓體積收縮 10 % 以上。', en: 'Polymerise a liquid monomer until its volume has shrunk by 10 % or more.' },
       check: function (ev) { const d = any(ev); return isAdd(d) && !d.gas && fin(d.shrink) && d.shrink >= 0.10; }
     },
     {
@@ -64,13 +64,13 @@
     {
       id: 'polymerization-7', level: 5,
       title: { zh: '把水抽走', en: 'Pump the water off' },
-      desc: { zh: '縮合聚合先在密閉的瓶中達到平衡，再打開減壓除水，讓 Xn 變成平衡時的 3 倍以上。', en: 'Let a condensation polymerisation reach equilibrium in a closed flask, then switch on water removal and make Xn at least 3 times its equilibrium value.' },
+      desc: { zh: '縮合聚合先在密閉的瓶中達到平衡，再打開減壓除水，讓 Xn 變成平衡時的 3 倍以上。', en: 'Let a condensation polymerisation reach equilibrium in a closed flask, then switch on water removal and make Xn at least 3 times its equilibrium value.' },
       check: function (ev) { const d = tk(ev); return isCond(d) && fin(d.eqXn) && d.dry && d.Xn >= 3 * d.eqXn; }
     },
     {
       id: 'polymerization-8', level: 6,
       title: { zh: '兩種長法', en: 'Two ways to grow' },
-      desc: { zh: '在紀錄表裡記下：一列加成聚合（轉化率 ≤ 10%、Xn ≥ 100），一列縮合聚合（反應程度 ≥ 90%、Xn ≤ 10）。', en: 'Record one addition run (conversion ≤ 10%, Xn ≥ 100) and one condensation run (extent of reaction ≥ 90%, Xn ≤ 10) in the table.' },
+      desc: { zh: '在紀錄表裡記下：一列加成聚合（轉化率 ≤ 10 %、Xn ≥ 100），一列縮合聚合（反應程度 ≥ 90 %、Xn ≤ 10）。', en: 'Record one addition run (conversion ≤ 10 %, Xn ≥ 100) and one condensation run (extent of reaction ≥ 90 %, Xn ≤ 10) in the table.' },
       check: function (ev) {
         const d = rec(ev);
         if (!d) return false;
@@ -82,7 +82,7 @@
     {
       id: 'polymerization-9', level: 6,
       title: { zh: '起始劑多，鏈反而短', en: 'More initiator, shorter chains' },
-      desc: { zh: '同一種單體、同一種終止方式，記下兩列加成聚合：起始劑相差 4 倍以上，轉化率都在 40%–60%，起始劑少的那列 Xn 是另一列的 1.6 倍以上。', en: 'Same monomer, same termination: record two addition runs whose initiator amounts differ by a factor of 4 or more, both at 40–60% conversion, with Xn of the low-initiator run at least 1.6 times the other.' },
+      desc: { zh: '同一種單體、同一種終止方式，記下兩列加成聚合：起始劑相差 4 倍以上，轉化率都在 40 %–60 %，起始劑少的那列 Xn 是另一列的 1.6 倍以上。', en: 'Same monomer, same termination: record two addition runs whose initiator amounts differ by a factor of 4 or more, both at 40–60 % conversion, with Xn of the low-initiator run at least 1.6 times the other.' },
       check: function (ev) {
         const d = rec(ev);
         if (!d) return false;
@@ -96,19 +96,19 @@
     {
       id: 'polymerization-10', level: 7,
       title: { zh: '多出來的那一邊', en: 'The side with extra' },
-      desc: { zh: '兩種單體的縮合聚合，讓莫耳比 r ≤ 0.95，除水並讓少的那種官能基反應 99.5% 以上。', en: 'In a two-monomer condensation polymerisation, use a mole ratio r ≤ 0.95, remove the water and react at least 99.5% of the scarcer functional group.' },
+      desc: { zh: '兩種單體的縮合聚合，讓莫耳比 r ≤ 0.95，除水並讓少的那種官能基反應 99.5 % 以上。', en: 'In a two-monomer condensation polymerisation, use a mole ratio r ≤ 0.95, remove the water and react at least 99.5 % of the scarcer functional group.' },
       check: function (ev) { const d = tk(ev); return isCond(d) && !d.ab && d.r <= 0.95 && d.dry && d.conv >= 0.995; }
     },
     {
       id: 'polymerization-11', level: 8,
       title: { zh: '兩條變一條', en: 'Two become one' },
-      desc: { zh: '用結合終止做加成聚合，在轉化率 3%–15% 時暫停，讓分散度 Đ 在 1.40–1.65 之間。', en: 'With termination by combination, pause an addition polymerisation at 3–15% conversion with the dispersity Đ between 1.40 and 1.65.' },
+      desc: { zh: '用結合終止做加成聚合，在轉化率 3 %–15 % 時暫停，讓分散度 Đ 在 1.40–1.65 之間。', en: 'With termination by combination, pause an addition polymerisation at 3–15 % conversion with the dispersity Đ between 1.40 and 1.65.' },
       check: function (ev) { const d = hold(ev); return isAdd(d) && d.term === 'comb' && d.conv >= 0.03 && d.conv <= 0.15 && d.PDI >= 1.40 && d.PDI <= 1.65; }
     },
     {
       id: 'polymerization-12', level: 9,
       title: { zh: '量身訂做的耐綸', en: 'Nylon made to measure' },
-      desc: { zh: '調整莫耳比，除水做耐綸-66 到反應程度 99.95% 以上，讓 Mn 在 10 000 g/mol 的 ±3% 以內。', en: 'Adjust the mole ratio and make nylon-6,6 with water removal to at least 99.95% reaction, so that Mn is within ±3% of 10 000 g/mol.' },
+      desc: { zh: '調整莫耳比，除水做耐綸-66 到反應程度 99.95 % 以上，讓 Mn 在 10 000 g/mol 的 ±3 % 以內。', en: 'Adjust the mole ratio and make nylon-6,6 with water removal to at least 99.95 % reaction, so that Mn is within ±3 % of 10 000 g/mol.' },
       check: function (ev) { const d = any(ev); return isCond(d) && d.pair === 'nylon66' && d.dry && d.conv >= 0.9995 && Math.abs(d.Mn - 10000) <= 300; }
     },
     // ---------- 隱藏任務 ----------

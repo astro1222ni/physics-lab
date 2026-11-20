@@ -490,7 +490,7 @@
       arcFan.geometry.dispose();
       arcFan.geometry = new THREE.BufferGeometry();
       arcFan.geometry.setAttribute('position', new THREE.Float32BufferAttribute(fan, 3));
-      const text = B.deg(th * VC.DEG);
+      const text = B.angleReading(th * VC.DEG);
       if (!arcLabel) { arcLabel = makeLabel(text, C.accent, { size: 14 }); arcG.add(arcLabel); }
       else setLabelText(arcLabel, text, C.accent, { size: 14 });
       const mid = VC.unit(VC.rotate(a, ax, th / 2));
@@ -576,7 +576,7 @@
       update();
     }
     canvas.addEventListener('pointerdown', function (ev) {
-      if (ev.button !== 0) return;
+      if (ev.button !== 0 || ev.shiftKey || nav.mode() === 'pan') return;
       const id = pick(ev);
       if (id == null) return;
       const d = domOf(id);
@@ -620,9 +620,10 @@
     controls.enableDamping = !B.reducedMotion;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: fitR * 2, T });
     controls.minPolarAngle = 0.02;
     controls.maxPolarAngle = Math.PI - 0.02;
+    controls.stopListenToKeyEvents();
     let startAng = null;
     controls.addEventListener('start', function () { startAng = [controls.getAzimuthalAngle(), controls.getPolarAngle()]; });
     controls.addEventListener('end', function () {
@@ -642,7 +643,16 @@
     canvas.addEventListener('keydown', function (ev) {
       const k = ev.key;
       const big = ev.shiftKey ? 3 : 1;
-      const off = camera.position.clone().sub(target);
+      if (nav.mode() === 'pan' && k.startsWith('Arrow')) {
+        const distance = camera.position.distanceTo(controls.target) * 0.04 * big;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+        const delta = right.multiplyScalar(k === 'ArrowLeft' ? -distance : k === 'ArrowRight' ? distance : 0)
+          .addScaledVector(up, k === 'ArrowUp' ? distance : k === 'ArrowDown' ? -distance : 0);
+        camera.position.add(delta); controls.target.add(delta); controls.update();
+        ev.preventDefault(); requestRender(); return;
+      }
+      const off = camera.position.clone().sub(controls.target);
       if (k === 'ArrowLeft' || k === 'ArrowRight') {
         off.applyAxisAngle(ZAXIS, (k === 'ArrowLeft' ? -1 : 1) * 5 * big * Math.PI / 180);
       } else if (k === 'ArrowUp' || k === 'ArrowDown') {
@@ -656,8 +666,8 @@
         if (L < controls.minDistance || L > controls.maxDistance) return;
       } else return;
       ev.preventDefault();
-      camera.position.copy(target).add(off);
-      camera.lookAt(target);
+      camera.position.copy(controls.target).add(off);
+      camera.lookAt(controls.target);
       controls.update();
       requestRender();
       if (k.indexOf('Arrow') === 0) reportView();
@@ -684,6 +694,7 @@
     function placeCamera(back, dist) {
       if (Math.abs(back.z) > 0.995) back = new THREE.Vector3(back.x + 0.08, back.y, back.z).normalize();
       controls.target.copy(target);
+      nav.home();
       camera.position.copy(target).addScaledVector(back, dist);
       camera.lookAt(target);
       setLimits();
@@ -803,6 +814,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (envRT) envRT.dispose();

@@ -14,6 +14,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const PC = window.PolyCore, LD = window.LabDraw;
   if (!PC || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -44,7 +54,7 @@
     const r = Math.round(x / Math.pow(10, e - (sig || 3) + 1)) * Math.pow(10, e - (sig || 3) + 1);
     return Math.round(r).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
-  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(x * 100, d == null ? 1 : d) + '%'; }
+  function pct(x, d) { return x == null || !isFinite(x) ? '—' : num(x * 100, d == null ? 1 : d) + ' %'; }
   /** 化學式 → HTML（數字用 <sub>） */
   function fH(f) { return f.replace(/(\d+)/g, '<sub>$1</sub>'); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -112,7 +122,7 @@
   function traceLabel() {
     if (state.mode === 'add') {
       const d = PC.ADD_MON[state.mon];
-      return d.ab + ' ' + sigf(state.init * 100, 2) + '%' + (state.term === 'disp' ? T(' 歧化', ' disp.') : '');
+      return d.ab + ' ' + sigf(state.init * 100, 2) + ' %' + (state.term === 'disp' ? T(' 歧化', ' disp.') : '');
     }
     const d = PC.COND[state.pair];
     return (state.pair === 'nylon66' ? T('耐綸', 'Nylon') : state.pair === 'pet' ? 'PET' : 'PLA') + (d.ab ? '' : ' ' + num(state.q, 3)) + (run && run.everDry ? '' : T(' 密閉', ' closed'));
@@ -461,7 +471,7 @@
   // ======================= 版面 =======================
   let W = 0, H = 0, LY = null;
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     const h = w < 560 ? Math.round(Math.max(420, w * 1.5)) : 420;
     cv.style.height = h + 'px';
@@ -684,7 +694,7 @@
       const px = xr + rw / 2 + 4, py = rTop - 2;
       drawGlassTube(c, [[xr + rw * 0.3, rTop + 2], [px + 8, py - 12]], 3);
       LD.pill(c, T('↑ 抽氣', '↑ to pump'), px + 2, py - 14, col.muted, 'left', fnt(11));
-      const lab = T('收集的水 ', 'Water ') + num(s.waterOut, 2) + ' g';
+      const lab = T('收集的水 ', 'Water ') + num(s.waterOut, 2) + ' g';
       c.font = fnt(12);
       LD.pill(c, lab, Math.min(xr, A.ax + A.aw - 8 - c.measureText(lab).width / 2 - 6), rBot + fsz(12) + 8, col.water, 'center', fnt(12));
     } else {
@@ -853,7 +863,7 @@
     else { const d = PC.COND[state.pair]; name = T(state.pair === 'pet' ? 'PET' : d.zh, state.pair === 'nylon66' ? 'Nylon-6,6' : state.pair === 'pet' ? 'PET' : 'PLA'); }
     const nb = LD.pill(c, name, LY.ax + 10, LY.ay + 26, col.text, 'left', fnt(13));
     const L = lite || { conv: 0, Xn: 0, t: 0 };
-    const tl = 't = ' + sigf(L.t, 3) + ' s' + (state.running ? '' : T('（暫停）', ' (paused)'));
+    const tl = 't = ' + sigf(L.t, 3) + ' s' + (state.running ? '' : T('（暫停）', ' (paused)'));
     if (LY.narrow) LD.pill(c, tl, nb.x + nb.w + 6, LY.ay + 26, col.muted, 'left', fnt(11));   // 窄螢幕：排在名稱右邊，讓出器材上方的空間
     else LD.pill(c, tl, LY.ax + 10, LY.ay + 50, col.muted, 'left', fnt(11));
     drawMagnifier(src);
@@ -929,7 +939,7 @@
   function drawXP(g, x0, x1, y0, y1) {
     const lo = 0, hi = 4;
     logTicks(g, x0, x1, y0, y1, lo, hi, 'y');
-    linTicks(g, x0, x1, y0, y1, 0, 1, 0.2, 'x', function (v) { return num(v * 100, 0) + '%'; });
+    linTicks(g, x0, x1, y0, y1, 0, 1, 0.2, 'x', function (v) { return num(v * 100, 0) + ' %'; });
     const X = function (p) { return x0 + p[1] * (x1 - x0); };
     const Y = function (p) { const v = Math.log10(Math.max(1, p[2])); return y1 - Math.min(hi, v) / hi * (y1 - y0); };
     g.save(); g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
@@ -1021,7 +1031,7 @@
     const e = Math.pow(10, Math.floor(Math.log10(tmax0))), m = tmax0 / e, tmax = (m <= 2 ? 2 : m <= 5 ? 5 : 10) * e;
     const stepT = tmax / 5;
     linTicks(g, x0, x1, y0, y1, 0, tmax, stepT, 'x', function (v) { return sigf(v, 2); });
-    linTicks(g, x0, x1, y0, y1, 0, 1, 0.25, 'y', function (v) { return num(v * 100, 0) + '%'; });
+    linTicks(g, x0, x1, y0, y1, 0, 1, 0.25, 'y', function (v) { return num(v * 100, 0) + ' %'; });
     // 右軸：Xn（對數）
     g.save(); g.font = fnt(11, '400');
     for (let k = 0; k <= 4; k++) {
@@ -1046,7 +1056,7 @@
       lg.innerHTML = cur + (traces.length ? '<span><span class="ln" style="background:' + LD.alpha(col.muted, 0.6) + '"></span>' + T('之前的幾次', 'Earlier runs') + '</span>' : '') +
         '<span style="color:' + col.muted + '"><span class="ln dash"></span>' + (sim.kind === 'cond' ? T('卡羅瑟斯方程式', 'Carothers equation') : T('理論鏈長', 'Theoretical chain length')) + '</span>';
       hint.textContent = sim.kind === 'add' ? T('加成聚合：鏈一開始就很長，之後幾乎是一條水平線；轉化率增加只是鏈的數目變多。', 'Addition: the chains are long from the very start and the curve is almost flat; higher conversion just means more chains.')
-        : T('縮合聚合：反應程度要非常接近 100%，聚合度才會急遽上升。', 'Condensation: Xn shoots up only when the extent of reaction is very close to 100%.');
+        : T('縮合聚合：反應程度要非常接近 100 %，聚合度才會急遽上升。', 'Condensation: Xn shoots up only when the extent of reaction is very close to 100 %.');
     } else if (state.tab === 'mwd') {
       lg.innerHTML = '<span><span class="box" style="background:' + modeColor(sim.kind) + '"></span>' + T('樣品中的鏈', 'Chains in the sample') + '</span>' +
         (sim.kind === 'cond' ? '<span style="color:' + col.muted + '"><span class="ln dash"></span>' + T('Flory 最可能分布', 'Flory most probable distribution') + '</span>' : '');
@@ -1063,18 +1073,18 @@
   function rd(dt, dd, cls) { return '<dt>' + dt + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + dd + '</dd>'; }
   function updateReadouts() {
     const s = fullStats(), el = $('readout');
-    let h = rd(T('時間 t<small>（模擬秒）</small>', 'Time t<small>(model seconds)</small>'), sigf(s.t, 3) + ' s');
+    let h = rd(T('時間 t<small>（模擬秒）</small>', 'Time t<small>(model seconds)</small>'), sigf(s.t, 3) + ' s');
     if (sim.kind === 'add') {
       const d = PC.ADD_MON[sim.mon];
       h += rd(T('單體轉化率', 'Monomer conversion'), pct(s.conv, 1), 'big');
       h += rd(T('起始劑剩下', 'Initiator left'), pct(s.initLeft, 1));
       h += rd(T('正在長的鏈<small>（樣品中的自由基數）</small>', 'Growing chains<small>(radicals in the sample)</small>'), String(s.radicals));
       h += rd(T('數量平均聚合度 X<sub>n</sub>', 'Number-average X<sub>n</sub>'), s.Xn > 0 ? big(s.Xn, 3) : '—', 'big');
-      h += rd(T('數量平均分子量 M<sub>n</sub>', 'M<sub>n</sub>'), s.Xn > 0 ? big(s.Mn, 3) + ' g/mol' : '—', 'big');
-      h += rd(T('重量平均分子量 M<sub>w</sub>', 'M<sub>w</sub>'), s.Xn > 0 ? big(s.Mw, 3) + ' g/mol' : '—');
+      h += rd(T('數量平均分子量 M<sub>n</sub>', 'M<sub>n</sub>'), s.Xn > 0 ? big(s.Mn, 3) + ' g/mol' : '—', 'big');
+      h += rd(T('重量平均分子量 M<sub>w</sub>', 'M<sub>w</sub>'), s.Xn > 0 ? big(s.Mw, 3) + ' g/mol' : '—');
       h += rd(T('分散度 Đ = M<sub>w</sub>/M<sub>n</sub>', 'Dispersity Đ = M<sub>w</sub>/M<sub>n</sub>'), s.Xn > 0 ? num(s.PDI, 2) : '—');
-      h += rd(T('聚合物<small>（每 1.00 mol 單體）</small>', 'Polymer<small>(per 1.00 mol of monomer)</small>'), num(s.mPoly, 2) + ' g');
-      h += rd(T('未反應的單體', 'Monomer left'), num(s.mMon, 2) + ' g');
+      h += rd(T('聚合物<small>（每 1.00 mol 單體）</small>', 'Polymer<small>(per 1.00 mol of monomer)</small>'), num(s.mPoly, 2) + ' g');
+      h += rd(T('未反應的單體', 'Monomer left'), num(s.mMon, 2) + ' g');
       if (d.gas) h += rd(T('反應釜的壓力<small>（與起始時相比）</small>', 'Pressure in the reactor<small>(compared with the start)</small>'), pct(1 - s.conv, 1));
       else h += rd(T('體積收縮', 'Volume shrinkage'), pct(s.shrink, 1));
     } else {
@@ -1082,12 +1092,12 @@
       h += rd(T('單體還剩<small>（占原來的單體）</small>', 'Monomers left<small>(of the original monomers)</small>'), pct(s.monoLeft, 1));
       h += rd(T('數量平均聚合度 X<sub>n</sub>', 'Number-average X<sub>n</sub>'), big(s.Xn, 3), 'big');
       h += rd(T('卡羅瑟斯方程式<small>(1 + r)/(1 + r − 2rp)，r = ', 'Carothers equation<small>(1 + r)/(1 + r − 2rp), r = ') + num(s.r, 3) + '</small>', big(s.carothers, 3));
-      h += rd(T('數量平均分子量 M<sub>n</sub>', 'M<sub>n</sub>'), big(s.Mn, 3) + ' g/mol', 'big');
-      h += rd(T('重量平均分子量 M<sub>w</sub>', 'M<sub>w</sub>'), big(s.Mw, 3) + ' g/mol');
+      h += rd(T('數量平均分子量 M<sub>n</sub>', 'M<sub>n</sub>'), big(s.Mn, 3) + ' g/mol', 'big');
+      h += rd(T('重量平均分子量 M<sub>w</sub>', 'M<sub>w</sub>'), big(s.Mw, 3) + ' g/mol');
       h += rd(T('分散度 Đ = M<sub>w</sub>/M<sub>n</sub>', 'Dispersity Đ = M<sub>w</sub>/M<sub>n</sub>'), num(s.PDI, 2));
-      h += rd(T('生成的水<small>（最多 ', 'Water formed<small>(at most ') + num(s.waterMax, 2) + ' g）</small>'.replace('）', T('）', ')')), num(s.water, 3) + ' g');
-      h += rd(state.dry ? T('已抽走的水', 'Water removed') : T('瓶內的水', 'Water in the flask'), num(state.dry ? s.waterOut : s.waterIn, 3) + ' g');
-      h += rd(T('瓶內的質量<small>（原料 ', 'Mass in the flask<small>(started with ') + num(s.mFeed, 2) + ' g' + T('）', ')') + '</small>', num(s.mFlask, 3) + ' g');
+      h += rd(T('生成的水<small>（最多 ', 'Water formed<small>(at most ') + num(s.waterMax, 2) + ' g）</small>'.replace('）', T('）', ')')), num(s.water, 3) + ' g');
+      h += rd(state.dry ? T('已抽走的水', 'Water removed') : T('瓶內的水', 'Water in the flask'), num(state.dry ? s.waterOut : s.waterIn, 3) + ' g');
+      h += rd(T('瓶內的質量<small>（原料 ', 'Mass in the flask<small>(started with ') + num(s.mFeed, 2) + ' g' + T('）', ')') + '</small>', num(s.mFlask, 3) + ' g');
       if (!state.dry && s.peq != null) h += rd(T('密閉時的平衡 p<sub>eq</sub>', 'Closed equilibrium p<sub>eq</sub>'), pct(s.peq, 2));
     }
     el.innerHTML = h;
@@ -1109,8 +1119,8 @@
     if (state.mode === 'add') {
       const d = PC.ADD_MON[state.mon], r = RX[state.mon];
       el.innerHTML = '<span class="eq">' + eqH(r[0]) + ' → ' + eqH(r[1]) + '</span>' +
-        T(d.zh + ' ' + fH(d.f) + '（' + num(d.M, 2) + ' g/mol）→ ' + d.poly[0] + '（' + d.ab + '）。重複單位和單體的組成相同，沒有副產物。',
-          cap(d.en) + ' ' + fH(d.f) + ' (' + num(d.M, 2) + ' g/mol) → ' + d.poly[1] + ' (' + d.ab + '). The repeating unit has the same formula as the monomer; nothing else is formed.') +
+        T(d.zh + ' ' + fH(d.f) + '（' + num(d.M, 2) + ' g/mol）→ ' + d.poly[0] + '（' + d.ab + '）。重複單位和單體的組成相同，沒有副產物。',
+          cap(d.en) + ' ' + fH(d.f) + ' (' + num(d.M, 2) + ' g/mol) → ' + d.poly[1] + ' (' + d.ab + '). The repeating unit has the same formula as the monomer; nothing else is formed.') +
         '<br><span class="use">' + T('用途：' + USE[state.mon][0], 'Uses: ' + USE[state.mon][1]) + '</span>';
     } else {
       const d = PC.COND[state.pair];
@@ -1120,17 +1130,17 @@
       else eq = 'n CH3CH(OH)COOH → −[OCH(CH3)CO]n− + n H2O';
       const unitF = state.pair === 'nylon66' ? 'C12H22N2O2' : state.pair === 'pet' ? 'C10H8O4' : 'C3H4O2';
       el.innerHTML = '<span class="eq">' + eqH(eq) + '</span>' +
-        (d.ab ? T('乳酸 ' + fH(d.A.f) + '（' + num(d.A.M, 2) + ' g/mol）一個分子上就有 –OH 與 –COOH，自己就能連成長鏈。',
-          'Lactic acid ' + fH(d.A.f) + ' (' + num(d.A.M, 2) + ' g/mol) carries both –OH and –COOH, so it can join up on its own.')
-          : T(d.A.zh + ' ' + fH(d.A.f) + '（' + num(d.A.M, 2) + '）＋ ' + d.B.zh + ' ' + fH(d.B.f) + '（' + num(d.B.M, 2) + ' g/mol）。',
-            cap(d.A.en) + ' ' + fH(d.A.f) + ' (' + num(d.A.M, 2) + ') + ' + d.B.en + ' ' + fH(d.B.f) + ' (' + num(d.B.M, 2) + ' g/mol).')) +
-        T('重複單位 ' + fH(unitF) + ' = ' + num(d.unit, 2) + ' g/mol；每形成一個' + d.link[0] + '放出 1 個 H<sub>2</sub>O（端基不計時寫成 2n）。',
-          ' Repeating unit ' + fH(unitF) + ' = ' + num(d.unit, 2) + ' g/mol; every ' + d.link[1] + ' bond formed gives off one H<sub>2</sub>O' + (d.ab ? '.' : ' (written 2n when the chain ends are ignored).')) +
+        (d.ab ? T('乳酸 ' + fH(d.A.f) + '（' + num(d.A.M, 2) + ' g/mol）一個分子上就有 –OH 與 –COOH，自己就能連成長鏈。',
+          'Lactic acid ' + fH(d.A.f) + ' (' + num(d.A.M, 2) + ' g/mol) carries both –OH and –COOH, so it can join up on its own.')
+          : T(d.A.zh + ' ' + fH(d.A.f) + '（' + num(d.A.M, 2) + '）＋ ' + d.B.zh + ' ' + fH(d.B.f) + '（' + num(d.B.M, 2) + ' g/mol）。',
+            cap(d.A.en) + ' ' + fH(d.A.f) + ' (' + num(d.A.M, 2) + ') + ' + d.B.en + ' ' + fH(d.B.f) + ' (' + num(d.B.M, 2) + ' g/mol).')) +
+        T('重複單位 ' + fH(unitF) + ' = ' + num(d.unit, 2) + ' g/mol；每形成一個' + d.link[0] + '放出 1 個 H<sub>2</sub>O（端基不計時寫成 2n）。',
+          ' Repeating unit ' + fH(unitF) + ' = ' + num(d.unit, 2) + ' g/mol; every ' + d.link[1] + ' bond formed gives off one H<sub>2</sub>O' + (d.ab ? '.' : ' (written 2n when the chain ends are ignored).')) +
         '<br><span class="use">' + T('用途：' + USE[state.pair][0], 'Uses: ' + USE[state.pair][1]) + '</span>';
     }
   }
   function rowCond(r) {
-    if (r.mode === 'add') return sigf(r.init * 100, 2) + '%' + T('，', ', ') + (r.term === 'comb' ? T('結合', 'comb.') : T('歧化', 'disp.'));
+    if (r.mode === 'add') return sigf(r.init * 100, 2) + ' %' + T('，', ', ') + (r.term === 'comb' ? T('結合', 'comb.') : T('歧化', 'disp.'));
     return (r.ab ? T('AB 單體', 'AB monomer') : 'q = ' + num(r.q, 4)) + T('，', ', ') + (r.dry ? T('除水', 'water removed') : T('密閉', 'closed'));
   }
   function rowName(r) {
@@ -1161,7 +1171,7 @@
       const d = PC.COND[k];
       const mons = d.ab ? T(d.A.zh, cap(d.A.en)) + ' ' + fH(d.A.f) : T(d.A.zh, cap(d.A.en)) + ' ' + fH(d.A.f) + ' + ' + T(d.B.zh, cap(d.B.en)) + ' ' + fH(d.B.f);
       const ms = d.ab ? num(d.A.M, 2) : num(d.A.M, 2) + ' + ' + num(d.B.M, 2);
-      h += '<tr><td class="l">' + mons + '</td><td>' + ms + '</td><td class="l">' + T(d.zh, cap(d.en)) + T('（', ' (') + num(d.unit, 2) + ' g/mol' + T('，放出水）', ', water given off)') + '</td><td class="l">' + T(USE[k][0], USE[k][1]) + '</td></tr>';
+      h += '<tr><td class="l">' + mons + '</td><td>' + ms + '</td><td class="l">' + T(d.zh, cap(d.en)) + T('（', ' (') + num(d.unit, 2) + ' g/mol' + T('，放出水）', ', water given off)') + '</td><td class="l">' + T(USE[k][0], USE[k][1]) + '</td></tr>';
     });
     el.innerHTML = h + '</tbody>';
   }
@@ -1202,7 +1212,7 @@
     if (!!d.ab !== ratioAb) { ratioAb = !!d.ab; setSlider(elRatio, d.ab ? 1 : state.q, qToPos); }
     $('ratioLabel').textContent = d.ab ? T('莫耳比（AB 單體，固定 1:1）', 'Mole ratio (AB monomer, always 1 : 1)')
       : state.pair === 'nylon66' ? T('莫耳比 n(己二酸) : n(己二胺)', 'Mole ratio n(diacid) : n(diamine)') : T('莫耳比 n(對苯二甲酸) : n(乙二醇)', 'Mole ratio n(diacid) : n(diol)');
-    $('inito').textContent = sigf(state.init * 100, 3) + '%';
+    $('inito').textContent = sigf(state.init * 100, 3) + ' %';
     $('ratioo').textContent = d.ab ? '1.0000' : num(state.q, 4);
     elDry.checked = state.dry;
   }
@@ -1307,7 +1317,7 @@
   });
   elInit.addEventListener('input', function () {
     const v = Math.max(PC.I_MIN, Math.min(PC.I_MAX, readInit()));
-    $('inito').textContent = sigf(v * 100, 3) + '%';
+    $('inito').textContent = sigf(v * 100, 3) + ' %';
     if (Math.abs(v - state.init) < 1e-12) return;
     state.init = v; changed();
   });
@@ -1383,7 +1393,7 @@
       hud: function () {
         const L = lite || { t: 0, conv: 0, Xn: 0 };
         return {
-          tl: (host3.clientWidth < 560 ? 't = ' : T('放大示意（未依比例）・t = ', 'Magnified sketch (not to scale) · t = ')) + sigf(L.t, 3) + ' s' + (state.running ? '' : T('（暫停）', ' (paused)')),
+          tl: (host3.clientWidth < 560 ? 't = ' : T('放大示意（未依比例）・t = ', 'Magnified sketch (not to scale) · t = ')) + sigf(L.t, 3) + ' s' + (state.running ? '' : T('（暫停）', ' (paused)')),
           tr: (sim.kind === 'add' ? T('轉化率 ', 'Conversion ') : 'p = ') + pct(L.conv, 1) + ' · Xn = ' + (L.Xn > 0 ? big(L.Xn, 3) : '—')
         };
       },
@@ -1474,4 +1484,33 @@
   resize();
   schedule();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：分子不會晃動，按「開始反應」照樣可以做實驗。', 'Reduced motion is on: the molecules stay still, but “Start” works as usual.'));
+
+  // 相關實驗卡在接近頁尾時載入。只替卡片文字建立上下標節點。
+  const notesSection = document.querySelector('.notes');
+  function formatRelatedCards() {
+    const related = notesSection.parentNode.querySelector('.related');
+    if (!related) return false;
+    related.querySelectorAll('.module p').forEach(function (p) {
+      if (p.childElementCount) return;
+      const text = p.textContent;
+      const pattern = /<(sub|sup)>([^<>]+)<\/\1>/g;
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for (const match of text.matchAll(pattern)) {
+        fragment.append(text.slice(end, match.index));
+        const script = document.createElement(match[1]);
+        script.textContent = match[2];
+        fragment.appendChild(script);
+        end = match.index + match[0].length;
+      }
+      if (end) { fragment.append(text.slice(end)); p.replaceChildren(fragment); }
+    });
+    return true;
+  }
+  if (notesSection && !formatRelatedCards()) {
+    const observer = new MutationObserver(function () {
+      if (formatRelatedCards()) observer.disconnect();
+    });
+    observer.observe(notesSection.parentNode, { childList: true });
+  }
 })();

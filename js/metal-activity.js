@@ -9,6 +9,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const MC = window.MetalCore, LD = window.LabDraw;
   if (!MC || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -210,7 +220,7 @@
   }
   function descTube(tb) {
     const what = T(nm(tb.metal) + (MC.METALS[tb.metal].alk ? '' : '片') + ' → ', nm(tb.metal) + ' → ') + chemHTML(liqStr(tb.liquid));
-    const cond = (tb.kind === 'water' ? '' : sigf(tb.c, 3) + ' mol/L、'.replace('、', T('、', ', '))) + num(tb.T, 0) + ' °C' + (tb.salt ? T('、加鹽', ', salt') : '');
+    const cond = (tb.kind === 'water' ? '' : sigf(tb.c, 3) + ' mol/L、'.replace('、', T('、', ', '))) + num(tb.T, 0) + ' °C' + (tb.salt ? T('、加鹽', ', salt') : '');
     return what + T('（', ' (') + cond + T('）', ')');
   }
   function record(tu) {
@@ -308,7 +318,7 @@
   let W = 0, H = 0, cols = 6, rowH = 380;
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = cv.clientWidth || 600;
+    W = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width'))) || 600;
     cols = W < 560 ? 3 : 6;
     const rows = RACK / cols;
     rowH = rows === 1 ? 380 : Math.max(270, Math.min(320, W * 0.78));
@@ -694,7 +704,7 @@
     let x = g.cx - (hw + bw) / 2;
     LD.haloText(ctx, head, x, y1, col.muted, 'left', 'alphabetic', '600 11px ' + FONT);
     chemText(ctx, body, x + hw, y1, { px: 12 });
-    const line2 = (tb.kind === 'water' ? '' : sigf(tb.c, 2) + ' M · ') + num(tb.T, 0) + ' °C' + (tb.salt ? ' · NaCl' : '');
+    const line2 = (tb.kind === 'water' ? '' : sigf(tb.c, 2) + ' M · ') + num(tb.T, 0) + ' °C' + (tb.salt ? ' · NaCl' : '');
     LD.haloText(ctx, line2, g.cx, y2, tb.T >= 50 ? col.pos : col.muted, 'center', 'alphabetic', '11px ' + FONT);
     // 進度：觀察中畫進度條，觀察完畫 ✓ 或 ✗
     const pw = Math.min(g.cw - 16, 56), px = g.cx - pw / 2, py = y2 + 6;
@@ -851,27 +861,27 @@
     let e = equationHTML(tb);
     if (tb.logK != null) {
       const tiny = tb.eEq < MC.REACT_E;
-      e += '<br><span class="k">ΔE° = ' + num(tb.dE, 3) + ' V　K = ' + powHTML(tb.logK) + (tiny ? T('　（K 很小：幾乎不反應）', ' (K is tiny: practically no reaction)') : tb.logK < 3 && tb.logK > -3 ? T('　（K 接近 1：停在半路）', ' (K near 1: stops part-way)') : '') + '</span>';
+      e += '<br><span class="k">ΔE° = ' + num(tb.dE, 3) + ' V　K = ' + powHTML(tb.logK) + (tiny ? T('　（K 很小：幾乎不反應）', ' (K is tiny: practically no reaction)') : tb.logK < 3 && tb.logK > -3 ? T('　（K 接近 1：停在半路）', ' (K near 1: stops part-way)') : '') + '</span>';
     }
     if (tb.metal === 'Al' && (tb.type === 'disp' || tb.type === 'acid')) e += '<br><span class="k">' + (tb.hasCl ? T('有 Cl<sup>−</sup>', 'Cl<sup>−</sup> present') : T('沒有 Cl<sup>−</sup>', 'no Cl<sup>−</sup>')) + '</span>';
     eq.innerHTML = e;
     const rows = [];
     const add = function (dt, dd, sm) { rows.push('<dt>' + dt + '</dt><dd>' + dd + (sm ? '<small>' + sm + '</small>' : '') + '</dd>'); };
-    add(T('時間', 'Time'), num(tu.t / 60, 1) + ' min', tu.done ? T('觀察完畢', 'observation finished') : !state.running ? T('暫停中', 'paused') : T('觀察中', 'observing'));
+    add(T('時間', 'Time'), num(tu.t / 60, 1) + ' min', tu.done ? T('觀察完畢', 'observation finished') : !state.running ? T('暫停中', 'paused') : T('觀察中', 'observing'));
     const m0 = tb.n0 * MC.METALS[tb.metal].M;
-    add(T(nm(tb.metal) + '（未反應）', nm(tb.metal) + ' left'), num(s.metalLeft * MC.METALS[tb.metal].M, 1) + ' mg', T('原來 ', 'from ') + num(m0, 1) + ' mg');
+    add(T(nm(tb.metal) + '（未反應）', nm(tb.metal) + ' left'), num(s.metalLeft * MC.METALS[tb.metal].M, 1) + ' mg', T('原來 ', 'from ') + num(m0, 1) + ' mg');
     if (tb.type === 'disp') {
-      add(T('析出的' + nm(tb.liquid), nm(tb.liquid) + ' deposited'), num(s.depMg, 1) + ' mg', sigf(s.dep, 3) + ' mmol');
-      add(T('金屬片質量變化', 'Change in strip mass'), (s.dm > 0 ? '+' : '') + num(s.dm, 1) + ' mg');
+      add(T('析出的' + nm(tb.liquid), nm(tb.liquid) + ' deposited'), num(s.depMg, 1) + ' mg', sigf(s.dep, 3) + ' mmol');
+      add(T('金屬片質量變化', 'Change in strip mass'), (s.dm > 0 ? '+' : '') + num(s.dm, 1) + ' mg');
     }
     Object.keys(s.ions).forEach(function (k) {
-      if (k === 'H') add('[H<sup>+</sup>]', concHTML(s.ions.H) + ' mol/L');
-      else add('[' + chemHTML(ionStr(k)) + ']', concHTML(s.ions[k]) + ' mol/L');
+      if (k === 'H') add('[H<sup>+</sup>]', concHTML(s.ions.H) + ' mol/L');
+      else add('[' + chemHTML(ionStr(k)) + ']', concHTML(s.ions[k]) + ' mol/L');
     });
-    if (tb.type === 'acid' || tb.type === 'water') add(T('氫氣', 'Hydrogen'), num(s.h2, 2) + ' mL', '25 °C, 1 atm');
+    if (tb.type === 'acid' || tb.type === 'water') add(T('氫氣', 'Hydrogen'), num(s.h2, 2) + ' mL', '25 °C, 1 atm');
     if (s.pH != null) add('pH', num(s.pH, 2), tu.phph ? (s.pH >= 8.2 ? T('酚酞：粉紅色', 'phenolphthalein: pink') : T('酚酞：無色', 'phenolphthalein: colourless')) : '');
-    s.ppt.forEach(function (p) { add(T('沉澱 ', 'Precipitate ') + chemHTML(PPT_NAME[p.kind] || p.kind), sigf(p.mmol, 3) + ' mmol'); });
-    add(T('溫度', 'Temperature'), num(tb.T, 0) + ' °C');
+    s.ppt.forEach(function (p) { add(T('沉澱 ', 'Precipitate ') + chemHTML(PPT_NAME[p.kind] || p.kind), sigf(p.mmol, 3) + ' mmol'); });
+    add(T('溫度', 'Temperature'), num(tb.T, 0) + ' °C');
     ro.innerHTML = rows.join('');
   }
   /** 一支試管的現象描述（觀察紀錄用） */
@@ -882,14 +892,14 @@
     if (ppt.AgCl) out.push(T('加鹽時生成白色 AgCl 沉澱', 'white AgCl formed when the salt was added'));
     if (rec.type === 'disp' && rec.reacted) {
       const col_ = { Cu: T('紅棕色', 'red-brown'), Ag: T('銀灰色晶枝', 'silvery crystals'), Pb: T('灰黑色晶枝', 'dark grey crystals'), Sn: T('灰色針狀晶體', 'grey needles') }[rec.liquid] || T('灰黑色', 'dark grey');
-      out.push(T('表面析出' + col_ + '的' + nm(rec.liquid) + '（' + num(rec.depMg, 0) + ' mg）', col_ + ' ' + nm(rec.liquid) + ' deposited (' + num(rec.depMg, 0) + ' mg)'));
+      out.push(T('表面析出' + col_ + '的' + nm(rec.liquid) + '（' + num(rec.depMg, 0) + ' mg）', col_ + ' ' + nm(rec.liquid) + ' deposited (' + num(rec.depMg, 0) + ' mg)'));
       if (rec.liquid === 'Cu') out.push(rec.oxFrac <= 0.05 ? T('藍色褪去', 'blue colour gone') : T('藍色變淡', 'blue colour paler'));
       if (rec.metal === 'Cu') out.push(T('溶液變藍', 'solution turns blue'));
       if (rec.metal === 'Fe') out.push(T('溶液帶淡綠色', 'pale green solution'));
       if (rec.metalFrac <= 0.02) out.push(T(nm(rec.metal) + '片完全溶解', 'the ' + nm(rec.metal) + ' strip dissolved completely'));
       if (!rec.atEq || (rec.oxFrac > 0.05 && rec.metalFrac > 0.05)) out.push(T('反應停在半路', 'stops part-way'));
     } else if (rec.type === 'acid' && rec.reacted) {
-      out.push(T('冒出氣泡（H<sub>2</sub> ' + num(rec.h2, 1) + ' mL）', 'bubbles (H<sub>2</sub> ' + num(rec.h2, 1) + ' mL)'));
+      out.push(T('冒出氣泡（H<sub>2</sub> ' + num(rec.h2, 1) + ' mL）', 'bubbles (H<sub>2</sub> ' + num(rec.h2, 1) + ' mL)'));
       if (rec.r0 < 0.5) out.push(T('非常緩慢', 'very slowly'));
       if (rec.metal === 'Fe') out.push(T('溶液變淡綠色', 'solution turns pale green'));
       if (rec.metalFrac <= 0.02) out.push(T('金屬完全溶解', 'metal dissolved completely'));
@@ -899,7 +909,7 @@
       else if (m === 'Na') out.push(T('浮在水面熔成小球、四處游動、冒泡', 'floats, melts into a ball, darts about, fizzes'));
       else if (m === 'Ca') out.push(T('沉在底部、穩定冒泡', 'sinks and bubbles steadily'));
       else out.push(T('緩慢冒出細小氣泡', 'small bubbles, slowly'));
-      out.push('H<sub>2</sub> ' + num(rec.h2, 1) + ' mL');
+      out.push('H<sub>2</sub> ' + num(rec.h2, 1) + ' mL');
       Object.keys(ppt).forEach(function (k) {
         if (k === 'AgCl' || k === 'PbCl2') return;
         const cname = k === 'CuOH2' ? T('藍色', 'blue ') : k === 'Ag2O' ? T('棕黑色', 'brown-black ') : k === 'FeOH2' ? T('淡綠白色', 'pale green-white ') : T('白色', 'white ');
@@ -917,7 +927,7 @@
     if (!recs.length) h += '<tr class="empty"><td colspan="7">' + T('還沒有觀察完畢的試管。', 'No tube has finished yet.') + '</td></tr>';
     recs.forEach(function (r) {
       const tu = rack.find(function (x) { return x.rec === r; });
-      const cond = (r.kind === 'water' ? '' : sigf(r.c, 2) + ' M<br>') + num(r.T, 0) + ' °C' + (r.salt ? '<br>NaCl' : '') + (r.phph ? '<br>' + T('酚酞', 'phth.') : '');
+      const cond = (r.kind === 'water' ? '' : sigf(r.c, 2) + ' M<br>') + num(r.T, 0) + ' °C' + (r.salt ? '<br>NaCl' : '') + (r.phph ? '<br>' + T('酚酞', 'phth.') : '');
       h += '<tr' + (tu && tu === selected ? ' class="sel"' : '') + ' data-id="' + r.id + '"><td>' + (r.demo ? T('示範', 'demo') : r.id) + '</td><td title="' + nm(r.metal) + '">' + r.metal + '</td><td>' + chemHTML(liqStr(r.liquid)) +
         '</td><td>' + cond + '</td><td class="obs">' + phenomena(r) + '</td><td>' + (r.dm > 0 ? '+' : '') + num(r.dm, 1) + '</td><td class="' + (r.reacted ? 'yes' : 'no') + '">' +
         (r.reacted ? T('有反應', 'reacted') : T('無反應', 'none')) + '</td></tr>';
@@ -1032,13 +1042,13 @@
     $('liqSeg').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.l === state.liq)); });
   }
   function refreshOutputs() {
-    $('conco').textContent = sigf(state.c, 3) + ' mol/L';
-    $('tempo').textContent = num(state.T, 0) + ' °C';
+    $('conco').textContent = sigf(state.c, 3) + ' mol/L';
+    $('tempo').textContent = num(state.T, 0) + ' °C';
   }
   function updateCondHint() {
     const h = [];
     if (state.liq === 'H2O') h.push(T('純水不用濃度設定。', 'The concentration does not apply to pure water.'));
-    if (MC.METALS[state.metal].alk) h.push(T(nm(state.metal) + '是 1.0 mmol 的小塊，放進任何液體都會先和水反應。', 'The ' + nm(state.metal) + ' is a small 1.0 mmol piece; in any liquid it reacts with the water first.'));
+    if (MC.METALS[state.metal].alk) h.push(T(nm(state.metal) + '是 1.0 mmol 的小塊，放進任何液體都會先和水反應。', 'The ' + nm(state.metal) + ' is a small 1.0 mmol piece; in any liquid it reacts with the water first.'));
     if (state.liq === state.metal) h.push(T('同一種金屬和它自己的離子不會有淨反應。', 'A metal in a solution of its own ions has no net reaction.'));
     $('condHint').textContent = h.join(' ');
   }
@@ -1077,7 +1087,7 @@
     if (!state.unknown) { el.innerHTML = ''; return; }
     if (!revealed) { el.innerHTML = T('這一輪用了 ' + unkTubes + ' 支含有 X、Y、Z 的試管。', 'Tubes with X, Y or Z this round: ' + unkTubes + '.'); return; }
     const u = env.unk;
-    el.innerHTML = T('揭曉：', 'Revealed: ') + ['X', 'Y', 'Z'].sort(function (a, b) { return u[a] - u[b]; }).map(function (k) { return k + '（E° = ' + num(u[k], 2) + ' V）'; }).join(' > ') +
+    el.innerHTML = T('揭曉：', 'Revealed: ') + ['X', 'Y', 'Z'].sort(function (a, b) { return u[a] - u[b]; }).map(function (k) { return k + '（E° = ' + num(u[k], 2) + ' V）'; }).join(' > ') +
       T('。這一輪之後排對不再算任務。', '. Ranking this round no longer counts for missions.');
   }
   function refreshAll() {
@@ -1113,7 +1123,8 @@
   });
   // 點畫布選試管；左右鍵換試管
   cv.addEventListener('click', function (ev) {
-    const b = cv.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+    const b = cv.getBoundingClientRect();
+    const x = (ev.clientX - b.left) * W / b.width, y = (ev.clientY - b.top) * H / b.height;
     for (let i = 0; i < rack.length; i++) {
       const g = slotGeo(i);
       if (Math.abs(x - g.cx) <= g.cw / 2 && y >= g.top0 && y <= g.top0 + rowH) { acted = true; select(rack[i]); return; }
@@ -1177,7 +1188,7 @@
         const tu = selected;
         if (!tu) return { tl: T('沒有選取試管', 'No tube selected'), tr: '' };
         return { tl: (tu.demo ? T('示範試管', 'Demo tube') : T('第 ' + tu.id + ' 支試管', 'Tube ' + tu.id)) + T('：', ': ') + equationHTML(tu.tb).split('<br>')[0],
-          tr: 't = ' + num(tu.t / 60, 1) + ' min' + (tu.done ? T('（已記錄）', ' (recorded)') : '') };
+          tr: 't = ' + num(tu.t / 60, 1) + ' min' + (tu.done ? T('（已記錄）', ' (recorded)') : '') };
       },
       ionStr: ionStr, chemHTML: chemHTML,
       running: function () { return state.running; },
@@ -1294,4 +1305,17 @@
   setRunning(state.running);
   refreshAll();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始觀察。', 'Reduced motion is on: press “Play” to start observing.'));
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('readout').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();

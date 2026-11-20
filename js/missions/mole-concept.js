@@ -4,7 +4,7 @@
   if (!window.LabMission) return;
 
   // 事件（js/mole-concept.js 只在使用者操作之後回報）：
-  //   'weigh'：天平任一盤改變 { a, b: { id, phase（s／l／g）, unit（g／mol／N／V）, m（g）, n（mol）, N（個）, atoms, electrons, V（cm³） }, cond（stp／rt）, dm（b.m − a.m） }
+  //   'weigh'：天平任一盤改變 { a, b: { id, phase（s／l／g）, unit（g／mol／N／V）, m（g）, n（mol）, N（個）, atoms, electrons, V（cm^3） }, cond（stp／rt）, dm（b.m − a.m） }
   //   'zoom'：放大鏡改變 { id（H2O／Cu／NaCl／Au）, L（視野邊長 nm）, Nview（邊長 L 的立方體裡的粒子數）, V0（mL）, N0, cuts, Nleft, src（'zoom' 拖放大倍率／'cut' 對切） }
   //   'film'：油膜法按「計算」{ method（last／fit）, h（nm）, hTrue, hErr, k, NA, NAerr, points, r2, grids[], edge, powders[], droppers[], cal[], Ds[] }
   const wg = function (ev) { return ev.type === 'weigh' && ev.data && ev.data.a && ev.data.b ? ev.data : null; };
@@ -19,43 +19,43 @@
     {
       id: 'mole-concept-1', level: 1,
       title: { zh: '天平平衡', en: 'Balance the scales' },
-      desc: { zh: '左右兩盤放不同的物質（每盤至少 1 g），讓天平平衡（質量相差不超過 0.01 g）。', en: 'Put a different substance on each pan (at least 1 g each) and make the balance level (masses within 0.01 g).' },
+      desc: { zh: '左右兩盤放不同的物質（每盤至少 1 g），讓天平平衡（質量相差不超過 0.01 g）。', en: 'Put a different substance on each pan (at least 1 g each) and make the balance level (masses within 0.01 g).' },
       check: function (ev) { const d = wg(ev); return !!d && d.a.id !== d.b.id && d.a.m >= 1 && d.b.m >= 1 && Math.abs(d.dm) <= 0.01; }
     },
     {
       id: 'mole-concept-2', level: 2,
-      title: { zh: '秤出 0.250 莫耳', en: 'Weigh out 0.250 mol' },
-      desc: { zh: '用「克」當單位，在其中一盤秤出 0.250 mol 的氯化鈉（莫耳數誤差 0.2% 以內）。', en: 'Using “g” as the unit, weigh out 0.250 mol of sodium chloride on one pan (amount within 0.2%).' },
+      title: { zh: '秤出 0.250 莫耳', en: 'Weigh out 0.250 mol' },
+      desc: { zh: '用「克」當單位，在其中一盤秤出 0.250 mol 的氯化鈉（莫耳數誤差 0.2 % 以內）。', en: 'Using “g” as the unit, weigh out 0.250 mol of sodium chloride on one pan (amount within 0.2 %).' },
       check: function (ev) { const d = wg(ev); return !!d && pans(d).some(function (p) { return p.id === 'NaCl' && p.unit === 'g' && Math.abs(p.n - 0.25) <= 0.0005; }); }
     },
     {
       id: 'mole-concept-3', level: 3,
       title: { zh: '一樣多，不一樣重', en: 'Same count, different weight' },
-      desc: { zh: '兩盤放不同的物質，粒子數相同（相差 0.5% 以內），而且一盤的質量是另一盤的 5 倍以上。', en: 'Put different substances on the pans with the same number of particles (within 0.5%), one pan at least 5 times heavier than the other.' },
+      desc: { zh: '兩盤放不同的物質，粒子數相同（相差 0.5 % 以內），而且一盤的質量是另一盤的 5 倍以上。', en: 'Put different substances on the pans with the same number of particles (within 0.5 %), one pan at least 5 times heavier than the other.' },
       check: function (ev) { const d = wg(ev); return !!d && d.a.id !== d.b.id && relEq(d.a.N, d.b.N, 0.005) && ratio(d.a.m, d.b.m) >= 5; }
     },
     {
       id: 'mole-concept-4', level: 3,
       title: { zh: '看見一個水分子', en: 'One water molecule' },
-      desc: { zh: '在「放大到原子」拖動放大倍率，把視野縮小到只裝得下大約 1 個水分子（0.8–1.25 個）。', en: 'In “Zoom to atoms”, zoom in until the field of view holds about one water molecule (0.8–1.25).' },
+      desc: { zh: '在「放大到原子」拖動放大倍率，把視野縮小到只裝得下大約 1 個水分子（0.8–1.25 個）。', en: 'In “Zoom to atoms”, zoom in until the field of view holds about one water molecule (0.8–1.25).' },
       check: function (ev) { const d = zm(ev); return !!d && d.src === 'zoom' && d.id === 'H2O' && d.Nview >= 0.8 && d.Nview <= 1.25; }
     },
     {
       id: 'mole-concept-5', level: 4,
       title: { zh: '亞佛加厥定律', en: "Avogadro's law" },
-      desc: { zh: '兩盤放兩種不同的氣體，體積相同（相差 0.5% 以內），但一盤的質量是另一盤的 10 倍以上。', en: 'Put two different gases on the pans with equal volumes (within 0.5%), one at least 10 times heavier than the other.' },
+      desc: { zh: '兩盤放兩種不同的氣體，體積相同（相差 0.5 % 以內），但一盤的質量是另一盤的 10 倍以上。', en: 'Put two different gases on the pans with equal volumes (within 0.5 %), one at least 10 times heavier than the other.' },
       check: function (ev) { const d = wg(ev); return !!d && d.a.phase === 'g' && d.b.phase === 'g' && d.a.id !== d.b.id && relEq(d.a.V, d.b.V, 0.005) && ratio(d.a.m, d.b.m) >= 10; }
     },
     {
       id: 'mole-concept-6', level: 5,
       title: { zh: '原子一樣多', en: 'The same number of atoms' },
-      desc: { zh: '兩盤放不同的物質，原子總數相同（相差 0.5% 以內），但粒子（分子）數相差 1.2 倍以上。', en: 'Put different substances on the pans with the same total number of atoms (within 0.5%) but particle (molecule) numbers differing by a factor of 1.2 or more.' },
+      desc: { zh: '兩盤放不同的物質，原子總數相同（相差 0.5 % 以內），但粒子（分子）數相差 1.2 倍以上。', en: 'Put different substances on the pans with the same total number of atoms (within 0.5 %) but particle (molecule) numbers differing by a factor of 1.2 or more.' },
       check: function (ev) { const d = wg(ev); return !!d && d.a.id !== d.b.id && relEq(d.a.atoms, d.b.atoms, 0.005) && ratio(d.a.N, d.b.N) >= 1.2; }
     },
     {
       id: 'mole-concept-7', level: 5,
       title: { zh: '單分子膜', en: 'A monolayer' },
-      desc: { zh: '用油膜法量出油酸單分子膜的厚度，誤差 10% 以內（粉要撒薄、油膜不可碰到盤邊）。', en: 'Use the oil-film method to measure the thickness of the oleic-acid monolayer to within 10% (thin powder, and the film must not touch the edge of the tray).' },
+      desc: { zh: '用油膜法量出油酸單分子膜的厚度，誤差 10 % 以內（粉要撒薄、油膜不可碰到盤邊）。', en: 'Use the oil-film method to measure the thickness of the oleic-acid monolayer to within 10 % (thin powder, and the film must not touch the edge of the tray).' },
       check: function (ev) { const d = fm(ev); return !!d && clean(d) && Math.abs(d.hErr) <= 0.10; }
     },
     {
@@ -67,19 +67,19 @@
     {
       id: 'mole-concept-9', level: 7,
       title: { zh: '面積與體積成正比', en: 'Area is proportional to volume' },
-      desc: { zh: '量至少 4 個不同滴數的油膜面積，用「直線斜率」求膜厚，誤差 3% 以內。', en: 'Measure the film area for at least 4 different numbers of drops and use the “Line slope” to find the thickness to within 3%.' },
+      desc: { zh: '量至少 4 個不同滴數的油膜面積，用「直線斜率」求膜厚，誤差 3 % 以內。', en: 'Measure the film area for at least 4 different numbers of drops and use the “Line slope” to find the thickness to within 3 %.' },
       check: function (ev) { const d = fm(ev); return !!d && clean(d) && d.method === 'fit' && d.points >= 4 && Math.abs(d.hErr) <= 0.03; }
     },
     {
       id: 'mole-concept-10', level: 9,
       title: { zh: '分子不是方塊', en: 'Molecules are not cubes' },
-      desc: { zh: '膜厚誤差 2% 以內，並調整「分子的長寬比」，讓估計的亞佛加厥數與 6.022 × 10²³ 相差 3% 以內。', en: 'Measure the thickness to within 2% and adjust the “aspect ratio of a molecule” so that your estimate of Avogadro’s number is within 3% of 6.022 × 10²³.' },
+      desc: { zh: '膜厚誤差 2 % 以內，並調整「分子的長寬比」，讓估計的亞佛加厥數與 6.022 × 10<sup>23</sup> 相差 3 % 以內。', en: 'Measure the thickness to within 2 % and adjust the “aspect ratio of a molecule” so that your estimate of Avogadro’s number is within 3 % of 6.022 × 10<sup>23</sup>.' },
       check: function (ev) { const d = fm(ev); return !!d && clean(d) && Math.abs(d.hErr) <= 0.02 && Math.abs(d.NAerr) <= 0.03; }
     },
     {
       id: 'mole-concept-11', level: 10,
       title: { zh: '精密油膜', en: 'Precision oil film' },
-      desc: { zh: '全部用 0.5 cm 的格子數面積，量出膜厚，誤差 1% 以內。', en: 'Count the area with the 0.5 cm grid only and measure the thickness to within 1%.' },
+      desc: { zh: '全部用 0.5 cm 的格子數面積，量出膜厚，誤差 1 % 以內。', en: 'Count the area with the 0.5 cm grid only and measure the thickness to within 1 %.' },
       check: function (ev) { const d = fm(ev); return !!d && clean(d) && d.grids.every(function (g) { return g === 0.5; }) && Math.abs(d.hErr) <= 0.01; }
     },
 

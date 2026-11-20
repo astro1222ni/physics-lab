@@ -24,73 +24,73 @@
     {
       id: 'redox-titration-1', level: 1,
       title: { zh: '紫色留下來了', en: 'The purple stays' },
-      desc: { zh: '用 KMnO4 滴定 Fe2+，加到整瓶溶液出現淡淡的粉紅色、不再消失。', en: 'Titrate Fe2+ with KMnO4 until the whole flask turns a faint pink that no longer fades.' },
+      desc: { zh: '用 KMnO<sub>4</sub> 滴定 Fe<sup>2+</sup>，加到整瓶溶液出現淡淡的粉紅色、不再消失。', en: 'Titrate Fe<sup>2+</sup> with KMnO<sub>4</sub> until the whole flask turns a faint pink that no longer fades.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'fe' && d.pink && d.excess; }
     },
     {
       id: 'redox-titration-2', level: 2,
       title: { zh: '讀彎月面的上緣', en: 'Read the top of the meniscus' },
-      desc: { zh: '讓滴定管的讀數停在 15.00 mL。KMnO4 顏色太深，看不到彎月面的最低點，要讀上緣。', en: 'Stop with the burette reading exactly 15.00 mL. KMnO4 is too dark to see the bottom of the meniscus, so read its top edge.' },
+      desc: { zh: '讓滴定管的讀數停在 15.00 mL。KMnO<sub>4</sub> 顏色太深，看不到彎月面的最低點，要讀上緣。', en: 'Stop with the burette reading exactly 15.00 mL. KMnO<sub>4</sub> is too dark to see the bottom of the meniscus, so read its top edge.' },
       check: function (ev) { const d = ev.data; return isS(ev) && Math.abs(d.Vread - 15) < 1e-6; }
     },
     {
       id: 'redox-titration-3', level: 3,
       title: { zh: '自身指示劑', en: 'Its own indicator' },
-      desc: { zh: 'Fe2+ ← KMnO4：整瓶出現淡粉紅色時按「記錄終點」，終點和當量點相差不超過 0.10 mL。', en: 'Fe2+ ← KMnO4: press “Record end point” when the whole flask turns faint pink; it must be within 0.10 mL of the equivalence point.' },
+      desc: { zh: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>：整瓶出現淡粉紅色時按「記錄終點」，終點和當量點相差不超過 0.10 mL。', en: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>: press “Record end point” when the whole flask turns faint pink; it must be within 0.10 mL of the equivalence point.' },
       check: function (ev) { const d = ev.data; return isE(ev) && d.sys === 'fe' && d.pink && Math.abs(d.err) <= 0.1 + E; }
     },
     {
       id: 'redox-titration-4', level: 4,
       title: { zh: '一半的鐵', en: 'Half of the iron' },
-      desc: { zh: 'Fe2+ ← KMnO4，鉑電極放在瓶中：剛好加入當量點一半的體積（±0.05 mL），看電位計：這時電位等於 Fe3+/Fe2+ 的標準還原電位。', en: 'Fe2+ ← KMnO4 with the platinum electrode in the flask: add exactly half the equivalence volume (±0.05 mL) and read the potential — it equals the standard reduction potential of Fe3+/Fe2+.' },
+      desc: { zh: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>，鉑電極放在瓶中：剛好加入當量點一半的體積（±0.05 mL），看電位計：這時電位等於 Fe<sup>3+</sup>/Fe<sup>2+</sup> 的標準還原電位。', en: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub> with the platinum electrode in the flask: add exactly half the equivalence volume (±0.05 mL) and read the potential — it equals the standard reduction potential of Fe<sup>3+</sup>/Fe<sup>2+</sup>.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'fe' && d.meter && d.E != null && Math.abs(d.V - d.Veq / 2) <= 0.05 + E; }
     },
     {
       id: 'redox-titration-5', level: 4,
       title: { zh: '1 : 5 的設計', en: 'Designed with 1 : 5' },
-      desc: { zh: 'Fe2+ ← KMnO4：自己調濃度與體積，讓當量點剛好是 20.00 mL，再用顏色找到終點（誤差 ≤ 0.10 mL）。', en: 'Fe2+ ← KMnO4: choose the concentrations and volume so that the equivalence point is exactly 20.00 mL, then find the end point by colour (within 0.10 mL).' },
+      desc: { zh: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>：自己調濃度與體積，讓當量點剛好是 20.00 mL，再用顏色找到終點（誤差 ≤ 0.10 mL）。', en: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>: choose the concentrations and volume so that the equivalence point is exactly 20.00 mL, then find the end point by colour (within 0.10 mL).' },
       check: function (ev) { const d = ev.data; return isE(ev) && d.sys === 'fe' && d.pink && Math.abs(d.Veq - 20) <= 0.01 + E && Math.abs(d.err) <= 0.1 + E; }
     },
     {
       id: 'redox-titration-6', level: 5,
       title: { zh: '當量點的電位', en: 'Potential at equivalence' },
-      desc: { zh: 'Fe2+ ← KMnO4，鉑電極放在瓶中：剛好停在當量點，電位計的讀數和加權平均公式算出的當量點電位相差不超過 0.02 V。', en: 'Fe2+ ← KMnO4 with the platinum electrode in: stop exactly at the equivalence point, where the meter must agree with the weighted-average equivalence potential within 0.02 V.' },
+      desc: { zh: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub>，鉑電極放在瓶中：剛好停在當量點，電位計的讀數和加權平均公式算出的當量點電位相差不超過 0.02 V。', en: 'Fe<sup>2+</sup> ← KMnO<sub>4</sub> with the platinum electrode in: stop exactly at the equivalence point, where the meter must agree with the weighted-average equivalence potential within 0.02 V.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'fe' && d.meter && d.E != null && Math.abs(d.V - d.Veq) <= 1e-6 && Math.abs(d.E - d.Eeq) <= 0.02 + E; }
     },
     {
       id: 'redox-titration-7', level: 5,
       title: { zh: '溫熱的草酸', en: 'Warm oxalic acid' },
-      desc: { zh: '草酸 ← KMnO4：先把加熱板調到 60–80 °C，再用顏色找到終點（誤差 ≤ 0.10 mL）。', en: 'Oxalic acid ← KMnO4: set the hot plate to 60–80 °C first, then find the end point by colour (within 0.10 mL).' },
+      desc: { zh: '草酸 ← KMnO<sub>4</sub>：先把加熱板調到 60–80 °C，再用顏色找到終點（誤差 ≤ 0.10 mL）。', en: 'Oxalic acid ← KMnO<sub>4</sub>: set the hot plate to 60–80 °C first, then find the end point by colour (within 0.10 mL).' },
       check: function (ev) { const d = ev.data; return isE(ev) && d.sys === 'ox' && d.T >= 60 - E && d.T <= 80 + E && d.pink && Math.abs(d.err) <= 0.1 + E; }
     },
     {
       id: 'redox-titration-8', level: 6,
       title: { zh: '越反應越快', en: 'Faster and faster' },
-      desc: { zh: '草酸 ← KMnO4，加熱到 55–85 °C：第一滴的粉紅色要等 20 秒以上才褪去；同一瓶後來再加一滴，粉紅色 2 秒內就消失。', en: 'Oxalic acid ← KMnO4 at 55–85 °C: the pink of the first drop takes more than 20 s to fade; later in the same flask, a drop’s pink vanishes within 2 s.' },
+      desc: { zh: '草酸 ← KMnO<sub>4</sub>，加熱到 55–85 °C：第一滴的粉紅色要等 20 秒以上才褪去；同一瓶後來再加一滴，粉紅色 2 秒內就消失。', en: 'Oxalic acid ← KMnO<sub>4</sub> at 55–85 °C: the pink of the first drop takes more than 20 s to fade; later in the same flask, a drop’s pink vanishes within 2 s.' },
       check: function (ev) { const d = ev.data; return isF(ev) && oxal(d) && d.T >= 55 - E && d.T <= 85 + E && !d.first && d.firstDur != null && d.firstDur >= 20 && d.dur <= 2; }
     },
     {
       id: 'redox-titration-9', level: 6,
       title: { zh: '三十秒不褪色', en: 'Thirty seconds of pink' },
-      desc: { zh: '用已知濃度的系統（Fe2+ 或草酸），等粉紅色維持 30 秒以上（可以用「快轉等待」）再按「記錄終點」，終點和當量點相差不超過 0.05 mL。', en: 'With a known system (Fe2+ or oxalic acid): Wait until the pink has lasted at least 30 s (“Fast-forward” helps) before you press “Record end point”; it must be within 0.05 mL of the equivalence point.' },
+      desc: { zh: '用已知濃度的系統（Fe<sup>2+</sup> 或草酸），等粉紅色維持 30 秒以上（可以用「快轉等待」）再按「記錄終點」，終點和當量點相差不超過 0.05 mL。', en: 'With a known system (Fe<sup>2+</sup> or oxalic acid): Wait until the pink has lasted at least 30 s (“Fast-forward” helps) before you press “Record end point”; it must be within 0.05 mL of the equivalence point.' },
       check: function (ev) { const d = ev.data; return isE(ev) && !d.mystery && d.pink && d.held >= 30 - E && Math.abs(d.err) <= 0.05 + E; }
     },
     {
       id: 'redox-titration-10', level: 7,
       title: { zh: '標定過錳酸鉀', en: 'Standardise the permanganate' },
-      desc: { zh: '「標定 KMnO4」：用精稱的草酸晶體滴定濃度未知的 KMnO4，算出它的濃度，核對答案：誤差不超過 0.5%（揭曉答案之後不算）。', en: '“Standardise KMnO4”: titrate a weighed amount of oxalic acid crystals with the KMnO4 of unknown concentration, work out its concentration and check: within 0.5% (not after “Reveal”).' },
+      desc: { zh: '「標定 KMnO<sub>4</sub>」：用精稱的草酸晶體滴定濃度未知的 KMnO<sub>4</sub>，算出它的濃度，核對答案：誤差不超過 0.5 %（揭曉答案之後不算）。', en: '“Standardise KMnO<sub>4</sub>”: titrate a weighed amount of oxalic acid crystals with the KMnO<sub>4</sub> of unknown concentration, work out its concentration and check: within 0.5 % (not after “Reveal”).' },
       check: function (ev) { const d = ev.data; return isA(ev) && isFinite(d.errMn) && Math.abs(d.errMn) <= 0.005 + E; }
     },
     {
       id: 'redox-titration-11', level: 8,
       title: { zh: '未知的鐵', en: 'The unknown iron' },
-      desc: { zh: '用同一瓶濃度未知的 KMnO4 滴定「未知 Fe2+」，算出 Fe2+ 的濃度，核對答案：誤差不超過 1%（要先標定；揭曉答案之後不算）。', en: 'Titrate the “Unknown Fe2+” with the same KMnO4 of unknown concentration and work out the Fe2+ concentration: within 1% (standardise first; not after “Reveal”).' },
+      desc: { zh: '用同一瓶濃度未知的 KMnO<sub>4</sub> 滴定「未知 Fe<sup>2+</sup>」，算出 Fe<sup>2+</sup> 的濃度，核對答案：誤差不超過 1 %（要先標定；揭曉答案之後不算）。', en: 'Titrate the “Unknown Fe<sup>2+</sup>” with the same KMnO<sub>4</sub> of unknown concentration and work out the Fe<sup>2+</sup> concentration: within 1 % (standardise first; not after “Reveal”).' },
       check: function (ev) { const d = ev.data; return isA(ev) && isFinite(d.errFe) && Math.abs(d.errFe) <= 0.01 + E; }
     },
     {
       id: 'redox-titration-12', level: 10,
       title: { zh: '大師：兩瓶定案', en: 'Master: two flasks, case closed' },
-      desc: { zh: '同一組未知樣品，標定只准用一瓶、未知 Fe2+ 也只准用一瓶，KMnO4 與 Fe2+ 的濃度誤差都不超過 0.3%（揭曉答案之後不算）。', en: 'For one set of unknowns, use a single flask to standardise and a single flask of the unknown Fe2+: both the KMnO4 and the Fe2+ concentrations within 0.3% (not after “Reveal”).' },
+      desc: { zh: '同一組未知樣品，標定只准用一瓶、未知 Fe<sup>2+</sup> 也只准用一瓶，KMnO<sub>4</sub> 與 Fe<sup>2+</sup> 的濃度誤差都不超過 0.3 %（揭曉答案之後不算）。', en: 'For one set of unknowns, use a single flask to standardise and a single flask of the unknown Fe<sup>2+</sup>: both the KMnO<sub>4</sub> and the Fe<sup>2+</sup> concentrations within 0.3 % (not after “Reveal”).' },
       check: function (ev) {
         const d = ev.data;
         return isA(ev) && d.flasksStd <= 1 && d.flasksMx <= 1 && isFinite(d.errMn) && isFinite(d.errFe) && Math.abs(d.errMn) <= 0.003 + E && Math.abs(d.errFe) <= 0.003 + E;

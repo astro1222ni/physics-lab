@@ -20,49 +20,49 @@
     {
       id: 'colligative-properties-1', level: 1,
       title: { zh: '糖水比較難結冰', en: 'Sugar water is harder to freeze' },
-      desc: { zh: '量一種溶液的凝固點，按「記錄結果」，凝固點下降 ΔTf 至少 0.30 K。', en: 'Measure the freezing point of a solution and press “Record result”: the freezing-point depression ΔTf must be at least 0.30 K.' },
+      desc: { zh: '量一種溶液的凝固點，按「記錄結果」，凝固點下降 ΔTf 至少 0.30 K。', en: 'Measure the freezing point of a solution and press “Record result”: the freezing-point depression ΔTf must be at least 0.30 K.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'f' && d.solute !== 'none' && d.dT >= 0.3; }
     },
     {
       id: 'colligative-properties-2', level: 2,
       title: { zh: '沸點上升', en: 'Boiling-point elevation' },
-      desc: { zh: '量一種溶液的沸點，按「記錄結果」，沸點上升 ΔTb 至少 0.20 K。', en: 'Measure the boiling point of a solution and press “Record result”: the boiling-point elevation ΔTb must be at least 0.20 K.' },
+      desc: { zh: '量一種溶液的沸點，按「記錄結果」，沸點上升 ΔTb 至少 0.20 K。', en: 'Measure the boiling point of a solution and press “Record result”: the boiling-point elevation ΔTb must be at least 0.20 K.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'b' && d.solute !== 'none' && d.dT >= 0.2; }
     },
     {
       id: 'colligative-properties-3', level: 2,
       title: { zh: '純溶劑的平台', en: 'The plateau of a pure solvent' },
-      desc: { zh: '把溶質的質量調成 0，量出純溶劑的凝固點，和表列值相差不超過 0.05 K。', en: 'Set the mass of solute to 0 and measure the freezing point of the pure solvent to within 0.05 K of the table value.' },
+      desc: { zh: '把溶質的質量調成 0，量出純溶劑的凝固點，和表列值相差不超過 0.05 K。', en: 'Set the mass of solute to 0 and measure the freezing point of the pure solvent to within 0.05 K of the table value.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'f' && d.solute === 'none' && within(d.absErr, 0.05); }
     },
     {
       id: 'colligative-properties-4', level: 3,
       title: { zh: '過冷', en: 'Supercooling' },
-      desc: { zh: '不加晶種，讓液體冷到比它的凝固點低 2.0 K 以上才開始結晶。', en: 'Without a seed crystal, let the liquid cool to at least 2.0 K below its freezing point before it starts to crystallise.' },
+      desc: { zh: '不加晶種，讓液體冷到比它的凝固點低 2.0 K 以上才開始結晶。', en: 'Without a seed crystal, let the liquid cool to at least 2.0 K below its freezing point before it starts to crystallise.' },
       check: function (ev) { const d = tk(ev); return !!d && d.mode === 'f' && d.nucleated && !d.seeded && d.superDepth >= 2.0; }
     },
     {
       id: 'colligative-properties-5', level: 4,
       title: { zh: '撒鹽的路面', en: 'Salt on the road' },
-      desc: { zh: '量出氯化鈉水溶液的凝固點，在 −3.0 °C 以下。', en: 'Measure the freezing point of a sodium chloride solution: it must be −3.0 °C or lower.' },
+      desc: { zh: '量出氯化鈉水溶液的凝固點，在 −3.0 °C 以下。', en: 'Measure the freezing point of a sodium chloride solution: it must be −3.0 °C or lower.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'f' && d.solvent === 'water' && d.solute === 'NaCl' && d.Tmeas <= -3.0; }
     },
     {
       id: 'colligative-properties-6', level: 5,
       title: { zh: '外插法', en: 'Extrapolation' },
-      desc: { zh: '用「外插法」量出一種溶液的凝固點下降（至少 0.30 K），和理論值相差不超過 2%。', en: 'Use “Extrapolate” to measure the freezing-point depression of a solution (at least 0.30 K) to within 2% of the theoretical value.' },
+      desc: { zh: '用「外插法」量出一種溶液的凝固點下降（至少 0.30 K），和理論值相差不超過 2 %。', en: 'Use “Extrapolate” to measure the freezing-point depression of a solution (at least 0.30 K) to within 2 % of the theoretical value.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'f' && known(d) && d.method === 'ext' && d.dT >= 0.3 && within(d.err, 0.02); }
     },
     {
       id: 'colligative-properties-7', level: 5,
       title: { zh: '回流', en: 'Under reflux' },
-      desc: { zh: '裝上「回流冷凝管」，量出一種溶液的沸點上升，和理論值相差不超過 3%。', en: 'With the “Reflux condenser” on, measure the boiling-point elevation of a solution to within 3% of the theoretical value.' },
+      desc: { zh: '裝上「回流冷凝管」，量出一種溶液的沸點上升，和理論值相差不超過 3 %。', en: 'With the “Reflux condenser” on, measure the boiling-point elevation of a solution to within 3 % of the theoretical value.' },
       check: function (ev) { const d = me(ev); return !!d && d.mode === 'b' && d.reflux && known(d) && within(d.err, 0.03); }
     },
     {
       id: 'colligative-properties-8', level: 5,
       title: { zh: '數一數粒子', en: 'Counting particles' },
-      desc: { zh: '不勾「理想 i」，量出氯化鈉水溶液（至少 0.20 mol/kg）的凡特荷夫因子 i，在 1.85～1.95 之間。', en: 'With “Ideal i” off, measure the van ’t Hoff factor i of a sodium chloride solution (at least 0.20 mol/kg): it must be between 1.85 and 1.95.' },
+      desc: { zh: '不勾「理想 i」，量出氯化鈉水溶液（至少 0.20 mol/kg）的凡特荷夫因子 i，在 1.85～1.95 之間。', en: 'With “Ideal i” off, measure the van ’t Hoff factor i of a sodium chloride solution (at least 0.20 mol/kg): it must be between 1.85 and 1.95.' },
       check: function (ev) { const d = me(ev); return !!d && d.solvent === 'water' && d.solute === 'NaCl' && !d.ideal && d.m >= 0.2 - 1e-9 && d.iExp != null && d.iExp >= 1.85 && d.iExp <= 1.95; }
     },
     {
@@ -74,19 +74,19 @@
     {
       id: 'colligative-properties-10', level: 7,
       title: { zh: 'ΔT 與 m 成正比', en: 'ΔT is proportional to m' },
-      desc: { zh: '同一種溶劑、同一種溶質，記錄 4 個以上不同濃度（最大是最小的 3 倍以上），ΔT—m 圖過原點直線的斜率與 i·K 相差不超過 3%，決定係數 R² 至少 0.998。', en: 'With the same solvent and solute, record 4 or more concentrations (the largest at least 3 times the smallest); the line through the origin on the ΔT–m graph must have a slope within 3% of i·K and R² of at least 0.998.' },
+      desc: { zh: '同一種溶劑、同一種溶質，記錄 4 個以上不同濃度（最大是最小的 3 倍以上），ΔT—m 圖過原點直線的斜率與 i·K 相差不超過 3 %，決定係數 R<sup>2</sup> 至少 0.998。', en: 'With the same solvent and solute, record 4 or more concentrations (the largest at least 3 times the smallest); the line through the origin on the ΔT–m graph must have a slope within 3 % of i·K and R<sup>2</sup> of at least 0.998.' },
       check: function (ev) { const d = me(ev), L = d && d.line; return !!L && L.n >= 4 && L.span >= 3 - 1e-9 && within(L.k / L.kTh - 1, 0.03) && L.r2 >= 0.998; }
     },
     {
       id: 'colligative-properties-11', level: 8,
       title: { zh: '未知物的分子量', en: 'Molar mass of the unknown' },
-      desc: { zh: '在未知物 X 卡片按「開始」，量出 X 的 ΔT，在揭曉之前算出它的莫耳質量，誤差在 3% 以內。', en: 'Press “Start” on the unknown X card, measure ΔT for X, and work out its molar mass to within 3% before revealing the answer.' },
+      desc: { zh: '在未知物 X 卡片按「開始」，量出 X 的 ΔT，在揭曉之前算出它的莫耳質量，誤差在 3 % 以內。', en: 'Press “Start” on the unknown X card, measure ΔT for X, and work out its molar mass to within 3 % before revealing the answer.' },
       check: function (ev) { return okAnswer(an(ev), 0.03); }
     },
     {
       id: 'colligative-properties-12', level: 9,
       title: { zh: '精密測分子量', en: 'Precise molar mass' },
-      desc: { zh: '在揭曉之前算出未知物 X 的莫耳質量，誤差在 1% 以內。', en: 'Work out the molar mass of unknown X to within 1% before revealing the answer.' },
+      desc: { zh: '在揭曉之前算出未知物 X 的莫耳質量，誤差在 1 % 以內。', en: 'Work out the molar mass of unknown X to within 1 % before revealing the answer.' },
       check: function (ev) { return okAnswer(an(ev), 0.01); }
     },
     {

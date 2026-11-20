@@ -5,7 +5,7 @@
  *
  * 平衡：Kc = [E][W] / ([A][B]) = nE·nW / (nA·nB)（Δn = 0，體積消去、沒有單位）。
  *   K(25 °C) = 4.0：Berthelot 與 Péan de Saint-Gilles（1862）等莫耳的乙酸＋乙醇，極限約 2/3 的酸變成酯，
- *   K = (2/3)² ÷ (1/3)² = 4。他們也發現極限「幾乎與溫度無關、幾乎與酸和醇的種類無關」，
+ *   K = (2/3)^2 ÷ (1/3)^2 = 4。他們也發現極限「幾乎與溫度無關、幾乎與酸和醇的種類無關」，
  *   所以九種酯都用同一個 K（真實值大約在 3–5.5 之間，例如甲醇約 5；〈模擬方法〉有寫）。
  *   ΔH° = −3.8 kJ/mol（液態，由生成焓算：乙酸乙酯 −479.86〔NIST，Wiberg & Waldron 1991〕、水 −285.83、
  *   乙酸 −484.3、乙醇 −277.6〔OpenStax《Chemistry 2e》附錄 G〕），凡特荷夫：K(T) = K(298.15 K)·exp(−ΔH/R·(1/T − 1/298.15))。
@@ -14,7 +14,7 @@
  * 速率（模擬用的估計值，數量級接近課本實驗：濃硫酸、70–80 °C 迴流約 1 小時接近平衡；不加催化劑的室溫要好幾個月）：
  *   dξ/dt = k(T)/V · (nA·nB − nE·nW / K)        （ξ：反應進度 mol，V：混合液體積 L）
  *   k(T) = 立體因子 × [ ku·酸自催化 · e^(−Eu/R(1/T−1/T0)) + kc · [H2SO4] · e^(−Ec/R(1/T−1/T0)) ]
- *   ku = 1.0×10⁻⁸ L/(mol·s)、Eu = 65 kJ/mol；kc = 2.4×10⁻⁵ L²/(mol²·s)、Ec = 55 kJ/mol；[H2SO4] 上限算 2 M。
+ *   ku = 1.0×10^−8 L/(mol·s)、Eu = 65 kJ/mol；kc = 2.4×10^−5 L^2/(mol^2·s)、Ec = 55 kJ/mol；[H2SO4] 上限算 2 M。
  *   立體因子：甲酸 3、乙酸 1、丁酸 0.6；甲醇 1.5、乙醇 1、異戊醇 0.9（只表現「越小越快」的趨勢）；甲酸較強，自催化 ×10。
  * 體積：各成分純液體體積相加（忽略混合時的體積變化）＋濃硫酸。迴流冷凝管讓揮發的物質流回，不計損失。
  * 分子篩（3A）：每次加 20 g，吸水量為本身質量的 20%（0.222 mol 水），吸水速率 = nW·(1 − 已吸/容量) / 900 s。
@@ -103,7 +103,7 @@
   function yieldAtRatio(r, Kv) {
     if (r <= 0) return 0;
     if (Math.abs(Kv - 1) < 1e-12) return r / (1 + r) / Math.min(1, r);
-    // (K−1)x² − K(1+r)x + K r = 0 的較小根，除以限量試劑
+    // (K−1)x^2 − K(1+r)x + K r = 0 的較小根，除以限量試劑
     const a = Kv - 1, b = -Kv * (1 + r), c = Kv * r;
     const x = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
     return x / Math.min(1, r);
@@ -126,6 +126,7 @@
     run.Tmin = run.T; run.Tmax = run.T;
     return run;
   }
+  function canHeat(run) { return run.A + run.B + run.E + run.W > 0; }
   function volume(run, n) {
     n = n || run;
     const a = ACIDS[run.acid], b = ALCS[run.alc], e = ester(run.acid, run.alc);
@@ -439,7 +440,7 @@
     SIEVE_TAU: SIEVE_TAU, FLASKS: FLASKS, O18: O18, CH_MAX: CH_MAX,
     ACIDS: ACIDS, ALCS: ALCS, ESTERS: ESTERS, WATER: WATER, ester: ester,
     K: K, Q: Q, solveXi: solveXi, equilibrium: equilibrium, yieldAtRatio: yieldAtRatio,
-    createRun: createRun, volume: volume, cH: cH, kRate: kRate, rate: rate, sieveRate: sieveRate, step: step, setT: setT,
+    createRun: createRun, canHeat: canHeat, volume: volume, cH: cH, kRate: kRate, rate: rate, sieveRate: sieveRate, step: step, setT: setT,
     addSpecies: addSpecies, addSieves: addSieves, inTotal: inTotal, formed: formed, yieldOf: yieldOf, hydrolysisOf: hydrolysisOf,
     atEquilibrium: atEquilibrium, direction: direction, esterM: esterM, waterM: waterM, workup: workup,
     molecule: molecule, mechanism: mechanism, mechAt: mechAt, dist: dist, angle: angle

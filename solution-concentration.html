@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Concentration and Preparing Solutions | Astro Ni Lab">濃度與溶液配製｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 濃度與溶液配製頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .sc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -42,7 +42,7 @@
     .sc .stepbar button { padding: 4px 6px; line-height: 1.2; }
     .sc .stepbar button.go { border-color: var(--accent); color: var(--accent); font-weight: 700; box-shadow: 0 0 0 1px var(--accent) inset; }
     .sc .stepbar button.primary { font-weight: 700; }
-    .sc .stepbar button:disabled, .sc .toolbar button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    .sc .stepbar button:disabled, .sc .toolbar button:disabled { opacity: 1; color: var(--muted); background: var(--bg); border-style: dashed; cursor: not-allowed; box-shadow: none; }
     .sc .stepbar button.primary:disabled { background: var(--surface); color: var(--muted); border-color: var(--border); }
     .sc .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 2px 0; }
     .sc .toolbar > button { flex: 1 1 auto; }
@@ -114,6 +114,34 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    .labdeck #stepBar { display: flex; flex-wrap: wrap; gap: 4px; }
+    .labdeck #stepBar[hidden] { display: none; }
+    .labdeck #stepBar button { min-height: 44px; }
   </style>
 </head>
 <body data-en-ready>
@@ -124,8 +152,13 @@
       <p data-en="Weigh a solid on a balance, dissolve it in a beaker and make it up to the mark in a volumetric flask; or dilute a stock solution with a pipette. Every slip — not rinsing the beaker, overshooting the mark, reading the mark from above, forgetting the water of crystallisation, filling while the solution is still hot — shifts the concentration, and you see by how much. Then convert between mass percentage, ppm, molarity and molality using real solution densities.">用天平秤固體、在燒杯裡溶解，再用量瓶定容；或用吸量管吸取原液稀釋。每一個小失誤——沒洗燒杯、加水超過刻度、從上方看刻度線、忘了結晶水、溶液還熱就定容——都會讓濃度偏離，而且看得到偏了多少。再用真實的溶液密度，在重量百分率、ppm、體積莫耳濃度、重量莫耳濃度之間換算。</p>
     </header>
 
-    <p class="try-hint" data-en="Try it: copper(II) sulfate pentahydrate is selected. Work out how many grams make 100 mL of 0.100 M solution, type it as the mass, then press the buttons under the picture from left to right. The blue gets paler as you add water, and evens out when you invert the flask.">試試看：已選好五水硫酸銅。先算出配 100 mL、0.100 M 要秤幾克，填進質量，再由左到右按畫面下方的按鈕。加水時藍色變淡，倒轉搖勻後顏色才均勻。</p>
-    <div class="lab sc">
+    <p class="try-hint" data-en="Try it: copper(II) sulfate pentahydrate is selected. Work out how many grams make 100 mL of 0.100 M solution, type it as the mass, then follow the buttons in Preparation steps. The blue gets paler as you add water, and evens out when you invert the flask.">試試看：已選好五水硫酸銅。先算出配 100 mL、0.100 M 要秤幾克，填進質量，再依序按「配製步驟」裡的按鈕。加水時藍色變淡，倒轉搖勻後顏色才均勻。</p>
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab sc" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -135,31 +168,38 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="溶液配製的器材：天平、燒杯、量瓶，以及刻度線的放大圖" data-en-aria-label="Apparatus: balance, beaker, volumetric flask and a magnified view of the mark"></canvas>
-        <div id="view3"></div>
-        <div class="stepbar" id="stepBar">
-          <button type="button" id="bDissolve" data-en="Dissolve">溶解</button>
-          <button type="button" id="bCool" data-en="Let it cool">等它冷卻</button>
-          <button type="button" id="bTransfer" data-en="Into the flask">移入量瓶</button>
-          <button type="button" id="bRinse" data-en="Rinse beaker">洗燒杯</button>
-          <button type="button" id="bPipette" data-en="Pipette in">吸取放入</button>
-          <button type="button" id="bPour" data-en="Fill to the neck">加水到瓶頸</button>
-          <button type="button" id="bSquirt" data-en="Wash bottle +1 mL">洗瓶 +1 mL</button>
-          <button type="button" id="bDrop" data-en="Dropper +1 drop">滴管 +1 滴</button>
-          <button type="button" id="bDraw" data-en="Draw off excess">吸出多餘</button>
-          <button type="button" id="bShake" data-en="Stopper &amp; invert">蓋塞搖勻</button>
-          <button type="button" id="bDone" class="primary" data-en="Done">完成</button>
-        </div>
-        <div class="toolbar">
-          <button type="button" id="bNew" data-en="New flask" title="倒掉這一瓶，同樣的設定重新開始" data-en-title="Empty this flask and start again (settings kept)">重新配一瓶</button>
-          <button type="button" id="clearAll" data-en="Clear all" title="清除「我的溶液」紀錄與圖表" data-en-title="Clear the record of your solutions and the graph">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="溶液配製的器材：天平、燒杯、量瓶，以及刻度線的放大圖" data-en-aria-label="Apparatus: balance, beaker, volumetric flask and a magnified view of the mark"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="toolbar">
+            <button type="button" id="bNew" data-en="New flask" title="倒掉這一瓶，同樣的設定重新開始" data-en-title="Empty this flask and start again (settings kept)">重新配一瓶</button>
+            <button type="button" id="clearAll" data-en="Clear all" title="清除「我的溶液」紀錄與圖表" data-en-title="Clear the record of your solutions and the graph">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <p class="hint" id="stageHint" data-en="The magnifier shows the mark as your eye sees it. One drop from the dropper is about 0.05 mL.">放大鏡裡是眼睛看到的刻度線。滴管一滴約 0.05 mL。</p>
+        <p class="hint" id="stageHint" data-en="The magnifier shows the mark as your eye sees it. One drop from the dropper is about 0.05 mL.">放大鏡裡是眼睛看到的刻度線。滴管一滴約 0.05 mL。</p>
       </div>
 
       <aside class="panel">
+        <section class="card">
+          <h2 data-en="Preparation steps">配製步驟</h2>
+          <div class="stepbar" id="stepBar">
+            <button type="button" id="bDissolve" data-en="Dissolve">溶解</button>
+            <button type="button" id="bCool" data-en="Let it cool">等它冷卻</button>
+            <button type="button" id="bTransfer" data-en="Into the flask">移入量瓶</button>
+            <button type="button" id="bRinse" data-en="Rinse beaker">洗燒杯</button>
+            <button type="button" id="bPipette" data-en="Pipette in">吸取放入</button>
+            <button type="button" id="bPour" data-en="Fill to the neck">加水到瓶頸</button>
+            <button type="button" id="bSquirt" data-en="Wash bottle +1 mL">洗瓶 +1 mL</button>
+            <button type="button" id="bDrop" data-en="Dropper +1 drop">滴管 +1 滴</button>
+            <button type="button" id="bDraw" data-en="Draw off excess">吸出多餘</button>
+            <button type="button" id="bShake" data-en="Stopper &amp; invert">蓋塞搖勻</button>
+            <button type="button" id="bDone" class="primary" data-en="Done">完成</button>
+          </div>
+        </section>
         <section class="card">
           <div class="seg3 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="weigh" aria-pressed="true" data-en="Weigh a solid">秤量配製</button>
@@ -181,9 +221,9 @@
           <div id="diluteCtl" hidden>
             <h3 data-en="Stock solution">原液</h3>
             <div class="seg4 wrap2" id="stockSeg" role="group" aria-label="原液" data-en-aria-label="Stock solution">
-              <button type="button" data-stock="Cu1" aria-pressed="true" data-en-html="1.00 M CuSO&lt;sub&gt;4&lt;/sub&gt;">1.00 M CuSO<sub>4</sub></button>
-              <button type="button" data-stock="Na2" aria-pressed="false" data-en="2.00 M NaCl">2.00 M NaCl</button>
-              <button type="button" data-stock="OH1" aria-pressed="false" data-en="1.00 M NaOH">1.00 M NaOH</button>
+              <button type="button" data-stock="Cu1" aria-pressed="true" data-en-html="1.00 M CuSO&lt;sub&gt;4&lt;/sub&gt;">1.00 M CuSO<sub>4</sub></button>
+              <button type="button" data-stock="Na2" aria-pressed="false" data-en="2.00 M NaCl">2.00 M NaCl</button>
+              <button type="button" data-stock="OH1" aria-pressed="false" data-en="1.00 M NaOH">1.00 M NaOH</button>
               <button type="button" data-stock="last" aria-pressed="false" disabled data-en="Last flask">上一瓶</button>
             </div>
             <div class="slider"><label for="V1" data-en="Volume drawn into the pipette">吸量管吸取的體積</label><output id="V1o"></output>
@@ -208,10 +248,10 @@
         <section class="card" id="flaskCard">
           <h2 data-en="Flask and target">量瓶與目標</h2>
           <div class="seg4" id="flaskSeg" role="group" aria-label="量瓶" data-en-aria-label="Volumetric flask">
-            <button type="button" data-vf="50" aria-pressed="false">50 mL</button>
-            <button type="button" data-vf="100" aria-pressed="true">100 mL</button>
-            <button type="button" data-vf="250" aria-pressed="false">250 mL</button>
-            <button type="button" data-vf="500" aria-pressed="false">500 mL</button>
+            <button type="button" data-vf="50" aria-pressed="false">50 mL</button>
+            <button type="button" data-vf="100" aria-pressed="true">100 mL</button>
+            <button type="button" data-vf="250" aria-pressed="false">250 mL</button>
+            <button type="button" data-vf="500" aria-pressed="false">500 mL</button>
           </div>
           <div class="slider"><label for="target" data-en="Target concentration">目標濃度</label><output id="targeto"></output>
             <input id="target" type="range" min="0" max="1000" step="1" value="0"></div>
@@ -229,7 +269,7 @@
       </aside>
     </div>
 
-    <div class="lab sc">
+    <div class="lab sc" data-scene="graphs">
       <div class="stage">
         <h2 data-en="My solutions">我的溶液</h2>
         <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -271,13 +311,13 @@
         \[ C_M = \frac{1000\,d\,P\%}{100\,M} \]
         \[ C_m = \frac{1000\,P\%}{(100 - P\%)\,M} \]
       </div>
-      <p data-en-html="\(M\) is the molar mass of the solute. In very dilute water solutions \(d \approx 1\) g/mL, so \(C_M \approx C_m\) and 1 ppm ≈ 1 mg/L.">\(M\) 是溶質的莫耳質量。很稀的水溶液 \(d \approx 1\) g/mL，所以 \(C_M \approx C_m\)、1 ppm ≈ 1 mg/L。</p>
+      <p data-en-html="\(M\) is the molar mass of the solute. In very dilute water solutions \(d \approx 1\) g/mL, so \(C_M \approx C_m\) and 1 ppm ≈ 1 mg/L.">\(M\) 是溶質的莫耳質量。很稀的水溶液 \(d \approx 1\) g/mL，所以 \(C_M \approx C_m\)、1 ppm ≈ 1 mg/L。</p>
       <h3 data-en="Weighing and dilution">秤量配製與稀釋</h3>
       <div class="formula multi">
         \[ W = C_M \times V \times M \]
         \[ C_1 V_1 = C_2 V_2 \]
       </div>
-      <p data-en-html="Diluting adds only solvent, so the moles of solute do not change. For a hydrate the molar mass includes the water of crystallisation: 0.0100 mol of CuSO&lt;sub&gt;4&lt;/sub&gt; is 2.497 g of CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O but only 1.596 g of anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;.">稀釋只加溶劑，溶質的莫耳數不變。秤含結晶水的固體時，莫耳質量要把結晶水算進去：0.0100 mol 的 CuSO<sub>4</sub> 是 2.497 g 的 CuSO<sub>4</sub>·5H<sub>2</sub>O，無水 CuSO<sub>4</sub> 卻只要 1.596 g。</p>
+      <p data-en-html="Diluting adds only solvent, so the moles of solute do not change. For a hydrate the molar mass includes the water of crystallisation: 0.0100 mol of CuSO&lt;sub&gt;4&lt;/sub&gt; is 2.497 g of CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O but only 1.596 g of anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;.">稀釋只加溶劑，溶質的莫耳數不變。秤含結晶水的固體時，莫耳質量要把結晶水算進去：0.0100 mol 的 CuSO<sub>4</sub> 是 2.497 g 的 CuSO<sub>4</sub>·5H<sub>2</sub>O，無水 CuSO<sub>4</sub> 卻只要 1.596 g。</p>
       <h3 data-en="Reading the mark: parallax">讀刻度線：視差</h3>
       <p data-en-html="The mark is a ring around the neck, and the bottom of the meniscus is at the centre of the neck, a distance \(r\) behind the front of the ring. If your eye is above the mark by an angle θ, the meniscus looks level with the mark while it is really \(r\tan\theta\) lower: the volume is short by \(\pi r^2 \cdot r\tan\theta\) and the concentration comes out too high. Looking up from below does the opposite. At eye level the front and back of the ring merge into one line.">刻度線是繞瓶頸一圈的環，彎月面的最低點在瓶頸中央，比環的前緣遠了 \(r\)。眼睛從刻度線上方以角度 θ 往下看時，液面看起來對齊，其實低了 \(r\tan\theta\)：體積少了 \(\pi r^2 \cdot r\tan\theta\)，濃度偏高。從下方往上看則相反。平視時，環的前後緣重疊成一條線。</p>
       <div class="formula">\[ \frac{\Delta C}{C} \approx \frac{\pi r^3 \tan\theta}{V} \]</div>
@@ -286,7 +326,7 @@
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en="Skip “Rinse beaker”: about 2–4% of the solute stays behind on the beaker and the glass rod. One rinse recovers most of it, two or three make the loss negligible.">不按「洗燒杯」：約 2–4% 的溶質留在燒杯與玻棒上。洗一次就救回大部分，洗兩、三次損失就可以忽略。</li>
+        <li data-en="Skip “Rinse beaker”: about 2–4 % of the solute stays behind on the beaker and the glass rod. One rinse recovers most of it, two or three make the loss negligible.">不按「洗燒杯」：約 2–4 % 的溶質留在燒杯與玻棒上。洗一次就救回大部分，洗兩、三次損失就可以忽略。</li>
         <li data-en="Move the eye up or down and fill until the meniscus looks level with the mark: looking down gives a solution that is too concentrated, looking up one that is too dilute.">把眼睛調高或調低，加水到「看起來」對齊：俯視配出的溶液偏濃，仰視偏稀。</li>
         <li data-en="Overshoot the mark, then draw the excess back out with the dropper: the level is right again, but the concentration is still too low — the liquid you removed carried solute with it.">加水超過刻度線，再用滴管吸出多餘的：液面對了，濃度卻還是偏低——吸出的液體也帶走了溶質。</li>
         <li data-en="After inverting, the level is a little below the mark (liquid stays on the stopper and the neck). Adding water now makes the solution too dilute.">搖勻後液面略低於刻度線（有液體沾在瓶塞與瓶頸上）。這時再補水，溶液就偏稀。</li>
@@ -296,27 +336,27 @@
 
       <h3 data-en="Questions for discussion">想一想</h3>
       <ol>
-        <li data-en-html="How many grams of CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O are needed for 250 mL of 0.200 M copper(II) sulfate solution? And of anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;?">配 250 mL、0.200 M 的硫酸銅溶液，要秤多少克 CuSO<sub>4</sub>·5H<sub>2</sub>O？如果用無水 CuSO<sub>4</sub> 呢？</li>
-        <li data-en="How many mL of 2.00 M NaCl are needed to make 500 mL of 0.0800 M NaCl?">要配 500 mL、0.0800 M 的 NaCl 溶液，需要 2.00 M NaCl 多少 mL？</li>
-        <li data-en="Concentrated sodium hydroxide solution of 40.0% by mass has a density of 1.43 g/mL. Find its molarity and its molality.">重量百分率 40.0% 的濃氫氧化鈉溶液，密度 1.43 g/mL。求它的體積莫耳濃度與重量莫耳濃度。</li>
+        <li data-en-html="How many grams of CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O are needed for 250 mL of 0.200 M copper(II) sulfate solution? And of anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;?">配 250 mL、0.200 M 的硫酸銅溶液，要秤多少克 CuSO<sub>4</sub>·5H<sub>2</sub>O？如果用無水 CuSO<sub>4</sub> 呢？</li>
+        <li data-en="How many mL of 2.00 M NaCl are needed to make 500 mL of 0.0800 M NaCl?">要配 500 mL、0.0800 M 的 NaCl 溶液，需要 2.00 M NaCl 多少 mL？</li>
+        <li data-en="Concentrated sodium hydroxide solution of 40.0 % by mass has a density of 1.43 g/mL. Find its molarity and its molality.">重量百分率 40.0 % 的濃氫氧化鈉溶液，密度 1.43 g/mL。求它的體積莫耳濃度與重量莫耳濃度。</li>
         <li data-en="For each mistake, is the concentration too high, too low or unchanged? (a) not rinsing the beaker; (b) looking down at the mark; (c) a wet flask; (d) adding water after inverting; (e) filling up a warm NaOH solution.">下列失誤使濃度偏高、偏低還是不變？(a) 沒洗燒杯；(b) 定容時俯視刻度線；(c) 量瓶裡原本有水；(d) 搖勻後再補水到刻度線；(e) NaOH 溶液還溫熱就定容。</li>
       </ol>
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="n = 0.200 × 0.250 = 0.0500 mol. CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O: 0.0500 × 249.7 = 12.48 g; anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;: 0.0500 × 159.6 = 7.98 g.">n = 0.200 × 0.250 = 0.0500 mol。CuSO<sub>4</sub>·5H<sub>2</sub>O：0.0500 × 249.7 = 12.48 g；無水 CuSO<sub>4</sub>：0.0500 × 159.6 = 7.98 g。</li>
-          <li data-en-html="V&lt;sub&gt;1&lt;/sub&gt; = 0.0800 × 500 ÷ 2.00 = 20.0 mL (use a 20 mL pipette, then make up to 500 mL).">V<sub>1</sub> = 0.0800 × 500 ÷ 2.00 = 20.0 mL（用 20 mL 吸量管，再定容到 500 mL）。</li>
-          <li data-en="1 L of solution weighs 1430 g, of which 572 g (14.3 mol) is NaOH and 858 g is water: 14.3 M and 14.3 ÷ 0.858 = 16.7 mol/kg.">1 L 溶液重 1430 g，其中 NaOH 572 g（14.3 mol）、水 858 g：14.3 M；14.3 ÷ 0.858 = 16.7 mol/kg。</li>
+          <li data-en-html="n = 0.200 × 0.250 = 0.0500 mol. CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O: 0.0500 × 249.7 = 12.48 g; anhydrous CuSO&lt;sub&gt;4&lt;/sub&gt;: 0.0500 × 159.6 = 7.98 g.">n = 0.200 × 0.250 = 0.0500 mol。CuSO<sub>4</sub>·5H<sub>2</sub>O：0.0500 × 249.7 = 12.48 g；無水 CuSO<sub>4</sub>：0.0500 × 159.6 = 7.98 g。</li>
+          <li data-en-html="V&lt;sub&gt;1&lt;/sub&gt; = 0.0800 × 500 ÷ 2.00 = 20.0 mL (use a 20 mL pipette, then make up to 500 mL).">V<sub>1</sub> = 0.0800 × 500 ÷ 2.00 = 20.0 mL（用 20 mL 吸量管，再定容到 500 mL）。</li>
+          <li data-en="1 L of solution weighs 1430 g, of which 572 g (14.3 mol) is NaOH and 858 g is water: 14.3 M and 14.3 ÷ 0.858 = 16.7 mol/kg.">1 L 溶液重 1430 g，其中 NaOH 572 g（14.3 mol）、水 858 g：14.3 M；14.3 ÷ 0.858 = 16.7 mol/kg。</li>
           <li data-en="(a) too low; (b) too high; (c) unchanged; (d) too low; (e) too high.">(a) 偏低；(b) 偏高；(c) 不變；(d) 偏低；(e) 偏高。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="The flask keeps track of the moles of solute and the mass of water in it. The volume of the solution is its total mass divided by its density, looked up in a table at 20 °C (volumes of solute and water do not simply add). The flasks are calibrated at 20 °C.">量瓶裡記錄溶質的莫耳數與水的質量。溶液的體積 = 總質量 ÷ 密度，密度查 20 °C 的表（溶質與水的體積不能直接相加）。量瓶以 20 °C 校正。</li>
-        <li data-en="The flask is drawn as a flat-bottomed sphere with a cylindrical neck; its volume up to the mark is exactly the nominal volume. Inner neck radius: 5.0, 6.0, 7.5 and 9.0 mm for the 50, 100, 250 and 500 mL flasks (rounded values close to class A flasks).">量瓶畫成底部截平的球加上圓柱形瓶頸，刻度線以下的容積剛好等於標示體積。瓶頸內半徑：50、100、250、500 mL 分別是 5.0、6.0、7.5、9.0 mm（接近 A 級量瓶的取整值）。</li>
-        <li data-en="Dissolving uses 40% of the flask volume of water. After pouring, 0.6 mL + 0.4% of the flask volume of solution stays on the beaker and glass rod; each rinse uses 10% of the flask volume of water. After inverting, 0.05 mL + 0.1% of the flask volume stays on the stopper and neck. One drop is 0.05 mL. An unrinsed pipette holds 0.02 mL + 0.5% of its volume of water.">溶解用量瓶體積 40% 的水。倒完後有 0.6 mL＋量瓶體積 0.4% 的溶液留在燒杯與玻棒上；每次洗燒杯用量瓶體積 10% 的水。搖勻後有 0.05 mL＋量瓶體積 0.1% 留在瓶塞與瓶頸。一滴 0.05 mL。沒潤洗的吸量管裡有 0.02 mL＋吸取體積 0.5% 的水。</li>
-        <li data-en="The temperature change on dissolving comes from the molar enthalpy of solution, taking the specific heat as 4.18 J/(g·K) and ignoring the beaker. A warm solution expands like pure water; the expansion of the glass is ignored.">溶解時的溫度變化由莫耳溶解熱計算，比熱取 4.18 J/(g·K)、不計燒杯吸熱。溫熱的溶液照純水的熱膨脹計算體積；玻璃的膨脹忽略不計。</li>
+        <li data-en="The flask keeps track of the moles of solute and the mass of water in it. The volume of the solution is its total mass divided by its density, looked up in a table at 20 °C (volumes of solute and water do not simply add). The flasks are calibrated at 20 °C.">量瓶裡記錄溶質的莫耳數與水的質量。溶液的體積 = 總質量 ÷ 密度，密度查 20 °C 的表（溶質與水的體積不能直接相加）。量瓶以 20 °C 校正。</li>
+        <li data-en="The flask is drawn as a flat-bottomed sphere with a cylindrical neck; its volume up to the mark is exactly the nominal volume. Inner neck radius: 5.0, 6.0, 7.5 and 9.0 mm for the 50, 100, 250 and 500 mL flasks (rounded values close to class A flasks).">量瓶畫成底部截平的球加上圓柱形瓶頸，刻度線以下的容積剛好等於標示體積。瓶頸內半徑：50、100、250、500 mL 分別是 5.0、6.0、7.5、9.0 mm（接近 A 級量瓶的取整值）。</li>
+        <li data-en="Dissolving uses 40 % of the flask volume of water. After pouring, 0.6 mL + 0.4 % of the flask volume of solution stays on the beaker and glass rod; each rinse uses 10 % of the flask volume of water. After inverting, 0.05 mL + 0.1 % of the flask volume stays on the stopper and neck. One drop is 0.05 mL. An unrinsed pipette holds 0.02 mL + 0.5 % of its volume of water.">溶解用量瓶體積 40 % 的水。倒完後有 0.6 mL＋量瓶體積 0.4 % 的溶液留在燒杯與玻棒上；每次洗燒杯用量瓶體積 10 % 的水。搖勻後有 0.05 mL＋量瓶體積 0.1 % 留在瓶塞與瓶頸。一滴 0.05 mL。沒潤洗的吸量管裡有 0.02 mL＋吸取體積 0.5 % 的水。</li>
+        <li data-en="The temperature change on dissolving comes from the molar enthalpy of solution, taking the specific heat as 4.18 J/(g·K) and ignoring the beaker. A warm solution expands like pure water; the expansion of the glass is ignored.">溶解時的溫度變化由莫耳溶解熱計算，比熱取 4.18 J/(g·K)、不計燒杯吸熱。溫熱的溶液照純水的熱膨脹計算體積；玻璃的膨脹忽略不計。</li>
         <li data-en="The colour of copper(II) sulfate is computed with Beer's law in three colour channels (illustrative absorption coefficients for red, green and blue light), with the path length equal to the width of the glassware.">硫酸銅的顏色用比爾定律在紅、綠、藍三個色頻計算（吸收係數是示意值），光程等於器材的寬度。</li>
         <li data-en="The 3D view uses the same flask shape, the same liquid level and the same colour. Drag it to look at the mark from above, from the side or from below.">3D 檢視用同一個量瓶形狀、同一個液面與顏色。拖曳轉動，從上方、側面、下方看刻度線。</li>
       </ul>
@@ -329,8 +369,8 @@
       <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: Senior-high chemistry · Matter and its changes (concentrations of solutions, preparing solutions).">課綱對應：高中化學・物質的組成與變化（溶液的濃度、溶液的配製）。</li>
-        <li data-en-html="Densities of NaCl, NaOH and CuSO&lt;sub&gt;4&lt;/sub&gt; solutions at 20 °C: &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Concentrative Properties of Aqueous Solutions (cross-checked with the Engineering ToolBox table and the Laliberté model). Density of pure water: CRC Handbook, Properties of Water in the Range 0–100 °C.">NaCl、NaOH、CuSO<sub>4</sub> 溶液 20 °C 的密度：《CRC Handbook of Chemistry and Physics》「水溶液的濃度性質」表（並與 Engineering ToolBox 的表、Laliberté 模型交叉核對）。純水的密度：同書「0–100 °C 水的性質」表。</li>
-        <li data-en-html="Molar enthalpies of solution (NaCl +3.88, NaOH −44.51, CuSO&lt;sub&gt;4&lt;/sub&gt; −73.25, CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O +11.5 kJ/mol) and solubilities at 20 °C: CRC Handbook. Atomic masses: IUPAC.">莫耳溶解熱（NaCl +3.88、NaOH −44.51、CuSO<sub>4</sub> −73.25、CuSO<sub>4</sub>·5H<sub>2</sub>O +11.5 kJ/mol）與 20 °C 溶解度：CRC Handbook。原子量：IUPAC。</li>
+        <li data-en-html="Densities of NaCl, NaOH and CuSO&lt;sub&gt;4&lt;/sub&gt; solutions at 20 °C: &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Concentrative Properties of Aqueous Solutions (cross-checked with the Engineering ToolBox table and the Laliberté model). Density of pure water: CRC Handbook, Properties of Water in the Range 0–100 °C.">NaCl、NaOH、CuSO<sub>4</sub> 溶液 20 °C 的密度：《CRC Handbook of Chemistry and Physics》「水溶液的濃度性質」表（並與 Engineering ToolBox 的表、Laliberté 模型交叉核對）。純水的密度：同書「0–100 °C 水的性質」表。</li>
+        <li data-en-html="Molar enthalpies of solution (NaCl +3.88, NaOH −44.51, CuSO&lt;sub&gt;4&lt;/sub&gt; −73.25, CuSO&lt;sub&gt;4&lt;/sub&gt;·5H&lt;sub&gt;2&lt;/sub&gt;O +11.5 kJ/mol) and solubilities at 20 °C: CRC Handbook. Atomic masses: IUPAC.">莫耳溶解熱（NaCl +3.88、NaOH −44.51、CuSO<sub>4</sub> −73.25、CuSO<sub>4</sub>·5H<sub>2</sub>O +11.5 kJ/mol）與 20 °C 溶解度：CRC Handbook。原子量：IUPAC。</li>
         <li data-en-html="OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/3-3-molarity&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;3.3 Molarity&lt;/a&gt; and 3.4 Other Units for Solution Concentrations.">OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/3-3-molarity" target="_blank" rel="noopener">3.3 體積莫耳濃度</a>、3.4 其他濃度單位（英文）。</li>
       </ul>
     </section>
@@ -340,18 +380,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/solution-concentration-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/solution-concentration-3d.js?v=202611201125"></script>
-  <script src="js/solution-concentration.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="solution-concentration"></script>
-  <script src="js/missions/solution-concentration.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="solution-concentration"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/solution-concentration-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/solution-concentration-3d.js?v=202611201126"></script>
+  <script src="js/solution-concentration.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="solution-concentration"></script>
+  <script src="js/missions/solution-concentration.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="solution-concentration"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

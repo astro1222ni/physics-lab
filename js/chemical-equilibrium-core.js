@@ -2,16 +2,16 @@
  * chemical-equilibrium-core.js — 「化學平衡與勒沙特列原理」的化學核心（與畫面無關，Node 可直接 require）
  *
  * 三個氣相反應（理想氣體，標準壓力 p° = 1 bar）：
- *   n2o4：N₂O₄ ⇌ 2NO₂（Δn = +1，吸熱，NO₂ 紅棕色）           溫度 273–373 K
- *   haber：N₂ + 3H₂ ⇌ 2NH₃（Δn = −2，放熱，哈柏法）           溫度 400–900 K
- *   hi：H₂ + I₂ ⇌ 2HI（Δn = 0，放熱，I₂ 紫色）                溫度 500–800 K
- * 另有未知反應 mys：A₂ ⇌ 2A（ΔH 隱藏，定值），溫度 280–420 K。
+ *   n2o4：N2O4 ⇌ 2NO2（Δn = +1，吸熱，NO2 紅棕色）           溫度 273–373 K
+ *   haber：N2 + 3H2 ⇌ 2NH3（Δn = −2，放熱，哈柏法）           溫度 400–900 K
+ *   hi：H2 + I2 ⇌ 2HI（Δn = 0，放熱，I2 紫色）                溫度 500–800 K
+ * 另有未知反應 mys：A2 ⇌ 2A（ΔH 隱藏，定值），溫度 280–420 K。
  *
  * 熱力學數據：NIST Chemistry WebBook 的氣相數據（M. W. Chase, NIST-JANAF Thermochemical Tables, 4th ed., 1998）：
- *   ΔfH°(298.15 K)、S°(298.15 K, 1 bar) 與 Shomate 熱容式 Cp = A + Bt + Ct² + Dt³ + E/t²（t = T/1000）。
+ *   ΔfH°(298.15 K)、S°(298.15 K, 1 bar) 與 Shomate 熱容式 Cp = A + Bt + Ct^2 + Dt^3 + E/t^2（t = T/1000）。
  *   ΔH°(T) = ΔH°(298) + ∫ΔCp dT、ΔS°(T) = ΔS°(298) + ∫ΔCp/T dT（解析積分），K(T) = exp(−ΔG°/RT)。
- *   N₂O₄ 在 298 K 附近沒有 Shomate 係數；273–373 K 的範圍內 ΔCp 的影響很小（K 變化約 1–2%），所以 n2o4 用定值 ΔH°、ΔS°。
- *   I₂(g) 的係數適用於 457.7 K 以上；本模擬在 500 K 以上使用，積分 298–457.7 K 的一段用同一式外推。
+ *   N2O4 在 298 K 附近沒有 Shomate 係數；273–373 K 的範圍內 ΔCp 的影響很小（K 變化約 1–2%），所以 n2o4 用定值 ΔH°、ΔS°。
+ *   I2(g) 的係數適用於 457.7 K 以上；本模擬在 500 K 以上使用，積分 298–457.7 K 的一段用同一式外推。
  *
  * 平衡：已知各成分的物質的量、溫度與「定容（V）」或「定壓（P）」條件，解反應進度 ξ 使 Q = K（Q 對 ξ 單調，二分法）。
  * 趨近平衡的快慢：ξ 以時間常數 τ 指數趨近 ξ_eq（示意的速率；催化劑讓 τ 變小，不改變 ξ_eq）。
@@ -93,7 +93,7 @@
   }
   function K(rx, T) { return thermo(rx, T).K; }
   function dn(rx) { return RX[rx].nu.reduce(function (a, b) { return a + b; }, 0); }
-  /** Kc（以 1 mol/L 為標準）= Kp·(p°/(RT·1000 mol/m³))^Δn */
+  /** Kc（以 1 mol/L 為標準）= Kp·(p°/(RT·1000 mol/m^3))^Δn */
   function Kc(rx, T) { return K(rx, T) * Math.pow(P0 / (R * T * 1000), dn(rx)); }
 
   // ---------- 狀態 ----------
@@ -183,7 +183,7 @@
     tol = tol == null ? 1e-6 : tol;
     return v < -tol ? 1 : v > tol ? -1 : 0;
   }
-  /** NO₂（或 I₂）的顏色深淺：吸光度 ∝ 濃度 × 光程（比爾定律），傳回透過率 10^(−A) */
+  /** NO2（或 I2）的顏色深淺：吸光度 ∝ 濃度 × 光程（比爾定律），傳回透過率 10^(−A) */
   function transmittance(c, eps, path) { return Math.pow(10, -eps * c * path); }
 
   /** 凡特荷夫：由 (T, K) 數據求 ΔH°（kJ/mol）＝ −斜率 × R，ln K 對 1/T 的直線 */

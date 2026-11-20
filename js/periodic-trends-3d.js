@@ -8,6 +8,13 @@
  */
 (function () {
   'use strict';
+
+  // 內容先跳脫，只還原沒有屬性的上下標標籤。
+  function formulaMarkup(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/&lt;(\/?su[bp])&gt;/g, '<$1>');
+  }
+
   const HMAX = 3.2, H0 = 0.12, FLAT = 0.05;
   const CX = 9.5, CZ = 4.75;
   const ATL = 16, TILE = 64;   // 符號圖集：16 × 8 格，每格 64 px
@@ -17,6 +24,7 @@
     const T = H.T, host = H.host, N = H.N;
 
     const canvas = document.createElement('canvas');
+    canvas.tabIndex = 0;
     canvas.setAttribute('aria-label', T('週期表的 3D 立體長條圖：長條越高，數值越大（拖曳旋轉、雙指或滾輪縮放、點長條選元素）',
       '3D bar chart of the periodic table: the taller the bar, the larger the value (drag to rotate, pinch or scroll to zoom, tap a bar to choose it)'));
     canvas.setAttribute('role', 'img');
@@ -44,7 +52,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 6;
     controls.maxDistance = 70;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: host, radius: 10.5, T });
     controls.maxPolarAngle = Math.PI * 0.49;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.35));
@@ -154,7 +162,7 @@
       ring.position.set(b.position.x, 0.012, b.position.z);
       const hd = H.hud();
       hudTL.textContent = hd.tl;
-      hudTR.textContent = hd.tr;
+      hudTR.innerHTML = formulaMarkup(hd.tr);
       return moving;
     }
 
@@ -179,13 +187,17 @@
       const dist = (span * 0.5) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1.35, camera.aspect);
       if (force) {
         controls.target.set(0, 0.8, 0.3);
+        nav.home();
         camera.position.copy(viewDir).multiplyScalar(dist).add(controls.target);
       }
       camera.updateProjectionMatrix();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(300, w * 0.9)) : 440; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(300, w * 0.9)) : 440;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -208,7 +220,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvas.clientHeight !== canvasHeight(host.clientWidth) || Math.abs(camera.aspect * canvas.clientHeight - host.clientWidth) > 1) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -229,6 +241,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set(), geos = new Set();
         scene.traverse(function (o) {

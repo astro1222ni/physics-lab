@@ -4,15 +4,15 @@
  * 模型：類氫原子（一個電子＋電荷 +Z 的原子核：H、He+、Li2+），原子核質量視為無限大。
  *   ψ_nlm(r, θ, φ) = R_nl(r) · Y_lm(θ, φ)
  *   R_nl(r) = N · ρ^l · e^(−ρ/2) · L_(n−l−1)^(2l+1)(ρ)，ρ = 2Zr / (n a0)
- *   N = √[ (2Z/(n a0))³ · (n−l−1)! / (2n (n+l)!) ]（L 為廣義拉蓋爾多項式，現代慣例）
- *   Y 用化學課本的「實數」球諧函數（px、py、pz、dxy、dz²…），由 m = ±|m| 的複數球諧函數組合而成，已歸一化。
- *   能量 E_n = −Z² · R∞ / n²，R∞ = 13.605693 eV（= 1312.75 kJ/mol；氫原子核質量有限時游離能是 13.598 eV = 1312.0 kJ/mol）。
+ *   N = √[ (2Z/(n a0))^3 · (n−l−1)! / (2n (n+l)!) ]（L 為廣義拉蓋爾多項式，現代慣例）
+ *   Y 用化學課本的「實數」球諧函數（px、py、pz、dxy、dz^2…），由 m = ±|m| 的複數球諧函數組合而成，已歸一化。
+ *   能量 E_n = −Z^2 · R∞ / n^2，R∞ = 13.605693 eV（= 1312.75 kJ/mol；氫原子核質量有限時游離能是 13.598 eV = 1312.0 kJ/mol）。
  *   長度單位一律是波耳半徑 a0 = 52.9177 pm。
  * 公式來源：L. Pauling & E. B. Wilson, Introduction to Quantum Mechanics (1935) 第 5 章；
  *   OpenStax Chemistry 2e 第 6.3 節〈Development of Quantum Theory〉；實數球諧函數的係數見 Wikipedia “Table of spherical harmonics”（Real spherical harmonics），
  *   CODATA 2018：a0 = 52.917 721 pm、R∞hc = 13.605 693 eV。
  *
- * 所有函數的長度參數都以 a0 為單位；ψ 的單位是 a0^(−3/2)，|ψ|² 是 a0^(−3)。
+ * 所有函數的長度參數都以 a0 為單位；ψ 的單位是 a0^(−3/2)，|ψ|^2 是 a0^(−3)。
  */
 (function (root) {
   'use strict';
@@ -30,21 +30,21 @@
     s: 1 / (2 * SQ(PI)),
     p: SQ(3 / (4 * PI)),
     d1: 0.5 * SQ(15 / PI),          // dxy、dxz、dyz
-    d2: 0.25 * SQ(15 / PI),         // dx²−y²
-    d0: 0.25 * SQ(5 / PI),          // dz²
-    f0: 0.25 * SQ(7 / PI),          // fz³
-    f1: 0.25 * SQ(21 / (2 * PI)),   // fxz²、fyz²
+    d2: 0.25 * SQ(15 / PI),         // dx^2−y^2
+    d0: 0.25 * SQ(5 / PI),          // dz^2
+    f0: 0.25 * SQ(7 / PI),          // fz^3
+    f1: 0.25 * SQ(21 / (2 * PI)),   // fxz^2、fyz^2
     f2a: 0.5 * SQ(105 / PI),        // fxyz
-    f2b: 0.25 * SQ(105 / PI),       // fz(x²−y²)
-    f3: 0.25 * SQ(35 / (2 * PI))    // fx(x²−3y²)、fy(3x²−y²)
+    f2b: 0.25 * SQ(105 / PI),       // fz(x^2−y^2)
+    f3: 0.25 * SQ(35 / (2 * PI))    // fx(x^2−3y^2)、fy(3x^2−y^2)
   };
   const R2 = 1 / SQ(2), R3 = SQ(3);
   const PL = function (nx, ny, nz, zh, en) { const m = Math.hypot(nx, ny, nz); return { type: 'plane', n: [nx / m, ny / m, nz / m], zh: zh, en: en }; };
-  /** 圓錐節面：cos²θ = cos² 的上、下兩個圓錐算兩個節面（例如 dz² 有 2 個角節面） */
+  /** 圓錐節面：cos^2θ = cos^2 的上、下兩個圓錐算兩個節面（例如 dz^2 有 2 個角節面） */
   const CONE = function (cos, deg) {
     const t = Math.acos(cos);
-    return [{ type: 'cone', theta: t, zh: '上方圓錐（與 z 軸夾 ' + deg + '°）', en: 'upper cone (' + deg + '° from the z-axis)' },
-      { type: 'cone', theta: PI - t, zh: '下方圓錐（與 z 軸夾 ' + deg + '°）', en: 'lower cone (' + deg + '° from the z-axis)' }];
+    return [{ type: 'cone', theta: t, zh: '上方圓錐（與 z 軸夾 ' + deg + ' °）', en: 'upper cone (' + deg + ' ° from the z-axis)' },
+      { type: 'cone', theta: PI - t, zh: '下方圓錐（與 z 軸夾 ' + deg + ' °）', en: 'lower cone (' + deg + ' ° from the z-axis)' }];
   };
   const P_YZ = PL(1, 0, 0, 'yz 平面', 'yz plane'), P_XZ = PL(0, 1, 0, 'xz 平面', 'xz plane'), P_XY = PL(0, 0, 1, 'xy 平面', 'xy plane');
 
@@ -56,22 +56,22 @@
     dxy: { l: 2, m: 2, f: function (x, y) { return C.d1 * x * y; }, html: 'd<sub>xy</sub>', txt: 'dxy', nodes: [P_YZ, P_XZ] },
     dxz: { l: 2, m: 1, f: function (x, y, z) { return C.d1 * x * z; }, html: 'd<sub>xz</sub>', txt: 'dxz', nodes: [P_YZ, P_XY] },
     dyz: { l: 2, m: 1, f: function (x, y, z) { return C.d1 * y * z; }, html: 'd<sub>yz</sub>', txt: 'dyz', nodes: [P_XZ, P_XY] },
-    dx2y2: { l: 2, m: 2, f: function (x, y) { return C.d2 * (x * x - y * y); }, html: 'd<sub>x<sup>2</sup>−y<sup>2</sup></sub>', txt: 'dx²−y²',
+    dx2y2: { l: 2, m: 2, f: function (x, y) { return C.d2 * (x * x - y * y); }, html: 'd<sub>x<sup>2</sup>−y<sup>2</sup></sub>', txt: 'dx^2−y^2',
       nodes: [PL(1, -1, 0, '平面 x = y', 'plane x = y'), PL(1, 1, 0, '平面 x = −y', 'plane x = −y')] },
-    dz2: { l: 2, m: 0, f: function (x, y, z) { return C.d0 * (3 * z * z - 1); }, html: 'd<sub>z<sup>2</sup></sub>', txt: 'dz²',
+    dz2: { l: 2, m: 0, f: function (x, y, z) { return C.d0 * (3 * z * z - 1); }, html: 'd<sub>z<sup>2</sup></sub>', txt: 'dz^2',
       nodes: CONE(1 / R3, '54.7') },
-    fz3: { l: 3, m: 0, f: function (x, y, z) { return C.f0 * z * (5 * z * z - 3); }, html: 'f<sub>z<sup>3</sup></sub>', txt: 'fz³',
+    fz3: { l: 3, m: 0, f: function (x, y, z) { return C.f0 * z * (5 * z * z - 3); }, html: 'f<sub>z<sup>3</sup></sub>', txt: 'fz^3',
       nodes: [P_XY].concat(CONE(SQ(3 / 5), '39.2')) },
-    fxz2: { l: 3, m: 1, f: function (x, y, z) { return C.f1 * x * (5 * z * z - 1); }, html: 'f<sub>xz<sup>2</sup></sub>', txt: 'fxz²',
+    fxz2: { l: 3, m: 1, f: function (x, y, z) { return C.f1 * x * (5 * z * z - 1); }, html: 'f<sub>xz<sup>2</sup></sub>', txt: 'fxz^2',
       nodes: [P_YZ].concat(CONE(SQ(1 / 5), '63.4')) },
-    fyz2: { l: 3, m: 1, f: function (x, y, z) { return C.f1 * y * (5 * z * z - 1); }, html: 'f<sub>yz<sup>2</sup></sub>', txt: 'fyz²',
+    fyz2: { l: 3, m: 1, f: function (x, y, z) { return C.f1 * y * (5 * z * z - 1); }, html: 'f<sub>yz<sup>2</sup></sub>', txt: 'fyz^2',
       nodes: [P_XZ].concat(CONE(SQ(1 / 5), '63.4')) },
     fxyz: { l: 3, m: 2, f: function (x, y, z) { return C.f2a * x * y * z; }, html: 'f<sub>xyz</sub>', txt: 'fxyz', nodes: [P_YZ, P_XZ, P_XY] },
-    fzx2y2: { l: 3, m: 2, f: function (x, y, z) { return C.f2b * z * (x * x - y * y); }, html: 'f<sub>z(x<sup>2</sup>−y<sup>2</sup>)</sub>', txt: 'fz(x²−y²)',
+    fzx2y2: { l: 3, m: 2, f: function (x, y, z) { return C.f2b * z * (x * x - y * y); }, html: 'f<sub>z(x<sup>2</sup>−y<sup>2</sup>)</sub>', txt: 'fz(x^2−y^2)',
       nodes: [P_XY, PL(1, -1, 0, '平面 x = y', 'plane x = y'), PL(1, 1, 0, '平面 x = −y', 'plane x = −y')] },
-    fxx23y2: { l: 3, m: 3, f: function (x, y) { return C.f3 * x * (x * x - 3 * y * y); }, html: 'f<sub>x(x<sup>2</sup>−3y<sup>2</sup>)</sub>', txt: 'fx(x²−3y²)',
+    fxx23y2: { l: 3, m: 3, f: function (x, y) { return C.f3 * x * (x * x - 3 * y * y); }, html: 'f<sub>x(x<sup>2</sup>−3y<sup>2</sup>)</sub>', txt: 'fx(x^2−3y^2)',
       nodes: [P_YZ, PL(1, -R3, 0, '平面 x = √3 y', 'plane x = √3 y'), PL(1, R3, 0, '平面 x = −√3 y', 'plane x = −√3 y')] },
-    fy3x2y2: { l: 3, m: 3, f: function (x, y) { return C.f3 * y * (3 * x * x - y * y); }, html: 'f<sub>y(3x<sup>2</sup>−y<sup>2</sup>)</sub>', txt: 'fy(3x²−y²)',
+    fy3x2y2: { l: 3, m: 3, f: function (x, y) { return C.f3 * y * (3 * x * x - y * y); }, html: 'f<sub>y(3x<sup>2</sup>−y<sup>2</sup>)</sub>', txt: 'fy(3x^2−y^2)',
       nodes: [P_XZ, PL(R3, -1, 0, '平面 y = √3 x', 'plane y = √3 x'), PL(R3, 1, 0, '平面 y = −√3 x', 'plane y = −√3 x')] }
   };
   const KEYS = [['s'], ['px', 'py', 'pz'], ['dxy', 'dxz', 'dyz', 'dx2y2', 'dz2'], ['fz3', 'fxz2', 'fyz2', 'fxyz', 'fzx2y2', 'fxx23y2', 'fy3x2y2']];
@@ -106,7 +106,7 @@
     const rho = 2 * Z * r / n;
     return norm(n, l, Z) * Math.pow(rho, l) * Math.exp(-rho / 2) * laguerre(n - l - 1, 2 * l + 1, rho);
   }
-  /** 徑向分布函數 P(r) = r² R²（在半徑 r～r + dr 的薄球殼內找到電子的機率 = P dr） */
+  /** 徑向分布函數 P(r) = r^2 R^2（在半徑 r～r + dr 的薄球殼內找到電子的機率 = P dr） */
   function radialP(n, l, r, Z) { const v = R(n, l, r, Z); return r * r * v * v; }
 
   function valid(n, l) { return n >= 1 && l >= 0 && l < n && l <= 3; }
@@ -123,7 +123,7 @@
     const r = Math.sqrt(x * x + y * y + z * z);
     return R(o.n, o.l, r, o.Z || 1) * Y(o.key, x, y, z);
   }
-  /** 機率密度：單一軌域 |ψ|²；sum = true 時是整個副層 (2l+1) 個軌域的平均 Σ|ψ|²／(2l+1)（球對稱，Unsöld 定理） */
+  /** 機率密度：單一軌域 |ψ|^2；sum = true 時是整個副層 (2l+1) 個軌域的平均 Σ|ψ|^2／(2l+1)（球對稱，Unsöld 定理） */
   function density(o, x, y, z, sum) {
     const r = Math.sqrt(x * x + y * y + z * z);
     const Rv = R(o.n, o.l, r, o.Z || 1);
@@ -164,7 +164,7 @@
     const P = PLANES[plane];
     return [u * P.u[0] + v * P.v[0] + d * P.n[0], u * P.u[1] + v * P.v[1] + d * P.n[1], u * P.u[2] + v * P.v[2] + d * P.n[2]];
   }
-  /** 這個切面整片都在角節面上（|ψ|² 處處為 0）？只有切面通過原子核、且和某個節面平面重合時才會發生 */
+  /** 這個切面整片都在角節面上（|ψ|^2 處處為 0）？只有切面通過原子核、且和某個節面平面重合時才會發生 */
   function sliceIsNodal(key, plane, offset, sum) {
     if (sum || ANG[key].l === 0 || Math.abs(offset) > 1e-9) return false;
     const N = PLANES[plane].n;
@@ -176,7 +176,7 @@
   // ======================= 半徑、能量 =======================
   function energyEV(n, Z) { Z = Z || 1; return -RY_EV * Z * Z / (n * n); }
   function energyKJ(n, Z) { Z = Z || 1; return -RY_KJ * Z * Z / (n * n); }
-  /** 平均半徑 ⟨r⟩ = [3n² − l(l+1)] a0 / (2Z) */
+  /** 平均半徑 ⟨r⟩ = [3n^2 − l(l+1)] a0 / (2Z) */
   function meanR(n, l, Z) { Z = Z || 1; return (3 * n * n - l * (l + 1)) / (2 * Z); }
   /** 遠到這裡以外的機率可以忽略（< 1e-9）：給積分與畫圖用的上限 */
   function rCut(n, Z) { Z = Z || 1; return (n * n * 3 + 12 * n + 18) / Z; }
@@ -291,7 +291,7 @@
     const r = (a + b) / 2;
     return { r: r, v: Math.abs(R(n, l, r, Z)) };
   }
-  /** 全空間 |ψ|² 的最大值（ψ 可分離，= max R² × max Y²；副層加總時 = max R² / 4π） */
+  /** 全空間 |ψ|^2 的最大值（ψ 可分離，= max R^2 × max Y^2；副層加總時 = max R^2 / 4π） */
   function maxDensity(o, sum) {
     const mr = maxAbsR(o.n, o.l, o.Z || 1).v;
     return sum ? mr * mr / (4 * PI) : mr * mr * Math.pow(maxAbsY(o.key), 2);
@@ -311,8 +311,8 @@
   }
   /**
    * 找出 c，使 |ψ| > c 的區域剛好包住 frac 的機率（3D 等值面就畫 ψ = +c 與 ψ = −c）。
-   * ψ = R·Y 可分離：機率 = Σ_方向 w·Y² · Σ_r P(r)dr·[|R(r)|·|Y| > c]，對 c 二分。
-   * sum = true（整個副層）：密度 = R²/(4π)，|ψ| 改用 √密度。傳回 { c, rOut（等值面最遠到哪裡，a0） }
+   * ψ = R·Y 可分離：機率 = Σ_方向 w·Y^2 · Σ_r P(r)dr·[|R(r)|·|Y| > c]，對 c 二分。
+   * sum = true（整個副層）：密度 = R^2/(4π)，|ψ| 改用 √密度。傳回 { c, rOut（等值面最遠到哪裡，a0） }
    */
   function isoLevel(o, frac, sum) {
     const Z = o.Z || 1, n = o.n, l = o.l, rc = rCut(n, Z);
@@ -365,7 +365,7 @@
     };
   }
   /**
-   * 依 |ψ|² 抽 count 個點（精確：r 依 P(r) 的反函數抽、方向依 Y² 拒絕抽樣）。
+   * 依 |ψ|^2 抽 count 個點（精確：r 依 P(r) 的反函數抽、方向依 Y^2 拒絕抽樣）。
    * sum = true：副層加總，每個點先隨機選一個 m 再抽。傳回 { pos: Float32Array(3N)（a0）, sign: Int8Array(N) }
    */
   function sample(o, count, rand, sum) {
@@ -381,7 +381,7 @@
       while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tab.C[m] < u) lo = m; else hi = m; }
       const span = tab.C[hi] - tab.C[lo], f = span > 0 ? (u - tab.C[lo]) / span : 0;
       const r = (lo + f) * tab.h;
-      // 方向：在球面上均勻取，再以 Y²／Ymax² 的機率接受
+      // 方向：在球面上均勻取，再以 Y^2／Ymax^2 的機率接受
       const key = keys[Math.min(keys.length - 1, Math.floor(rand() * keys.length))];
       const ym = maxAbsY(key);
       let x, y, z, yv;
@@ -408,8 +408,11 @@
   }
   /** HTML 名稱，例如 3d<sub>z<sup>2</sup></sub> */
   function html(o) { return o.n + ANG[o.key].html; }
-  /** 純文字名稱（² ³ 允許），例如 3dz² */
-  function text(o) { return o.n + ANG[o.key].txt; }
+  /** 純文字名稱（^2 ^3 允許），例如 3dz^2 */
+  // 任務證明與既有工具讀取的軌域字串。頁面、選單和畫布各用 html 或 txt 排版。
+  function text(o) {
+    return o.n + ANG[o.key].txt.replace(/\^2/g, '\u00b2').replace(/\^3/g, '\u00b3');
+  }
   /** 測驗時哪個切面最看得出形狀：{ plane, offsetFrac（× 最可能半徑） } */
   function bestPlane(key) {
     const M = { s: 'xz', px: 'xy', py: 'xy', pz: 'xz', dxy: 'xy', dxz: 'xz', dyz: 'yz', dx2y2: 'xy', dz2: 'xz',

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Phase Diagrams: Triple Points and Critical Points | Astro Ni Lab">相圖：三相點與臨界點｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 相圖頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pd canvas { aspect-ratio: auto; touch-action: auto; }
@@ -85,6 +85,27 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-console button { min-height: 44px; }
+    }
+    .phase-pad .state-point { grid-area: 2 / 2; align-self: center; text-align: center; font-weight: 700; color: var(--accent); }
+    .phase-pad .vpad-footer { grid-template-columns: 1fr; }
   </style>
 </head>
 <body data-en-ready>
@@ -95,23 +116,32 @@
       <p data-en-html="Every pure substance has a map: for each temperature and pressure it tells you whether the substance is a solid, a liquid, a gas or a supercritical fluid. Drag the state point across the real phase diagrams of water, carbon dioxide and iodine, heat at constant pressure or compress at constant temperature, and watch what happens in the sealed cylinder. Why does dry ice never melt in your hand, why does a pressure cooker cook faster, and why is the melting line of water tilted the “wrong” way?">每一種純物質都有一張「地圖」：給定溫度與壓力，就知道它是固體、液體、氣體，還是超臨界流體。在水、二氧化碳與碘真正的相圖上拖動狀態點，等壓加熱或等溫加壓，看密閉汽缸裡的物質怎麼變化。為什麼乾冰在手上不會熔化？壓力鍋為什麼煮得快？水的熔化線為什麼斜向「錯」的那一邊？</p>
     </header>
 
-    <p class="try-hint" data-en-html="Try it: choose Carbon dioxide and press “Heat (constant P)”. At 1 atm the dry ice turns straight into gas at −78.5 °C. Then raise the pressure above 5.1 atm and heat again — now it melts first.">試試看：選「二氧化碳」，按「等壓加熱」。在 1 atm 下，乾冰在 −78.5 °C 直接變成氣體；再把壓力加到 5.1 atm 以上重新加熱，這次它會先熔化成液體。</p>
-    <div class="lab pd">
+    <p class="try-hint" data-en-html="Try it: choose Carbon dioxide and press “Heat (constant P)”. At 1 atm the dry ice turns straight into gas at −78.5 °C. Then raise the pressure above 5.1 atm and heat again — now it melts first.">試試看：選「二氧化碳」，按「等壓加熱」。在 1 atm 下，乾冰在 −78.5 °C 直接變成氣體；再把壓力加到 5.1 atm 以上重新加熱，這次它會先熔化成液體。</p>
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab pd" data-scene="bench">
       <div class="stage" id="stage">
-        <canvas id="cv" aria-label="相圖與密閉汽缸" data-en-aria-label="Phase diagram and sealed cylinder"></canvas>
-        <div class="playbar" role="group" aria-label="路徑" data-en-aria-label="Paths">
-          <button type="button" id="pHeat" aria-pressed="false" data-en="Heat (constant P)">等壓加熱</button>
-          <button type="button" id="pCool" aria-pressed="false" data-en="Cool (constant P)">等壓冷卻</button>
-          <button type="button" id="pPress" aria-pressed="false" data-en="Compress (constant T)">等溫加壓</button>
-          <button type="button" id="pDepress" aria-pressed="false" data-en="Expand (constant T)">等溫減壓</button>
-        </div>
-        <div class="playbar2">
-          <button type="button" id="stop" data-en="Stop">停止</button>
-          <button type="button" id="clearAll" data-en="Clear all" title="清除路徑軌跡、相變紀錄表與兩點式的計算；目前的狀態點不變" data-en-title="Clear the path trace, the table of phase changes and the two-point results; the state point stays where it is">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" aria-label="相圖與密閉汽缸" data-en-aria-label="Phase diagram and sealed cylinder"></canvas>
+          </div>
+          <div class="playbar" role="group" aria-label="路徑" data-en-aria-label="Paths">
+            <button type="button" id="pHeat" aria-pressed="false" data-en="Heat (constant P)">等壓加熱</button>
+            <button type="button" id="pCool" aria-pressed="false" data-en="Cool (constant P)">等壓冷卻</button>
+            <button type="button" id="pPress" aria-pressed="false" data-en="Compress (constant T)">等溫加壓</button>
+            <button type="button" id="pDepress" aria-pressed="false" data-en="Expand (constant T)">等溫減壓</button>
+          </div>
+          <div class="playbar2">
+            <button type="button" id="stop" data-en="Stop">停止</button>
+            <button type="button" id="clearAll" data-en="Clear all" title="清除路徑軌跡、相變紀錄表與兩點式的計算；目前的狀態點不變" data-en-title="Clear the path trace, the table of phase changes and the two-point results; the state point stays where it is">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <p class="hint" data-en="Drag the state point on the phase diagram (or focus the drawing and use the arrow keys: left and right change the temperature, up and down the pressure). The cylinder on the right is a sketch: a weighted piston keeps the pressure, a water or oil bath keeps the temperature; molecule numbers and volumes are not to scale.">在相圖上拖曳狀態點（或選取畫面後按方向鍵：左右改溫度、上下改壓力）。右邊的汽缸是示意圖：活塞上的砝碼維持壓力、外面的恆溫槽維持溫度；分子數與體積都不依比例。</p>
+        <p class="hint" data-en="Tap the diagram to place a starting point. Drag the state point to trace phase changes (or focus the drawing and use the arrow keys: left and right change the temperature, up and down the pressure). The cylinder on the right is a sketch: a weighted piston keeps the pressure, a water or oil bath keeps the temperature; molecule numbers and volumes are not to scale.">點相圖空白處可選起點，拖曳狀態點可追蹤沿途的相變（或選取畫面後按方向鍵：左右改溫度、上下改壓力）。右邊的汽缸是示意圖：活塞上的砝碼維持壓力、外面的恆溫槽維持溫度；分子數與體積都不依比例。</p>
       </div>
 
       <aside class="panel">
@@ -151,7 +181,7 @@
       </aside>
     </div>
 
-    <div class="lab pd">
+    <div class="lab pd" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Graphs and table of phase changes">圖表與相變紀錄</h2>
         <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -175,7 +205,7 @@
           <p class="info" id="clapOut"></p>
         </section>
         <section class="card">
-          <h2 data-en="Does pressure melt the ice under a skate?">溜冰：真的是壓力讓冰熔化嗎？</h2>
+          <h2 data-en="Pressure and skating">溜冰與壓力熔冰</h2>
           <div class="slider"><label for="mass" data-en="Skater's mass">溜冰者的質量</label><output id="masso"></output>
             <input id="mass" type="range" min="20" max="120" step="1" value="60" data-decimals="0"></div>
           <div class="slider"><label for="area" data-en="Blade contact area">冰刀與冰的接觸面積</label><output id="areao"></output>
@@ -190,7 +220,7 @@
       <ol>
         <li data-en="Read a phase diagram: the regions of solid, liquid, gas and supercritical fluid, the three coexistence lines, the triple point and the critical point.">讀懂相圖：固體、液體、氣體與超臨界流體的區域，三條兩相共存線，以及三相點與臨界點。</li>
         <li data-en="Explain everyday phenomena with the diagram: boiling points that change with pressure, sublimation, freeze-drying and supercritical fluids.">用相圖解釋生活現象：沸點隨壓力改變、昇華、冷凍乾燥、超臨界流體。</li>
-        <li data-en="Compare substances: why the melting line of water slopes the other way, and why carbon dioxide and iodine behave so differently at 1 atm.">比較不同物質：為什麼水的熔化線斜向另一邊？為什麼二氧化碳和碘在 1 atm 下表現得這麼不一樣？</li>
+        <li data-en="Compare substances: why the melting line of water slopes the other way, and why carbon dioxide and iodine behave so differently at 1 atm.">比較不同物質：為什麼水的熔化線斜向另一邊？為什麼二氧化碳和碘在 1 atm 下表現得這麼不一樣？</li>
         <li data-en="Use the Clausius–Clapeyron equation to obtain heats of vaporization and sublimation from the curves.">用克勞修斯—克拉佩龍方程式，由曲線求出汽化熱與昇華熱。</li>
       </ol>
 
@@ -198,7 +228,7 @@
       <h3 data-en="Three lines and two special points">三條線與兩個特殊的點</h3>
       <ul>
         <li data-en-html="<strong>Sublimation line</strong> (solid–gas), <strong>vapour-pressure line</strong> (liquid–gas) and <strong>melting line</strong> (solid–liquid): on each line two phases coexist in equilibrium. Crossing a line is a phase change with a latent heat; while the two phases coexist at constant pressure, the temperature stays on the line.">昇華線（固—氣）、蒸氣壓曲線（液—氣）與熔化線（固—液）：線上兩個相共存而達成平衡。越過一條線就是相變，要吸收或放出潛熱；兩相共存時（等壓下）溫度停在線上。</li>
-        <li data-en-html="<strong>Triple point</strong>: the only temperature and pressure at which solid, liquid and gas coexist. For water it is 0.01 °C and 611.657 Pa — it was used to define the kelvin until 2019.">三相點：固、液、氣三相共存的唯一溫度與壓力。水的三相點是 0.01 °C、611.657 Pa，2019 年以前用它來定義克耳文溫標。</li>
+        <li data-en-html="<strong>Triple point</strong>: the only temperature and pressure at which solid, liquid and gas coexist. For water it is 0.01 °C and 611.657 Pa — it was used to define the kelvin until 2019.">三相點：固、液、氣三相共存的唯一溫度與壓力。水的三相點是 0.01 °C、611.657 Pa，2019 年以前用它來定義克耳文溫標。</li>
         <li data-en-html="<strong>Critical point</strong>: the vapour-pressure line ends. Above the critical temperature \(T_\mathrm{c}\) no pressure can liquefy the gas; above both \(T_\mathrm{c}\) and \(P_\mathrm{c}\) the substance is a <strong>supercritical fluid</strong>, as dense as a liquid but flowing and diffusing like a gas. The dashed lines on the diagram are not phase boundaries: crossing them changes nothing suddenly.">臨界點：蒸氣壓曲線在這裡結束。高於臨界溫度 \(T_\mathrm{c}\)，加再大的壓力也無法把氣體液化；溫度與壓力都高於臨界值時是超臨界流體，密度像液體、流動與擴散卻像氣體。圖上的虛線不是相界線：越過它不會發生突然的變化。</li>
       </ul>
       <h3 data-en="The slopes of the lines">線的斜率</h3>
@@ -206,7 +236,7 @@
         \[ \frac{\mathrm{d}P}{\mathrm{d}T} = \frac{\Delta H}{T\,\Delta V} \]
         \[ \ln\frac{P_2}{P_1} = -\frac{\Delta H}{R}\left(\frac{1}{T_2}-\frac{1}{T_1}\right) \]
       </div>
-      <p data-en-html="The first is the Clapeyron equation, exact for any coexistence line (\(\Delta H\) and \(\Delta V\) are the molar changes). For the melting line \(\Delta V\) is tiny, so the line is very steep. Ice is <em>less</em> dense than liquid water (\(\Delta V &lt; 0\) on melting), so the melting line of water slopes to the left: pressure lowers its melting point, by only about 0.0075 K per atmosphere. Solid CO<sub>2</sub> and solid iodine are denser than their liquids, so their melting lines slope to the right. The second is the Clausius–Clapeyron equation for the vapour-pressure and sublimation lines, assuming an ideal gas and a negligible volume of the condensed phase: a graph of \(\ln P\) against \(1/T\) is nearly straight with slope \(-\Delta H/R\). Because \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\) (Hess's law), the sublimation line is steeper than the vapour-pressure line at the triple point.">第一式是克拉佩龍方程式，對任何兩相共存線都成立（\(\Delta H\)、\(\Delta V\) 是每莫耳的變化）。熔化時 \(\Delta V\) 很小，所以熔化線很陡。冰的密度比水小（熔化時 \(\Delta V &lt; 0\)），所以水的熔化線向左斜：加壓會讓熔點下降，但每增加 1 atm 只下降約 0.0075 K。固態 CO<sub>2</sub> 與固態碘比各自的液體密度大，熔化線向右斜。第二式是蒸氣壓曲線與昇華線的克勞修斯—克拉佩龍方程式（假設氣體為理想氣體、凝相體積可以忽略）：\(\ln P\) 對 \(1/T\) 的圖幾乎是斜率 \(-\Delta H/R\) 的直線。由赫斯定律 \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\)（sub、fus、vap 分別是昇華、熔化、汽化），所以在三相點，昇華線比蒸氣壓曲線陡。</p>
+      <p data-en-html="The first is the Clapeyron equation, exact for any coexistence line (\(\Delta H\) and \(\Delta V\) are the molar changes). For the melting line \(\Delta V\) is tiny, so the line is very steep. Ice is <em>less</em> dense than liquid water (\(\Delta V &lt; 0\) on melting), so the melting line of water slopes to the left: pressure lowers its melting point, by only about 0.0075 K per atmosphere. Solid CO<sub>2</sub> and solid iodine are denser than their liquids, so their melting lines slope to the right. The second is the Clausius–Clapeyron equation for the vapour-pressure and sublimation lines, assuming an ideal gas and a negligible volume of the condensed phase: a graph of \(\ln P\) against \(1/T\) is nearly straight with slope \(-\Delta H/R\). Because \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\) (Hess's law), the sublimation line is steeper than the vapour-pressure line at the triple point.">第一式是克拉佩龍方程式，對任何兩相共存線都成立（\(\Delta H\)、\(\Delta V\) 是每莫耳的變化）。熔化時 \(\Delta V\) 很小，所以熔化線很陡。冰的密度比水小（熔化時 \(\Delta V &lt; 0\)），所以水的熔化線向左斜：加壓會讓熔點下降，但每增加 1 atm 只下降約 0.0075 K。固態 CO<sub>2</sub> 與固態碘比各自的液體密度大，熔化線向右斜。第二式是蒸氣壓曲線與昇華線的克勞修斯—克拉佩龍方程式（假設氣體為理想氣體、凝相體積可以忽略）：\(\ln P\) 對 \(1/T\) 的圖幾乎是斜率 \(-\Delta H/R\) 的直線。由赫斯定律 \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\)（sub、fus、vap 分別是昇華、熔化、汽化），所以在三相點，昇華線比蒸氣壓曲線陡。</p>
       <p data-en-html="Heating curves, latent heat and specific heat are measured in the physics experiment <a href=&quot;specific-heat.html&quot;>Specific Heat and Thermal Equilibrium</a>; here we look at the whole map of a substance.">加熱曲線、潛熱與比熱的測量在物理的〈<a href="specific-heat.html">比熱與熱平衡</a>〉實驗；這裡看的是一種物質的整張地圖。</p>
 
       <h3 data-en="Data of the three substances">三種物質的數據</h3>
@@ -214,9 +244,9 @@
 
       <h3 data-en="Things to look for">觀察重點</h3>
       <ul>
-        <li data-en-html="Water at 1 atm: heat from −20 °C to 150 °C. The ice melts at 0 °C and the water boils at 100 °C — two separate lines.">1 atm 的水：從 −20 °C 加熱到 150 °C，冰在 0 °C 熔化、水在 100 °C 沸騰——越過兩條不同的線。</li>
-        <li data-en-html="Carbon dioxide: its triple point lies at 5.11 atm, above atmospheric pressure, so at 1 atm there is no liquid at all — dry ice sublimes. Liquid CO<sub>2</sub> exists only above 5.11 atm (a CO<sub>2</sub> fire extinguisher holds about 60 atm).">二氧化碳：三相點在 5.11 atm，高於大氣壓，所以 1 atm 下根本沒有液態——乾冰直接昇華。液態 CO<sub>2</sub> 只存在於 5.11 atm 以上（CO<sub>2</sub> 滅火器裡約 60 atm）。</li>
-        <li data-en-html="Iodine: its triple point is only 0.12 atm, so at 1 atm it <em>does</em> melt (113.5 °C) and boil (184.4 °C). It seems to sublime in the classroom because its vapour pressure is already noticeable at room temperature (about 40 Pa at 25 °C).">碘：三相點只有 0.12 atm，所以 1 atm 下它其實會熔化（113.5 °C）、沸騰（184.4 °C）。課堂上看起來像是昇華，是因為它在室溫的蒸氣壓就不小（25 °C 時約 40 Pa）。</li>
+        <li data-en-html="Water at 1 atm: heat from −20 °C to 150 °C. The ice melts at 0 °C and the water boils at 100 °C — two separate lines.">1 atm 的水：從 −20 °C 加熱到 150 °C，冰在 0 °C 熔化、水在 100 °C 沸騰——越過兩條不同的線。</li>
+        <li data-en-html="Carbon dioxide: its triple point lies at 5.11 atm, above atmospheric pressure, so at 1 atm there is no liquid at all — dry ice sublimes. Liquid CO<sub>2</sub> exists only above 5.11 atm (a CO<sub>2</sub> fire extinguisher holds about 60 atm).">二氧化碳：三相點在 5.11 atm，高於大氣壓，所以 1 atm 下根本沒有液態——乾冰直接昇華。液態 CO<sub>2</sub> 只存在於 5.11 atm 以上（CO<sub>2</sub> 滅火器裡約 60 atm）。</li>
+        <li data-en-html="Iodine: its triple point is only 0.12 atm, so at 1 atm it <em>does</em> melt (113.5 °C) and boil (184.4 °C). It seems to sublime in the classroom because its vapour pressure is already noticeable at room temperature (about 40 Pa at 25 °C).">碘：三相點只有 0.12 atm，所以 1 atm 下它其實會熔化（113.5 °C）、沸騰（184.4 °C）。課堂上看起來像是昇華，是因為它在室溫的蒸氣壓就不小（25 °C 時約 40 Pa）。</li>
         <li data-en-html="Near the critical point the boundary between liquid and vapour in the cylinder fades away and the fluid turns milky (critical opalescence): the two densities become equal.">接近臨界點時，汽缸裡液體與蒸氣的界面慢慢消失，流體變得像牛奶一樣混濁（臨界乳光）：兩相的密度變得相同。</li>
         <li data-en-html="On “ln P against 1/T” the sublimation line is steeper than the vapour-pressure line; they meet at the triple point.">在「ln P 對 1/T」圖上，昇華線比蒸氣壓曲線陡，兩條線在三相點相接。</li>
         <li data-en-html="On “Reduced variables” the vapour-pressure curves of the three substances almost coincide when temperature and pressure are divided by their critical values (the law of corresponding states). Water, with its hydrogen bonds, deviates the most.">在「對比狀態」圖上，把溫度、壓力各除以臨界值後，三種物質的蒸氣壓曲線幾乎重合（對比狀態原理）；有氫鍵的水偏離最多。</li>
@@ -224,8 +254,8 @@
 
       <h3 data-en="Questions for discussion">想一想</h3>
       <ol>
-        <li data-en="Why does food cook faster in a pressure cooker, and why is it hard to cook rice well on top of Yushan (3952 m)?">為什麼壓力鍋煮東西比較快？為什麼在玉山頂（3952 m）不容易把飯煮熟？</li>
-        <li data-en-html="A skater of 60 kg stands on a blade with a contact area of 3 cm<sup>2</sup>. By how much does the melting point fall? Is this why ice is slippery?">60 kg 的溜冰者站在接觸面積 3 cm<sup>2</sup> 的冰刀上，冰的熔點下降多少？冰很滑是這個原因嗎？</li>
+        <li data-en="Why does food cook faster in a pressure cooker, and why is it hard to cook rice well on top of Yushan (3952 m)?">為什麼壓力鍋煮東西比較快？為什麼在玉山頂（3952 m）不容易把飯煮熟？</li>
+        <li data-en-html="A skater of 60 kg stands on a blade with a contact area of 3 cm<sup>2</sup>. By how much does the melting point fall? Is this why ice is slippery?">60 kg 的溜冰者站在接觸面積 3 cm<sup>2</sup> 的冰刀上，冰的熔點下降多少？冰很滑是這個原因嗎？</li>
         <li data-en-html="Can liquid carbon dioxide exist in an open cup at room conditions? What happens when a CO<sub>2</sub> fire extinguisher is discharged?">液態二氧化碳能放在室溫、開口的杯子裡嗎？CO<sub>2</sub> 滅火器噴出時會發生什麼事？</li>
         <li data-en="How can a liquid be turned into a gas without ever boiling?">怎樣可以把液體變成氣體，卻完全不經過沸騰？</li>
         <li data-en="Why is the sublimation line steeper than the vapour-pressure line at the triple point?">為什麼在三相點，昇華線比蒸氣壓曲線陡？</li>
@@ -233,9 +263,9 @@
       <details>
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
-          <li data-en-html="Water boils when its vapour pressure equals the surrounding pressure. In a pressure cooker at about 2 atm (absolute) water boils at about 120 °C, so food is hotter and cooks faster. On Yushan the air pressure is only about 0.61 atm, so water boils at about 87 °C and rice cooks slowly and unevenly.">水的蒸氣壓等於外界壓力時沸騰。壓力鍋裡約 2 atm（絕對壓力），水約 120 °C 才沸騰，食物溫度較高、熟得快。玉山頂氣壓只有約 0.61 atm，水約 87 °C 就沸騰，飯不容易煮熟。</li>
-          <li data-en-html="The extra pressure is \(60 \times 9.8 / (3\times10^{-4}) \approx 2.0 \times 10^{6}\) Pa ≈ 19 atm. With a melting-line slope of about −13.5 MPa/K, the melting point falls by only about 0.15 K. At −5 °C that melts nothing. Ice is slippery mainly because its surface has a thin, liquid-like layer and friction warms it — pressure melting is a small effect.">增加的壓力約 \(60 \times 9.8 / (3\times10^{-4}) \approx 2.0 \times 10^{6}\) Pa ≈ 19 atm；熔化線斜率約 −13.5 MPa/K，熔點只下降約 0.15 K。在 −5 °C 的冰場，這根本熔不了冰。冰會滑主要是因為表面有一層像液體的薄層，加上摩擦生熱；壓力熔冰只是很小的效應。</li>
-          <li data-en-html="No: liquid CO<sub>2</sub> needs at least 5.11 atm. In the extinguisher the CO<sub>2</sub> is a liquid at about 60 atm; when it is released to 1 atm it boils violently, expands and cools so much that part of it deposits as fine dry-ice “snow”.">不能：液態 CO<sub>2</sub> 至少要 5.11 atm。滅火器裡的 CO<sub>2</sub> 在約 60 atm 下是液體；噴到 1 atm 時劇烈沸騰、膨脹而大幅降溫，一部分直接凝華成細細的乾冰「雪」。</li>
+          <li data-en-html="Water boils when its vapour pressure equals the surrounding pressure. In a pressure cooker at about 2 atm (absolute) water boils at about 120 °C, so food is hotter and cooks faster. On Yushan the air pressure is only about 0.61 atm, so water boils at about 87 °C and rice cooks slowly and unevenly.">水的蒸氣壓等於外界壓力時沸騰。壓力鍋裡約 2 atm（絕對壓力），水約 120 °C 才沸騰，食物溫度較高、熟得快。玉山頂氣壓只有約 0.61 atm，水約 87 °C 就沸騰，飯不容易煮熟。</li>
+          <li data-en-html="The extra pressure is \(60 \times 9.8 / (3\times10^{-4}) \approx 2.0 \times 10^{6}\) Pa ≈ 19 atm. With a melting-line slope of about −13.5 MPa/K, the melting point falls by only about 0.15 K. At −5 °C that melts nothing. Ice is slippery mainly because its surface has a thin, liquid-like layer and friction warms it — pressure melting is a small effect.">增加的壓力約 \(60 \times 9.8 / (3\times10^{-4}) \approx 2.0 \times 10^{6}\) Pa ≈ 19 atm；熔化線斜率約 −13.5 MPa/K，熔點只下降約 0.15 K。在 −5 °C 的冰場，這根本熔不了冰。冰會滑主要是因為表面有一層像液體的薄層，加上摩擦生熱；壓力熔冰只是很小的效應。</li>
+          <li data-en-html="No: liquid CO<sub>2</sub> needs at least 5.11 atm. In the extinguisher the CO<sub>2</sub> is a liquid at about 60 atm; when it is released to 1 atm it boils violently, expands and cools so much that part of it deposits as fine dry-ice “snow”.">不能：液態 CO<sub>2</sub> 至少要 5.11 atm。滅火器裡的 CO<sub>2</sub> 在約 60 atm 下是液體；噴到 1 atm 時劇烈沸騰、膨脹而大幅降溫，一部分直接凝華成細細的乾冰「雪」。</li>
           <li data-en-html="Go around the critical point: heat the liquid above \(T_\mathrm{c}\) while the pressure is above \(P_\mathrm{c}\) (it becomes supercritical), then lower the pressure, then cool. The density changes gradually all the way; there is never a meniscus or bubbles.">繞過臨界點：在壓力高於 \(P_\mathrm{c}\) 時把液體加熱到 \(T_\mathrm{c}\) 以上（變成超臨界流體），再降低壓力、再冷卻。一路上密度慢慢改變，從頭到尾沒有出現液面或氣泡。</li>
           <li data-en-html="By Clausius–Clapeyron the slope of \(\ln P\) against \(T\) is \(\Delta H/RT^2\). At the triple point \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\) is larger than \(\Delta H_\text{vap}\), so the sublimation line rises more steeply.">由克勞修斯—克拉佩龍方程式，\(\ln P\) 對 \(T\) 的斜率是 \(\Delta H/RT^2\)。在三相點 \(\Delta H_\text{sub} = \Delta H_\text{fus} + \Delta H_\text{vap}\) 比 \(\Delta H_\text{vap}\) 大，所以昇華線比較陡。</li>
         </ol>
@@ -243,12 +273,12 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="<strong>Water</strong>: vapour pressure and saturated densities from the IAPWS equations of Wagner and Pruß (2002); sublimation pressure and the melting pressure of ice Ih from the IAPWS 2011 release (Wagner, Riethmann, Feistel and Harvey). The diagram stops at 100 MPa, below the pressure (208.6 MPa) where ice III and other high-pressure ices appear.">水：蒸氣壓與飽和密度用 IAPWS 的 Wagner 與 Pruß（2002）方程式；昇華壓與冰 Ih 的熔化壓用 IAPWS 2011 年的方程式（Wagner、Riethmann、Feistel、Harvey）。圖只畫到 100 MPa，低於冰 III 等高壓冰出現的 208.6 MPa。</li>
+        <li data-en-html="<strong>Water</strong>: vapour pressure and saturated densities from the IAPWS equations of Wagner and Pruß (2002); sublimation pressure and the melting pressure of ice Ih from the IAPWS 2011 release (Wagner, Riethmann, Feistel and Harvey). The diagram stops at 100 MPa, below the pressure (208.6 MPa) where ice III and other high-pressure ices appear.">水：蒸氣壓與飽和密度用 IAPWS 的 Wagner 與 Pruß（2002）方程式；昇華壓與冰 Ih 的熔化壓用 IAPWS 2011 年的方程式（Wagner、Riethmann、Feistel、Harvey）。圖只畫到 100 MPa，低於冰 III 等高壓冰出現的 208.6 MPa。</li>
         <li data-en-html="<strong>Carbon dioxide</strong>: the vapour-pressure, sublimation, melting and saturated-density equations of Span and Wagner (1996), the reference equation used by the NIST Chemistry WebBook.">二氧化碳：Span 與 Wagner（1996）的蒸氣壓、昇華壓、熔化壓與飽和密度方程式（NIST 化學網路書採用的參考方程式）。</li>
-        <li data-en-html="<strong>Iodine</strong>: triple point (113.5 °C, 12.07 kPa), normal boiling point (184.4 °C) and critical point (546 °C, 11.7 MPa) from the CRC Handbook. Sublimation line: the Clausius–Clapeyron equation integrated from the triple point with \(\Delta H_\text{sub}\) = 62.42 kJ/mol at 25 °C and \(\Delta C_p\) = −17.55 J/(mol·K) (NIST); it gives 40 Pa at 25 °C, close to the value from the NIST standard entropies. Liquid–vapour line: \(\ln P = A + B/T + C\ln T\) through the triple, boiling and critical points (heat of vaporization linear in temperature); within 2% of the NIST (Stull) vapour pressures. Melting line: the Clapeyron equation with \(\Delta H_\text{fus}\) = 15.52 kJ/mol and the densities of solid (4.93 g/cm<sup>3</sup>) and liquid (3.96 g/cm<sup>3</sup>) iodine, taken as constant (about 3.2 MPa/K). No reliable saturated-density equation exists for iodine, so its density readout is left out.">碘：三相點（113.5 °C、12.07 kPa）、正常沸點（184.4 °C）與臨界點（546 °C、11.7 MPa）取自 CRC Handbook。昇華線：由三相點積分克勞修斯—克拉佩龍方程式，25 °C 的昇華熱 \(\Delta H_\text{sub}\) = 62.42 kJ/mol、\(\Delta C_p\) = −17.55 J/(mol·K)（NIST），算出 25 °C 時 40 Pa，與 NIST 標準熵算出的值相近。氣液線：通過三相點、沸點、臨界點的 \(\ln P = A + B/T + C\ln T\)（汽化熱隨溫度線性變化），與 NIST 收錄的 Stull 蒸氣壓相差 2% 以內。熔化線：克拉佩龍方程式，熔化熱 \(\Delta H_\text{fus}\) = 15.52 kJ/mol、固態 4.93 g/cm<sup>3</sup>、液態 3.96 g/cm<sup>3</sup>，視為固定（約 3.2 MPa/K）。碘沒有可靠的飽和密度方程式，所以不顯示密度。</li>
+        <li data-en-html="<strong>Iodine</strong>: triple point (113.5 °C, 12.07 kPa), normal boiling point (184.4 °C) and critical point (546 °C, 11.7 MPa) from the CRC Handbook. Sublimation line: the Clausius–Clapeyron equation integrated from the triple point with \(\Delta H_\text{sub}\) = 62.42 kJ/mol at 25 °C and \(\Delta C_p\) = −17.55 J/(mol·K) (NIST); it gives 40 Pa at 25 °C, close to the value from the NIST standard entropies. Liquid–vapour line: \(\ln P = A + B/T + C\ln T\) through the triple, boiling and critical points (heat of vaporization linear in temperature); within 2 % of the NIST (Stull) vapour pressures. Melting line: the Clapeyron equation with \(\Delta H_\text{fus}\) = 15.52 kJ/mol and the densities of solid (4.93 g/cm<sup>3</sup>) and liquid (3.96 g/cm<sup>3</sup>) iodine, taken as constant (about 3.2 MPa/K). No reliable saturated-density equation exists for iodine, so its density readout is left out.">碘：三相點（113.5 °C、12.07 kPa）、正常沸點（184.4 °C）與臨界點（546 °C、11.7 MPa）取自 CRC Handbook。昇華線：由三相點積分克勞修斯—克拉佩龍方程式，25 °C 的昇華熱 \(\Delta H_\text{sub}\) = 62.42 kJ/mol、\(\Delta C_p\) = −17.55 J/(mol·K)（NIST），算出 25 °C 時 40 Pa，與 NIST 標準熵算出的值相近。氣液線：通過三相點、沸點、臨界點的 \(\ln P = A + B/T + C\ln T\)（汽化熱隨溫度線性變化），與 NIST 收錄的 Stull 蒸氣壓相差 2 % 以內。熔化線：克拉佩龍方程式，熔化熱 \(\Delta H_\text{fus}\) = 15.52 kJ/mol、固態 4.93 g/cm<sup>3</sup>、液態 3.96 g/cm<sup>3</sup>，視為固定（約 3.2 MPa/K）。碘沒有可靠的飽和密度方程式，所以不顯示密度。</li>
         <li data-en-html="The phase at a point is decided by which side of each line it lies on; above both the critical temperature and pressure it is called supercritical. A drag, a slider move or a path step is followed along a straight line in (T, ln P); every crossing point is found by bisection and written into the table.">某一點的相由它在每條線的哪一側決定；溫度與壓力都高於臨界值就是超臨界流體。拖曳、移動滑桿或路徑的每一步，都在 (T, ln P) 上沿直線追蹤，越過界線的位置用二分法求出，寫進紀錄表。</li>
-        <li data-en-html="Two-point heats: \(\Delta H = R\ln(P_2/P_1)/(1/T_1 - 1/T_2)\) from the last two crossings of the same line (pressures at least 5% apart). Because real vapour is not quite ideal, the result for water near 100 °C is about 1% higher than the true heat of vaporization (40.65 kJ/mol).">兩點求相變熱：用同一條線上最近兩個相變點（壓力至少差 5%）算 \(\Delta H = R\ln(P_2/P_1)/(1/T_1 - 1/T_2)\)。真實的蒸氣不完全理想，所以水在 100 °C 附近算出的值比真正的汽化熱（40.65 kJ/mol）高約 1%。</li>
-        <li data-en-html="The cylinder is only a sketch: when a path crosses a line it pauses on the line for a moment while one phase turns into the other (in reality the time depends on how fast heat flows in). Molecule numbers, spacing and the piston height are not to scale — a gas at 1 atm takes up about a thousand times the volume of its liquid. The contrast of the liquid–vapour boundary follows the real density difference (water, CO<sub>2</sub>) or the scaling law \((1 - T/T_\mathrm{c})^{0.33}\) (iodine).">汽缸只是示意圖：路徑越過界線時會在線上停一下，表示一個相逐漸變成另一個相（真實需要的時間看熱量流入多快）。分子數、間距與活塞高度不依比例——1 atm 的氣體體積大約是液體的一千倍。液面與蒸氣交界的明暗依真實的密度差（水、CO<sub>2</sub>）或標度律 \((1 - T/T_\mathrm{c})^{0.33}\)（碘）。</li>
+        <li data-en-html="Two-point heats: \(\Delta H = R\ln(P_2/P_1)/(1/T_1 - 1/T_2)\) from the last two crossings of the same line (pressures at least 5 % apart). Because real vapour is not quite ideal, the result for water near 100 °C is about 1 % higher than the true heat of vaporization (40.65 kJ/mol).">兩點求相變熱：用同一條線上最近兩個相變點（壓力至少差 5 %）算 \(\Delta H = R\ln(P_2/P_1)/(1/T_1 - 1/T_2)\)。真實的蒸氣不完全理想，所以水在 100 °C 附近算出的值比真正的汽化熱（40.65 kJ/mol）高約 1 %。</li>
+        <li data-en-html="The cylinder is only a sketch: when a path crosses a line it pauses on the line for a moment while one phase turns into the other (in reality the time depends on how fast heat flows in). Molecule numbers, spacing and the piston height are not to scale — a gas at 1 atm takes up about a thousand times the volume of its liquid. The contrast of the liquid–vapour boundary follows the real density difference (water, CO<sub>2</sub>) or the scaling law \((1 - T/T_\mathrm{c})^{0.33}\) (iodine).">汽缸只是示意圖：路徑越過界線時會在線上停一下，表示一個相逐漸變成另一個相（真實需要的時間看熱量流入多快）。分子數、間距與活塞高度不依比例——1 atm 的氣體體積大約是液體的一千倍。液面與蒸氣交界的明暗依真實的密度差（水、CO<sub>2</sub>）或標度律 \((1 - T/T_\mathrm{c})^{0.33}\)（碘）。</li>
         <li data-en-html="No 3D view: the pressure–temperature diagram is a complete two-dimensional map. A pressure–volume–temperature surface would need a full equation of state for solid, liquid and gas, which is not available with comparable accuracy for all three substances.">沒有 3D 檢視：壓力—溫度相圖本身就是完整的平面地圖；要畫壓力—體積—溫度的立體曲面，需要固、液、氣三相都準確的狀態方程式，三種物質無法都做到同樣的準確度。</li>
       </ul>
 
@@ -267,18 +297,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/phase-diagram-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/phase-diagram.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="phase-diagram"></script>
-  <script src="js/missions/phase-diagram.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="phase-diagram"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/phase-diagram-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/vpad.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/phase-diagram.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="phase-diagram"></script>
+  <script src="js/missions/phase-diagram.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="phase-diagram"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

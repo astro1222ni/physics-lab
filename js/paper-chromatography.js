@@ -15,6 +15,41 @@
  */
 (function () {
   'use strict';
+
+  // 分段量字再對齊，沿用目前的基線、字型與主題色。
+  function drawNotation(g, label, x, y, color, align, baseline, font, maxWidth) {
+    g.save();
+    const px = Number(font.match(/([\d.]+)px/)[1]);
+    const small = font.replace(/[\d.]+px/, (px * 0.72) + 'px');
+    const runs = label.split(/(<su[bp]>[^<]+<\/su[bp]>)/).filter(Boolean).map(function (t) {
+      const match = /^<(sub|sup)>([^<]+)<\/\1>$/.exec(t);
+      const text = match ? match[2] : t;
+      const face = match ? small : font;
+      g.font = face;
+      return { text: text, face: face, width: g.measureText(text).width,
+        dy: match ? (match[1] === 'sub' ? 0.24 : -0.40) * px : 0 };
+    });
+    const width = runs.reduce(function (sum, run) { return sum + run.width; }, 0);
+    g.translate(x, y);
+    if (maxWidth && width > maxWidth) g.scale(maxWidth / width, 1);
+    let left = align === 'right' ? -width : align === 'center' ? -width / 2 : 0;
+    runs.forEach(function (run) {
+      LD.haloText(g, run.text, left, run.dy, color, 'left', baseline, run.face);
+      left += run.width;
+    });
+    g.restore();
+  }
+
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const P = window.PaperChromCore, LD = window.LabDraw;
   if (!P || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -47,12 +82,12 @@
       const p = Math.round(phi * 1000) / 10;
       if (p === 0) return T('水', 'water');
       if (p === 100) return T('乙醇', 'ethanol');
-      return T('水＋乙醇 ' + num(p, p % 1 ? 1 : 0) + '%', 'water + ' + num(p, p % 1 ? 1 : 0) + '% ethanol');
+      return T('水＋乙醇 ' + num(p, p % 1 ? 1 : 0) + ' %', 'water + ' + num(p, p % 1 ? 1 : 0) + ' % ethanol');
     }
     return T(P.SOLV[key].zh, P.SOLV[key].en);
   }
   function solvShort(key, phi) {
-    if (key === 'mix') { const p = Math.round(phi * 1000) / 10; return T('乙醇 ', 'EtOH ') + num(p, p % 1 ? 1 : 0) + '%'; }
+    if (key === 'mix') { const p = Math.round(phi * 1000) / 10; return T('乙醇 ', 'EtOH ') + num(p, p % 1 ? 1 : 0) + ' %'; }
     return { salt: T('食鹽水', 'salt water'), ace: T('丙酮', 'acetone'), pe: T('石油醚＋丙酮', 'pet. ether') }[key];
   }
 
@@ -114,11 +149,19 @@
   let syncing = false;
   function val(e) { return window.LabNum ? window.LabNum.value(e) : +e.value; }
   function setVal(e, v) { if (window.LabNum) window.LabNum.set(e, v); else { e.value = v; e.dispatchEvent(new Event('input')); } }
+  for (const [key, slider] of [['fineStart', elZ0], ['fineLiquid', elZL]]) {
+    $(key).querySelectorAll('button').forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (slider.disabled || state.phase !== PH.setup) return;
+        setVal(slider, Math.max(+slider.min, Math.min(+slider.max, val(slider) + 0.05 * Number(button.dataset.delta))));
+      });
+    });
+  }
   function refreshOutputs() {
-    $('spoto').textContent = num(state.spot, 1) + ' mm';
-    $('z0o').textContent = num(state.z0, 2) + ' cm';
-    $('zLo').textContent = num(state.zL, 2) + ' cm';
-    $('phio').textContent = num(state.phi * 100, Math.abs(state.phi * 1000 - Math.round(state.phi * 1000)) < 1e-6 && Math.round(state.phi * 1000) % 10 ? 1 : 0) + ' %';
+    $('spoto').textContent = num(state.spot, 1) + ' mm';
+    $('z0o').textContent = num(state.z0, 2) + ' cm';
+    $('zLo').textContent = num(state.zL, 2) + ' cm';
+    $('phio').textContent = num(state.phi * 100, Math.abs(state.phi * 1000 - Math.round(state.phi * 1000)) < 1e-6 && Math.round(state.phi * 1000) % 10 ? 1 : 0) + ' %';
   }
 
   // ======================= 濾紙（離屏畫布，2D 與 3D 共用） =======================
@@ -266,7 +309,7 @@
     const S = snd();
     if (S) S.noise({ dur: 0.18, gain: 0.1, filter: 3200, q: 2 });
     setStatus(snap.ranOff ? T('前緣在濾紙上緣：畫下的線其實不是真正的前緣。', 'The front is at the top edge: the line you drew is not the true front.') :
-      T('已用鉛筆畫下溶劑前緣（離起始線 ' + num(P.roundRuler(frontMark - state.z0), 2) + ' cm）。點斑點量 Rf。', 'Solvent front marked (' + num(P.roundRuler(frontMark - state.z0), 2) + ' cm from the start line). Tap the spots to measure Rf.'));
+      T('已用鉛筆畫下溶劑前緣（離起始線 ' + num(P.roundRuler(frontMark - state.z0), 2) + ' cm）。點斑點量 Rf。', 'Solvent front marked (' + num(P.roundRuler(frontMark - state.z0), 2) + ' cm from the start line). Tap the spots to measure Rf.'));
     // 已經量過的斑點補算 Rf
     meas.forEach(function (m) {
       if (m.paper === paperId && m.Rf == null) { finishMeas(m); emitMeas(m); }
@@ -274,9 +317,11 @@
     refreshAll();
   }
 
+  // 固定點樣直徑 2 mm（起始標準差 0.05 cm），其餘條件與這張濾紙相同。
+  function referenceSnapshot() { return P.snapshot(run, 0.05); }
   function takeData() {
     const s = snap;
-    const ref = P.snapshot(run, 0.05);    // 同樣的展開、點樣直徑 2 mm
+    const ref = referenceSnapshot();
     return {
       paper: paperId, t: run.t, dF: s.dF, ranOff: s.ranOff, submerged: s.submerged, lidOpenAll: run.lidOpenAll, lidClosedAll: run.lidClosedAll,
       solvent: run.o.solvent, phi: run.o.phi, spot: run.o.spot, z0: run.o.z0, zL: run.o.zL, pen: run.o.pen, penMove: penMove(),
@@ -339,9 +384,9 @@
     return sI < P.topS(run) - 0.3 && snap.s >= 0.98 * sI;
   }
   function measText(m) {
-    const head = LANES[m.lane] + T(' 道斑點：離起始線 ', ' lane spot: ') + num(m.d, 2) + T(' cm', ' cm from the start line');
+    const head = LANES[m.lane] + T(' 道斑點：離起始線 ', ' lane spot: ') + num(m.d, 2) + T(' cm', ' cm from the start line');
     if (m.Rf == null) return head + T('；還沒標記溶劑前緣，算不出 Rf。', '; the solvent front is not marked, so there is no Rf.');
-    return head + T('，前緣 ', ', front ') + num(m.dF, 2) + ' cm，R<sub>f</sub> = ' + num(m.d, 2) + ' ÷ ' + num(m.dF, 2) + ' = <b>' + num(m.Rf, 3) + '</b>' +
+    return head + T('，前緣 ', ', front ') + num(m.dF, 2) + ' cm，R<sub>f</sub> = ' + num(m.d, 2) + ' ÷ ' + num(m.dF, 2) + ' = <b>' + num(m.Rf, 3) + '</b>' +
       (m.ranOff ? T('（前緣跑出紙外，這個值不準）', ' (the front ran off the paper: not reliable)') : '');
   }
 
@@ -399,7 +444,7 @@
       dissolveSaid = true;
       setStatus('<span class="warn">' + T('樣品幾乎全部溶進槽裡的展開液了，濾紙上什麼都沒留下。', 'Almost all the sample has dissolved into the solvent in the tank; nothing is left on the paper.') + '</span>');
     }
-    if (run.t > 6 * 3600) { setRunning(false); setStatus(T('已經展開 6 小時，自動暫停。', 'Six hours of development: paused automatically.')); }
+    if (run.t > 6 * 3600) { setRunning(false); setStatus(T('已經展開 6 小時，自動暫停。', 'Six hours of development: paused automatically.')); }
     if (userActed && window.LabMission && performance.now() - lastTick > 500) { lastTick = performance.now(); window.LabMission.emit('tick', tickData()); }
   }
 
@@ -549,13 +594,13 @@
     if (o.z0 <= o.zL) LD.pill(c, T('起始線在液面下！', 'Start line under the surface!'), X_(P.PAPER.W / 2), Y_(o.z0 + L) - 0.9 * k, col.pos, 'center', font);
     if (state.phase === PH.run && sn.t > 0) {
       const yF = Y_(sn.zF + L);
-      LD.pill(c, T('前緣', 'front') + ' ' + num(Math.max(0, sn.dF), 1) + ' cm', X_(P.PAPER.W) - 0.15 * k, yF - 0.2 * k, sn.ranOff ? col.pos : col.accent, 'right', font);
+      LD.pill(c, T('前緣', 'front') + ' ' + num(Math.max(0, sn.dF), 1) + ' cm', X_(P.PAPER.W) - 0.15 * k, yF - 0.2 * k, sn.ranOff ? col.pos : col.accent, 'right', font);
     }
     if (frontMark != null && state.phase === PH.out) LD.pill(c, T('溶劑前緣', 'solvent front'), X_(P.PAPER.W) - 0.15 * k, Y_(frontMark + L) - 0.2 * k, col.text, 'right', font);
     if (state.phase === PH.out) {
       meas.forEach(function (m) {
         if (m.paper !== paperId) return;
-        LD.pill(c, m.Rf != null ? 'R' + T('f', 'f') + ' ' + num(m.Rf, 2) : num(m.d, 2) + ' cm', X_(P.PAPER.lanes[m.lane]) + 0.3 * k, Y_(m.z + L) + 0.32 * k, m.Rf != null ? col.text : col.muted, 'left', font);
+        LD.pill(c, m.Rf != null ? 'R' + T('f', 'f') + ' ' + num(m.Rf, 2) : num(m.d, 2) + ' cm', X_(P.PAPER.lanes[m.lane]) + 0.3 * k, Y_(m.z + L) + 0.32 * k, m.Rf != null ? col.text : col.muted, 'left', font);
       });
     }
     if (!G.wide) {
@@ -649,7 +694,7 @@
     c.strokeRect(Math.round(b.x) + 0.5, Math.round(b.y) + 0.5, Math.round(b.w), Math.round(b.h));
     c.fillStyle = col.text; c.textAlign = 'center'; c.textBaseline = 'bottom';
     if (xlab) c.fillText(xlab, b.x + b.w / 2, b.y + b.h + 34);
-    if (ylab) { c.save(); c.translate(14, b.y + b.h / 2); c.rotate(-Math.PI / 2); c.textBaseline = 'middle'; c.fillText(ylab, 0, 0); c.restore(); }
+    if (ylab) { c.save(); c.translate(14, b.y + b.h / 2); c.rotate(-Math.PI / 2); c.textBaseline = 'middle'; drawNotation(c, ylab, 0, 0, col.text, 'center', 'middle', c.font); c.restore(); }
     return { X: X, Y: Y };
   }
   function drawGraph() {
@@ -670,7 +715,7 @@
     curves.forEach(function (cu) { cu.pts.forEach(function (p) { tmax = Math.max(tmax, p[0]); ymax = Math.max(ymax, sq ? p[1] * p[1] : p[1]); }); });
     const top = P.topS(run);
     ymax = Math.min(Math.max(ymax * 1.12, sq ? 4 : 2), sq ? 400 : 22);
-    const A = axes(b, [0, tmax / 60 * 1.05], [0, ymax], T('時間 t（分鐘）', 'time t (min)'), sq ? T('s²（cm²）', 's² (cm²)') : T('前緣離液面 s（cm）', 'front above surface s (cm)'));
+    const A = axes(b, [0, tmax / 60 * 1.05], [0, ymax], T('時間 t（分鐘）', 'time t (min)'), sq ? T('s<sup>2</sup>（cm<sup>2</sup>）', 's<sup>2</sup> (cm<sup>2</sup>)') : T('前緣離液面 s（cm）', 'front above surface s (cm)'));
     // 濾紙上緣
     const yTop = sq ? top * top : top;
     if (yTop <= ymax) {
@@ -683,7 +728,7 @@
       if (ys <= ymax) {
         c.strokeStyle = LD.alpha(col.accent, 0.7); c.setLineDash([2, 4]); c.lineWidth = 1.2;
         c.beginPath(); c.moveTo(b.x, A.Y(ys)); c.lineTo(b.x + b.w, A.Y(ys)); c.stroke(); c.setLineDash([]);
-        LD.pill(c, 's∞ = ' + num(si, 2) + ' cm', b.x + b.w - 6, A.Y(ys) - 3, col.accent, 'right', '11px ' + LD.FONT);
+        LD.pill(c, 's∞ = ' + num(si, 2) + ' cm', b.x + b.w - 6, A.Y(ys) - 3, col.accent, 'right', '11px ' + LD.FONT);
       }
     }
     curves.forEach(function (cu, i) {
@@ -731,7 +776,7 @@
     const pts = meas.filter(function (m) { return m.Rf != null; });
     // x：乙醇百分比 0–100，右邊另外三欄：食鹽水、丙酮、石油醚＋丙酮
     const cat = { salt: 112, ace: 124, pe: 136 };
-    const A = axes(b, [-4, 142], [0, 1], T('展開液', 'solvent'), 'Rf', function (v) { return v <= 100 ? num(v, 0) + '%' : ''; });
+    const A = axes(b, [-4, 142], [0, 1], T('展開液', 'solvent'), 'Rf', function (v) { return v <= 100 ? num(v, 0) + ' %' : ''; });
     c.fillStyle = col.muted; c.font = '11px ' + LD.FONT; c.textAlign = 'center'; c.textBaseline = 'top';
     c.fillText(T('乙醇體積百分比', '% ethanol by volume'), A.X(50), b.y + b.h + 18);
     [['salt', T('鹽水', 'salt')], ['ace', T('丙酮', 'acet.')], ['pe', T('石油醚', 'PE')]].forEach(function (q) { c.fillText(q[1], A.X(cat[q[0]]), b.y + b.h + 4); });
@@ -749,7 +794,7 @@
     $('sqRow').hidden = state.tab !== 'front';
     if (state.tab === 'front') {
       lg.innerHTML = '<span><i class="ln" style="background:' + col.accent + '"></i>' + T('這一張濾紙', 'this paper') + '</span> <span><i class="ln" style="background:' + col.muted + '"></i>' + T('之前的濾紙', 'earlier papers') + '</span>';
-      hint.innerHTML = state.sq ? T('s² 對 t 是直線（斜率 D）：前緣高度和 √t 成正比。沒蓋蓋子時曲線會往下彎、趨近 s∞²。', 's² against t is a straight line (slope D): the height grows like √t. With the lid off the line bends over towards s∞².') :
+      hint.innerHTML = state.sq ? T('s<sup>2</sup> 對 t 是直線（斜率 D）：前緣高度和 √t 成正比。沒蓋蓋子時曲線會往下彎、趨近 s∞<sup>2</sup>。', 's<sup>2</sup> against t is a straight line (slope D): the height grows like √t. With the lid off the line bends over towards s∞<sup>2</sup>.') :
         T('前緣越爬越慢：爬兩倍高要四倍時間。', 'The front slows down as it climbs: twice the height takes four times as long.');
     } else if (state.tab === 'prof') {
       lg.innerHTML = [0, 1, 2].filter(function (i) { return run.o.lanes[i] !== 'none'; }).map(function (i) {
@@ -759,7 +804,7 @@
       [0, 1, 2].forEach(function (i) {
         if (run.o.lanes[i] === 'none') return;
         const pk = P.peaks(snap, i).length, pr = P.pairs(snap, i);
-        parts.push(LANES[i] + T(' 道看得出 ', ': ') + pk + T(' 個斑點', pk === 1 ? ' spot' : ' spots') + (pr.minRs != null && snap.t > 0 ? T('，相鄰成分最小 R', ', smallest R') + '<sub>s</sub> = ' + num(pr.minRs, 2) : ''));
+        parts.push(LANES[i] + T(' 道看得出 ', ': ') + pk + T(' 個斑點', pk === 1 ? ' spot' : ' spots') + (pr.minRs != null && snap.t > 0 ? T('，相鄰成分最小 R', ', smallest R') + '<sub>s</sub> = ' + num(pr.minRs, 2) : ''));
       });
       hint.innerHTML = parts.join(T('；', '; ')) + (parts.length ? T('。', '.') : '') + ' ' + T('R<sub>s</sub> ≥ 1.5 時完全分開。', 'R<sub>s</sub> ≥ 1.5 means completely separated.');
     } else {
@@ -775,11 +820,11 @@
     const s = Math.sqrt(run.u), eps = run.o.lid ? 0 : sv.eps;
     const v = s > 0 ? (sv.D - 2 * eps * run.u) / (2 * s) * 60 : null;
     out.push([T('展開時間', 'Development time'), state.phase === PH.setup ? '—' : clock(run.t)]);
-    out.push([T('前緣離液面 s', 'Front above surface s'), state.phase === PH.setup ? '—' : num(sn.s, 2) + ' cm']);
-    out.push([T('前緣離起始線 d<sub>f</sub>', 'Front from start line d<sub>f</sub>'), state.phase === PH.setup ? '—' : sn.dF > 0 ? num(sn.dF, 2) + ' cm' : T('還沒到', 'not yet')]);
-    out.push([T('前緣上升速度', 'Speed of the front'), state.phase === PH.run && v != null && !sn.ranOff ? sigf(Math.max(0, v), 3) + ' cm/min' : '—']);
-    out.push([T('毛細係數 D<small>s² = D·t</small>', 'Capillary coefficient D<small>s² = D·t</small>'), sigf(sv.D, 3) + ' cm²/s']);
-    if (!run.o.lid) out.push([T('沒蓋時前緣的極限 s∞', 'Limit with lid off s∞'), num(P.sInf(sv), 2) + ' cm']);
+    out.push([T('前緣離液面 s', 'Front above surface s'), state.phase === PH.setup ? '—' : num(sn.s, 2) + ' cm']);
+    out.push([T('前緣離起始線 d<sub>f</sub>', 'Front from start line d<sub>f</sub>'), state.phase === PH.setup ? '—' : sn.dF > 0 ? num(sn.dF, 2) + ' cm' : T('還沒到', 'not yet')]);
+    out.push([T('前緣上升速度', 'Speed of the front'), state.phase === PH.run && v != null && !sn.ranOff ? sigf(Math.max(0, v), 3) + ' cm/min' : '—']);
+    out.push([T('毛細係數 D<small>s<sup>2</sup> = D·t</small>', 'Capillary coefficient D<small>s<sup>2</sup> = D·t</small>'), sigf(sv.D, 3) + ' cm<sup>2</sup>/s']);
+    if (!run.o.lid) out.push([T('沒蓋時前緣的極限 s∞', 'Limit with lid off s∞'), num(P.sInf(sv), 2) + ' cm']);
     let st;
     if (state.phase === PH.setup) st = T('準備中（濾紙吊在液面上方）', 'Ready (paper above the solvent)');
     else if (state.phase === PH.out) st = T('已取出', 'Out of the tank') + (frontMark != null ? T('，前緣已標記', ', front marked') : dryLeft > 0 ? T('，前緣還看得見', ', front still visible') : T('，濾紙已乾', ', paper dry'));
@@ -787,16 +832,29 @@
     if (sn.ranOff && state.phase !== PH.setup) st += T('（前緣跑出紙外）', ' (front ran off)');
     if (sn.submerged && state.phase !== PH.setup) st += T('（樣品溶進展開液）', ' (sample dissolving)');
     out.push([T('狀態', 'Status'), st]);
+    if (state.phase !== PH.setup) {
+      const ref = referenceSnapshot();
+      sn.lanes.forEach(function (lane, i) {
+        if (lane.key === 'none') return;
+        const actual = P.pairs(sn, i), control = P.pairs(ref, i);
+        const closest = actual.pairs.find(function (pair) { return pair.Rs === actual.minRs; });
+        const pairName = closest ? '<small class="rs-pair">' + compName(closest.a) + ' / ' + compName(closest.b) + '</small>' : '';
+        const label = LANES[i] + T(' 道最小 R<sub>s</sub>', ' · minimum R<sub>s</sub>');
+        out.push([label + '<small>' + sampleName(lane.key) + '</small>', actual.minRs == null ? '—' : num(actual.minRs, 3) + pairName]);
+        out.push([LANES[i] + T(' 道 2 mm 對照 R<sub>s</sub>', ' · 2 mm reference R<sub>s</sub>'), control.minRs == null ? '—' : num(control.minRs, 3)]);
+      });
+    }
     $('readout').innerHTML = out.map(function (q) { return '<dt>' + q[0] + '</dt><dd>' + q[1] + '</dd>'; }).join('');
   }
   function updateSolvInfo() {
     const sv = P.solvent(state.solvent, state.phi);
     const t10 = sigf(P.timeTo(sv, 10) / 60, 2), g = num(sv.gamma, 1), e = num(sv.eta, 2), pol = num(sv.ETN, 2);
-    $('solvInfo').innerHTML = T('表面張力 γ = ' + g + ' mN/m，黏度 η = ' + e + ' mPa·s，極性 E<sub>T</sub><sup>N</sup> ≈ ' + pol + '。蓋著蓋子時，前緣爬 10 cm 約需 ' + t10 + ' 分鐘。',
-      'Surface tension γ = ' + g + ' mN/m, viscosity η = ' + e + ' mPa·s, polarity E<sub>T</sub><sup>N</sup> ≈ ' + pol + '. With the lid on the front climbs 10 cm in about ' + t10 + ' min.') +
+    $('solvInfo').innerHTML = T('表面張力 γ = ' + g + ' mN/m，黏度 η = ' + e + ' mPa·s，極性 E<sub>T</sub><sup>N</sup> ≈ ' + pol + '。蓋著蓋子時，前緣爬 10 cm 約需 ' + t10 + ' 分鐘。',
+      'Surface tension γ = ' + g + ' mN/m, viscosity η = ' + e + ' mPa·s, polarity E<sub>T</sub><sup>N</sup> ≈ ' + pol + '. With the lid on the front climbs 10 cm in about ' + t10 + ' min.') +
       (state.solvent === 'pe' ? T('（石油醚是沸點低的烷類混合物，性質接近己烷。）', ' (Petroleum ether is a mixture of low-boiling alkanes, much like hexane.)') : '');
   }
   function updateWetbar() {
+    document.querySelectorAll('.fine-row button').forEach(function (b) { b.disabled = state.phase !== PH.setup; });
     const on = state.phase === PH.out && dryLeft > 0 && frontMark == null;
     $('wetbar').hidden = !on;
     if (on) $('wetfill').style.width = (100 * dryLeft / dryTotal).toFixed(1) + '%';
@@ -815,7 +873,7 @@
       P.peaks(snap, i).forEach(function (pk, j) {
         const m = P.odAt(snap, i, pk.z);
         const done = meas.some(function (q) { return q.paper === paperId && q.lane === i && Math.abs(q.z - pk.z) < 0.06; });
-        h += '<button type="button" data-lane="' + i + '" data-z="' + pk.z.toFixed(3) + '" aria-pressed="' + done + '" aria-label="' + LANES[i] + T(' 道第 ', ' lane spot ') + (j + 1) + T(' 個斑點', '') + '"><i style="background:' + mixColor(m.parts) + '"></i>' + LANES[i] + (j + 1) + '</button>';
+        h += '<button type="button" data-lane="' + i + '" data-z="' + pk.z.toFixed(3) + '" aria-pressed="' + done + '" aria-label="' + LANES[i] + T(' 道第 ', ' lane spot ') + (j + 1) + T(' 個斑點', '') + '"><i style="background:' + mixColor(m.parts) + '"></i>' + LANES[i] + (j + 1) + '</button>';
       });
     });
     box.innerHTML = h || '<span class="hint">' + T('看不到任何斑點。', 'No visible spots.') + '</span>';
@@ -871,7 +929,7 @@
     if (S) { if (ok) { S.tone({ freq: 784, dur: 0.1, gain: 0.14 }); S.tone({ freq: 1047, dur: 0.16, gain: 0.12, delay: 0.09 }); } else S.sweep({ from: 392, to: 262, dur: 0.25, gain: 0.12, type: 'triangle' }); }
     $('xOut').innerHTML = ok ? '<span class="ok">' + T('答對了！', 'Correct!') + '</span> ' + T('X 含有：', 'X contains: ') + X.map(compName).join(T('、', ', ')) + T('。', '.') :
       '<span class="no">' + T('不對。', 'Not right.') + '</span> ' + (xState.ran ? T('比較 X 和標準品的斑點：顏色相同、R<sub>f</sub> 也相同才算同一種。換一種展開液再比對一次會更有把握。', 'Compare the spots of X with the standards: the same colour and the same R<sub>f</sub>. A second solvent makes it more certain.') :
-        T('先把 X 和標準品點在同一張濾紙上展開（前緣至少走 3 cm）。', 'First develop X next to the standards on the same paper (let the front travel at least 3 cm).'));
+        T('先把 X 和標準品點在同一張濾紙上展開（前緣至少走 3 cm）。', 'First develop X next to the standards on the same paper (let the front travel at least 3 cm).'));
     if (window.LabMission) window.LabMission.emit('identify', { ok: ok, revealed: xState.revealed, tries: xState.tries, ran: xState.ran });
   }
   function revealX() {
@@ -912,7 +970,7 @@
       colors: function () { return col; },
       hud: function () {
         return { tl: 't = ' + clock(run.t) + (state.phase === PH.run ? (state.running ? '' : T('（暫停）', ' (paused)')) : state.phase === PH.out ? T('（已取出）', ' (out)') : T('（準備中）', ' (ready)')),
-          tr: solvName(run.o.solvent, run.o.phi) + (state.phase !== PH.setup && snap.dF > 0 ? ' · d<sub>f</sub> = ' + num(snap.dF, 2) + ' cm' : '') };
+          tr: solvName(run.o.solvent, run.o.phi) + (state.phase !== PH.setup && snap.dF > 0 ? ' · d<sub>f</sub> = ' + num(snap.dF, 2) + ' cm' : '') };
       },
       animating: needAnim,
       contextLost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
@@ -1058,7 +1116,10 @@
 
   // 畫布：準備時拖曳起始線或液面；取出後點斑點量測
   let drag = null;
-  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; }
+  function canvasXY(ev) {
+    const b = cv.getBoundingClientRect();
+    return [(ev.clientX - b.left) * G.w / b.width, (ev.clientY - b.top) * G.h / b.height];
+  }
   function hitSetup(x, y) {
     if (state.phase !== PH.setup || !G) return null;
     if (x >= X_(0) - 6 && x <= X_(P.PAPER.W) + 6 && Math.abs(y - Y_(state.z0 + lift)) < 14) return 'z0';
@@ -1095,10 +1156,10 @@
       items: [
         { name: function () { return T('起始線', 'Start line'); },
           move: function (dx, dy, big) { if (!dy || state.phase !== PH.setup) return false; setVal(elZ0, Math.max(0.5, Math.min(4, state.z0 + dy * (big ? 0.5 : 0.1)))); return true; },
-          describe: function () { return T('起始線離濾紙下緣 ', 'Start line ') + num(state.z0, 1) + T(' cm', ' cm above the lower edge'); } },
+          describe: function () { return T('起始線離濾紙下緣 ', 'Start line ') + num(state.z0, 1) + T(' cm', ' cm above the lower edge'); } },
         { name: function () { return T('展開液液面', 'Solvent surface'); },
           move: function (dx, dy, big) { if (!dy || state.phase !== PH.setup) return false; setVal(elZL, Math.max(0.2, Math.min(3, state.zL + dy * (big ? 0.5 : 0.1)))); return true; },
-          describe: function () { return T('展開液深度 ', 'Solvent depth ') + num(state.zL, 1) + ' cm'; } }
+          describe: function () { return T('展開液深度 ', 'Solvent depth ') + num(state.zL, 1) + ' cm'; } }
       ],
       onChange: function () { drawStage(performance.now()); }
     });
@@ -1114,8 +1175,8 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {
-    let lw = 0, lg = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lw) { lw = cv.clientWidth; resize(); } }).observe(cv);
+    let lw = 0, lh = 0, lg = 0;
+    new ResizeObserver(function () { if (cv.clientWidth && (cv.clientWidth !== lw || cv.clientHeight !== lh)) { lw = cv.clientWidth; lh = cv.clientHeight; resize(); } }).observe(cv);
     new ResizeObserver(function () { if (gcv.clientWidth !== lg) { lg = gcv.clientWidth; resizeGraph(); drawGraph(); } }).observe(gcv);
   } else window.addEventListener('resize', function () { resize(); resizeGraph(); drawGraph(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lastTs = 0; kick(); } });

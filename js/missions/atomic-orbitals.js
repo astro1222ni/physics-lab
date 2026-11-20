@@ -40,7 +40,7 @@
     {
       id: 'atomic-orbitals-4', level: 3,
       title: { zh: '四葉草', en: 'Four-leaf clover' },
-      desc: { zh: '選一個 dz² 以外的 d 軌域，把 2D 切面放在它四片花瓣所在的平面上（切面通過原子核）。', en: 'Choose a d orbital other than dz² and put the 2D slice in the plane of its four lobes (through the nucleus).' },
+      desc: { zh: '選一個 dz<sup>2</sup> 以外的 d 軌域，把 2D 切面放在它四片花瓣所在的平面上（切面通過原子核）。', en: 'Choose a d orbital other than dz<sup>2</sup> and put the 2D slice in the plane of its four lobes (through the nucleus).' },
       check: function (ev) { const d = D(ev); return !!d && !d.sum && d.l === 2 && LEAF[d.key] === d.plane && Math.abs(d.off) <= 0.3; }
     },
     {
@@ -52,13 +52,13 @@
     {
       id: 'atomic-orbitals-6', level: 4,
       title: { zh: '波耳半徑', en: 'The Bohr radius' },
-      desc: { zh: '選氫原子（H）的 1s，在徑向分布圖上把游標移到曲線最高點（誤差 2% 以內）。', en: 'Choose 1s of hydrogen (H) and move the cursor on the radial distribution to the top of the curve (within 2%).' },
+      desc: { zh: '選氫原子（H）的 1s，在徑向分布圖上把游標移到曲線最高點（誤差 2 % 以內）。', en: 'Choose 1s of hydrogen (H) and move the cursor on the radial distribution to the top of the curve (within 2 %).' },
       check: function (ev) { const d = D(ev); return is(ev, 'cursor') && d.id === '1s' && d.Z === 1 && near(d.cur, 1, 0.02); }
     },
     {
       id: 'atomic-orbitals-7', level: 5,
       title: { zh: '一半的機會', en: 'A fifty-fifty chance' },
-      desc: { zh: '在任一個軌域的徑向分布圖上，找到電子出現在它以內的機率剛好是 50%（±0.5%）的半徑。', en: 'For any orbital, find the radius inside which the electron is found with a probability of exactly 50% (±0.5%).' },
+      desc: { zh: '在任一個軌域的徑向分布圖上，找到電子出現在它以內的機率剛好是 50 %（±0.5 %）的半徑。', en: 'For any orbital, find the radius inside which the electron is found with a probability of exactly 50 % (±0.5 %).' },
       check: function (ev) { const d = D(ev); return is(ev, 'cursor') && near(d.cum, 0.5, 0.005); }
     },
     {
@@ -76,13 +76,13 @@
     {
       id: 'atomic-orbitals-10', level: 7,
       title: { zh: '縮小的離子', en: 'A shrunken ion' },
-      desc: { zh: '選 He+ 的 1s，把游標移到它的最可能半徑（誤差 2% 以內）。', en: 'Choose 1s of He+ and move the cursor to its most probable radius (within 2%).' },
+      desc: { zh: '選 He<sup>+</sup> 的 1s，把游標移到它的最可能半徑（誤差 2 % 以內）。', en: 'Choose 1s of He<sup>+</sup> and move the cursor to its most probable radius (within 2 %).' },
       check: function (ev) { const d = D(ev); return is(ev, 'cursor') && d.id === '1s' && d.Z === 2 && near(d.cur, 0.5, 0.01); }
     },
     {
       id: 'atomic-orbitals-11', level: 8,
       title: { zh: '找到兩道牆', en: 'Both walls' },
-      desc: { zh: '選氫原子的 3s，把徑向分布圖的游標分別移到它的兩個徑向節面上（各在 0.05 個波耳半徑以內）。', en: 'Choose 3s of hydrogen and move the cursor onto each of its two radial nodes (each within 0.05 Bohr radius).' },
+      desc: { zh: '選氫原子的 3s，把徑向分布圖的游標分別移到它的兩個徑向節面上（各在 0.05 個波耳半徑以內）。', en: 'Choose 3s of hydrogen and move the cursor onto each of its two radial nodes (each within 0.05 Bohr radius).' },
       check: function (ev) { const d = D(ev); return is(ev, 'cursor') && d.id === '3s' && d.Z === 1 && d.hits.length === 2 && d.hits[0] && d.hits[1]; }
     },
     {
@@ -94,8 +94,8 @@
     {
       id: 'atomic-orbitals-h1', level: 3, hidden: true,
       riddle: { zh: '伸手碰一碰，啞鈴腰間的那枚戒指。', en: 'Reach out and touch the ring around the dumbbell’s waist.' },
-      // dz²（任何 n）在 xy 切面、通過原子核，探針點在中間那圈環上：ψ < 0，密度至少是環最濃處的 60%
-      // （環上 Y² 是軸上的 1/4，所以環最濃處 = 全空間最大值的 25%，門檻 0.15）
+      // dz^2（任何 n）在 xy 切面、通過原子核，探針點在中間那圈環上：ψ < 0，密度至少是環最濃處的 60%
+      // （環上 Y^2 是軸上的 1/4，所以環最濃處 = 全空間最大值的 25%，門檻 0.15）
       check: function (ev) { const d = D(ev); return is(ev, 'probe') && !d.sum && d.key === 'dz2' && d.plane === 'xy' && Math.abs(d.off) <= 0.2 && d.sign < 0 && d.rel >= 0.15; }
     },
     {
@@ -120,7 +120,7 @@
     {
       id: 'atomic-orbitals-h5', level: 7, hidden: true,
       riddle: { zh: '甜筒的邊緣，一片寂靜。', en: 'Silence along the rim of the cone.' },
-      // dz² 的圓錐節面：探針與 z 軸夾 54.74°（或 125.26°）±0.6°，離原子核至少 2 a0
+      // dz^2 的圓錐節面：探針與 z 軸夾 54.74°（或 125.26°）±0.6°，離原子核至少 2 a0
       check: function (ev) {
         const d = D(ev);
         return is(ev, 'probe') && !d.sum && d.key === 'dz2' && d.pr >= 2 && (near(d.theta, MAGIC, 0.6) || near(d.theta, 180 - MAGIC, 0.6));

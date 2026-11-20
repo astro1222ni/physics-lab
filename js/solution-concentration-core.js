@@ -109,7 +109,7 @@
   /** 由重量莫耳濃度求質量分率（解析） */
   function wFromMolal(sp, m) { const ms = m * SPECIES[sp].M; return ms / (1000 + ms); }
 
-  // ---------------- 量瓶幾何（mm、mm³） ----------------
+  // ---------------- 量瓶幾何（mm、mm^3） ----------------
   // 瓶身：半徑 R 的球，球心在 zc = 0.8R（底部截平），在 r = rn 處接上瓶頸
   const geomCache = {};
   function bulbVol(R, rn, zc, z) {   // 由瓶底（z = 0）到高度 z 的球段體積（z 不超過接頸處）
@@ -132,9 +132,9 @@
     g.Vtop = Vt + Math.PI * rn * rn * F.neck;
     /** 高度 z 處的內半徑 */
     g.r = function (z) { return z >= zt ? rn : z <= 0 ? g.rBottom : Math.sqrt(Math.max(0, R * R - (z - zc) * (z - zc))); };
-    /** 高度 z 以下的容積 mm³ */
+    /** 高度 z 以下的容積 mm^3 */
     g.volAt = function (z) { return z <= 0 ? 0 : z <= zt ? bulbVol(R, rn, zc, z) : Vt + Math.PI * rn * rn * (z - zt); };
-    /** 容積 v mm³ 的液面高度 */
+    /** 容積 v mm^3 的液面高度 */
     g.zAt = function (v) {
       if (v <= 0) return 0;
       if (v >= Vt) return zt + (v - Vt) / (Math.PI * rn * rn);

@@ -13,6 +13,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.CollCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -36,7 +46,7 @@
     return num(x, Math.max(0, Math.min(6, (sig || 3) - 1 - e)));
   }
   function signed(x, d) { return (x > 0 ? '+' : '') + num(x, d); }
-  function pct(x) { return x == null ? '—' : signed(x * 100, Math.abs(x) < 0.1 ? 1 : 0) + '%'; }
+  function pct(x) { return x == null ? '—' : signed(x * 100, Math.abs(x) < 0.1 ? 1 : 0) + ' %'; }
   function parseNum(s) {
     s = String(s || '').normalize('NFKC').replace(/[，,]/g, '.').replace(/[−–—]/g, '-').replace(/\s+/g, '');
     s = s.replace(/[x×]10\^?([-+]?\d+)$/i, 'e$1');
@@ -113,7 +123,6 @@
   let raf = 0, lastTs = 0, lastRead = 0, phase = 0;
   function startLoop() { if (!raf) { lastTs = 0; raf = requestAnimationFrame(loop); } }
   function loop(ts) {
-    raf = 0;
     const dtw = lastTs ? Math.min(0.1, (ts - lastTs) / 1000) : 0;
     lastTs = ts;
     if (dtw > 0) {
@@ -126,7 +135,9 @@
     if (view3 && view3.active) moved = view3.frame(dtw);
     else drawStage();
     const fxOn = now - fx.seedT < 900 || now - fx.nucT < 900 || now - fx.bumpT < 1200 || bubbles.length > 0;
-    if (state.running || (!reducedMotion && fxOn) || moved || (view3 && view3.active && !reducedMotion && view3.animating())) raf = requestAnimationFrame(loop);
+    // 鏡頭更新會同步觸發 change；畫完這一幀前保留 raf，避免同時排入兩個下一幀。
+    const active = state.running || (!reducedMotion && fxOn) || moved || (view3 && view3.active && !reducedMotion && view3.animating());
+    raf = active ? requestAnimationFrame(loop) : 0;
   }
   function advance(dt) {
     const target = run.t + dt;
@@ -139,9 +150,9 @@
       if (rows[rows.length - 1][0] < run.t - 0.5) rows.push(C.sample(run));
       state.running = false;
       updatePlay();
-      setStatus(run.endReason === 'frozen' ? T('溶劑已經結冰 60%，實驗結束。可以分析、記錄結果。', '60% of the solvent has frozen, so the run is over. You can analyse and record the result.') :
+      setStatus(run.endReason === 'frozen' ? T('溶劑已經結冰 60 %，實驗結束。可以分析、記錄結果。', '60 % of the solvent has frozen, so the run is over. You can analyse and record the result.') :
         run.endReason === 'dry' ? T('溶劑已經蒸發掉一半，停止加熱。可以分析、記錄結果。', 'Half of the solvent has boiled away, so the heating stops. You can analyse and record the result.') :
-          T('已經記錄 40 分鐘，實驗結束。', 'The run has reached 40 minutes and stops.'));
+          T('已經記錄 40 分鐘，實驗結束。', 'The run has reached 40 minutes and stops.'));
       if (snd()) window.LabSound.tone({ freq: 440, dur: 0.2, gain: 0.2 });
     }
   }
@@ -157,14 +168,14 @@
       if (ph === 'freezing') {
         fx.nucT = performance.now();
         setStatus(run.seeded ? T('晶種讓過冷的液體立刻開始結晶，溫度跳回凝固點附近。', 'The seed crystal starts the supercooled liquid crystallising at once; the temperature jumps back to near the freezing point.') :
-          T('過冷了 ' + num(run.superDepth, 2) + ' K 才開始結晶！結晶放熱，溫度很快回升。', 'Crystals finally appear after ' + num(run.superDepth, 2) + ' K of supercooling! Freezing releases heat, so the temperature jumps back up.'));
+          T('過冷了 ' + num(run.superDepth, 2) + ' K 才開始結晶！結晶放熱，溫度很快回升。', 'Crystals finally appear after ' + num(run.superDepth, 2) + ' K of supercooling! Freezing releases heat, so the temperature jumps back up.'));
         if (snd()) { window.LabSound.noise({ dur: 0.12, gain: 0.35, filter: 3200, q: 2 }); window.LabSound.tone({ freq: 1320, dur: 0.12, gain: 0.18, delay: 0.05 }); }
       } else if (ph === 'super' && lastPhase === 'cool') {
         setStatus(T('已經低於凝固點，但還沒結冰——這就是過冷。', 'Below the freezing point but still liquid — this is supercooling.'));
       } else if (ph === 'boil') {
         if (run.bumped) {
           fx.bumpT = performance.now();
-          setStatus(T('突沸！過熱了 ' + num(run.superMax, 2) + ' K 的液體一下子劇烈沸騰。', 'Bumping! The liquid, overheated by ' + num(run.superMax, 2) + ' K, boils violently all at once.'));
+          setStatus(T('突沸！過熱了 ' + num(run.superMax, 2) + ' K 的液體一下子劇烈沸騰。', 'Bumping! The liquid, overheated by ' + num(run.superMax, 2) + ' K, boils violently all at once.'));
           if (snd()) { window.LabSound.noise({ dur: 0.35, gain: 0.6, filter: 900, q: 0.8 }); window.LabSound.sweep({ from: 700, to: 300, dur: 0.3 }); }
         } else {
           fx.boilT = performance.now();
@@ -209,7 +220,7 @@
   let cw = 600, ch = 420, dpr = 1;
   let G = {};
   function resize() {
-    const w = cv.clientWidth;
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cw = w;
@@ -363,7 +374,7 @@
     const su = (performance.now() - fx.seedT) / 600;
     if (su >= 0 && su < 1 && !reducedMotion) { ctx.fillStyle = col.ice; ctx.strokeStyle = col.accent; ctx.lineWidth = 1; const yy = ty - 30 + (ly - ty + 30) * su; ctx.beginPath(); ctx.moveTo(ax + 8, yy - 4); ctx.lineTo(ax + 12, yy); ctx.lineTo(ax + 8, yy + 4); ctx.lineTo(ax + 4, yy); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     // 標籤
-    LD.pill(ctx, T('冷浴 ', 'Bath ') + num(run.Tbath, 1) + ' °C', bx + bw - 4, gy - 8, col.cold, 'right');
+    LD.pill(ctx, T('冷浴 ', 'Bath ') + num(run.Tbath, 1) + ' °C', bx + bw - 4, gy - 8, col.cold, 'right');
     G.lcd = { x: Math.max(6, ax - 40 - 118), y: ty - 84 };
   }
 
@@ -380,7 +391,7 @@
     if (heat > 0) { const gg = ctx.createRadialGradient(ax, py - 2, 4, ax, py - 2, pw * 0.5); gg.addColorStop(0, LD.alpha(col.hot, 0.35 * heat)); gg.addColorStop(1, LD.alpha(col.hot, 0)); ctx.fillStyle = gg; ctx.fillRect(px, py - 50, pw, 50); }
     LD.ball(ctx, px + pw - 20, py + ph / 2, 7, col.dark ? '#2e3338' : '#59616a', { shadow: false });
     ctx.fillStyle = col.hot; ctx.beginPath(); ctx.arc(px + 18, py + ph / 2, 3.5, 0, Math.PI * 2); ctx.globalAlpha = heat > 0 ? 1 : 0.25; ctx.fill(); ctx.globalAlpha = 1;
-    LD.pill(ctx, num(run.P, 0) + ' W', px + pw - 34, py + ph - 6, col.text, 'right');
+    LD.pill(ctx, num(run.P, 0) + ' W', px + pw - 34, py + ph - 6, col.text, 'right');
     // 圓底燒瓶
     const R = Math.min(pw * 0.42, ch * 0.17, 74);
     const fy = py - 8 - R * 0.95, nw = R * 0.36, ntop = fy - R * 1.95;
@@ -461,7 +472,7 @@
   function drawTopInfo() {
     const L = G.lcd || { x: 10, y: 10 };
     const x = Math.max(8, L.x), y = Math.max(8, Math.min(L.y, ch - 100));
-    lcd(x, y, 118, 46, num(C.reading(run), 2) + ' °C', T('溫度計', 'Thermometer'));
+    lcd(x, y, 118, 46, num(C.reading(run), 2) + ' °C', T('溫度計', 'Thermometer'));
     const ph = phaseOf();
     const lab = {
       cool: T('液體冷卻中', 'Liquid cooling'), super: T('過冷（低於凝固點，還沒結冰）', 'Supercooled (below the freezing point, no crystals yet)'),
@@ -567,7 +578,7 @@
       }
       ctx.strokeStyle = LD.alpha(LD.shade(lc, -0.4), 0.9); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(mx - r, surf); ctx.lineTo(mx + r, surf); ctx.stroke();
-      LD.pill(ctx, 'P = ' + sigf(P, 3) + ' kPa', mx, my - r * 0.52, P >= 101.3 ? col.hot : col.text, 'center');
+      LD.pill(ctx, 'P = ' + sigf(P, 3) + ' kPa', mx, my - r * 0.52, P >= 101.3 ? col.hot : col.text, 'center');
     }
     ctx.restore();
     ctx.strokeStyle = LD.alpha(col.muted, 0.6); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.stroke();
@@ -626,7 +637,7 @@
     const yT0 = A.Y(th.T0);
     g.strokeStyle = LD.alpha(col.muted, 0.8); g.setLineDash([5, 4]); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(x0, yT0); g.lineTo(x1, yT0); g.stroke(); g.setLineDash([]);
-    LD.pill(g, (run.mode === 'f' ? T('純溶劑凝固點 ', 'pure solvent f.p. ') : T('純溶劑沸點 ', 'pure solvent b.p. ')) + num(th.T0, 1) + ' °C', x1 - 4, run.mode === 'f' ? yT0 - 3 : yT0 + 18, col.muted, 'right');
+    LD.pill(g, (run.mode === 'f' ? T('純溶劑凝固點 ', 'pure solvent f.p. ') : T('純溶劑沸點 ', 'pure solvent b.p. ')) + num(th.T0, 1) + ' °C', x1 - 4, run.mode === 'f' ? yT0 - 3 : yT0 + 18, col.muted, 'right');
     // 曲線
     g.strokeStyle = run.mode === 'f' ? col.cold : col.hot; g.lineWidth = 2.2; g.lineJoin = 'round'; g.lineCap = 'round';
     g.beginPath();
@@ -640,7 +651,7 @@
     }
     if (state.meth === 'raw' && An.ok) {
       g.strokeStyle = col.accent; g.lineWidth = 2; g.beginPath(); g.arc(A.X(An.tTurn), A.Y(An.Tturn), 6, 0, Math.PI * 2); g.stroke();
-      LD.pill(g, num(An.Tturn, 2) + ' °C', A.X(An.tTurn) + 8, A.Y(An.Tturn) + (run.mode === 'f' ? -8 : 24), col.accent, 'left');
+      LD.pill(g, num(An.Tturn, 2) + ' °C', A.X(An.tTurn) + 8, A.Y(An.Tturn) + (run.mode === 'f' ? -8 : 24), col.accent, 'left');
     }
     if (An.line) {
       const L = An.line, tc = An.tCross == null ? L.t0 : An.tCross;
@@ -651,7 +662,7 @@
         g.beginPath(); g.moveTo(A.X(tc - 20), A.Y(L.a + L.b * (tc - 20))); g.lineTo(A.X(L.t0), A.Y(L.a + L.b * L.t0)); g.stroke(); g.setLineDash([]);
         const xc = A.X(tc), yc = A.Y(An.Text);
         g.fillStyle = col.accent; g.beginPath(); g.moveTo(xc, yc - 6); g.lineTo(xc + 6, yc); g.lineTo(xc, yc + 6); g.lineTo(xc - 6, yc); g.closePath(); g.fill();
-        LD.pill(g, T('外插 ', 'extrap. ') + num(An.Text, 2) + ' °C', xc - 8, yc + (run.mode === 'f' ? -9 : 26), col.accent, 'right');
+        LD.pill(g, T('外插 ', 'extrap. ') + num(An.Text, 2) + ' °C', xc - 8, yc + (run.mode === 'f' ? -9 : 26), col.accent, 'right');
       }
     }
     drawInset(g, A, An, th, x0, y0, x1, y1);
@@ -702,7 +713,7 @@
       g.fillText(num(v, st < 0.1 ? 2 : 1), ix0 - 4, y);
     }
     g.textAlign = 'center'; g.textBaseline = 'top';
-    g.fillText(num(ta, 0) + ' s', ix0, iy1 + 3); g.fillText(num(tb, 0) + ' s', ix1, iy1 + 3);
+    g.fillText(num(ta, 0) + ' s', ix0, iy1 + 3); g.fillText(num(tb, 0) + ' s', ix1, iy1 + 3);
     g.save();
     g.beginPath(); g.rect(ix0, iy0 - 2, ix1 - ix0, iy1 - iy0 + 4); g.clip();
     // 純溶劑的凝固點／沸點
@@ -766,18 +777,18 @@
   function updateReadouts() {
     if (!run) return;
     const r = C.reading(run);
-    const items = [[T('溫度計讀數', 'Thermometer'), num(r, 2) + ' °C', 'big'], [T('時間', 'Time'), num(run.t, 0) + ' s']];
+    const items = [[T('溫度計讀數', 'Thermometer'), num(r, 2) + ' °C', 'big'], [T('時間', 'Time'), num(run.t, 0) + ' s']];
     const th = C.theory(run);
     if (run.w2 > 0) {
-      items.push([T('重量莫耳濃度 m', 'Molality m') + '<small>' + T('開始時', 'at the start') + '</small>', isXHidden() ? '? mol/kg' : num(th.m, 3) + ' mol/kg']);
-      if (run.solute !== 'X') items.push([T('凡特荷夫因子 i', "van ’t Hoff factor i") + '<small>' + (run.ideal ? T('理想', 'ideal') : T('實測（0.050 m）', 'measured (0.050 m)')) + '</small>', num(run.i, 1)]);
+      items.push([T('重量莫耳濃度 m', 'Molality m') + '<small>' + T('開始時', 'at the start') + '</small>', isXHidden() ? '? mol/kg' : num(th.m, 3) + ' mol/kg']);
+      if (run.solute !== 'X') items.push([T('凡特荷夫因子 i', "van ’t Hoff factor i") + '<small>' + (run.ideal ? T('理想', 'ideal') : T('實測（0.050 m）', 'measured (0.050 m)')) + '</small>', num(run.i, 1)]);
     }
-    if (run.mode === 'f') items.push([T('已結冰的溶劑', 'Solvent frozen'), num(C.frozenFrac(run) * 100, 1) + '%']);
-    else items.push([T('已蒸發的溶劑', 'Solvent boiled away'), num(C.lostFrac(run) * 100, 1) + '%']);
+    if (run.mode === 'f') items.push([T('已結冰的溶劑', 'Solvent frozen'), num(C.frozenFrac(run) * 100, 1) + ' %']);
+    else items.push([T('已蒸發的溶劑', 'Solvent boiled away'), num(C.lostFrac(run) * 100, 1) + ' %']);
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
     updateAna();
     if (!statusOverride) statusEl.innerHTML = autoStatus();
-    cv.setAttribute('aria-label', T('實驗裝置，溫度計讀數 ', 'Apparatus; thermometer reads ') + num(r, 2) + ' °C');
+    cv.setAttribute('aria-label', T('實驗裝置，溫度計讀數 ', 'Apparatus; thermometer reads ') + num(r, 2) + ' °C');
   }
   function updateAna() {
     const An = analysis();
@@ -786,16 +797,16 @@
     const f = run.mode === 'f';
     if (An.tOnset == null) out.push([f ? T('還沒開始結晶', 'No crystals yet') : T('還沒開始沸騰', 'Not boiling yet'), '—']);
     else {
-      out.push([f ? T('開始結晶', 'Crystals appeared') : T('開始沸騰', 'Boiling began'), 't = ' + num(An.tOnset, 0) + ' s']);
-      if (!An.ok) out.push([T('還要再記錄', 'Keep recording for'), (An.need || 1) + ' s']);
+      out.push([f ? T('開始結晶', 'Crystals appeared') : T('開始沸騰', 'Boiling began'), 't = ' + num(An.tOnset, 0) + ' s']);
+      if (!An.ok) out.push([T('還要再記錄', 'Keep recording for'), (An.need || 1) + ' s']);
       else {
-        out.push([(f ? T('量到的凝固點', 'Measured freezing point') : T('量到的沸點', 'Measured boiling point')) + '<small>' + (state.meth === 'ext' ? T('外插法', 'extrapolated') : T('直接讀', 'read directly')) + '</small>', num(An.Tmeas, 2) + ' °C', 'big']);
+        out.push([(f ? T('量到的凝固點', 'Measured freezing point') : T('量到的沸點', 'Measured boiling point')) + '<small>' + (state.meth === 'ext' ? T('外插法', 'extrapolated') : T('直接讀', 'read directly')) + '</small>', num(An.Tmeas, 2) + ' °C', 'big']);
         const dT = f ? th.T0 - An.Tmeas : An.Tmeas - th.T0;
-        out.push([(f ? T('純溶劑的凝固點', 'Freezing point of pure solvent') : T('純溶劑的沸點', 'Boiling point of pure solvent')), num(th.T0, 1) + ' °C']);
-        out.push([f ? 'ΔT<sub>f</sub>' : 'ΔT<sub>b</sub>', num(dT, 2) + ' K', 'big']);
-        out.push([(f ? 'K<sub>f</sub>' : 'K<sub>b</sub>') + T('（溶劑）', ' (solvent)'), num(th.K, th.K < 1 ? 3 : 2) + ' K·kg/mol']);
+        out.push([(f ? T('純溶劑的凝固點', 'Freezing point of pure solvent') : T('純溶劑的沸點', 'Boiling point of pure solvent')), num(th.T0, 1) + ' °C']);
+        out.push([f ? 'ΔT<sub>f</sub>' : 'ΔT<sub>b</sub>', num(dT, 2) + ' K', 'big']);
+        out.push([(f ? 'K<sub>f</sub>' : 'K<sub>b</sub>') + T('（溶劑）', ' (solvent)'), num(th.K, th.K < 1 ? 3 : 2) + ' K·kg/mol']);
         if (run.w2 > 0 && run.solute !== 'X') out.push([T('實驗的 i = ΔT ÷ (K·m)', 'Experimental i = ΔT ÷ (K·m)'), num(dT / (th.K * th.m), 2)]);
-        if (run.solute === 'X') out.push([T('X 的質量／溶劑的質量', 'Mass of X / mass of solvent'), num(run.w2, 3) + ' g / ' + num(run.w1, 1) + ' g']);
+        if (run.solute === 'X') out.push([T('X 的質量／溶劑的質量', 'Mass of X / mass of solvent'), num(run.w2, 3) + ' g / ' + num(run.w1, 1) + ' g']);
       }
     }
     $('anaOut').innerHTML = out.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
@@ -809,7 +820,7 @@
       const hide = r.isX && !(r.revealed || (unk && unk.id === r.unkId && unk.revealed));
       h += '<tr' + (r.seg !== seg ? ' style="opacity:.55"' : '') + '><td>' + (k + 1) + '</td><td class="l">' + (r.mode === 'f' ? T('凝固', 'freezing') : T('沸騰', 'boiling')) + '</td><td class="l">' + svName(r.solvent) + '・' + soName(r.solute) +
         '</td><td>' + (r.solute === 'none' ? '0' : hide ? '?' : num(r.m, 3)) + '</td><td>' + (r.method === 'ext' ? T('外插', 'extrap.') : T('直接', 'direct')) + '</td><td>' + num(r.Tmeas, 2) + '</td><td><strong>' + num(r.dT, 2) + '</strong></td><td>' + (hide ? '?' : num(r.dTth, 3)) +
-        '</td><td>' + (r.iExp == null ? '—' : num(r.iExp, 2)) + '</td><td>' + (hide ? '?' : r.err == null ? signed(r.absErr, 2) + ' K' : pct(r.err)) + '</td></tr>';
+        '</td><td>' + (r.iExp == null ? '—' : num(r.iExp, 2)) + '</td><td>' + (hide ? '?' : r.err == null ? signed(r.absErr, 2) + ' K' : pct(r.err)) + '</td></tr>';
     });
     t.innerHTML = h + '</tbody>';
   }
@@ -852,10 +863,10 @@
     }
     if (userActed && window.LabMission) window.LabMission.emit('measure', Object.assign({}, P, { isX: isX, unkId: rec.unkId, revealed: rec.revealed, prev: prev, line: line }));
     const f = run.mode === 'f';
-    $('recOut').innerHTML = T('已記錄第 ' + records.length + ' 筆：', 'Recorded #' + records.length + ': ') + (f ? 'ΔT<sub>f</sub>' : 'ΔT<sub>b</sub>') + ' = ' + num(P.dT, 2) + ' K' +
+    $('recOut').innerHTML = T('已記錄第 ' + records.length + ' 筆：', 'Recorded #' + records.length + ': ') + (f ? 'ΔT<sub>f</sub>' : 'ΔT<sub>b</sub>') + ' = ' + num(P.dT, 2) + ' K' +
       (isX && !(unk && unk.revealed) ? T('（X 的理論值要對答案或揭曉後才知道）', ' (the theory for X stays hidden until you check or reveal)') :
-        P.err == null ? T('（純溶劑：和表列值差 ', ' (pure solvent: ') + signed(P.absErr, 2) + T(' K）', ' K from the table value)') :
-          T('（理論 ', ' (theory ') + num(P.dTth, 3) + T(' K，誤差 ', ' K, error ') + pct(P.err) + T('）', ')'));
+        P.err == null ? T('（純溶劑：和表列值差 ', ' (pure solvent: ') + signed(P.absErr, 2) + T(' K）', ' K from the table value)') :
+          T('（理論 ', ' (theory ') + num(P.dTth, 3) + T(' K，誤差 ', ' K, error ') + pct(P.err) + T('）', ')'));
     if (snd()) { window.LabSound.tone({ freq: 660, dur: 0.09, gain: 0.2 }); window.LabSound.tone({ freq: 880, dur: 0.12, gain: 0.2, delay: 0.09 }); }
     renderTable();
     drawGraph();
@@ -872,7 +883,7 @@
     setUnkUI();
     clampMass(true);
     changed('');
-    $('unkOut').innerHTML = T('新的未知物 X 已經放在溶質裡（第 ' + unk.id + ' 個）。秤一些溶進溶劑，量 ΔT，算出莫耳質量。', 'A new unknown X (no. ' + unk.id + ') is now among the solutes. Dissolve some, measure ΔT, and work out the molar mass.');
+    $('unkOut').innerHTML = T('新的未知物 X 已經放在溶質裡（第 ' + unk.id + ' 個）。秤一些溶進溶劑，量 ΔT，算出莫耳質量。', 'A new unknown X (no. ' + unk.id + ') is now among the solutes. Dissolve some, measure ΔT, and work out the molar mass.');
   }
   function stopUnknown() {
     acted();
@@ -889,7 +900,7 @@
     acted();
     unk.revealed = true;
     records.forEach(function (r) { if (r.isX && r.unkId === unk.id) r.revealed = true; });
-    $('unkOut').innerHTML = T('答案：X 的莫耳質量是 ', 'Answer: the molar mass of X is ') + num(unk.M, 1) + ' g/mol' + T('。這個已經揭曉，換一個再挑戰。', '. This one is revealed; try another.');
+    $('unkOut').innerHTML = T('答案：X 的莫耳質量是 ', 'Answer: the molar mass of X is ') + num(unk.M, 1) + ' g/mol' + T('。這個已經揭曉，換一個再挑戰。', '. This one is revealed; try another.');
     renderTable(); drawGraph(); updateReadouts();
   }
   function checkAnswer() {
@@ -905,8 +916,8 @@
     const a = Math.abs(err);
     let msg;
     if (!last) msg = T('先量一次 X 的 ΔT（按「記錄結果」），再用它算莫耳質量。', 'Measure ΔT for X first (press “Record result”), then calculate the molar mass from it.');
-    else if (a <= 0.01) msg = T('幾乎完全正確（1% 以內）！', 'Spot on (within 1%)!');
-    else if (a <= 0.03) msg = T('正確（3% 以內）。想更準嗎？', 'Correct (within 3%). Can you get closer?');
+    else if (a <= 0.01) msg = T('幾乎完全正確（1 % 以內）！', 'Spot on (within 1 %)!');
+    else if (a <= 0.03) msg = T('正確（3 % 以內）。想更準嗎？', 'Correct (within 3 %). Can you get closer?');
     else if (a <= 0.1) msg = T('接近了，但還差一點。檢查 ΔT 的讀法與單位。', 'Close, but not quite. Check how you read ΔT and the units.');
     else msg = T('不對。檢查公式 M = K·W<sub>2</sub>×1000 ÷ (ΔT·W<sub>1</sub>) 與單位。', 'Not right. Check the formula M = K·W<sub>2</sub>×1000 ÷ (ΔT·W<sub>1</sub>) and the units.');
     $('unkOut').innerHTML = msg;
@@ -947,10 +958,10 @@
     setVal(el.Tbath, reset ? R.def : Math.max(R.min, Math.min(R.max, val(el.Tbath))));
   }
   function showOutputs() {
-    $('w1o').textContent = num(val(el.w1), 1) + ' g';
-    $('w2o').textContent = num(val(el.w2), 3) + ' g';
-    $('Tbatho').textContent = num(val(el.Tbath), 1) + ' °C';
-    $('pwo').textContent = num(val(el.pw), 0) + ' W';
+    $('w1o').textContent = num(val(el.w1), 1) + ' g';
+    $('w2o').textContent = num(val(el.w2), 3) + ' g';
+    $('Tbatho').textContent = num(val(el.Tbath), 1) + ' °C';
+    $('pwo').textContent = num(val(el.pw), 0) + ' W';
   }
   function syncSegs() {
     document.querySelectorAll('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)); });
@@ -966,6 +977,8 @@
     [0, 1, 2, 3].forEach(function (k) { $('sp' + k).setAttribute('aria-pressed', String(k === state.speed)); });
     $('fCtl').hidden = state.mode !== 'f';
     $('bCtl').hidden = state.mode !== 'b';
+    el.chips.disabled = state.mode !== 'b';
+    el.reflux.disabled = state.mode !== 'b';
     $('seedBtn').hidden = state.mode !== 'f';
     $('methSeg').setAttribute('aria-label', state.mode === 'f' ? T('求凝固點的方法', 'How to read the freezing point') : T('求沸點的方法', 'How to read the boiling point'));
     el.ideal.disabled = state.so === 'X';
@@ -1049,9 +1062,9 @@
         const f = run.mode === 'f';
         const x1 = C.solventMoleFrac(run);
         return {
-          tl: (f ? T('固液界面', 'Solid–liquid interface') : T('液面與蒸氣', 'Liquid surface and vapour')) + '・' + num(C.reading(run), 2) + ' °C',
-          tr: f ? T('已結冰 ', 'Frozen ') + num(C.frozenFrac(run) * 100, 1) + '%' + (run.w2 > 0 ? '<br>' + T('溶質粒子只留在液體裡', 'Solute particles stay in the liquid') : '') :
-            T('溶劑占液面 ', 'Solvent share of surface ') + num(x1 * 100, 1) + '%<br>P = ' + sigf(x1 * C.vaporP(run.solvent, run.T), 3) + ' kPa' + T('（沸騰要 101.3）', ' (boils at 101.3)'),
+          tl: (f ? T('固液界面', 'Solid–liquid interface') : T('液面與蒸氣', 'Liquid surface and vapour')) + '・' + num(C.reading(run), 2) + ' °C',
+          tr: f ? T('已結冰 ', 'Frozen ') + num(C.frozenFrac(run) * 100, 1) + ' %' + (run.w2 > 0 ? '<br>' + T('溶質粒子只留在液體裡', 'Solute particles stay in the liquid') : '') :
+            T('溶劑占液面 ', 'Solvent share of surface ') + num(x1 * 100, 1) + ' %<br>P = ' + sigf(x1 * C.vaporP(run.solvent, run.T), 3) + ' kPa' + T('（沸騰要 101.3）', ' (boils at 101.3)'),
           br: T('溶質粒子放大 ×' + EXAG + '，不依比例', 'Solute ×' + EXAG + ', not to scale')
         };
       },
@@ -1170,10 +1183,10 @@
       items: [
         { name: function () { return T('溶質的質量', 'Mass of solute'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(el.w2, d, big); return true; },
-          describe: function () { return num(val(el.w2), 2) + ' g'; } },
+          describe: function () { return num(val(el.w2), 2) + ' g'; } },
         { name: function () { return state.mode === 'f' ? T('冷浴的溫度', 'Cold bath temperature') : T('加熱功率', 'Heater power'); },
           move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; stepIn(condEl(), d, big); return true; },
-          describe: function () { return state.mode === 'f' ? num(val(el.Tbath), 1) + ' °C' : num(val(el.pw), 0) + ' W'; } }
+          describe: function () { return state.mode === 'f' ? num(val(el.Tbath), 1) + ' °C' : num(val(el.pw), 0) + ' W'; } }
       ],
       onChange: function () { drawStage(); }
     });

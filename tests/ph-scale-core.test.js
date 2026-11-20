@@ -13,6 +13,21 @@ function near(a, b, tol, msg) {
 }
 const S = (sp, logC, T, Kx) => P.solution(sp, logC, T == null ? 25 : T, Kx);
 
+test('輸入體積莫耳濃度後計算強酸的 pH', function () {
+  const acid = P.parseConcentration('0.01');
+  assert.strictEqual(S('HCl', acid.logC).pH.toFixed(2), '2.00');
+  for (const text of ['1e-3', '1×10⁻³', '1 × 10^−3']) {
+    assert.deepStrictEqual(P.parseConcentration(text), { concentration: 0.001, logC: -3, clamped: false });
+  }
+  assert.strictEqual(P.parseConcentration('1.25e-8').concentration, 1.25e-8);
+  for (const [text, limit] of [['-0.2', 1e-8], ['0', 1e-8], ['1e-12', 1e-8], ['2', 1]]) {
+    const r = P.parseConcentration(text);
+    assert.ok(r.clamped);
+    assert.strictEqual(r.concentration, limit);
+  }
+  for (const text of ['', '1e', '1.2.3', '0x10']) assert.strictEqual(P.parseConcentration(text), null);
+});
+
 // ---------------- 水的離子積 ----------------
 test('Kw：25 °C 取課本的 1.00 × 10^-14（pKw = 14.000）', function () {
   near(P.pKw(25), 14, 1e-9);

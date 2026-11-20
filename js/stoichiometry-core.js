@@ -9,7 +9,7 @@
  *   - 標準狀況（STP）照臺灣高中課本：0 °C、1 atm（760 mmHg），理想氣體莫耳體積 22.414 L/mol。
  *   - 水的飽和蒸氣壓：IAPWS 的 Wagner–Pruss 飽和曲線公式（J. Phys. Chem. Ref. Data 31, 387, 2002；
  *     CRC Handbook「水的蒸氣壓」表就是用它算的），0–40 °C 誤差遠小於 0.1%。
- *   - 1 cm 水柱 = 0.7334 mmHg（水的密度取 0.997 g/mL、g = 9.80665 m/s²）。
+ *   - 1 cm 水柱 = 0.7334 mmHg（水的密度取 0.997 g/mL、g = 9.80665 m/s^2）。
  *   - 量筒內的氣體是氫氣（與被推出來的瓶中空氣，體積相同）加飽和水蒸氣；氫氣當理想氣體，不計溶解。
  *
  * 反應速率只是示意（產量是精確的）：dξ/dt = k(T)·(n_Mg − ξ)·[H+]，[H+] = (n_HCl − 2ξ)/V，
@@ -127,7 +127,7 @@
       Pgas = P; h = 0; V = nRT / (P - Pw);
       if (V > Vmax) V = Vmax;
     } else {
-      // (k/A)V² + (P − Pw − k·Htop)V − nRT = 0
+      // (k/A)V^2 + (P − Pw − k·Htop)V − nRT = 0
       const k = CMH2O, qa = k / C.A, qb = P - Pw - k * C.Htop;
       V = nRT > 0 ? 2 * nRT / (qb + Math.sqrt(qb * qb + 4 * qa * nRT)) : 0;
       if (V > Vmax) V = Vmax;

@@ -33,7 +33,7 @@
     {
       id: 'chemical-equilibrium-1', level: 1,
       title: { zh: '壓一壓注射筒', en: 'Squeeze the syringe' },
-      desc: { zh: 'N2O4 ⇌ 2NO2：先達到平衡，再在同一溫度把體積壓到原來的 70% 以下，等它再次平衡。', en: 'N2O4 ⇌ 2NO2: reach equilibrium, then, at the same temperature, compress to 70% of the volume or less and wait for equilibrium again.' },
+      desc: { zh: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>：先達到平衡，再在同一溫度把體積壓到原來的 70 % 以下，等它再次平衡。', en: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>: reach equilibrium, then, at the same temperature, compress to 70 % of the volume or less and wait for equilibrium again.' },
       check: function (ev) {
         if (!isS(ev, 'n2o4')) return false;
         const d = ev.data;
@@ -43,7 +43,7 @@
     {
       id: 'chemical-equilibrium-2', level: 2,
       title: { zh: '熱水裡的紅棕色', en: 'Brown in hot water' },
-      desc: { zh: 'N2O4 ⇌ 2NO2：把溫度提高 30 K 以上，讓平衡時的 NO2 比之前多。', en: 'N2O4 ⇌ 2NO2: raise the temperature by 30 K or more so that there is more NO2 at equilibrium than before.' },
+      desc: { zh: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>：把溫度提高 30 K 以上，讓平衡時的 NO<sub>2</sub> 比之前多。', en: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>: raise the temperature by 30 K or more so that there is more NO<sub>2</sub> at equilibrium than before.' },
       check: function (ev) {
         if (!isS(ev, 'n2o4')) return false;
         const d = ev.data;
@@ -53,13 +53,13 @@
     {
       id: 'chemical-equilibrium-3', level: 3,
       title: { zh: '冰水裡幾乎無色', en: 'Almost colourless in ice water' },
-      desc: { zh: 'N2O4 ⇌ 2NO2：讓平衡混合物中 N2O4 的莫耳分率達到 0.90 以上。', en: 'N2O4 ⇌ 2NO2: make the mole fraction of N2O4 at equilibrium 0.90 or more.' },
+      desc: { zh: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>：讓平衡混合物中 N<sub>2</sub>O<sub>4</sub> 的莫耳分率達到 0.90 以上。', en: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>: make the mole fraction of N<sub>2</sub>O<sub>4</sub> at equilibrium 0.90 or more.' },
       check: function (ev) { return isS(ev, 'n2o4') && ev.data.x.N2O4 >= 0.9; }
     },
     {
       id: 'chemical-equilibrium-4', level: 3,
       title: { zh: '壓了也不動', en: 'Squeezed but unmoved' },
-      desc: { zh: 'H2 + I2 ⇌ 2HI：在同一溫度把體積變成 2 倍以上（或一半以下），再次平衡後 HI 的莫耳數變化不到 0.5%。', en: 'H2 + I2 ⇌ 2HI: at the same temperature, double the volume or more (or halve it or less); at the new equilibrium the amount of HI has changed by less than 0.5%.' },
+      desc: { zh: 'H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI：在同一溫度把體積變成 2 倍以上（或一半以下），再次平衡後 HI 的莫耳數變化不到 0.5 %。', en: 'H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI: at the same temperature, double the volume or more (or halve it or less); at the new equilibrium the amount of HI has changed by less than 0.5 %.' },
       check: function (ev) {
         if (!isS(ev, 'hi')) return false;
         const d = ev.data;
@@ -72,7 +72,7 @@
     {
       id: 'chemical-equilibrium-5', level: 4,
       title: { zh: '多了一位旁觀者', en: 'A bystander arrives' },
-      desc: { zh: '定容下，在平衡混合物中加入氬氣，加到不少於反應氣體的總量：再次平衡時每種反應氣體的量都和加入前相差不到 0.5%。', en: 'At constant volume, add argon to an equilibrium mixture until there is at least as much argon as reacting gas: at the new equilibrium every reacting gas is within 0.5% of its amount before.' },
+      desc: { zh: '定容下，在平衡混合物中加入氬氣，加到不少於反應氣體的總量：再次平衡時每種反應氣體的量都和加入前相差不到 0.5 %。', en: 'At constant volume, add argon to an equilibrium mixture until there is at least as much argon as reacting gas: at the new equilibrium every reacting gas is within 0.5 % of its amount before.' },
       check: function (ev) {
         if (!isS(ev) || ev.data.mode !== 'V') return false;
         const d = ev.data;
@@ -85,7 +85,7 @@
     {
       id: 'chemical-equilibrium-6', level: 5,
       title: { zh: '定壓的稀釋', en: 'Diluted at constant pressure' },
-      desc: { zh: 'N2O4 ⇌ 2NO2：切換到定壓，在同一溫度與壓力下加入氬氣，讓平衡時 NO2 的莫耳數增加 10% 以上。', en: 'N2O4 ⇌ 2NO2: switch to constant pressure and, at the same temperature and pressure, add argon so that the amount of NO2 at equilibrium rises by 10% or more.' },
+      desc: { zh: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>：切換到定壓，在同一溫度與壓力下加入氬氣，讓平衡時 NO<sub>2</sub> 的莫耳數增加 10 % 以上。', en: 'N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>: switch to constant pressure and, at the same temperature and pressure, add argon so that the amount of NO<sub>2</sub> at equilibrium rises by 10 % or more.' },
       check: function (ev) {
         if (!isS(ev, 'n2o4') || ev.data.mode !== 'P' || ev.data.stop) return false;
         const d = ev.data;
@@ -95,7 +95,7 @@
     {
       id: 'chemical-equilibrium-7', level: 5,
       title: { zh: '低溫高產率', en: 'High yield at low temperature' },
-      desc: { zh: '哈柏法：在 550 K 以下、使用催化劑，達到平衡時 NH3 的莫耳分率在 0.60 以上。', en: 'Haber process: at 550 K or below, with the catalyst, reach equilibrium with a mole fraction of NH3 of 0.60 or more.' },
+      desc: { zh: '哈柏法：在 550 K 以下、使用催化劑，達到平衡時 NH<sub>3</sub> 的莫耳分率在 0.60 以上。', en: 'Haber process: at 550 K or below, with the catalyst, reach equilibrium with a mole fraction of NH<sub>3</sub> of 0.60 or more.' },
       check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T <= 550 && d.cat && d.x.NH3 >= 0.6; }
     },
     {
@@ -107,7 +107,7 @@
     {
       id: 'chemical-equilibrium-9', level: 6,
       title: { zh: '又快又多', en: 'Fast and plentiful' },
-      desc: { zh: '哈柏法：在 700 K 以上達到平衡，而且 NH3 的莫耳分率在 0.40 以上。', en: 'Haber process: at 700 K or above, reach equilibrium with a mole fraction of NH3 of 0.40 or more.' },
+      desc: { zh: '哈柏法：在 700 K 以上達到平衡，而且 NH<sub>3</sub> 的莫耳分率在 0.40 以上。', en: 'Haber process: at 700 K or above, reach equilibrium with a mole fraction of NH<sub>3</sub> of 0.40 or more.' },
       check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T >= 700 && d.x.NH3 >= 0.4; }
     },
     {
@@ -119,13 +119,13 @@
     {
       id: 'chemical-equilibrium-11', level: 8,
       title: { zh: '未知反應的焓', en: 'Enthalpy of the unknown' },
-      desc: { zh: '在至少 2 個溫度量到未知反應的平衡，求出 ΔH°，誤差在 10% 以內。', en: 'Measure equilibria of the unknown reaction at two or more temperatures and find ΔH° within 10%.' },
+      desc: { zh: '在至少 2 個溫度量到未知反應的平衡，求出 ΔH°，誤差在 10 % 以內。', en: 'Measure equilibria of the unknown reaction at two or more temperatures and find ΔH° within 10 %.' },
       check: function (ev) { return isA(ev) && ev.data.nT >= 2 && ev.data.err <= 0.1; }
     },
     {
       id: 'chemical-equilibrium-12', level: 9,
       title: { zh: '凡特荷夫的直線', en: 'Van ’t Hoff’s straight line' },
-      desc: { zh: '在至少 3 個溫度（最高與最低相差 60 K 以上）量到未知反應的平衡，求出 ΔH°，誤差在 2% 以內。', en: 'Measure equilibria of the unknown reaction at three or more temperatures, spanning at least 60 K, and find ΔH° within 2%.' },
+      desc: { zh: '在至少 3 個溫度（最高與最低相差 60 K 以上）量到未知反應的平衡，求出 ΔH°，誤差在 2 % 以內。', en: 'Measure equilibria of the unknown reaction at three or more temperatures, spanning at least 60 K, and find ΔH° within 2 %.' },
       check: function (ev) { return isA(ev) && ev.data.nT >= 3 && ev.data.span >= 60 && ev.data.err <= 0.02; }
     },
     {

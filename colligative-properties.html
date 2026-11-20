@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Boiling-Point Elevation and Freezing-Point Depression | Astro Ni Lab">沸點上升與凝固點下降｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 沸點上升與凝固點下降頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .cp canvas { aspect-ratio: auto; touch-action: auto; }
@@ -115,6 +115,31 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
   </style>
 </head>
 <body data-en-ready>
@@ -126,7 +151,12 @@
     </header>
 
     <p class="try-hint" data-en="Try it: press “Start”, and watch the sugar water cool in the ice–salt bath. It drops below its freezing point without freezing (supercooling), then suddenly crystallises and the temperature jumps back up.">試試看：按「開始」，看糖水在冰鹽浴裡冷卻。它會降到凝固點以下還不結冰（過冷），然後突然結晶，溫度又跳回來。</p>
-    <div class="lab cp">
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab cp" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -136,20 +166,24 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="實驗裝置" data-en-aria-label="Apparatus"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Start">開始</button>
-          <button id="seedBtn" type="button" data-en="Add a seed crystal" title="丟入一小粒溶劑的晶體，讓過冷的液體立刻開始結晶" data-en-title="Drop in a tiny crystal of the solvent so a supercooled liquid starts to crystallise at once">加晶種</button>
-          <button id="restart" type="button" data-en="New run" title="同樣的設定，從室溫重新開始" data-en-title="Start again from room temperature with the same settings">重做一次</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除我的測量紀錄與 ΔT—m 圖；目前這次的曲線保留" data-en-title="Clear my measurements and the ΔT–m graph; the current curve is kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-            <div class="seg4" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false">×1</button>
-              <button type="button" id="sp1" aria-pressed="false">×5</button>
-              <button type="button" id="sp2" aria-pressed="true">×20</button>
-              <button type="button" id="sp3" aria-pressed="false">×60</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" role="img" aria-label="實驗裝置" data-en-aria-label="Apparatus"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar">
+            <button id="play" class="primary" type="button" data-en="Start">開始</button>
+            <button id="seedBtn" type="button" data-en="Add a seed crystal" title="丟入一小粒溶劑的晶體，讓過冷的液體立刻開始結晶" data-en-title="Drop in a tiny crystal of the solvent so a supercooled liquid starts to crystallise at once">加晶種</button>
+            <button id="restart" type="button" data-en="New run" title="同樣的設定，從室溫重新開始" data-en-title="Start again from room temperature with the same settings">重做一次</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除我的測量紀錄與 ΔT—m 圖；目前這次的曲線保留" data-en-title="Clear my measurements and the ΔT–m graph; the current curve is kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+              <div class="seg4" role="group" aria-labelledby="speedLabel">
+                <button type="button" id="sp0" aria-pressed="false">×1</button>
+                <button type="button" id="sp1" aria-pressed="false">×5</button>
+                <button type="button" id="sp2" aria-pressed="true">×20</button>
+                <button type="button" id="sp3" aria-pressed="false">×60</button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,6 +196,13 @@
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="f" aria-pressed="true" data-en="Freezing point">凝固點下降</button>
             <button type="button" data-mode="b" aria-pressed="false" data-en="Boiling point">沸點上升</button>
+          </div>
+          <div id="boilingGear" role="group" aria-labelledby="boilingGearTitle">
+            <p class="hint" id="boilingGearTitle" data-en="Boiling-point equipment">沸點實驗設備</p>
+            <div class="checks">
+              <label><input id="chips" type="checkbox" checked disabled><span data-en="Boiling chips">沸石</span></label>
+              <label><input id="reflux" type="checkbox" checked disabled><span data-en="Reflux condenser">回流冷凝管</span></label>
+            </div>
           </div>
           <h3 data-en="Solvent">溶劑</h3>
           <div class="seg4" id="svSeg" role="group" aria-label="溶劑" data-en-aria-label="Solvent">
@@ -192,17 +233,13 @@
           <div id="bCtl" hidden>
             <div class="slider"><label for="pw" data-en="Heater power">加熱功率</label><output id="pwo"></output>
               <input id="pw" type="range" min="40" max="200" step="5" value="100" data-decimals="0"></div>
-            <div class="checks">
-              <label><input id="chips" type="checkbox" checked><span data-en="Boiling chips">沸石</span></label>
-              <label><input id="reflux" type="checkbox" checked><span data-en="Reflux condenser">回流冷凝管</span></label>
-            </div>
           </div>
-          <p class="hint" data-en="Changing a setting starts a new run from room temperature (25 °C).">改變設定會從室溫（25 °C）重新開始。</p>
+          <p class="hint" data-en="Changing a setting starts a new run from room temperature (25 °C).">改變設定會從室溫（25 °C）重新開始。</p>
         </section>
       </aside>
     </div>
 
-    <div class="lab cp">
+    <div class="lab cp" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Graphs and my measurements">圖表與我的測量</h2>
         <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -258,7 +295,7 @@
 
       <h2 style="margin-top:18px" data-en="Principle">原理</h2>
       <h3 data-en="Colligative properties">依數性質</h3>
-      <p data-en="Solute particles take up part of the surface and dilute the solvent, so fewer solvent molecules escape into the vapour (the vapour pressure is lower) and fewer join the crystal. The solution has to be heated higher before its vapour pressure reaches 1 atm, and cooled lower before the solid can grow. For dilute solutions:">溶質粒子占據一部分液面、把溶劑「稀釋」了，所以逃到蒸氣裡的溶劑分子變少（蒸氣壓下降），加入晶體的也變少。溶液要加熱到更高的溫度，蒸氣壓才達到 1 atm；要冷到更低的溫度，固體才長得出來。稀薄溶液：</p>
+      <p data-en="Solute particles take up part of the surface and dilute the solvent, so fewer solvent molecules escape into the vapour (the vapour pressure is lower) and fewer join the crystal. The solution has to be heated higher before its vapour pressure reaches 1 atm, and cooled lower before the solid can grow. For dilute solutions:">溶質粒子占據一部分液面、把溶劑「稀釋」了，所以逃到蒸氣裡的溶劑分子變少（蒸氣壓下降），加入晶體的也變少。溶液要加熱到更高的溫度，蒸氣壓才達到 1 atm；要冷到更低的溫度，固體才長得出來。稀薄溶液：</p>
       <div class="formula multi">
         \[ \Delta T_b = i\,K_b\,C_m \]
         \[ \Delta T_f = i\,K_f\,C_m \]
@@ -284,15 +321,15 @@
         <li data-en="Benzoic acid in benzene gives only half the expected ΔT: two molecules hold hands through hydrogen bonds (a dimer), so there are half as many particles.">苯甲酸溶在苯裡，ΔT 只有預期的一半：兩個分子用氫鍵手牽手（雙分子），粒子數少了一半。</li>
         <li data-en="Turn off stirring or use a colder bath: the supercooling gets deeper, and reading the highest point directly gives a freezing point that is too low. Extrapolation fixes it.">關掉攪拌或把冷浴弄得更冷：過冷更深，直接讀最高點得到的凝固點偏低；外插法可以修正。</li>
         <li data-en="Cyclohexane has a very small heat of fusion: after deep supercooling a large part of it freezes in an instant, the remaining solution is suddenly more concentrated, and even extrapolation cannot fully recover the freezing point. Experienced chemists add a seed crystal as soon as the liquid is just below its freezing point.">環己烷的熔化熱很小：過冷很深時，一瞬間就結冰一大部分，剩下的溶液突然變濃，連外插法也救不回來。有經驗的人會在液體剛低於凝固點時就加晶種。</li>
-        <li data-en="A very dilute solution gives a small ΔT, so the 0.01 °C resolution of the thermometer and the little ice formed after supercooling become a large fraction of it: 0.25 mol/kg glucose in water is about 3 % off even with extrapolation. A larger ΔT gives a more precise result.">溶液太稀時 ΔT 很小，溫度計 0.01 °C 的解析度、過冷後先結出的那一點冰，占 ΔT 的比例就變大：0.25 mol/kg 葡萄糖水溶液，外插後仍差約 3%。ΔT 大一些，結果比較準。</li>
+        <li data-en="A very dilute solution gives a small ΔT, so the 0.01 °C resolution of the thermometer and the little ice formed after supercooling become a large fraction of it: 0.25 mol/kg glucose in water is about 3 % off even with extrapolation. A larger ΔT gives a more precise result.">溶液太稀時 ΔT 很小，溫度計 0.01 °C 的解析度、過冷後先結出的那一點冰，占 ΔT 的比例就變大：0.25 mol/kg 葡萄糖水溶液，外插後仍差約 3 %。ΔT 大一些，結果比較準。</li>
         <li data-en="Boil without boiling chips: the liquid overheats and then boils violently all at once (bumping).">不放沸石加熱：液體會過熱，然後一下子劇烈沸騰（突沸）。</li>
       </ul>
 
       <h3 data-en="Questions for discussion">想一想</h3>
       <ol>
         <li data-en="Why do we use molality rather than molarity in these formulas?">為什麼這些公式用重量莫耳濃度，而不用體積莫耳濃度？</li>
-        <li data-en="10.0 g of a non-electrolyte dissolved in 100 g of water freezes at −0.62 °C. Find its molar mass (Kf = 1.86).">10.0 g 非電解質溶於 100 g 水，凝固點 −0.62 °C。求它的分子量（Kf = 1.86）。</li>
-        <li data-en-html="Rank 0.1 m glucose, 0.1 m NaCl and 0.1 m MgCl&lt;sub&gt;2&lt;/sub&gt; by boiling point, from lowest to highest.">把 0.1 m 葡萄糖、0.1 m NaCl、0.1 m MgCl<sub>2</sub> 依沸點由低到高排列。</li>
+        <li data-en="10.0 g of a non-electrolyte dissolved in 100 g of water freezes at −0.62 °C. Find its molar mass (Kf = 1.86).">10.0 g 非電解質溶於 100 g 水，凝固點 −0.62 °C。求它的分子量（Kf = 1.86）。</li>
+        <li data-en-html="Rank 0.1 m glucose, 0.1 m NaCl and 0.1 m MgCl&lt;sub&gt;2&lt;/sub&gt; by boiling point, from lowest to highest.">把 0.1 m 葡萄糖、0.1 m NaCl、0.1 m MgCl<sub>2</sub> 依沸點由低到高排列。</li>
         <li data-en="Why does a solution have no flat plateau on its cooling curve, but pure water does?">為什麼溶液的冷卻曲線沒有水平的平台，純水卻有？</li>
         <li data-en="To find a molar mass as precisely as possible, would you choose water (Kf = 1.86) or cyclohexane (Kf = 20.2) as the solvent? Why?">要把分子量測得盡量準，你會選水（Kf = 1.86）還是環己烷（Kf = 20.2）當溶劑？為什麼？</li>
       </ol>
@@ -300,21 +337,21 @@
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
           <li data-en="Molality uses the mass of solvent, which does not change with temperature; molarity uses the volume of solution, which expands when heated and shrinks when cooled.">重量莫耳濃度用溶劑的質量，不隨溫度改變；體積莫耳濃度用溶液的體積，加熱會膨脹、冷卻會收縮。</li>
-          <li data-en="m = 0.62 ÷ 1.86 = 0.333 mol/kg; n = 0.333 × 0.100 = 0.0333 mol; M = 10.0 ÷ 0.0333 = 300 g/mol.">m = 0.62 ÷ 1.86 = 0.333 mol/kg；n = 0.333 × 0.100 = 0.0333 mol；M = 10.0 ÷ 0.0333 = 300 g/mol。</li>
+          <li data-en="m = 0.62 ÷ 1.86 = 0.333 mol/kg; n = 0.333 × 0.100 = 0.0333 mol; M = 10.0 ÷ 0.0333 = 300 g/mol.">m = 0.62 ÷ 1.86 = 0.333 mol/kg；n = 0.333 × 0.100 = 0.0333 mol；M = 10.0 ÷ 0.0333 = 300 g/mol。</li>
           <li data-en-html="Particle molality: glucose 0.1, NaCl about 0.19, MgCl&lt;sub&gt;2&lt;/sub&gt; about 0.27, so glucose &amp;lt; NaCl &amp;lt; MgCl&lt;sub&gt;2&lt;/sub&gt;.">粒子的重量莫耳濃度：葡萄糖 0.1、NaCl 約 0.19、MgCl<sub>2</sub> 約 0.27，所以葡萄糖 &lt; NaCl &lt; MgCl<sub>2</sub>。</li>
           <li data-en="Only solvent freezes out, so the remaining solution keeps getting more concentrated and its freezing point keeps dropping. In pure water the liquid that is left is still pure water, so the freezing point stays the same until it is all frozen.">析出的只有溶劑，剩下的溶液越來越濃，凝固點一直下降。純水剩下的還是純水，凝固點不變，直到全部結冰。</li>
-          <li data-en="Cyclohexane: for the same molality its ΔT is about 11 times larger, so a 0.01 K reading error is a much smaller percentage error in M.">環己烷：同樣的重量莫耳濃度，ΔT 大約是水的 11 倍，0.01 K 的讀數誤差在 M 裡占的百分比小得多。</li>
+          <li data-en="Cyclohexane: for the same molality its ΔT is about 11 times larger, so a 0.01 K reading error is a much smaller percentage error in M.">環己烷：同樣的重量莫耳濃度，ΔT 大約是水的 11 倍，0.01 K 的讀數誤差在 M 裡占的百分比小得多。</li>
         </ol>
       </details>
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="Dilute-solution laws ΔT = i·K·m are used for the whole range (up to 2 mol/kg; at the top of the range real solutions deviate by a few per cent). The molality is that of the liquid that is left, so it rises as solvent freezes or boils away.">稀薄溶液定律 ΔT = i·K·m 用在整個範圍（最高 2 mol/kg；濃度高時真實溶液會偏離幾個百分點）。重量莫耳濃度用「還是液體的溶劑」來算，所以溶劑結冰或蒸發後濃度會升高。</li>
-        <li data-en="Freezing: The tube sits in an air jacket inside the bath (heat-transfer coefficient 0.5 W/K for 50 g), so it cools slowly and evenly; Newton’s law of cooling plus the latent heat of the freezing solvent. The liquid supercools by (0.8 K stirred, 2.4 K not stirred) + 5% of how far the bath is below the freezing point, then crystallises; a seed crystal starts it at once. The run stops when 60% of the solvent has frozen.">凝固：試管套在空氣套管裡再放進冷浴（傳熱係數 50 g 時 0.5 W/K），冷得慢而均勻；牛頓冷卻加上溶劑結冰放出的熔化熱。液體會過冷（攪拌 0.8 K、不攪拌 2.4 K，再加上冷浴比凝固點低多少的 5%）才結晶；加晶種會立刻開始。溶劑結冰 60% 就結束。</li>
-        <li data-en="Boiling: the heater power minus heat lost to the room (0.35 W/K) warms the flask; above the boiling point the extra heat boils solvent away. Without boiling chips the liquid overheats by 2.5 K + P/80 before bumping. A reflux condenser returns all the vapour, so the amount of solvent stays the same. Evaporation below the boiling point is ignored.">沸騰：加熱功率減去散到空氣的熱（0.35 W/K）使燒瓶升溫；超過沸點，多的熱讓溶劑沸騰蒸發。沒有沸石會先過熱 2.5 K + P/80 才突沸。回流冷凝管把蒸氣全部冷凝流回，溶劑量不變。沸點以下的蒸發不計。</li>
-        <li data-en="The digital thermometer reads to 0.01 °C with a response time of 2 s. Readings are recorded every second of simulated time.">數位溫度計讀到 0.01 °C、反應時間常數 2 s；每模擬 1 秒記錄一筆。</li>
-        <li data-en="“Read directly” takes the highest reading within 60 s after freezing starts (or the lowest reading 10–60 s after boiling starts). “Extrapolate” fits a straight line to the transition (from 5 s after the highest point, or from 15 s after boiling starts; 60 s long, but stopping once another 8% of the solvent has frozen or boiled away) and extends it back to where it meets the curve of the liquid.">「直接讀」取開始結晶後 60 s 內的最高讀數（沸騰則取開始沸騰後 10–60 s 的最低讀數）。「外插法」把相變的一段（最高點後 5 s 起，或沸騰後 15 s 起；長 60 s，但溶劑再結冰或蒸發 8% 就截止）擬合成直線，往回延伸到與液體的曲線相交。</li>
-        <li data-en="The real van ’t Hoff factors are the measured values for 0.050 m solutions and are kept the same at all concentrations (a simplification). Benzoic acid is taken as completely dimerised (i = 0.5). The unknown substances are invented (molar mass 80–360 g/mol).">真實的凡特荷夫因子用 0.050 m 溶液的實測值，在所有濃度都不變（簡化）。苯甲酸當成完全雙分子化（i = 0.5）。未知物是虛構的（莫耳質量 80–360 g/mol）。</li>
+        <li data-en="Dilute-solution laws ΔT = i·K·m are used for the whole range (up to 2 mol/kg; at the top of the range real solutions deviate by a few per cent). The molality is that of the liquid that is left, so it rises as solvent freezes or boils away.">稀薄溶液定律 ΔT = i·K·m 用在整個範圍（最高 2 mol/kg；濃度高時真實溶液會偏離幾個百分點）。重量莫耳濃度用「還是液體的溶劑」來算，所以溶劑結冰或蒸發後濃度會升高。</li>
+        <li data-en="Freezing: The tube sits in an air jacket inside the bath (heat-transfer coefficient 0.5 W/K for 50 g), so it cools slowly and evenly; Newton’s law of cooling plus the latent heat of the freezing solvent. The liquid supercools by (0.8 K stirred, 2.4 K not stirred) + 5 % of how far the bath is below the freezing point, then crystallises; a seed crystal starts it at once. The run stops when 60 % of the solvent has frozen.">凝固：試管套在空氣套管裡再放進冷浴（傳熱係數 50 g 時 0.5 W/K），冷得慢而均勻；牛頓冷卻加上溶劑結冰放出的熔化熱。液體會過冷（攪拌 0.8 K、不攪拌 2.4 K，再加上冷浴比凝固點低多少的 5 %）才結晶；加晶種會立刻開始。溶劑結冰 60 % 就結束。</li>
+        <li data-en="Boiling: the heater power minus heat lost to the room (0.35 W/K) warms the flask; above the boiling point the extra heat boils solvent away. Without boiling chips the liquid overheats by 2.5 K + P/80 before bumping. A reflux condenser returns all the vapour, so the amount of solvent stays the same. Evaporation below the boiling point is ignored.">沸騰：加熱功率減去散到空氣的熱（0.35 W/K）使燒瓶升溫；超過沸點，多的熱讓溶劑沸騰蒸發。沒有沸石會先過熱 2.5 K + P/80 才突沸。回流冷凝管把蒸氣全部冷凝流回，溶劑量不變。沸點以下的蒸發不計。</li>
+        <li data-en="The digital thermometer reads to 0.01 °C with a response time of 2 s. Readings are recorded every second of simulated time.">數位溫度計讀到 0.01 °C、反應時間常數 2 s；每模擬 1 秒記錄一筆。</li>
+        <li data-en="“Read directly” takes the highest reading within 60 s after freezing starts (or the lowest reading 10–60 s after boiling starts). “Extrapolate” fits a straight line to the transition (from 5 s after the highest point, or from 15 s after boiling starts; 60 s long, but stopping once another 8 % of the solvent has frozen or boiled away) and extends it back to where it meets the curve of the liquid.">「直接讀」取開始結晶後 60 s 內的最高讀數（沸騰則取開始沸騰後 10–60 s 的最低讀數）。「外插法」把相變的一段（最高點後 5 s 起，或沸騰後 15 s 起；長 60 s，但溶劑再結冰或蒸發 8 % 就截止）擬合成直線，往回延伸到與液體的曲線相交。</li>
+        <li data-en="The real van ’t Hoff factors are the measured values for 0.050 m solutions and are kept the same at all concentrations (a simplification). Benzoic acid is taken as completely dimerised (i = 0.5). The unknown substances are invented (molar mass 80–360 g/mol).">真實的凡特荷夫因子用 0.050 m 溶液的實測值，在所有濃度都不變（簡化）。苯甲酸當成完全雙分子化（i = 0.5）。未知物是虛構的（莫耳質量 80–360 g/mol）。</li>
         <li data-en="The 3D view is a molecular picture (not to scale, solute particles exaggerated): the surface of the liquid with the vapour above it, or the crystal growing from below. The number of molecules in the vapour follows x(solvent) × P°(T), with P° from the Clausius–Clapeyron equation; the 2D and 3D views show the same run.">3D 立體是分子示意圖（不依比例、溶質粒子放大）：液面與上方的蒸氣，或由下往上長的晶體。蒸氣中的分子數依 x<sub>溶劑</sub> × P°(T)，P° 用克勞修斯—克拉佩龍式算；2D 與 3D 是同一次實驗。</li>
       </ul>
 
@@ -325,7 +362,7 @@
       <ul>
         <li data-en="Curriculum: Senior-high chemistry · Matter and structure (solutions: vapour-pressure lowering, boiling-point elevation, freezing-point depression).">課綱對應：高中化學・物質與結構（溶液：蒸氣壓下降、沸點上升、凝固點下降）。</li>
         <li data-en-html="Kb, Kf, normal boiling and freezing points: OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/11-4-colligative-properties&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;11.4 Colligative Properties&lt;/a&gt;, Table 11.2; measured van ’t Hoff factors: Table 11.3.">Kb、Kf、正常沸點與凝固點：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/11-4-colligative-properties" target="_blank" rel="noopener">11.4 依數性質</a>（英文）表 11.2；實測凡特荷夫因子：表 11.3。</li>
-        <li data-en-html="Cyclohexane (Kf = 20.2 K·kg/mol, freezing point 6.4 °C): &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Molal freezing point depression constants. Heats of fusion and vaporisation, heat capacities: NIST Chemistry WebBook and the CRC Handbook.">環己烷（Kf = 20.2 K·kg/mol、凝固點 6.4 °C）：《CRC Handbook of Chemistry and Physics》凝固點下降常數表。熔化熱、汽化熱、比熱：NIST 化學網路書與 CRC 手冊。</li>
+        <li data-en-html="Cyclohexane (Kf = 20.2 K·kg/mol, freezing point 6.4 °C): &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Molal freezing point depression constants. Heats of fusion and vaporisation, heat capacities: NIST Chemistry WebBook and the CRC Handbook.">環己烷（Kf = 20.2 K·kg/mol、凝固點 6.4 °C）：《CRC Handbook of Chemistry and Physics》凝固點下降常數表。熔化熱、汽化熱、比熱：NIST 化學網路書與 CRC 手冊。</li>
       </ul>
     </section>
 
@@ -334,19 +371,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/colligative-properties-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/colligative-properties-3d.js?v=202611201125"></script>
-  <script src="js/colligative-properties.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="colligative-properties"></script>
-  <script src="js/missions/colligative-properties.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="colligative-properties"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/colligative-properties-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/colligative-properties-3d.js?v=202611201126"></script>
+  <script src="js/colligative-properties.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="colligative-properties"></script>
+  <script src="js/missions/colligative-properties.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="colligative-properties"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

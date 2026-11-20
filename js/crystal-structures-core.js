@@ -2,7 +2,7 @@
  * crystal-structures-core.js — 「晶體結構與堆積」的化學核心 CSCore（不碰 DOM，Node 與瀏覽器共用）
  *
  * 長度單位：晶格常數 a、c、半徑 r 一律用 pm；幾何座標用「a 的倍數」（晶胞邊長 = 1）。
- * 密度 ρ = Z·M ／（N_A·V），V 由 pm³ 換成 cm³（1 pm³ = 10^-30 cm³），單位 g/cm³。
+ * 密度 ρ = Z·M ／（N_A·V），V 由 pm^3 換成 cm^3（1 pm^3 = 10^-30 cm^3），單位 g/cm^3。
  *
  * 結構（八種）：
  *   金屬：簡單立方 sc、體心立方 bcc、面心立方 fcc（立方最密）、六方最密 hcp（晶胞取六角柱，含 6 個原子）
@@ -79,7 +79,7 @@
   }
 
   // ======================= 物質 =======================
-  // a、c：pm；M：g/mol；rho：實測密度 g/cm³（null 表示沒有，用 X 光數據算）；rc、ra：Shannon 離子半徑（pm）
+  // a、c：pm；M：g/mol；rho：實測密度 g/cm^3（null 表示沒有，用 X 光數據算）；rc、ra：Shannon 離子半徑（pm）
   const MATS = {
     Po: { s: 'sc', zh: '釙（α）', en: 'Polonium (α)', sym: 'Po', M: 208.98, a: 335.2, rho: 9.196, col: '#9aa3ad' },
     Li: { s: 'bcc', zh: '鋰', en: 'Lithium', sym: 'Li', M: 6.94, a: 351.0, rho: 0.534, col: '#c9ccd2' },
@@ -87,7 +87,7 @@
     K: { s: 'bcc', zh: '鉀', en: 'Potassium', sym: 'K', M: 39.098, a: 532.8, rho: 0.862, col: '#c4c9d0' },
     Cr: { s: 'bcc', zh: '鉻', en: 'Chromium', sym: 'Cr', M: 51.996, a: 288.46, rho: 7.19, col: '#b8c2cc' },
     Fe: { s: 'bcc', zh: '鐵（α，室溫）', en: 'Iron (α, room temperature)', sym: 'Fe', M: 55.845, a: 286.65, rho: 7.874, col: '#8d939b' },
-    Fe912: { s: 'bcc', zh: '鐵（α，912 °C）', en: 'Iron (α, 912 °C)', sym: 'Fe', M: 55.845, a: 290.40, rho: null, T: 912, col: '#b06a4a', hot: true },
+    Fe912: { s: 'bcc', zh: '鐵（α，912 °C）', en: 'Iron (α, 912 °C)', sym: 'Fe', M: 55.845, a: 290.40, rho: null, T: 912, col: '#b06a4a', hot: true },
     Mo: { s: 'bcc', zh: '鉬', en: 'Molybdenum', sym: 'Mo', M: 95.95, a: 314.70, rho: 10.28, col: '#9fa8b3' },
     W: { s: 'bcc', zh: '鎢', en: 'Tungsten', sym: 'W', M: 183.84, a: 316.52, rho: 19.25, col: '#8e959e' },
     Al: { s: 'fcc', zh: '鋁', en: 'Aluminium', sym: 'Al', M: 26.982, a: 404.95, rho: 2.70, col: '#c7ced6' },
@@ -97,7 +97,7 @@
     Pt: { s: 'fcc', zh: '鉑', en: 'Platinum', sym: 'Pt', M: 195.08, a: 392.42, rho: 21.45, col: '#b9bec4' },
     Au: { s: 'fcc', zh: '金', en: 'Gold', sym: 'Au', M: 196.97, a: 407.82, rho: 19.30, col: '#d9a830' },
     Pb: { s: 'fcc', zh: '鉛', en: 'Lead', sym: 'Pb', M: 207.2, a: 495.08, rho: 11.34, col: '#7f8796' },
-    Fe916: { s: 'fcc', zh: '鐵（γ，916 °C）', en: 'Iron (γ, 916 °C)', sym: 'Fe', M: 55.845, a: 364.67, rho: null, T: 916, col: '#c0603a', hot: true },
+    Fe916: { s: 'fcc', zh: '鐵（γ，916 °C）', en: 'Iron (γ, 916 °C)', sym: 'Fe', M: 55.845, a: 364.67, rho: null, T: 916, col: '#c0603a', hot: true },
     Be: { s: 'hcp', zh: '鈹', en: 'Beryllium', sym: 'Be', M: 9.0122, a: 228.58, c: 358.43, rho: 1.85, col: '#b7bfc4' },
     Mg: { s: 'hcp', zh: '鎂', en: 'Magnesium', sym: 'Mg', M: 24.305, a: 320.94, c: 521.05, rho: 1.738, col: '#cfd3d8' },
     Ti: { s: 'hcp', zh: '鈦', en: 'Titanium', sym: 'Ti', M: 47.867, a: 295.08, c: 468.55, rho: 4.506, col: '#9ea6b1' },
@@ -119,13 +119,13 @@
   function matsOf(s) { return MAT_ORDER.filter(function (k) { return MATS[k].s === s; }); }
 
   // ======================= 基本計算 =======================
-  /** 晶胞體積（pm³）：立方 a³；六角柱 (3√3/2)a²c */
+  /** 晶胞體積（pm^3）：立方 a^3；六角柱 (3√3/2)a^2c */
   function cellVolume(s, a, c) { return STRUCTS[s].cell === 'hex' ? 1.5 * S3 * a * a * c : a * a * a; }
-  /** 密度（g/cm³）：Z 個（原子或化學式單位）、莫耳質量 M、晶胞體積 V（pm³） */
+  /** 密度（g/cm^3）：Z 個（原子或化學式單位）、莫耳質量 M、晶胞體積 V（pm^3） */
   function density(Z, M, Vpm3) { return Z * M / (NA * Vpm3 * 1e-30); }
   function sphereVol(r) { return 4 / 3 * Math.PI * r * r * r; }
   /**
-   * 六方最密的原子半徑 = 最近兩原子距離的一半。同一層的距離是 a，上下層的距離是 √(a²/3 + c²/4)；
+   * 六方最密的原子半徑 = 最近兩原子距離的一半。同一層的距離是 a，上下層的距離是 √(a^2/3 + c^2/4)；
    * c/a 等於理想值 1.633 時兩者相等（r = a/2）；鈹、鈦的 c/a 較小，上下層反而比較近。
    */
   function hcpR(a, ca) { return Math.min(a, Math.sqrt(a * a / 3 + a * a * ca * ca / 4)) / 2; }
@@ -388,7 +388,7 @@
     let pf = null;
     if (gaps.length) {
       const hm = gaps.reduce(function (s, g) { return s + g; }, 0) / gaps.length;
-      pf = sphereVol(1) / (2 * S3 * hm);   // 每個原子占的底面積 2√3 r²
+      pf = sphereVol(1) / (2 * S3 * hm);   // 每個原子占的底面積 2√3 r^2
     }
     let cnMid = null;
     if (n >= 3) {
@@ -414,7 +414,7 @@
   }
   /**
    * 出題（用的數字就是題目給的數字，答案也由這些數字算出，學生照課本公式算就對得上）：
-   *   'rho'：已知晶格常數 a（六方另給 c）、M、結構 → 求密度（g/cm³）
+   *   'rho'：已知晶格常數 a（六方另給 c）、M、結構 → 求密度（g/cm^3）
    *   'r'  ：已知密度 ρ、M、結構（六方另給 c/a）→ 求原子半徑（pm）
    *   'NA' ：已知密度 ρ、晶格常數 a（六方另給 c）、M、結構 → 求亞佛加厥數（mol^-1）
    * 題目的 ρ 用實測密度；沒有實測值（高溫的鐵）時用 X 光數據算出的密度，取 4 位有效數字。
@@ -428,7 +428,7 @@
     if (type === 'rho') ans = density(st.Z, m.M, cellVolume(s, m.a, m.c));
     else if (type === 'NA') ans = st.Z * m.M / (g.rho * cellVolume(s, m.a, m.c) * 1e-30);
     else if (type === 'r') {
-      const V = st.Z * m.M / (NA * g.rho) * 1e30;   // pm³
+      const V = st.Z * m.M / (NA * g.rho) * 1e30;   // pm^3
       const a = st.cell === 'hex' ? Math.cbrt(V / (1.5 * S3 * g.ca)) : Math.cbrt(V);
       ans = s === 'hcp' ? hcpR(a, g.ca) : st.rFromA(a);
     }

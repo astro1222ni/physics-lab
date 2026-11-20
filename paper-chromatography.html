@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-20 11:11">
-  <script src="js/settings.js?v=202611201125"></script>
+<meta name="lab-updated" content="2026-11-20 11:26">
+  <script src="js/settings.js?v=202611201126"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Paper Chromatography | Astro Ni Lab">紙色層分析｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201125">
+  <link rel="stylesheet" href="lab.css?v=202611201126">
   <style>
     /* 紙色層分析頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -86,6 +86,7 @@
     dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
     .pc dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
     .pc dl.readout dd { white-space: nowrap; }
+    .pc dl.readout dd .rs-pair { max-width: 16ch; white-space: normal; overflow-wrap: anywhere; }
     .pc .tabs { margin: 0 2px 8px; }
     .pc .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
     .pc .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
@@ -118,6 +119,36 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .notes .tablewrap { max-height: none; }
+
+    .scene-pages { display: none; }
+    .bench-console, .bench-screen { display: contents; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .scene-pages { position: fixed; inset: 0 0 auto auto; z-index: 36; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+        width: var(--deck-w); height: 48px; min-width: 0; margin: 0; padding: 0 4px; border: 1px solid var(--border); background: var(--surface); }
+      html.labdeck-drawer .labdeck { top: 48px; }
+      .scene-pages label { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; padding: 0 3px; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+      .scene-pages label:has(:checked) { color: var(--accent); font-weight: 700; }
+      .scene-pages:has([value="bench"]:checked) ~ .lab:not([data-scene="bench"]),
+      .scene-pages:has([value="graphs"]:checked) ~ .lab:not([data-scene="graphs"]) {
+        visibility: hidden; height: 0; min-height: 0; overflow: clip; margin-block: 0; padding-block: 0;
+      }
+      .bench-console { display: flex; flex-direction: column; height: calc(100dvh - 12px); }
+      .bench-screen { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; flex: 1 1 0; min-height: 0; }
+      .bench-screen > canvas { --drawing-min-width: 660; grid-area: 1 / 1; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; }
+      .bench-console .playbar, .bench-console .playbar2, .bench-console .toolbar { gap: 4px; margin: 4px 16px 0 0; }
+      .bench-screen > #view3 { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; }
+      .stage:not(.is3d) .bench-screen > #view3 { display: none; }
+      #view3 .v3nav-hint { display: none; }
+      .bench-console button { min-height: 44px; }
+    }
+    #view3 .r3-hud:empty { display: none; }
+    .bench-screen > #view3 { width: 100%; }
+    #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    .fine-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+    .fine-row button { min-width: 44px; min-height: 44px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bench-screen > #cv { width: 100% !important; height: 100% !important; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -129,7 +160,12 @@
     </header>
 
     <p class="try-hint" data-en-html="Try it: press “Put into the tank” and watch the black marker split into colours. Then change the solvent to salt water: the brown food colouring, which stayed in one blob in plain water, splits into red, orange and blue.">試試看：按「放入展開槽」，看黑色水性筆分出好幾種顏色。再把展開液換成食鹽水：在清水裡擠成一團的咖啡色食用色素，分成紅、橙、藍三個斑點。</p>
-    <div class="lab pc">
+    <fieldset class="scene-pages">
+      <legend class="sr-only" data-en="Experiment view">實驗畫面</legend>
+      <label><input type="radio" name="scene-page" value="bench" checked><span data-en="Apparatus">實驗裝置</span></label>
+      <label><input type="radio" name="scene-page" value="graphs"><span data-en="Graphs">圖表與紀錄</span></label>
+    </fieldset>
+    <div class="lab pc" data-scene="bench">
       <div class="stage" id="stage">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -139,20 +175,24 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" aria-label="展開槽與濾紙" data-en-aria-label="Developing tank and filter paper"></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Put into the tank">放入展開槽</button>
-          <button id="take" type="button" disabled data-en="Take the paper out">取出濾紙</button>
-          <button id="mark" type="button" disabled data-en="Mark the solvent front" title="趁濾紙還沒乾，用鉛筆畫出溶劑前緣" data-en-title="Draw the solvent front in pencil before the paper dries">標記溶劑前緣</button>
-          <button id="newPaper" type="button" data-en="New paper" title="換一張新的濾紙，照目前的設定重新點樣；量測紀錄保留" data-en-title="Start again with a fresh paper spotted with the current settings; the measurements are kept">換一張新濾紙</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、前緣曲線與 Rf 圖；目前的設定不變" data-en-title="Clear the measurements, the front curves and the Rf chart; the settings stay as they are">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-            <div class="seg3" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false" data-en="×10">×10</button>
-              <button type="button" id="sp1" aria-pressed="true" data-en="×60">×60</button>
-              <button type="button" id="sp2" aria-pressed="false" data-en="×300">×300</button>
+        <div class="bench-console">
+          <div class="bench-screen">
+            <canvas id="cv" aria-label="展開槽與濾紙" data-en-aria-label="Developing tank and filter paper"></canvas>
+            <div id="view3"></div>
+          </div>
+          <div class="playbar">
+            <button id="play" class="primary" type="button" data-en="Put into the tank">放入展開槽</button>
+            <button id="take" type="button" disabled data-en="Take the paper out">取出濾紙</button>
+            <button id="mark" type="button" disabled data-en="Mark the solvent front" title="趁濾紙還沒乾，用鉛筆畫出溶劑前緣" data-en-title="Draw the solvent front in pencil before the paper dries">標記溶劑前緣</button>
+            <button id="newPaper" type="button" data-en="New paper" title="換一張新的濾紙，照目前的設定重新點樣；量測紀錄保留" data-en-title="Start again with a fresh paper spotted with the current settings; the measurements are kept">換一張新濾紙</button>
+            <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、前緣曲線與 Rf 圖；目前的設定不變" data-en-title="Clear the measurements, the front curves and the Rf chart; the settings stay as they are">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+              <div class="seg3" role="group" aria-labelledby="speedLabel">
+                <button type="button" id="sp0" aria-pressed="false" data-en="×10">×10</button>
+                <button type="button" id="sp1" aria-pressed="true" data-en="×60">×60</button>
+                <button type="button" id="sp2" aria-pressed="false" data-en="×300">×300</button>
+              </div>
             </div>
           </div>
         </div>
@@ -171,6 +211,11 @@
             <input id="spot" type="range" min="1" max="10" step="0.5" value="3" data-decimals="1"></div>
           <div class="slider"><label for="z0" data-en="Start line (height above the lower edge)">起始線（離濾紙下緣）</label><output id="z0o"></output>
             <input id="z0" type="range" min="0.5" max="4" step="0.1" value="1.5" data-decimals="2"></div>
+          <div class="fine-row" id="fineStart" role="group" aria-label="起始線 ±0.05 cm" data-en-aria-label="Start line ±0.05 cm">
+            <span data-en="Start line ±0.05 cm">起始線 ±0.05 cm</span>
+            <button type="button" data-delta="-1" aria-label="起始線降低 0.05 cm" data-en-aria-label="Lower start line by 0.05 cm">−</button>
+            <button type="button" data-delta="1" aria-label="起始線升高 0.05 cm" data-en-aria-label="Raise start line by 0.05 cm">＋</button>
+          </div>
           <div class="checks"><label><input id="pen" type="checkbox"><span data-en="Draw the start line with a ballpoint pen (a common mistake)">起始線用原子筆畫（常見錯誤）</span></label></div>
         </section>
 
@@ -186,13 +231,18 @@
             <input id="phi" type="range" min="0" max="100" step="1" value="0" data-decimals="1"></div>
           <div class="slider"><label for="zL" data-en="Depth of solvent">展開液深度</label><output id="zLo"></output>
             <input id="zL" type="range" min="0.2" max="3" step="0.1" value="0.8" data-decimals="2"></div>
+          <div class="fine-row" id="fineLiquid" role="group" aria-label="液面 ±0.05 cm" data-en-aria-label="Solvent surface ±0.05 cm">
+            <span data-en="Solvent surface ±0.05 cm">液面 ±0.05 cm</span>
+            <button type="button" data-delta="-1" aria-label="液面降低 0.05 cm" data-en-aria-label="Lower solvent surface by 0.05 cm">−</button>
+            <button type="button" data-delta="1" aria-label="液面升高 0.05 cm" data-en-aria-label="Raise solvent surface by 0.05 cm">＋</button>
+          </div>
           <div class="checks"><label><input id="lid" type="checkbox" checked><span data-en="Lid on (sealed tank)">蓋上蓋子（密封）</span></label></div>
           <p class="info" id="solvInfo"></p>
         </section>
       </aside>
     </div>
 
-    <div class="lab pc">
+    <div class="lab pc" data-scene="graphs">
       <div class="stage">
         <h2 data-en="Graphs and measurements">圖表與量測紀錄</h2>
         <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
@@ -257,7 +307,7 @@
       <div class="formula multi">
         \[ s^2 = \frac{\gamma\,r\cos\theta}{2\eta}\,t = D\,t \]
       </div>
-      <p data-en-html="The Lucas–Washburn equation: the height \(s\) of the front above the solvent surface grows like \(\sqrt{t}\), so the front slows down as it climbs (to climb twice as high takes four times as long). \(\gamma\) is the surface tension, \(\eta\) the viscosity, \(r\) the effective pore radius of the paper and \(\theta\) the contact angle. Water climbs fast because its surface tension is large; a 50% water–ethanol mixture is unusually viscous and climbs very slowly.">這是 Lucas–Washburn 方程式：前緣離液面的高度 \(s\) 和 \(\sqrt{t}\) 成正比，越往上越慢（爬兩倍高要四倍時間）。\(\gamma\) 是表面張力、\(\eta\) 是黏度、\(r\) 是濾紙的有效孔徑、\(\theta\) 是接觸角。水的表面張力大，爬得快；水和乙醇各半的混合液黏度特別大，爬得很慢。</p>
+      <p data-en-html="The Lucas–Washburn equation: the height \(s\) of the front above the solvent surface grows like \(\sqrt{t}\), so the front slows down as it climbs (to climb twice as high takes four times as long). \(\gamma\) is the surface tension, \(\eta\) the viscosity, \(r\) the effective pore radius of the paper and \(\theta\) the contact angle. Water climbs fast because its surface tension is large; a 50 % water–ethanol mixture is unusually viscous and climbs very slowly.">這是 Lucas–Washburn 方程式：前緣離液面的高度 \(s\) 和 \(\sqrt{t}\) 成正比，越往上越慢（爬兩倍高要四倍時間）。\(\gamma\) 是表面張力、\(\eta\) 是黏度、\(r\) 是濾紙的有效孔徑、\(\theta\) 是接觸角。水的表面張力大，爬得快；水和乙醇各半的混合液黏度特別大，爬得很慢。</p>
       <h3 data-en="Resolution">解析度</h3>
       <div class="formula multi">
         \[ R_s = \frac{|d_1 - d_2|}{2(\sigma_1 + \sigma_2)} \]
@@ -268,8 +318,8 @@
       <ul>
         <li data-en="With plain water, the black marker separates into violet, cyan and an orange spot; is the orange spot really one substance? Try a little ethanol in the water.">用清水時，黑色水性筆分出紫、青和一個橙色的斑點。橙色的斑點真的只有一種物質嗎？在水裡加一點乙醇試試。</li>
         <li data-en="The spinach extract does not move at all in water. In petroleum ether + acetone it splits into four bands: orange carotene at the top, then yellow xanthophyll, blue-green chlorophyll a and yellow-green chlorophyll b.">菠菜葉萃取液在水中完全不動；用石油醚＋丙酮時分成四條：最上面是橙色的胡蘿蔔素，接著是黃色的葉黃素、藍綠色的葉綠素 a、黃綠色的葉綠素 b。</li>
-        <li data-en="Open the “Solvent front” graph and tick “Plot s² against t”: with the lid on the line is straight. Take the lid off with acetone and the front stops part-way up.">打開「溶劑前緣」圖，勾選「改畫 s² 對 t」：蓋著蓋子時是直線。用丙酮、打開蓋子，前緣爬到一半就停住。</li>
-        <li data-en="Make the common mistakes on purpose: start line under the solvent surface, a ballpoint-pen start line, a 10 mm spot, letting the front run off the top of the paper.">故意犯常見的錯誤：起始線低於液面、起始線用原子筆畫、點樣 10 mm、讓前緣跑出濾紙上緣。</li>
+        <li data-en-html="Open the “Solvent front” graph and tick “Plot s&lt;sup&gt;2&lt;/sup&gt; against t”: with the lid on the line is straight. Take the lid off with acetone and the front stops part-way up.">打開「溶劑前緣」圖，勾選「改畫 s<sup>2</sup> 對 t」：蓋著蓋子時是直線。用丙酮、打開蓋子，前緣爬到一半就停住。</li>
+        <li data-en="Make the common mistakes on purpose: start line under the solvent surface, a ballpoint-pen start line, a 10 mm spot, letting the front run off the top of the paper.">故意犯常見的錯誤：起始線低於液面、起始線用原子筆畫、點樣 10 mm、讓前緣跑出濾紙上緣。</li>
       </ul>
 
       <h3 data-en="Questions for discussion">想一想</h3>
@@ -277,7 +327,7 @@
         <li data-en="Why is the start line drawn in pencil and not with a pen?">為什麼起始線要用鉛筆畫，不用原子筆？</li>
         <li data-en="Why must the start line be above the surface of the solvent?">為什麼起始線一定要高於展開液的液面？</li>
         <li data-en="Why is the tank covered, and why should the front be marked as soon as the paper is taken out?">為什麼展開槽要蓋上蓋子？為什麼取出濾紙要立刻標記溶劑前緣？</li>
-        <li data-en="The front travelled 9.6 cm from the start line and a blue spot 7.7 cm. What is its Rf? Can we say for certain that it is Brilliant Blue FCF because a standard of Brilliant Blue has the same Rf?">溶劑前緣離起始線 9.6 cm，一個藍色斑點離起始線 7.7 cm，它的 R<sub>f</sub> 是多少？標準品亮藍的 R<sub>f</sub> 也一樣，就可以確定它是亮藍嗎？</li>
+        <li data-en="The front travelled 9.6 cm from the start line and a blue spot 7.7 cm. What is its Rf? Can we say for certain that it is Brilliant Blue FCF because a standard of Brilliant Blue has the same Rf?">溶劑前緣離起始線 9.6 cm，一個藍色斑點離起始線 7.7 cm，它的 R<sub>f</sub> 是多少？標準品亮藍的 R<sub>f</sub> 也一樣，就可以確定它是亮藍嗎？</li>
         <li data-en="In plain water the four food dyes all run close to the front. Why do they separate better in salt water?">在清水中四種食用色素都跑到前緣附近，為什麼用食鹽水就分得比較開？</li>
       </ol>
       <details>
@@ -293,12 +343,12 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Solvent front: \(\mathrm{d}(s^2)/\mathrm{d}t = D - 2\varepsilon s^2\), solved exactly step by step, with \(D = \gamma\,r\cos\theta/2\eta\). The effective \(r\cos\theta = 0.30\) μm is chosen so that water at 20 °C climbs 10 cm in about 15 minutes, as on real filter paper. Viscosities and surface tensions at 20 °C: water 1.002 mPa·s and 72.8 mN/m, ethanol 1.20 and 22.4, acetone 0.32 and 23.7; water–ethanol mixtures are interpolated from tables by mass percentage (CRC Handbook; surface tensions rounded from Vázquez et al. 1995). Gravity is ignored (it matters only at heights of metres for such fine pores).">溶劑前緣：\(\mathrm{d}(s^2)/\mathrm{d}t = D - 2\varepsilon s^2\)，每一小步用精確解計算，\(D = \gamma\,r\cos\theta/2\eta\)。有效的 \(r\cos\theta\) 取 0.30 μm，使 20 °C 的水約 15 分鐘爬 10 cm，和實際的濾紙相當。20 °C 的黏度與表面張力：水 1.002 mPa·s、72.8 mN/m，乙醇 1.20、22.4，丙酮 0.32、23.7；水—乙醇混合液照質量百分率的表格內插（CRC 手冊；表面張力取自 Vázquez 等 1995 的近似值）。不考慮重力（孔徑這麼細，重力要到好幾公尺高才有影響）。</li>
+        <li data-en-html="Solvent front: \(\mathrm{d}(s^2)/\mathrm{d}t = D - 2\varepsilon s^2\), solved exactly step by step, with \(D = \gamma\,r\cos\theta/2\eta\). The effective \(r\cos\theta = 0.30\) μm is chosen so that water at 20 °C climbs 10 cm in about 15 minutes, as on real filter paper. Viscosities and surface tensions at 20 °C: water 1.002 mPa·s and 72.8 mN/m, ethanol 1.20 and 22.4, acetone 0.32 and 23.7; water–ethanol mixtures are interpolated from tables by mass percentage (CRC Handbook; surface tensions rounded from Vázquez et al. 1995). Gravity is ignored (it matters only at heights of metres for such fine pores).">溶劑前緣：\(\mathrm{d}(s^2)/\mathrm{d}t = D - 2\varepsilon s^2\)，每一小步用精確解計算，\(D = \gamma\,r\cos\theta/2\eta\)。有效的 \(r\cos\theta\) 取 0.30 μm，使 20 °C 的水約 15 分鐘爬 10 cm，和實際的濾紙相當。20 °C 的黏度與表面張力：水 1.002 mPa·s、72.8 mN/m，乙醇 1.20、22.4，丙酮 0.32、23.7；水—乙醇混合液照質量百分率的表格內插（CRC 手冊；表面張力取自 Vázquez 等 1995 的近似值）。不考慮重力（孔徑這麼細，重力要到好幾公尺高才有影響）。</li>
         <li data-en-html="Evaporation: with the lid off, \(\varepsilon\) is proportional to the vapour pressure of the solvent (an illustrative constant). The flow of solvent at height \(h\) is then \(\mathrm{d}s/\mathrm{d}t + \varepsilon(s - h)\), so after the front stops the spots keep creeping up and the measured \(R_f\) comes out too large. With the lid on there is no evaporation.">蒸發：沒蓋時 \(\varepsilon\) 和展開液的蒸氣壓成正比（比例常數是示意值）。高度 \(h\) 處的溶劑流速是 \(\mathrm{d}s/\mathrm{d}t + \varepsilon(s - h)\)，所以前緣停住之後斑點仍慢慢往上走，量到的 \(R_f\) 偏大。蓋上蓋子時不蒸發。</li>
         <li data-en-html="Spots: each spot moves at \(R_f\) times the local solvent velocity, so with the lid on its distance is exactly \(R_f\,d_\text{f}\). For water–ethanol mixtures \(\ln k = (1-\varphi)\ln k_\text{water} + \varphi \ln k_\text{ethanol}\) (the linear solvent-strength approximation; \(\varphi\) is the volume fraction of ethanol), so two substances can swap places as \(\varphi\) changes. The \(R_f\) values are illustrative; their order follows usual classroom results (for leaf pigments in petroleum ether + acetone: carotene, xanthophyll, chlorophyll a, chlorophyll b from the top). Real \(R_f\) values depend on the paper, the temperature and how saturated the tank is.">斑點：每個斑點的速度是 \(R_f\) 乘以該處的溶劑流速，所以蓋著蓋子時移動的距離剛好是 \(R_f\,d_\text{f}\)。水—乙醇混合液用 \(\ln k = (1-\varphi)\ln k_\text{水} + \varphi \ln k_\text{乙醇}\)（線性溶劑強度近似，\(\varphi\) 是乙醇的體積分率），所以兩種物質可能隨 \(\varphi\) 改變而交換上下位置。\(R_f\) 數值是示意值，上下順序照常見的課堂結果（葉綠素萃取液在石油醚＋丙酮中由上到下是胡蘿蔔素、葉黃素、葉綠素 a、葉綠素 b）；真實的 \(R_f\) 會隨濾紙、溫度與展開槽是否飽和而改變。</li>
-        <li data-en-html="Spot size: \(\sigma^2 = \sigma_0^2 + H d + 2 D_\text{m} t\) along the paper (plate height \(H\) = 0.05 mm, diffusion coefficient \(D_\text{m}\) = 3 × 10&lt;sup&gt;−6&lt;/sup&gt; cm²/s, both illustrative) and a smaller spreading across it; the starting spot has \(\sigma_0\) = diameter ÷ 4. The total amount of sample is the same whatever the spot size, so a big spot is both wider and paler. Colours follow Beer's law: each dye absorbs in proportion to its amount.">斑點大小：沿著濾紙方向 \(\sigma^2 = \sigma_0^2 + H d + 2 D_\text{m} t\)（板高 \(H\) = 0.05 mm、擴散係數 \(D_\text{m}\) = 3 × 10<sup>−6</sup> cm²/s，都是示意值），橫向變寬得少一些；一開始的 \(\sigma_0\) = 點樣直徑 ÷ 4。不論點多大，樣品總量一樣，所以點太大的斑點又寬又淡。顏色照比爾定律：每種染料的吸光度和它的量成正比。</li>
-        <li data-en="A start line under the solvent surface: the sample dissolves into the solvent in the tank with a time constant of 20 s. A ballpoint-pen line is modelled as an oil-soluble blue dye. Once the front reaches the top of the paper the solvent keeps flowing and evaporating at the top edge, so the spots keep moving but the true front can no longer be measured.">起始線在液面下：樣品以時間常數 20 s 溶進槽裡的展開液。原子筆畫的線當作一種油溶性的藍色染料。前緣到達濾紙上緣後，溶劑繼續從上緣流走、蒸發，斑點還會繼續往上走，但已經量不到前緣真正的位置。</li>
-        <li data-en="Measuring: tapping a spot climbs to the darkest point nearby (two spots that are not separated are measured as one) and reads it on a millimetre ruler to 0.05 cm. The front is visible for a few seconds after the paper is taken out (until it dries). The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same paper and tank.">量測：點一下斑點，會找附近顏色最深的地方（沒有分開的兩個斑點會被當成一個），用毫米尺讀到 0.05 cm。濾紙取出後，前緣只看得見幾秒（濾紙乾了就看不到）。3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一張濾紙與同一個展開槽。</li>
+        <li data-en-html="Spot size: \(\sigma^2 = \sigma_0^2 + H d + 2 D_\text{m} t\) along the paper (plate height \(H\) = 0.05 mm, diffusion coefficient \(D_\text{m}\) = 3 × 10&lt;sup&gt;−6&lt;/sup&gt; cm&lt;sup&gt;2&lt;/sup&gt;/s, both illustrative) and a smaller spreading across it; the starting spot has \(\sigma_0\) = diameter ÷ 4. The total amount of sample is the same whatever the spot size, so a big spot is both wider and paler. Colours follow Beer's law: each dye absorbs in proportion to its amount.">斑點大小：沿著濾紙方向 \(\sigma^2 = \sigma_0^2 + H d + 2 D_\text{m} t\)（板高 \(H\) = 0.05 mm、擴散係數 \(D_\text{m}\) = 3 × 10<sup>−6</sup> cm<sup>2</sup>/s，都是示意值），橫向變寬得少一些；一開始的 \(\sigma_0\) = 點樣直徑 ÷ 4。不論點多大，樣品總量一樣，所以點太大的斑點又寬又淡。顏色照比爾定律：每種染料的吸光度和它的量成正比。</li>
+        <li data-en="A start line under the solvent surface: the sample dissolves into the solvent in the tank with a time constant of 20 s. A ballpoint-pen line is modelled as an oil-soluble blue dye. Once the front reaches the top of the paper the solvent keeps flowing and evaporating at the top edge, so the spots keep moving but the true front can no longer be measured.">起始線在液面下：樣品以時間常數 20 s 溶進槽裡的展開液。原子筆畫的線當作一種油溶性的藍色染料。前緣到達濾紙上緣後，溶劑繼續從上緣流走、蒸發，斑點還會繼續往上走，但已經量不到前緣真正的位置。</li>
+        <li data-en="Measuring: tapping a spot climbs to the darkest point nearby (two spots that are not separated are measured as one) and reads it on a millimetre ruler to 0.05 cm. The front is visible for a few seconds after the paper is taken out (until it dries). The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same paper and tank.">量測：點一下斑點，會找附近顏色最深的地方（沒有分開的兩個斑點會被當成一個），用毫米尺讀到 0.05 cm。濾紙取出後，前緣只看得見幾秒（濾紙乾了就看不到）。3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一張濾紙與同一個展開槽。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>
@@ -315,19 +365,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201125"></script>
-  <script src="js/paper-chromatography-core.js?v=202611201125"></script>
-  <script src="js/sound.js?v=202611201125"></script>
-  <script src="js/numinput.js?v=202611201125"></script>
-  <script src="js/labdeck.js?v=202611201125"></script>
-  <script src="js/drawkit.js?v=202611201125"></script>
-  <script src="js/keys.js?v=202611201125"></script>
-  <script src="js/paper-chromatography-3d.js?v=202611201125"></script>
-  <script src="js/paper-chromatography.js?v=202611201125"></script>
-  <script src="js/firebase-config.js?v=202611201125"></script>
-  <script src="js/missions.js?v=202611201125" data-module="paper-chromatography"></script>
-  <script src="js/missions/paper-chromatography.js?v=202611201125"></script>
-  <script src="js/stats.js?v=202611201125" data-module="paper-chromatography"></script>
-  <script src="js/comments.js?v=202611201125"></script>
+  <script src="js/math.js?v=202611201126"></script>
+  <script src="js/paper-chromatography-core.js?v=202611201126"></script>
+  <script src="js/sound.js?v=202611201126"></script>
+  <script src="js/numinput.js?v=202611201126"></script>
+  <script src="js/view3d-nav.js?v=202611201126"></script>
+  <script src="js/labdeck.js?v=202611201126"></script>
+  <script src="js/drawkit.js?v=202611201126"></script>
+  <script src="js/keys.js?v=202611201126"></script>
+  <script src="js/paper-chromatography-3d.js?v=202611201126"></script>
+  <script src="js/paper-chromatography.js?v=202611201126"></script>
+  <script src="js/firebase-config.js?v=202611201126"></script>
+  <script src="js/missions.js?v=202611201126" data-module="paper-chromatography"></script>
+  <script src="js/missions/paper-chromatography.js?v=202611201126"></script>
+  <script src="js/stats.js?v=202611201126" data-module="paper-chromatography"></script>
+  <script src="js/comments.js?v=202611201126"></script>
 </body>
 </html>

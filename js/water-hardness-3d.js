@@ -18,8 +18,8 @@
     const T = H.T, host = H.host;
 
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('錐形瓶中一小滴溶液的 3D 微觀示意：Ca2+、Mg2+、包住金屬離子的 EDTA，以及指示劑分子（拖曳旋轉、雙指或滾輪縮放）',
-      '3D sketch of a tiny drop of the solution in the flask: Ca2+, Mg2+, EDTA wrapped round metal ions, and indicator molecules (drag to rotate, pinch or scroll to zoom)'));
+    canvas.setAttribute('aria-label', T('錐形瓶中一小滴溶液的 3D 微觀示意：Ca 2+、Mg 2+、包住金屬離子的 EDTA，以及指示劑分子（拖曳旋轉、雙指或滾輪縮放）',
+      '3D sketch of a tiny drop of the solution in the flask: Ca 2+, Mg 2+, EDTA wrapped round metal ions, and indicator molecules (drag to rotate, pinch or scroll to zoom)'));
     canvas.setAttribute('role', 'img');
     host.appendChild(canvas);
     const huds = ['tl', 'tr', 'bl', 'br'].map(function (k) {
@@ -28,7 +28,6 @@
       return d;
     });
     const hudTL = huds[0], hudTR = huds[1], hudBL = huds[2], hudBR = huds[3];
-    hudBL.textContent = T('拖曳旋轉・滾輪或雙指縮放', 'Drag to rotate · scroll or pinch to zoom');
 
     let renderer;
     try {
@@ -48,7 +47,7 @@
     controls.dampingFactor = 0.12;
     controls.minDistance = 6;
     controls.maxDistance = 40;
-    controls.enablePan = false;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host, radius: 10, T });
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.5));
     const sun = new THREE.DirectionalLight(0xffffff, 1.9);
@@ -207,14 +206,23 @@
     function fit(reset) {
       const dist = (R_DROP + 1.2) / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.max(1, 1.15 / camera.aspect);
       if (reset) {
+        // 先消掉拖曳剩餘的慣性，放回原位後模型才不會繼續移動。
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        controls.enableDamping = damping;
         controls.target.set(0, 0, 0);
         camera.position.copy(viewDir).multiplyScalar(dist);
       }
       camera.updateProjectionMatrix();
+      if (reset) nav.home();
       controls.update();
     }
     let vw = 0, raf = 0;
-    function canvasHeight(w) { return w < 560 ? Math.round(Math.max(320, w * 0.95)) : 480; }
+    function canvasHeight(w) {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches && host.clientHeight) return host.clientHeight;
+      return w < 560 ? Math.round(Math.max(320, w * 0.95)) : 480;
+    }
     function resize3() {
       const w = host.clientWidth;
       if (!w) return;
@@ -237,7 +245,7 @@
       if (raf || !api.active) return;
       raf = requestAnimationFrame(function () { raf = 0; if (!H.running()) renderNow(); });
     }
-    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw) resize3(); }) : null;
+    const ro = window.ResizeObserver ? new ResizeObserver(function () { if (host.clientWidth !== vw || canvasHeight(host.clientWidth) !== canvas.clientHeight) resize3(); }) : null;
     if (ro) ro.observe(host); else window.addEventListener('resize', resize3);
     controls.addEventListener('change', requestRender);
     const onVisible = function () { if (!document.hidden) requestRender(); };
@@ -258,6 +266,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        nav.dispose();
         controls.dispose();
         const mats = new Set();
         scene.traverse(function (o) {

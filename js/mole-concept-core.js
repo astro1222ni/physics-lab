@@ -3,18 +3,18 @@
  *
  * 三個部分：
  *   1. 天平與換算：質量 m、莫耳數 n、粒子數 N、（氣體）體積 V 的互換。m = nM、N = nN_A、V = nV_m（氣體）或 V = m/ρ（固體、液體）。
- *   2. 放大到原子：邊長 L 的立方體裡有幾個粒子 N = ρL³N_A/M；粒子間距 d = (M/ρN_A)^(1/3)；一直對切，切幾刀剩一個。
+ *   2. 放大到原子：邊長 L 的立方體裡有幾個粒子 N = ρL^3N_A/M；粒子間距 d = (M/ρN_A)^(1/3)；一直對切，切幾刀剩一個。
  *   3. 油膜法：油酸酒精溶液滴在撒了粉的水面，形成單分子膜。膜厚 h = V/A；假設分子是「高 h、寬 h/k」的長方柱，
- *      每個分子的體積 = h³/k²，N_A ≈ M k² /(ρ h³)（k = 1 就是立方體假設）。
+ *      每個分子的體積 = h^3/k^2，N_A ≈ M k^2 /(ρ h^3)（k = 1 就是立方體假設）。
  *
  * 數據：
- *   - 亞佛加厥數 N_A = 6.02214076 × 10^23 mol⁻¹（2019 SI 定義值，CODATA 2018）；R = 8.314462618 J/(mol·K)。
+ *   - 亞佛加厥數 N_A = 6.02214076 × 10^23 mol^−1（2019 SI 定義值，CODATA 2018）；R = 8.314462618 J/(mol·K)。
  *   - 原子量：IUPAC 標準原子量的慣用值（abridged / conventional，2021）。
- *   - 密度（g/cm³）：CRC Handbook of Chemistry and Physics；液體用 25 °C 的值。
+ *   - 密度（g/cm^3）：CRC Handbook of Chemistry and Physics；液體用 25 °C 的值。
  *   - 氣體當理想氣體：STP（0 °C、1 atm）V_m = 22.414 L/mol；25 °C、1 atm V_m = 24.465 L/mol（臺灣課本取 22.4、24.5）。
  *   - 晶格常數：Cu 0.36149 nm、Au 0.40782 nm（面心立方），NaCl 0.56402 nm（岩鹽結構），CRC 手冊。
- *   - 油酸 C18H34O2：M = 282.47 g/mol、ρ ≈ 0.895 g/cm³（25 °C）；水面單分子膜每個分子約占 0.46 nm²（文獻約 0.4–0.5 nm²，
- *     模擬取 0.46），所以膜厚 h = (M/ρN_A)/0.46 nm² ≈ 1.14 nm。
+ *   - 油酸 C18H34O2：M = 282.47 g/mol、ρ ≈ 0.895 g/cm^3（25 °C）；水面單分子膜每個分子約占 0.46 nm^2（文獻約 0.4–0.5 nm^2，
+ *     模擬取 0.46），所以膜厚 h = (M/ρN_A)/0.46 nm^2 ≈ 1.14 nm。
  *
  * 油膜實驗的誤差模型（固定的偽亂數，同樣的操作順序每次結果都一樣，任務證明才能重現）：
  *   - 每一滴的體積 = 滴管的標稱滴體積 ×（1 ± 4%）；校正滴管：一滴一滴滴進量筒，直到達到刻度（1、2 或 5 mL），數滴數。
@@ -29,13 +29,13 @@
   'use strict';
 
   // ======================= 常數 =======================
-  const NA = 6.02214076e23;            // mol⁻¹（定義值）
+  const NA = 6.02214076e23;            // mol^−1（定義值）
   const R = 8.314462618;               // J/(mol·K)（定義值）
   const ATM = 101325;                  // Pa
   const T0 = 273.15;
   const VM = { stp: R * T0 / ATM * 1000, rt: R * (T0 + 25) / ATM * 1000 };   // L/mol：22.414、24.465
-  const COND = { stp: { T: T0, zh: '0 °C、1 atm（STP）', en: '0 °C, 1 atm (STP)' }, rt: { T: T0 + 25, zh: '25 °C、1 atm', en: '25 °C, 1 atm' } };
-  /** 洛施密特常數（STP 下每 cm³ 理想氣體的分子數） */
+  const COND = { stp: { T: T0, zh: '0 °C、1 atm（STP）', en: '0 °C, 1 atm (STP)' }, rt: { T: T0 + 25, zh: '25 °C、1 atm', en: '25 °C, 1 atm' } };
+  /** 洛施密特常數（STP 下每 cm^3 理想氣體的分子數） */
   const LOSCHMIDT = NA / (VM.stp * 1000);
 
   // IUPAC 標準原子量（慣用值）與原子序
@@ -73,14 +73,14 @@
     s.M = molarMass(s.comp);
     s.atoms = atomsOf(s.comp);            // 每個粒子含幾個原子（離子晶體：幾個離子）
     s.electrons = electronsOf(s.comp);    // 每個粒子含幾個電子（中性）
-    s.Vm = s.phase === 'g' ? null : s.M / s.rho;   // 固體、液體的莫耳體積 cm³/mol
+    s.Vm = s.phase === 'g' ? null : s.M / s.rho;   // 固體、液體的莫耳體積 cm^3/mol
     SUB[s.id] = s;
   });
 
-  /** 莫耳體積（cm³/mol）：固體、液體 M/ρ；氣體依條件（理想氣體） */
+  /** 莫耳體積（cm^3/mol）：固體、液體 M/ρ；氣體依條件（理想氣體） */
   function molarVolume(sub, cond) { return sub.phase === 'g' ? VM[cond || 'stp'] * 1000 : sub.Vm; }
 
-  // 單位：g（質量）、mol（莫耳數）、N（粒子數，個）、V（體積：氣體用 L，固體液體用 mL = cm³）
+  // 單位：g（質量）、mol（莫耳數）、N（粒子數，個）、V（體積：氣體用 L，固體液體用 mL = cm^3）
   const UNITS = ['g', 'mol', 'N', 'V'];
   /** 1 mol 是多少「單位」 */
   function perMol(sub, unit, cond) {
@@ -94,7 +94,7 @@
   function fromMol(sub, unit, n, cond) { return n * perMol(sub, unit, cond); }
   /** 一份樣品的各種量 */
   function sample(sub, n, cond) {
-    const V = n * molarVolume(sub, cond);    // cm³
+    const V = n * molarVolume(sub, cond);    // cm^3
     return {
       id: sub.id, phase: sub.phase, kind: sub.kind, M: sub.M,
       n: n, m: n * sub.M, N: n * NA, atoms: n * NA * sub.atoms, electrons: n * NA * sub.electrons,
@@ -134,7 +134,7 @@
   // ======================= 油膜法 =======================
   const OLEIC = { zh: '油酸', en: 'Oleic acid', comp: { C: 18, H: 34, O: 2 }, rho: 0.895, a0: 0.46 };
   OLEIC.M = molarMass(OLEIC.comp);
-  OLEIC.vmol = OLEIC.M / (OLEIC.rho * NA) * 1e21;   // 一個分子的體積 nm³
+  OLEIC.vmol = OLEIC.M / (OLEIC.rho * NA) * 1e21;   // 一個分子的體積 nm^3
   OLEIC.h = OLEIC.vmol / OLEIC.a0;                  // 單分子膜厚 nm
   OLEIC.k = OLEIC.h / Math.sqrt(OLEIC.a0);          // 膜中分子的「高 ÷ 寬」
   const TRAY = { W: 40, H: 30 };                    // 水盤 cm
@@ -170,7 +170,7 @@
       const f = shapeF(harm, 2 * Math.PI * j / NS);
       I += f * f; fmax = Math.max(fmax, f); fmin = Math.min(fmin, f);
     }
-    I *= Math.PI / NS;   // ½∫f²dθ
+    I *= Math.PI / NS;   // ½∫f^2dθ
     return {
       idx: t, dropper: opts.dropper, D: opts.D, powder: opts.powder,
       harm: harm, I: I, fmax: fmax, fmin: fmin,
@@ -184,7 +184,7 @@
     tray.drops++;
     tray.Vsol += v;
     tray.Voil = tray.Vsol / tray.D;
-    tray.A = tray.Voil / (OLEIC.h * 1e-7) * POWDER[tray.powder];   // cm²（粉太厚推不開）
+    tray.A = tray.Voil / (OLEIC.h * 1e-7) * POWDER[tray.powder];   // cm^2（粉太厚推不開）
     tray.R = Math.sqrt(tray.A / tray.I);
     return v;
   }
@@ -245,13 +245,13 @@
     return {
       tray: tray.idx, drops: tray.drops, D: tray.D, dropper: tray.dropper, powder: tray.powder, grid: grid,
       calVol: cal ? cal.Vcal : 0, v: v,
-      Voil: tray.drops * v / tray.D,                 // 學生算的油酸體積 mL（= cm³）
+      Voil: tray.drops * v / tray.D,                 // 學生算的油酸體積 mL（= cm^3）
       VoilTrue: tray.Voil,
       A: cc ? cc.area : null, count: cc ? cc.count : 0, Aexact: cc ? cc.exact : null,
       edge: touches(tray), visible: visible
     };
   }
-  /** 過原點的最小平方直線 A = V/h：斜率 1/h（cm⁻¹）；r² 用過原點的定義 */
+  /** 過原點的最小平方直線 A = V/h：斜率 1/h（cm^−1）；r^2 用過原點的定義 */
   function fitThroughOrigin(rows) {
     let sxx = 0, sxy = 0, syy = 0;
     rows.forEach(function (r) { sxx += r.Voil * r.Voil; sxy += r.Voil * r.A; syy += r.A * r.A; });

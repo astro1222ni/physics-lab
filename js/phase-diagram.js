@@ -10,6 +10,16 @@
  */
 (function () {
   'use strict';
+  document.querySelector('.scene-pages').addEventListener('change', function (event) {
+    const lab = document.querySelector('.lab[data-scene="' + event.target.value + '"]');
+    const bench = lab.querySelector('.bench-console');
+    const first = bench || lab.querySelector('.stage');
+    const last = bench || lab.querySelector('#gcv');
+    // 優先保留圖表標題與選項，但讓圖的底端也落在同一個畫面。
+    const offset = Math.max(first.getBoundingClientRect().top, last.getBoundingClientRect().bottom - innerHeight + 4);
+    window.scrollBy({ top: offset, behavior: 'instant' });
+  });
+
   const C = window.PDCore, LD = window.LabDraw;
   if (!C || !LD) return;
   const $ = function (id) { return document.getElementById(id); };
@@ -43,12 +53,12 @@
   /** 壓力：自動選 Pa、kPa、MPa */
   function pTxt(P, sig) {
     if (!isFinite(P)) return '—';
-    if (P >= 1e6) return sigf(P / 1e6, sig || 4) + ' MPa';
-    if (P >= 1e3) return sigf(P / 1e3, sig || 4) + ' kPa';
-    return sigf(P, sig || 3) + ' Pa';
+    if (P >= 1e6) return sigf(P / 1e6, sig || 4) + ' MPa';
+    if (P >= 1e3) return sigf(P / 1e3, sig || 4) + ' kPa';
+    return sigf(P, sig || 3) + ' Pa';
   }
-  function atmHTML(P) { return sciHTML(P / ATM, 3) + ' atm'; }
-  function cTxt(Tk, d) { return num(Tk - K0, d == null ? 1 : d) + ' °C'; }
+  function atmHTML(P) { return sciHTML(P / ATM, 3) + ' atm'; }
+  function cTxt(Tk, d) { return num(Tk - K0, d == null ? 1 : d) + ' °C'; }
 
   // ======================= 名稱 =======================
   const SUBN = { water: ['水', 'water'], co2: ['二氧化碳', 'carbon dioxide'], iodine: ['碘', 'iodine'] };
@@ -123,9 +133,9 @@
     refreshOutputs();
   }
   function refreshOutputs() {
-    $('tempo').textContent = num(valT() - K0, 2) + ' °C';
+    $('tempo').textContent = num(valT() - K0, 2) + ' °C';
     const pk = valP() / 1000;
-    $('preso').textContent = (pk >= 1e4 ? num(pk, 0) : sigf(pk, 4)) + ' kPa';
+    $('preso').textContent = (pk >= 1e4 ? num(pk, 0) : sigf(pk, 4)) + ' kPa';
   }
   function setRanges() {
     const s = Tr();
@@ -169,7 +179,7 @@
 
   // ======================= 版面 =======================
   function layout() {
-    const w = cv.clientWidth || 600, fs = fsScale();
+    const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width'))) || 600, fs = fsScale();
     const narrow = w < 640;
     let H, d, c;
     if (narrow) {
@@ -300,7 +310,7 @@
     });
     g.restore();
     // 1 atm 標籤
-    LD.haloText(g, '1 atm', G.pr - 4, ya - 4, col.muted, 'right', 'alphabetic', f11);
+    LD.haloText(g, '1 atm', G.pr - 4, ya - 4, col.muted, 'right', 'alphabetic', f11);
     // 座標軸
     g.strokeStyle = LD.alpha(col.text, 0.55); g.lineWidth = 1;
     g.beginPath(); g.moveTo(G.pl + 0.5, G.pt); g.lineTo(G.pl + 0.5, G.pb + 0.5); g.lineTo(G.pr, G.pb + 0.5); g.stroke();
@@ -839,7 +849,7 @@
   }
 
   // ======================= 讀數 =======================
-  function setStatus(t) { $('status').textContent = t || statusBase; }
+  function setStatus(t) { $('status').innerHTML = t || statusBase; }
   function updateReadouts() {
     const s = Tr(), ph = C.phase(st.sub, st.T, st.P), line = lineNow();
     const box = $('phaseNow');
@@ -859,7 +869,7 @@
     box.style.color = line || pause ? col.accent : LD.shade(col.ph[ph], col.dk ? 0.1 : -0.2);
 
     const rows = [];
-    rows.push([T('溫度 T', 'Temperature T'), cTxt(st.T, 2) + '<small>' + num(st.T, 2) + ' K</small>']);
+    rows.push([T('溫度 T', 'Temperature T'), cTxt(st.T, 2) + '<small>' + num(st.T, 2) + ' K</small>']);
     rows.push([T('壓力 P', 'Pressure P'), pTxt(st.P, 4) + '<small>' + atmHTML(st.P) + '</small>']);
     // 這個壓力下的相變溫度
     const parts = [];
@@ -879,11 +889,11 @@
     // 熔化線斜率
     const Tm = st.P >= s.pt ? C.Tmelt(st.sub, st.P) : s.Tt;
     const sl = C.meltSlope(st.sub, isFinite(Tm) ? Tm : s.Tt);
-    rows.push([T('熔化線斜率', 'Melting-line slope') + '<small>dP/dT</small>', num(sl / ATM, 0) + ' atm/K<small>' + (sl > 0 ? T('加壓 1 atm，熔點升高 ', '+1 atm raises the melting point by ') : T('加壓 1 atm，熔點降低 ', '+1 atm lowers the melting point by ')) + sigf(Math.abs(ATM / sl), 2) + ' K</small>']);
+    rows.push([T('熔化線斜率', 'Melting-line slope') + '<small>dP/dT</small>', num(sl / ATM, 0) + ' atm/K<small>' + (sl > 0 ? T('加壓 1 atm，熔點升高 ', '+1 atm raises the melting point by ') : T('加壓 1 atm，熔點降低 ', '+1 atm lowers the melting point by ')) + sigf(Math.abs(ATM / sl), 2) + ' K</small>']);
     // 飽和密度
     const dd = C.satDensity(st.sub, st.T);
     rows.push([T('飽和密度（液／氣）', 'Saturated densities (liquid / vapour)') + '<small>' + T('這個溫度', 'at this temperature') + '</small>',
-      dd ? sigf(dd.L, 3) + ' / ' + sigf(dd.V, 3) + ' kg/m<sup>3</sup>' : st.sub === 'iodine' && st.T >= s.Tt && st.T <= s.Tc ? T('—（無可靠數據）', '— (no reliable data)') : '—']);
+      dd ? sigf(dd.L, 3) + ' / ' + sigf(dd.V, 3) + ' kg/m<sup>3</sup>' : st.sub === 'iodine' && st.T >= s.Tt && st.T <= s.Tc ? T('—（無可靠數據）', '— (no reliable data)') : '—']);
     const rd = C.reduced(st.sub, st.T, st.P);
     rows.push([T('對比溫度、對比壓力', 'Reduced T and P') + '<small>T/T<sub>c</sub>, P/P<sub>c</sub></small>', sigf(rd.Tr, 3) + ', ' + sciHTML(rd.Pr, 3)]);
     $('readout').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
@@ -893,9 +903,9 @@
   function updateSubInfo() {
     const s = Tr(), id = st.sub;
     let h = T('三相點 ', 'Triple point ') + cTxt(s.Tt, 2) + T('、', ', ') + pTxt(s.pt, 4) + T('；臨界點 ', '; critical point ') + cTxt(s.Tc, 2) + T('、', ', ') + pTxt(s.pc, 4) + T('。', '.');
-    if (id === 'co2') h += T('三相點的壓力高於 1 atm，所以 1 atm 下乾冰在 −78.5 °C 直接昇華。', ' The triple-point pressure is above 1 atm, so at 1 atm dry ice sublimes at −78.5 °C.');
-    else if (id === 'iodine') h += T('1 atm 下 113.5 °C 熔化、184.4 °C 沸騰。', ' At 1 atm it melts at 113.5 °C and boils at 184.4 °C.');
-    else h += T('1 atm 下 0.00 °C 熔化、99.97 °C 沸騰；熔化線向左斜。', ' At 1 atm it melts at 0.00 °C and boils at 99.97 °C; the melting line leans to the left.');
+    if (id === 'co2') h += T('三相點的壓力高於 1 atm，所以 1 atm 下乾冰在 −78.5 °C 直接昇華。', ' The triple-point pressure is above 1 atm, so at 1 atm dry ice sublimes at −78.5 °C.');
+    else if (id === 'iodine') h += T('1 atm 下 113.5 °C 熔化、184.4 °C 沸騰。', ' At 1 atm it melts at 113.5 °C and boils at 184.4 °C.');
+    else h += T('1 atm 下 0.00 °C 熔化、99.97 °C 沸騰；熔化線向左斜。', ' At 1 atm it melts at 0.00 °C and boils at 99.97 °C; the melting line leans to the left.');
     $('subInfo').innerHTML = h;
   }
 
@@ -914,14 +924,14 @@
   function updateClap() {
     const id = st.sub, s = Tr();
     const v = tr.pair(id, 'vap'), b = tr.pair(id, 'sub');
-    const kj = function (x) { return num(x / 1000, 2) + ' kJ/mol'; };
+    const kj = function (x) { return num(x / 1000, 2) + ' kJ/mol'; };
     let h = '';
     const one = function (p, name, ref, refNote) {
       return name + T('：', ': ') + '<b>' + kj(p.dH) + '</b><br><small>' + T('兩點 ', 'from ') + cTxt(p.T1, 2) + T('（', ' (') + pTxt(p.P1, 3) + T('）與 ', ') and ') + cTxt(p.T2, 2) + T('（', ' (') + pTxt(p.P2, 3) + T('）', ')') +
         T('；壓力比 ', '; pressure ratio ') + sigf(p.ratio, 3) + T('；文獻 ', '; reference ') + kj(ref) + refNote + '</small>';
     };
-    if (v) h += one(v, T('莫耳汽化熱 ΔH<sub>vap</sub>', 'Molar heat of vaporization ΔH<sub>vap</sub>'), s.dHvapRef, id === 'water' ? T('（100 °C）', ' (100 °C)') : id === 'co2' ? T('（三相點）', ' (triple point)') : T('（沸點）', ' (boiling point)'));
-    if (b) h += (h ? '<br>' : '') + one(b, T('莫耳昇華熱 ΔH<sub>sub</sub>', 'Molar heat of sublimation ΔH<sub>sub</sub>'), s.dHsubRef, id === 'water' ? T('（0 °C）', ' (0 °C)') : id === 'co2' ? T('（−78.5 °C）', ' (−78.5 °C)') : T('（25 °C）', ' (25 °C)'));
+    if (v) h += one(v, T('莫耳汽化熱 ΔH<sub>vap</sub>', 'Molar heat of vaporization ΔH<sub>vap</sub>'), s.dHvapRef, id === 'water' ? T('（100 °C）', ' (100 °C)') : id === 'co2' ? T('（三相點）', ' (triple point)') : T('（沸點）', ' (boiling point)'));
+    if (b) h += (h ? '<br>' : '') + one(b, T('莫耳昇華熱 ΔH<sub>sub</sub>', 'Molar heat of sublimation ΔH<sub>sub</sub>'), s.dHsubRef, id === 'water' ? T('（0 °C）', ' (0 °C)') : id === 'co2' ? T('（−78.5 °C）', ' (−78.5 °C)') : T('（25 °C）', ' (25 °C)'));
     if (v && b) h += '<br>ΔH<sub>sub</sub> − ΔH<sub>vap</sub> = <b>' + kj(b.dH - v.dH) + '</b>' + T('；熔化熱 ΔH<sub>fus</sub> = ', '; heat of fusion ΔH<sub>fus</sub> = ') + kj(s.dHfusRef) + T('（赫斯定律：在三相點附近量才準）', ' (Hess’s law: measure near the triple point)');
     if (!h) h = T('沿等壓或等溫路徑，在兩個不同的壓力越過同一條線（例如兩個沸點），就能用 ', 'Cross the same line at two different pressures (for example two boiling points) and the equation ') +
       '\\(\\ln\\dfrac{P_2}{P_1} = -\\dfrac{\\Delta H}{R}\\left(\\dfrac{1}{T_2} - \\dfrac{1}{T_1}\\right)\\)' + T(' 算出這個物質的莫耳相變熱。', ' gives the molar heat of that change for ') + (T('', subName(id) + '.'));
@@ -945,10 +955,10 @@
       let k = st.T < s.Tt ? 'sub' : st.T < s.Tc ? 'vap' : null;
       t = T('克勞修斯—克拉佩龍圖：橫軸 1000/T、縱軸 ln(P/kPa)。昇華線與蒸氣壓曲線幾乎是直線，斜率 = −ΔH/R；兩條線在三相點相接，昇華線比較陡。',
         'Clausius–Clapeyron plot: 1000/T across, ln(P/kPa) up. The sublimation and vapour-pressure lines are nearly straight with slope −ΔH/R; they meet at the triple point, and the sublimation line is steeper.');
-      if (k) t += T(' 在目前的溫度，', ' At the current temperature the ') + T(LINEN[k][0], LINEN[k][1]) + T('的切線斜率給出 ΔH = ', ' has a tangent slope giving ΔH = ') + num(C.dHslope(st.sub, k, st.T) / 1000, 1) + ' kJ/mol' + T('。', '.');
+      if (k) t += T(' 在目前的溫度，', ' At the current temperature the ') + T(LINEN[k][0], LINEN[k][1]) + T('的切線斜率給出 ΔH = ', ' has a tangent slope giving ΔH = ') + num(C.dHslope(st.sub, k, st.T) / 1000, 1) + ' kJ/mol' + T('。', '.');
     } else if (st.tab === 'all') {
-      t = T('三種物質的相圖畫在一起（同一組座標）。虛線是 1 atm：只有二氧化碳的三相點在它上面，所以乾冰在 1 atm 下直接昇華；碘與水都會先熔化。',
-        'The three phase diagrams on the same axes. The dashed line is 1 atm: only carbon dioxide has its triple point above it, so dry ice sublimes at 1 atm, while iodine and water melt first.');
+      t = T('三種物質的相圖畫在一起（同一組座標）。虛線是 1 atm：只有二氧化碳的三相點在它上面，所以乾冰在 1 atm 下直接昇華；碘與水都會先熔化。',
+        'The three phase diagrams on the same axes. The dashed line is 1 atm: only carbon dioxide has its triple point above it, so dry ice sublimes at 1 atm, while iodine and water melt first.');
     } else {
       t = T('對比狀態：溫度除以 T<sub>c</sub>、壓力除以 P<sub>c</sub> 之後，三條蒸氣壓曲線幾乎疊在一起（對比狀態原理）。在 T/T<sub>c</sub> = 0.7 的 −1 − log P/P<sub>c</sub> 叫做偏心因子 ω：',
         'Reduced variables: divide T by T<sub>c</sub> and P by P<sub>c</sub> and the three vapour-pressure curves nearly coincide (law of corresponding states). The value of −1 − log P/P<sub>c</sub> at T/T<sub>c</sub> = 0.7 is the acentric factor ω: ') +
@@ -1027,7 +1037,7 @@
       const A = gAxes(g, xr, yr, T('溫度（°C）', 'Temperature (°C)'), T('壓力（kPa，對數）', 'Pressure (kPa, log)'), xs, ys, logFmt);
       const ya = A.fy(Math.log10(ATM / 1000));
       poly(g, [[GG.l, ya], [GG.r, ya]], LD.alpha(col.muted, 0.8), 1, [3, 4]);
-      LD.haloText(g, '1 atm', GG.r - 4, ya - 4, col.muted, 'right', 'alphabetic', f11);
+      LD.haloText(g, '1 atm', GG.r - 4, ya - 4, col.muted, 'right', 'alphabetic', f11);
       C.ORDER.forEach(function (k, idx) {
         const cu = curves(k), cc = col.sub[k], w = k === id ? 3 : 2;
         ['sub', 'vap', 'melt'].forEach(function (q) { poly(g, cu[q].map(function (p) { return [A.fx(p[0] - K0), A.fy(Math.log10(p[1] / 1000))]; }), cc, w); });
@@ -1069,20 +1079,20 @@
   // ======================= 溜冰 =======================
   function updateSkate() {
     const m = window.LabNum ? window.LabNum.value(elMass) : +elMass.value, a = window.LabNum ? window.LabNum.value(elArea) : +elArea.value;
-    $('masso').textContent = num(m, 0) + ' kg';
-    $('areao').innerHTML = num(a, 0) + ' mm<sup>2</sup>';
+    $('masso').textContent = num(m, 0) + ' kg';
+    $('areao').innerHTML = num(a, 0) + ' mm<sup>2</sup>';
     const k = C.skate(m, a);
     const p5 = C.pmelt('water', K0 - 5);
-    $('skateOut').innerHTML = T('冰刀下增加的壓力：', 'Extra pressure under the blade: ') + '<b>' + num(k.P / ATM, 1) + ' atm</b>（' + pTxt(k.P, 3) + '）<br>' +
-      T('熔點只下降 ', 'The melting point falls by only ') + '<b>' + sigf(-k.dT, 2) + ' K</b>' + T('（熔化線斜率 ', ' (melting-line slope ') + num(k.slope / 1e6, 1) + ' MPa/K' + T('）。', ').') + '<br>' +
-      T('冰場約 −5 °C，要讓冰熔化需要約 ', 'A rink is at about −5 °C; melting its ice by pressure needs about ') + num(p5 / ATM, 0) + ' atm' +
+    $('skateOut').innerHTML = T('冰刀下增加的壓力：', 'Extra pressure under the blade: ') + '<b>' + num(k.P / ATM, 1) + ' atm</b>（' + pTxt(k.P, 3) + '）<br>' +
+      T('熔點只下降 ', 'The melting point falls by only ') + '<b>' + sigf(-k.dT, 2) + ' K</b>' + T('（熔化線斜率 ', ' (melting-line slope ') + num(k.slope / 1e6, 1) + ' MPa/K' + T('）。', ').') + '<br>' +
+      T('冰場約 −5 °C，要讓冰熔化需要約 ', 'A rink is at about −5 °C; melting its ice by pressure needs about ') + num(p5 / ATM, 0) + ' atm' +
       T('。冰會滑，主要是表面有一層像液體的薄層，加上摩擦生熱；壓力熔冰的效果很小。', '. Ice is slippery mainly because of a thin liquid-like surface layer and frictional heating; pressure melting is a tiny effect.');
   }
 
   // ======================= 數據表 =======================
   function buildDataTable() {
     const el = $('dataTable');
-    let h = '<thead><tr><th class="l">' + T('物質', 'Substance') + '</th><th>' + T('三相點', 'Triple point') + '</th><th>' + T('臨界點', 'Critical point') + '</th><th>' + T('1 atm 時', 'At 1 atm') +
+    let h = '<thead><tr><th class="l">' + T('物質', 'Substance') + '</th><th>' + T('三相點', 'Triple point') + '</th><th>' + T('臨界點', 'Critical point') + '</th><th>' + T('1 atm 時', 'At 1 atm') +
       '</th><th>' + T('熔化線斜率', 'Melting-line slope') + '<br><small>MPa/K</small></th><th>ΔH<sub>fus</sub> / ΔH<sub>vap</sub> / ΔH<sub>sub</sub><br><small>kJ/mol</small></th><th>' + T('密度 固／液', 'Density solid / liquid') + '<br><small>g/cm<sup>3</sup></small></th></tr></thead><tbody>';
     C.ORDER.forEach(function (id) {
       const s = S[id];
@@ -1128,14 +1138,14 @@
     updateClap();
   }
   const EX = {
-    cooker: function () { return ['water', K0 + 100, 2 * ATM, T('壓力鍋：鍋內約 2 atm（錶壓 1 atm）。按「等壓加熱」，水要到約 120.6 °C 才沸騰，所以食物熟得快。', 'Pressure cooker: about 2 atm inside (1 atm above the outside). Press “Heat (constant P)”: water does not boil until about 120.6 °C, so food cooks faster.')]; },
-    yushan: function () { const p = ATM * Math.pow(1 - 2.25577e-5 * 3952, 5.25588); return ['water', K0 + 25, p, T('玉山頂（3952 m）的氣壓約 0.61 atm。按「等壓加熱」，水在約 87 °C 就沸騰，飯不容易煮熟。', 'On top of Yushan (3952 m) the air pressure is about 0.61 atm. Press “Heat (constant P)”: water boils at about 87 °C, so rice is hard to cook.')]; },
-    dryice: function () { return ['co2', K0 - 90, ATM, T('乾冰（固態 CO2）在 1 atm。按「等壓加熱」，它在 −78.5 °C 直接昇華成氣體，不會留下液體。', 'Dry ice (solid CO2) at 1 atm. Press “Heat (constant P)”: at −78.5 °C it turns straight into gas and leaves no liquid.')]; },
-    skate: function () { return ['water', K0 - 5, ATM, T('冰場約 −5 °C。按「等溫加壓」：要加到約 590 atm 冰才會熔化，而冰刀只多出約 20 atm（見下方的溜冰卡）。', 'An ice rink at about −5 °C. Press “Compress (constant T)”: the ice only melts at about 590 atm, while a skate blade adds only about 20 atm (see the skating card).')]; },
-    freezedry: function () { return ['water', K0 - 40, ATM, T('冷凍乾燥：食物先冷凍到 −40 °C。先「等溫減壓」到比三相點低得多的壓力（例如 20 Pa），再停下來慢慢「等壓加熱」：冰直接昇華，食物不會被水泡過。', 'Freeze-drying: the food is first frozen to −40 °C. Lower the pressure at constant temperature far below the triple point (say 20 Pa), stop, then warm it gently at constant pressure: the ice sublimes and the food is never soaked.')]; },
-    iodine: function () { return ['iodine', K0 + 80, ATM, T('碘晶體在 1 atm。室溫的蒸氣壓就有約 40 Pa，密閉容器裡會出現紫色蒸氣；按「等壓加熱」，它在 113.5 °C 熔化、184.4 °C 沸騰。', 'Iodine crystals at 1 atm. Even at room temperature the vapour pressure is about 40 Pa, so a closed flask fills with violet vapour. Press “Heat (constant P)”: it melts at 113.5 °C and boils at 184.4 °C.')]; },
-    scco2: function () { return ['co2', K0 + 40, 200 * ATM, T('超臨界 CO2 萃取（例如去除咖啡因）：約 40 °C、200 atm。超臨界流體像氣體一樣鑽進咖啡豆，又像液體一樣溶解咖啡因；減壓後 CO2 變回氣體，不留殘餘。', 'Supercritical CO2 extraction (for example decaffeination): about 40 °C and 200 atm. The fluid seeps into the beans like a gas and dissolves caffeine like a liquid; on release it turns back into gas and leaves nothing behind.')]; },
-    extinguisher: function () { return ['co2', K0 + 20, C.pvap('co2', K0 + 20), T('CO2 滅火器：鋼瓶裡液態與氣態 CO2 共存，20 °C 時壓力約 57 atm（就是這個溫度的蒸氣壓）。按「等溫減壓」看它噴出到低壓時沸騰。', 'CO2 extinguisher: liquid and gaseous CO2 coexist in the cylinder; at 20 °C the pressure is about 57 atm (the vapour pressure). Press “Expand (constant T)” to see it boil as it is released.')]; }
+    cooker: function () { return ['water', K0 + 100, 2 * ATM, T('壓力鍋：鍋內約 2 atm（錶壓 1 atm）。按「等壓加熱」，水要到約 120.6 °C 才沸騰，所以食物熟得快。', 'Pressure cooker: about 2 atm inside (1 atm above the outside). Press “Heat (constant P)”: water does not boil until about 120.6 °C, so food cooks faster.')]; },
+    yushan: function () { const p = ATM * Math.pow(1 - 2.25577e-5 * 3952, 5.25588); return ['water', K0 + 25, p, T('玉山頂（3952 m）的氣壓約 0.61 atm。按「等壓加熱」，水在約 87 °C 就沸騰，飯不容易煮熟。', 'On top of Yushan (3952 m) the air pressure is about 0.61 atm. Press “Heat (constant P)”: water boils at about 87 °C, so rice is hard to cook.')]; },
+    dryice: function () { return ['co2', K0 - 90, ATM, T('乾冰（固態 CO<sub>2</sub>）在 1 atm。按「等壓加熱」，它在 −78.5 °C 直接昇華成氣體，不會留下液體。', 'Dry ice (solid CO<sub>2</sub>) at 1 atm. Press “Heat (constant P)”: at −78.5 °C it turns straight into gas and leaves no liquid.')]; },
+    skate: function () { return ['water', K0 - 5, ATM, T('冰場約 −5 °C。按「等溫加壓」：要加到約 590 atm 冰才會熔化，而冰刀只多出約 20 atm（見下方的溜冰卡）。', 'An ice rink at about −5 °C. Press “Compress (constant T)”: the ice only melts at about 590 atm, while a skate blade adds only about 20 atm (see the skating card).')]; },
+    freezedry: function () { return ['water', K0 - 40, ATM, T('冷凍乾燥：食物先冷凍到 −40 °C。先「等溫減壓」到比三相點低得多的壓力（例如 20 Pa），再停下來慢慢「等壓加熱」：冰直接昇華，食物不會被水泡過。', 'Freeze-drying: the food is first frozen to −40 °C. Lower the pressure at constant temperature far below the triple point (say 20 Pa), stop, then warm it gently at constant pressure: the ice sublimes and the food is never soaked.')]; },
+    iodine: function () { return ['iodine', K0 + 80, ATM, T('碘晶體在 1 atm。室溫的蒸氣壓就有約 40 Pa，密閉容器裡會出現紫色蒸氣；按「等壓加熱」，它在 113.5 °C 熔化、184.4 °C 沸騰。', 'Iodine crystals at 1 atm. Even at room temperature the vapour pressure is about 40 Pa, so a closed flask fills with violet vapour. Press “Heat (constant P)”: it melts at 113.5 °C and boils at 184.4 °C.')]; },
+    scco2: function () { return ['co2', K0 + 40, 200 * ATM, T('超臨界 CO<sub>2</sub> 萃取（例如去除咖啡因）：約 40 °C、200 atm。超臨界流體像氣體一樣鑽進咖啡豆，又像液體一樣溶解咖啡因；減壓後 CO<sub>2</sub> 變回氣體，不留殘餘。', 'Supercritical CO<sub>2</sub> extraction (for example decaffeination): about 40 °C and 200 atm. The fluid seeps into the beans like a gas and dissolves caffeine like a liquid; on release it turns back into gas and leaves nothing behind.')]; },
+    extinguisher: function () { return ['co2', K0 + 20, C.pvap('co2', K0 + 20), T('CO<sub>2</sub> 滅火器：鋼瓶裡液態與氣態 CO<sub>2</sub> 共存，20 °C 時壓力約 57 atm（就是這個溫度的蒸氣壓）。按「等溫減壓」看它噴出到低壓時沸騰。', 'CO<sub>2</sub> extinguisher: liquid and gaseous CO<sub>2</sub> coexist in the cylinder; at 20 °C the pressure is about 57 atm (the vapour pressure). Press “Expand (constant T)” to see it boil as it is released.')]; }
   };
   function applyExample(k) {
     const e = EX[k]();
@@ -1147,7 +1157,10 @@
 
   // ======================= 操作 =======================
   function act() { acted = true; }
-  function canvasXY(ev) { const b = cv.getBoundingClientRect(); return [ev.clientX - b.left, ev.clientY - b.top]; }
+  function canvasXY(ev) {
+    const b = cv.getBoundingClientRect();
+    return [(ev.clientX - b.left) * G.w / b.width, (ev.clientY - b.top) * G.h / b.height];
+  }
   function inPlot(x, y) { return G && x >= G.pl - 10 && x <= G.pr + 10 && y >= G.pt - 10 && y <= G.pb + 10; }
   function nearPoint(x, y) { return Math.hypot(x - X(st.T), y - Y(st.P)) < 22; }
   function snapped(Tk, P) {
@@ -1167,12 +1180,21 @@
     drag = { id: ev.pointerId };
     cv.setPointerCapture(ev.pointerId);
     ev.preventDefault();
-    if (!nearPoint(p[0], p[1])) moveToXY(p[0], p[1]);
+    if (!nearPoint(p[0], p[1])) {
+      // 點空白處是選新的起點；只有手指實際走過的路徑才留下相變紀錄。
+      const q = plotState(p[0], p[1]);
+      teleport(q[0], q[1]);
+      emitState('drag');
+    }
     requestDraw();
   });
-  function moveToXY(x, y) {
+  function plotState(x, y) {
     const xx = Math.max(G.pl, Math.min(G.pr, x)), yy = Math.max(G.pt, Math.min(G.pb, y));
     const q = snapped(invX(xx), invY(yy));
+    return clampState(q[0], q[1]);
+  }
+  function moveToXY(x, y) {
+    const q = plotState(x, y);
     userMove(q[0], q[1], 'drag', 'drag');
   }
   cv.addEventListener('pointermove', function (ev) {
@@ -1289,5 +1311,65 @@
   updateReadouts();
   pushTrail(true);
   requestDraw();
+  // 溫度是線性軸，壓力是對數軸。斜向一步只送出一次狀態變化。
+  const padSteps = [[0.05, 0.2], [0.5, 1], [5, 10]];
+  let stepIndex = 0;
+  function pointOnScreen() {
+    const r = cv.getBoundingClientRect();
+    return { x: r.left + X(st.T) * r.width / G.w, y: r.top + Y(st.P) * r.height / G.h };
+  }
+  const pad = LabVPad.mount({
+    id: 'phase-diagram', className: 'phase-pad', canvas: cv, objects: ['state'],
+    steps: [1], step: 1, selected: () => 'state', select: () => {},
+    point: pointOnScreen, reading: () => cTxt(st.T, 2) + ' · ' + pTxt(st.P, 5),
+    visible: () => {
+      const r = cv.getBoundingClientRect();
+      return getComputedStyle(cv).visibility === 'visible' && r.bottom > 0 && r.top < innerHeight;
+    },
+    home: (w, h) => {
+      const r = cv.getBoundingClientRect();
+      return { x: r.right - w - 6, y: Math.max(6, Math.min(innerHeight - h - 6, r.bottom - h - 6)) };
+    },
+    move: (dx, dy) => {
+      act(); stopPath();
+      const [kelvin, percent] = padSteps[stepIndex];
+      const mode = dx && dy ? 'drag' : dx ? (dx > 0 ? 'heat' : 'cool') : (dy > 0 ? 'press' : 'depress');
+      userMove(st.T + dx * kelvin, st.P * (1 + percent / 100) ** dy, mode, 'key');
+    }
+  });
+  pad.element.setAttribute('aria-label', T('相圖狀態點八向微調', 'Eight-direction state point control'));
+  pad.element.querySelectorAll('[data-direction]').forEach(function (b) {
+    b.setAttribute('aria-label', T('移動狀態點 ', 'Move state point ') + b.textContent);
+  });
+  pad.lens.querySelector('canvas').setAttribute('aria-label', T('狀態點局部放大', 'Magnified state point'));
+  // 共用元件原有的探針編號、公分步距和手動記錄，換成本圖的單一狀態點與雙軸步距。
+  const center = document.createElement('span');
+  center.className = 'state-point'; center.textContent = 'T, P';
+  pad.element.querySelector('.vpad-select').replaceWith(center);
+  pad.element.querySelector('.vpad-record').remove();
+  const stepButton = document.createElement('button');
+  stepButton.className = 'vpad-step'; stepButton.type = 'button';
+  function labelStep() {
+    const [kelvin, percent] = padSteps[stepIndex];
+    stepButton.textContent = kelvin + ' K · ' + percent + ' %';
+    stepButton.setAttribute('aria-label', T('切換溫度與壓力步距，目前 ', 'Change temperature and pressure increments, currently ') + stepButton.textContent);
+  }
+  labelStep();
+  stepButton.addEventListener('click', function () { stepIndex = (stepIndex + 1) % padSteps.length; labelStep(); });
+  pad.element.querySelector('.vpad-step').replaceWith(stepButton);
+  try { if (!localStorage.getItem('lab-vpad:phase-diagram')) pad.collapse(true); } catch (e) { pad.collapse(true); }
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：分子不晃動，路徑照常可用。', 'Reduced motion is on: the molecules stay still; the paths still work.'));
+
+  // 寬螢幕的讀數卡接在操作台後，窄螢幕回到圖表原位。
+  const readingsCard = document.getElementById('phaseNow').closest('.card');
+  const readingsHome = document.createComment('讀數卡原位');
+  readingsCard.before(readingsHome);
+  const controlsPanel = document.querySelector('.lab > .panel');
+  const widePanel = matchMedia('(min-width: 881px) and (min-height: 601px)');
+  function placeReadings() {
+    if (widePanel.matches) controlsPanel.appendChild(readingsCard);
+    else readingsHome.after(readingsCard);
+  }
+  widePanel.addEventListener('change', placeReadings);
+  placeReadings();
 })();
