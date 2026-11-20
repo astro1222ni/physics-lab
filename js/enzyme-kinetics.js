@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const E = window.EnzymeCore;
   const D = window.LabDraw;
@@ -318,6 +318,12 @@
 
   // ---------- 版面 ----------
   function layout1() {
+    if (shortLandscape.matches && W1 < 700) {
+      const half = Math.floor(W1 / 2);
+      return { rack: { short: true, x: 0, y: 0, w: W1, h: 153 },
+        prog: { short: true, x: 4, y: 157, w: half - 8, h: H1 - 161 },
+        scan: { short: true, x: half + 4, y: 157, w: W1 - half - 8, h: H1 - 161 } };
+    }
     if (W1 < 640) {
       return { narrow: true, rack: { x: 0, y: 0, w: W1, h: 250 }, prog: { x: 8, y: 256, w: W1 - 16, h: 196 }, scan: { x: 8, y: 460, w: W1 - 16, h: 210 } };
     }
@@ -326,7 +332,7 @@
   }
   function resize1() {
     W1 = drawingWidth(cv) || 300;
-    H1 = W1 < 640 ? 680 : 470;
+    H1 = shortLandscape.matches && W1 < 700 ? 318 : W1 < 640 ? 680 : 470;
     fit(cv, ctx, H1);
     request();
   }
@@ -345,8 +351,8 @@
     const g = ctx;
     const t = run.started ? run.t : 0;
     const n = NT, gap = R.w / n;
-    const tw = Math.min(32, gap * 0.4), th = R.narrow ? 140 : Math.min(R.h * 0.56, 240);
-    const top = R.y + (R.narrow ? 50 : Math.max(64, R.h * 0.16)), bathTop = top + th * 0.35, bathH = th * 0.65 + 8;
+    const tw = Math.min(32, gap * 0.4), th = R.short ? 44 : R.narrow ? 140 : Math.min(R.h * 0.56, 240);
+    const top = R.y + (R.short ? 53 : R.narrow ? 50 : Math.max(64, R.h * 0.16)), bathTop = top + th * 0.35, bathH = th * 0.65 + 8;
     tubeHit = [];
     title(ctx, T('水浴與試管', 'Water baths and tubes'), R.x + 12, R.y + 16);
     small(ctx, T('經過 ', 'Time ') + mmss(t) + ' / 20:00', R.x + R.w - 12, R.y + 16, D.c.text, 'right');
@@ -402,24 +408,24 @@
       // 選取框
       if (i === sel) {
         g.save(); g.setLineDash([4, 3]); g.strokeStyle = D.c.accent || '#0f766e'; g.lineWidth = 2;
-        D.roundRect(g, cx - gap / 2 + 3, top - 30, gap - 6, th + 104, 10); g.stroke(); g.restore();
+        D.roundRect(g, cx - gap / 2 + 3, top - 30, gap - 6, th + (R.short ? 82 : 104), 10); g.stroke(); g.restore();
       }
       // 標籤
       D.haloText(g, String(i + 1), cx, top - 18, sc(i), 'center', 'middle', '700 13px ' + FONT);
-      const ly = top + th + 24;
+      const ly = top + th + (R.short ? 15 : 24);
       small(g, num(tb.T, 0) + ' °C', cx, ly, D.c.text, 'center');
       small(g, 'pH ' + num(tb.pH, 1), cx, ly + 15, D.c.text, 'center');
       const done = tb.end <= t && run.started;
       const lab = !run.started ? '' : done ? '✓ ' + mmss(tb.end) : (run.finished ? T('沒完成', 'not done') : '…');
       if (lab) D.haloText(g, lab, cx, ly + 33, done ? C['ek-good'] : run.finished ? C['ek-bad'] : D.c.muted, 'center', 'middle', '600 12px ' + FONT);
-      tubeHit.push({ x0: cx - gap / 2, x1: cx + gap / 2, y0: top - 34, y1: ly + 50 });
+      tubeHit.push({ x0: cx - gap / 2, x1: cx + gap / 2, y0: top - 34, y1: R.short ? R.y + R.h : ly + 50 });
     }
   }
   function drawProg(R) {
     const g = ctx;
     panel(g, R.x, R.y, R.w, R.h);
     title(g, T('受質剩下多少', 'Substrate left'), R.x + 12, R.y + 16);
-    const p = { x0: R.x + 44, y0: R.y + 32, x1: R.x + R.w - 12, y1: R.y + R.h - 24 };
+    const p = { x0: R.x + 44, y0: R.y + 32, x1: R.x + R.w - (R.short ? 22 : 12), y1: R.y + R.h - 24 };
     const X = function (s) { return p.x0 + s / TMAX * (p.x1 - p.x0); };
     const Y = function (f) { return p.y1 - f * (p.y1 - p.y0); };
     axes(g, p, [0, 5, 10, 15, 20].map(function (m) { return m * 60; }), [0, 0.5, 1], X, Y,
@@ -446,6 +452,10 @@
     panel(g, R.x, R.y, R.w, R.h);
     title(g, T('溫度掃描：平均速率', 'Temperature scan: average rate'), R.x + 12, R.y + 16);
     const p = { x0: R.x + 44, y0: R.y + 32, x1: R.x + R.w - 12, y1: R.y + R.h - 24 };
+    if (R.short) {
+      p.x1 -= 9;
+      p.y0 += 16 + 16 * Math.ceil(scans.length / 2);
+    }
     let ymax = 1;
     scans.forEach(function (q) { ymax = Math.max(ymax, q.max * 1.12); });
     const X = function (Tc) { return p.x0 + (Tc - TSCAN[0]) / (TSCAN[1] - TSCAN[0]) * (p.x1 - p.x0); };
@@ -465,11 +475,14 @@
       const xo = X(q.Topt), yo = Y(q.max);
       D.ball(g, xo, yo, 4, col);
       const lab = num(q.ta / 60, 0) + T(' 分：', ' min: ') + num(q.Topt, 1) + '°';
-      small(g, lab, xo + (xo > p.x1 - 90 ? -8 : 8), yo - 10 - 0 * k, col, xo > p.x1 - 90 ? 'right' : 'left');
+      if (R.short) {
+        const labelX = R.x + 12 + (k % 2) * R.w / 2;
+        small(g, lab, labelX, R.y + 48 + Math.floor(k / 2) * 16, col, 'left');
+      } else small(g, lab, xo + (xo > p.x1 - 90 ? -8 : 8), yo - 10, col, xo > p.x1 - 90 ? 'right' : 'left');
     });
     // 選取試管的溫度虛線會穿過這裡：用有底色的膠囊蓋在線上
     if (!scans.length) D.pill(g, T('按「溫度掃描」', 'Press “Temperature scan”'), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2 + 9, D.c.muted, 'center', '11px ' + FONT);
-    else small(g, enzName(scans[scans.length - 1].enz) + '・pH ' + num(scans[scans.length - 1].pH, 1), p.x1, R.y + 16, D.c.muted, 'right');
+    else small(g, enzName(scans[scans.length - 1].enz) + '・pH ' + num(scans[scans.length - 1].pH, 1), p.x1, R.y + (R.short ? 32 : 16), D.c.muted, 'right');
   }
   function draw1() {
     if (view3 && view3.active) return;
