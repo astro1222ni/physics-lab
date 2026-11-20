@@ -5,7 +5,7 @@
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
-    return shortLandscape.matches ? Math.max(720, width) : width;
+    return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
   }
   const B = window.GlucoseCore;
   const D = window.LabDraw;
@@ -120,7 +120,7 @@
     g.fillStyle = D.alpha(D.c.surface, D.dark ? 0.35 : 0.72); g.fill();
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
-  function small(g, s, x, y, col, align, base, size) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (size || 11) + 'px ' + FONT); }
+  function small(g, s, x, y, col, align, base, size) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (g === ctx && st1.L && st1.L.short ? Math.max(11, size || 11) : size || 11) + 'px ' + FONT); }
   function evPos(c, ev) {
     const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
     return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
@@ -278,7 +278,11 @@
     const w = drawingWidth(cv) || 360;
     const wide = w >= 700;
     let L;
-    if (wide) {
+    if (shortLandscape.matches && w < 700) {
+      const split = Math.round(w * 0.50);
+      L = { short: true, wide: false, w, h: 316, g: { x0: 33, x1: split - 17, y0: 58, y1: 201 },
+        i: { y0: 235, y1: 281 }, ax: 302, body: { x: split, y: 4, w: w - split - 4, h: 308 } };
+    } else if (wide) {
       const H = 470, px = Math.round(w * 0.58);
       L = { w: w, h: H, wide: true, g: { x0: 54, x1: px - 12, y0: 40, y1: 290 }, i: { y0: 318, y1: 408 }, ax: 428, body: { x: px + 4, y: 10, w: w - px - 12, h: H - 20 } };
     } else {
@@ -331,7 +335,10 @@
     const step = R.hi > 400 ? 100 : 50;
     for (let v = Math.ceil(R.lo / step) * step; v <= R.hi; v += step) {
       g.strokeStyle = D.alpha(D.c.border, 0.55); g.beginPath(); g.moveTo(P.x0, yG(v)); g.lineTo(P.x1, yG(v)); g.stroke();
-      if (v !== 70 && v !== 180) small(g, String(v), P.x0 - 5, yG(v), D.c.muted, 'right');
+      if (v !== 70 && v !== 180) {
+        const nearLimit = L.short && [70, 180].some(limit => Math.abs(yG(v) - yG(limit)) < 14);
+        small(g, String(v), nearLimit ? P.x0 + 4 : P.x0 - 5, yG(v), D.c.muted, nearLimit ? 'left' : 'right');
+      }
     }
     [70, 180].forEach(function (v) {
       g.strokeStyle = D.alpha(v === 70 ? C['gl-lo'] : C['gl-hi'], 0.8); g.lineWidth = 1.2;
@@ -342,7 +349,7 @@
     g.save(); g.setLineDash([5, 4]); g.strokeStyle = D.alpha(C['gl-renal'], 0.9); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(P.x0, yG(162)); g.lineTo(P.x1, yG(162)); g.stroke(); g.restore();
     small(g, T('腎閾 162', 'Kidney threshold 162'), P.x1 - 4, yG(162) - 7, C['gl-renal'], 'right', 'middle', 10.5);
-    D.haloText(g, T('血糖（mg/dL）', 'Blood glucose (mg/dL)'), P.x0, P.y0 - 18, D.c.text, 'left', 'middle', '600 12.5px ' + FONT);
+    D.haloText(g, T('血糖（mg/dL）', 'Blood glucose (mg/dL)'), P.x0, P.y0 - (L.short ? 42 : 18), D.c.text, 'left', 'middle', '600 12.5px ' + FONT);
     // 運動
     st1.p.ex.forEach(function (q) {
       const segs = [[q.t, Math.min(1440, q.t + q.dur)]];
@@ -431,8 +438,8 @@
     const P = L.g;
     for (let h = 0; h <= 24; h += 3) {
       const x = xOf(h * 60);
-      if (!L.wide && h % 6) { g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x, L.ax - 10); g.lineTo(x, L.ax - 6); g.stroke(); continue; }
-      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax, D.c.muted, 'center', 'middle', 10.5);
+      if (!L.short && !L.wide && h % 6) { g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x, L.ax - 10); g.lineTo(x, L.ax - 6); g.stroke(); continue; }
+      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax - (L.short && h % 6 ? 14 : 0), D.c.muted, L.short && h === 24 ? 'right' : 'center', 'middle', 10.5);
     }
   }
   function drawCursor(g, L, yG) {
@@ -446,7 +453,7 @@
     const s = hhmm(t) + '  ' + num(Gv, 0) + ' mg/dL';
     g.font = '600 11.5px ' + FONT;
     const tw = g.measureText(s).width + 14;
-    const bx = Math.max(P.x0, Math.min(P.x1 - tw, x - tw / 2)), by = P.y0 + 4;
+    const bx = Math.max(P.x0, Math.min(P.x1 - tw, x - tw / 2)), by = L.short ? P.y0 - 33 : P.y0 + 4;
     D.roundRect(g, bx, by, tw, 20, 7);
     g.fillStyle = D.alpha(D.c.surface, 0.92); g.fill(); g.strokeStyle = D.alpha(D.c.border, 1); g.stroke();
     D.haloText(g, s, bx + 7, by + 10, D.c.text, 'left', 'middle', '600 11.5px ' + FONT);
@@ -479,7 +486,7 @@
     g.strokeStyle = D.alpha(col, 0.8); g.lineWidth = 1.2; g.stroke();
     D.haloText(g, title, x, y - (value ? 7 : 0), D.c.text, 'center', 'middle', '600 11.5px ' + FONT);
     if (value) D.haloText(g, value, x, y + 8, col, 'center', 'middle', '600 11px ' + FONT);
-    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', '600 10.5px ' + FONT);
+    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', (st1.L.short ? '600 11px ' : '600 10.5px ') + FONT);
   }
   function wOf(gph) { return gph <= 0.05 ? 0 : Math.min(11, 1.3 + 6.5 * Math.sqrt(gph / 25)); }
   function drawBody(g, x, y, w, h, t) {
@@ -521,14 +528,14 @@
     g.strokeStyle = zc; g.lineWidth = 3; g.stroke();
     D.haloText(g, T('血液', 'Blood'), cx, cy - r * 0.42, D.c.text, 'center', 'middle', '600 11px ' + FONT);
     D.haloText(g, num(Gv, 0), cx, cy + 1, D.c.text, 'center', 'middle', '700 ' + Math.round(Math.max(14, r * 0.45)) + 'px ' + FONT);
-    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', '10.5px ' + FONT);
+    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', (st1.L.short ? '11px ' : '10.5px ') + FONT);
     // 往肌肉、腎臟的箭頭會從這裡經過：用有底色的膠囊標籤蓋在箭頭上，字不被穿過
-    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, cy + r + 21, C['gl-ins'], 'center', '600 10.5px ' + FONT);
+    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, st1.L.short ? y + h * 0.73 : cy + r + 21, C['gl-ins'], 'center', (st1.L.short ? '600 11px ' : '600 10.5px ') + FONT);
     const gp = function (v) { return num(v, v < 10 ? 1 : 0) + ' g/h'; };
     const up = function (v) { return num(v, v < 1 ? 2 : 1) + ' U/h'; };
     node(g, pos.gut[0], pos.gut[1], nw, nh, T('腸道吸收', 'Gut'), gp(ug), C['gl-meal']);
     node(g, pos.liver[0], pos.liver[1], nw, nh, T('肝臟產糖', 'Liver'), gp(egp), C['gl-liver'], f.cr > 2e-4 ? T('升糖素作用中', 'Glucagon on') : '');
-    node(g, pos.tis[0], pos.tis[1], nw, nh, T('肌肉・腦用掉', 'Muscle · brain'), gp(use), C['gl-glu'], f.ex > 0 ? T('運動中', 'Exercising') : '');
+    node(g, pos.tis[0], pos.tis[1], nw, nh, T('肌肉・腦用掉', st1.L.short ? 'Muscle/brain' : 'Muscle · brain'), gp(use), C['gl-glu'], f.ex > 0 ? T('運動中', 'Exercising') : '');
     node(g, pos.kid[0], pos.kid[1], nw, nh, T('腎臟排糖', 'Kidney'), gp(fr), C['gl-renal']);
     node(g, pos.panc[0], pos.panc[1], nw, nh, T('β 細胞分泌', 'β cells'), st1.p.beta > 0 ? up(sr) : T('沒有', 'none'), C['gl-ins']);
     node(g, pos.inj[0], pos.inj[1], nw, nh, T('注射進血', 'Injected'), up(ui), C['gl-bolus']);
