@@ -68,14 +68,23 @@
     {
       id: 'cpu-scheduling-7', level: 5,
       title: { zh: '急事先辦', en: 'Urgent business first' },
-      desc: { zh: '選「優先權（可搶先）」跑到最後，讓正在執行的行程至少兩次被更優先的行程搶走 CPU。', en: 'Choose “Priority (preemptive)” and run to the end, with a running process losing the CPU to a more urgent one at least twice.' },
-      check: function (ev) { const d = ev.data; return isRun(ev) && d.algo === 'pp' && d.preempts >= 2; }
+      desc: { zh: '親手編行程表的優先權與到達時間（可以從範例改起），選「優先權（可搶先）」跑到最後，讓正在執行的行程至少兩次被更優先的行程搶走 CPU（表原本就搶先兩次以上的不算，要靠自己的修改做到）。', en: 'Edit the priorities and arrival times in the process table yourself (you may start from an example), choose “Priority (preemptive)” and run to the end, with a running process losing the CPU to a more urgent one at least twice (a table that already did so before your edits does not count).' },
+      // 11/20 改嚴（站長選「改嚴」）：行程表要親手編過，而且編之前原本被搶先不到 2 次（搶先是自己的修改造成的）；範例或隨機表剛好成立不算
+      check: function (ev) { const d = ev.data; return isRun(ev) && d.algo === 'pp' && d.sheet === 'hand' && d.basePre != null && d.basePre < 2 && d.preempts >= 2; }
     },
     {
       id: 'cpu-scheduling-8', level: 5,
       title: { zh: '切換的代價', en: 'The price of switching' },
-      desc: { zh: '選「RR」，調大「情境切換成本」，讓切換花掉的時間至少占總時間的 30%，跑到最後。', en: 'Choose “RR”, raise the “Context-switch cost” and run to the end with switching taking at least 30% of the total time.' },
-      check: function (ev) { const d = ev.data; return isRun(ev) && d.algo === 'rr' && d.cs > 0 && d.csShare >= 0.3 - EPS; }
+      desc: { zh: '選「RR」，先在切換成本 0 跑到最後；同一張表、同一個時間片，再調大「情境切換成本」，讓切換花掉的時間至少占總時間的 30%，跑到最後。', en: 'Choose “RR” and run to the end with no switching cost first; then, with the same table and quantum, raise the “Context-switch cost” and run to the end with switching taking at least 30% of the total time.' },
+      // 11/20 改嚴（站長選「改嚴」）：同一張表、同一個 q，要先看過切換成本 0 的結果再調大，親眼比較才算
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!isRun(ev) || d.algo !== 'rr') return false;
+        const k = d.arr.join(',') + '|' + d.burst.join(',') + '|' + d.q;
+        mem.base = mem.base || {};
+        if (d.cs === 0) { mem.base[k] = true; return false; }
+        return !!mem.base[k] && d.csShare >= 0.3 - EPS;
+      }
     },
     {
       id: 'cpu-scheduling-9', level: 6,

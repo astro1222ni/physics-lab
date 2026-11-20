@@ -45,7 +45,7 @@
 
   // ---------- 狀態 ----------
   const state = {
-    procs: toProcs(DEFAULT_SHEET), seed: 0, sheetSrc: 'default', preset: '', edits: 0,
+    procs: toProcs(DEFAULT_SHEET), seed: 0, sheetSrc: 'default', preset: '', edits: 0, handBasePP: null,
     algo: 'fcfs', q: 3, cs: 0, tie: 'new', speed: 3,
     all: null, res: null, scan: null, Tmax: 20, times: [0],
     t: 0, playing: false, atEnd: false, logged: false,
@@ -826,7 +826,7 @@
     return {
       src: src, algo: state.algo, q: state.q, cs: state.cs, tie: state.tie, n: P.length,
       arr: P.map(function (p) { return p.arr; }), burst: P.map(function (p) { return p.burst; }), pri: P.map(function (p) { return p.pri; }),
-      sheet: state.sheetSrc, edits: state.edits,
+      sheet: state.sheetSrc, edits: state.edits, basePre: state.handBasePP,
       avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, maxW: r.maxW,
       wait: r.wait.slice(), tat: r.tat.slice(), resp: r.resp.slice(), fin: r.fin.slice(), first: r.first.slice(),
       switches: r.switches, preempts: r.preempts, expires: r.expires, gap: r.gap, idle: r.idle, csTime: r.csTime, csShare: r.csShare,
@@ -908,6 +908,8 @@
     if (!isFinite(v) || nv !== v) { el.classList.add('bad'); setTimeout(function () { el.classList.remove('bad'); }, 900); }
     el.value = nv;
     if (nv === p[k]) return;
+    // 任務 7：開始親手編表前，這張表在「優先權（可搶先）」下原本被搶先幾次
+    if (state.sheetSrc !== 'hand') state.handBasePP = K.schedule(state.procs, 'pp', { q: state.q, cs: state.cs, tie: state.tie }).preempts; 
     p[k] = nv;
     state.sheetSrc = 'hand'; state.edits++; state.preset = '';
     updateSeed();
@@ -926,7 +928,7 @@
   $('rand').addEventListener('click', function () {
     state.seed++;
     state.procs = K.randomSheet(state.seed, state.procs.length);
-    state.sheetSrc = 'random'; state.edits = 0; state.preset = '';
+    state.sheetSrc = 'random'; state.edits = 0; state.preset = ''; state.handBasePP = null;
     $('preset').value = '';
     renderSheet(); updateSeed(); changed();
   });
@@ -934,7 +936,7 @@
     const k = $('preset').value;
     if (!PRESETS[k]) return;
     state.procs = toProcs(PRESETS[k]);
-    state.sheetSrc = 'preset'; state.edits = 0; state.preset = k;
+    state.sheetSrc = 'preset'; state.edits = 0; state.preset = k; state.handBasePP = null;
     if (window.LabNum) window.LabNum.set(elN, state.procs.length); else elN.value = state.procs.length;
     $('nno').textContent = String(state.procs.length);
     renderSheet(); updateSeed(); changed();
@@ -1103,6 +1105,7 @@
   window.CpuSchedLab = {
     state: state,
     setSheet: function (list) {
+      if (state.sheetSrc !== 'hand') state.handBasePP = K.schedule(state.procs, 'pp', { q: state.q, cs: state.cs, tie: state.tie }).preempts; 
       state.procs = list.map(function (r) { return K.sanitize(Array.isArray(r) ? { arr: r[0], burst: r[1], pri: r[2] } : r); });
       state.sheetSrc = 'hand'; state.edits++;
       if (window.LabNum) window.LabNum.set(elN, state.procs.length); else elN.value = state.procs.length;

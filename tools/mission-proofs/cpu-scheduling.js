@@ -28,7 +28,7 @@ const pick = r => ({ avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, switches: r.switc
 
 class Sim {
   constructor() {
-    this.procs = toProcs(DEFAULT_SHEET); this.seed = 0; this.sheetSrc = 'default'; this.edits = 0;
+    this.procs = toProcs(DEFAULT_SHEET); this.seed = 0; this.sheetSrc = 'default'; this.edits = 0; this.basePre = null;
     this.algo = 'fcfs'; this.q = 3; this.cs = 0; this.tie = 'new';
     this.t = 0; this.atEnd = false; this.ev = []; this._res = null;
   }
@@ -53,7 +53,7 @@ class Sim {
     const scan = K.rrScan(P, { cs: this.cs, tie: this.tie });
     return {
       src: src, algo: this.algo, q: this.q, cs: this.cs, tie: this.tie, n: P.length,
-      arr: P.map(p => p.arr), burst: P.map(p => p.burst), pri: P.map(p => p.pri), sheet: this.sheetSrc, edits: this.edits,
+      arr: P.map(p => p.arr), burst: P.map(p => p.burst), pri: P.map(p => p.pri), sheet: this.sheetSrc, edits: this.edits, basePre: this.basePre,
       avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, maxW: r.maxW, wait: r.wait.slice(), tat: r.tat.slice(), resp: r.resp.slice(), fin: r.fin.slice(), first: r.first.slice(),
       switches: r.switches, preempts: r.preempts, expires: r.expires, gap: r.gap, idle: r.idle, csTime: r.csTime, csShare: r.csShare, makespan: r.makespan, util: r.util,
       sameAsFcfs: K.sameGantt(r, A.fcfs), renews: r.ticks.length, ganttKinds: Object.keys(keys).length, otherTieW: other.avgW,
@@ -66,11 +66,12 @@ class Sim {
   finish(src) { this.t = this.res().makespan; this.atEnd = true; this.emit(src); return this; }
   // ----- 操作 -----
   algoTo(a) { this.algo = a; return this.changed(); }
-  sheet(list) { this.procs = toProcs(list); this.sheetSrc = 'hand'; this.edits++; return this.changed(); }
+  sheet(list) { if (this.sheetSrc !== 'hand') this.basePre = K.schedule(this.procs, 'pp', this.opt()).preempts; this.procs = toProcs(list); this.sheetSrc = 'hand'; this.edits++; return this.changed(); }
   cell(i, k, v) {
     const lo = k === 'arr' ? 0 : 1, hi = k === 'arr' ? K.LIMITS.arrMax : k === 'burst' ? K.LIMITS.burstMax : K.LIMITS.priMax;
     const nv = Math.min(hi, Math.max(lo, Math.round(v)));
     if (nv === this.procs[i][k]) return this;
+    if (this.sheetSrc !== 'hand') this.basePre = K.schedule(this.procs, 'pp', this.opt()).preempts; 
     this.procs[i][k] = nv; this.sheetSrc = 'hand'; this.edits++;
     return this.changed();
   }
@@ -81,8 +82,8 @@ class Sim {
     while (this.procs.length < n) this.procs.push(K.randomProc(this.seed + 1000, this.procs.length));
     return this.changed();
   }
-  random() { this.seed++; this.procs = K.randomSheet(this.seed, this.procs.length); this.sheetSrc = 'random'; this.edits = 0; return this.changed(); }
-  preset(k) { this.procs = toProcs(PRESETS[k]); this.sheetSrc = 'preset'; this.edits = 0; return this.changed(); }
+  random() { this.seed++; this.procs = K.randomSheet(this.seed, this.procs.length); this.sheetSrc = 'random'; this.edits = 0; this.basePre = null; return this.changed(); }
+  preset(k) { this.procs = toProcs(PRESETS[k]); this.sheetSrc = 'preset'; this.edits = 0; this.basePre = null; return this.changed(); }
   qTo(q) { this.q = q; return this.changed(); }
   csTo(c) { this.cs = c; return this.changed(); }
   tieTo(t) { this.tie = t; return this.changed(); }
@@ -160,7 +161,16 @@ expect('6', new Sim().preset('stallings').algoTo('rr').qTo(4).toEnd().ev, false,
 expect('6', new Sim().preset('convoy').nTo(5).algoTo('rr').qTo(4).toEnd().ev, true, '範例 24、3、3 再加兩個行程（n = 5），RR q = 4');
 expect('7', new Sim().sheet([[0, 8, 5], [1, 5, 3], [2, 2, 1]]).algoTo('pp').toEnd().ev, true, '優先權 5、3、1 依序晚 1 到：P1 被 P2 搶、P2 被 P3 搶');
 expect('7', new Sim().algoTo('pp').toEnd().ev, false, '預設工作表只被搶先 1 次');
-expect('8', new Sim().algoTo('rr').qTo(1).csTo(1).toEnd().ev, true, '預設工作表 RR q = 1、切換成本 1');
+Object.keys(PRESETS).forEach(k => expect('7', new Sim().preset(k).algoTo('pp').toEnd().ev, false, '11/20 改嚴：範例「' + k + '」原封不動跑優先權（可搶先）不算'));
+const expect7r = [];
+for (let i = 0; i < 30; i++) { const S = new Sim(); for (let j = 0; j <= i; j++) S.random(); expect7r.push(S.algoTo('pp').toEnd().ev); }
+expect('7', [].concat(...expect7r), false, '11/20 改嚴：隨機產生的 30 張表跑優先權（可搶先），即使剛好被搶 2 次也不算');
+{ let S = null; for (let i = 1; i < 200 && !S; i++) { const T = new Sim(); for (let j = 0; j < i; j++) T.random(); if (K.schedule(T.procs, 'pp', T.opt()).preempts >= 2) S = T; }
+  if (!S) { console.log('✗ 7 反例：找不到被搶先 2 次以上的隨機表'); fail++; }
+  else expect('7', S.cell(0, 'burst', S.procs[0].burst === 1 ? 2 : 1).algoTo('pp').toEnd().ev, false, '11/20 改嚴：隨機表原本就被搶先 2 次以上，只改一格（亂按會碰到）不算'); }
+expect('8', new Sim().algoTo('rr').qTo(1).toEnd().csTo(1).ev, true, '預設工作表 RR q = 1：先在切換成本 0 跑到最後，再把切換成本調成 1');
+expect('8', new Sim().algoTo('rr').qTo(1).csTo(1).toEnd().ev, false, '11/20 改嚴：沒看過切換成本 0 的結果，直接調成 1 跑完不算');
+expect('8', new Sim().algoTo('rr').qTo(4).toEnd().csTo(1).qTo(1).ev, false, '11/20 改嚴：切換成本 0 只看過 q = 4，調成本後才換到 q = 1，不是同一組比較');
 expect('9', new Sim().preset('equal').cell(0, 'burst', 5).cell(1, 'burst', 5).cell(2, 'burst', 5).cell(3, 'burst', 5).cell(4, 'burst', 5).algoTo('rr').qTo(1).toEnd().ev, true, '從範例「五個一樣長」親手把五個執行時間都改成 5，RR q = 1：回應最短、周轉最長');
 expect('9', new Sim().preset('equal').algoTo('rr').qTo(1).toEnd().ev, false, '11/20 改嚴：範例「五個一樣長」原封不動跑 RR q = 1（試玩亂按會碰到）不算');
 expect('9', new Sim().preset('convoy').algoTo('rr').qTo(4).toEnd().ev, false, '24、3、3 的 RR 回應比 SJF 慢');
