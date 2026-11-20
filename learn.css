@@ -251,3 +251,29 @@ html.learn-class {--teaching:1.4}
 #exam-years button[aria-selected=true]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 .exam-year-note{margin:0 0 10px;color:var(--muted);font-size:calc(14px * var(--fs,1))}
 .exam-soon{padding:18px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+
+/* 學習大廳兩張大門卡（11/21）：手機一屏放得下兩張，寫裡面有什麼、怎麼用、最近新出什麼 */
+.lobby-doors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0 8px}
+.lobby-door{position:relative;display:flex;gap:18px;align-items:flex-start;padding:22px 46px 22px 22px;min-height:300px;background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--accent);border-radius:18px;color:var(--text);text-decoration:none;box-shadow:0 6px 26px #0b1f2a14;transition:transform .15s,box-shadow .15s}
+.lobby-door:hover{transform:translateY(-2px);box-shadow:0 10px 32px #0b1f2a26}
+.lobby-door>i{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-style:normal;font-size:28px;color:var(--accent)}
+.door-tile{flex:none;width:92px;height:92px;border-radius:16px;display:grid;place-content:center;text-align:center;background:linear-gradient(145deg,#1f6f66,#134640);color:#fff1c9;box-shadow:inset 0 0 0 2px #ffffff22}
+.door-tile.exam{background:linear-gradient(145deg,#8a4b1d,#5a2e12)}
+.door-tile b{font:800 26px/1.1 system-ui,sans-serif;letter-spacing:.04em}.door-tile small{font:700 15px Georgia,serif;opacity:.85;margin-top:4px}
+.door-body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.door-body strong{font-size:calc(30px * var(--fs,1));line-height:1.15}
+.door-body>span{font-size:calc(16px * var(--fs,1));line-height:1.5}
+.door-what{color:var(--text)}.door-how,.door-now{color:var(--muted)}
+.door-new{display:flex;gap:8px;align-items:baseline;color:var(--text)}.door-new b{flex:none;padding:1px 7px;border-radius:6px;background:var(--star,#de9a31);color:#1d1406;font-size:calc(12px * var(--fs,1));letter-spacing:.06em}
+.door-me{color:var(--accent);font-weight:750}.door-me:empty{display:none}
+.lobby-back{display:inline-flex;align-items:center;min-height:44px;margin:14px 0 0;color:var(--accent);font-weight:750;text-decoration:none}
+@media(max-width:760px){
+  .lobby-doors{grid-template-columns:1fr;gap:12px;margin:12px 0 4px}
+  .lobby-door{min-height:0;padding:13px 34px 13px 13px;gap:12px;border-radius:14px}
+  .lobby-door>i{right:10px;font-size:22px}
+  .door-tile{width:58px;height:58px;border-radius:12px}.door-tile b{font-size:17px}.door-tile small{font-size:12px;margin-top:2px}
+  .door-body{gap:4px}.door-body strong{font-size:calc(22px * var(--fs,1))}
+  .door-body>span{font-size:calc(14px * var(--fs,1));line-height:1.42}
+  #learn-lobby .lobby-header{padding:0 0 4px}#learn-lobby .lobby-header h1{margin:6px 0 0;font-size:calc(28px * var(--fs,1))}
+  .learn-lobby-page .crumbs{margin:2px 0}
+}
