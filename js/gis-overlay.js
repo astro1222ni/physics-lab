@@ -453,6 +453,7 @@
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-view') === state.view ? 'true' : 'false'); });
     document.querySelectorAll('#layerSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-layer') === state.layer ? 'true' : 'false'); });
     $('layerSeg').hidden = state.view !== 'map';
+    $('padSlot').hidden = state.view !== 'map';
     cv.classList.toggle('rot', state.view === '3d');
     setHTML('legend', legendHTML());
     updateProbe();
@@ -722,7 +723,18 @@
       id: 'gis-overlay', canvas: cv, step: 1, steps: [1],
       objects: ['point'], selected: () => 'point', select: () => {},
       move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
-      visible: () => state.view === 'map',
+      // 地圖露出不到四成（例如還在頁面頂端）時先藏起圓鈕，免得蓋住標題與說明文字。
+      visible: () => {
+        if (state.view !== 'map') return false;
+        const slot = document.getElementById('padSlot');
+        if (slot && slot.offsetParent) {
+          // 手機直放：圓鈕的家在地圖下方提示列，提示列進入畫面才出現，不退到地圖上。
+          const s = slot.getBoundingClientRect();
+          return s.top >= 0 && s.bottom <= innerHeight;
+        }
+        const r = cv.getBoundingClientRect();
+        return Math.min(innerHeight, r.bottom) - Math.max(0, r.top) > r.height * 0.4;
+      },
       point: function (id) {
         const r = cv.getBoundingClientRect(), p = padPoint();
         return { x: r.left + p[0], y: r.top + p[1] };
@@ -730,6 +742,10 @@
       home: function (w, h) {
         const r = cv.getBoundingClientRect(), p = padPoint();
         if (w < 80) {
+          // 手機直放：模式列中間放不下，圓鈕放在地圖下方提示列的右端，不蓋任何圖層資料。
+          const slot = document.getElementById('padSlot');
+          const sr = slot && slot.offsetParent ? slot.getBoundingClientRect() : null;
+          if (sr && sr.height >= h - 4 && sr.bottom > 0 && sr.top < innerHeight) return { x: sr.right - w - 4, y: sr.top + (sr.height - h) / 2 };
           // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
           const bar = cv.closest('.stage').querySelector('.view-bar');
           const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;

@@ -65,6 +65,10 @@
     .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
     .segw button + button { border-left: 1px solid var(--border); }
     .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .pad-slot { display: none; }
+    @media (max-width: 480px) and (orientation: portrait) {
+      .pad-slot { display: flex; align-items: center; min-height: 52px; margin: 6px 0 0; padding: 0 64px 0 2px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); line-height: 1.35; }
+    }
     .layers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 0; }
     .layers button { min-height: 44px; padding: 4px 6px; font-size: calc(13px * var(--fs, 1)); }
     .layers button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
@@ -127,6 +131,7 @@
           </div>
         </div>
         <canvas id="cv" aria-label="虛構縣的地圖：目前顯示的圖層與選址結果；點一格看那一格的資料" data-en-aria-label="Map of the invented county showing the current layer and the result; tap a cell to read it"></canvas>
+        <div class="pad-slot view-msg" id="padSlot" data-en="Tap the map to pick a cell, or nudge it with 🎮 on the right.">點地圖選一格，或用右邊的 🎮 微調。</div>
         <div class="layers" role="group" aria-label="顯示的圖層" data-en-aria-label="Layer shown" id="layerSeg">
           <button type="button" data-layer="result" aria-pressed="true" data-en="Result">結果</button>
           <button type="button" data-layer="z" aria-pressed="false" data-en="Elevation">高程</button>
