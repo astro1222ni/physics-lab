@@ -122,18 +122,30 @@
     },
     {
       id: 'cloud-formation-h1', level: 4, hidden: true,
-      riddle: { zh: '最高處落下的，不是淚，是羽毛。', en: 'What falls from the highest place is not a tear but a feather.' },
-      check: function (ev) { return isState(ev) && ev.data.cloud && ev.data.rain > 0 && ev.data.topT <= 0; }
+      riddle: { zh: '同一陣風翻過兩道山脊，第二道山脊冷得讓水改了模樣。', en: 'The same wind crosses two ridges, and at the second the cold changes what water could become.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'cross') return false;
+        const d = ev.data;
+        if (d.T0 <= 0 || !d.cloud || d.rain <= 0) return false;
+        // 固定山腳氣象與降水效率，比較暖山頂與跨過冰點的較高山頂。
+        const air = [d.T0, d.RH, d.eff, d.gamma].join('|');
+        if (d.topT >= 2) mem.warm = { air: air, height: d.H };
+        return !!mem.warm && mem.warm.air === air && d.H > mem.warm.height && d.topT <= -1;
+      }
     },
     {
       id: 'cloud-formation-h2', level: 6, hidden: true,
       riddle: { zh: '翻過山的風，連一滴汗都不肯留。', en: 'The wind that crossed the mountain would not keep a single drop of sweat.' },
-      check: function (ev) { const d = ev.data; return isState(ev) && real(d) && d.H > 0 && d.RH >= 90 && d.leeRH <= 8; }
+      check: function (ev) {
+        const d = ev.data;
+        // 在高於冰點的山腳、低於山高滑桿上限時，仍能觀察強烈的雨影。
+        return isState(ev) && real(d) && d.T0 >= 2 && d.H > 0 && d.H <= 3950 && d.RH >= 90 && d.leeRH <= 8;
+      }
     },
     {
       id: 'cloud-formation-h3', level: 5, hidden: true,
       riddle: { zh: '沒有山，也有人往上爬。', en: 'No mountain, and still someone climbs.' },
-      check: function (ev) { return isState(ev) && ev.data.H === 0 && ev.data.triggered; }
+      check: function (ev) { const d = ev.data; return isState(ev) && d.H === 0 && d.triggered && d.gamma > 9.8 && d.gamma <= 10.8; }
     }
   ]);
 })();

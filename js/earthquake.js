@@ -1700,7 +1700,7 @@
       T(' s，距離 R = ', ' s, so R = ') + num(a0.R, 1) + T(' km），表面波 ', ' km); the surface wave arrives last at ') + num(a0.tR, 1) + T(' s 最晚到但振幅最大。', ' s but is the largest.'));
     if (w.user) {
       const a = w.arr;
-      emit('quake1', { h: w.h, x: w.x, R: a.R, vp: w.vp, vs: w.vs, ratio: w.vp / w.vs, tP: a.tP, tS: a.tS, sp: a.sp, tR: a.tR, medium: w.medium });
+      emit('quake1', { h: w.h, x: w.x, R: a.R, vp: w.vp, vs: w.vs, ratio: w.vp / w.vs, nu: Q.poisson(w.vp, w.vs), tP: a.tP, tS: a.tS, sp: a.sp, tR: a.tR, medium: w.medium });
     }
   }
 

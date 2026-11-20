@@ -143,14 +143,19 @@ prove('seasons-4', '按「北極點」、「夏至」', 'state', { loc: 'npole',
   if (passes('seasons-8', 'state', eq)) { fail++; console.log('✗ seasons-8 春分不應該成功'); }
 })();
 
-// ---------- 9. 夏至日照冠軍：不計大氣，北極點（或北緯 76° 以上） ----------
+// ---------- 9. 夏至日照冠軍：不計大氣，北緯 80° ----------
 (function () {
-  const d = prove('seasons-9', '按「北極點」、「夏至」：Q = ' + data({ loc: 'npole', day: 172, clock: 12 }).Q.toFixed(2) + ' MJ/m²，赤道 ' + data({ loc: 'npole', day: 172, clock: 12 }).Qeq.toFixed(2), 'state', { loc: 'npole', day: 172, clock: 12 });
+  const p = { loc: 'custom', lat: 80, day: 172, clock: 12 };
+  const d = data(p);
+  prove('seasons-9', '臺北的時區，按夏至、緯度改北緯 80°：Q = ' + d.Q.toFixed(2) + ' MJ/m²，赤道 ' + d.Qeq.toFixed(2), 'state', p);
   let lo = null;
   for (let lat = 60; lat <= 90; lat = Math.round((lat + 0.01) * 100) / 100) { if (passes('seasons-9', 'state', data({ loc: 'custom', lat: lat, lon: 121.56, zone: 8, day: 172, clock: 12 }))) { lo = lat; break; } }
-  console.log('   （臺灣時區的夏至，北緯 ' + lo + '° 以上就達成；特羅姆瑟 Q/Q赤道 = ' + (data({ loc: 'tromso', day: 172, clock: 12 }).Q / data({ loc: 'tromso', day: 172, clock: 12 }).Qeq).toFixed(3) + '，不夠）');
+  console.log('   （臺灣時區的夏至，北緯 ' + lo + '° 至 89.99°；特羅姆瑟 Q/Q赤道 = ' + (data({ loc: 'tromso', day: 172, clock: 12 }).Q / data({ loc: 'tromso', day: 172, clock: 12 }).Qeq).toFixed(3) + '，不夠）');
   if (passes('seasons-9', 'state', data({ loc: 'tromso', day: 172, clock: 12 }))) console.log('   （注意：特羅姆瑟也可以）');
-  if (passes('seasons-9', 'state', data({ loc: 'npole', day: 172, clock: 12, atmos: true }))) { fail++; console.log('✗ seasons-9 計入大氣時不應成功'); }
+  if (passes('seasons-9', 'state', data({ ...p, atmos: true })) ||
+    passes('seasons-9', 'state', data({ loc: 'npole', day: 172, clock: 12 }))) {
+    fail++; console.log('✗ seasons-9：計入大氣或直接選北極點時不應成功');
+  }
 })();
 
 // ---------- 10. 東北方的日出：高緯度 ----------
@@ -235,39 +240,68 @@ prove('seasons-4', '按「北極點」、「夏至」', 'state', { loc: 'npole',
   else { fail++; console.log('✗ seasons-h1'); }
 })();
 
-// ---------- h2. 春分那天的直線竿影：臺北春分，從 07:00 播放到 13:00 以後 ----------
+// ---------- h2. 比較同地點春分與秋分的竿影紀錄 ----------
 (function () {
-  const day = seasonDay('mar', 8);
-  const pts = {};
-  let found = null;
-  for (let c = 7; c <= 16 && !found; c += 1 / 60 * 1.5) {
-    const m = Math.round(c * 60);
-    const d = data({ loc: 'taipei', day: day, clock: c, playing: true });
-    if (d.alt <= 0 || pts[m]) continue;
-    pts[m] = true;
-    const mins = Object.keys(pts).map(Number);
-    const ev = Object.assign({}, d, { span: (Math.max.apply(null, mins) - Math.min.apply(null, mins)) / 60, count: mins.length });
-    if (passes('seasons-h2', 'trace', ev)) found = ev;
+  function track(loc, season, step = 1.5 / 60) {
+    const day = seasonDay(season, LOCS[loc][2]);
+    const pts = new Set();
+    const events = [];
+    for (let c = 7; c <= 15; c += step) {
+      const minute = Math.round(c * 60);
+      const d = data({ loc, day, clock: c, playing: true });
+      if (d.alt <= 0 || pts.has(minute)) continue;
+      pts.add(minute);
+      const mins = Array.from(pts);
+      events.push({ type: 'trace', data: Object.assign(d, {
+        span: (mins[mins.length - 1] - mins[0]) / 60, count: mins.length
+      }) });
+    }
+    return events;
   }
-  if (found) { proofs.push('seasons-h2'); console.log('✓ seasons-h2（5 級）：臺北按「春分」（' + date(day) + '），時刻設 07:00 按播放，播到 ' + hm(found.clock) + ' 記錄滿 ' + found.span.toFixed(2) + ' 小時'); }
-  else { fail++; console.log('✗ seasons-h2'); }
-  // 夏至不算
-  const d = Object.assign(data({ loc: 'taipei', day: 172, clock: 15 }), { span: 8, count: 480 });
-  if (passes('seasons-h2', 'trace', d)) { fail++; console.log('✗ seasons-h2 夏至不應成功'); }
+  function hit(events) {
+    const mem = {};
+    return events.some(ev => byId('seasons-h2').check(ev, mem));
+  }
+  const mar = track('taipei', 'mar'), sep = track('taipei', 'sep');
+  if (hit(mar.concat(sep)) && hit(sep.concat(mar))) {
+    proofs.push('seasons-h2');
+    console.log('✓ seasons-h2（5 級）：臺北春分與秋分各由 07:00 播到 15:00，順序不限');
+  } else { fail++; console.log('✗ seasons-h2'); }
+  // 最快設定是每秒 8 模擬小時，每幀實際時間上限為 1/30 秒。
+  if (!hit(track('taipei', 'mar', 8 / 30).concat(track('taipei', 'sep', 8 / 30)))) {
+    fail++; console.log('✗ seasons-h2：最高速度搭配每幀時間上限時仍應做得到');
+  } else console.log('✓ seasons-h2：最高速度搭配每幀時間上限時仍做得到');
+  const sparse = { type: 'trace', data: { ...sep[sep.length - 1].data, count: 2 } };
+  if (hit(mar) || hit(sep) || hit(mar.concat(track('taichung', 'sep'))) ||
+    hit(mar.concat(track('taipei', 'jun'))) || hit(mar.concat(sparse))) {
+    fail++; console.log('✗ seasons-h2：只有一季、不同地點、換成夏至或只取兩點不應成功');
+  } else console.log('✓ seasons-h2：只播一次、換地點、換成夏至或只取兩點都不觸發');
 })();
 
-// ---------- h3. 午夜的太陽：特羅姆瑟夏至播放一天 ----------
+// ---------- h3. 同地點冬至正午和夏至午夜的高緯日照對照 ----------
 (function () {
+  const winter = seasonDay('dec', 1), summer = seasonDay('jun', 1);
+  const noon = data({ loc: 'tromso', day: winter, clock: 12 });
+  const winterNoon = data({ loc: 'tromso', day: winter, clock: noon.noon });
   const dt = 1 / 60, rate = 1.5;
   let c = 12, prevH = null, found = null;
   for (let i = 0; i < 24 / (dt * rate) + 10 && !found; i++) {
     c += dt * rate; if (c >= 24) c -= 24;
-    const d = data({ loc: 'tromso', day: 172, clock: c, playing: true });
+    const d = data({ loc: 'tromso', day: summer, clock: c, playing: true });
     if (prevH != null && prevH > 150 && d.H < -150 && d.alt > 0) found = d;
     prevH = d.H;
   }
-  if (found && passes('seasons-h3', 'midnight', found)) { proofs.push('seasons-h3'); console.log('✓ seasons-h3（4 級）：按「特羅姆瑟」、「夏至」再按播放，' + hm(found.clock) + ' 太陽仍在 h = ' + found.alt.toFixed(1) + '°'); }
-  else { fail++; console.log('✗ seasons-h3'); }
+  const m = byId('seasons-h3'), mem = {};
+  m.check({ type: 'state', data: winterNoon }, mem);
+  if (found && m.check({ type: 'midnight', data: found }, mem)) {
+    proofs.push('seasons-h3');
+    console.log('✓ seasons-h3（4 級）：特羅姆瑟冬至按正午（高度角 ' + winterNoon.noonAlt.toFixed(1) +
+      '°），再切夏至播過午夜（高度角 ' + found.alt.toFixed(1) + '°）');
+    const different = data({ loc: 'npole', day: seasonDay('jun', 0), clock: 0, playing: true });
+    if (passes('seasons-h3', 'midnight', found) || m.check({ type: 'midnight', data: different }, mem)) {
+      fail++; console.log('✗ seasons-h3：只播夏至或中途換地點不應成功');
+    } else console.log('✓ seasons-h3：單獨觀察夏至午夜或中途換地點都不觸發');
+  } else { fail++; console.log('✗ seasons-h3'); }
 })();
 
 // ---------- 預設狀態與自動播放不會觸發任務 ----------
@@ -289,6 +323,32 @@ prove('seasons-4', '按「北極點」、「夏至」', 'state', { loc: 'npole',
   if (bad.length) { fail++; console.log('✗ 預設狀態觸發了：' + Array.from(new Set(bad)).slice(0, 10).join('、')); }
   else console.log('✓ 預設狀態（與按下播放後的每一格 state 事件）不會完成任何任務；自動播放不回報事件');
 })();
+
+// 日期分至按鈕、地點預設、時刻按鈕與滑桿端點。每組獨立，沒有長時間累積的紀錄。
+{
+  let count = 0;
+  const hits = new Set();
+  for (const [loc, [, , zone]] of Object.entries(LOCS)) {
+    const days = [1, 172, 365, ...['mar', 'jun', 'sep', 'dec'].map(k => seasonDay(k, zone))];
+    for (const day of new Set(days)) for (const eps of [0, REAL, 90]) {
+      const noon = data({ loc, day, eps, clock: 9.5 }).noon;
+      for (const clock of [0, 9.5, noon, 24]) {
+        const d = data({ loc, day, eps, clock });
+        const events = [{ type: 'state', data: d }];
+        const midnight = data({ loc, day, eps, clock: (noon + 12) % 24, playing: true });
+        if (midnight.alt > 0) events.push({ type: 'midnight', data: midnight });
+        count++;
+        missions.filter(m => m.hidden || m.level >= 6).forEach(m => {
+          const mem = {};
+          if (events.some(ev => m.check(ev, mem))) hits.add(m.id);
+        });
+      }
+    }
+  }
+  if (hits.size) fail++;
+  console.log((hits.size ? '✗ ' : '✓ ') + '預設按鈕與單一／多個端點（' + count + ' 組）：' +
+    (hits.size ? '觸發 ' + [...hits].join('、') : '未觸發 6 級以上或隱藏任務'));
+}
 
 const all = missions.map(m => m.id);
 const missing = all.filter(id => proofs.indexOf(id) < 0);

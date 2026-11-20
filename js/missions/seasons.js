@@ -79,8 +79,8 @@
     {
       id: 'seasons-9', level: 6,
       title: { zh: '夏至日照冠軍', en: 'June-solstice sunshine champion' },
-      desc: { zh: '不計大氣，在夏至那天找一個地方，一天每平方公尺收到的日照量比赤道多 30% 以上。', en: 'Without the air, on the June solstice find a place whose daily sunshine per square metre beats the equator’s by more than 30%.' },
-      check: function (ev) { const d = ev.data; return still(ev) && d.season === 'jun' && d.realTilt && !d.atmos && d.Q >= 1.3 * d.Qeq; }
+      desc: { zh: '不計大氣，在夏至那天找一個緯度絕對值小於 90° 的地方，一天每平方公尺收到的日照量比赤道多 30% 以上。', en: 'Without the air, on the June solstice find a site at a latitude less than 90° in magnitude whose daily sunshine per square metre beats the equator’s by at least 30%.' },
+      check: function (ev) { const d = ev.data; return still(ev) && d.season === 'jun' && d.realTilt && !d.atmos && Math.abs(d.lat) < 90 && d.Q >= 1.3 * d.Qeq; }
     },
     {
       id: 'seasons-10', level: 8,
@@ -114,16 +114,29 @@
     },
     {
       id: 'seasons-h2', level: 5, hidden: true,
-      riddle: { zh: '一年只有兩天，影子的足跡不肯轉彎。', en: 'Only twice a year does the shadow’s footprint refuse to turn.' },
-      check: function (ev) {
+      riddle: { zh: '隔了半年的兩頁，影子留下相似的筆跡。', en: 'On two pages half a year apart, the shadow leaves a familiar hand.' },
+      check: function (ev, mem) {
         const d = ev.data;
-        return ev.type === 'trace' && (d.season === 'mar' || d.season === 'sep') && d.realTilt && d.span >= 6 && Math.abs(d.lat) >= 10 && Math.abs(d.lat) <= 60;
+        if (ev.type !== 'trace' || (d.season !== 'mar' && d.season !== 'sep') ||
+          !d.realTilt || d.span < 6 || d.count < 20 || Math.abs(d.lat) < 10 || Math.abs(d.lat) > 60) return false;
+        // 在同一地點完成春分、秋分的長時段竿影紀錄，順序不限。
+        mem[d.season] = [d.lat, d.lon, d.zone].join('|');
+        return mem.mar === mem.sep;
       }
     },
     {
       id: 'seasons-h3', level: 4, hidden: true,
-      riddle: { zh: '夜半時分，仍需要一頂草帽。', en: 'At midnight you still need a straw hat.' },
-      check: function (ev) { return ev.type === 'midnight'; }
+      riddle: { zh: '午間等不到的旅人，半年後在深夜造訪。', en: 'The traveller who missed noon comes calling at midnight, half a year later.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!d.realTilt) return false;
+        const site = [d.lat, d.lon, d.zone].join('|');
+        const winter = d.lat > 0 ? 'dec' : 'jun';
+        const summer = d.lat > 0 ? 'jun' : 'dec';
+        if (ev.type === 'state' && d.season === winter && d.polar === 'night' &&
+          d.noonAlt < 0 && Math.abs(d.H) <= 15) mem.darkNoon = site;
+        return ev.type === 'midnight' && mem.darkNoon === site && d.season === summer && d.polar === 'day';
+      }
     }
   ]);
 })();

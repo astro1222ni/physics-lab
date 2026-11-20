@@ -5,7 +5,7 @@
 
   // 事件（js/earthquake.js 發出；距離 km、時間 s、角度用度）：
   //   quake1：模式一，按「播放／發生地震」後播完一次（自動播放不算）
-  //           { h, x（震央距離 Δ）, R, vp, vs, ratio, tP, tS, sp（S−P）, tR, medium: 'liquid' | 'solid' }
+  //           { h, x（震央距離 Δ）, R, vp, vs, ratio, nu（帕松比）, tP, tS, sp（S−P）, tR, medium: 'liquid' | 'solid' }
   //   chain：模式一，使用者播放時長條裡的 S 波脈衝撞到界面、反射完畢 { medium, vp, vs, rP, tP, rS, tS }
   //   params1：模式一，放開滑桿、打完數字或切換長條右半段 { vp, vs, ratio, nu（帕松比）, h, x, medium, prev }
   //   locate：模式二按「確認我的震央」（判定的是學生自己在地圖上點的標記）
@@ -101,8 +101,11 @@
     {
       id: 'earthquake-12', level: 6,
       title: { zh: '雷曼的發現', en: 'Lehmann’s discovery' },
-      desc: { zh: '找一個 P 波、S 波都收不到，卻收得到穿過內核的微弱 P 波（PKIKP）的測站位置。', en: 'Find a station position that receives neither P nor S waves, yet does receive the faint P wave that crossed the inner core (PKIKP).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'station3' && !d.P && !d.S && d.IK; }
+      desc: { zh: '在直接 P 波消失、PKP 還未出現的陰影區內，找一個收不到 S 波，卻收得到穿過內核的微弱 P 波（PKIKP）的測站位置。', en: 'In the shadow zone between the loss of direct P and the onset of PKP, find a station that receives no S wave but does receive the faint P wave that crossed the inner core (PKIKP).' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'station3' && d.deg > d.pMax && d.deg < d.pkpMin && !d.P && !d.S && d.IK;
+      }
     },
     {
       id: 'earthquake-h1', level: 6, hidden: true,
@@ -111,13 +114,26 @@
     },
     {
       id: 'earthquake-h2', level: 5, hidden: true,
-      riddle: { zh: '有一種石頭，被拉長時反而變胖。', en: 'There is a stone that grows fatter when you stretch it.' },
-      check: function (ev) { return ev.type === 'params1' && ev.data.nu < 0; }
+      riddle: { zh: '同樣的第一聲，岩石卻換了一種呼吸。', en: 'The same first arrival, yet the rock breathes differently.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'quake1') return false;
+        const d = ev.data;
+        // 固定震源與測站幾何及 P 波波速，比較調整 S 波波速前後的帕松比。
+        const setup = [d.h, d.x, d.vp, d.medium].join('|');
+        if (d.nu >= 0.2) mem.ordinary = setup;
+        return mem.ordinary === setup && d.nu >= -0.3 && d.nu <= -0.05;
+      }
     },
     {
       id: 'earthquake-h3', level: 3, hidden: true,
-      riddle: { zh: '穿過一切，抵達腳底下的另一面。', en: 'Through everything, to the far side beneath your feet.' },
-      check: function (ev) { return ev.type === 'station3' && ev.data.deg >= 179.5 && ev.data.IK; }
+      riddle: { zh: '先在寂靜裡等，腳底另一端才傳來回音。', en: 'Wait in the silence first, then listen on the far side beneath your feet.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'station3') return false;
+        const d = ev.data;
+        // 先在 P、S 與穿內核波皆未抵達的區域觀察，再到對蹠點找穿內核的波。
+        if (d.deg > d.sMax && d.deg < d.pkpMin && !d.P && !d.S && !d.IK) mem.inShadow = true;
+        return !!mem.inShadow && d.deg >= 179.5 && d.IK;
+      }
     }
   ]);
 })();

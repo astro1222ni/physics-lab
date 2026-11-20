@@ -100,13 +100,27 @@
     },
     {
       id: 'tides-h1', level: 5, hidden: true,
-      riddle: { zh: '有個地方不必等潮——因為它永遠不來。', en: 'There is a place where no one waits for the tide — it never comes.' },
-      check: function (ev) { return isState(ev) && ev.data.range <= 0.002; }
+      riddle: { zh: '月亮還在走，水面卻在旅途盡頭靜了下來。', en: 'The Moon keeps moving, but at the end of the journey the sea falls still.' },
+      check: function (ev, mem) {
+        if (!isState(ev) || ev.data.sun) return false;
+        const d = ev.data;
+        const hemisphere = Math.sign(d.lat);
+        // 保持月球赤緯與距離，比較同半球的近極觀測點與極點。
+        const moon = [d.dec, d.dist, hemisphere].join('|');
+        if (Math.abs(d.lat) >= 75 && Math.abs(d.lat) <= 85 && d.range >= 0.02) mem.nearPole = moon;
+        return mem.nearPole === moon && Math.abs(d.lat) === 90 && d.range <= 0.002;
+      }
     },
     {
       id: 'tides-h2', level: 4, hidden: true,
-      riddle: { zh: '最滿的一刻，依舊在平常之下。', en: 'At its fullest, still below the usual.' },
-      check: function (ev) { return isHigh(ev) && ev.data.h < 0; }
+      riddle: { zh: '兩度漲到盡頭，仍摸不著那道線。', en: 'Twice the sea rises as far as it can, and twice the line stays out of reach.' },
+      check: function (ev) {
+        const d = ev.data;
+        // 只看月球，讓同一太陰日的兩次相連高潮都低於模型的零潮位。
+        return paired(ev) && !d.sun && Math.abs(d.dec) <= 2 &&
+          Math.abs(d.lat) >= 65 && Math.abs(d.lat) <= 80 &&
+          d.gap < 20 && d.h <= -0.02 && d.prevH <= -0.02;
+      }
     },
     {
       id: 'tides-h3', level: 6, hidden: true,

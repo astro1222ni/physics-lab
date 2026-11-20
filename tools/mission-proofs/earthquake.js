@@ -14,7 +14,7 @@ let fail = 0;
 function expect(id, events, want, note) {
   const m = byId(id); m.mem = {};
   let ok = false;
-  events.forEach(e => { ok = !!m.check(e, m.mem); });
+  events.forEach(e => { if (m.check(e, m.mem)) ok = true; });
   const pass = ok === want;
   if (!pass) fail++;
   console.log((pass ? '  ✓ ' : '  ✗ ') + String(id).padEnd(3) + (want ? ' 達成：' : ' 不觸發：') + note);
@@ -28,7 +28,7 @@ function params1(o) { return { type: 'params1', data: Object.assign({ prev: sett
 function quake1(o) {
   o = Object.assign({}, DEF1, o);
   const a = Q.arrivals(o.x, o.h, o.vp, o.vs);
-  return { type: 'quake1', data: { h: o.h, x: o.x, R: a.R, vp: o.vp, vs: o.vs, ratio: o.vp / o.vs, tP: a.tP, tS: a.tS, sp: a.sp, tR: a.tR, medium: o.medium } };
+  return { type: 'quake1', data: { h: o.h, x: o.x, R: a.R, vp: o.vp, vs: o.vs, ratio: o.vp / o.vs, nu: Q.poisson(o.vp, o.vs), tP: a.tP, tS: a.tS, sp: a.sp, tR: a.tR, medium: o.medium } };
 }
 function chain(medium) {
   const coP = Q.interfaceCoeffs(2.7, 6, medium === 'liquid' ? 1 : 2.7, medium === 'liquid' ? 1.5 : 6);
@@ -243,6 +243,7 @@ expect(11, [station3(106)], false, 'Δ = 106°（離邊界超過 2°）');
 expect(12, [station3(130)], true, 'Δ = 130°：P ' + station3(130).data.P + '、S ' + station3(130).data.S + '、PKIKP ' + station3(130).data.IK);
 expect(12, [station3(110)], false, 'Δ = 110°：PKIKP 還沒出現（由 ' + Z.ikMin.toFixed(1) + '° 起）');
 expect(12, [station3(150)], false, 'Δ = 150°：PKP 又收得到了');
+expect(12, [station3(180)], false, 'Δ = 180°：對蹠點在這段陰影區以外');
 // h1 擦過核幔界面
 {
   const a = ray3('P', 13.4).data, b = ray3('P', 13.5).data, c = ray3('P', 13.3).data;
@@ -250,12 +251,45 @@ expect(12, [station3(150)], false, 'Δ = 150°：PKP 又收得到了');
   expect('h1', [ray3('P', 13.5)], false, '13.5°：離界面 ' + (b.turnR - 3480).toFixed(1) + ' km');
   expect('h1', [ray3('P', 13.3)], false, '13.3°：進了外核（' + c.phase + '）');
 }
-// h2 負的帕松比
-expect('h2', [params1({ vp: 4, vs: 3 })], true, 'VP = 4、VS = 3（≤ 上限 ' + vsLimit(4).toFixed(2) + '）→ ν = ' + Q.poisson(4, 3).toFixed(3));
-expect('h2', [params1({ vp: 5, vs: 3.5 })], false, 'VP = 5、VS = 3.5 → ν = ' + Q.poisson(5, 3.5).toFixed(3));
-// h3 地球的另一端
-expect('h3', [station3(180)], true, 'Δ = 180°：PKIKP ' + station3(180).data.IK);
-expect('h3', [station3(179)], false, 'Δ = 179°');
+// h2 比較固定 P 波速度下的一正一負帕松比；走完兩次地震。
+{
+  const ref = quake1({}), auxetic = quake1({ vs: 4.5 });
+  expect('h2', [ref, auxetic], true, '固定 VP = 6 km/s，VS 3.5 → 4.5 km/s，兩次播完：ν ' +
+    ref.data.nu.toFixed(3) + ' → ' + auxetic.data.nu.toFixed(3));
+  expect('h2', [params1({ vp: 4 })], false, '只把 VP 拉到左端');
+  expect('h2', [auxetic], false, '只播過負帕松比');
+  expect('h2', [ref, quake1({ vp: 5, vs: 3.75 })], false, '第二次同時改變 VP');
+  expect('h2', [ref, quake1({ vs: 5 })], false, 'VS 端點，帕松比低於比較範圍');
+}
+// h3 先在無三種波的測站，再到對蹠點找 PKIKP。
+{
+  const shadow = station3(110), antipode = station3(180);
+  expect('h3', [shadow, antipode], true, 'Δ 110° 三種波都沒抵達，再移到 Δ 180° 看到 PKIKP');
+  expect('h3', [antipode], false, '從預設直接移到 Δ 180°');
+  expect('h3', [shadow, station3(179)], false, '做了對照，仍距對蹠點 1°');
+  expect('h3', [station3(130), antipode], false, '用已能收到 PKIKP 的位置作對照');
+}
+
+// 每組從新任務記憶出發。端點包含上下限與未動的預設值，VS 套用頁面的動態上限。
+{
+  const scenes = [[station3(60)], [station3(0)], [station3(180)]];
+  for (const angle of [0, 20, 60]) scenes.push([ray3('P', angle), ray3('S', angle)]);
+  for (const medium of ['liquid', 'solid']) {
+    for (const h of [2, 15, 40]) for (const x of [0, 60, 100]) {
+      for (const vp of [4, 6, 8]) for (const sliderVS of [2, 3.5, 5]) {
+        const p = { medium, h, x, vp, vs: Math.min(sliderVS, vsLimit(vp)) };
+        scenes.push([params1(p), chain(medium), quake1(p)]);
+      }
+    }
+  }
+  const hits = missions.filter(m => m.hidden || m.level >= 6).filter(m =>
+    scenes.some(events => {
+      const mem = {};
+      return events.some(ev => m.check(ev, mem));
+    })).map(m => m.id);
+  claim(hits.length === 0, '預設與單一／多個端點（' + scenes.length + ' 組）：' +
+    (hits.length ? '觸發 ' + hits.join('、') : '未觸發 6 級以上或隱藏任務'));
+}
 
 console.log(fail ? '\n有 ' + fail + ' 項失敗' : '\n全部通過');
 process.exitCode = fail ? 1 : 0;

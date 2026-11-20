@@ -120,6 +120,10 @@ expect(4, [cam('side', 15), cam('top', 25)], false, 'δ = 15° 側看、δ = 25�
   expect(6, highEvs({ sun: false, lat: 0, dec: 25 }, 2), false, '赤道上沒有日潮不等');
   const old = highEvs({ sun: false, lat: 30, dec: 25 }, 2);
   expect(6, old, false, '試玩回報 C17 的做法（關掉太陽，緯度 30°、赤緯 25°）：第二次高潮 ' + cm(Math.min.apply(null, old.map(e => e.data.h))) + '，不在平均海面以上，不算');
+  expect('h2', old, false, 'C17 的舊做法也不再觸發隱藏 h2');
+  const standard = highEvs({ lat: 30, dec: 25 }, 4);
+  expect(6, standard.slice(0, 2), true, '緯度 30°、赤緯 25°、有太陽：連按下一次高潮兩次完成公開任務 6');
+  expect('h2', standard, false, '公開任務 6 的標準做法，包括繼續播放四天，不觸發 h2');
   expect(6, highEvs({ sun: false, lat: 50, dec: 25 }, 2), false, '緯度 50°：差很大，但第二次高潮在平均海面以下');
 }
 // 7 赤道的公平
@@ -167,20 +171,26 @@ expect(10, [stateEv({ dist: 0.5 })], false, '只把距離減半（8 倍）');
   expect(11, [stateEv({ dec: -28.6, psi: 270, dist: d3 })], false, '舊版的誤觸：赤緯拉到最小 −28.6°、小潮、距離 ' + d3 + ' 倍：' + cm(K.equatorRange({ dec: -28.6, dist: d3, sun: true }, 270)));
   expect(11, [stateEv({ dec: 0.3, psi: 90, dist: 1.3 })], true, '赤緯 0.3° 還算：' + cm(K.equatorRange({ dec: 0.3, dist: 1.3, sun: true }, 90)));
 }
-// h1 永遠不來的潮
+const ach = {};   // 每個隱藏任務的達成例（用來證明彼此不連帶完成）
+// h1 月球還在走，極點的潮位沒有日變化
 {
-  expect('h1', [stateEv({ lat: 90 })], true, '北極：今日潮差 ' + (stateEv({ lat: 90 }).data.range * 1000).toFixed(3) + ' mm');
-  expect('h1', [stateEv({ lat: -90, dec: -28.6, psi: 0 })], true, '南極、赤緯 −28.6°、大潮：' + (stateEv({ lat: -90, dec: -28.6, psi: 0 }).data.range * 1000).toFixed(3) + ' mm');
-  expect('h1', [stateEv({ lat: 85 })], false, '緯度 85°：' + cm(stateEv({ lat: 85 }).data.range));
-  expect('h1', [stateEv({})], false, '預設：' + cm(stateEv({}).data.range));
+  const near = stateEv({ lat: 80, sun: false }), pole = stateEv({ lat: 90, sun: false });
+  ach.h1 = [near, pole];
+  expect('h1', ach.h1, true, '只開月球、赤緯 10°、距離 1 倍：緯度 80° → 90°，潮差 ' +
+    cm(near.data.range) + ' → ' + cm(pole.data.range));
+  expect('h1', [pole], false, '直接移到北極，沒有近極對照');
+  expect('h1', [near, stateEv({ lat: -90, sun: false })], false, '近極與極點不在同一半球');
+  expect('h1', [near, stateEv({ lat: 90, sun: false, dec: 20 })], false, '兩次用不同的月球赤緯');
 }
-// h2 低於平均海面的高潮
+// h2 同一太陰日兩次高潮都低於零潮位
 {
   const hs = highEvs({ sun: false, lat: 70, dec: 0 }, 1);
-  expect('h2', hs, true, '關掉太陽，緯度 70°、赤緯 0°：高潮 ' + hs.map(e => cm(e.data.h)).join('、'));
-  const hs2 = highEvs({ lat: 65, dec: 2, psi: 90 }, 1);
-  expect('h2', hs2, true, '有太陽、小潮，緯度 65°、赤緯 2°：' + hs2.map(e => cm(e.data.h)).join('、'));
-  expect('h2', highEvs({ lat: 40, dec: 0 }, 2), false, '緯度 40°');
+  ach.h2 = hs;
+  expect('h2', hs, true, '關掉太陽，緯度 70°、赤緯 0°：兩次高潮 ' + hs.map(e => cm(e.data.h)).join('、'));
+  expect('h2', hs.slice(0, 1), false, '只到了一次高潮');
+  expect('h2', highEvs({ sun: true, lat: 65, dec: 2, psi: 90 }, 2), false, '有太陽的小潮');
+  expect('h2', highEvs({ sun: false, lat: 70, dec: 28.6 }, 2), false, '高緯與大赤緯');
+  expect('h2', highEvs({ sun: false, lat: 40, dec: 0 }, 2), false, '緯度 40°');
 }
 // h3 月亮在地平線下時的高潮比較高
 {
@@ -197,7 +207,6 @@ expect(10, [stateEv({ dist: 0.5 })], false, '只把距離減半（8 倍）');
 }
 
 // ---------- 新增的隱藏任務 h4–h10（11/13，隱藏任務補到 10 個） ----------
-const ach = {};   // 每個隱藏任務的達成例（用來證明彼此不連帶完成）
 // h4 引力加倍：距離 1/√2
 {
   const e = [stateEv({ dist: 0.7071 })];
@@ -276,16 +285,35 @@ const rat = ev => (ev[0].data.range / ev[1].data.range).toFixed(3);
 }
 // 彼此不連帶完成：每個隱藏任務的達成例，不會讓其他隱藏任務成立
 {
-  ach.h1 = [stateEv({ lat: 90 })]; ach.h2 = highEvs({ sun: false, lat: 70, dec: 0 }, 1); ach.h3 = highEvs({ sun: false, lat: 45, dec: -25 }, 2);
+  ach.h3 = highEvs({ sun: false, lat: 45, dec: -25 }, 2);
   const ids = Object.keys(ach);
   ids.forEach(a => {
-    // 已知例外（已上線的判定不改）：h3 要「月在地平線下那次高 40 cm 以上」，只開月球時另一次高潮必然在平均海面以下，
-    // 所以 h3 一定伴隨 h2（逐一試過緯度 0–90°、赤緯 0 至 −28.6° 都找不到反例）。新的 h4–h10 都沒有這種情形。
-    const KNOWN = { h3: ['h2'] };
-    const hit = ids.filter(b => b !== a && !(KNOWN[a] || []).includes(b) && (() => { const m = byId(b); m.mem = {}; return ach[a].some(e => m.check(e, m.mem)); })());
+    const hit = ids.filter(b => b !== a && (() => { const m = byId(b); m.mem = {}; return ach[a].some(e => m.check(e, m.mem)); })());
     if (hit.length) { fail++; console.log('  ✗ ' + a + ' 的達成例也完成了 ' + hit.join('、')); }
     else console.log('  ✓ ' + a + ' 的達成例不會順便完成別的隱藏任務');
   });
+}
+
+// 以新記憶檢查各端點（含其他滑桿留在預設值）、太陽開關與相連高潮。
+{
+  let count = 0;
+  const hits = new Set();
+  for (const psi of [0, 40, 360]) for (const dec of [-28.6, 10, 28.6]) {
+    for (const dist of [0.5, 1, 2]) for (const lat of [-90, 23.5, 90]) {
+      for (const sun of [true, false]) for (const hr of [0, 6, 23.99]) {
+        const p = { psi, dec, dist, lat, sun, t: hr };
+        const events = [stateEv(p), cam('side', dec), ...highEvs(p, 2)];
+        count++;
+        missions.filter(m => m.hidden || m.level >= 6).forEach(m => {
+          const mem = {};
+          if (events.some(ev => m.check(ev, mem))) hits.add(m.id);
+        });
+      }
+    }
+  }
+  if (hits.size) fail++;
+  console.log((hits.size ? '  ✗ ' : '  ✓ ') + '預設與單一／多個端點（' + count + ' 組）：' +
+    (hits.size ? '觸發 ' + [...hits].join('、') : '未觸發 6 級以上或隱藏任務'));
 }
 
 let stars = 0, hidden = 0;
