@@ -121,6 +121,8 @@
     html.labdeck-drawer #view3 > div, html.labdeck-drawer #view3 canvas { height: 100%; }
     .eq { max-width: 100%; overflow-x: auto; }
     .eq .katex { font-size: 0.9em; }
+    .labdeck-tabs button { display: block; overflow: visible; -webkit-line-clamp: unset; overflow-wrap: normal; text-wrap: balance; }
+    button small { text-wrap: balance; }
   </style>
 </head>
 <body data-en-ready>
@@ -173,7 +175,8 @@
         </section>
 
         <section class="card m2">
-          <h2 data-en="Matrix A (2×2): rows (a, b) and (c, d)">2×2 矩陣 A：兩列是 (a, b)、(c, d)</h2>
+          <h2 data-en="Matrix A (2×2)">2×2 矩陣 A</h2>
+          <p class="hint" data-en="Rows (a, b) and (c, d).">兩列是 (a, b)、(c, d)。</p>
           <div class="slider"><label for="ma" data-en="a (i goes to x = a)">a（i 的 x 坐標）</label><output id="mao"></output>
             <input id="ma" type="range" min="-3" max="3" step="0.1" value="1.5" data-decimals="2"></div>
           <div class="slider"><label for="mc" data-en="c (i goes to y = c)">c（i 的 y 坐標）</label><output id="mco"></output>

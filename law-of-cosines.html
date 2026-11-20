@@ -91,6 +91,9 @@
     }
     html.labdeck-drawer .plot-controls > * { flex: none; }
     html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
+    .labdeck-tabs button { display: block; overflow: visible; -webkit-line-clamp: unset; overflow-wrap: normal; text-wrap: balance; }
+    button small { text-wrap: balance; }
+    .nw { white-space: nowrap; }
   </style>
 </head>
 <body data-en-ready>
@@ -169,7 +172,7 @@
             <dt data-en="Type">形狀</dt><dd id="rKind">—</dd>
             <dt data-en="Area">面積</dt><dd id="rArea">—</dd>
             <dt data-en="Perimeter">周長</dt><dd id="rPer">—</dd>
-            <dt data-en="a／sin A, b／sin B, c／sin C">a／sin A、b／sin B、c／sin C</dt><dd id="rSine">—</dd>
+            <dt data-en-html="&lt;span class=&quot;nw&quot;&gt;a／sin A&lt;/span&gt;, &lt;span class=&quot;nw&quot;&gt;b／sin B&lt;/span&gt;, &lt;span class=&quot;nw&quot;&gt;c／sin C&lt;/span&gt;"><span class="nw">a／sin A</span>、<span class="nw">b／sin B</span>、<span class="nw">c／sin C</span></dt><dd id="rSine">—</dd>
             <dt data-en="Circumradius R">外接圓半徑 R</dt><dd id="rR">—</dd>
           </dl>
           <div class="eq" id="rEq" aria-live="off"></div>

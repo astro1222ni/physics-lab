@@ -98,6 +98,8 @@
     html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
     .eq { max-width: 100%; overflow-x: auto; }
     .eq .katex { font-size: 0.9em; }
+    .labdeck-tabs button { display: block; overflow: visible; -webkit-line-clamp: unset; overflow-wrap: normal; text-wrap: balance; }
+    button small { text-wrap: balance; }
   </style>
 </head>
 <body data-en-ready>
@@ -142,7 +144,7 @@
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="graph" aria-pressed="true" data-en-html="The graph<small>vertex, roots, max and min</small>">圖形<small>頂點、根、最大最小</small></button>
             <button type="button" data-mode="line" aria-pressed="false" data-en-html="Parabola and line<small>intersections, tangents</small>">拋物線與直線<small>交點、切線</small></button>
-            <button type="button" data-mode="square" aria-pressed="false" data-en-html="Completing the square<small>x² + px = q</small>">配方<small>x² + px = q</small></button>
+            <button type="button" data-mode="square" aria-pressed="false" data-en-html="Completing the square<small>x<sup>2</sup> + px = q</small>">配方<small>x<sup>2</sup> + px = q</small></button>
           </div>
         </section>
 
@@ -188,7 +190,8 @@
         </section>
 
         <section class="card ms">
-          <h2 data-en-html="Completing the square: x<sup>2</sup> + px = q">配方：x<sup>2</sup> + px = q</h2>
+          <h2 data-en="Completing the square">配方</h2>
+          <p class="hint" data-en-html="Solve x<sup>2</sup> + px = q.">解 x<sup>2</sup> + px = q。</p>
           <div class="slider"><label for="sp" data-en="p">p</label><output id="spo"></output>
             <input id="sp" type="range" min="0.5" max="10" step="0.5" value="4" data-decimals="2"></div>
           <div class="slider"><label for="sq" data-en="q">q</label><output id="sqo"></output>
@@ -237,7 +240,7 @@
 
         <section class="card mg">
           <h2 data-en="Challenge: read the function off its graph">挑戰：看圖寫二次函數</h2>
-          <p class="hint" data-en="A dashed parabola appears with its vertex and one more point marked, and your function starts again from y = x². Make your graph lie exactly on the dashed one, then submit.">出現一條虛線拋物線，標出頂點和另一個點，你的函數從 y = x² 重新開始。讓你的圖形和虛線完全重合，再送出。</p>
+          <p class="hint" data-en="A dashed parabola appears with its vertex and one more point marked, and your function starts again from y = x^2. Make your graph lie exactly on the dashed one, then submit.">出現一條虛線拋物線，標出頂點和另一個點，你的函數從 y = x^2 重新開始。讓你的圖形和虛線完全重合，再送出。</p>
           <div class="chal">
             <button id="newChal" type="button" data-en="New challenge">出一題</button>
             <button id="submitC" type="button" hidden data-en="Submit">送出</button>
