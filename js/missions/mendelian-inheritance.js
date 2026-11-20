@@ -117,18 +117,26 @@
     {
       id: 'mendelian-inheritance-h2', level: 6, hidden: true,
       riddle: { zh: '明明說的是實話，卻沒有人相信；你沒有改口，只是繼續說下去。', en: 'You told the truth and no one believed you; you did not change your story, you just kept on telling it.' },
-      // 型一錯誤：單性狀、假說為真（子二代或試交），同一輪先在 N ≥ 200 被卡方檢定拒絕（p < 0.05），
-      // 不清除、繼續產生子代到被拒絕時的兩倍以上，p 回到 0.5 以上。只限單性狀，做雙性狀任務（例如「比孟德爾更準」）時不會順手完成。
+      // 用同一輪單性狀試交追蹤型一錯誤：先拒絕 1:1，再觀察回到不拒絕，最後才接近理論比例。
       check: function (ev, mem) {
-        if (ev.type === 'reset') { mem.rej = 0; mem.key = ''; mem.lastN = 0; return false; }
-        if (!isSow(ev)) return false;
+        if (ev.type === 'reset') { delete mem.series; return false; }
+        if (ev.type !== 'sow') return false;
         const d = ev.data;
-        const key = d.L + '|' + d.kind + '|' + d.g1.join('') + '|' + d.g2.join('') + '|' + d.traits.join(',');
-        if (key !== mem.key || d.N < (mem.lastN || 0)) { mem.key = key; mem.rej = 0; }
-        mem.lastN = d.N;
-        if (d.L !== 1 || (d.kind !== 'F2' && d.kind !== 'test') || d.impossible || !(d.df >= 1)) return false;
-        if (!mem.rej) { if (d.N >= 200 && d.p < 0.05) mem.rej = d.N; return false; }
-        return d.N >= 2 * mem.rej && d.p > 0.5;
+        if (!isSow(ev) || d.L !== 1 || d.kind !== 'test' || d.impossible || d.df !== 1) { delete mem.series; return false; }
+        const key = d.g1[0] + '|' + d.g2[0] + '|' + d.traits[0];
+        if (!mem.series || mem.series.key !== key || mem.series.N !== d.N - d.n) mem.series = { key: key };
+        const s = mem.series;
+        s.N = d.N;
+        if (!s.rejectedAt) {
+          if (d.N >= 200 && d.N <= 300 && d.p < 0.05) s.rejectedAt = d.N;
+          return false;
+        }
+        if (!s.recovered) {
+          if (d.N >= 2 * s.rejectedAt && d.p >= 0.05 && d.p <= 0.5) s.recovered = true;
+          return false;
+        }
+        if (d.p < 0.05) s.recovered = false;
+        return s.recovered && d.N >= 4 * s.rejectedAt && d.p > 0.5;
       }
     },
     {

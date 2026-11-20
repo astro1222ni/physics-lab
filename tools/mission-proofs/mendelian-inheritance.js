@@ -22,13 +22,13 @@ function claim(ok, msg) { out.push((ok ? '✓ ' : '✗ ') + msg); if (!ok) fail+
 const pct = x => (100 * x).toFixed(1) + '%';
 
 /** 頁面的一次雜交實驗：累積子代並在每批之後產生 sow 事件 */
-function Lab(traits, g1, g2, gchart) {
+function Lab(traits, g1, g2, gchart, random = rand) {
   const cr = M.cross(g1, g2);
   const s = { N: 0, pheno: new Array(cr.phenoP.length).fill(0), geno: new Array(cr.genoP.length).fill(0), cell: new Array(cr.slots1.length * cr.slots2.length).fill(0) };
   return {
     cr, s,
     sow(n) {
-      M.sampleCounts(cr, n, rand, s);
+      M.sampleCounts(cr, n, random, s);
       const t = M.chiSquare(s.pheno, cr.phenoP);
       return { type: 'sow', data: { L: g1.length, traits, g1, g2, mystery: false, kind: M.crossKind(g1, g2), n, N: s.N, pheno: s.pheno.slice(), geno: s.geno.slice(), chi2: t.chi2, df: t.df, p: t.p, impossible: t.impossible, minE: t.minExpected, gchart: !!gchart } };
     }
@@ -168,24 +168,26 @@ function detective(L, budget) {
   const sim = rate(40000, di([1, 1], [1, 1]), [16], 'h1');
   claim(Math.abs(sim - theory) < 0.004, `H1 一字不差：16 個子二代恰好 9:3:3:1 的機率 ${pct(theory)}（模擬 ${pct(sim)}），平均約 ${Math.round(1 / theory)} 次「全部清除＋自訂數量 16」`);
 }
-// h2. 型一錯誤：真的假說（單性狀）先被拒絕（N ≥ 200、p < 0.05），不清除、繼續種到兩倍以上，p 回到 0.5 以上
+// h2. 單性狀試交的型一錯誤與後續取樣
 {
-  const fresh = () => { byId['h2'].mem = {}; };
-  const rateM = (trials, make, batches) => { let ok = 0; for (let i = 0; i < trials; i++) { fresh(); const lab = make(); for (const b of batches) if (check('h2', lab.sow(b))) { ok++; break; } } fresh(); return ok / trials; };
-  // 刻意的做法：單性狀子二代（或試交）一直按「+100」到 4000 個
-  const go = rateM(3000, mono(1, 1), new Array(40).fill(100));
-  const goT = rateM(3000, mono(1, 0), new Array(40).fill(100));
-  claim(go > 0.08 && goT > 0.08, `H2 說實話沒人信：單性狀子二代一路按「+100」到 4000 個之內成立 ${pct(go)}、試交 ${pct(goT)}（每次「全部清除」重來就是新的一輪）`);
-  fresh(); claim(!check('h2', mono(1, 1)().sow(5000)), '    只產生一批（沒有先被拒絕）不會成立');
-  // 誤觸檢查：做一般任務的典型路線
-  const t11 = rateM(2000, di([1, 1], [1, 1]), [556].concat(new Array(30).fill(100)));
-  const t11b = rateM(2000, di([1, 1], [1, 1]), new Array(30).fill(100));
-  claim(t11 === 0 && t11b === 0, `    做「比孟德爾更準」（雙性狀子二代 556 個再一路 +100）不會順手完成：${pct(t11)}、${pct(t11b)}`);
-  const t4 = rateM(3000, mono(1, 1), [100, 100, 100, 100]);
-  const t5 = rateM(3000, mono(1, 0), [100, 100, 100]);
-  claim(t4 < 0.01 && t5 < 0.01, `    做「三比一」（+100 到 400 個）${pct(t4)}、「試交的一比一」（+100 到 300 個）${pct(t5)}，都低於 1%`);
-  const t6 = rateM(3000, mono(1, 1), [8, 1, 1, 1, 1, 1]);
-  claim(t6 === 0, '    做「小樣本會騙人」（8 個左右）不會成立');
+  const make = () => Lab(['shape'], [1], [0], false, M.rng(81));
+  const seq = (lab, batches) => batches.map(n => lab.sow(n));
+  const test = events => hitsOf(events, ['h2']).length > 0;
+  const events = seq(make(), [200, 200, 400]);
+  const [reject, recover, close] = events;
+  claim(!test([reject, recover]) && test(events), `H2：形狀單性狀試交（證明用種子 81），自訂依次加 200、200、400 個，p 值依次為 ${events.map(e => e.data.p.toFixed(4)).join('、')}`);
+  const old = seq(make(), [200, 800]);
+  claim(old[0].data.p < 0.05 && old[1].data.p > 0.5 && !test(old) && !test(seq(make(), [1000])),
+    'H2：直接大量播種或沿舊路線只播兩批，都不成立，即使 p 已從顯著變為大於 0.5');
+  const reset = { type: 'reset', data: {} };
+  const nextTray = make().sow(400);
+  claim(!test([reject, recover, reset, close]) && !test([reject, recover, nextTray, close]),
+    'H2：全部清除、每批清除或換了一盤，即使數到同一個 N 也不能接用舊進度');
+  const publicRoutes = [seq(make(), [100, 100, 100]), seq(mono(1, 1)(), [8, 92, 100, 100, 100]),
+    seq(di([1, 1], [1, 1])(), [556, 100, 100, 100]), seq(di([1, 1], [0, 0])(), [100, 100, 100, 100])];
+  claim(publicRoutes.every(route => !test(route)), 'H2：典型單性狀試交、三比一、小樣本及雙性狀公開路線均不會順手完成');
+  const hiddenIds = defs.filter(m => m.hidden).map(m => m.id.replace('mendelian-inheritance-', ''));
+  claim(hitsOf(events, hiddenIds).join() === 'h2', 'H2 的試交路線只成立這一個隱藏任務');
 }
 // h3. 孟德爾數過的 7324 粒（或 8023 粒）
 {
@@ -255,11 +257,12 @@ const solutions = {};
   let ok = 0, ex = null;
   const n = 4000;
   for (let t = 0; t < n; t++) {
-    const evs = [di([2, 0], [0, 2])().sow(10), di([1, 1], [1, 1])().sow(16)];
+    // 17 個仍可觀察兩種新組合，也避開 H1 的 16 倍數取樣。
+    const evs = [di([2, 0], [0, 2])().sow(10), di([1, 1], [1, 1])().sow(17)];
     if (hitsOf(evs, ['h5']).length) { ok++; if (!ex) ex = evs; }
   }
   solutions.h5 = ex;
-  claim(ok / n > 0.6, `H5 祖父母沒有的模樣：RRyy × rrYY 產生 10 個子一代，按「F1 自交」再產生 16 個，圓黃與皺綠都出現 ${pct(ok / n)}（不夠就再多產生幾個）`);
+  claim(ok / n > 0.6, `H5 祖父母沒有的模樣：RRyy × rrYY 產生 10 個子一代，按「F1 自交」再產生 17 個，圓黃與皺綠都出現 ${pct(ok / n)}（不夠就再多產生幾個）`);
   const plain = hitsOf([di([2, 2], [0, 0])().sow(10), di([1, 1], [1, 1])().sow(1000)], ['h5']);
   const noP = hitsOf([di([1, 1], [1, 1])().sow(1000)], ['h5']);
   claim(plain.length === 0 && noP.length === 0, '    RRYY × rryy 之後的子二代（圓黃、皺綠是祖父母本來就有的）、或沒有先做親代雜交，都不算');
