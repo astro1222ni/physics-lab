@@ -122,7 +122,9 @@
     html.labdeck-drawer .market .lab { order:-1; margin:0; }
     html.labdeck-drawer .market .stage { padding:3px; }
     html.labdeck-drawer .market .view-bar { margin:0 0 2px; }
-    html.labdeck-drawer .market .view-bar { justify-content:flex-start; }
+    html.labdeck-drawer .market .view-bar { justify-content:flex-start; padding-right:var(--head-reserve,150px); }
+    /* 橫放時實驗區排在頁頂：齒輪與登入鈕上移，收在第一列右側，不壓到下面的剩餘讀數（11/20 試玩） */
+    html.labdeck-drawer .market .lab-gear, html.labdeck-drawer .market .lab-account { top:5px; }
     html.labdeck-drawer .market .stall-sign { display:none; }
     html.labdeck-drawer .market #compactQuote { display:inline; font-size:calc(15px * var(--fs,1)); font-weight:700; }
     html.labdeck-drawer .market #cv { height:clamp(127px,calc(100dvh - 204px),357px); }

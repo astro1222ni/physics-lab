@@ -224,7 +224,8 @@
     }
     ctx.restore();
   }
-  // Narrow regions point to their named amount in the strip touching the graph.
+  // 放不下金額的窄面積：只畫和上方讀數卡圖例同形狀的記號（● 消費者、■ 生產者、▲ 無謂損失）。
+  // 11/20 試玩：原本拉虛線引線到圖外，窄圖時會穿過座標軸標題與曲線名稱，看起來像畫錯，所以拿掉引線。
   function areaAmount(g, left, right, upper, lower, amount, ink, column) {
     if (!(amount > 0) || right <= left) return;
     const q = left + (right-left)/3, x = g.x(q), label = money(amount);
@@ -237,16 +238,11 @@
       && (policy==='free' || Math.abs(y-g.y(state.price))>19)) {
       halo(label,x,(top+bottom)/2,ink,'center',15); return;
     }
-    const card = $(['consume','produce','loss'][column]).parentElement.getBoundingClientRect();
-    const target = card.left + card.width/2 - canvas.getBoundingClientRect().left;
-    const bend = Math.max(5,g.top-10-column*3);
-    const points = [[x,y],[target,bend],[target,1]];
-    line(points,c['canvas-bg'],3.5); line(points,ink,1.25,[3,2]);
     ctx.beginPath();
-    if (column===0) ctx.arc(x,y,3.5,0,2*Math.PI);
-    else if (column===1) ctx.rect(x-3.5,y-3.5,7,7);
-    else {ctx.moveTo(x,y-4); ctx.lineTo(x+4,y+3); ctx.lineTo(x-4,y+3); ctx.closePath();}
-    ctx.fillStyle=ink; ctx.fill();
+    if (column===0) ctx.arc(x,y,5,0,2*Math.PI);
+    else if (column===1) ctx.rect(x-4.5,y-4.5,9,9);
+    else {ctx.moveTo(x,y-6); ctx.lineTo(x+5.5,y+4); ctx.lineTo(x-5.5,y+4); ctx.closePath();}
+    ctx.fillStyle=ink; ctx.strokeStyle=c['canvas-bg']; ctx.lineWidth=2; ctx.stroke(); ctx.fill();
   }
   function segment(g, s, key) {
     const down = key === 'a', start = down ? s.a : s.c, slope = down ? -s.b : s.d;
