@@ -302,7 +302,7 @@
     dpr = Math.min(window.devicePixelRatio || 1, 2); // 上限 2：分子很小，2 倍已足夠清晰，手機也較流暢
     cw = w;
     narrow = w < 560;
-    ch = narrow ? Math.round(Math.max(310, w * 0.9)) : Math.round(Math.min(520, Math.max(380, w * 0.58)));
+    ch = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? Math.round(Math.min(w * 0.9, innerHeight - 82)) : narrow ? Math.round(Math.max(310, w * 0.9)) : Math.round(Math.min(520, Math.max(380, w * 0.58)));
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);

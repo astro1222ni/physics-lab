@@ -132,7 +132,7 @@
   let arcKey = '';
 
   function layout() {
-    const narrow = cw < 620, gap = narrow ? 8 : 10;
+    const narrow = cw < 620 && !matchMedia('(orientation: landscape) and (max-height: 600px)').matches, gap = narrow ? 8 : 10;
     let G, NG, AG, H;
     if (narrow) {
       const S = cw, gH = Math.round(cw * 0.64), aH = Math.round(cw * 0.44);
@@ -148,7 +148,7 @@
       AG = { x: S + gap, y: gH + gap, w: cw - S - gap, h: S - gH - gap };
       H = S;
     }
-    return { narrow: narrow, G: G, NG: NG, AG: AG, H: H, band: narrow ? 26 : 28 };
+    return { narrow: narrow, G: G, NG: NG, AG: AG, H: H, band: G.w < 310 ? 46 : 28 };
   }
 
   /** 原子核方陣的格子：n × n，置中 */
@@ -851,11 +851,11 @@
     if (s.kind === 'dice') label = T('桌上的骰子 ', 'Dice left ') + s.nP + ' / ' + r.N0;
     else if (r.half2 != null) label = T('母核 ', 'Parent ') + s.nP + T('　子核 ', '  Daughter ') + s.nD;
     else label = T('未衰變 ', 'Undecayed ') + s.nP + ' / ' + r.N0;
-    pill(ctx, label, G.x + 10, G.y + L.band / 2 + 1, colors.text, '600 ' + fs + 'px ' + LD.FONT, 0);
+    pill(ctx, label, G.x + 10, G.y + (L.band > 30 ? 12 : L.band / 2 + 1), colors.text, '600 ' + fs + 'px ' + LD.FONT, 0);
     ctx.textAlign = 'right';
     const tl = s.kind === 'dice' ? T('第 ' + s.t + ' 擲', 'Roll ' + s.t)
       : 't = ' + timeStr(s.t, r.unit) + (r.kind === 'half' ? '  (' + num(s.t / r.half, 2) + ' T½)' : '');
-    pill(ctx, tl, G.x + G.w - 10, G.y + L.band / 2 + 1, colors.muted, '600 ' + fs + 'px ' + LD.FONT, 0);
+    pill(ctx, tl, G.x + G.w - 10, G.y + (L.band > 30 ? 33 : L.band / 2 + 1), colors.muted, '600 ' + fs + 'px ' + LD.FONT, 0);
   }
 
   function drawNGraph(xm) {

@@ -95,6 +95,13 @@
       #view3 .tr { top: 36px; left: 8px; right: auto; text-align: left; }
       #view3 .mid { top: 64px; }
     }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage .cvwrap {
+        max-width: min(100%, calc((100dvh - 82px) * 1.65)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

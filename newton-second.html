@@ -92,6 +92,19 @@
     .ns .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
     .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
     .formula.multi .katex-display { margin: 4px 0; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 0.99)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) {
+      .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
+    }
+    @media (orientation: landscape) {
+      #moveBox { grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr)); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -300,7 +313,7 @@
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
         <li data-en-html="<strong>Balance friction first</strong>: choose “Off — give a push”, release the cart and look at the tape. Shrinking spacing means friction wins; growing spacing means the track is tilted too much. Find the angle where the strips are all the same length — the v–t line is flat — and check that \(\tan\theta = \mu\)."><strong>先平衡摩擦力</strong>：選「取下，推一下」，放開小車看紙帶。間距愈來愈小代表摩擦力較大；愈來愈大代表墊得太高。找出紙條一樣長（v–t 圖是水平線）的角度，驗證 \(\tan\theta = \mu\)。</li>
-        <li data-en-html="<strong>The right way to vary F</strong>: in Experiment 1, use the “Move 10 g” buttons between runs. The points lie on a straight line through the origin, and 1/slope equals \(M + m\)."><strong>改變拉力的正確方法</strong>：做實驗一時，每次之間按「移動 10 g 槽碼」。數據點排成通過原點的直線，斜率的倒數等於 \(M + m\)。</li>
+        <li data-en-html="<strong>The right way to vary F</strong>: in Experiment 1, press “Move 10 g: cart → hanger” or “Move 10 g: hanger → cart” between runs. The points lie on a straight line through the origin, and 1/slope equals \(M + m\)."><strong>改變拉力的正確方法</strong>：做實驗一時，每次之間按「10 g 槽碼：車上 → 吊鉤」或「10 g 槽碼：吊鉤 → 車上」。數據點排成通過原點的直線，斜率的倒數等於 \(M + m\)。</li>
         <li data-en-html="<strong>The naive way</strong>: keep \(M\) and only increase \(m\) (try \(m\) up to 0.30 kg with \(M = 0.50\ \mathrm{kg}\)). The points bend below the dashed line \(a = mg/M\)."><strong>只加吊掛砝碼會怎樣</strong>：\(M\) 不變、只增加 \(m\)（例如 \(M = 0.50\ \mathrm{kg}\)，\(m\) 加到 0.30 kg），數據點彎到虛線 \(a = mg/M\) 的下方。</li>
         <li data-en-html="<strong>Forget to balance friction</strong>: set \(\theta = 0\) with \(\mu = 0.03\) and repeat Experiment 1. The line no longer passes through the origin."><strong>忘了平衡摩擦力</strong>：\(\mu = 0.03\)、\(\theta = 0\)，重做實驗一：直線不再通過原點。</li>
         <li data-en-html="<strong>T is not mg</strong>: compare the tension with \(mg\) in the readout and in the hanging-mass diagram. The difference is exactly \(ma\)."><strong>張力不等於 mg</strong>：比較讀數與吊掛物受力圖中的 \(T\) 與 \(mg\)，兩者相差恰好是 \(ma\)。</li>

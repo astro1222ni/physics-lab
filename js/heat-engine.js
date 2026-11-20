@@ -208,9 +208,11 @@
     box.pa = { x: p.x + ml, y: p.y + 26, w: p.w - ml - 14, h: p.h - 26 - mb };
   }
   function resize() {
-    const w = cv.clientWidth || 600, h = canvasH(w);
-    cv.style.height = h + 'px';
-    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const displayWidth = cv.clientWidth || 600;
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? 720 : displayWidth;
+    const scale = displayWidth / w, h = canvasH(w);
+    cv.style.height = Math.round(h * scale) + 'px';
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5) * scale;
     W = w; H = h;
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     layout();
@@ -341,7 +343,7 @@
       labels.push({ t: Math.round(Tk) + ' K', x: lx, y: ly, al: al, c: tempColor(Tk) });
     });
     // 互相太近的標示略過
-    const used = [];
+    const used = vertScreen();
     labels.forEach(function (L) {
       if (used.some(function (u) { return Math.abs(u.x - L.x) < 40 && Math.abs(u.y - L.y) < 12; })) return;
       used.push(L);
@@ -1158,7 +1160,7 @@
 
   // ---------------- 拖曳 ----------------
   let drag = null, hover = -1, lastPicked = -1;
-  function evPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function evPos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
   function hitVertex(p, touch) {
     if (st.type !== 'custom' || stage.classList.contains('is3d')) return -1;
     const rr = touch ? 26 : 16;

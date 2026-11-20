@@ -209,13 +209,16 @@
   function Y(y) { return L.oy - y * L.k; }
 
   function resize() {
-    const w = cv.clientWidth;
-    if (!w) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const displayWidth = cv.clientWidth;
+    if (!displayWidth) return;
+    // 橫放沿用並排子圖；繪圖座標和實體像素分別依寬度換算。
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? 720 : displayWidth;
+    const scale = displayWidth / w;
+    dpr = Math.min(window.devicePixelRatio || 1, 3) * scale;
     cw = w;
     L = layout();
     ch = L.h;
-    if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    cv.style.height = Math.round(ch * scale) + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
     [bg, fg].forEach(function (c) { c.width = cv.width; c.height = cv.height; });
@@ -255,7 +258,7 @@
     const w = segs.reduce(function (s, g) { return s + g.w; }, 0);
     let x0 = o.align === 'center' ? x - w / 2 : o.align === 'right' ? x - w : x;
     if (o.box) { // 有底框的標籤不超出畫布左右邊緣
-      const cwid = c.canvas.width / dpr;
+      const cwid = c.canvas.width / c.getTransform().a;
       x0 = Math.max(8, Math.min(cwid - 8 - w, x0));
     }
     if (o.box) {
@@ -388,7 +391,7 @@
     c.fillStyle = mg;
     roundRect(c, bx + 4, by - 3, bw - 8, 6, 3); c.fill();
     // 「真空」標示
-    rich(c, T('真空', 'vacuum'), X(0.5), Y(-2.02), { size: L.narrow ? 9 : 11, weight: 500, color: alpha(colors.muted, 0.9), align: 'center' });
+    rich(c, T('真空', 'vacuum'), X(0.5), Y(-2.02), { size: L.narrow ? 9 : 11, weight: 700, color: '#f4f8ff', align: 'center' });
   }
 
   function drawGlassFront(c) {
@@ -520,7 +523,7 @@
       D.arrow(c, x0, y, x1, y, colors.field, 1.7);
     });
     c.restore();
-    rich(c, 'E', X(0.5 * D_CM), Y(1.15) - 11, { size: 12, weight: 700, color: alpha(colors.field, Math.min(1, a + 0.3)), align: 'center' });
+    rich(c, 'E', X(0.5 * D_CM), Y(1.15) - 23, { size: 12, weight: 700, color: alpha(colors.field, Math.min(1, a + 0.3)), align: 'center' });
   }
 
   /** 燈的位置與方向（指向陰極中心） */
@@ -835,7 +838,7 @@
     const fs = Math.max(11, Math.min(15, R * 0.19));
     const yR = g.win.y + g.win.h + (g.box.y + g.box.h - g.win.y - g.win.h) * 0.42;
     rich(ctx, nA(A ? A.I : 0) + ' nA', g.cx, yR, { size: fs, weight: 700, color: colors.text, align: 'center' });
-    rich(ctx, T('量程 ', 'range ') + rng + ' nA', g.cx, yR + fs * 0.5 + 8, { size: Math.max(9, fs - 4), weight: 500, color: colors.muted, align: 'center' });
+    rich(ctx, T('量程 ', 'range ') + rng + ' nA', g.cx, yR + fs * 0.5 + 4, { size: Math.max(9, fs - 4), weight: 500, color: colors.muted, align: 'center' });
     return target;
   }
 
@@ -869,7 +872,7 @@
     c.shadowColor = alpha(colors.probe, 0.6); c.shadowBlur = 6;
     rich(c, signed(state.V, 2) + ' V', lx + lw - 6, ly + lh / 2, { size: Math.round(fs), weight: 700, color: shade(colors.probe, colors.dark ? 0.1 : 0.35), align: 'right' });
     c.restore();
-    if (!L.narrow) rich(c, [['V', ''], ['AK', 'sub']], lx + 5, ly + lh / 2, { size: Math.max(9, Math.round(fs * 0.6)), weight: 600, color: alpha(colors.probe, 0.75) });
+    if (!L.narrow) rich(c, [['V', ''], ['AK', 'sub']], lx + 5, ly + lh / 2, { size: Math.max(9, Math.round(fs * 0.6)), weight: 600, color: '#a5efc7' });
     // 調整電壓的旋鈕（指標的角度跟著 V 轉，−5 V 到 +5 V）
     const kr = Math.max(7, Math.min(12, s.h * 0.1)), kx = s.x + s.w * 0.51, ky = s.y + s.h * 0.69;
     if (ky - kr > ly + lh + 3) {
@@ -1205,12 +1208,13 @@
   const mk = $('mk'), mkc = mk.getContext('2d');
   let gw = { iv: [300, 200], mk: [300, 200] };
   function resizeGraphs() {
+    const graphDpr = Math.min(window.devicePixelRatio || 1, 3);
     [[iv, 'iv'], [mk, 'mk']].forEach(function (p) {
       const el = p[0], w = el.clientWidth;
       if (!w) return;
       const h = Math.round(Math.max(220, Math.min(300, w * 0.68)));
       if (el.style.height !== h + 'px') el.style.height = h + 'px';
-      el.width = Math.round(w * dpr); el.height = Math.round(h * dpr);
+      el.width = Math.round(w * graphDpr); el.height = Math.round(h * graphDpr);
       gw[p[1]] = [w, h];
     });
     drawGraphs();
@@ -1243,7 +1247,7 @@
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
   }
   function graphFrame(c, w, h, pad) {
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.setTransform(c.canvas.width / w, 0, 0, c.canvas.height / h, 0, 0);
     c.clearRect(0, 0, w, h);
     const base = colors['canvas-bg'];
     const g = c.createLinearGradient(0, 0, 0, h);

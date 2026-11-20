@@ -150,7 +150,7 @@
   const bgA = document.createElement('canvas'), bgB = document.createElement('canvas');
 
   function layoutA(w) {
-    const narrow = w < 560;
+    const narrow = w < 560 && (embedNoMu || !matchMedia('(orientation: landscape) and (max-height: 600px)').matches);
     if (narrow) {
       const H = Math.round(w * 0.8);
       return { narrow: true, H: H, scene: { x: 0, y: 0, w: w, h: H }, fbd: null };
@@ -159,7 +159,7 @@
     return { narrow: false, H: H, scene: { x: 0, y: 0, w: ws, h: H }, fbd: { x: ws + gap, y: 0, w: w - ws - gap, h: H } };
   }
   function layoutB(w) {
-    const narrow = w < 560, gap = narrow ? 6 : 8;
+    const narrow = w < 560 && (embedNoMu || !matchMedia('(orientation: landscape) and (max-height: 600px)').matches), gap = narrow ? 6 : 8;
     if (narrow) {
       // 手機：受力圖佔滿整列（箭頭與標籤才不會擠在一起），下方兩張圖並排
       const h1 = Math.round(w * 0.78), h2 = Math.round(w * 0.74), half = Math.floor((w - gap) / 2);

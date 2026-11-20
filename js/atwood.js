@@ -798,7 +798,7 @@
     // 起始高度 h 的標記
     c.strokeStyle = alpha(colors.accent, 0.65); c.lineWidth = 1; c.setLineDash([4, 4]);
     c.beginPath(); c.moveTo(X(-0.77), Y(G.B.y0)); c.lineTo(X(G.B.x - G.B.w / 2 - 0.02), Y(G.B.y0)); c.stroke(); c.setLineDash([]);
-    pill('h = ' + num(state.p.h, 2) + ' m', X(-0.76) + 4, Y(G.B.y0) - 11, colors.accent, '600 ' + L.fs + 'px ' + FF, 'left', 0.85);
+    pill('h = ' + num(state.p.h, 2) + ' m', X(-0.76) + 11, Y(G.B.y0) - 20, colors.accent, '600 ' + L.fs + 'px ' + FF, 'left', 0.85);
     // 光電閘（地板附近）
     photogate(X(G.B.x), Y(0.012), (G.B.w + 0.06) * L.k, null, false);
     pill(T('光電閘', 'Photogate'), X(G.B.x) - (G.B.w / 2 + 0.05) * L.k, Y(0.012) - 14, colors.muted, '600 ' + L.fsS + 'px ' + FF, 'right', 0.8);
@@ -1162,7 +1162,7 @@
     const A = bs[0], B = bs[1];
     // 質量標籤
     const f = '700 ' + L.fs + 'px ' + FF;
-    pill('m_1 = ' + num(p.m1, 3) + ' kg', X(G.B.x) - wB / 2 - 4, Y(bTop) - 14, colors.text, f, 'right', 0.86, { prio: 3 });
+    pill('m_1 = ' + num(p.m1, 3) + ' kg', X(G.B.x) + wB / 2 + 4, Y(bTop) - 18, colors.text, f, 'left', 0.86, { prio: 3 });
     pill('m_2 = ' + num(p.m2, 3) + ' kg', X(G.A.x) + wA / 2 + 24, Y(aTop) - 14, colors.text, f, 'left', 0.86, { prio: 3 });
     // 力與加速度
     sceneForces(B, X(G.B.x), Y(yB + G.B.h / 2));
@@ -1657,17 +1657,18 @@
   function fbdLayout() {
     const narrow = fw < 640;
     const n = state.mode === 3 ? state.p.m.length : 2;
-    const cols = narrow ? 1 : n;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const cols = compact ? n : narrow ? 1 : n;
     const rows = Math.ceil(n / cols);
     const gap = 8;
     const bw = (fw - gap * (cols - 1)) / cols;
-    const bh = narrow ? 210 : 270;
+    const bh = compact ? Math.round(innerHeight * 0.42) : narrow ? 210 : 270;
     const boxes = [];
     for (let i = 0; i < n; i++) {
       const r = Math.floor(i / cols), k = i % cols;
       boxes.push({ x: k * (bw + gap), y: r * (bh + gap), w: bw, h: bh });
     }
-    const sysH = state.mode === 2 || state.mode === 4 ? 176 : 150;
+    const sysH = compact ? Math.round(innerHeight * 0.34) : state.mode === 2 || state.mode === 4 ? 176 : 150;
     const sys = { x: 0, y: rows * (bh + gap), w: fw, h: sysH };
     return { narrow: narrow, boxes: boxes, sys: sys, H: sys.y + sys.h, fs: narrow ? 11 : 12, lw: narrow ? 2.2 : 2.6 };
   }

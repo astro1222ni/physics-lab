@@ -93,8 +93,9 @@
 
   function geom() {
     const w = cw, narrow = w < 560;
-    const top = narrow ? 104 : 108;
-    const tubeH = narrow ? Math.round(Math.max(340, Math.min(440, w * 1.18))) : 450;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const top = compact ? 72 : narrow ? 104 : 108;
+    const tubeH = compact ? Math.max(80, Math.min(w * 0.49, innerHeight - top - 148)) : narrow ? Math.round(Math.max(340, Math.min(440, w * 1.18))) : 450;
     const tubeW = narrow ? 40 : 58;
     const tubeX = narrow ? 40 : Math.round(Math.max(96, w * 0.11));
     const rodX = tubeX + tubeW + (narrow ? 16 : 26);

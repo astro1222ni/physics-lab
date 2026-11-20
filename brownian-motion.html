@@ -140,6 +140,13 @@
     .formula.multi .flabel { display: block; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 6px; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
     @media (max-width: 560px) { #gcv { height: 260px; } }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #observation {
+        max-width: min(100%, calc((100dvh - 82px) * 0.92)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

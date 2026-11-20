@@ -164,10 +164,11 @@
   const bgctx = bg.getContext('2d');
 
   function layout() {
-    const narrow = cw < 640, gap = narrow ? 6 : 8;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const narrow = cw < 640 && !compact, gap = narrow ? 6 : 8;
     let H, bld, car, dial, fbd;
     if (!narrow) {
-      H = Math.round(Math.max(400, Math.min(480, cw * 0.56)));
+      H = compact ? Math.round(cw * 0.66) : Math.round(Math.max(400, Math.min(480, cw * 0.56)));
       const bw = Math.round(cw * 0.2), iw = Math.round(cw * 0.45);
       const rx = bw + iw + 2 * gap, rw = cw - rx;
       const dh = Math.round(H * 0.4);

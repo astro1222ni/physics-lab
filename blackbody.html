@@ -117,6 +117,16 @@
     table.reft th { color: var(--muted); font-weight: 600; background: var(--bg); }
     table.reft tbody tr:last-child td { border-bottom: none; }
     @media (max-width: 560px) { .bb #cv { height: 450px; } .minis canvas { height: 230px; } }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.73)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .bb #cv { height: min(65dvh, 340px); }
+    }
   </style>
 </head>
 <body data-en-ready>

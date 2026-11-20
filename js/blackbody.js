@@ -316,6 +316,7 @@
       ctx.beginPath(); ctx.moveTo(pxn, g.y1 - 1); ctx.lineTo(pxn - 5, g.y1 - 9); ctx.lineTo(pxn + 5, g.y1 - 9); ctx.closePath(); ctx.fill();
       rich(ctx, [['c/ν', ''], ['max', 'sub']], pxn, g.y1 - 13, D.c.muted, 11, 'center');
     }
+    drawProbe(g, yr, t);
     // 峰值
     const lpk = C.lamMax(t), ppx = lamToPx(lpk, g), ppy = lgToPy(lgPk(t), g, yr);
     if (ppx >= g.x0 && ppx <= g.x1) {
@@ -325,10 +326,12 @@
       // 標籤放在峰的右上方（峰右邊的曲線往下走，不會壓到曲線）；太靠右就改放左上方
       const lab = 'λmax = ' + fmtLam(lpk / NM, 4);
       ctx.font = font(12, '700');
-      const lw = ctx.measureText(lab).width + 14, right = ppx + 8 + lw < g.x1 - 4;
+      const lw = ctx.measureText(lab).width + 14;
+      const probeX = lamToPx(st.probe, g);
+      const fitsLeft = ppx - 8 - lw >= g.x0;
+      const right = !fitsLeft || (ppx + 8 + lw < g.x1 && !(probeX > ppx && probeX < ppx + lw + 8));
       D.pill(ctx, lab, right ? ppx + 8 : ppx - 8, clamp(ppy - 6, g.y0 + 40, g.y1 - 4), tok.planck, right ? 'left' : 'right', font(12, '700'));
     }
-    drawProbe(g, yr, t);
     legend(g);
     if (kb && kb.focused()) {
       ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = D.c.accent; ctx.lineWidth = 2;

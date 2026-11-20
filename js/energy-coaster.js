@@ -99,7 +99,7 @@
     };
     // 下方能量圖（gv）
     const gBarsH = narrow ? 4 * 24 + 30 : 0;
-    const graphH = narrow ? Math.round(clamp(cw * 0.5, 160, 230)) : Math.round(clamp(cw * 0.27, 190, 270));
+    const graphH = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? Math.round(Math.min(cw * 0.44, innerHeight - 210)) : narrow ? Math.round(clamp(cw * 0.5, 160, 230)) : Math.round(clamp(cw * 0.27, 190, 270));
     lay.g = {
       bars: narrow ? { x: 8, y: 6, w: cw - 16, h: gBarsH - 8 } : null,
       plot: { x: mL, y: gBarsH + 30, w: narrow ? cw - mL - mR : plotW, h: graphH - 30 - 26 },
@@ -848,7 +848,9 @@
     const arr = function (dx, dy, lenM, color, label, w) {
       if (lenM * k < 3) return;
       const Lm = capped(lenM);
-      D.arrow(c, pose.cx, pose.cy, pose.cx + dx * Lm * k, pose.cy - dy * Lm * k, color, w || 2.6, { label: (lenM > MAX_ARROW ? '≈' : '') + label });
+      const x = pose.cx + dx * Lm * k, y = pose.cy - dy * Lm * k;
+      D.arrow(c, pose.cx, pose.cy, x, y, color, w || 2.6);
+      D.haloText(c, (lenM > MAX_ARROW ? '≈' : '') + label, x + 7, clamp(y - 8, 12, L.sceneH - 10), color, 'left', 'bottom', 'bold 12px ' + D.FONT);
     };
     if (state.show.f) {
       arr(0, -1, SCALE_F, colors.field, 'mg', 2.4);

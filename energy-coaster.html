@@ -80,6 +80,17 @@
     table.data td.res { text-align: left; }
     table.data .empty td { text-align: center; color: var(--muted); }
     .ec .pt-info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; min-height: 1.3em; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv,
+      html.labdeck-drawer .stage #gv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.55)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) {
+      .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
+    }
   </style>
 </head>
 <body data-en-ready>

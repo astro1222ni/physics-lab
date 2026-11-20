@@ -75,6 +75,13 @@
     table.parts tr.total td { border-bottom: none; font-weight: 700; }
     .legend .grad { width: 44px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--neg), var(--field), var(--pos)); opacity: .75; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.14)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

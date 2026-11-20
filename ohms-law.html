@@ -125,6 +125,16 @@
     .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
     .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: center; white-space: nowrap; }
     .notes table.spec th { color: var(--muted); font-weight: 600; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.6)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) {
+      .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
+    }
   </style>
 </head>
 <body data-en-ready>

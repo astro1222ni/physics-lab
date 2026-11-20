@@ -146,7 +146,8 @@
     W = cv.clientWidth || 360;
     const b = BOX[st.mode], bw = b.x1 - b.x0, bh = b.y1 - b.y0, pad = 10;
     topH = st.mode === 'standing' ? Math.round(clamp(W * 0.24, 104, 150)) : st.mode === 'polar' ? Math.round(clamp(W * 0.3, 128, 172)) : 0;
-    const maxH = st.mode === 'reflect' || st.mode === 'refract' ? 470 : 250;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const maxH = compact ? Math.max(54, innerHeight - 102 - topH - clamp(W * 0.24, 112, 140)) : st.mode === 'reflect' || st.mode === 'refract' ? 470 : 250;
     sc = Math.min((W - 2 * pad) / bw, maxH / bh);
     ox = (W - bw * sc) / 2 - b.x0 * sc;
     oy = topH + pad + b.y1 * sc;
@@ -321,11 +322,11 @@
     }
     g.strokeStyle = D.alpha(D.c.text, D.dark ? 0.5 : 0.45); g.lineWidth = 1; g.stroke();
     if (sc >= 6.5) {
-      g.font = fpx(Math.min(10, sc * 1.25), 500); g.fillStyle = D.alpha(D.c.text, 0.6); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = fpx(Math.min(12, sc * 1.5), 700); g.fillStyle = D.c.text; g.textAlign = 'center'; g.textBaseline = 'middle';
       const flip = Math.cos(ang * DEG) < -0.01;
       for (let cm = 10; cm <= len - 4; cm += 10) {
         g.save(); g.translate(cm * sc, w * 0.22); if (flip) g.rotate(Math.PI);
-        g.fillText(String(cm), 0, 0); g.restore();
+        D.haloText(g, String(cm), 0, 0, D.c.text, 'center', 'middle', g.font); g.restore();
       }
     }
     g.restore();
@@ -350,7 +351,7 @@
     g.font = fpx(clamp(sc * 1.7, 8, 11), 600); g.fillStyle = D.alpha(D.c.text, 0.72); g.textAlign = 'center'; g.textBaseline = 'middle';
     for (let p = 0; p <= 180; p += 30) {
       const a = (180 - p) * DEG, r = R - 3.1 * sc;
-      g.fillText(String(p), cx + r * Math.cos(a), cy - r * Math.sin(a));
+      g.fillText(String(p), cx + r * Math.cos(a), cy - r * Math.sin(a) - (p === 0 || p === 180 ? 2.4 * sc : 0));
     }
     // 中央轉台
     const r2 = 6.6 * sc;

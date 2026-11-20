@@ -129,6 +129,16 @@
     .notes details { margin: 6px 0 10px; }
     .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
     .notes ol { padding-left: 1.4em; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.44)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) {
+      .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
+    }
   </style>
 </head>
 <body data-en-ready>

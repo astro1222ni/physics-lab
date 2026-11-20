@@ -84,6 +84,17 @@
       .slider input[type="range"], .range-row input { height: 28px; }
       .seg button { padding: 10px 6px; }
     }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #scene {
+        max-width: min(100%, calc((100dvh - 82px) * 1.6)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage canvas#scene { aspect-ratio: 3 / 1; }
+      .stage canvas#pattern { aspect-ratio: 2 / 1; }
+    }
   </style>
 </head>
 <body data-en-ready>

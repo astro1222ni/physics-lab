@@ -250,11 +250,12 @@
   const bgctx = bg.getContext('2d');
 
   function layout() {
-    const narrow = cw < 640;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const narrow = !compact && cw < 640;
     const gap = narrow ? 6 : 8;
     let S, strips = [], H;
     if (!narrow) {
-      H = clamp(Math.round(cw * 0.6), 400, 560);
+      H = compact ? Math.round(cw * 0.65) : clamp(Math.round(cw * 0.6), 400, 560);
       const sw = Math.round(cw * 0.6);
       S = { x: 0, y: 0, w: sw, h: H };
       const gx = sw + gap, gw = cw - gx, sh = (H - 2 * gap) / 3;
@@ -269,7 +270,8 @@
     const out = { narrow: narrow, gap: gap, S: S, strips: strips, H: H };
     // 模式 A：線圈中心在畫面中央，軸線在上方 36% 處
     const view = narrow ? 0.17 : 0.22;
-    const kA = S.w / (2 * view);
+    // 視野包含通過線圈的兩個端點及半支磁鐵；拖曳範圍沿用原設定。
+    const kA = (S.w - 8) / (2 * Math.max(view, FC.PASS_X + FC.MAG.len / 2));
     const gR = narrow ? Math.min(S.h * 0.15, S.w * 0.13) : Math.min(S.h * 0.16, S.w * 0.2, 72);
     out.A = { k: kA, view: view, cx: S.x + S.w / 2, sy: S.y + S.h * 0.36, gx: S.x + S.w / 2, gy: S.y + S.h - gR - (narrow ? 12 : 18), gR: gR };
     // 模式 B：俯視圖，x 由 −0.18 m 到 2.14 m
@@ -903,7 +905,7 @@
       const x0 = ux > 0 ? r.x + 6 : r.x + r.w - 6; // 從磁鐵後端出發，避免被線圈擋住
       arrow(x0, y, ux, 0, Math.min(len, cap), L.narrow ? 2.2 : 2.6, colors.accent, over);
       const lx = x0 + ux * (Math.min(len, cap) + 9);
-      LD.vecLabel(ctx, 'v', '', lx + ux * 2, y, colors.accent);
+      LD.vecLabel(ctx, 'v', '', lx + ux * 2, y - 9, colors.accent);
       if (over) LD.haloText(ctx, '≈', lx + ux * 12, y, colors.accent, 'center', 'middle', '700 12px ' + LD.FONT);
     }
   }
@@ -996,17 +998,20 @@
         xL = gx + Math.sign(q) * Math.min(Math.abs(xL - gx) + 4, lim);
       }
       ctx.textAlign = q === 2 ? 'right' : q === -2 ? 'left' : 'center';
+      ctx.strokeStyle = colors.surface;
+      ctx.lineWidth = 3;
+      ctx.strokeText(t, xL, yL);
       ctx.fillText(t, xL, yL);
     });
     // 錶面文字：G 與單位
     ctx.font = '700 ' + (gR < 56 ? 12 : 14) + 'px ' + LD.FONT;
     ctx.fillStyle = alpha(colors.text, 0.85);
     ctx.textAlign = 'center';
-    ctx.fillText('G', gx, py + Math.max(fr * 0.3, 15));
+    ctx.fillText('G', gx - fr * 0.38, py + fr * 0.26);
     if (!L.narrow) {
       ctx.font = '11px ' + LD.FONT;
       ctx.fillStyle = colors.muted;
-      ctx.fillText('mA', gx, py - rT * 0.5);
+      ctx.fillText('mA', gx + fr * 0.42, py + fr * 0.19);
     }
     // 指針：先畫投影，再畫錐形指針與配重
     const frac = clamp(state.needle / sc.range, -1.08, 1.08);

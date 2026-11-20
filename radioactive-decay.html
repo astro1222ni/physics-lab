@@ -69,6 +69,13 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
     .legend .bar { width: 8px; height: 12px; border-radius: 2px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.85)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

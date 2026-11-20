@@ -63,6 +63,13 @@
     dl.readout dt .f { white-space: nowrap; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 0.99)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -191,8 +198,8 @@
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en-html="<strong>Double the speed, four times the acceleration</strong>: choose “keep fixed: speed v”, set \(r = 1\ \mathrm{m}\) and \(v = 2\ \mathrm{m/s}\) (so \(a = 4\ \mathrm{m/s^2}\)), then change to \(v = 4\ \mathrm{m/s}\). The acceleration becomes \(16\ \mathrm{m/s^2}\) and the blue arrow four times as long, because \(a = v^2/r\)."><strong>速率加倍，加速度變 4 倍</strong>：選「保持不變：速率 v」，設 \(r = 1\ \mathrm{m}\)、\(v = 2\ \mathrm{m/s}\)（\(a = 4\ \mathrm{m/s^2}\)），再改成 \(v = 4\ \mathrm{m/s}\)：加速度變成 \(16\ \mathrm{m/s^2}\)，藍色箭頭變 4 倍長，因為 \(a = v^2/r\)。</li>
-        <li data-en-html="<strong>Same period: \(a \propto r\)</strong>: choose “keep fixed: period T” with \(T = 2\ \mathrm{s}\) and try \(r = 0.5,\ 1,\ 2\ \mathrm{m}\). The speed and the acceleration both double each time, because \(v = 2\pi r/T\) and \(a = 4\pi^2 r/T^2\)."><strong>週期相同時 \(a \propto r\)</strong>：選「保持不變：週期 T」，\(T = 2\ \mathrm{s}\)，依序試 \(r = 0.5\)、\(1\)、\(2\ \mathrm{m}\)：速率與加速度每次都加倍，因為 \(v = 2\pi r/T\)、\(a = 4\pi^2 r/T^2\)。</li>
+        <li data-en-html="<strong>Double the speed, four times the acceleration</strong>: under “When the radius changes, keep fixed”, choose “Speed v”, set \(r = 1\ \mathrm{m}\) and \(v = 2\ \mathrm{m/s}\) (so \(a = 4\ \mathrm{m/s^2}\)), then change to \(v = 4\ \mathrm{m/s}\). The acceleration becomes \(16\ \mathrm{m/s^2}\) and the blue arrow four times as long, because \(a = v^2/r\)."><strong>速率加倍，加速度變 4 倍</strong>：在「改變半徑時保持不變的量」選「速率 v」，設 \(r = 1\ \mathrm{m}\)、\(v = 2\ \mathrm{m/s}\)（\(a = 4\ \mathrm{m/s^2}\)），再改成 \(v = 4\ \mathrm{m/s}\)：加速度變成 \(16\ \mathrm{m/s^2}\)，藍色箭頭變 4 倍長，因為 \(a = v^2/r\)。</li>
+        <li data-en-html="<strong>Same period: \(a \propto r\)</strong>: under “When the radius changes, keep fixed”, choose “Period T” with \(T = 2\ \mathrm{s}\) and try \(r = 0.5,\ 1,\ 2\ \mathrm{m}\). The speed and the acceleration both double each time, because \(v = 2\pi r/T\) and \(a = 4\pi^2 r/T^2\)."><strong>週期相同時 \(a \propto r\)</strong>：在「改變半徑時保持不變的量」選「週期 T」，\(T = 2\ \mathrm{s}\)，依序試 \(r = 0.5\)、\(1\)、\(2\ \mathrm{m}\)：速率與加速度每次都加倍，因為 \(v = 2\pi r/T\)、\(a = 4\pi^2 r/T^2\)。</li>
         <li data-en-html="<strong>Same speed: \(a \propto 1/r\)</strong>: keep \(v\) fixed and halve the radius — the acceleration doubles. (A car taking a tighter bend at the same speed needs more friction.)"><strong>速率相同時 \(a \propto 1/r\)</strong>：固定 \(v\)、把半徑減半，加速度加倍（汽車用同樣速率過更急的彎，需要更大的摩擦力）。</li>
         <li data-en-html="<strong>Cut the string at different angles</strong>: the ball always leaves along the tangent, in the direction of the red velocity arrow, and the equal-time markers stay equally spaced — constant velocity, as Newton’s first law says."><strong>在不同角度剪斷繩子</strong>：小球永遠沿切線、順著紅色速度箭頭的方向飛出；等時距標記的間距保持相等——等速度運動，正是牛頓第一定律。</li>
         <li data-en-html="<strong>Projections are SHM</strong>: the \(x\)–\(t\) graph is a cosine and the \(y\)–\(t\) graph a sine, with amplitude \(r\) and period \(T\); \(y\) lags \(x\) by a quarter period. After the string is cut, both graphs turn into straight lines."><strong>投影是簡諧運動</strong>：\(x\)–\(t\) 圖是餘弦、\(y\)–\(t\) 圖是正弦，振幅 \(r\)、週期 \(T\)，\(y\) 比 \(x\) 慢四分之一週期。剪斷繩子後，兩張圖都變成直線。</li>

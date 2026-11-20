@@ -149,6 +149,13 @@
     .notes details { margin: 6px 0 0; }
     .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
     .equip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 4px 18px; padding-left: 1.3em; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage .cvwrap {
+        max-width: min(100%, calc((100dvh - 82px) * 1.5)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

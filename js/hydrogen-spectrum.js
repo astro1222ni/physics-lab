@@ -195,13 +195,16 @@
   }
 
   function resize() {
-    const w = cv.clientWidth;
-    if (!w) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const displayWidth = cv.clientWidth;
+    if (!displayWidth) return;
+    // 橫放沿用並排子圖；繪圖座標和實體像素分別依寬度換算。
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? 760 : displayWidth;
+    const scale = displayWidth / w;
+    dpr = Math.min(window.devicePixelRatio || 1, 3) * scale;
     cw = w;
     L = layout();
     ch = L.H;
-    if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    cv.style.height = Math.round(ch * scale) + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
     G = diagGeom();
@@ -2388,7 +2391,7 @@
   document.querySelectorAll('#lvbar button').forEach(function (b) {
     b.addEventListener('click', function () { request(b.dataset.n === 'inf' ? Infinity : +b.dataset.n, 0); });
   });
-  function pos(ev) { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function pos(ev) { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * cw / r.width, (ev.clientY - r.top) * ch / r.height]; }
   function inR(p, R) { return p[0] >= R.x && p[0] <= R.x + R.w && p[1] >= R.y && p[1] <= R.y + R.h; }
   /** 畫面上的點對應到哪個能階（能階圖或軌道） */
   function pickLevel(p) {

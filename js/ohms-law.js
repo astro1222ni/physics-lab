@@ -874,7 +874,7 @@
   function resizeMeters() {
     const W = mv.clientWidth;
     if (!W) return;
-    const wide = W >= 560;
+    const wide = W >= 560 || matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
     const fw = wide ? (W - 12) / 2 : W;
     const fh = Math.round(Math.min(fw * (wide ? 0.7 : 0.64), 300));
     const H = wide ? fh : fh * 2 + 10;

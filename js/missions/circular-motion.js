@@ -78,7 +78,7 @@
     {
       id: 'circular-motion-6', level: 4,
       title: { zh: '影子的極值', en: 'The shadow’s extremes' },
-      desc: { zh: '調整條件，讓 x 投影（影子）的簡諧運動最大速率恰好 2.00 m/s、最大加速度恰好 4.00 m/s²（各在 1% 內）。', en: 'Adjust the settings so that the simple harmonic motion of the x projection (the shadow) has a maximum speed of exactly 2.00 m/s and a maximum acceleration of exactly 4.00 m/s² (each within 1%).' },
+      desc: { zh: '在「改變半徑時保持不變的量」選「速率 v」，再調整條件，讓 x 投影（影子）的簡諧運動最大速率恰好 2.00 m/s、最大加速度恰好 4.00 m/s²（各在 1% 內）。', en: 'Under “When the radius changes, keep fixed”, choose “Speed v”. Then adjust the settings so that the simple harmonic motion of the x projection (the shadow) has a maximum speed of exactly 2.00 m/s and a maximum acceleration of exactly 4.00 m/s² (each within 1%).' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'params' && rel(d.r * d.omega, 2, 0.01) && rel(d.r * d.omega * d.omega, 4, 0.01);

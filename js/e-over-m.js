@@ -105,17 +105,18 @@
   function layout() {
     W = cv.clientWidth;
     if (!W) return false;
-    side = W >= 620;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    side = W >= 620 || compact;
     const ww = WX1 - WX0, wh = WY1 - WY0;
     if (side) {
       const aw = Math.round(W * 0.6);
       s = aw / ww;
       const ah = wh * s;
       const cx = aw + 12, cw = W - cx - 2;
-      const mh = Math.round(Math.min(170, Math.max(130, ah * 0.27)));
+      const mh = compact ? Math.floor((ah - 28) / (st.parallax ? 3 : 2)) : Math.round(Math.min(170, Math.max(130, ah * 0.27)));
       mags = [{ x: cx, y: 4, w: cw, h: mh, side: 'L' }, { x: cx, y: 4 + mh + 10, w: cw, h: mh, side: 'R' }];
       const dy = 4 + 2 * mh + 20;
-      diag = { x: cx, y: dy, w: cw, h: Math.max(150, ah - dy - 4) };
+      diag = compact && !st.parallax ? null : { x: cx, y: dy, w: cw, h: compact ? ah - dy - 4 : Math.max(150, ah - dy - 4) };
       H = Math.round(ah);
       ox = -WX0 * s; oy = WY1 * s;
     } else {
@@ -475,7 +476,7 @@
     LD.block(g, x0, y0, x1 - x0, y1 - y0, tok.ruler, { r: 2 });
     g.save();
     g.strokeStyle = '#2a2a26'; g.fillStyle = '#2a2a26';
-    const mm = s >= 16;
+    const mm = s >= 24;
     for (let i = 0; i <= 200; i++) {
       const isCm = i % 10 === 0, isHalf = i % 5 === 0;
       if (!mm && !isHalf) continue;
@@ -483,10 +484,6 @@
       const len = (isCm ? 0.75 : isHalf ? 0.5 : 0.3) * s;
       g.lineWidth = isCm ? 1 : 0.7;
       g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 + len); g.stroke();
-      if (isCm && (i / 10) % (s < 11 ? 2 : 1) === 0) {
-        g.font = font(Math.max(8, Math.min(10.5, s * 0.62)), '600'); g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-        g.fillText(String(i / 10), x, y1 - 2);
-      }
     }
     g.restore();
   }
@@ -654,7 +651,7 @@
     const fz = Math.max(10, Math.min(12.5, s * 0.92)), f = font(fz, '600');
     const lab = '#e7f3f6', mx = X(WX1) - 3, narrow = W < 520;
     const placed = []; // 已放好的標籤：後放的若重疊就移開，任何寬度、語言、字級都不會疊在一起
-    const r1 = tag(g, T('亥姆霍茲線圈', 'Helmholtz coils'), X(-18.4), Y(17.2), SH(tok.copper, 0.35), 'left', f, mx, placed, 1);
+    const r1 = tag(g, T('亥姆霍茲線圈', 'Helmholtz coils'), X(-18.4), Y(17.2), SH(tok.copper, 0.63), 'left', f, mx, placed, 1);
     const note = st.parallax ? [T('從眼睛的位置看（透視）', 'Seen from your eye (perspective)'), SH(tok.heat, 0.2)]
       : st.alpha > 0 && beamOn() ? [T('螺旋朝你前進（近大遠小）', 'Helix coming towards you'), SH(tok.beam, 0.3)] : null;
     if (note) {
@@ -671,7 +668,7 @@
     tag(g, T('電子槍', 'Electron gun'), q[0] - 8, q[1], SH(tok.metal, 0.4), 'right', f, mx, placed, 1);
     tag(g, T('標尺', 'Scale'), X(ZERO - 1.0), Y(-13.9), SH(tok.ruler, -0.1), 'right', f, mx, placed, -1);
     // 游標的標籤放在右游標把手的外側、靠下方（不和玻璃球的標籤搶位置）
-    if (!narrow) tag(g, T('游標', 'Cursor'), X(st.xR + ZERO + 2.2), Y(-9.5), tok.hair, 'left', f, mx, placed, -1);
+    if (!narrow) tag(g, T('游標', 'Cursor'), X(st.xR + ZERO + 2.2), Y(-9.5), SH(tok.hair, 0.55), 'left', f, mx, placed, -1);
     cv._eomTags = placed; // 給測試檢查標籤有沒有重疊
   }
 
@@ -719,6 +716,11 @@
     drawCursor(g, 'R', hover === 'R');
     drawBase(g);
     drawPanel(g);
+    // 下排獨立標數字，游標桿不會遮住尺上的讀值。
+    const labelStep = s < 7 ? 5 : s < 15 ? 2 : 1;
+    for (let cm = 0; cm <= 20; cm += labelStep) {
+      LD.haloText(g, String(cm), X(ZERO + cm), Y(-16.45), '#f4f7f8', 'center', 'middle', font(11, '700'));
+    }
     drawLabels(g);
     mags.forEach(function (m) { drawMag(g, m); });
     if (diag) drawDiag(g, diag);

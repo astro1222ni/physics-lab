@@ -85,9 +85,10 @@
 
   function layout() {
     const narrow = cw < 560, gap = narrow ? 6 : 8;
-    if (!narrow) {
-      const Sm = Math.round(cw * 0.56), rw = cw - Sm - gap, ah = Math.round(Sm * 0.47);
-      const Hb = Math.round(Math.max(150, cw * 0.22));
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    if (compact || !narrow) {
+      const Sm = Math.round(cw * (compact ? 0.47 : 0.56)), rw = cw - Sm - gap, ah = Math.round(Sm * (compact ? 0.39 : 0.47));
+      const Hb = Math.round(compact ? cw * 0.21 : Math.max(150, cw * 0.22));
       return { narrow: narrow, gap: gap, main: { x: 0, y: 0, w: Sm, h: Sm }, A: { x: Sm + gap, y: 0, w: rw, h: ah },
         B: { x: Sm + gap, y: ah + gap, w: rw, h: Sm - ah - gap }, strip: { x: 0, y: Sm + gap, w: cw, h: Hb }, H: Sm + gap + Hb };
     }
@@ -104,12 +105,14 @@
     const w = cv.clientWidth;
     if (!w) return;
     const nextDpr = Math.min(window.devicePixelRatio || 1, 3);
-    if (Lo && w === cw && nextDpr === dpr) return;
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    if (Lo && w === cw && nextDpr === dpr && Lo.compact === compact) return;
     dpr = nextDpr;
     cw = w;
     Lo = layout();
+    Lo.compact = compact;
     ch = Lo.H;
-    if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
     bgKey = '';
@@ -182,6 +185,7 @@
     if (label) {
       const lx = x0 + ux * (len + 12), ly = y0 + uy * (len + 12);
       D.vecLabel(ctx, label + (over ? ' ≈' : ''), sub, lx, ly, color);
+      return { x: lx, y: ly, w: over ? 32 : 18 };
     }
   }
   /** 彎曲的轉動箭頭（畫布座標，逆時針為正的角度 a0 → a1，以數學方向計） */
@@ -264,7 +268,7 @@
       const fT = fnt(Lo.narrow ? 10 : 11);
       [-2, -1, 1, 2].forEach(function (d) {
         D.haloText(c, num(d, 0), cx + d * k, cy + 5, col.muted, 'center', 'top', fT);
-        D.haloText(c, num(d, 0), cx + 5, cy - d * k, col.muted, 'left', 'middle', fT);
+        D.haloText(c, num(d, 0), cx - 6, Math.max(M.y + 9, Math.min(M.y + M.h - 10, cy - d * k)), col.muted, 'right', 'middle', fT);
       });
       D.haloText(c, 'x (m)', M.x + M.w - 6, cy - 6, col.muted, 'right', 'bottom', fnt(Lo.narrow ? 10.5 : 11.5, 600));
       D.haloText(c, 'y (m)', cx + 7, M.y + 6, col.muted, 'left', 'top', fnt(Lo.narrow ? 10.5 : 11.5, 600));
@@ -548,15 +552,17 @@
     // 角動量 L（⊙ 朝上）
     outOfPage(ctx, hx, hy, Math.max(7, holeR + 3), col.neg);
     const fL = fnt(Lo.narrow ? 11 : 12, 600);
-    outOfPage(ctx, M.x + M.w - 16, M.y + M.h - 16, 6, col.neg);
-    D.haloText(ctx, 'L = ' + sig(kin.L, 3) + ' kg·m²/s', M.x + M.w - 28, M.y + M.h - 16, col.neg, 'right', 'middle', fL);
+    outOfPage(ctx, M.x + M.w - 16, M.y + M.h - 31, 6, col.neg);
+    D.haloText(ctx, 'L = ' + sig(kin.L, 3) + ' kg·m²/s', M.x + M.w - 28, M.y + M.h - 31, col.neg, 'right', 'middle', fL);
 
     // 向量：張力（指向小孔）與速度
     const lw = Lo.narrow ? 2.4 : 2.8;
     const br = Math.max(7, Math.min(11, 0.06 * k));
+    const placed = [];
     if (H.show.T && !free && kin.T > 0 && kin.r > 1e-6) {
       const ux = -(bx - hx) / (kin.r * k), uy = -(by - hy) / (kin.r * k);
-      vecArrow(bx + ux * br, by + uy * br, ux, uy, kin.T * SCALE_T, k, Math.min(MAX_ARROW, Math.max(0.05, kin.r - 0.05)), col['b-mech'], lw, 'T');
+      const tensionLabel = vecArrow(bx + ux * br, by + uy * br, ux, uy, kin.T * SCALE_T, k, Math.min(MAX_ARROW, Math.max(0.05, kin.r - 0.05)), col['b-mech'], lw, 'T');
+      if (tensionLabel) placed.push(tensionLabel);
     }
     if (H.show.v && kin.v > 0) {
       vecArrow(bx, by, kin.vx / kin.v, -kin.vy / kin.v, kin.v * SCALE_V, k, MAX_ARROW, col.pos, lw, 'v');
@@ -570,7 +576,6 @@
 
     // 扇形面積的標籤（畫在最上層）
     // 只標最近兩塊，放不下（太靠近小孔、小球、邊緣或彼此重疊）就不標
-    const placed = [];
     const fA = fnt(Lo.narrow ? 10 : 11, 600);
     areaLabels.reverse().forEach(function (a) {
       const x = MX(a.x), y = MY(a.y), text = num(a.A * 1e4, 0) + ' cm²', w = pillW(ctx, text, fA);
@@ -727,7 +732,7 @@
     // 圖例
     const lf = fnt(Lo.narrow ? 9.5 : 10.5, 600);
     const lx = R.x + R.w - 8;
-    runs(ctx, [{ t: 'v = ' }, { t: 'L', it: true }, { t: '/(' }, { t: 'mr', it: true }, { t: ')' }], lx, R.y + 14, col.neg, Lo.narrow ? 9.5 : 10.5, 600, 'right');
+    runs(ctx, [{ t: 'v = ' }, { t: 'L', it: true }, { t: '/(' }, { t: 'mr', it: true }, { t: ')' }], lx, R.y + (R.w < 160 ? 27 : 14), col.neg, Lo.narrow ? 9.5 : 10.5, 600, 'right');
     D.haloText(ctx, 'v (m/s)', x0 + 4, y0 - 3, col.muted, 'left', 'bottom', lf);
     ctx.restore();
   }

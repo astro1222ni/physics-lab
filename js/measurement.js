@@ -110,17 +110,18 @@
   function layout() {
     const W = cv.clientWidth || 360;
     const narrow = W < 560;
-    const magH = isVernierScene() ? (narrow ? 150 : 176) : (narrow ? 230 : 260);
+    const compact = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const magH = compact ? Math.round(innerHeight * 0.31) : isVernierScene() ? (narrow ? 150 : 176) : (narrow ? 230 : 260);
     let view, mainH;
     if (!isVernierScene()) {
-      const k = Math.min((W - 16) / 122, 6.4);
+      const k = Math.min((W - 16) / 122, compact ? Math.max(1, (innerHeight - magH - 125) / 47) : 6.4);
       mainH = Math.round(47 * k) + 14;
       const ox = (W - 122 * k) / 2 + 22 * k;
       view = { k: k, kx: k, ky: k, X: function (x) { return ox + x * k; }, Y: function (y) { return 8 + (y + 13) * k; }, xinv: function (px) { return (px - ox) / k; } };
     } else {
       const depth = state.mode === 'vernier' && state.v.kind === 'depth';
       const span = depth ? 228 : 136;
-      const k = Math.min((W - 16) / span, 3.6);
+      const k = Math.min((W - 16) / span, compact ? Math.max(1, (innerHeight - magH - 125) / 92) : 3.6);
       mainH = Math.round(92 * k) + 14;
       let ox = 8 + 26 * k;
       if (W - 16 >= 228 * k) ox += ((W - 16) - 228 * k) / 2; // 整支放得下就置中

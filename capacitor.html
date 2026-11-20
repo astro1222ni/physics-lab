@@ -105,6 +105,14 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .legend .plane { width: 16px !important; height: 9px !important; border-radius: 2px; background: color-mix(in srgb, var(--equi) 28%, transparent) !important; border: 1.5px solid var(--equi); }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.34)) !important;
+        margin-inline: 0 !important;
+      }
+    }
+    .cap:not(.is3d) #view3 { display: none; }
   </style>
 </head>
 <body data-en-ready>

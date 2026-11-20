@@ -1819,7 +1819,7 @@
 
     if (!si.pts.length) {
       const msg = exp === 1
-        ? T('實驗一：固定 M + m，用「移動 10 g 槽碼」改變拉力，每跑一次加一點', 'Experiment 1: keep M + m fixed and use “Move 10 g” to change the force; each run adds a point')
+        ? T('實驗一：固定 M + m，按「10 g 槽碼：車上 → 吊鉤」或「10 g 槽碼：吊鉤 → 車上」改變拉力，每跑一次加一點', 'Experiment 1: keep M + m fixed and press “Move 10 g: cart → hanger” or “Move 10 g: hanger → cart” to change the force; each run adds a point')
         : T('實驗二：固定 m，改變小車質量 M，每跑一次加一點', 'Experiment 2: keep m fixed and change the cart mass M; each run adds a point');
       noteBox(c, msg, P.x + P.w / 2, P.y + P.h / 2, Math.min(P.w - 20, 420), colors.muted, font);
       return;

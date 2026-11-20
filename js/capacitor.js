@@ -146,7 +146,7 @@
     // px/m（水平與深度）：最大平板加上約一半板長的介電質（全部抽出時，最大平板的介電質會有一部分在畫面外）
     const kx = (cw - x0 - 10) / (Math.sqrt(A_MAX) * (1.55 + OX));
     const Lmax = Math.sqrt(A_MAX) * kx;
-    const Gmax = narrow ? 132 : Math.max(170, Math.min(220, cw * 0.25));
+    const Gmax = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? Math.min(116, innerHeight * 0.25) : narrow ? 132 : Math.max(170, Math.min(220, cw * 0.25));
     const ky = Gmax / D_MAX;                          // px/m（板距方向，放大）
     const pt = narrow ? 11 : 14;                      // 平板厚度（示意）
     const lh = textH(fontPx(narrow ? 11.5 : 12.5)) + 2;

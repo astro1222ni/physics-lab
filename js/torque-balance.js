@@ -862,7 +862,7 @@
     const f1 = fnt(12.5, 700), f2 = fnt(12, 650);
     D.pill(c, txt, 8, 8 + 20, col, 'left', f1);
     const net = tq.net;
-    const ntxt = [['Στ', 0], [T('重力', 'gravity'), 1], [' = ' + sgn(net, 2) + ' N·m' + (Math.abs(net) < 1e-9 ? '' : net > 0 ? T('（逆時針）', ' (ccw)') : T('（順時針）', ' (cw)')), 0]];
+    const ntxt = [[T('重力矩總和', 'Net gravitational torque'), 0], [' = ' + sgn(net, 2) + ' N·m' + (Math.abs(net) < 1e-9 ? '' : net > 0 ? T('（逆時針）', ' (ccw)') : T('（順時針）', ' (cw)')), 0]];
     const b = pillBox(c, ntxt, 8, 8 + 20 + 4 + 19 - 9.5, 'left', f2);
     drawPill(c, ntxt, b, Math.abs(net) < 1e-9 ? C.probe : net > 0 ? C.ccw : C.cw, f2);
     placed.push({ x: 6, y: 6, w: Math.max(b.w, 150) + 4, h: b.y + b.h - 4 });

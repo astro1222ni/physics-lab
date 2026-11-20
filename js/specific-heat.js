@@ -170,13 +170,16 @@
   }
 
   function resize() {
-    const w = cv.clientWidth;
-    if (!w) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const displayWidth = cv.clientWidth;
+    if (!displayWidth) return;
+    // 橫放沿用並排子圖；繪圖座標和實體像素分別依寬度換算。
+    const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? 720 : displayWidth;
+    const scale = displayWidth / w;
+    dpr = Math.min(window.devicePixelRatio || 1, 3) * scale;
     cw = w;
     L = layout();
     ch = L.H;
-    if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    cv.style.height = Math.round(ch * scale) + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
     buildBackground();

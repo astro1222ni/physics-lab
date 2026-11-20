@@ -91,6 +91,13 @@
     .notes table.mat th { color: var(--muted); font-weight: 600; }
     .notes .tablewrap { overflow-x: auto; }
     .notes .src { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv {
+        max-width: min(100%, calc((100dvh - 82px) * 1.55)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>

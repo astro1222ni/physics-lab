@@ -125,6 +125,14 @@
     .opts3 input { width: 17px; height: 17px; }
     .legend i.knob { position: relative; }
     .legend i.knob::before { content: ""; position: absolute; left: -3px; top: 50%; width: 7px; height: 7px; border-radius: 50%; background: currentColor; transform: translateY(-50%); }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      html.labdeck-drawer .stage #cv,
+      html.labdeck-drawer .stage #cvg {
+        max-width: min(100%, calc((100dvh - 82px) * 1.48)) !important;
+        margin-inline: 0 !important;
+      }
+    }
   </style>
   <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
