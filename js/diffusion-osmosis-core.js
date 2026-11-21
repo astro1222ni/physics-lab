@@ -106,7 +106,7 @@
     opt = opt || {};
     const N = opt.N || BOX.N;
     const c = {
-      N: N, Lx: opt.Lx || BOX.Lx, Ly: opt.Ly || BOX.Ly, Lz: opt.Lz || BOX.Lz, a: opt.a || BOX.a,
+      twoSizes: !!opt.twoSizes, N: N, Lx: opt.Lx || BOX.Lx, Ly: opt.Ly || BOX.Ly, Lz: opt.Lz || BOX.Lz, a: opt.a || BOX.a,
       u: new Float64Array(3 * N), u0: new Float64Array(3 * N), seen: new Uint8Array(N),
       partition: true, t: 0, theta: 0, steps: 0, gauss: makeGauss(rand)
     };
@@ -151,12 +151,27 @@
   function stepCloud(c, D, dt) {
     if (!(dt > 0) || !(D > 0)) return;
     const s = Math.sqrt(2 * D * dt), g = c.gauss, u = c.u, n3 = 3 * c.N;
-    for (let k = 0; k < n3; k++) u[k] += s * g();
+    if (c.twoSizes) {
+      for (let i = 0; i < c.N; i++) {
+        const width = s * Math.sqrt(i % 2 ? 0.5 : 1.5);
+        for (let axis = 0; axis < 3; axis++) u[3 * i + axis] += width * g();
+      }
+    } else {
+      for (let k = 0; k < n3; k++) u[k] += s * g();
+    }
     if (!c.partition) {
       c.t += dt; c.theta += D * dt; c.steps++;
       const half = c.Lx / 2;
       for (let i = 0; i < c.N; i++) if (!c.seen[i] && fold(u[3 * i], c.Lx) > half) c.seen[i] = 1;
     }
+  }
+  /** 同一個盒子的兩種粒徑各依其擴散係數求期望粒子數。 */
+  function cloudBins(c, bins) {
+    const theta = c.partition ? 0 : c.theta;
+    if (!c.twoSizes) return expectedBins(c.N, c.a, c.Lx, theta, bins);
+    const small = expectedBins(Math.ceil(c.N / 2), c.a, c.Lx, 1.5 * theta, bins);
+    const large = expectedBins(Math.floor(c.N / 2), c.a, c.Lx, 0.5 * theta, bins);
+    return small.map((n, i) => n + large[i]);
   }
   /** 統計：左右半邊的粒子數、x 方向與三維的均方位移、走過右半邊的粒子數 */
   function cloudStats(c) {
@@ -421,7 +436,7 @@
     waterViscosity: waterViscosity, waterDensity: waterDensity, diffusionCoef: diffusionCoef, diffusionUm2: diffusionUm2,
     rng: rng, makeGauss: makeGauss, fold: fold,
     createCloud: createCloud, scatterLeft: scatterLeft, posOf: posOf, xOf: xOf, removePartition: removePartition, stepCloud: stepCloud,
-    cloudStats: cloudStats, histogram: histogram, expectedBetween: expectedBetween, expectedBins: expectedBins,
+    cloudStats: cloudStats, histogram: histogram, expectedBetween: expectedBetween, cloudBins: cloudBins, expectedBins: expectedBins,
     fracRightTheory: fracRightTheory, fitSlope: fitSlope, relaxTime: relaxTime,
     osmoticPressure: osmoticPressure, RTkPa: RTkPa, percentWV: percentWV, molarFromPercent: molarFromPercent,
     osmoCreate: osmoCreate, concL: concL, concR: concR, osmoDrive: osmoDrive, osmoRate: osmoRate, osmoStep: osmoStep,

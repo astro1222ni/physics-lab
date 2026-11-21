@@ -59,7 +59,8 @@
   // 狀態
   // =====================================================================
   const S = { mode: 'diff', running: !reducedMotion, acted: false, speed: 1, Tc: 25 };
-  const rand = K.rng((Date.now() ^ 0x5bd1e995) >>> 0);
+  $('cloudSeed').value = (Date.now() ^ 0x5bd1e995) >>> 0;
+  let rand = K.rng(Number($('cloudSeed').value));
   // ---------- 擴散 ----------
   const DF = { r: 0.5, cloud: K.createCloud({}, rand), track: [0, 1], trails: [[], []], run: null, history: [], chimed: false, partAnim: 0, stats: null, mixedTold: false };
   DF.stats = K.cloudStats(DF.cloud);
@@ -139,13 +140,13 @@
     for (let i = 0; i < c.N; i++) {
       K.posOf(c, i, p);
       const z = p[2] / box.Lz;           // 0 前、1 後
-      layers[z < 0.333 ? 2 : z < 0.667 ? 1 : 0].push(L.bx + p[0] * L.sc, L.by + p[1] * L.sc);
+      layers[z < 0.333 ? 2 : z < 0.667 ? 1 : 0].push(L.bx + p[0] * L.sc, L.by + p[1] * L.sc, c.twoSizes ? (i % 2 ? 2 : 2 / 3) : 1);
     }
     const cols = [D.mix(C['do-solute'], C['canvas-bg'], 0.38), D.mix(C['do-solute'], C['canvas-bg'], 0.16), C['do-solute']];
     const rs = [rpx * 0.82, rpx * 0.92, rpx];
     for (let k = 0; k < 3; k++) {
       const arr = layers[k];
-      for (let j = 0; j < arr.length; j += 2) D.ball(g, arr[j], arr[j + 1], rs[k], cols[k], { shadow: k === 2, glow: C.dark ? 0.18 : 0 });
+      for (let j = 0; j < arr.length; j += 3) D.ball(g, arr[j], arr[j + 1], rs[k] * arr[j + 2], cols[k], { shadow: k === 2, glow: C.dark ? 0.18 : 0 });
     }
     // 追蹤的粒子與路徑
     DF.track.forEach(function (idx, n) {
@@ -194,14 +195,14 @@
     const sx = L.bx + 10, sy = L.by + L.bh - 10;
     g.strokeStyle = C.text; g.lineWidth = 2; g.lineCap = 'butt';
     g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + sb, sy); g.moveTo(sx, sy - 4); g.lineTo(sx, sy + 1); g.moveTo(sx + sb, sy - 4); g.lineTo(sx + sb, sy + 1); g.stroke();
-    D.haloText(g, '50 μm', sx + sb + 6, sy, C.text, 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(g, '50 μm', sx + sb + 6, sy, C.text, 'left', 'middle', '600 12px ' + FONT);
     // 直方圖
     drawHist(g, L);
   }
   function drawHist(g, L) {
     const c = DF.cloud;
     const h = K.histogram(c, BINS);
-    const e = c.partition ? K.expectedBins(c.N, c.a, c.Lx, 0, BINS) : K.expectedBins(c.N, c.a, c.Lx, c.theta, BINS);
+    const e = K.cloudBins(c, BINS);
     const x0 = L.hx, y0 = L.hy, w = L.hw, hh = L.hh;
     // 上方留 18 px 給「粒子數（每格）」標籤，柱子不會蓋到它
     const top = Math.max(c.N * 2 / BINS * 1.04, Math.max.apply(null, h) * 1.03) * hh / Math.max(1, hh - 18);
@@ -232,12 +233,12 @@
     // 座標
     g.strokeStyle = D.alpha(C.text, 0.5); g.lineWidth = 1;
     g.beginPath(); g.moveTo(x0, y0 + hh + 0.5); g.lineTo(x0 + w, y0 + hh + 0.5); g.stroke();
-    const f = '11px ' + FONT;
+    const f = '12px ' + FONT;
     [0, 50, 100, 150, 200].forEach(function (um, k) {
       const x = x0 + um * L.sc;
       D.haloText(g, k === 4 ? '200 μm' : String(um), x, y0 + hh + 13, C.muted, k === 0 ? 'left' : k === 4 ? 'right' : 'center', 'middle', f);
     });
-    D.haloText(g, T('粒子數（每格）', 'Particles per slice'), x0 + 4, L.short ? y0 - 9 : y0 + 9, C.muted, 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('粒子數（每格）', 'Particles per slice'), x0 + 4, L.short ? y0 - 9 : y0 + 9, C.muted, 'left', 'middle', '600 12px ' + FONT);
     D.haloText(g, T('虛線：均勻分布', 'Dashed: even spread'), x0 + w - 4, L.short ? y0 - 9 : yu - 8, C.muted, 'right', 'middle', f);
   }
 
@@ -274,9 +275,9 @@
     for (let cm = 0; cm <= 110; cm += 5) {
       const y = Math.round(yOf(cm / 100)) + 0.5, major = cm % 10 === 0;
       g.beginPath(); g.moveTo(rx - (major ? 7 : 4), y); g.lineTo(rx, y); g.stroke();
-      if (cm % 20 === 0) D.haloText(g, String(cm), rx - 9, y, C.muted, 'right', 'middle', '11px ' + FONT);
+      if (cm % 20 === 0) D.haloText(g, String(cm), rx - 9, y, C.muted, 'right', 'middle', '12px ' + FONT);
     }
-    D.haloText(g, 'cm', rx - 9, yOf(K.UTUBE.top) - 12, C.muted, 'right', 'middle', '600 11px ' + FONT);
+    D.haloText(g, 'cm', rx - 9, yOf(K.UTUBE.top) - 12, C.muted, 'right', 'middle', '600 12px ' + FONT);
     // 管子的路徑（中心線）
     const path = function (gg, upL, upR) {
       gg.moveTo(G.xl, upL); gg.lineTo(G.xl, G.yb);
@@ -347,7 +348,7 @@
     }
     if (OS.P > 0.0005) {
       D.arrow(g, G.xr + 22, rodTop - 10, G.xr + 22, rodTop + 12, C.pos, 2.4);
-      D.pill(g, 'P = ' + num(OS.P, 2) + ' kPa', G.xr + 30, rodTop + 10, C.pos, 'left', '600 11px ' + FONT);
+      D.pill(g, 'P = ' + num(OS.P, 2) + ' kPa', G.xr + 30, rodTop + 10, C.pos, 'left', '600 12px ' + FONT);
     }
     // 液面差（兩管之間的括號）
     const hcm = r.h * 100;
@@ -363,10 +364,10 @@
     D.pill(g, Math.abs(hcm) < 0.05 ? 'h ≈ 0' : 'h = ' + signed(hcm, 1) + ' cm', G.cx, hy, C.text, 'center', '700 12px ' + FONT);
     // 兩管上方的溶液名稱
     const lbl = function (sk, c0) { return c0 <= 0 ? T('純水', 'pure water') : shortSol(sk) + ' ' + num(c0, 2) + ' mmol/L'; };
-    D.pill(g, T('左：', 'Left: ') + lbl(OS.solL, OS.CL), 10, 48, osmoInk(r.osmL), 'left', '600 11px ' + FONT);
-    D.pill(g, T('右：', 'Right: ') + lbl(OS.solR, OS.CR), W - 10, 48, osmoInk(r.osmR), 'right', '600 11px ' + FONT);
-    D.pill(g, 't = ' + fmtMin(OS.st.t) + T('（已加速）', ' (sped up)'), 10, 22, C.muted, 'left', '600 11px ' + FONT);
-    if (OS.st.limited) D.pill(g, OS.st.limited === 'left' ? T('左管的水快流光了', 'The left arm is nearly empty') : T('右管的水快被壓光了', 'The right arm is nearly empty'), W - 10, 22, C.pos, 'right', '600 11px ' + FONT);
+    D.pill(g, T('左：', 'Left: ') + lbl(OS.solL, OS.CL), 10, 48, osmoInk(r.osmL), 'left', '600 12px ' + FONT);
+    D.pill(g, T('右：', 'Right: ') + lbl(OS.solR, OS.CR), W - 10, 48, osmoInk(r.osmR), 'right', '600 12px ' + FONT);
+    D.pill(g, 't = ' + fmtMin(OS.st.t) + T('（已加速）', ' (sped up)'), 10, 22, C.muted, 'left', '600 12px ' + FONT);
+    if (OS.st.limited) D.pill(g, OS.st.limited === 'left' ? T('左管的水快流光了', 'The left arm is nearly empty') : T('右管的水快被壓光了', 'The right arm is nearly empty'), W - 10, 22, C.pos, 'right', '600 12px ' + FONT);
     drawInset(g, G, r);
   }
   // ---------- 半透膜放大圖（純示意的分子動畫） ----------
@@ -428,7 +429,7 @@
     g.strokeStyle = D.alpha('#ffffff', C.dark ? 0.12 : 0.5); g.lineWidth = 1;
     g.beginPath(); g.arc(x0, y0, R - 3, Math.PI * 1.05, Math.PI * 1.45); g.stroke();
     // 標籤放在右管與畫布右緣之間：放不下整句就改短句，不蓋到管子、不超出畫布
-    const font = '600 11px ' + FONT, W = G.W, left = G.xr + G.aw / 2 + 4;
+    const font = '600 12px ' + FONT, W = G.W, left = G.xr + G.aw / 2 + 4;
     let lab = T('放大示意：水過得去，溶質過不去', 'Enlarged: water passes, solute does not');
     g.font = font;
     if (g.measureText(lab).width + 24 > W - left) lab = T('放大示意', 'Enlarged view');
@@ -674,7 +675,7 @@
     const pctTxt = num(K.percentWV(CS.C, SOL[CS.sol].M), 2) + '%';
     const short = shortLandscape.matches && W < 700;
     D.pill(g, T('外液：', 'Solution: ') + (CS.C <= 0 ? T('清水', 'pure water') : shortSol(CS.sol) + ' ' + num(CS.C, 0) + ' mmol/L = ' + num(osm, 0) + ' mOsm/L' + T('（', ' (') + pctTxt + T('）', ')')), 10, short ? 15 : 24, C.text, 'left', '600 12px ' + FONT);
-    if (short || W >= 520) D.pill(g, 't = ' + fmtTime(CS.t) + T('（已放慢）', ' (slowed)'), W - 10, short ? 40 : 24, C.muted, 'right', '600 11px ' + FONT);
+    if (short || W >= 520) D.pill(g, 't = ' + fmtTime(CS.t) + T('（已放慢）', ' (slowed)'), W - 10, short ? 40 : 24, C.muted, 'right', '600 12px ' + FONT);
     // ---- 紅血球
     const A = Lc.a;
     panelBg(g, A, osm);
@@ -685,7 +686,7 @@
     const rateR = CS.rbc.lysed ? 0 : K.cellRate('rbc', CS.rbc.V, osm, S.Tc);
     drawRbcFace(g, fx, cyA, k, sh, CS.rbc.lysed, rateR);
     drawRbcProfile(g, sx, cyA, k, sh, CS.rbc.lysed);
-    const lf = '600 11px ' + FONT;
+    const lf = '600 12px ' + FONT;
     D.pill(g, T('紅血球（動物細胞）', 'Red blood cell (animal)'), A.x + 10, A.y + 24, C.text, 'left', '700 12px ' + FONT);
     D.pill(g, T('正面', 'Face-on'), fx, A.y + A.h - 34, C.muted, 'center', lf);
     D.pill(g, T('剖面', 'Cross-section'), sx, A.y + A.h - 34, C.muted, 'center', lf);
@@ -736,17 +737,17 @@
     for (let x = 0; x <= xmax + 1e-9; x += xs) {
       const px = Math.round(X(x)) + 0.5;
       g.strokeStyle = D.alpha(C.text, 0.08); g.beginPath(); g.moveTo(px, t); g.lineTo(px, t + ph); g.stroke();
-      D.haloText(g, xfmt(x, xs), px, t + ph + 12, C.muted, 'center', 'middle', '11px ' + FONT);
+      D.haloText(g, xfmt(x, xs), px, t + ph + 12, C.muted, 'center', 'middle', '12px ' + FONT);
     }
     for (let y = Math.ceil(ymin / ys) * ys; y <= ymax + 1e-9; y += ys) {
       const py = Math.round(Y(y)) + 0.5;
       g.strokeStyle = D.alpha(C.text, Math.abs(y) < 1e-9 ? 0.3 : 0.08); g.beginPath(); g.moveTo(l, py); g.lineTo(l + pw, py); g.stroke();
-      D.haloText(g, yfmt(y, ys), l - 6, py, C.muted, 'right', 'middle', '11px ' + FONT);
+      D.haloText(g, yfmt(y, ys), l - 6, py, C.muted, 'right', 'middle', '12px ' + FONT);
     }
     g.strokeStyle = D.alpha(C.text, 0.45);
     g.beginPath(); g.moveTo(l + 0.5, t); g.lineTo(l + 0.5, t + ph + 0.5); g.lineTo(l + pw, t + ph + 0.5); g.stroke();
-    D.haloText(g, xl, l + pw, t + ph + 24, C.muted, 'right', 'middle', '600 11px ' + FONT);
-    D.haloText(g, yl, l + 6, t + 9, C.muted, 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(g, xl, l + pw, t + ph + 24, C.muted, 'right', 'middle', '600 12px ' + FONT);
+    D.haloText(g, yl, l + 6, t + 9, C.muted, 'left', 'middle', '600 12px ' + FONT);
     return { X: X, Y: Y, l: l, t: t, pw: pw, ph: ph };
   }
   function polyline(g, xs, ys, A, col, w, dash, alpha) {
@@ -814,7 +815,7 @@
       const ye = A.Y(eq.h * 100);
       g.save(); g.setLineDash([6, 4]); g.strokeStyle = C.accent; g.lineWidth = 1.6;
       g.beginPath(); g.moveTo(A.l, ye); g.lineTo(A.l + A.pw, ye); g.stroke(); g.restore();
-      D.haloText(g, T('平衡 ', 'equilibrium ') + signed(eq.h * 100, 1) + ' cm', A.l + A.pw - 4, ye + (eq.h >= 0 ? 10 : -10), C.accent, 'right', 'middle', '600 11px ' + FONT);
+      D.haloText(g, T('平衡 ', 'equilibrium ') + signed(eq.h * 100, 1) + ' cm', A.l + A.pw - 4, ye + (eq.h >= 0 ? 10 : -10), C.accent, 'right', 'middle', '600 12px ' + FONT);
     }
     polyline(g, OS.ts.map(function (t) { return t / 60; }), OS.hs, A, C['do-water'], 2.6);
     const n = OS.ts.length - 1;
@@ -863,8 +864,8 @@
   }
   function plotCaption() {
     $('plotCap').innerHTML = S.mode === 'diff'
-      ? T('<b>均方位移</b>——實線是 600 個粒子在 x 方向位移平方的平均，虛線是理論 2Dt；舊的紀錄保留在圖上比較。',
-        '<b>Mean square displacement</b> — solid: the average of the 600 particles’ squared x-displacements; dashed: the theory 2Dt. Earlier runs stay for comparison.')
+      ? T('<b>均方位移</b>——實線是 所有粒子在 x 方向位移平方的平均，虛線是理論 2Dt；舊的紀錄保留在圖上比較。',
+        '<b>Mean square displacement</b> — solid: the average of the particles’ squared x-displacements; dashed: the theory 2Dt. Earlier runs stay for comparison.')
       : S.mode === 'osmo'
         ? (OS.showEq ? T('<b>液面差</b>——右管比左管高多少；虛線是平衡時的液面差（考慮了稀釋）。',
           '<b>Level difference</b> — how much higher the right level is than the left; dashed: the equilibrium value (dilution included).')
@@ -986,6 +987,7 @@
     } else if (S.mode === 'osmo') {
       const x0 = OS.st.x;
       K.osmoStep(OS.st, S.Tc, OS.P * 1000, k * BASE.osmo * dtr);
+      OS.maxAbsH = Math.max(OS.maxAbsH, Math.abs(OS.st.x * 200));
       osmoSample();
       // 滴水聲：液面每變化 1 cm 響一下（越接近平衡越稀疏）
       OS.drip += (OS.st.x - x0) * 200;
@@ -1042,7 +1044,7 @@
       const r = K.osmoReadout(OS.st, S.Tc, OS.P * 1000), eq = K.osmoEquilibrium(OS.st, S.Tc, OS.P * 1000);
       const rate = r.rate * 6000;
       return { mode: 'osmo', t: OS.st.t / 60, solL: OS.solL, solR: OS.solR, iL: SOL[OS.solL].i, iR: SOL[OS.solR].i, CL0: OS.CL, CR0: OS.CR,
-        osmL0: SOL[OS.solL].i * OS.CL, osmR0: SOL[OS.solR].i * OS.CR, T: S.Tc, P: OS.P, h: r.h * 100, dpi: r.dpi / 1000, rhogh: r.rhogh / 1000,
+        osmL0: SOL[OS.solL].i * OS.CL, osmR0: SOL[OS.solR].i * OS.CR, T: S.Tc, P: OS.P, maxAbsH: OS.maxAbsH, h: r.h * 100, dpi: r.dpi / 1000, rhogh: r.rhogh / 1000,
         rate: rate, eq: Math.abs(rate) < 0.005 && OS.st.t >= 300 && !OS.st.limited, heq: eq.h * 100, limited: OS.st.limited, peek: !!OS.peeked[osmoKey()] };
     }
     const osm = osmOut();
@@ -1055,6 +1057,7 @@
   function emitState() {
     lastEmit = performance.now();
     if (!S.acted || !window.LabMission) return;
+    if (S.mode === 'diff' && (DF.cloud.twoSizes || DF.cloud.a !== K.BOX.a || DF.cloud.N !== K.BOX.N)) return;
     window.LabMission.emit(S.mode, missionData());
   }
 
@@ -1119,6 +1122,14 @@
     DF.track.push(i); DF.trails.push([]);
     requestDraw();
   }
+  $('prepareCloud').addEventListener('click', function () {
+    if (!$('cloudSeed').reportValidity()) return;
+    finishRun(); DF.history = []; DF.track = [0, 1]; DF.trails = [[], []];
+    rand = K.rng(Number($('cloudSeed').value));
+    DF.cloud = K.createCloud({ N: Number($('cloudCount').value), a: K.BOX.Lx * Number($('cloudWidth').value), twoSizes: $('twoSizes').checked }, rand);
+    DF.stats = K.cloudStats(DF.cloud); DF.chimed = false; DF.partAnim = 0;
+    S.running = false; updatePlay(); updatePartBtn(); updateReadouts(); requestDraw();
+  });
   $('partBtn').addEventListener('click', function () {
     acted();
     const c = DF.cloud;
@@ -1136,7 +1147,7 @@
       K.scatterLeft(c, rand);
       DF.stats = K.cloudStats(c);
       DF.trails.forEach(function (t) { t.length = 0; });
-      setStatus(T('放回隔板：粒子重新撒在左半邊。剛才的均方位移留在圖上供比較。', 'Partition back in: the particles are spread over the left half again. The last run stays on the graph for comparison.'));
+      setStatus(T('放回隔板：粒子重新撒在隔板左側。剛才的均方位移留在圖上供比較。', 'Partition back in: the particles are spread to the left of the partition again. The last run stays on the graph for comparison.'));
     }
     updatePartBtn(); updateReadouts(); emitState(); schedule();
   });
@@ -1149,7 +1160,7 @@
   function osmoRefill(msg) {
     if (OS.st && OS.ts.length > 2) { OS.history.push({ ts: OS.ts, hs: OS.hs }); if (OS.history.length > 6) OS.history.shift(); }
     OS.st = K.osmoCreate({ iL: SOL[OS.solL].i, CL: OS.CL, iR: SOL[OS.solR].i, CR: OS.CR });
-    OS.ts = [0]; OS.hs = [0]; OS.eqChimed = false; OS.drip = 0;
+    OS.maxAbsH = 0; OS.ts = [0]; OS.hs = [0]; OS.eqChimed = false; OS.drip = 0;
     insetReset();
     if (msg) setStatus(msg);
   }

@@ -345,4 +345,14 @@ test('紅血球外形（畫面用）：90 fL 是 Evans–Fung 雙凹圓盤、溶
   assert.ok(K.rbcProfilePoint(0, 0, 1)[1] < K.rbcProfilePoint(1.0, 0, 1)[1]);
 });
 
+
+test('兩種半徑的理論分布依粒子數加權，布朗步長各依擴散係數', () => {
+  const c = K.createCloud({ N: 60, a: 50, twoSizes: true }, K.rng(123));
+  K.removePartition(c); c.gauss = () => 1;
+  K.stepCloud(c, 1, 1);
+  assert.ok(Math.abs(c.u[0] - c.u0[0] - Math.sqrt(3)) < 1e-10);
+  assert.ok(Math.abs(c.u[3] - c.u0[3] - 1) < 1e-10);
+  assert.ok(Math.abs(K.cloudBins(c, 20).reduce((a,b) => a+b, 0) - 60) < 1e-8);
+});
+
 console.log(`\n${passed} 項測試通過`);

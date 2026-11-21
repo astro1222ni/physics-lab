@@ -343,13 +343,16 @@
       const m4 = R.mat4;
       for (let i = 0; i < c.N; i++) {
         K.posOf(c, i, pos3);
-        m4.makeScale(rw, rw, rw);
+        const size = rw * (c.twoSizes ? (i % 2 ? 2 : 2 / 3) : 1);
+        m4.makeScale(size, size, size);
         m4.setPosition(dX(pos3[0]), dY(pos3[1]), dZ(pos3[2]));
         R.inst.setMatrixAt(i, m4);
       }
       R.inst.instanceMatrix.needsUpdate = true;
       // 隔板（移除時往上升起淡去：純裝飾）
       const pa = c.partition ? 1 : B.DF.partAnim;
+      R.inst.count = c.N;
+      R.part.position.x = dX(c.a);
       R.part.visible = pa > 0.01;
       R.part.position.y = c.partition ? 0 : (1 - pa) * BY * 0.9;
       R.part.material.opacity = 0.55 * pa;
@@ -380,8 +383,9 @@
       });
       // 直方圖與理論
       const h = K.histogram(c, BINS);
-      const e = K.expectedBins(c.N, c.a, c.Lx, c.partition ? 0 : c.theta, BINS);
+      const e = K.cloudBins(c, BINS);
       const top = Math.max(c.N * 2 / BINS * 1.08, Math.max.apply(null, h) * 1.05);
+      R.uniform.position.y = HIST_H * ((c.N / BINS) / top - 1 / (2 * 1.08));
       const tp = R.theory.geometry.attributes.position.array;
       const bw = BX / BINS;
       for (let b = 0; b < BINS; b++) {
@@ -398,7 +402,7 @@
       relabel(R.lbR, T('右半邊 ', 'Right half ') + st.nR, C.text);
       const Dv = B.Dnow();
       setHud('a', c.partition ? T('隔板還在', 'Partition in') : 't = ' + B.fmtTime(c.t));
-      setHud('b', 'D = ' + B.num(Dv, Dv < 100 ? 1 : 0) + ' μm²/s');
+      setHud('b', (c.twoSizes ? T('平均 D = ', 'Mean D = ') : 'D = ') + B.num(Dv, Dv < 100 ? 1 : 0) + ' μm²/s');
       setHud('c', T('右半邊 ', 'Right half ') + B.num(100 * st.fracR, 1) + '%');
       setHud('d', c.partition ? '' : T('到過右半邊 ', 'Visited the right ') + st.seen + ' / ' + st.N);
       setHud('note', T('粒子畫得比實際大很多（示意）；盒子 200 × 80 × 40 μm', 'Particles drawn far larger than real; box 200 × 80 × 40 μm'));

@@ -86,7 +86,7 @@
       title: { zh: '剛好擋住水', en: 'Just enough to stop the water' },
       desc: { zh: '滲透：右管比左管濃，調活塞壓力（至少 1 kPa），讓兩管液面一直保持一樣高（相差不到 0.5 cm）並達到平衡。這個壓力就是兩邊的滲透壓差。提示：水一流過去，右管就被稀釋、Δπ 跟著變小，所以要先設好活塞，再按「液面歸零」。',
         en: 'Osmosis: with the right side more concentrated, set a piston pressure of at least 1 kPa so the two levels stay equal (within 0.5 cm) at equilibrium. That pressure is the osmotic pressure difference. Hint: once water starts to flow the right side is diluted and Δπ shrinks, so set the piston first, then press “Level the liquids”.' },
-      check: function (ev) { const d = ev.data; return isOsmo(ev) && d.osmR0 > d.osmL0 && d.P >= 1 && d.eq && Math.abs(d.h) < 0.5; }
+      check: function (ev) { const d = ev.data; return isOsmo(ev) && d.osmR0 > d.osmL0 && d.P >= 1 && d.eq && d.maxAbsH < 0.5; }
     },
     {
       id: 'diffusion-osmosis-9', level: 6,

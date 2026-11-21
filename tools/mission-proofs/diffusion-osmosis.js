@@ -96,19 +96,20 @@ function fullRun(L, extra, speed, onEmit) {
 // =====================================================================
 function OsmoLab(o) {
   const L = Object.assign({ solL: 'glucose', solR: 'sucrose', CL: 0, CR: 1, P: 0, Tc: 25 }, o || {});
-  L.refill = function () { L.st = K.osmoCreate({ iL: SOL[L.solL].i, CL: L.CL, iR: SOL[L.solR].i, CR: L.CR }); };
+  L.refill = function () { L.maxAbsH = 0; L.st = K.osmoCreate({ iL: SOL[L.solL].i, CL: L.CL, iR: SOL[L.solR].i, CR: L.CR }); };
   L.refill();
   L.data = function () {
     const r = K.osmoReadout(L.st, L.Tc, L.P * 1000), eq = K.osmoEquilibrium(L.st, L.Tc, L.P * 1000);
     const rate = r.rate * 6000;
     return { mode: 'osmo', t: L.st.t / 60, solL: L.solL, solR: L.solR, iL: SOL[L.solL].i, iR: SOL[L.solR].i, CL0: L.CL, CR0: L.CR,
-      osmL0: SOL[L.solL].i * L.CL, osmR0: SOL[L.solR].i * L.CR, T: L.Tc, P: L.P, h: r.h * 100, dpi: r.dpi / 1000, rhogh: r.rhogh / 1000,
+      osmL0: SOL[L.solL].i * L.CL, osmR0: SOL[L.solR].i * L.CR, T: L.Tc, P: L.P, maxAbsH: L.maxAbsH, h: r.h * 100, dpi: r.dpi / 1000, rhogh: r.rhogh / 1000,
       rate: rate, eq: Math.abs(rate) < 0.005 && L.st.t >= 300 && !L.st.limited, heq: eq.h * 100, limited: L.st.limited };
   };
   L.play = function (seconds, speed, onEmit) {
     const frames = Math.round(seconds / FRAME);
     for (let f = 1; f <= frames; f++) {
       K.osmoStep(L.st, L.Tc, L.P * 1000, (speed || 1) * BASE.osmo * FRAME);
+      L.maxAbsH = Math.max(L.maxAbsH, Math.abs(L.st.x * 200));
       if (f % EMIT_EVERY === 0 && onEmit && onEmit({ type: 'osmo', data: L.data() })) return true;
     }
     return false;
@@ -283,6 +284,7 @@ function twoRuns(seed, a, b, id) {
   let d = null;
   L.play(60, 1, ev => { if (check('8', ev)) { d = ev.data; return true; } return false; });
   // 容許範圍：|h| < 0.5 cm ⇔ |P − Δπ| < ρg·0.005 ≈ 49 Pa（滑桿一格 10 Pa）
+  claim(!check('8', { type: 'osmo', data: { ...d, maxAbsH: 1 } }), 'M8 曾偏離一公分再回來');
   claim(d != null, 'M8 剛好擋住水：預設溶液 Δπ = ' + pi0.toFixed(3) + ' kPa，活塞 ' + P.toFixed(2) + ' kPa，' + (d ? d.t.toFixed(0) : '—') + ' 分鐘成立（h = ' + (d ? d.h.toFixed(2) : '—') + ' cm）；容許 ±' + (K.waterDensity(25) * K.G * 0.005 / 1000).toFixed(3) + ' kPa');
 }
 // =====================================================================
