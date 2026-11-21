@@ -130,18 +130,21 @@
           <button id="rewind" type="button" data-en="Back to the start" title="回到第一批商店剛開張（商品圈剛好相切）的時候" data-en-title="Back to when the first shops opened (ranges just touching)">回到一開始</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <div class="legend" id="legS">
-          <span style="color:var(--cp-range)" data-en-html="<i class=&quot;ring&quot;></i>Range (farthest a shopper will go)"><i class="ring"></i>商品圈（顧客最遠願意走到）</span>
-          <span style="color:var(--cp-thr)" data-en-html="<i class=&quot;dash&quot;></i>Threshold radius"><i class="dash"></i>門檻半徑</span>
-          <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-served)&quot;></i>Can buy it"><i style="background:var(--cp-served)"></i>買得到</span>
-          <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-gap)&quot;></i>Too far: cannot buy it"><i style="background:var(--cp-gap)"></i>太遠，買不到</span>
-        </div>
-        <div class="legend" id="legH" hidden>
-          <span style="color:var(--cp-l1)" data-en-html="<i style=&quot;background:var(--cp-l1)&quot;></i>Rank 1 (village)"><i style="background:var(--cp-l1)"></i>第 1 級（村）</span>
-          <span style="color:var(--cp-l2)" data-en-html="<i style=&quot;background:var(--cp-l2)&quot;></i>Rank 2 (town)"><i style="background:var(--cp-l2)"></i>第 2 級（鎮）</span>
-          <span style="color:var(--cp-l3)" data-en-html="<i style=&quot;background:var(--cp-l3)&quot;></i>Rank 3 (city)"><i style="background:var(--cp-l3)"></i>第 3 級（市）</span>
-          <span style="color:var(--cp-l4)" data-en-html="<i style=&quot;background:var(--cp-l4)&quot;></i>Rank 4 (regional capital)"><i style="background:var(--cp-l4)"></i>第 4 級（區域中心）</span>
-          <span style="color:var(--cp-road)" data-en-html="<i class=&quot;dash&quot;></i>Roads"><i class="dash"></i>道路</span>
+        <!-- 即時讀數（狀態句）留在畫布正下方；圖例排在操作台後面，畫布正下方就是操作台（站長 11/21 自查準則：畫布底到操作台 ≤ 80 px） -->
+        <div class="deck-after">
+          <div class="legend" id="legS">
+            <span style="color:var(--cp-range)" data-en-html="<i class=&quot;ring&quot;></i>Range (farthest a shopper will go)"><i class="ring"></i>商品圈（顧客最遠願意走到）</span>
+            <span style="color:var(--cp-thr)" data-en-html="<i class=&quot;dash&quot;></i>Threshold radius"><i class="dash"></i>門檻半徑</span>
+            <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-served)&quot;></i>Can buy it"><i style="background:var(--cp-served)"></i>買得到</span>
+            <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-gap)&quot;></i>Too far: cannot buy it"><i style="background:var(--cp-gap)"></i>太遠，買不到</span>
+          </div>
+          <div class="legend" id="legH" hidden>
+            <span style="color:var(--cp-l1)" data-en-html="<i style=&quot;background:var(--cp-l1)&quot;></i>Rank 1 (village)"><i style="background:var(--cp-l1)"></i>第 1 級（村）</span>
+            <span style="color:var(--cp-l2)" data-en-html="<i style=&quot;background:var(--cp-l2)&quot;></i>Rank 2 (town)"><i style="background:var(--cp-l2)"></i>第 2 級（鎮）</span>
+            <span style="color:var(--cp-l3)" data-en-html="<i style=&quot;background:var(--cp-l3)&quot;></i>Rank 3 (city)"><i style="background:var(--cp-l3)"></i>第 3 級（市）</span>
+            <span style="color:var(--cp-l4)" data-en-html="<i style=&quot;background:var(--cp-l4)&quot;></i>Rank 4 (regional capital)"><i style="background:var(--cp-l4)"></i>第 4 級（區域中心）</span>
+            <span style="color:var(--cp-road)" data-en-html="<i class=&quot;dash&quot;></i>Roads"><i class="dash"></i>道路</span>
+          </div>
         </div>
         <p class="hint" data-en="Tap the map (or use the arrow keys) to place a shopper; near a shop or central place the marker snaps onto it.">點地圖（或用方向鍵）放一位消費者；靠近商店或中地時會自動對準。</p>
       </div>

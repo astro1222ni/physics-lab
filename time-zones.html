@@ -114,6 +114,15 @@
     .speed button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
     .twin-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
     @media (max-width: 560px) { .twin-sliders { grid-template-columns: 1fr; } }
+    /* 手機直放：時刻讀數和播放鍵排同一排，地圖下面少一整排空白（站長 11/21 自查準則：畫布底到操作台的死空白 ≤ 80 px） */
+    @media (max-width: 560px) and (orientation: portrait) {
+      .clockbar { gap: 6px 8px; margin-top: 6px; }
+      .clockbar .now { flex: 1 1 150px; }
+      .clockbar .now b { font-size: calc(17px * var(--fs, 1)); }
+      .clockbar .btns { flex: 1 1 170px; }
+      .clockbar .btns button { padding: 4px 6px; }
+      .twin-sliders .slider { margin: 4px 0 2px; }
+    }
     .notes li { overflow-wrap: anywhere; }
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
@@ -175,13 +184,16 @@
           <div class="slider"><label for="utc" data-en="Time (UTC, hours)">時刻（UTC，小時）</label><output></output>
             <input id="utc" type="range" min="0" max="23.9833" step="0.016667" value="0" data-decimals="2"></div>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <div class="legend" id="legend">
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--tz-night);opacity:.55&quot;></i>Night (shaded: twilight)"><i class="sw" style="background:var(--tz-night);opacity:.55"></i>黑夜（漸層是曙暮光）</span>
-          <span style="color:var(--tz-dateline)" data-en-html="<i style=&quot;background:var(--tz-dateline)&quot;></i>Date line (ideal, along 180°)"><i style="background:var(--tz-dateline)"></i>換日線（理想位置，沿 180°）</span>
-          <span style="color:var(--tz-midnight)" data-en-html="<i style=&quot;background:var(--tz-midnight)&quot;></i>Midnight: the date changes here"><i style="background:var(--tz-midnight)"></i>午夜：日期在這裡換</span>
-          <span style="color:var(--tz-sun)" data-en-html="<i style=&quot;background:var(--tz-sun)&quot;></i>Subsolar point"><i style="background:var(--tz-sun)"></i>太陽直射點</span>
-          <span style="color:var(--tz-flight)" data-en-html="<i style=&quot;background:var(--tz-flight)&quot;></i>Flight (great circle)"><i style="background:var(--tz-flight)"></i>飛行航線（大圓）</span>
+        <!-- 狀態句、圖例排在操作台後面，畫布正下方就是操作台（站長 11/21 自查準則：畫布底到操作台 ≤ 80 px） -->
+        <div class="deck-after">
+          <p class="status" id="status" aria-live="polite"></p>
+          <div class="legend" id="legend">
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--tz-night);opacity:.55&quot;></i>Night (shaded: twilight)"><i class="sw" style="background:var(--tz-night);opacity:.55"></i>黑夜（漸層是曙暮光）</span>
+            <span style="color:var(--tz-dateline)" data-en-html="<i style=&quot;background:var(--tz-dateline)&quot;></i>Date line (ideal, along 180°)"><i style="background:var(--tz-dateline)"></i>換日線（理想位置，沿 180°）</span>
+            <span style="color:var(--tz-midnight)" data-en-html="<i style=&quot;background:var(--tz-midnight)&quot;></i>Midnight: the date changes here"><i style="background:var(--tz-midnight)"></i>午夜：日期在這裡換</span>
+            <span style="color:var(--tz-sun)" data-en-html="<i style=&quot;background:var(--tz-sun)&quot;></i>Subsolar point"><i style="background:var(--tz-sun)"></i>太陽直射點</span>
+            <span style="color:var(--tz-flight)" data-en-html="<i style=&quot;background:var(--tz-flight)&quot;></i>Flight (great circle)"><i style="background:var(--tz-flight)"></i>飛行航線（大圓）</span>
+          </div>
         </div>
         <p class="hint l2" data-en="Tap the map to drop the measuring point; near a city it snaps to the city and uses its official time. Drag the point to move it; with the map focused, the arrow keys move it by 1° (Shift: 10°).">點一下地圖放量測點；靠近城市時會對準城市，改用那裡的官方時間。拖曳量測點可以移動；選取地圖後方向鍵每次移 1°（加 Shift 移 10°）。</p>
         <p class="hint l3" data-en="Choose Rotate or Pan, then drag with one finger or the left mouse button. Pinch or scroll to zoom. The Sun shines from one side; the coloured slices are the 24 time zones and the two bright seams are where the date changes.">選「旋轉」或「平移」後，用單指或滑鼠左鍵拖曳。用雙指或滾輪縮放。太陽從一側照過來；一瓣一瓣的顏色是 24 個時區，兩條亮線是日期改變的地方。</p>

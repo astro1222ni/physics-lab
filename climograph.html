@@ -181,20 +181,23 @@
             <button type="button" id="tJul" aria-pressed="false" data-en="Start the chart in July" title="南半球的夏天在 12–2 月，從 7 月開始畫，夏天就在圖的中間" data-en-title="Summer in the Southern Hemisphere is December–February; starting in July puts it in the middle">從 7 月開始畫</button>
           </div>
         </div>
-        <div class="legend" id="legChart">
-          <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-temp)&quot;></i>Mean temperature (°C, left)"><i class="ln" style="border-color:var(--cl-temp)"></i>月均溫（°C，左軸）</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-rain)&quot;></i>Precipitation (mm, right)"><i class="sw" style="background:var(--cl-rain)"></i>月雨量（mm，右軸）</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-summer);opacity:.35&quot;></i>Summer half-year"><i class="sw" style="background:var(--cl-summer);opacity:.35"></i>夏半年</span>
-          <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>Thresholds used in this decision"><i class="ln dash" style="border-color:var(--cl-mark)"></i>這次判定用到的門檻</span>
+        <!-- 氣候類型已標在圖的左上角；狀態句、圖例排在操作台後面，畫布正下方就是操作台（站長 11/21 自查準則：畫布底到操作台 ≤ 80 px） -->
+        <div class="deck-after">
+          <p class="status" id="status" aria-live="polite"></p>
+          <div class="legend" id="legChart">
+            <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-temp)&quot;></i>Mean temperature (°C, left)"><i class="ln" style="border-color:var(--cl-temp)"></i>月均溫（°C，左軸）</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-rain)&quot;></i>Precipitation (mm, right)"><i class="sw" style="background:var(--cl-rain)"></i>月雨量（mm，右軸）</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-summer);opacity:.35&quot;></i>Summer half-year"><i class="sw" style="background:var(--cl-summer);opacity:.35"></i>夏半年</span>
+            <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>Thresholds used in this decision"><i class="ln dash" style="border-color:var(--cl-mark)"></i>這次判定用到的門檻</span>
+          </div>
+          <div class="legend" id="legDry" hidden>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-dry);opacity:.35&quot;></i>Desert (BW)"><i class="sw" style="background:var(--cl-dry);opacity:.35"></i>沙漠（BW）</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-steppe);opacity:.35&quot;></i>Steppe (BS)"><i class="sw" style="background:var(--cl-steppe);opacity:.35"></i>草原（BS）</span>
+            <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-dry)&quot;></i>Dryness line for this rain pattern"><i class="ln" style="border-color:var(--cl-dry)"></i>這種降雨季節的乾燥界線</span>
+            <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>The lines for the other two patterns"><i class="ln dash" style="border-color:var(--cl-mark)"></i>另外兩種降雨季節的界線</span>
+          </div>
+          <div class="maplegend" id="legMap" hidden></div>
         </div>
-        <div class="legend" id="legDry" hidden>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-dry);opacity:.35&quot;></i>Desert (BW)"><i class="sw" style="background:var(--cl-dry);opacity:.35"></i>沙漠（BW）</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-steppe);opacity:.35&quot;></i>Steppe (BS)"><i class="sw" style="background:var(--cl-steppe);opacity:.35"></i>草原（BS）</span>
-          <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-dry)&quot;></i>Dryness line for this rain pattern"><i class="ln" style="border-color:var(--cl-dry)"></i>這種降雨季節的乾燥界線</span>
-          <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>The lines for the other two patterns"><i class="ln dash" style="border-color:var(--cl-mark)"></i>另外兩種降雨季節的界線</span>
-        </div>
-        <div class="maplegend" id="legMap" hidden></div>
-        <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l-chart" data-en="Drag a red dot to change that month’s temperature; drag up or down inside a month to set its rainfall; tap a month to read it. With the chart selected, ← → choose the month and ↑ ↓ change the value (Shift: bigger steps); Enter switches between temperature and rainfall.">拖曳紅點改那個月的均溫；在月份欄裡上下拖曳設定雨量；點一下可以讀數值。選取圖表後，← → 選月份、↑ ↓ 調整數值（加 Shift 一次調多一點）；Enter 切換溫度與雨量。</p>
         <p class="hint l-dry" hidden data-en="Drag the large dot: sideways warms or cools every month by the same amount, up and down scales every month’s rainfall by the same factor, so the seasons keep their shape. The arrow keys do the same.">拖曳大圓點：左右移動，每個月同時變暖或變冷同樣的度數；上下移動，每個月的雨量按同樣的比例增減，季節的形狀不變。方向鍵也可以。</p>
         <p class="hint l-map" hidden data-en="Each dot is a station, coloured by its Köppen–Geiger type. Tap a dot to open it (on the world map, tap Taiwan to zoom in). Only land and coastlines are drawn.">每個點是一個測站，顏色代表它的柯本－蓋格類型。點一下測站就換過去（世界地圖上點臺灣會放大）。地圖只畫陸地與海岸線。</p>
