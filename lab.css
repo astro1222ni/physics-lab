@@ -2026,9 +2026,9 @@ a.ms-near-more { display: flex; align-items: center; justify-content: center; mi
 /* 同一分頁放兩張以上的卡：第二張起留標題和分隔線，學生知道換了一組 */
 .labdeck-pane > .card:not(.labdeck-first) { border-top: 1px solid var(--border); padding-top: 8px; }
 .labdeck-pane > .card:not(.labdeck-first) > h2 { display: block; margin: 0 0 4px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
-.labdeck .slider { margin: 0 0 2px; gap: 0 8px; align-items: center; }
-.labdeck .slider .lab-num { min-height: 28px !important; height: 28px; } /* 看不見的 ::after 仍把觸控範圍放大到約 44 px */
-.labdeck .slider input[type="range"] { height: 30px !important; margin: 0; }
+.labdeck .slider { margin: 0; gap: 0 8px; align-items: center; } /* 11/21 站長：滑桿上下不要留沒意義的空白，相鄰間距約 52 px */
+.labdeck .slider .lab-num { min-height: 24px !important; height: 24px; } /* 看不見的 ::after 仍把觸控範圍放大到約 44 px */
+.labdeck .slider input[type="range"] { height: 28px !important; margin: 0; }
 /* 「接通電源」這類主開關放在分頁最上面（data-deck-top），不用往下找 */
 .labdeck-pane > .card:has(> [data-deck-top]) { display: flex; flex-direction: column; }
 .labdeck-pane [data-deck-top] { order: -1; margin: 0 0 6px; }
