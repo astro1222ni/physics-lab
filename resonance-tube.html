@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Resonance in an Air Column: Measuring the Speed of Sound | Astro Ni Lab">氣柱的共鳴（共鳴管測聲速）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 氣柱的共鳴頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布可以上下捲動頁面，只有蓄水桶的拖曳把手（#tank）攔下觸控 */
@@ -156,6 +156,8 @@
         margin-inline: 0 !important;
       }
     }
+
+    .labdeck .waterbar { margin: 0 0 4px; }
   </style>
 </head>
 <body data-en-ready>
@@ -186,20 +188,16 @@
         </div>
         <div id="view3"></div>
         <p class="rt3-meter l3" id="meter3" aria-live="off"></p>
-        <div class="waterbar" role="group" aria-label="微調水面" data-en-aria-label="Fine-tune the water level">
-          <span class="wl" data-en-html="Water<br>level">水面<br>微調</span>
-          <button type="button" id="up10" aria-label="水面上升 1 cm" data-en-aria-label="Raise the water by 1 cm">▲ 1 cm</button>
-          <button type="button" id="up1" aria-label="水面上升 1 mm" data-en-aria-label="Raise the water by 1 mm">▲ 1 mm</button>
-          <button type="button" id="dn1" aria-label="水面下降 1 mm" data-en-aria-label="Lower the water by 1 mm">▼ 1 mm</button>
-          <button type="button" id="dn10" aria-label="水面下降 1 cm" data-en-aria-label="Lower the water by 1 cm">▼ 1 cm</button>
-        </div>
         <div class="playbar">
           <button id="strike" class="primary" type="button" data-en="Strike the fork">敲音叉</button>
           <button id="record" type="button" data-en="Record (rubber band)">記錄（套橡皮筋）</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、橡皮筋與響度掃描曲線；滑桿設定不變" data-en-title="Clear the data table, the rubber bands and the loudness scans; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--b-wave)" data-en-html="<i style=&quot;background:var(--b-wave)&quot;></i>Displacement amplitude of the air"><i style="background:var(--b-wave)"></i>空氣的位移振幅</span>
           <span data-en-html="<i class=&quot;dia&quot; style=&quot;background:var(--accent)&quot;></i>Node"><i class="dia" style="background:var(--accent)"></i>波節</span>
@@ -212,7 +210,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="步驟|Steps" data-deck-order="10">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps">
             <li data-step="0" data-en="Read the thermometer and pick a tuning fork (note its frequency).">讀溫度計、選一支音叉（記下它的頻率）。</li>
@@ -224,7 +222,7 @@
           </ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="聲源|Sound source" data-deck-order="10">
           <h2 data-en="Sound source">聲源</h2>
           <div class="forks" role="group" aria-label="選擇聲源" data-en-aria-label="Choose the sound source" id="forks">
             <button type="button" id="fork384" data-src="fork" data-f="384" aria-pressed="false">384<small>Hz</small></button>
@@ -241,14 +239,21 @@
           <p class="hint" id="srcHint">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="水面與溫度|Water and temperature" data-deck-order="1">
           <h2 data-en="Conditions">實驗條件</h2>
+          <div class="slider"><label for="lev" data-en="Water level L (distance from the mouth)">水面位置 L（距管口）</label><output id="levo"></output>
+            <input id="lev" type="range" min="2" max="98" step="0.1" value="40" data-decimals="1"></div>
           <div class="slider"><label for="temp" data-en="Room temperature T (thermometer)">室溫 T（溫度計讀數）</label><output id="tempo"></output>
             <input id="temp" type="range" min="0" max="40" step="0.5" value="25" data-decimals="1"></div>
           <div class="slider"><label for="dia" data-en="Inner diameter of the tube d">玻璃管內徑 d</label><output id="diao"></output>
             <input id="dia" type="range" min="1.6" max="5" step="0.1" value="3" data-decimals="2"></div>
-          <div class="slider"><label for="lev" data-en="Water level L (distance from the mouth)">水面位置 L（距管口）</label><output id="levo"></output>
-            <input id="lev" type="range" min="2" max="98" step="0.1" value="40" data-decimals="1"></div>
+          <div class="waterbar" role="group" aria-label="微調水面" data-en-aria-label="Fine-tune the water level">
+            <span class="wl" data-en-html="Water<br>level">水面<br>微調</span>
+            <button type="button" id="up10" aria-label="水面上升 1 cm" data-en-aria-label="Raise the water by 1 cm">▲ 1 cm</button>
+            <button type="button" id="up1" aria-label="水面上升 1 mm" data-en-aria-label="Raise the water by 1 mm">▲ 1 mm</button>
+            <button type="button" id="dn1" aria-label="水面下降 1 mm" data-en-aria-label="Lower the water by 1 mm">▼ 1 mm</button>
+            <button type="button" id="dn10" aria-label="水面下降 1 cm" data-en-aria-label="Lower the water by 1 cm">▼ 1 cm</button>
+          </div>
           <p class="seg-label" id="errLabel" data-en="Measurement:">測量：</p>
           <div class="seg2" role="group" aria-labelledby="errLabel">
             <button type="button" id="ideal" aria-pressed="true" data-en="Ideal">理想</button>
@@ -258,7 +263,7 @@
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks col">
             <label><input id="showEnv" type="checkbox" checked><span data-en="Displacement amplitude, nodes and antinodes">位移振幅、波節與波腹</span></label>
@@ -434,18 +439,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/resonance-tube-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/resonance-tube-3d.js?v=202611211106"></script>
-  <script src="js/resonance-tube.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="resonance-tube"></script>
-  <script src="js/missions/resonance-tube.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="resonance-tube"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/resonance-tube-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/resonance-tube-3d.js?v=202611210919"></script>
+  <script src="js/resonance-tube.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="resonance-tube"></script>
+  <script src="js/missions/resonance-tube.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="resonance-tube"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

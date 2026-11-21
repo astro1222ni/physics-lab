@@ -106,7 +106,6 @@
     <p class="try-hint" data-en="Try it: tap “n = 4”, then “n = 2”, and see which line the emitted photon lights up in the spectrum.">試試看：先按「n = 4」再按「n = 2」，看放出的光子在光譜上亮起哪一條線。</p>
     <div class="lab hs">
       <div class="stage">
-        <canvas id="cv" role="img" aria-label="氫原子模擬畫布：左邊是能階圖，右邊是波耳軌道（或放電管、白光吸收裝置），下方是全波段光譜與可見光放大光譜"></canvas>
         <div class="lvbar" id="lvbar" role="group" aria-labelledby="lvlabel">
           <span class="lvlabel" id="lvlabel" data-en="Jump to:">躍遷到：</span>
           <button type="button" data-n="1">n = 1<small>−13.6 eV</small></button>
@@ -118,12 +117,16 @@
           <button type="button" data-n="7">n = 7<small>−0.28</small></button>
           <button type="button" data-n="inf" data-en-html="∞<small>ionise</small>">∞<small>游離</small></button>
         </div>
+        <canvas id="cv" role="img" aria-label="氫原子模擬畫布：左邊是能階圖，右邊是波耳軌道（或放電管、白光吸收裝置），下方是全波段光譜與可見光放大光譜"></canvas>
         <div class="playbar">
           <button id="fire" type="button" class="primary">射入光子</button>
           <button id="play" type="button" class="primary" hidden data-en="Pause the discharge">暫停放電</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除光譜上累積的譜線與統計，電子回到基態，滑桿設定不變" data-en-title="Clear the accumulated spectral lines and counts and return the electron to the ground state; slider settings are kept">全部清除</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="clear" type="button" data-en="Clear all" title="清除光譜上累積的譜線與統計，電子回到基態，滑桿設定不變" data-en-title="Clear the accumulated spectral lines and counts and return the electron to the ground state; slider settings are kept">全部清除</button>
+        </div>
         <div class="legend">
           <span data-en-html="<i class=&quot;arrow-dn&quot;></i>Emission (down)"><i class="arrow-dn"></i>發射（往下）</span>
           <span data-en-html="<i class=&quot;arrow-up&quot;></i>Absorption (up, dashed)"><i class="arrow-up"></i>吸收（往上，虛線）</span>
@@ -134,7 +137,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="10">
           <h2 data-en="Mode">模式</h2>
           <div class="seg3" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" id="modeAtom" aria-pressed="true" data-en="One atom">單一原子</button>
@@ -144,23 +147,23 @@
           <p class="hint" id="modeHint"></p>
         </section>
 
-        <section class="card" id="cardGun">
+        <section class="card" id="cardGun" data-deck="射入光子|Fire a photon" data-deck-order="1">
           <h2 data-en="Fire a photon">射入光子</h2>
+          <div class="slider" id="boxE"><label for="gE" data-en="Photon energy E">光子能量 E</label><output id="gEo"></output>
+            <input id="gE" type="range" min="0" max="1000" step="1" value="884" data-decimals="4"></div>
+          <div class="slider" id="boxL" hidden><label for="gL" data-en="Wavelength λ (vacuum)">波長 λ（真空）</label><output id="gLo"></output>
+            <input id="gL" type="range" min="0" max="1000" step="1" value="116" data-decimals="2"></div>
           <p class="seg-label" id="gunByLabel" data-en="Set the photon by:">設定光子的：</p>
           <div class="seg2" role="group" aria-labelledby="gunByLabel">
             <button type="button" id="byE" aria-pressed="true" data-en="Energy E">能量 E</button>
             <button type="button" id="byL" aria-pressed="false" data-en="Wavelength λ">波長 λ</button>
           </div>
-          <div class="slider" id="boxE"><label for="gE" data-en="Photon energy E">光子能量 E</label><output id="gEo"></output>
-            <input id="gE" type="range" min="0" max="1000" step="1" value="884" data-decimals="4"></div>
-          <div class="slider" id="boxL" hidden><label for="gL" data-en="Wavelength λ (vacuum)">波長 λ（真空）</label><output id="gLo"></output>
-            <input id="gL" type="range" min="0" max="1000" step="1" value="116" data-decimals="2"></div>
           <dl class="photonbox" id="gunInfo"></dl>
           <div class="btnrow"><button type="button" id="fire2" class="primary" data-en="Fire the photon">射入光子</button></div>
           <p class="hint" data-en="Tap a number to type an exact value. The atom absorbs the photon only if its energy matches an energy-level difference (within ±0.005 eV), or if it is enough to ionise the atom.">點一下數字可直接輸入精確數值。只有能量剛好等於能階差（誤差 ±0.005 eV 內），或足以讓原子游離的光子才會被吸收。</p>
         </section>
 
-        <section class="card" id="cardTube" hidden>
+        <section class="card" id="cardTube" hidden data-deck="放電管|Discharge tube" data-deck-order="2">
           <h2 data-en="Discharge tube">放電管</h2>
           <div class="slider"><label for="tK" data-en="Kinetic energy of the colliding electrons K">撞擊電子的動能 K</label><output id="tKo"></output>
             <input id="tK" type="range" min="8" max="13.5" step="0.01" value="13.4" data-decimals="3"></div>
@@ -182,7 +185,7 @@
           <p class="hint" data-en="“Share” is the fraction of all photons counted; “Expected” is the exact average from the transition probabilities (NIST). The more photons, the closer they agree.">「比例」是占全部光子的比例；「理論」是由躍遷機率（NIST）算出的精確平均值。光子越多，兩者越接近。</p>
         </section>
 
-        <section class="card" id="cardAbs" hidden>
+        <section class="card" id="cardAbs" hidden data-deck="白光穿過氫氣|White light through hydrogen" data-deck-order="10">
           <h2 data-en="White light through hydrogen">白光穿過氫氣</h2>
           <p class="seg-label" id="gasLabel" data-en="The hydrogen gas is:">氫氣的狀態：</p>
           <div class="seg2" role="group" aria-labelledby="gasLabel">
@@ -217,7 +220,7 @@
           </dl>
         </section>
 
-        <section class="card" id="cardShow">
+        <section class="card" id="cardShow" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showWave" type="checkbox" checked><span data-en="Matter wave (standing wave)">物質波（駐波）</span></label>

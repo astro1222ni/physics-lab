@@ -225,7 +225,8 @@
       side = { x: 0, y: world.h + 6, w: cw, h: below };
       infoBelow = true;
     } else if (narrow) {
-      const wH = Math.max(210, Math.min(state.mode === 1 ? 480 : 430, cw * wh / ww + 10));
+      const maxSceneHeight = cw <= 420 ? 410 : state.mode === 1 ? 480 : 430;
+      const wH = Math.max(210, Math.min(maxSceneHeight, cw * wh / ww + 10));
       world = { x: 0, y: 0, w: cw, h: wH };
       side = { x: 0, y: wH + 6, w: cw, h: 128 };
       infoBelow = true;

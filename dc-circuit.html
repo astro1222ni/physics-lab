@@ -98,11 +98,14 @@
         <canvas id="cv" aria-label="直流電路模擬畫布：電路圖、沿導線移動的電荷、燈泡亮度、電流標示與三用電表探針"></canvas>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="Pause">暫停</button>
-          <button id="clearProbe" type="button" data-en="Remove probes" title="移除兩支探針" data-en-title="Remove both probes">移除探針</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p id="srLive" class="sr-only" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="clearProbe" type="button" data-en="Remove probes" title="移除兩支探針" data-en-title="Remove both probes">移除探針</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
         <div class="legend">
           <span id="lgCarrier" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--pos)"></i>移動的電荷（傳統電流方向）</span>
           <span data-en-html="<i class=&quot;grad&quot;></i>Potential: low → high"><i class="grad"></i>電位：低 → 高</span>
@@ -113,7 +116,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="電路|Circuit" data-deck-order="10">
           <h2 data-en="Circuit">電路</h2>
           <div class="presets" role="group" aria-label="選擇電路" data-en-aria-label="Choose a circuit">
             <button type="button" data-preset="single" aria-pressed="true" data-en="Single resistor">單一電阻</button>
@@ -133,7 +136,7 @@
           <p class="hint" data-en="Choosing a circuit loads its starting values.">選擇電路時會載入該電路的預設數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電池|Battery" data-deck-order="1">
           <h2 data-en="Battery">電池</h2>
           <div class="slider"><label for="emf" data-en="EMF ε">電動勢 ε</label><output id="emfo"></output>
             <input id="emf" type="range" min="1.5" max="12" step="0.5" value="6" data-decimals="2"></div>
@@ -141,7 +144,7 @@
             <input id="rin" type="range" min="0" max="5" step="0.1" value="0" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="元件|Components" data-deck-order="10">
           <h2 data-en="Components">元件</h2>
           <div class="chips" id="chips" role="group" aria-label="元件：點電阻選取、點開關切換" data-en-aria-label="Components: tap a resistor to select it, a switch to toggle it"></div>
           <div class="slider" id="rBox"><label for="rsel" id="rselLabel">電阻</label><output id="rselo"></output>
@@ -174,7 +177,7 @@
           <p class="hint" data-en="Current I is the conventional current through the part; V = IR is the voltage across it.">I 是流過元件的電流（傳統電流），V = IR 是元件兩端的電壓。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showLabels" type="checkbox" checked><span data-en="Current labels">電流標示</span></label>

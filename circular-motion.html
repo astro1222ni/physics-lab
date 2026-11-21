@@ -87,12 +87,15 @@
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
           <button id="cut" type="button" data-en="Cut the string">剪斷繩子</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="reset" type="button" data-en="Clear all" title="清除軌跡、圖表與飛出的路徑，滑桿設定不變" data-en-title="Clear the trail, graphs and released path; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Circular path"><i class="dash"></i>圓周軌道</span>
           <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v (tangent)"><i style="background:var(--pos)"></i>速度 v（切線方向）</span>
@@ -105,21 +108,21 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="運動|Motion">
           <h2 data-en="Motion settings">運動條件</h2>
           <div class="slider"><label for="r" data-en="Radius r">半徑 r</label><output id="ro"></output>
             <input id="r" type="range" min="0.5" max="2" step="0.1" value="1.5" data-decimals="2"></div>
-          <p class="seg-label" id="holdLabel" data-en="When the radius changes, keep fixed:">改變半徑時保持不變的量：</p>
-          <div class="seg2" role="group" aria-labelledby="holdLabel">
-            <button type="button" id="holdT" aria-pressed="true" data-en="Period T">週期 T</button>
-            <button type="button" id="holdV" aria-pressed="false" data-en="Speed v">速率 v</button>
-          </div>
           <div class="slider" id="boxT"><label for="T" data-en="Period T">週期 T</label><output id="To"></output>
             <input id="T" type="range" min="1" max="8" step="0.1" value="3" data-decimals="2"></div>
           <div class="slider" id="boxV" hidden><label for="v" data-en="Speed v">速率 v</label><output id="vo"></output>
             <input id="v" type="range" min="1" max="8" step="0.1" value="3" data-decimals="2"></div>
           <div class="slider"><label for="m" data-en="Mass m">質量 m</label><output id="mo"></output>
             <input id="m" type="range" min="0.1" max="2" step="0.1" value="0.5" data-decimals="2"></div>
+          <p class="seg-label" id="holdLabel" data-en="When the radius changes, keep fixed:">改變半徑時保持不變的量：</p>
+          <div class="seg2" role="group" aria-labelledby="holdLabel">
+            <button type="button" id="holdT" aria-pressed="true" data-en="Period T">週期 T</button>
+            <button type="button" id="holdV" aria-pressed="false" data-en="Speed v">速率 v</button>
+          </div>
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
 
@@ -149,7 +152,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showV" type="checkbox" checked><span data-en="Velocity v">速度 v</span></label>

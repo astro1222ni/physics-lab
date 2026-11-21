@@ -136,6 +136,8 @@
         margin-inline: 0 !important;
       }
     }
+
+    .labdeck .answer { margin-inline: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -155,7 +157,6 @@
           <button type="button" data-mode="micro" aria-pressed="false" data-en-html="<b>Part 2</b>Micrometer"><b>②</b>螺旋測微器</button>
           <button type="button" data-mode="multi" aria-pressed="false" data-en-html="<b>Part 3</b>Repeated measurements"><b>③</b>多次測量</button>
         </div>
-        <canvas id="cv" aria-label="量具的畫面：上方是整支儀器與待測物，下方是讀刻度用的放大鏡" data-en-aria-label="The instrument: the whole tool with the object above, and a magnifier for reading the scale below"></canvas>
         <div class="magbar">
           <span id="magLabel" data-en="Magnifier">放大鏡</span>
           <div class="seg5" role="group" aria-labelledby="magLabel">
@@ -167,6 +168,7 @@
           </div>
           <button type="button" id="namesBtn" aria-pressed="true" data-en="Part names">部件名稱</button>
         </div>
+        <canvas id="cv" aria-label="量具的畫面：上方是整支儀器與待測物，下方是讀刻度用的放大鏡" data-en-aria-label="The instrument: the whole tool with the object above, and a magnifier for reading the scale below"></canvas>
         <div class="playbar" id="ctlBar">
           <div class="grow" id="jawBtns">
             <button type="button" id="closeBtn" class="primary" data-en="Close on the object">夾緊</button>
@@ -184,22 +186,19 @@
             <button type="button" id="meas1" class="primary" data-en="Measure once">量一次</button>
             <button type="button" id="meas10" data-en="Measure 10 times">量 10 次</button>
           </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button type="button" id="clearAll" data-en="Clear all" title="清除多次測量的所有數據與讀數成績；設定不變" data-en-title="Clear all repeated-measurement data and the reading scores; the settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <form class="answer" id="ansBox" autocomplete="off" data-share-skip>
-          <label for="ans" id="ansLabel">讀數（mm）</label>
-          <input id="ans" type="text" inputmode="decimal" enterkeyhint="done" spellcheck="false" placeholder="例如 23.45" data-en-placeholder="e.g. 23.45">
-          <button type="submit" id="checkBtn" class="primary" data-en="Check">核對</button>
-        </form>
-        <div class="feedback" id="feedback" aria-live="polite"></div>
-        <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="sceneHint"></p>
         <p class="sr-only" id="liveOut" role="status" aria-live="polite"></p>
       </div>
 
       <aside class="panel">
-        <section class="card" id="cardV">
+        <section class="card" id="cardV" data-deck="游標尺|Vernier caliper" data-deck-order="1">
           <h2 data-en="Vernier caliper">游標尺</h2>
           <p class="seg-label" id="nLabel" data-en="Vernier scale:">副尺刻度：</p>
           <div class="seg2" role="group" aria-labelledby="nLabel">
@@ -216,7 +215,7 @@
           <p class="hint" id="vHint"></p>
         </section>
 
-        <section class="card" id="cardM" hidden>
+        <section class="card" id="cardM" hidden data-deck="螺旋測微器|Micrometer" data-deck-order="2">
           <h2 data-en="Micrometer">螺旋測微器</h2>
           <p class="seg-label" id="objLabel" data-en="Object:">待測物：</p>
           <div class="seg3" role="group" aria-labelledby="objLabel">
@@ -228,7 +227,7 @@
           <p class="hint" data-en="Drag the thimble up or down to turn it (0.01 mm per division); drag it sideways to spin it fast. Near the object, finish with the ratchet: once it clicks, stop.">在套管上下拖曳可轉動（每格 0.01 mm），左右拖曳可快轉。接近物體時改用棘輪，聽到「喀喀」就停。</p>
         </section>
 
-        <section class="card" id="cardX" hidden>
+        <section class="card" id="cardX" hidden data-deck="多次測量|Repeated measurements" data-deck-order="3">
           <h2 data-en="Repeated measurements">多次測量</h2>
           <p class="seg-label" id="instrLabel" data-en="Instrument:">儀器：</p>
           <div class="seg3" role="group" aria-labelledby="instrLabel">
@@ -254,8 +253,14 @@
           <dl class="readout" id="scoreOut"></dl>
         </section>
 
-        <section class="card" id="cardHow">
+        <section class="card" id="cardHow" data-deck="讀數與讀法|Read and check" data-deck-order="0">
           <h2 data-en="How to read it">讀法</h2>
+          <form class="answer" id="ansBox" autocomplete="off" data-share-skip>
+            <label for="ans" id="ansLabel">讀數（mm）</label>
+            <input id="ans" type="text" inputmode="decimal" enterkeyhint="done" spellcheck="false" placeholder="例如 23.45" data-en-placeholder="e.g. 23.45">
+            <button type="submit" id="checkBtn" class="primary" data-en="Check">核對</button>
+          </form>
+          <div class="feedback" id="feedback" aria-live="polite"></div>
           <ol class="steps" id="howV">
             <li data-en-html="<b>Check the zero:</b> close the jaws. If the vernier 0 is not on the main-scale 0, the reading then is the zero error \(e\). If the vernier 0 is left of the main-scale 0, \(e\) is negative: when vernier line \(k\) lines up, \(e = -(N - k)\,c\) (e.g. a 20-division vernier with line 17 lined up: \(e = -3 \times 0.05 = -0.15\) mm).">先<b>檢查零點</b>：合攏夾爪，副尺 0 刻線不在主尺 0 時，這時的讀數就是零點誤差 \(e\)。副尺 0 在主尺 0 左邊時 \(e\) 為負：對齊的是副尺第 \(k\) 條，\(e = -(N - k)\,c\)（例如 20 格副尺第 17 條對齊：\(e = -3 \times 0.05 = -0.15\) mm）。</li>
             <li data-en-html="Use the lower <b>outside jaws</b> for a diameter, the upper <b>inside jaws</b> for a hole, the <b>depth rod</b> for a depth. Close gently until they touch.">外徑用下方的<b>外測爪</b>、內徑用上方的<b>內測爪</b>、深度用尾端的<b>深度桿</b>，輕輕碰到就好。</li>

@@ -93,6 +93,7 @@
           <p class="status" id="status"></p>
           <button id="anim" type="button" hidden>暫停動畫</button>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend">
           <span data-en-html="&lt;i style=&quot;background:var(--beam)&quot;&gt;&lt;/i&gt;Light ray (brightness ∝ intensity)"><i style="background:var(--beam)"></i>光線（亮度隨光強）</span>
           <span style="color:var(--muted)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Normal"><i class="dash"></i>法線</span>
@@ -115,7 +116,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="顯示模式|View" data-deck-order="10">
           <h2 data-en="View">顯示模式</h2>
           <div class="seg" role="group" aria-label="顯示模式" data-en-aria-label="View">
             <button type="button" data-mode="ray" aria-pressed="true" data-en="Rays">光線</button>
@@ -124,8 +125,12 @@
           </div>
         </section>
 
-        <section class="card" id="mediaCard">
+        <section class="card" id="mediaCard" data-deck="介質|Media" data-deck-order="1">
           <h2 data-en="Media">介質</h2>
+          <div class="slider"><label for="n1" data-en-html="Refractive index n&lt;sub&gt;1&lt;/sub&gt;">折射率 n<sub>1</sub></label><output id="n1o"></output>
+            <input id="n1" type="range" min="1" max="2.5" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="n2" data-en-html="Refractive index n&lt;sub&gt;2&lt;/sub&gt;">折射率 n<sub>2</sub></label><output id="n2o"></output>
+            <input id="n2" type="range" min="1" max="2.5" step="0.01" value="1.5" data-decimals="3"></div>
           <p class="sub-h"><span class="chip" id="chip1"></span><span data-en-html="Upper medium (incident light), n&lt;sub&gt;1&lt;/sub&gt;">上方介質（入射光所在），n<sub>1</sub></span></p>
           <div class="presets" role="group" aria-label="上方介質" data-en-aria-label="Upper medium" id="pre1">
             <button type="button" data-n="1.00" data-en-html="Air&lt;small&gt;1.00&lt;/small&gt;">空氣<small>1.00</small></button>
@@ -133,8 +138,6 @@
             <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
             <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
           </div>
-          <div class="slider"><label for="n1" data-en-html="Refractive index n&lt;sub&gt;1&lt;/sub&gt;">折射率 n<sub>1</sub></label><output id="n1o"></output>
-            <input id="n1" type="range" min="1" max="2.5" step="0.01" value="1" data-decimals="3"></div>
 
           <p class="sub-h"><span class="chip" id="chip2"></span><span data-en-html="Lower medium, n&lt;sub&gt;2&lt;/sub&gt;">下方介質，n<sub>2</sub></span></p>
           <div class="presets" role="group" aria-label="下方介質" data-en-aria-label="Lower medium" id="pre2">
@@ -143,22 +146,20 @@
             <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
             <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
           </div>
-          <div class="slider"><label for="n2" data-en-html="Refractive index n&lt;sub&gt;2&lt;/sub&gt;">折射率 n<sub>2</sub></label><output id="n2o"></output>
-            <input id="n2" type="range" min="1" max="2.5" step="0.01" value="1.5" data-decimals="3"></div>
           <button type="button" class="swap" id="swap" data-en="⇅ Swap upper and lower media">⇅ 上下介質對調</button>
         </section>
 
-        <section class="card" id="fibreCard" hidden>
+        <section class="card" id="fibreCard" hidden data-deck="光纖材料|Fibre materials" data-deck-order="2">
           <h2 data-en="Fibre materials">光纖材料</h2>
           <div class="slider"><label for="nCore" data-en-html="Core refractive index n&lt;sub&gt;core&lt;/sub&gt;">纖芯折射率 n<sub>芯</sub></label><output id="nCoreo"></output>
             <input id="nCore" type="range" min="1" max="2.5" step="0.01" value="1.5" data-decimals="3"></div>
+          <div class="slider"><label for="nClad" data-en-html="Cladding refractive index n&lt;sub&gt;clad&lt;/sub&gt;">包層折射率 n<sub>包</sub></label><output id="nClado"></output>
+            <input id="nClad" type="range" min="1" max="2.5" step="0.01" value="1.33" data-decimals="3"></div>
           <div class="presets three" role="group" aria-label="纖芯材料" data-en-aria-label="Core material" id="preCore">
             <button type="button" data-n="1.48" data-en-html="Fibre core&lt;small&gt;1.48&lt;/small&gt;">光纖纖芯<small>1.48</small></button>
             <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
             <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
           </div>
-          <div class="slider"><label for="nClad" data-en-html="Cladding refractive index n&lt;sub&gt;clad&lt;/sub&gt;">包層折射率 n<sub>包</sub></label><output id="nClado"></output>
-            <input id="nClad" type="range" min="1" max="2.5" step="0.01" value="1.33" data-decimals="3"></div>
           <div class="presets three" role="group" aria-label="包層材料" data-en-aria-label="Cladding material" id="preClad">
             <button type="button" data-n="1.00" data-en-html="Air&lt;small&gt;1.00&lt;/small&gt;">空氣<small>1.00</small></button>
             <button type="button" data-n="1.33" data-en-html="Water&lt;small&gt;1.33&lt;/small&gt;">水<small>1.33</small></button>
@@ -166,7 +167,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="入射光|Incident light" data-deck-order="10">
           <h2 data-en="Incident light">入射光</h2>
           <div data-m="ray wave">
             <div class="slider"><label for="th" data-en-html="Angle of incidence θ&lt;sub&gt;1&lt;/sub&gt;">入射角 θ<sub>1</sub></label><output id="tho"></output>
@@ -223,7 +224,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showArcs" type="checkbox" checked><span data-en="Angle labels">角度標示</span></label>

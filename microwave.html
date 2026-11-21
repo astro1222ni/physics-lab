@@ -180,10 +180,13 @@
         </div>
         <div class="playbar">
           <button id="recBtn" class="primary" type="button" data-en="Record">記錄</button>
-          <button id="clearAll" type="button" title="清除四個實驗的數據表與讀數掃描，探針回到中點；滑桿設定不變" data-en-title="Clear the data tables and reading scans of all four parts and put the probe back at the middle; slider settings are kept" data-en="Clear all">全部清除</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="clearAll" type="button" title="清除四個實驗的數據表與讀數掃描，探針回到中點；滑桿設定不變" data-en-title="Clear the data tables and reading scans of all four parts and put the probe back at the middle; slider settings are kept" data-en="Clear all">全部清除</button>
+        </div>
         <div class="legend l2" id="legend2">
           <span data-en-html="<i class=&quot;grad&quot;></i>Electric field: red = up (out of the screen), blue = down"><i class="grad"></i>電場：紅＝向上（指出畫面）、藍＝向下</span>
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Reading scan"><i style="background:var(--accent)"></i>讀數掃描</span>
@@ -194,13 +197,13 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="步驟|Steps" data-deck-order="10">
           <h2 id="stepsTitle" data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps"></ol>
         </section>
 
         <!-- 實驗一：反射 -->
-        <section class="card" id="ctl-reflect">
+        <section class="card" id="ctl-reflect" data-deck="反射|Reflection" data-deck-order="1">
           <h2 data-en="Part 1: the metal plate">實驗一：金屬反射板</h2>
           <p class="seg-label" id="plateLabel" data-en="Metal plate on the turntable:">轉軸上的金屬反射板：</p>
           <div class="seg2" role="group" aria-labelledby="plateLabel">
@@ -215,7 +218,7 @@
         </section>
 
         <!-- 實驗二：折射 -->
-        <section class="card" id="ctl-refract" hidden>
+        <section class="card" id="ctl-refract" hidden data-deck="折射|Refraction" data-deck-order="2">
           <h2 data-en="Part 2: the prism (smallest angle A = 30°)">實驗二：稜鏡（最小內角 A = 30°）</h2>
           <p class="seg-label" id="matLabel" data-en="Prism material (n at about 10 GHz):">稜鏡材料（約 10 GHz 的折射率）：</p>
           <div class="seg3" role="group" aria-labelledby="matLabel">
@@ -229,7 +232,7 @@
         </section>
 
         <!-- 實驗三：駐波 -->
-        <section class="card" id="ctl-standing" hidden>
+        <section class="card" id="ctl-standing" hidden data-deck="駐波|Standing wave" data-deck-order="3">
           <h2 data-en="Part 3: the probe between transmitter and plate">實驗三：發射器與反射板之間的探針</h2>
           <div class="slider"><label for="probe" data-en="Probe position on the scale x (cm)">探針在尺上的刻度 x（cm）</label><output id="probeo"></output>
             <input id="probe" type="range" min="14" max="68" step="0.05" value="40" data-decimals="2"></div>
@@ -239,7 +242,7 @@
         </section>
 
         <!-- 實驗四：偏振 -->
-        <section class="card" id="ctl-polar" hidden>
+        <section class="card" id="ctl-polar" hidden data-deck="偏極|Polarization" data-deck-order="4">
           <h2 data-en="Part 4: polarizing grids">實驗四：偏極柵</h2>
           <div class="slider"><label for="dist" data-en="Distance between the horn mouths d (cm)">兩喇叭開口的距離 d（cm）</label><output id="disto"></output>
             <input id="dist" type="range" min="30" max="70" step="0.1" value="55" data-decimals="2"></div>
@@ -262,7 +265,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="發射器|Emitter" data-deck-order="10">
           <h2 data-en="Transmitter and meter">發射器與電表</h2>
           <p class="seg-label" id="freqLabel" data-en="Transmitter frequency:">發射器的頻率：</p>
           <div class="seg3" role="group" aria-labelledby="freqLabel">
@@ -299,7 +302,7 @@
         </div>
       </div>
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="分析|Analysis" data-deck-order="10">
           <h2 data-en="Analysis">分析結果</h2>
           <dl class="readout" id="fit"></dl>
           <button type="button" class="reveal" id="reveal" hidden>—</button>

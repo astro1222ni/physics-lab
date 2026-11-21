@@ -112,6 +112,9 @@
       #view { height: 170px; }
       #graph { height: 300px; }
     }
+
+    .labdeck .viewbar[data-deck-top] { display: flex; gap: 4px 8px; }
+    .labdeck .viewbar .seg2 { margin-bottom: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -130,11 +133,13 @@
         <div class="playbar">
           <button id="drawBtn" class="primary" type="button" data-en="Remove the block and draw the rays">移走透明塊，畫出光路</button>
           <button id="recBtn" type="button" disabled data-en="Record">記錄</button>
-          <button id="clearAll" type="button" title="清除數據表、紙上的舊光路，針回到針插、透明塊放回；材料與設定不變" data-en-title="Clear the data table and the old rays on the paper, return the pins to the pincushion and put the block back; the material and settings are kept" data-en="Clear all">全部清除</button>
         </div>
         <p class="status" id="status" aria-live="off"></p>
         <p class="sr-only" id="srStatus" aria-live="polite"></p>
         <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="clearAll" type="button" title="清除數據表、紙上的舊光路，針回到針插、透明塊放回；材料與設定不變" data-en-title="Clear the data table and the old rays on the paper, return the pins to the pincushion and put the block back; the material and settings are kept" data-en="Clear all">全部清除</button>
+        </div>
 
         <section class="card ri" data-deck="對準插針|Align pins" data-deck-order="1">
           <div class="view-head">
@@ -142,7 +147,7 @@
             <span id="viewNote" data-en="horizontal angles magnified; the lower part of each pin is seen through the block">水平方向放大；針的下半段是透過透明塊看到的</span>
           </div>
           <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體"></canvas>
-          <div class="viewbar">
+          <div class="viewbar" data-deck-top>
             <div class="seg2" role="group" aria-label="視野" data-en-aria-label="Field of view">
               <button type="button" data-zoom="wide" aria-pressed="true" data-en-html="Wide&lt;small&gt;±12°&lt;/small&gt;">廣角<small>±12°</small></button>
               <button type="button" data-zoom="zoom" aria-pressed="false" data-en-html="Magnified ×4&lt;small&gt;±3°&lt;/small&gt;">放大 ×4<small>±3°</small></button>
@@ -176,6 +181,10 @@
 
         <section class="card" data-deck="透明塊|Block" data-deck-order="2">
           <h2 data-en="Block and material">透明塊與材料</h2>
+          <div id="rectBox">
+            <div class="slider"><label for="t" data-en="Block thickness t (between L and L′)">透明塊厚度 t（L 到 L′）</label><output id="to"></output>
+              <input id="t" type="range" min="2" max="8" step="0.1" value="6" data-decimals="2"></div>
+          </div>
           <p class="seg-label" id="shapeLabel" data-en="Shape:">形狀：</p>
           <div class="seg2" role="group" aria-labelledby="shapeLabel">
             <button type="button" data-shape="semi" aria-pressed="false" data-en="Semicircular">半圓形</button>
@@ -189,10 +198,6 @@
             <button type="button" data-mat="unknown" aria-pressed="false" data-en-html="Unknown&lt;small&gt;n = ?&lt;/small&gt;">未知樣品<small>n = ?</small></button>
           </div>
           <button type="button" class="reveal" id="reveal" hidden data-en="Reveal the unknown sample’s n">揭曉未知樣品的折射率</button>
-          <div id="rectBox">
-            <div class="slider"><label for="t" data-en="Block thickness t (between L and L′)">透明塊厚度 t（L 到 L′）</label><output id="to"></output>
-              <input id="t" type="range" min="2" max="8" step="0.1" value="6" data-decimals="2"></div>
-          </div>
           <div id="semiBox" hidden>
             <p class="seg-label" id="dirLabel" data-en="Light enters through:">光射入的一面：</p>
             <div class="seg2" role="group" aria-labelledby="dirLabel">

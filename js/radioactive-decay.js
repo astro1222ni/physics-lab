@@ -135,8 +135,10 @@
     const narrow = cw < 620 && !matchMedia('(orientation: landscape) and (max-height: 600px)').matches, gap = narrow ? 8 : 10;
     let G, NG, AG, H;
     if (narrow) {
-      const S = cw, gH = Math.round(cw * 0.64), aH = Math.round(cw * 0.44);
-      G = { x: 0, y: 0, w: S, h: S };
+      const phone = cw <= 420;
+      const S = Math.round(cw * (phone ? 0.8 : 1));
+      const gH = Math.round(cw * (phone ? 0.43 : 0.64)), aH = Math.round(cw * (phone ? 0.32 : 0.44));
+      G = { x: 0, y: 0, w: cw, h: S };
       NG = { x: 0, y: S + gap, w: cw, h: gH };
       AG = { x: 0, y: S + gap + gH + gap, w: cw, h: aH };
       H = AG.y + aH;

@@ -94,6 +94,8 @@
       }
     }
     .labdeck-tabs button { -webkit-line-clamp: unset; }
+    .stage .simulation-actions { display: flex; gap: 8px; margin: 8px 0 0; }
+    .stage .simulation-actions button { flex: 1; min-height: 44px; }
   </style>
 </head>
 <body data-en-ready>
@@ -117,6 +119,12 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" tabindex="0" aria-label="帶電粒子在磁場中運動的模擬畫布：紙面上的磁場符號、粒子的軌跡、速度與力的向量、圓軌道與圓心。點擊或拖曳畫布改變出發點；鍵盤操作：方向鍵移動出發點 0.1 cm，Shift 加方向鍵移動 1 cm。" data-en-aria-label="Simulation canvas: the magnetic field symbols on the page, the particle’s trail, its velocity and force vectors, and the orbit circle with its center. Click or drag on the canvas to move the starting point. Keyboard: the arrow keys move the starting point 0.1 cm, Shift with an arrow key 1 cm."></canvas>
         <div id="view3"></div>
+        <div class="btns simulation-actions">
+          <button id="run" class="primary">發射</button>
+          <button id="reset" data-en="Back to start">回到起點</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="proj-note" id="projNote" hidden data-en="θ ≠ 90°: the 2D view shows the projection of the motion onto the plane perpendicular to B (the page), so the helix looks like a circle. The particle is also moving along B (the z axis) — switch to the 3D view to see the full helix.">θ ≠ 90°：2D 畫面是運動在垂直於 B 的平面（紙面）上的投影，所以螺旋線看起來是圓；粒子同時沿 B（z 軸）前進，切換到 3D 檢視可看到完整的螺旋線。</p>
         <div class="legend">
           <span class="l2"><i class="sym out"></i><span data-en="B out of the page">B 射出紙面</span></span>
@@ -135,7 +143,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="情境|Scenarios" data-deck-order="10">
           <h2 data-en="Scenarios">情境</h2>
           <div class="btns">
             <button data-preset="circle" data-en="Uniform circular motion">等速圓周運動</button>
@@ -146,11 +154,9 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="動畫|Animation" data-deck-order="10">
           <h2 data-en="Animation">動畫</h2>
           <div class="btns">
-            <button id="run" class="primary">發射</button>
-            <button id="reset" data-en="Back to start">回到起點</button>
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
           <div class="slider"><label for="speed" data-en="Slow motion">慢動作</label><output id="speedo"></output>
@@ -160,12 +166,11 @@
             <label><input id="showVec" type="checkbox" checked><span data-en="Velocity and force vectors">速度與力的向量</span></label>
             <label><input id="showOrbit" type="checkbox" checked><span data-en="Orbit circle and center">圓軌道與圓心</span></label>
           </div>
-          <p class="status" id="status" aria-live="polite"></p>
           <p class="sr-only" id="srSay" aria-live="polite"></p>
           <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="磁場|Magnetic field" data-deck-order="10">
           <h2 data-en="Magnetic field">磁場</h2>
           <p class="hint" data-en="The field points along the z axis, perpendicular to the page.">磁場沿 z 軸，垂直紙面。</p>
           <div class="slider"><label for="B" data-en="Magnetic field B">磁場 B</label><output id="Bo"></output>
@@ -175,7 +180,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="帶電粒子|Charged particle" data-deck-order="1">
           <h2 data-en="Charged particle">帶電粒子</h2>
           <div class="slider"><label for="q" data-en="Charge q">電荷 q</label><output id="qo"></output>
             <input id="q" type="range" min="-3" max="3" step="1" value="2" data-decimals="0"></div>
@@ -190,7 +195,7 @@
           <p class="mp-help" data-en="q is in units of the elementary charge e and m in atomic mass units u (a proton is about 1 u; an α particle is +2e, 4 u). θ = 90° means v ⊥ B (a circle in the page); any other angle gives a helix along B.">q 以基本電荷 e 為單位，m 以原子質量單位 u 為單位（質子約 1 u，α 粒子為 +2e、4 u）。θ = 90° 時速度垂直於 B（紙面上的圓），其他角度則沿 B 做螺旋運動。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電場（垂直於發射方向）|Electric field (perpendicular to the launch direction)" data-deck-order="10">
           <h2 data-en="Electric field (perpendicular to the launch direction)">電場（垂直於發射方向）</h2>
           <div class="slider"><label for="E" data-en="Electric field E">電場 E</label><output id="Eo"></output>
             <input id="E" type="range" min="-100" max="100" step="0.5" value="0" data-decimals="3"></div>

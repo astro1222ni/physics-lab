@@ -83,6 +83,7 @@
         <canvas id="cv" tabindex="0" aria-label="透鏡與面鏡成像畫布。左右方向鍵移動物體（改變物距，每次 0.5 cm，按住 Shift 每次 5 cm，經過 F、2F 時會停一下），上下方向鍵改變物高（每次 0.5 cm，按住 Shift 每次 1 cm）。" data-en-aria-label="Lens and mirror imaging canvas. The left and right arrow keys move the object (object distance, 0.5 cm a step, 5 cm with Shift; it stops at F and 2F on the way); the up and down arrow keys change its height (0.5 cm a step, 1 cm with Shift)."></canvas>
         <p class="sr-only" id="live" role="status" aria-live="polite"></p>
         <p class="status" id="status"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend">
           <span style="color:var(--equi)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Object"><i class="arrow" style="background:var(--equi)"></i>物體</span>
           <span style="color:var(--b-optics)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--b-optics)&quot;&gt;&lt;/i&gt;Image (dashed: virtual)"><i class="arrow" style="background:var(--b-optics)"></i>像（虛線：虛像）</span>
@@ -98,7 +99,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="光學元件|Optical element" data-deck-order="10">
           <h2 id="elemTitle" data-en="Optical element">光學元件</h2>
           <div class="elems" role="group" aria-labelledby="elemTitle">
             <button type="button" data-el="convex-lens" aria-pressed="true"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2 Q19 13 13 24 Q7 13 13 2 Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-en="Convex lens">凸透鏡</span></button>
@@ -109,7 +110,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="焦距|Focal length" data-deck-order="1">
           <h2 data-en="Object and focal length">物體與焦距</h2>
           <div class="slider" id="boxF"><label for="f" data-en="Focal length (magnitude) |f|">焦距大小 |f|</label><output id="fo"></output>
             <input id="f" type="range" min="5" max="20" step="0.5" value="10" data-decimals="2"></div>
@@ -121,7 +122,7 @@
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card" id="casesCard">
+        <section class="card" id="casesCard" data-deck="成像規律|Image rules" data-deck-order="10">
           <h2 id="casesTitle" data-en="Where is the object?">物體位置與成像規律</h2>
           <div class="cases" role="group" aria-labelledby="casesTitle">
             <button type="button" data-case="beyond2F" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
@@ -147,7 +148,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showRays" type="checkbox" checked><span data-en="Principal rays">主光線</span></label>

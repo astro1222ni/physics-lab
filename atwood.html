@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Connected Bodies and the Atwood Machine | Astro Ni Lab">連體運動與阿特午機｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -31,7 +31,7 @@
 
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 連體運動與阿特午機頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .lab.aw { grid-template-areas: "scene panel" "fbd panel" "data panel"; grid-template-rows: auto auto 1fr; }
@@ -154,13 +154,15 @@
           <button id="play" type="button" class="primary" data-en="Release">釋放</button>
           <button id="lap" type="button" hidden disabled data-en="Stop watch">停錶</button>
           <button id="reset" type="button" data-en="Put back" title="把物體放回起點，量測紀錄保留" data-en-title="Put the bodies back at the start; the measurement table is kept">放回起點</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、速度圖並放回起點，滑桿設定不變" data-en-title="Clear the measurements and the graph and put the bodies back; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、速度圖並放回起點，滑桿設定不變" data-en-title="Clear the measurements and the graph and put the bodies back; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Weight mg"><i style="background:var(--field)"></i>重力 mg</span>
           <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Tension T"><i style="background:var(--b-mech)"></i>張力 T</span>
@@ -413,17 +415,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/atwood-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/atwood.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="atwood"></script>
-  <script src="js/missions/atwood.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="atwood"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/atwood-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/atwood.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="atwood"></script>
+  <script src="js/missions/atwood.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="atwood"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

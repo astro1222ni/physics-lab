@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Magnetic Effects of Currents: Fields of a Wire, a Coil and a Solenoid | Astro Ni Lab">電流的磁效應：直導線、線圈與螺線管的磁場｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":4,"name":"電磁學","item":"https://lab.astroni.org/physics.html#em"},{"@type":"ListItem","position":5,"name":"電流的磁效應","item":"https://lab.astroni.org/physics.html#ch-magnetism"},{"@type":"ListItem","position":6,"name":"電流的磁效應：直導線、線圈與螺線管的磁場","item":"https://lab.astroni.org/current-magnetic-field.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 本頁專用的顏色代號（淺色＋深色）：由 js/current-magnetic-field.js 與 js/current-magnetic-field-3d.js 讀取 */
     :root {
@@ -62,7 +62,7 @@
     .seg2 button { padding: 6px 6px; line-height: 1.3; }
     .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
     .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
-    .cm .slider { margin: 4px 0 6px; }
+    .cm .slider:not(.labdeck .slider) { margin: 4px 0 6px; }
     .cm .slider input[type="range"] { height: 28px; margin: 0; }
     .cm .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
     .cm .slider label sub, dl.readout sub, .cm .hint sub, table.data sub, .cm .seg2 sub { font-size: .75em; }
@@ -157,28 +157,31 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv"></canvas>
-        <div id="view3"></div>
         <div class="opts3 checks" id="opts3">
           <label><input id="s3lines" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
           <label><input id="s3needles" type="checkbox"><span data-en="Compass needles">小磁針</span></label>
           <label><input id="s3filings" type="checkbox"><span data-en="Iron filings">鐵粉</span></label>
         </div>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
         <div class="playbar">
           <button type="button" id="record" class="primary" data-en="Record">記錄</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srState" role="status"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button type="button" id="undo" data-en="Delete last row">刪除上一筆</button>
           <button type="button" id="clearAll" data-en="Clear all" title="清除數據表與分析圖；設定不變" data-en-title="Clear the data table and the graph; the settings are kept">全部清除</button>
           <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <p class="sr-only" id="srState" role="status"></p>
         <div class="legend" id="legend"></div>
         <p class="hint l2" id="hint2"></p>
         <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Lengths are to scale in centimetres; the field lines, needles and filings are computed from the same Biot–Savart field as the 2D view.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。長度依實際尺寸（公分）繪製；磁力線、小磁針與鐵粉都由與 2D 相同的畢歐–沙伐磁場計算而來。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="實驗|Experiment" data-deck-order="10">
           <h2 data-en="Experiment">選擇實驗</h2>
           <div class="modes" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
             <button type="button" id="mOer" data-mode="oersted" aria-pressed="true" data-en-html="Ørsted’s experiment<small>tangent method</small>">厄斯特實驗<small>正切法</small></button>
@@ -188,7 +191,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電流|Current" data-deck-order="1">
           <h2 data-en="Current">電流</h2>
           <div class="slider"><label for="I" data-en="Current I">電流 I</label><output id="Io"></output>
             <input id="I" type="range" min="0" max="5" step="0.01" value="0" data-decimals="2"></div>
@@ -199,7 +202,7 @@
           <p class="hint" id="dirHint"></p>
         </section>
 
-        <section class="card" id="cardOer">
+        <section class="card" id="cardOer" data-deck="導線|Wire" data-deck-order="10">
           <h2 data-en="Wire and compass">導線與磁針</h2>
           <div class="seg2" role="group" aria-label="導線位置" data-en-aria-label="Position of the wire">
             <button type="button" id="posAbove" aria-pressed="true" data-en="Above the needle">磁針上方</button>
@@ -225,7 +228,7 @@
           <p class="hint" data-en="You can also drag the compass sideways or the wire up and down in the side view.">也可以在畫面上左右拖曳羅盤，或在側視圖上下拖曳導線。</p>
         </section>
 
-        <section class="card" id="cardInst">
+        <section class="card" id="cardInst" data-deck="儀器|Instruments" data-deck-order="10">
           <h2 data-en="Instruments">儀器</h2>
           <div class="seg2" role="group" aria-label="儀器" data-en-aria-label="Instruments">
             <button type="button" id="instIdeal" aria-pressed="true" data-en="Ideal">理想</button>
@@ -236,7 +239,7 @@
           <p class="hint" id="instHint"></p>
         </section>
 
-        <section class="card" id="cardShape" hidden>
+        <section class="card" id="cardShape" hidden data-deck="導體|The conductor" data-deck-order="10">
           <h2 id="shapeTitle" data-en="The conductor">導體</h2>
           <div id="coilBox">
             <div class="slider"><label for="N" data-en="Number of turns N">匝數 N</label><output id="No"></output>
@@ -265,7 +268,7 @@
           <dl class="readout" id="readout"></dl>
         </section>
 
-        <section class="card" id="cardDisp">
+        <section class="card" id="cardDisp" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showLabels" type="checkbox" checked><span data-en="Labels">名稱標示</span></label>
@@ -385,19 +388,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/current-magnetic-field-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/keys.js?v=202611211106"></script>
-  <script src="js/current-magnetic-field-3d.js?v=202611211106"></script>
-  <script src="js/current-magnetic-field.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="current-magnetic-field"></script>
-  <script src="js/missions/current-magnetic-field.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="current-magnetic-field"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/current-magnetic-field-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/keys.js?v=202611210919"></script>
+  <script src="js/current-magnetic-field-3d.js?v=202611210919"></script>
+  <script src="js/current-magnetic-field.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="current-magnetic-field"></script>
+  <script src="js/missions/current-magnetic-field.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="current-magnetic-field"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

@@ -143,6 +143,12 @@
             <button type="button" data-src="mono" aria-pressed="true" data-en="Monochromatic">單色光</button>
             <button type="button" data-src="white" aria-pressed="false" data-en="White light">白光</button>
           </div>
+          <div class="slider"><label for="a" data-en="Slit width a">縫寬 a</label><output id="ao"></output>
+            <input id="a" type="range" min="5" max="100" step="1" value="40" data-decimals="1"></div>
+          <div class="slider" id="dRow"><label for="d" data-en="Slit separation d (centre to centre)">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
+            <input id="d" type="range" min="10" max="400" step="1" value="120" data-decimals="1"></div>
+          <div class="slider"><label for="L" data-en="Slit-to-screen distance L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="0.3" max="3" step="0.05" value="1" data-decimals="2"></div>
           <div id="monoRows">
           <div class="slider"><label for="lam" data-en="Wavelength λ">波長 λ</label><output id="lamo"></output>
             <input id="lam" type="range" min="380" max="750" step="1" value="550" data-decimals="0">
@@ -157,12 +163,6 @@
             <p class="status" data-en="Visible light from 380 to 750 nm, weighted by a 6500 K blackbody spectrum (close to daylight). The intensities of all wavelengths add up.">可見光 380–750 nm 的連續光譜，以 6500 K 黑體光譜加權（接近日光），各波長的光強直接相加。</p>
             <div class="spectrum"></div>
           </div>
-          <div class="slider"><label for="a" data-en="Slit width a">縫寬 a</label><output id="ao"></output>
-            <input id="a" type="range" min="5" max="100" step="1" value="40" data-decimals="1"></div>
-          <div class="slider" id="dRow"><label for="d" data-en="Slit separation d (centre to centre)">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
-            <input id="d" type="range" min="10" max="400" step="1" value="120" data-decimals="1"></div>
-          <div class="slider"><label for="L" data-en="Slit-to-screen distance L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
-            <input id="L" type="range" min="0.3" max="3" step="0.05" value="1" data-decimals="2"></div>
           <p class="status" id="status"></p>
         </section>
 

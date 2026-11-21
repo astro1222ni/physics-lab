@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Heat Engines and the First Law of Thermodynamics | Astro Ni Lab">熱機循環與熱力學第一定律｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":4,"name":"熱學","item":"https://lab.astroni.org/physics.html#thermo"},{"@type":"ListItem","position":5,"name":"氣體與熱力學","item":"https://lab.astroni.org/physics.html#ch-gas-thermo"},{"@type":"ListItem","position":6,"name":"熱機循環與熱力學第一定律","item":"https://lab.astroni.org/heat-engine.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 本頁專用的顏色代號（淺色＋深色）：由 js/heat-engine.js 與 js/heat-engine-3d.js 讀取 */
     :root {
@@ -65,7 +65,7 @@
     .he .seg2 button { padding: 6px 6px; line-height: 1.25; }
     .he .seg2 button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
     .he .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
-    .he .slider { margin: 4px 0 6px; }
+    .he .slider:not(.labdeck .slider) { margin: 4px 0 6px; }
     .he .slider input[type="range"] { height: 28px; margin: 0; }
     .he .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
     .he .slider label sub, dl.readout sub, .he .hint sub, table.data sub, .he .seg2 sub, .legend sub { font-size: .75em; }
@@ -161,6 +161,8 @@
     @media (orientation: landscape) {
       .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
     }
+
+    .he .stage .warn:empty { display: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -182,22 +184,25 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv"></canvas>
-        <div id="view3"></div>
         <div class="opts3 checks" id="opts3">
           <label><input id="s3surf" type="checkbox" checked><span data-en="State surface">狀態曲面</span></label>
           <label><input id="s3iso" type="checkbox" checked><span data-en="Isotherms">等溫線</span></label>
           <label><input id="s3proj" type="checkbox" checked><span data-en="P–V projection">P–V 投影</span></label>
         </div>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
         <div class="playbar">
           <button type="button" id="play">暫停</button>
           <button type="button" id="step" data-en="Next stage" title="跑到這一段的終點後停下" data-en-title="Run to the end of this stage and stop">下一段</button>
           <button type="button" id="record" class="primary" data-en="Record this cycle">記錄這個循環</button>
-          <button type="button" id="clearAll" data-en="Clear all" title="清除比較表；設定不變" data-en-title="Clear the comparison table; the settings are kept">全部清除</button>
-          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srState" role="status"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button type="button" id="clearAll" data-en="Clear all" title="清除比較表；設定不變" data-en-title="Clear the comparison table; the settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
         <p class="warn" id="warn"></p>
         <div class="legend" id="legend"></div>
         <p class="hint l2" id="hint2"></p>
@@ -205,7 +210,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="循環|Cycle" data-deck-order="10">
           <h2 data-en="Cycle">循環</h2>
           <div class="modes" role="group" aria-label="循環種類" data-en-aria-label="Kind of cycle">
             <button type="button" id="tCarnot" data-type="carnot" aria-pressed="true" data-en-html="Carnot<small>ideal engine</small>">卡諾<small>理想熱機</small></button>
@@ -223,7 +228,7 @@
             <input id="n" type="range" min="0.1" max="2" step="0.01" value="1" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="參數|Parameters" data-deck-order="1">
           <h2 id="parTitle">參數</h2>
           <div id="pCarnot">
             <div class="slider"><label for="cTh" data-en-html="Hot reservoir T<sub>h</sub>">高溫熱庫 T<sub>h</sub></label><output id="cTho"></output>
@@ -291,7 +296,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="運轉|Running" data-deck-order="10">
           <h2 data-en="Running">運轉</h2>
           <div class="checks">
             <label><input id="reverse" type="checkbox"><span data-en="Run in reverse (refrigerator / heat pump)">逆向運轉（冰箱／熱泵）</span></label>
@@ -306,7 +311,7 @@
           <dl class="readout" id="readout"></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showIso" type="checkbox" checked><span data-en="Isotherms">等溫線</span></label>
@@ -428,19 +433,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/heat-engine-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/keys.js?v=202611211106"></script>
-  <script src="js/heat-engine-3d.js?v=202611211106"></script>
-  <script src="js/heat-engine.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="heat-engine"></script>
-  <script src="js/missions/heat-engine.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="heat-engine"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/heat-engine-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/keys.js?v=202611210919"></script>
+  <script src="js/heat-engine-3d.js?v=202611210919"></script>
+  <script src="js/heat-engine.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="heat-engine"></script>
+  <script src="js/missions/heat-engine.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="heat-engine"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

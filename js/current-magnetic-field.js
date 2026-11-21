@@ -133,7 +133,12 @@
   let W = 0, H = 0, dpr = 1;
   function canvasH(w) {
     const narrow = w < 640;
-    if (st.mode === 'oersted') return narrow ? Math.round(w * 1.62) : Math.round(clamp(w * 0.6, 430, 560));
+    if (st.mode === 'oersted') {
+      if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches) {
+        return Math.round(Math.min(innerHeight - 80, w * 0.7));
+      }
+      return narrow ? Math.round(w * (w <= 420 ? 1.47 : 1.62)) : Math.round(clamp(w * 0.6, 430, 560));
+    }
     if (st.mode === 'wire') return narrow ? Math.round(w * 0.95) : Math.round(clamp(w * 0.62, 320, 540));
     if (st.mode === 'coil') return narrow ? Math.round(w * 0.75) : Math.round(clamp(w * 0.6, 300, 520));
     return narrow ? Math.round(w * 0.62) : Math.round(clamp(w * 0.52, 260, 480));
@@ -153,9 +158,11 @@
   // 厄斯特實驗：版面
   // =====================================================================
   function oerLayout() {
-    const m = 12, narrow = W < 640;
+    const m = 12;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const narrow = W < 640 && !landscape;
     if (!narrow) {
-      const S = Math.min(H - 2 * m, W * 0.6);
+      const S = Math.min(H - 2 * m, W * (landscape ? 0.54 : 0.6));
       const top = { x: m, y: (H - S) / 2, w: S, h: S };
       const rx = m + S + 14, rw = W - rx - m;
       const ph = (H - 3 * m) / 2;

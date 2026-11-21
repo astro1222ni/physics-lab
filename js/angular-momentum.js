@@ -92,8 +92,10 @@
       return { narrow: narrow, gap: gap, main: { x: 0, y: 0, w: Sm, h: Sm }, A: { x: Sm + gap, y: 0, w: rw, h: ah },
         B: { x: Sm + gap, y: ah + gap, w: rw, h: Sm - ah - gap }, strip: { x: 0, y: Sm + gap, w: cw, h: Hb }, H: Sm + gap + Hb };
     }
-    const Sm = cw, hw = Math.floor((cw - gap) / 2), ah = Math.round(cw * 0.62), Hb = Math.round(cw * 0.47);
-    return { narrow: narrow, gap: gap, main: { x: 0, y: 0, w: Sm, h: Sm }, A: { x: 0, y: Sm + gap, w: hw, h: ah },
+    const phone = cw <= 420;
+    const Sm = phone ? Math.min(cw, 294) : cw, hw = Math.floor((cw - gap) / 2);
+    const ah = Math.round(cw * (phone ? 0.40 : 0.62)), Hb = Math.round(cw * (phone ? 0.32 : 0.47));
+    return { narrow: narrow, gap: gap, main: { x: Math.round((cw - Sm) / 2), y: 0, w: Sm, h: Sm }, A: { x: 0, y: Sm + gap, w: hw, h: ah },
       B: { x: hw + gap, y: Sm + gap, w: cw - hw - gap, h: ah }, strip: { x: 0, y: Sm + gap + ah + gap, w: cw, h: Hb }, H: Sm + gap + ah + gap + Hb };
   }
   /** 主畫面：物理座標（m，y 向上）→ 畫布 */

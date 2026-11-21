@@ -67,7 +67,7 @@
     .ag .seg2 button, .ag .seg3 button { padding: 6px 4px; line-height: 1.25; }
     .ag .seg2 button small, .ag .seg3 button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
     .ag .seg2 button[aria-pressed="true"], .ag .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
-    .ag .slider { margin: 4px 0 6px; }
+    .ag .slider:not(.labdeck .slider) { margin: 4px 0 6px; }
     .ag .slider input[type="range"] { height: 28px; margin: 0; }
     .ag .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
     .ag .slider label sub, dl.readout sub, .ag .hint sub, table.data sub, .ag .seg2 sub, .ag .seg3 sub, .legend sub, .ag .warn sub { font-size: .75em; }
@@ -226,10 +226,10 @@
           <div class="slider"><label for="gR" data-en="Load resistance R">負載電阻 R</label><output id="gRo"></output>
             <input id="gR" type="range" min="0" max="1000" step="1" value="325"></div>
           <div class="checks">
-            <label><input id="gOpen" type="checkbox"><span data-en="Open circuit (take the lamp out)">開路（拿掉燈泡）</span></label>
           </div>
           <div class="slider"><label for="gr" data-en="Coil resistance r">線圈電阻 r</label><output id="gro"></output>
             <input id="gr" type="range" min="0.1" max="20" step="0.1" value="2" data-decimals="2"></div>
+            <label><input id="gOpen" type="checkbox"><span data-en="Open circuit (take the lamp out)">開路（拿掉燈泡）</span></label>
           <p class="hint" data-en="The turning rate is kept constant by whatever drives the shaft (a water turbine, say): it supplies exactly the torque the magnetic force takes away.">轉速由帶動轉軸的外力（例如水輪機）維持固定：它提供的力矩正好抵銷磁力造成的阻力矩。</p>
         </section>
 

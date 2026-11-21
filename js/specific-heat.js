@@ -163,7 +163,9 @@
       const gh = Math.round(H * (state.mode === 'cmp' ? 0.6 : 0.62));
       return { wide: true, H: H, gap: gap, scene: { x: 0, y: 0, w: Sw, h: H }, graph: { x: gx, y: 0, w: cw - gx, h: gh }, info: { x: gx, y: gh + gap, w: cw - gx, h: H - gh - gap } };
     }
-    const sh = Math.round(cw * (state.mode === 'cmp' ? 0.7 : 0.86)), gh = Math.round(cw * 0.68);
+    const phone = cw <= 420;
+    const sh = Math.round(cw * (state.mode === 'cmp' ? 0.7 : phone ? 0.72 : 0.86));
+    const gh = Math.round(cw * (phone ? 0.47 : 0.68));
     const nRows = state.mode === 'cmp' ? Math.max(1, cmpKeys().length) : 0;
     const ih = state.mode === 'cmp' ? 40 + nRows * 22 : state.mode === 'cal' ? (el.lossC && el.lossC.checked ? 158 : 128) : 128;
     return { wide: false, H: sh + gh + ih + 2 * gap, gap: gap, scene: { x: 0, y: 0, w: cw, h: sh }, graph: { x: 0, y: sh + gap, w: cw, h: gh }, info: { x: 0, y: sh + gh + 2 * gap, w: cw, h: ih } };

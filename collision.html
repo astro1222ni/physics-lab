@@ -106,6 +106,7 @@
       table.compare { font-size: calc(13px * var(--fs, 1)); }
       table.compare th, table.compare td { padding: 4px 5px; }
     }
+    .coll .deck-secondary > label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
   </style>
 </head>
 <body data-en-ready>
@@ -124,16 +125,19 @@
           <div class="btns">
             <button id="play" class="primary" data-en="Play">播放</button>
             <button id="reset" data-en="Reset">重設</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
           <div class="checks">
-            <label><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25 倍速）</span></label>
             <label><input id="cmFrame" type="checkbox"><span data-en="Centre-of-mass frame">以質心為參考系</span></label>
           </div>
         </div>
         <p class="status" id="status"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25 倍速）</span></label>
+        </div>
         <div class="legend">
           <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
           <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
@@ -169,7 +173,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="車 1（左）|Cart 1 (left)" data-deck-order="1">
           <h2 data-en-html="&lt;span class=&quot;swatch&quot; style=&quot;background:var(--pos)&quot;&gt;&lt;/span&gt;Cart 1 (left)"><span class="swatch" style="background:var(--pos)"></span>車 1（左）</h2>
           <div class="slider"><label for="m1" data-en-html="Mass \(m_1\)">質量 \(m_1\)</label><output id="m1o"></output>
             <input id="m1" type="range" min="0.5" max="10" step="0.5" value="2" data-decimals="2"></div>
@@ -177,7 +181,7 @@
             <input id="v1" type="range" min="-5" max="5" step="0.5" value="3" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="車 2（右）|Cart 2 (right)" data-deck-order="10">
           <h2 data-en-html="&lt;span class=&quot;swatch&quot; style=&quot;background:var(--neg)&quot;&gt;&lt;/span&gt;Cart 2 (right)"><span class="swatch" style="background:var(--neg)"></span>車 2（右）</h2>
           <div class="slider"><label for="m2" data-en-html="Mass \(m_2\)">質量 \(m_2\)</label><output id="m2o"></output>
             <input id="m2" type="range" min="0.5" max="10" step="0.5" value="3" data-decimals="2"></div>
@@ -185,7 +189,7 @@
             <input id="v2" type="range" min="-5" max="5" step="0.5" value="-1" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="恢復係數|Coefficient of restitution" data-deck-order="10">
           <h2 data-en="Coefficient of restitution">恢復係數</h2>
           <div class="slider"><label for="e" data-en-html="\(e\) (0 perfectly inelastic, 1 elastic)">\(e\)（0 完全非彈性，1 彈性）</label><output id="eo"></output>
             <input id="e" type="range" min="0" max="1" step="0.05" value="1" data-decimals="2"></div>
@@ -199,7 +203,7 @@
           </div>
         </section>
 
-        <section class="card" id="springCard">
+        <section class="card" id="springCard" data-deck="彈簧緩衝|Spring bumper" data-deck-order="10">
           <h2 data-en="Spring bumper">彈簧緩衝</h2>
           <div class="checks"><label><input id="spring" type="checkbox"><span data-en="Add a spring bumper">加彈簧（彈簧緩衝）</span></label></div>
           <p class="hint" data-en="Ideal massless spring, mounted on the front of cart 1">理想彈簧，質量不計；裝在車 1 前端</p>

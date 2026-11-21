@@ -152,11 +152,14 @@
         <div class="playbar">
           <button id="launch" class="primary" type="button">發射</button>
           <button id="play" type="button">暫停</button>
-          <button id="reset" type="button" data-en="Clear all" title="清除所有軌道與第三定律的紀錄，滑桿設定不變" data-en-title="Clear all orbits and the third-law records; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="reset" type="button" data-en="Clear all" title="清除所有軌道與第三定律的紀錄，滑桿設定不變" data-en-title="Clear all orbits and the third-law records; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Orbit in flight"><i style="background:var(--accent)"></i>飛行中的軌道</span>
           <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Predicted orbit (not launched yet)"><i class="dash"></i>預測軌道（尚未發射）</span>
@@ -173,7 +176,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="中心天體|Central body" data-deck-order="10">
           <h2 data-en="Central body">中心天體</h2>
           <div class="seg2" role="group" aria-label="中心天體" data-en-aria-label="Central body">
             <button type="button" id="pSun" aria-pressed="true" data-en="Sun (planets)">太陽（行星）</button>
@@ -183,10 +186,12 @@
             <input id="M" type="range" min="0.2" max="3" step="0.05" value="1" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="發射條件|Launch" data-deck-order="1">
           <h2 data-en="Launch">發射條件</h2>
           <div class="slider"><label for="r0" data-en-html="Distance from centre r<sub>0</sub>">與中心距離 r<sub>0</sub></label><output id="r0o"></output>
             <input id="r0" type="range" min="0.3" max="2.5" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="al" data-en="Elevation α (from horizontal)">仰角 α（與水平方向的夾角）</label><output id="alo"></output>
+            <input id="al" type="range" min="-85" max="85" step="1" value="0" data-decimals="1"></div>
           <div class="slider"><label for="v0" data-en-html="Launch speed v<sub>0</sub>">發射速率 v<sub>0</sub></label><output id="v0o"></output>
             <input id="v0" type="range" min="2" max="120" step="0.1" value="35" data-decimals="2">
             <div class="vgauge" id="vgauge" aria-hidden="true"><span class="gc" id="gC" data-en-html="v<sub>circ</sub>">v<sub>圓</sub></span><span class="ge" id="gE" data-en-html="v<sub>esc</sub>">v<sub>脫</sub></span></div></div>
@@ -195,12 +200,10 @@
             <button type="button" id="setE" aria-pressed="false" data-en-html="v<sub>0</sub> = v<sub>esc</sub> (parabola)">v<sub>0</sub> = v<sub>脫</sub>（拋物線）</button>
           </div>
           <p class="hint" id="launchInfo"></p>
-          <div class="slider"><label for="al" data-en="Elevation α (from horizontal)">仰角 α（與水平方向的夾角）</label><output id="alo"></output>
-            <input id="al" type="range" min="-85" max="85" step="1" value="0" data-decimals="1"></div>
           <p class="hint" data-en="“Horizontal” means perpendicular to the line from the centre; α > 0 tilts the launch outward. Tap a number to type an exact value.">「水平」指垂直於中心連線的方向；α &gt; 0 表示斜向外發射。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="時間與視野|Time and view" data-deck-order="10">
           <h2 data-en="Time and view">時間與視野</h2>
           <div class="slider"><label for="ts" data-en="Time scale (simulated time per second)">時間倍率（每秒模擬的時間）</label><output id="tso"></output>
             <input id="ts" type="range" min="0" max="1000" step="1" value="500"></div>
@@ -235,7 +238,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showSec" type="checkbox"><span data-en="Equal-time sectors">等時間扇形</span></label>

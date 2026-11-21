@@ -261,9 +261,11 @@
       const gx = sw + gap, gw = cw - gx, sh = (H - 2 * gap) / 3;
       for (let i = 0; i < 3; i++) strips.push({ x: gx, y: i * (sh + gap), w: gw, h: sh });
     } else {
-      const sh0 = Math.round(cw * (is3D() ? 1 : 0.84)); // 3D 檢視在手機上用正方形
+      // 手機直放的裝置和三張即時曲線仍一起顯示。
+      const phone = cw <= 420;
+      const sh0 = Math.round(cw * (is3D() ? (phone ? 0.78 : 1) : (phone ? 0.69 : 0.84)));
       S = { x: 0, y: 0, w: cw, h: sh0 };
-      const sh = Math.max(100, Math.round(cw * 0.3));
+      const sh = Math.max(phone ? 88 : 100, Math.round(cw * (phone ? 0.26 : 0.3)));
       for (let i = 0; i < 3; i++) strips.push({ x: 0, y: sh0 + gap + i * (sh + gap), w: cw, h: sh });
       H = sh0 + 3 * (sh + gap);
     }

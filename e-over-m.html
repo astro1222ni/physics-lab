@@ -63,7 +63,7 @@
     .eom .stage .status { margin: 6px 4px 0; color: var(--text); }
     .eom .slider input[type="range"] { height: 28px; margin: 0; }
     .eom .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
-    .eom .slider { margin: 4px 0 6px; }
+    .eom .slider:not(.labdeck .slider) { margin: 4px 0 6px; }
     .eom .slider label sub, dl.readout sub { font-size: .75em; }
     .eom [hidden] { display: none !important; }
     .eom .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
@@ -139,6 +139,7 @@
     @media (orientation: landscape) {
       .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
     }
+    @media (max-width: 880px) and (orientation: portrait) { .eom .labdeck-tabs button { min-width: 20%; } }
   </style>
 </head>
 <body data-en-ready>
@@ -165,11 +166,14 @@
         <div class="playbar">
           <button type="button" id="power" aria-pressed="false" data-en="Power on">開啟電源</button>
           <button type="button" id="record" class="primary" data-en="Record">記錄</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button type="button" id="undo" data-en="Delete last row">刪除上一筆</button>
           <button type="button" id="clearAll" data-en="Clear all" title="清除數據表與分析圖，旋鈕與游標的設定不變" data-en-title="Clear the data table and the graph; knob and cursor settings are kept">全部清除</button>
           <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span><i class="glow"></i><span data-en="Electron beam (glowing helium)">電子束（氦氣受撞擊發光）</span></span>
           <span><i style="background:var(--eom-hair)"></i><span data-en="Cursor hairlines (front and back)">游標的前、後細線</span></span>
@@ -181,7 +185,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="步驟|Steps" data-deck-order="10">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps">
             <li data-en="Turn both knobs down to zero, then press “Power on”.">把兩個旋鈕轉到最小，再按「開啟電源」。</li>
@@ -193,7 +197,7 @@
           </ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電源|Power" data-deck-order="1">
           <h2 data-en="Power supply knobs">電源供應器旋鈕</h2>
           <div class="slider"><label for="V" data-en="Accelerating voltage V (knob)">加速電壓 V（旋鈕）</label><output id="Vo"></output>
             <input id="V" type="range" min="0" max="300" step="1" value="0" data-decimals="0"></div>
@@ -203,12 +207,14 @@
           <p class="hint" data-en="Record the meter readings, not the knob settings — in “With errors” mode the meters are slightly off. Coils: N = 130 turns each, radius R = 15.0 cm, separated by R.">記錄要用電表的讀數，不是旋鈕的設定（「含誤差」模式中電表略有偏差）。線圈：每個 N = 130 匝、半徑 R = 15.0 cm，兩線圈相距 R。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="測量直徑|Measuring the diameter" data-deck-order="10">
           <h2 data-en="Measuring the diameter">測量直徑</h2>
           <div class="slider"><label for="xL" data-en="Left cursor">左游標</label><output id="xLo"></output>
             <input id="xL" type="range" min="0" max="10" step="0.01" value="2" data-decimals="2"></div>
           <div class="slider"><label for="xR" data-en="Right cursor">右游標</label><output id="xRo"></output>
             <input id="xR" type="range" min="10" max="20" step="0.01" value="18" data-decimals="2"></div>
+          <div class="slider" id="eyeBox" hidden><label for="eye" data-en="Eye position (on the scale)">眼睛的水平位置（對應標尺）</label><output id="eyeo"></output>
+            <input id="eye" type="range" min="0" max="20" step="0.1" value="10" data-decimals="1"></div>
           <p class="seg-label" id="modeLabel" data-en="Instrument">儀器</p>
           <div class="seg2" role="group" aria-labelledby="modeLabel">
             <button type="button" id="modeIdeal" aria-pressed="true" data-en="Ideal">理想</button>
@@ -217,8 +223,6 @@
           <div class="checks">
             <label><input id="parallax" type="checkbox"><span data-en="Parallax (where your eye is matters)">視差（眼睛的位置會影響讀數）</span></label>
           </div>
-          <div class="slider" id="eyeBox" hidden><label for="eye" data-en="Eye position (on the scale)">眼睛的水平位置（對應標尺）</label><output id="eyeo"></output>
-            <input id="eye" type="range" min="0" max="20" step="0.1" value="10" data-decimals="1"></div>
           <p class="hint" id="modeHint" data-en="Ideal: perfectly uniform field, exact meters, and you always look straight at each cursor.">理想：磁場完全均勻、電表準確，而且每次讀數時眼睛都正對游標。</p>
         </section>
 
@@ -236,14 +240,14 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電子槍|Electron gun" data-deck-order="10">
           <h2 data-en="Going further: tilt the gun">延伸：轉動電子槍</h2>
           <div class="slider"><label for="alpha" data-en="Gun tilt α out of the circle’s plane">電子槍轉角 α（離開圓的平面）</label><output id="alphao"></output>
             <input id="alpha" type="range" min="0" max="15" step="0.5" value="0" data-decimals="1"></div>
           <p class="hint" data-en="When the beam is not perpendicular to B it spirals along the field (a helix). Look at it in 3D. Set α back to 0° to take measurements.">電子束不垂直於磁場時，會沿著磁場方向螺旋前進。切換到 3D 看得最清楚。量直徑前要把 α 轉回 0°。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showLabels" type="checkbox" checked><span data-en="Labels">名稱標示</span></label>

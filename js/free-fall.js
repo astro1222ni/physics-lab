@@ -308,7 +308,10 @@
   function layoutA() {
     const w = cv.clientWidth, narrow = w < 560;
     const S = SCENES[state.mode];
-    const h = narrow ? S.hNarrow : S.hWide;
+    const naturalHeight = narrow ? S.hNarrow : S.hWide;
+    // 手機橫放時把鉛直落下的裝置裝進一屏，圖表維持原來的繪圖尺寸。
+    const drawer = document.documentElement.classList.contains('labdeck-drawer');
+    const h = drawer ? Math.min(naturalHeight, Math.max(180, innerHeight - 32)) : naturalHeight;
     let rx = 0, rw = w, top = 56, inset = null;
     if (state.mode === 'fall') {
       top = 8;

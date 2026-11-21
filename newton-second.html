@@ -122,12 +122,15 @@
         <canvas id="cv" role="img" aria-label="力學車實驗裝置側視圖：軌道、打點計時器、紙帶、力學車、滑輪與吊掛物，左下方為小車與吊掛物的受力圖" data-en-aria-label="Side view of the apparatus: track, ticker timer, paper tape, dynamics cart, pulley and hanging mass, with free-body diagrams of the cart and the hanging mass at the lower left"></canvas>
         <div class="playbar">
           <button id="go" class="primary" type="button" data-en="Release the cart">放開小車</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="clearAll" type="button" data-en="Clear all" title="清除紙帶、圖表與所有數據點，回到起點；滑桿設定不變" data-en-title="Clear the tape, the graphs and all data points and return the cart to the start; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Tension T"><i style="background:var(--accent)"></i>張力 T</span>
           <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Weight Mg, mg"><i style="background:var(--pos)"></i>重力 Mg、mg</span>
@@ -139,7 +142,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="質量|Mass" data-deck-order="1">
           <h2 data-en="Masses and string">質量與細繩</h2>
           <p class="seg-label" id="modeLabel" data-en="The string and hanging mass:">細繩與吊掛物：</p>
           <div class="seg2" role="group" aria-labelledby="modeLabel">
@@ -150,28 +153,28 @@
             <input id="M" type="range" min="0.2" max="2" step="0.01" value="0.5" data-decimals="3"></div>
           <div class="slider" id="boxm"><label for="m" data-en-html="Hanging mass m (hanger + slotted masses)">吊掛物質量 m（掛鉤＋槽碼）</label><output id="mo"></output>
             <input id="m" type="range" min="0.01" max="0.5" step="0.005" value="0.05" data-decimals="3"></div>
+          <div class="slider" id="boxv0" hidden><label for="v0" data-en-html="Push speed v<sub>0</sub>">推出的初速 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="0.05" max="1" step="0.01" value="0.3" data-decimals="3"></div>
           <div class="move" id="moveBox">
             <button type="button" id="toHang" data-en="Move 10 g: cart → hanger">10 g 槽碼：車上 → 吊鉤</button>
             <button type="button" id="toCart" data-en="Move 10 g: hanger → cart">10 g 槽碼：吊鉤 → 車上</button>
           </div>
           <p class="hint" id="moveHint" data-en="Moving a slotted mass between the cart and the hanger changes the pulling weight mg but keeps the total mass M + m the same.">在車上與吊鉤之間移動槽碼：拉力 mg 改變，但總質量 M + m 不變。</p>
-          <div class="slider" id="boxv0" hidden><label for="v0" data-en-html="Push speed v<sub>0</sub>">推出的初速 v<sub>0</sub></label><output id="v0o"></output>
-            <input id="v0" type="range" min="0.05" max="1" step="0.01" value="0.3" data-decimals="3"></div>
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="摩擦|Friction" data-deck-order="10">
           <h2 data-en="Friction and tilting the track">摩擦與平衡摩擦力</h2>
           <div class="slider" id="boxmu"><label for="mu" data-en="Rolling friction coefficient μ">軌道的滾動摩擦係數 μ</label><output id="muo"></output>
             <input id="mu" type="range" min="0" max="0.06" step="0.001" value="0.02" data-decimals="3"></div>
-          <div class="checks"><label><input id="mystery" type="checkbox"><span data-en="Mystery track (μ hidden — find it by experiment)">未知摩擦的軌道（μ 隱藏，要靠實驗找出來）</span></label></div>
           <div class="slider"><label for="th" data-en="Track tilt θ (raise the end away from the pulley)">軌道傾角 θ（墊高遠離滑輪的一端）</label><output id="tho"></output>
             <input id="th" type="range" min="0" max="5" step="0.05" value="0" data-decimals="2"></div>
+          <div class="checks"><label><input id="mystery" type="checkbox"><span data-en="Mystery track (μ hidden — find it by experiment)">未知摩擦的軌道（μ 隱藏，要靠實驗找出來）</span></label></div>
           <p class="info" id="tiltInfo">—</p>
           <p class="hint" data-en="To balance friction: take the hanging mass off, give the cart a push and adjust θ until the dots on the tape are equally spaced (constant velocity). Then Mg sin θ = f, i.e. tan θ = μ.">平衡摩擦力：取下吊掛物、推一下小車，調整 θ 直到紙帶上的點間距相等（等速度）。此時 Mg sin θ = f，也就是 tan θ = μ。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="計時器|Timer" data-deck-order="10">
           <h2 data-en="Ticker timer and tape">打點計時器與紙帶</h2>
           <p class="seg-label" id="freqLabel" data-en="Dot frequency f:">打點頻率 f：</p>
           <div class="seg4" role="group" aria-labelledby="freqLabel">

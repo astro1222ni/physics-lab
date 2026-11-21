@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Faraday’s Law and Lenz’s Law | Astro Ni Lab">法拉第定律與冷次定律｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":4,"name":"電磁學","item":"https://lab.astroni.org/physics.html#em"},{"@type":"ListItem","position":5,"name":"電磁感應與電磁波","item":"https://lab.astroni.org/physics.html#ch-induction"},{"@type":"ListItem","position":6,"name":"法拉第定律與冷次定律","item":"https://lab.astroni.org/faraday.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 法拉第定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；只有磁鐵可以左右拖曳，其他地方可以上下捲動頁面 */
@@ -102,6 +102,7 @@
         margin-inline: 0 !important;
       }
     }
+    .labdeck .deck-secondary { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
   </style>
 </head>
 <body data-en-ready>
@@ -129,13 +130,11 @@
         </div>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
-          <button id="reset" type="button" data-en="Clear all" title="清除圖表並回到起點，滑桿設定不變" data-en-title="Clear the graphs and go back to the start; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legendA">
           <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>N pole"><i style="background:var(--pos)"></i>N 極</span>
           <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>S pole"><i style="background:var(--neg)"></i>S 極</span>
@@ -159,7 +158,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="實驗|Experiment" data-deck-order="10">
           <h2 data-en="Experiment">實驗</h2>
           <div class="seg2" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" id="modeA" aria-pressed="true" data-en="Magnet and coil">磁鐵與線圈</button>
@@ -167,8 +166,18 @@
           </div>
         </section>
 
-        <section class="card" id="cardA">
+        <section class="card" id="cardA" data-deck="線圈|Coil" data-deck-order="1">
           <h2 data-en="Magnet and coil">磁鐵與線圈</h2>
+          <div class="slider" id="boxV"><label for="v" data-en="Speed v">速率 v</label><output id="vo"></output>
+            <input id="v" type="range" min="0.05" max="2" step="0.05" value="0.2" data-decimals="3"></div>
+          <div class="slider" id="boxF" hidden><label for="f" data-en="Frequency f">頻率 f</label><output id="fo"></output>
+            <input id="f" type="range" min="0.2" max="2" step="0.1" value="0.5" data-decimals="2"></div>
+          <div class="slider"><label for="N" data-en="Turns N">匝數 N</label><output id="No"></output>
+            <input id="N" type="range" min="10" max="500" step="10" value="100" data-decimals="0"></div>
+          <div class="slider"><label for="a" data-en="Coil radius a">線圈半徑 a</label><output id="ao"></output>
+            <input id="a" type="range" min="2" max="5" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="Ra" data-en="Circuit resistance R">電路電阻 R</label><output id="Rao"></output>
+            <input id="Ra" type="range" min="1" max="100" step="1" value="10" data-decimals="1"></div>
           <p class="seg-label" id="motionLabel" data-en="How the magnet moves:">磁鐵的運動方式：</p>
           <div class="seg3" role="group" aria-labelledby="motionLabel">
             <button type="button" id="mvPass" aria-pressed="true" data-en="Steady pass">等速通過</button>
@@ -183,20 +192,10 @@
             </div>
           </div>
           <button type="button" id="flip" class="wide" aria-pressed="false" data-en="Turn the magnet round (N ⇄ S)">翻轉磁鐵（N ⇄ S）</button>
-          <div class="slider" id="boxV"><label for="v" data-en="Speed v">速率 v</label><output id="vo"></output>
-            <input id="v" type="range" min="0.05" max="2" step="0.05" value="0.2" data-decimals="3"></div>
-          <div class="slider" id="boxF" hidden><label for="f" data-en="Frequency f">頻率 f</label><output id="fo"></output>
-            <input id="f" type="range" min="0.2" max="2" step="0.1" value="0.5" data-decimals="2"></div>
-          <div class="slider"><label for="N" data-en="Turns N">匝數 N</label><output id="No"></output>
-            <input id="N" type="range" min="10" max="500" step="10" value="100" data-decimals="0"></div>
-          <div class="slider"><label for="a" data-en="Coil radius a">線圈半徑 a</label><output id="ao"></output>
-            <input id="a" type="range" min="2" max="5" step="0.1" value="3" data-decimals="2"></div>
-          <div class="slider"><label for="Ra" data-en="Circuit resistance R">電路電阻 R</label><output id="Rao"></output>
-            <input id="Ra" type="range" min="1" max="100" step="1" value="10" data-decimals="1"></div>
           <p class="hint" data-en="Tap a number to type an exact value. The magnet is 10 cm long; its pole flux is 0.40 mWb. The coil is 4 cm long.">點一下數字可直接輸入精確數值。磁鐵長 10 cm，由 N 極發出的磁通量為 0.40 mWb；線圈長 4 cm。</p>
         </section>
 
-        <section class="card" id="cardB" hidden>
+        <section class="card" id="cardB" hidden data-deck="導體棒|Rod" data-deck-order="2">
           <h2 data-en="Rod on rails">導體棒在軌道上</h2>
           <p class="seg-label" id="subLabel" data-en="Applied force:">外力的情況：</p>
           <div class="seg3" role="group" aria-labelledby="subLabel">
@@ -259,8 +258,13 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
+          <div class="playbar deck-secondary">
+            <button id="reset" type="button" data-en="Clear all" title="清除圖表並回到起點，滑桿設定不變" data-en-title="Clear the graphs and go back to the start; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+          </div>
           <div class="checks">
             <label id="chkLines"><input id="showLines" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
             <label><input id="showCurrent" type="checkbox" checked><span data-en="Current direction">電流方向</span></label>
@@ -326,18 +330,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/faraday-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/keys.js?v=202611211106"></script>
-  <script src="js/faraday.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="faraday"></script>
-  <script src="js/missions/faraday.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="faraday"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/faraday-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/keys.js?v=202611210919"></script>
+  <script src="js/faraday.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="faraday"></script>
+  <script src="js/missions/faraday.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="faraday"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

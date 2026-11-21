@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Specific Heat and Thermal Equilibrium | Astro Ni Lab">比熱與熱平衡｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -31,7 +31,7 @@
 
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 比熱與熱平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定（實驗裝置＋溫度–時間圖＋熱量圖）；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -115,6 +115,10 @@
         <div class="playbar">
           <button id="play" class="primary" data-en="Drop the sample in">放入樣品</button>
           <button id="rec" type="button" hidden data-en="Record (t, T)">記錄 (t, T)</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="reset" type="button" data-en="Clear all" title="清除所有保留的曲線、紀錄點與這一次的實驗，滑桿設定不變" data-en-title="Clear all kept curves, recorded points and this run; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
@@ -127,7 +131,6 @@
             <button type="button" data-speed="200" aria-pressed="false">200×</button>
           </div>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legCal">
           <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Sample T<sub>1</sub>"><i style="background:var(--b-mech)"></i>樣品 T<sub>1</sub></span>
           <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Water T<sub>2</sub>"><i style="background:var(--neg)"></i>水 T<sub>2</sub></span>
@@ -145,7 +148,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="實驗|Experiment" data-deck-order="10">
           <h2 data-en="Experiment">實驗</h2>
           <div class="seg3" role="group" aria-label="實驗模式" data-en-aria-label="Experiment mode">
             <button type="button" id="modeCal" aria-pressed="true" data-en="Calorimeter">量熱器混合</button>
@@ -156,17 +159,17 @@
         </section>
 
         <!-- ===== 量熱器 ===== -->
-        <section class="card" data-mode="cal">
+        <section class="card" data-mode="cal" data-deck="樣品|Sample" data-deck-order="1">
           <h2 data-en="Sample">樣品</h2>
-          <div class="chips" id="calMats" role="group" aria-label="樣品材料" data-en-aria-label="Sample material"></div>
           <div class="slider"><label for="m1" data-en-html="Mass m<sub>1</sub>">質量 m<sub>1</sub></label><output id="m1o"></output>
             <input id="m1" type="range" min="0.01" max="1" step="0.01" value="0.2" data-decimals="3"></div>
           <div class="slider"><label for="T1" data-en-html="Temperature T<sub>1</sub>">溫度 T<sub>1</sub></label><output id="T1o"></output>
             <input id="T1" type="range" min="-20" max="200" step="1" value="100" data-decimals="2"></div>
+          <div class="chips" id="calMats" role="group" aria-label="樣品材料" data-en-aria-label="Sample material"></div>
           <p class="hint" id="sampleHint"></p>
         </section>
 
-        <section class="card" data-mode="cal">
+        <section class="card" data-mode="cal" data-deck="量熱器|Calorimeter" data-deck-order="10">
           <h2 data-en="Water in the calorimeter">量熱器中的水</h2>
           <div class="slider"><label for="m2" data-en-html="Mass m<sub>2</sub>">質量 m<sub>2</sub></label><output id="m2o"></output>
             <input id="m2" type="range" min="0.05" max="0.5" step="0.01" value="0.25" data-decimals="3"></div>
@@ -182,15 +185,15 @@
         </section>
 
         <!-- ===== 加熱曲線 ===== -->
-        <section class="card" data-mode="heat" hidden>
+        <section class="card" data-mode="heat" hidden data-deck="加熱|Heating" data-deck-order="2">
           <h2 data-en="Substance and heater">加熱的物質與加熱器</h2>
-          <div class="chips" id="heatMats" role="group" aria-label="加熱的物質" data-en-aria-label="Substance heated"></div>
           <div class="slider"><label for="hm" data-en="Mass m">質量 m</label><output id="hmo"></output>
             <input id="hm" type="range" min="0.05" max="1" step="0.05" value="0.5" data-decimals="3"></div>
           <div class="slider"><label for="hT" data-en-html="Starting temperature T<sub>0</sub>">起始溫度 T<sub>0</sub></label><output id="hTo"></output>
             <input id="hT" type="range" min="-30" max="100" step="1" value="-20" data-decimals="1"></div>
           <div class="slider"><label for="hP" data-en="Heater power P">加熱器功率 P</label><output id="hPo"></output>
             <input id="hP" type="range" min="10" max="3000" step="10" value="1000" data-decimals="1"></div>
+          <div class="chips" id="heatMats" role="group" aria-label="加熱的物質" data-en-aria-label="Substance heated"></div>
           <div class="checks">
             <label><input id="lossH" type="checkbox"><span data-en="Heat loss (no insulation)">散熱（容器沒有隔熱）</span></label>
           </div>
@@ -209,20 +212,20 @@
         </section>
 
         <!-- ===== 比熱比較 ===== -->
-        <section class="card" data-mode="cmp" hidden>
+        <section class="card" data-mode="cmp" hidden data-deck="比較|Compare" data-deck-order="3">
           <h2 data-en="Same heater, same mass">同樣的加熱器、同樣的質量</h2>
-          <div class="chips" id="cmpMats" role="group" aria-label="比較的材料（可複選）" data-en-aria-label="Materials compared (choose several)"></div>
           <div class="slider"><label for="cm" data-en="Mass of each m">每個物體的質量 m</label><output id="cmo"></output>
             <input id="cm" type="range" min="0.1" max="2" step="0.1" value="1" data-decimals="3"></div>
           <div class="slider"><label for="cP" data-en="Power of each heater P">每個加熱器的功率 P</label><output id="cPo"></output>
             <input id="cP" type="range" min="10" max="2000" step="10" value="500" data-decimals="1"></div>
           <div class="slider"><label for="cT" data-en-html="Starting temperature T<sub>0</sub>">起始溫度 T<sub>0</sub></label><output id="cTo"></output>
             <input id="cT" type="range" min="0" max="50" step="1" value="20" data-decimals="1"></div>
+          <div class="chips" id="cmpMats" role="group" aria-label="比較的材料（可複選）" data-en-aria-label="Materials compared (choose several)"></div>
           <p class="hint" data-en="Every object receives the same heat Q = Pt at the same time. Tap a material to add or remove it.">每個物體在同一時間都吸收同樣的熱量 Q = Pt。點一下材料可加入或移除。</p>
         </section>
 
         <!-- ===== 神秘金屬 ===== -->
-        <section class="card" id="mysCard" hidden>
+        <section class="card" id="mysCard" hidden data-deck="神秘金屬|Mystery metal" data-deck-order="10">
           <h2 data-en="Mystery metal">神秘金屬</h2>
           <p class="hint" data-en="Its specific heat is hidden. Measure it — drop it into water, or heat it — and work out c, then check your answer.">它的比熱被藏起來了。先做實驗（放進水中，或用加熱器加熱），算出比熱 c，再核對你的答案。</p>
           <div class="guess">
@@ -331,17 +334,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/specific-heat-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/specific-heat.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="specific-heat"></script>
-  <script src="js/missions/specific-heat.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="specific-heat"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/specific-heat-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/specific-heat.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="specific-heat"></script>
+  <script src="js/missions/specific-heat.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="specific-heat"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

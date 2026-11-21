@@ -186,7 +186,10 @@
   // =====================================================================
   let W = 0, H = 0, dpr = 1, narrow = false;
   let box = { cyl: null, sank: null, plot: null, pa: null };
-  function canvasH(w) { return w >= 640 ? Math.round(clamp(w * 0.6, 400, 540)) : Math.round(w * 0.78 + w * 0.8 + 30); }
+  function canvasH(w) {
+    if (w >= 640) return Math.round(clamp(w * 0.6, 400, 540));
+    return Math.round(w * (w <= 420 ? 1.35 : 1.58) + 30);
+  }
   function layout() {
     const m = 10;
     narrow = W < 640;
@@ -197,7 +200,7 @@
       box.sank = { x: m, y: 2 * m + ch, w: lw, h: H - 3 * m - ch };
       box.plot = { x: 2 * m + lw, y: m, w: W - 3 * m - lw, h: H - 2 * m };
     } else {
-      const ph = Math.round(W * 0.78);
+      const ph = Math.round(W * (W <= 420 ? 0.69 : 0.78));
       box.plot = { x: m, y: m, w: W - 2 * m, h: ph };
       const y2 = 2 * m + ph, h2 = H - y2 - m, hw = (W - 3 * m) / 2;
       box.cyl = { x: m, y: y2, w: hw, h: h2 };

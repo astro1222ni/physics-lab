@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Conservation of Angular Momentum | Astro Ni Lab">角動量守恆｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":4,"name":"力學","item":"https://lab.astroni.org/physics.html#mech"},{"@type":"ListItem","position":5,"name":"動量與角動量","item":"https://lab.astroni.org/physics.html#ch-momentum"},{"@type":"ListItem","position":6,"name":"角動量守恆","item":"https://lab.astroni.org/angular-momentum.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 角動量守恆頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -133,12 +133,15 @@
           <button id="arms" class="act" type="button" data-mode="plat" hidden data-en="Pull arms in">收手</button>
           <button id="dropDb" class="act warn" type="button" data-mode="plat" hidden data-en="Let go of the dumbbells">鬆開啞鈴</button>
           <button id="dropDisk" class="act" type="button" data-mode="disk" hidden data-en="Drop the upper disc">放下上盤</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="reset" type="button" data-en="Clear all" title="清除軌跡與圖表，回到起始狀態；滑桿設定不變" data-en-title="Clear the trails and graphs and go back to the start; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" data-mode="hole">
           <span style="color:var(--accent)" data-en-html="<i></i>Path (fading)"><i style="background:var(--accent)"></i>軌跡（漸淡）</span>
           <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
@@ -185,7 +188,7 @@
 
       <aside class="panel">
         <!-- ===== 模式一：穿過小孔的繩子 ===== -->
-        <section class="card" data-mode="hole">
+        <section class="card" data-mode="hole" data-deck="小球|Ball" data-deck-order="1">
           <h2 data-en="Ball and string">小球與繩子</h2>
           <div class="slider"><label for="m1" data-en="Mass of the ball m">小球質量 m</label><output id="m1o"></output>
             <input id="m1" type="range" min="0.1" max="1" step="0.05" value="0.5" data-decimals="3"></div>
@@ -195,7 +198,7 @@
             <input id="v0" type="range" min="0.2" max="2" step="0.05" value="1" data-decimals="3"></div>
           <p class="hint" data-en="Changing these starts again from the starting radius. Tap a number to type an exact value.">改變這三個條件會從起始半徑重新開始。點一下數字可直接輸入精確數值。</p>
         </section>
-        <section class="card" data-mode="hole">
+        <section class="card" data-mode="hole" data-deck="拉繩|Pull" data-deck-order="10">
           <h2 data-en="The hand under the table">桌面下的手</h2>
           <div class="slider"><label for="r1" data-en-html="Target radius r<sub>1</sub>">目標半徑 r<sub>1</sub></label><output id="r1o"></output>
             <input id="r1" type="range" min="0.15" max="1.8" step="0.05" value="0.5" data-decimals="3"></div>
@@ -220,7 +223,7 @@
             <dt data-en="Area swept per second">每秒掃過的面積</dt><dd id="h_A">—</dd>
           </dl>
         </section>
-        <section class="card" data-mode="hole">
+        <section class="card" data-mode="hole" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showV" type="checkbox" checked><span data-en="Velocity v">速度 v</span></label>
@@ -233,7 +236,7 @@
         </section>
 
         <!-- ===== 模式二：旋轉平台 ===== -->
-        <section class="card" data-mode="plat" hidden>
+        <section class="card" data-mode="plat" hidden data-deck="啞鈴|Dumbbells" data-deck-order="2">
           <h2 data-en="Person and dumbbells">人與啞鈴</h2>
           <div class="slider"><label for="md" data-en="Mass of each dumbbell m">每個啞鈴的質量 m</label><output id="mdo"></output>
             <input id="md" type="range" min="0" max="5" step="0.5" value="2" data-decimals="2"></div>
@@ -259,7 +262,7 @@
             <dt data-en="Work done by the muscles W">肌肉作的功 W</dt><dd id="p_W">—</dd>
           </dl>
         </section>
-        <section class="card" data-mode="plat" hidden>
+        <section class="card" data-mode="plat" hidden data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showVd" type="checkbox" checked><span data-en="Dumbbell velocity">啞鈴速度</span></label>
@@ -268,7 +271,7 @@
         </section>
 
         <!-- ===== 模式三：兩盤相合 ===== -->
-        <section class="card" data-mode="disk" hidden>
+        <section class="card" data-mode="disk" hidden data-deck="圓盤|Discs" data-deck-order="3">
           <h2 data-en="Two discs">兩個圓盤</h2>
           <div class="slider"><label for="M1" data-en-html="Lower disc mass M<sub>1</sub>">下盤質量 M<sub>1</sub></label><output id="M1o"></output>
             <input id="M1" type="range" min="0.5" max="5" step="0.1" value="2" data-decimals="2"></div>
@@ -299,7 +302,7 @@
             <dt data-en-html="Final ω<sub>f</sub> (predicted)">最後的 ω<sub>f</sub>（預測）</dt><dd id="d_wf">—</dd>
           </dl>
         </section>
-        <section class="card" data-mode="disk" hidden>
+        <section class="card" data-mode="disk" hidden data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showW" type="checkbox" checked><span data-en="Rotation arrows">轉動箭頭</span></label>
@@ -389,18 +392,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/angular-momentum-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/angular-momentum-3d.js?v=202611211106"></script>
-  <script src="js/angular-momentum.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="angular-momentum"></script>
-  <script src="js/missions/angular-momentum.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="angular-momentum"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/angular-momentum-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/angular-momentum-3d.js?v=202611210919"></script>
+  <script src="js/angular-momentum.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="angular-momentum"></script>
+  <script src="js/missions/angular-momentum.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="angular-momentum"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

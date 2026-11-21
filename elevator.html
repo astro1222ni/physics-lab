@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211106"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210919"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Apparent Weight in an Elevator | Astro Ni Lab">電梯中的視重（超重與失重）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -31,7 +31,7 @@
 
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab.css?v=202611210919">
   <style>
     /* 電梯中的視重：頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 兩張畫布的高度由程式依寬度決定；畫布沒有拖曳操作，手機可以在上面捲動頁面 */
@@ -111,8 +111,6 @@
     <p class="try-hint" data-en="Try it: press floor button “10” and watch the scale reading — what is it while speeding up, cruising and slowing down?">試試看：按樓層「10」，看體重計在加速、等速、減速時各讀多少？</p>
     <div class="lab el">
       <div class="stage">
-        <canvas id="cv" role="img" aria-label="電梯模擬畫布：左邊是大樓與電梯井（高度依比例），中間是車廂內部：人站在體重計上、彈簧秤吊著物體、手上拿著小球；右邊是體重計刻度盤與人的受力圖" data-en-aria-label="Elevator simulation: on the left the building and the shaft (heights to scale); in the middle the inside of the car with a person on a bathroom scale, a mass on a spring scale and a ball in the hand; on the right the scale dial and the free-body diagram of the person"></canvas>
-
         <div class="ctrlrow">
           <span class="lbl" id="modeLabel" data-en="Control:">操作方式：</span>
           <div class="modeseg" role="group" aria-labelledby="modeLabel">
@@ -126,17 +124,22 @@
           <button type="button" id="driveDown" data-en="▼ Hold: accelerate down">▼ 按住：向下加速</button>
           <p class="hint" data-en="Hold a button to accelerate at A (up to the top speed V); release it and the elevator moves on at constant velocity. Hold the opposite button to slow down — the elevator stops when its velocity reaches zero. Near the top and bottom floors the controller slows the elevator down automatically. Keyboard: hold the ↑ / ↓ keys.">按住按鈕以 A 加速（最快到 V）；放開就維持等速。按住反方向的按鈕會減速，速度變成 0 時停住。快到頂樓或 1 樓時，控制器會自動減速。鍵盤：按住 ↑／↓ 鍵。</p>
         </div>
+        <canvas id="cv" role="img" aria-label="電梯模擬畫布：左邊是大樓與電梯井（高度依比例），中間是車廂內部：人站在體重計上、彈簧秤吊著物體、手上拿著小球；右邊是體重計刻度盤與人的受力圖" data-en-aria-label="Elevator simulation: on the left the building and the shaft (heights to scale); in the middle the inside of the car with a person on a bathroom scale, a mass on a spring scale and a ball in the hand; on the right the scale dial and the free-body diagram of the person"></canvas>
+
         <div class="playbar">
           <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
           <button id="cut" type="button" data-en="Cut the cable">剪斷纜繩</button>
           <button id="brake" type="button" disabled data-en="Emergency brake">緊急煞車</button>
           <button id="ball" type="button" data-en="Drop the ball">放開小球</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
           <button id="reset" type="button" data-en="Clear all" title="清除所有圖表與紀錄、修好纜繩，滑桿設定不變" data-en-title="Clear all graphs and records and repair the cable; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
-        <p class="sr-only" id="srSay" aria-live="polite"></p>
 
         <canvas id="gv" role="img" aria-label="同步圖表：由上而下是加速度–時間、速度–時間、高度–時間與體重計讀數–時間圖，底色標出超重、失重與完全失重的階段" data-en-aria-label="Synchronised graphs: from top to bottom acceleration–time, velocity–time, height–time and scale reading–time, with the overweight, underweight and weightless phases shaded"></canvas>
         <div class="legend">
@@ -150,7 +153,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="電梯運轉|Elevator drive" data-deck-order="1">
           <h2 data-en="Elevator drive">電梯運轉</h2>
           <div class="slider"><label for="A" data-en-html="Maximum acceleration <i>A</i>">最大加速度 <i>A</i></label><output id="Ao"></output>
             <input id="A" type="range" min="0.5" max="3" step="0.1" value="1" data-decimals="2"></div>
@@ -159,7 +162,7 @@
           <p class="hint" data-en="Speeding up and slowing down both use A. A new setting applies from the next ride.">起動加速與停靠減速的大小都是 A。新的設定從下一趟開始生效。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="秤重|Scale" data-deck-order="10">
           <h2 data-en="Person and spring scale">人與彈簧秤</h2>
           <div class="slider"><label for="m" data-en-html="Person’s mass <i>m</i>">人的質量 <i>m</i></label><output id="mo"></output>
             <input id="m" type="range" min="30" max="100" step="1" value="60" data-decimals="1"></div>
@@ -168,7 +171,7 @@
           <p class="hint" data-en="Spring constant k = 60 N/m. The ball is let go 1.25 m above the floor of the car.">彈簧的力常數 k = 60 N/m。小球從離車廂地板 1.25 m 的高度放開。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="安全裝置|Safety" data-deck-order="10">
           <h2 data-en="Cable break and emergency brake">纜繩斷裂與緊急煞車</h2>
           <div class="slider"><label for="vt" data-en-html="Governor trip speed <i>v</i><sub>trip</sub>">限速器動作速率 <i>v</i><sub>trip</sub></label><output id="vto"></output>
             <input id="vt" type="range" min="2" max="10" step="0.1" value="5" data-decimals="2"></div>
@@ -192,7 +195,7 @@
           </dl>
         </section>
 
-        <section class="card mystery">
+        <section class="card mystery" data-deck="挑戰|Challenge" data-deck-order="10">
           <h2 data-en="Challenge: the mystery elevator">挑戰：神秘電梯</h2>
           <p class="hint" data-en="The elevator goes to a random floor with a secret acceleration. The acceleration and velocity are hidden — use only the scale reading and the person’s mass to work out the size of the acceleration while it sets off.">電梯會用保密的加速度開到隨機的樓層，加速度與速度都會被遮住。只用體重計讀數與人的質量，算出電梯起動時加速度的大小。</p>
           <div class="row">
@@ -296,17 +299,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211106"></script>
-  <script src="js/elevator-core.js?v=202611211106"></script>
-  <script src="js/sound.js?v=202611211106"></script>
-  <script src="js/numinput.js?v=202611211106"></script>
-  <script src="js/labdeck.js?v=202611211106"></script>
-  <script src="js/drawkit.js?v=202611211106"></script>
-  <script src="js/elevator.js?v=202611211106"></script>
-  <script src="js/firebase-config.js?v=202611211106"></script>
-  <script src="js/missions.js?v=202611211106" data-module="elevator"></script>
-  <script src="js/missions/elevator.js?v=202611211106"></script>
-  <script src="js/stats.js?v=202611211106" data-module="elevator"></script>
-  <script src="js/comments.js?v=202611211106"></script>
+  <script src="js/math.js?v=202611210919"></script>
+  <script src="js/elevator-core.js?v=202611210919"></script>
+  <script src="js/sound.js?v=202611210919"></script>
+  <script src="js/numinput.js?v=202611210919"></script>
+  <script src="js/labdeck.js?v=202611210919"></script>
+  <script src="js/drawkit.js?v=202611210919"></script>
+  <script src="js/elevator.js?v=202611210927"></script>
+  <script src="js/firebase-config.js?v=202611210919"></script>
+  <script src="js/missions.js?v=202611210919" data-module="elevator"></script>
+  <script src="js/missions/elevator.js?v=202611210919"></script>
+  <script src="js/stats.js?v=202611210919" data-module="elevator"></script>
+  <script src="js/comments.js?v=202611210919"></script>
 </body>
 </html>

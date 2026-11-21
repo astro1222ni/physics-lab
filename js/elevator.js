@@ -178,8 +178,9 @@
       dial = { x: rx, y: 0, w: rw, h: dh };
       fbd = { x: rx, y: dh + gap, w: rw, h: H - dh - gap };
     } else {
-      const H1 = Math.round(Math.max(300, Math.min(420, cw * 0.98)));
-      const H2 = Math.round(Math.max(220, Math.min(300, cw * 0.66)));
+      const phone = cw <= 420;
+      const H1 = Math.round(Math.max(268, Math.min(phone ? 298 : 420, cw * 0.98)));
+      const H2 = Math.round(Math.max(phone ? 200 : 220, Math.min(phone ? 212 : 300, cw * 0.66)));
       const bw = Math.round(cw * 0.25);
       const dw = Math.round(cw * 0.4);
       bld = { x: 0, y: 0, w: bw, h: H1 };

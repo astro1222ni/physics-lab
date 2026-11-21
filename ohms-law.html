@@ -135,6 +135,7 @@
     @media (orientation: landscape) {
       .labdeck-tabs button { flex-basis: auto; text-wrap: balance; -webkit-line-clamp: unset; }
     }
+    .oh .labdeck-tabs button { min-width: 20%; }
   </style>
 </head>
 <body data-en-ready>
@@ -152,13 +153,15 @@
         <canvas id="cv" role="img" aria-label="實驗桌：毫安培計、待測元件、伏特計、可變電阻箱與直流電源供應器，以紅黑導線連接，導線上的小點代表移動的電荷" data-en-aria-label="The lab bench: milliammeter, the component under test, voltmeter, decade resistance box and DC power supply joined by red and black leads; the dots on the leads are moving charges"></canvas>
         <div class="playbar">
           <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
-          <button id="undo" type="button" data-en="Remove last point">移除最後一點</button>
-          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、I–V 圖與三用電表的紀錄；電源、電阻箱與電表的設定不變" data-en-title="Clear the data table, the I–V graph and the multimeter readings; the supply, box and meter settings are kept">全部清除</button>
           <button id="dmm" type="button" data-en="Multimeter (Ω)">三用電表量電阻</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="undo" type="button" data-en="Remove last point">移除最後一點</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、I–V 圖與三用電表的紀錄；電源、電阻箱與電表的設定不變" data-en-title="Clear the data table, the I–V graph and the multimeter readings; the supply, box and meter settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
         <canvas id="mv" role="img" aria-label="兩個電表的錶面特寫：指針、刻度、目前的檔位與讀數" data-en-aria-label="Close-up of the two meter faces: needle, scale, selected range and reading"></canvas>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--equi)"></i>移動的電荷（傳統電流方向）</span>

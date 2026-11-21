@@ -141,12 +141,13 @@
             <button type="button" id="modeV" aria-pressed="true" data-en-html="Battery connected<br>(V fixed)">接上電池<br>（V 固定）</button>
             <button type="button" id="modeQ" aria-pressed="false" data-en-html="Charged, then disconnected<br>(Q fixed)">充電後斷開<br>（Q 固定）</button>
           </div>
-          <div class="tools">
-            <button id="reset" type="button" data-en="Reset" title="恢復預設的面積、板距、電壓與介電質" data-en-title="Restore the default area, separation, voltage and dielectric">重設</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <button id="reset" type="button" data-en="Reset" title="恢復預設的面積、板距、電壓與介電質" data-en-title="Restore the default area, separation, voltage and dielectric">重設</button>
+        </div>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Free charge + / −"><i class="dot" style="background:var(--pos)"></i>自由電荷 ＋／－</span>
           <span style="color:var(--b-optics)" data-en-html="<i class=&quot;ring&quot;></i>Bound charge on the dielectric"><i class="ring"></i>介電質表面的束縛電荷</span>
@@ -159,7 +160,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="電容器|Capacitor" data-deck-order="1">
           <h2 data-en="Capacitor">電容器</h2>
           <p class="modeline" id="modeLine"></p>
           <div class="slider"><label for="A" data-en="Plate area A">平板面積 A</label><output id="Ao"></output>
@@ -171,7 +172,7 @@
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="介電質|Dielectric" data-deck-order="10">
           <h2 data-en="Dielectric between the plates">兩板間的介電質</h2>
           <div class="presets" role="group" aria-label="介電質" data-en-aria-label="Dielectric">
             <button type="button" data-k="1" data-en-html="Air<small>κ = 1</small>">空氣<small>κ = 1</small></button>
@@ -204,7 +205,7 @@
           <p class="sr-only" id="srRead" aria-live="polite"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showLines" type="checkbox" checked><span data-en="Field lines">電場線</span></label>

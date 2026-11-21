@@ -131,6 +131,7 @@
         margin-inline: 0 !important;
       }
     }
+    .labdeck .speedbox { margin-bottom: 4px; }
   </style>
 </head>
 <body data-en-ready>
@@ -156,17 +157,13 @@
         <div id="view3"></div>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
-          <button id="reset" type="button" data-en="Clear all" title="清除速率分布、過程圖與能量收支的累積資料；滑桿設定與氣體不變" data-en-title="Clear the accumulated speed histogram, process graph and energy totals; the sliders and the gas are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
-            <div class="seg3" role="group" aria-labelledby="speedLabel">
-              <button type="button" id="sp0" aria-pressed="false" data-en="Slow 0.2×">慢 0.2×</button>
-              <button type="button" id="sp1" aria-pressed="true">1×</button>
-              <button type="button" id="sp2" aria-pressed="false">5×</button>
-            </div>
-          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playbar deck-secondary">
+          <button id="reset" type="button" data-en="Clear all" title="清除速率分布、過程圖與能量收支的累積資料；滑桿設定與氣體不變" data-en-title="Clear the accumulated speed histogram, process graph and energy totals; the sliders and the gas are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; id=&quot;lgA&quot; style=&quot;background:var(--b-wave)&quot;></i>Gas molecules (colour = element)"><i class="dot" id="lgA" style="background:var(--b-wave)"></i>氣體分子（顏色代表元素）</span>
           <span id="lgBath" data-en-html="<i style=&quot;background:var(--b-thermo)&quot;></i>Heat-bath walls (glow = temperature)"><i style="background:var(--b-thermo)"></i>恆溫壁（光暈顏色代表溫度）</span>
@@ -204,7 +201,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="熱力學過程|Process" data-deck-order="10">
           <h2 id="modeTitle" data-en="Process">熱力學過程</h2>
           <div class="seg4" role="group" aria-labelledby="modeTitle">
             <button type="button" id="mIso" aria-pressed="true" data-en="Isothermal">等溫</button>
@@ -215,7 +212,7 @@
           <p class="info" id="modeInfo"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="氣體|Gas" data-deck-order="10">
           <h2 data-en="Gas">氣體</h2>
           <p class="seg-label" id="spALabel" data-en="Element (monatomic gas)">氣體種類（單原子氣體）</p>
           <div class="seg5" role="group" aria-labelledby="spALabel" id="segA"></div>
@@ -235,7 +232,7 @@
           <p class="hint" data-en="“Give all the same speed” keeps the total energy but gives every molecule the same speed in a random direction — a state far from equilibrium. Watch collisions turn it back into a Maxwell distribution (best seen in the adiabatic process).">「改成同一速率」保持總能量不變，但讓每個分子的速率都相同、方向隨機，這是遠離平衡的狀態；觀察碰撞如何讓它回到馬克士威分布（在絕熱過程中最清楚）。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="氣體狀態|State of the gas" data-deck-order="1">
           <h2 data-en="State of the gas">氣體狀態</h2>
           <div class="slider" id="boxT"><label for="T" id="TLabel" data-en="Heat-bath temperature T">恆溫槽溫度 T</label><output id="To"></output>
             <input id="T" type="range" min="50" max="1000" step="10" value="300" data-decimals="1"><span class="note" id="TNote" hidden></span></div>
@@ -268,8 +265,15 @@
           <p class="hint" data-en="± is the statistical uncertainty (one standard error). Measurements restart whenever the state changes; Q, W and ΔU add up from the last “Clear all”.">± 為統計不確定度（一個標準誤差）。狀態改變時重新開始平均；Q、W、ΔU 從上次「全部清除」開始累計。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="10">
           <h2 data-en="Display">顯示</h2>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
+            <div class="seg3" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false" data-en="Slow 0.2×">慢 0.2×</button>
+              <button type="button" id="sp1" aria-pressed="true">1×</button>
+              <button type="button" id="sp2" aria-pressed="false">5×</button>
+            </div>
+          </div>
           <div class="checks">
             <label><input id="showTrack" type="checkbox"><span data-en="Follow one molecule">追蹤一個分子</span></label>
             <label><input id="showImp" type="checkbox" checked><span data-en="Impacts on the piston">撞擊活塞的位置</span></label>

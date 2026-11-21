@@ -41,6 +41,8 @@
     table.data th { color: var(--accent); }
     table.data :is(th, td):first-child { white-space: nowrap; }
     @media (max-width: 460px) { table.data :is(th, td) { padding: .35em; } }
+
+    #playback[hidden] ~ .playback-speed { display: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -78,6 +80,10 @@
             <button type="button" id="reset" data-en="Reset time">重設時間</button>
             <button type="button" id="steady" data-en="Near steady state">快轉至近穩態</button>
           </div>
+        </div>
+        <p class="status" id="status"></p>
+        <div data-deck-anchor hidden></div>
+        <div class="playback-speed">
           <p class="status" id="speedNote"></p>
           <div id="speedbar" class="lab-seg" role="group" aria-label="播放速度" data-en-aria-label="Playback speed">
             <button type="button" id="speed1" data-speed="1" aria-pressed="false" data-en="1×">1×</button>
@@ -85,13 +91,12 @@
             <button type="button" id="speed200" data-speed="200" aria-pressed="false" data-en="200×">200×</button>
           </div>
         </div>
-        <p class="status" id="status"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="stageHint"></p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="實驗|Experiment" data-deck-order="10">
           <h2 data-en="Experiment">實驗</h2>
           <div id="modes" class="lab-seg" role="group" aria-label="實驗模式" data-en-aria-label="Experiment mode">
             <button type="button" id="modeSeries" data-mode="series" aria-pressed="true" data-en="Series">串聯</button>
@@ -101,7 +106,7 @@
           <p class="status" id="modeHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="材料|Materials" data-deck-order="10">
           <h2 data-en="Materials">材料</h2>
           <p class="status" id="materialLabelA"></p>
           <div class="btns chips" id="materialA" role="group" aria-labelledby="materialLabelA"></div>
@@ -109,7 +114,7 @@
           <div class="btns chips" id="materialB" role="group" aria-labelledby="materialLabelB"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="溫度與尺寸|Temperature and size" data-deck-order="1">
           <h2 data-en="Dimensions and temperatures">尺寸與溫度</h2>
           <div class="slider">
             <label for="length" data-en="Length L">長度 L</label><output id="lengtho" for="length"></output>
@@ -146,7 +151,7 @@
           <p class="status" data-en="Tap a slider value to type it directly.">點一下滑桿右側的數字，可以直接輸入。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="讀數|Readings" data-deck-order="10">
           <h2 data-en="Readings">讀數</h2>
           <div class="btns">
             <button type="button" id="record" data-en="Record readings">記錄讀數</button>
