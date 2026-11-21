@@ -348,7 +348,7 @@
         }
       }
     }
-    const FT = TL > 0 ? 1 - bridgesLen / TL : 0;
+    const FT = connected && TL > 0 ? 1 - bridgesLen / TL : 0;
     return { connected: connected, TL: TL, MD: MD, FT: FT, edges: ne, bridgesLen: bridgesLen, comps: nc };
   }
 

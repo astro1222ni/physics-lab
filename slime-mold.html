@@ -246,6 +246,10 @@
         </section>
         <section class="card" data-deck="黏菌|The slime mould" data-deck-order="2" data-section="lab2">
           <h2 data-en="The slime mould">黏菌</h2>
+          <details><summary data-en="Initial network">初始管網</summary>
+            <label><span data-en="Initial diameter variation">初始管徑擾動</span> <select id="netNoise"><option>0</option><option>0.1</option><option>0.3</option></select></label>
+            <label><span data-en="Seed">種子</span> <input type="number" id="netSeed" min="0" max="4294967295" step="1" required value="1"></label>
+          </details>
           <div class="slider"><label for="I0" data-en-html="Flow from each food source I<sub>0</sub>">每個食物源的流量 I<sub>0</sub></label><output id="I0o"></output>
             <input id="I0" type="range" min="0.2" max="6" step="0.05" value="1" data-decimals="2"></div>
           <div class="slider"><label for="gam" data-en="Steepness γ of f(Q)">f(Q) 的陡度 γ</label><output id="gamo"></output>
@@ -288,7 +292,7 @@
       <ul>
         <li data-en-html="<strong>Total length</strong> (cost): the length of all the tubes, divided by that of the minimum spanning tree."><strong>總長</strong>（成本）：所有管子的長度，除以最小生成樹的總長。</li>
         <li data-en-html="<strong>Mean distance</strong> (efficiency): the distance between two cities along the network, averaged over every pair, divided by the same for the minimum spanning tree."><strong>平均距離</strong>（效率）：兩城市之間沿網路的距離，對每一對城市平均，再除以最小生成樹的值。</li>
-        <li data-en-html="<strong>Fault tolerance</strong>: if one random stretch of tube breaks, the chance that every city can still reach every other. A tree scores 0; a ring scores 1."><strong>容錯</strong>：隨便斷一段管子，所有城市仍然互相連得到的機率。樹是 0，一個環是 1。</li>
+        <li data-en="Fault tolerance is the probability that all food cities remain connected after a break sampled uniformly along retained tube length in the city components. Already disconnected cities score zero.">容錯是在有食物城市的連通分量中，沿留存管長均勻抽一處斷點後，所有食物城市仍然連通的機率。若城市原已分離，容錯為零。</li>
       </ul>
       <p data-en-html="To be fair, the railway and the minimum spanning tree are laid on the same grid as the slime mould: each railway line follows the cheapest lowland route between its two cities, and the tree follows the cheapest route with the current mountain resistance.">為了公平，臺鐵和最小生成樹也畫在跟黏菌一樣的格子上：每段鐵路沿兩個城市之間最省力的平地路線走，最小生成樹則照目前的山區阻力走最省的路。</p>
 

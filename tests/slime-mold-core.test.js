@@ -240,3 +240,11 @@ test('等量城市逐步重現舊管徑；異量入口與各出口守恆', () =>
 });
 
 console.log(passed + ' 項通過');
+
+test('兩個分離的環即使沒有橋，容錯仍為零', () => {
+  const g = S.graph([[0,0],[1,0],[0,1],[3,0],[4,0],[3,1]],
+    [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3]]);
+  const r = S.netStats(g, new Uint8Array(6).fill(1), [0,3]);
+  assert.strictEqual(r.connected, false);
+  assert.strictEqual(r.FT, 0);
+});

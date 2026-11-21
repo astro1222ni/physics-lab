@@ -31,7 +31,7 @@
     {
       id: 'slime-mold-3', level: 2,
       title: { zh: '連起所有城市', en: 'Join the cities' },
-      desc: { zh: '在至少 8 個城市放食物，讓黏菌在臺灣長到穩定，所有城市都連在一起。', en: 'Put food on at least 8 cities and let the mould grow across Taiwan until it settles with every city connected.' },
+      desc: { zh: '使用預設配置或在至少 8 個城市放食物，讓黏菌在臺灣長到穩定，所有城市都連在一起。', en: 'Use the default layout or put food on at least 8 cities and let the mould grow across Taiwan until it settles with every city connected.' },
       check: function (ev) { const d = ev.data; return net(ev) && d.cities >= 8; }
     },
     {

@@ -113,7 +113,7 @@
     g.beginPath(); g.moveTo(p.x0, Math.round(y) + 0.5); g.lineTo(p.x1, Math.round(y) + 0.5); g.stroke();
   }
   function yTicks(g, p, lo, hi, step, fmt, yOf) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) {
       const y = yOf(v);
       g.fillText(fmt(v), p.x0 - 7, y);
@@ -121,7 +121,7 @@
     }
   }
   function xTicks(g, p, lo, hi, step, fmt, xOf, unit) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
     g.textAlign = 'right';
     const wl = g.measureText(unit).width;
     g.fillText(unit, p.x1, p.y1 + 6);
@@ -222,7 +222,7 @@
       const kn = keptNow();
       if (kn.alive < m1.alive0) { sndPrune(1 - kn.kept); m1.alive0 = kn.alive; }
       if (m1.sim.steps % 2 === 0 || m1.sim.change < TOL) m1.hist.push({ t: m1.sim.t, kept: kn.kept });
-      if (m1.sim.change < TOL || m1.sim.steps >= MAXSTEP1) finishRun1();
+      if (m1.sim.change < TOL || m1.sim.steps % MAXSTEP1 === 0) finishRun1();
     }
   }
   function finishRun1() {
@@ -261,10 +261,11 @@
   }
   function updateRun1Button() {
     const b = $('run1');
-    b.textContent = m1.playing ? T('暫停', 'Pause') : (m1.done ? T('重新生長', 'Grow again') : (m1.sim && m1.sim.steps > 0 ? T('繼續', 'Resume') : T('開始生長', 'Grow')));
+    b.textContent = m1.playing ? T('暫停', 'Pause') : (m1.done && m1.ev.converged ? T('重新生長', 'Grow again') : (m1.sim && m1.sim.steps > 0 ? T('繼續', 'Resume') : T('開始生長', 'Grow')));
   }
   function play1() {
-    if (m1.done) reset1(true);
+    if (m1.done && m1.ev.converged) reset1(true);
+    else if (m1.done) { m1.done = false; m1.playing = true; }
     else m1.playing = !m1.playing;
     if (m1.playing && reducedMotion) { finish1(); return; }
     updateRun1Button();
@@ -272,7 +273,8 @@
     request();
   }
   function finish1() {
-    if (m1.done) reset1();
+    if (m1.done && m1.ev.converged) reset1();
+    else m1.done = false;
     let guard = 0;
     while (!m1.done && guard++ < MAXSTEP1 + 5) step1(1);
   }
@@ -376,7 +378,7 @@
     m1.foods.forEach(function (f, k) { const p = cellXY(f); oat(g, p[0], p[1], cs * 0.36, k ? 0.5 : -0.4, sel === k || m1.dragK === k); });
     m1.foods.forEach(function (f, k) {
       const p = cellXY(f);
-      D.haloText(g, k ? 'B' : 'A', p[0], p[1] - cs * 0.36 - 8, D.c.text, 'center', 'middle', '700 11px ' + FONT);
+      D.haloText(g, k ? 'B' : 'A', p[0], p[1] - cs * 0.36 - 8, D.c.text, 'center', 'middle', '700 12px ' + FONT);
     });
   }
   function drawChart1(g) {
@@ -392,7 +394,7 @@
     const ys = yOf(m1.routes.shortest / (m1.total || 1));
     g.save(); g.setLineDash([5, 4]); g.strokeStyle = C['sm-best']; g.lineWidth = 1.4;
     g.beginPath(); g.moveTo(p.x0, ys); g.lineTo(p.x1, ys); g.stroke(); g.restore();
-    D.haloText(g, T('只剩最短路', 'shortest only'), p.x1 - 4, ys - 9, C['sm-best'], 'right', 'middle', '11px ' + FONT);
+    D.haloText(g, T('只剩最短路', 'shortest only'), p.x1 - 4, ys - 9, C['sm-best'], 'right', 'middle', '12px ' + FONT);
     g.save();
     g.beginPath(); g.rect(p.x0, p.y0 - 2, p.x1 - p.x0, p.y1 - p.y0 + 4); g.clip();
     g.strokeStyle = D.shade(C['sm-tube'], -0.15); g.lineWidth = 2.4; g.lineJoin = 'round';
@@ -518,7 +520,7 @@
     S.setMountain(TG, val(el.mtn));
     const f = foods2();
     net.params = { I0: val(el.I0), gamma: val(el.gam), M: val(el.mtn) };
-    net.sim = f.length >= 2 ? S.create({ g: TG, foods: f, weights: net.weights.filter((w, i) => net.on[i]), rule: 'sig', gamma: net.params.gamma, I0: net.params.I0, dt: DT2 }) : null;
+    net.sim = f.length >= 2 ? S.create({ g: TG, foods: f, weights: net.weights.filter((w, i) => net.on[i]), rule: 'sig', gamma: net.params.gamma, I0: net.params.I0, dt: DT2, noise: Number($('netNoise').value), seed: Number($('netSeed').value) }) : null;
     net.playing = !!keepPlaying && !!net.sim; net.done = false; net.ev = null;
     if (f.length >= 2) {
       net.mst = S.mstEdges(TG, f);
@@ -535,7 +537,7 @@
     if (!net.sim) return;
     for (let i = 0; i < n && !net.done; i++) {
       S.step(net.sim);
-      if (net.sim.change < TOL || net.sim.steps >= MAXSTEP2) finishRun2();
+      if (net.sim.change < TOL || net.sim.steps % MAXSTEP2 === 0) finishRun2();
     }
     if (!net.done && net.sim.steps % 6 === 0) { net.stats = S.netStats(TG, S.alive(net.sim, THR), net.sim.foods); updateReadouts2(); }
   }
@@ -573,17 +575,18 @@
     if (!ev.connected) return T('有城市被隔開了。', 'Some cities were cut off.');
     let s = (ev.converged ? T('穩定了：', 'Settled: ') : T('跑了很久還沒完全穩定：', 'Not fully settled: ')) +
       T('總長是最小生成樹的 ', 'length ') + num(ev.TLr, 2) + T(' 倍、平均距離 ', '× the spanning tree, mean distance ') + num(ev.MDr, 2) + T(' 倍、容錯 ', '×, fault tolerance ') + pct(ev.FT, 0) + T('。', '.');
-    if (ev.FT < 0.05) s += T('這是一棵樹：斷任何一段都會隔開城市。', ' It is a tree: any break cuts a city off.');
+    if (ev.connected && ev.FT === 0) s += T('這是一棵樹：斷任何一段都會隔開城市。', ' It is a tree: any break cuts a city off.');
     if (ev.beatRail) s += T('總長和平均距離都不輸臺鐵，而且一樣耐用！', ' As short and as quick as the railway, and as robust!');
     return s;
   }
   function updateRun2Button() {
     const b = $('run2');
-    b.textContent = net.playing ? T('暫停', 'Pause') : (net.done ? T('重新生長', 'Grow again') : (net.sim && net.sim.steps > 0 ? T('繼續', 'Resume') : T('開始生長', 'Grow')));
+    b.textContent = net.playing ? T('暫停', 'Pause') : (net.done && net.ev.converged ? T('重新生長', 'Grow again') : (net.sim && net.sim.steps > 0 ? T('繼續', 'Resume') : T('開始生長', 'Grow')));
   }
   function play2() {
     if (!net.sim) { setStatus2(T('至少要兩個城市有食物。', 'At least two cities need food.')); return; }
-    if (net.done) reset2(true);
+    if (net.done && net.ev.converged) reset2(true);
+    else if (net.done) { net.done = false; net.playing = true; }
     else net.playing = !net.playing;
     if (net.playing && reducedMotion) { finish2(); return; }
     updateRun2Button();
@@ -592,7 +595,8 @@
   }
   function finish2() {
     if (!net.sim) return;
-    if (net.done) reset2();
+    if (net.done && net.ev.converged) reset2();
+    else net.done = false;
     let guard = 0;
     while (!net.done && guard++ < MAXSTEP2 + 5) step2(1);
   }
@@ -699,7 +703,7 @@
     const km = 50, sx = m.x0 + 14, sy = m.y1 - 16;
     g.strokeStyle = D.c.text; g.lineWidth = 2;
     g.beginPath(); g.moveTo(sx, sy - 4); g.lineTo(sx, sy); g.lineTo(sx + km * L2.s, sy); g.lineTo(sx + km * L2.s, sy - 4); g.stroke();
-    D.haloText(g, km + ' km', sx + km * L2.s / 2, sy - 9, D.c.text, 'center', 'middle', '11px ' + FONT);
+    D.haloText(g, km + ' km', sx + km * L2.s / 2, sy - 9, D.c.text, 'center', 'middle', '12px ' + FONT);
     // 最小生成樹與臺鐵
     const edgePath = function (ok) { g.beginPath(); for (let e = 0; e < TG.m; e++) if (ok[e]) { g.moveTo(X(TG.x[TG.ea[e]]), Y(TG.y[TG.ea[e]])); g.lineTo(X(TG.x[TG.eb[e]]), Y(TG.y[TG.eb[e]])); } };
     // 黏菌
@@ -755,7 +759,7 @@
       { zh: '最小生成樹', en: 'Spanning tree', col: C['sm-mst'], r: ms ? { TL: 1, MD: 1, FT: 0 } : null }
     ];
     const top = p.y0 + 22, rowH = (p.y1 - top) / 3, labW = L2.wide ? 92 : 86;
-    g.font = '11px ' + FONT;
+    g.font = '12px ' + FONT;
     rowsDef.forEach(function (rd, ri) {
       const y0 = top + ri * rowH;
       g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = D.c.muted;
@@ -801,7 +805,7 @@
     const yOf = function (v) { return p.y1 - (p.y1 - p.y0) * v; };
     yTicks(g, p, 0, 1, 0.25, function (v) { return pct(v, 0); }, yOf);
     xTicks(g, p, 1, xmax, xmax > 2.6 ? 0.5 : 0.25, function (v) { return num(v, 2); }, xOf, T('總長 ÷ 樹', 'length ÷ tree'));
-    D.haloText(g, T('↖ 便宜又耐用', '↖ cheap and robust'), p.x0 + 8, p.y0 + 12, D.c.muted, 'left', 'middle', '11px ' + FONT);
+    D.haloText(g, T('↖ 便宜又耐用', '↖ cheap and robust'), p.x0 + 8, p.y0 + 12, D.c.muted, 'left', 'middle', '12px ' + FONT);
     // 最小生成樹
     if (net.mstStats) {
       const x = xOf(1), y = yOf(0);
@@ -810,7 +814,7 @@
     if (net.railStats && net.mstStats) {
       const r = ratios(net.railStats), x = xOf(r.TL), y = yOf(r.FT);
       g.fillStyle = C['sm-rail']; g.fillRect(x - 5, y - 5, 10, 10);
-      D.haloText(g, T('臺鐵', 'Railway'), x + 9, y + 4, D.c.text, 'left', 'middle', '11px ' + FONT);
+      D.haloText(g, T('臺鐵', 'Railway'), x + 9, y + 4, D.c.text, 'left', 'middle', '12px ' + FONT);
     }
     rows2.forEach(function (r, i) {
       const ev = r.ev;
@@ -841,7 +845,7 @@
     const s = net.sim, st = net.stats, ms = net.mstStats, rs = net.railStats;
     const rows = [
       [T('有食物的城市', 'Cities with food'), foods2().length + T(' 個', '') + (isDefault15() ? '<small>' + T('鐵路 15 城', 'the 15 railway cities') + '</small>' : '')],
-      [T('時間', 'Time'), s ? num(s.t, 0) + '<small>' + (net.done ? T('已穩定', 'settled') : (s.steps ? T('還在調整', 'still adapting') : T('鋪滿全島', 'covering the island'))) + '</small>' : '—'],
+      [T('時間', 'Time'), s ? num(s.t, 0) + '<small>' + (net.done ? (net.ev.converged ? T('已穩定', 'settled') : T('達步數上限', 'step limit')) : (s.steps ? T('還在調整', 'still adapting') : T('鋪滿全島', 'covering the island'))) + '</small>' : '—'],
       [T('黏菌網', 'Slime mould network'), st ? num(st.TL, 0) + ' km<small>' + T('平均距離 ', 'mean distance ') + num(st.MD, 0) + ' km' + T('，容錯 ', ', fault tolerance ') + pct(st.FT, 0) + '</small>' : '—'],
       [T('最小生成樹', 'Minimum spanning tree'), ms ? num(ms.TL, 0) + ' km<small>' + T('平均距離 ', 'mean distance ') + num(ms.MD, 0) + ' km' + T('，容錯 0%', ', fault tolerance 0%') + '</small>' : '—'],
       [T('臺鐵（簡化）', 'Railway (simplified)'), rs ? num(rs.TL, 0) + ' km<small>' + T('平均距離 ', 'mean distance ') + num(rs.MD, 0) + ' km' + T('，容錯 ', ', fault tolerance ') + pct(rs.FT, 0) + '</small>' :
@@ -1055,6 +1059,9 @@
   $('finish2').addEventListener('click', finish2);
   $('reset2').addEventListener('click', function () { reset2(); setStatus2(T('黏菌重新鋪滿全島。', 'The mould covers the island again.')); });
   $('clear2').addEventListener('click', function () { rows2 = []; renderRows2(); reset2(); setStatus2(T('已清除紀錄表、重新鋪滿；設定沒有改變。', 'Table cleared and the island covered again; the settings are unchanged.')); });
+  ['netNoise', 'netSeed'].forEach(id => $(id).addEventListener('change', function () {
+    if ($('netSeed').reportValidity()) reset2();
+  }));
   [el.I0, el.gam, el.mtn].forEach(function (r) {
     r.addEventListener('input', function () {
       refreshOutputs();
