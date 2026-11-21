@@ -24,6 +24,7 @@
   const hier = function (d) { const x = V(d); return x && x.mode === 'hier' ? x : null; };
   const near = function (a, b, tol) { return Math.abs(a - b) <= tol; };
 
+  const lastDensity=ctx=>ctx.seq('cp-density')>ctx.seq('cp')?(ctx.last('cp-density')||{}):{};
   LabMission.register('central-place', [
     {
       id: 'central-place-1', level: 1,
@@ -101,6 +102,28 @@
       check: function (ev) { const d = hier(ev); return !!d && d.good.L === 3 && d.good.reach >= 1 && d.good.reach <= 1.02; }
     },
 
+    {
+      id:'central-place-13', level:4,
+      title:{zh:'市中心的小商圈',en:'Small downtown markets'},
+      desc:{zh:'選向市中心遞減，調整密度倍數，讓市中心商店的面積不到最邊緣商店的四分之一，再按「看商店開張」觀察到穩定。',en:'Choose city-centre peak, then adjust the city-centre density multiple to make the central market smaller than one quarter of the outermost market. Watch the shops settle.'},
+      check(ev){const d=ev.data;return ev.type==='cp-density' && d.act==='settled' && d.settled && d.mode==='gradient' && d.areaRatio<0.25;},
+      need(ctx){const d=lastDensity(ctx);return [
+        [d.mode==='gradient','選向市中心遞減','Select city-centre peak'],
+        [null,'調整中心／邊緣密度倍數，目前 '+(d.multiple??'—'),'Adjust the density multiple; now '+(d.multiple??'—')],
+        [d.settled && d.areaRatio<0.25,'穩定後面積比 < 0.25，目前 '+(d.areaRatio?.toFixed(3)??'—'),'Settled area ratio < 0.25; now '+(d.areaRatio?.toFixed(3)??'—')],
+        [d.act==='settled','按「看商店開張」，觀察到店址穩定。','Press “Watch shops open” and watch them settle.']];}
+    },
+    {
+      id:'central-place-14', level:6,
+      title:{zh:'不同面積，相近人數',en:'Different areas, similar populations'},
+      desc:{zh:'在隨機起伏模式重抽，讓至少 12 家店的人數變異係數不超過 0.12，再按「看商店開張」觀察到穩定。',en:'Redraw random hills and reach a population CV of at most 0.12 with at least 12 shops. Watch them settle.'},
+      check(ev){const d=ev.data;return ev.type==='cp-density' && d.act==='settled' && d.settled && d.mode==='random' && d.rerolls>0 && d.cv<=0.12 && d.count>=12;},
+      need(ctx){const d=lastDensity(ctx);return [
+        [d.mode==='random' && d.rerolls>0,'選隨機起伏並重抽','Select random hills and redraw'],
+        [d.settled && d.cv<=0.12,'穩定後 CV ≤ 0.12，目前 '+(d.cv?.toFixed(3)??'—'),'Settled CV ≤ 0.12; now '+(d.cv?.toFixed(3)??'—')],
+        [d.count>=12,'至少 12 家，目前 '+(d.count??'—'),'At least 12 shops; now '+(d.count??'—')],
+        [d.act==='settled','按「看商店開張」，觀察到店址穩定。','Press “Watch shops open” and watch them settle.']];}
+    },
     // ---------------- 隱藏任務 ----------------
     {
       id: 'central-place-h1', level: 3, hidden: true,

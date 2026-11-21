@@ -249,6 +249,15 @@ console.log('\n[隨機亂玩]');
   expect('隨機亂玩 ' + tries + ' 次（每次 ' + steps + ' 步），隱藏任務碰巧完成的比例夠低', Object.keys(cnt).every(x => cnt[x] / tries < (lim[x] || 0.03)), worst);
 }
 
+for(const [id,mode,seed,rerolls] of [['13','gradient',1,0],['14','random',2,1]]){
+  const {final:f}=K.market({mode,seed,width:32,height:24,rho:100,T:2000,R:5,multiple:30});
+  const e={type:'cp-density',data:{mode,rerolls,act:'settled',multiple:30,settled:true,count:f.count,cv:f.cv,areaRatio:f.areaRatio}};
+  expect(id+' 單獨完成',firing(e).join()===id,'CV '+f.cv.toFixed(3)+'，面積比 '+f.areaRatio.toFixed(3));
+  expect(id+' 尚未穩定時不完成',!firing({...e,data:{...e.data,settled:false}}).includes(id));
+  expect(id+' 一般調參不誤觸',!firing({...e,data:{...e.data,act:'param'}}).includes(id));
+  if(id==='13') expect('只切換分布不會誤觸 13',!firing({...e,data:{...e.data,act:'distribution'}}).includes(id));
+  if(id==='14') expect('未重抽不能完成 14',!firing({...e,data:{...e.data,rerolls:0}}).includes(id));
+}
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
 console.log('\n合計：' + ok + ' 項通過，' + bad + ' 項失敗');
 console.log('公開 ' + pub.length + ' 個（' + pub.reduce((a, m) => a + m.level, 0) + ' 顆星），隱藏 ' + hid.length + ' 個（' + hid.reduce((a, m) => a + 2 * m.level, 0) + ' 顆星）；7 級以上的隱藏任務 ' + hid.filter(m => m.level >= 7).length + ' 個');

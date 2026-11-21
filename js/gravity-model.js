@@ -17,16 +17,17 @@
   const el = { b: $('gB'), pop: $('gPop') };
   const state = { view: 'flows', mode: 'km', b: 2, from: 'txg', to: 'tpe', town: null, pop: 50, acted: false };
   let padTarget = null;
+  const barrier = () => state.mode === 'hsr' && state.mountains === true;
   let L = K.CITIES.slice(), flows = [], AR = null, arKey = '', syncing = false;
   const idx = function (id) { return L.findIndex(function (c) { return c.id === id; }); };
   const cname = function (c) { return T(c.zh, c.en); };
   const byId = function (id) { return L[idx(id)]; };
   function recompute() {
     L = K.withTown(state.town ? { lon: state.town.lon, lat: state.town.lat, pop: state.pop } : null);
-    flows = K.flowsFrom(L, idx(state.from), state.b, state.mode);
+    flows = K.flowsFrom(L, idx(state.from), state.b, state.mode, barrier());
     if (state.view === 'areas') {
-      const key = state.b + '|' + state.mode + '|' + (state.town ? state.town.lon.toFixed(4) + ',' + state.town.lat.toFixed(4) + ',' + state.pop : '');
-      if (key !== arKey) { AR = K.areas(L, state.b, state.mode, 3); arKey = key; areaImg = null; }
+      const key = barrier() + '|' + state.b + '|' + state.mode + '|' + (state.town ? state.town.lon.toFixed(4) + ',' + state.town.lat.toFixed(4) + ',' + state.pop : '');
+      if (key !== arKey) { AR = K.areas(L, state.b, state.mode, 3, barrier()); arKey = key; areaImg = null; }
     }
   }
 
@@ -200,6 +201,32 @@
     captions.push({ text: T('新市鎮', 'New town') + ' ' + state.pop + T(' 萬', '0k'), x: p[0], y: p[1],
       gap: r + 8, side: 1, color: C['gm-town'], face: font(11, 700), priority: 96, pill: true });
   }
+  function drawBarrier(v, captions) {
+    if (!barrier()) return;
+    function line(points, color, width, dash) {
+      ctx.strokeStyle=color; ctx.lineWidth=width; ctx.setLineDash(dash);
+      ctx.beginPath();
+      points.forEach((p,i)=>{const [x,y]=P(v,p); if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);});
+      ctx.stroke();
+    }
+    ctx.save();
+    line(K.RIDGE,C.surface,3.5,[]);
+    line(K.RIDGE,C['gm-city'],2,[5,4]);
+    const [ridgeX,ridgeY] = P(v,K.RIDGE[Math.floor(K.RIDGE.length/2)]);
+    captions.push({x:ridgeX,y:ridgeY,text:T('中央山脈（示意）','Central Range (schematic)'),
+      gap:10,side:1,color:C.text,face:font(11,600),priority:94,pill:true});
+    const route=K.roadRoute(byId(state.from),byId(state.to));
+    if(route.gate){
+      line(route.points,C.surface,5,[]);
+      line(route.points,C['gm-town'],3,[]);
+    }
+    for(const [gate,p,label] of [['north',K.TOUCHENG,T('雪隧','Xueshan')],['south',K.FENGGANG,T('南迴','South Link')]]){
+      const [x,y]=P(v,p), color=gate===route.gate?C['gm-town']:C.text;
+      ctx.fillStyle=color;ctx.fillRect(x-2.5,y-2.5,5,5);
+      captions.push({x,y,text:label,gap:8,side:1,color,face:font(12,700),priority:101,pill:true});
+    }
+    ctx.restore();
+  }
   function drawBreak(v, captions) {
     const a = byId(state.from), b = byId(state.to);
     if (!a || !b || a.id === b.id) return;
@@ -230,6 +257,7 @@
       ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.quadraticCurveTo(mx2 - 0.12 * dy, my2 + 0.12 * dx, pb[0], pb[1]); ctx.stroke(); ctx.restore();
     });
     const captions = [];
+    drawBarrier(v, captions);
     drawBreak(v, captions);
     drawCities(v, flows.slice(0, 3).map(function (o) { return L[o.j].id; }), captions);
     drawTown(v, captions);
@@ -290,6 +318,7 @@
     ctx.restore();
     drawCoast(v); drawHsr(v);
     const captions = [];
+    drawBarrier(v, captions);
     drawCities(v, [], captions);
     drawTown(v, captions);
     // 出發城市的面積
@@ -359,6 +388,18 @@
   }
   function pairInfo() { return K.summary(stOf(), null).pair; }
   function updateReadouts() {
+    const on=barrier();
+    $('mountains').disabled=state.mode !== 'hsr';
+    $('mtnHint').hidden=state.mode === 'hsr';
+    $('mountains').setAttribute('aria-pressed',String(on));
+    $('lab').classList.toggle('barrier',on);
+    $('roadReadout').hidden=!on;
+    if(on){
+      const a=byId(state.from), b=byId(state.to), route=K.roadRoute(a,b);
+      const gate=route.gate==='north'?T('經雪隧','via Xueshan'):route.gate==='south'?T('經南迴','via South Link'):T('直接行駛','direct');
+      const delta=Math.round(route.minutes-K.dist(a,b,'car'));
+      setText('roadReadout',T('繞行：比直線公式多 +'+delta+' 分鐘（'+gate+'）','Drive: +'+delta+' min vs straight-line formula ('+gate+')'));
+    }
     setOut(el.b, num(state.b, 1)); setOut(el.pop, String(state.pop));
     const a = byId(state.from), pi = pairInfo();
     if (pi) {
@@ -369,7 +410,9 @@
     } else ['rKm', 'rCar', 'rHsr', 'rBrk'].forEach(function (id) { setText(id, '—'); });
     setText('flowH', T(cname(a) + ' 的互動流向', 'Where ' + cname(a) + '’s interaction goes'));
     const mx = flows.length ? flows[0].share : 1;
-    let h = '<colgroup><col style="width:30%"><col style="width:22%"><col style="width:28%"><col></colgroup><tr><th>' + T('城市', 'City') + '</th><th>' + (state.mode === 'km' ? T('距離', 'Dist.') : T('時間', 'Time')) + '</th><th></th><th>' + T('占比', 'Share') + '</th></tr>';
+    const travelTime = state.mode !== 'km';
+    $('flowTab').classList.toggle('travel-time',travelTime);
+    let h = '<colgroup><col><col><col><col></colgroup><tr><th>' + T('城市', 'City') + '</th><th>' + (travelTime ? T('時間', 'Time') : T('距離', 'Dist.')) + '</th><th></th><th>' + T('占比', 'Share') + '</th></tr>';
     flows.slice(0, 8).forEach(function (o) {
       const c = L[o.j];
       h += '<tr><td>' + cname(c) + '</td><td>' + dUnit(o.d) + '</td><td class="bar"><i style="width:' + Math.max(2, Math.round(100 * o.share / mx)) + '%' + (c.id === 'new' ? ';background:var(--gm-town)' : '') + '"></i></td><td>' + pct(o.share) + '</td></tr>';
@@ -398,7 +441,7 @@
   // 任務事件
   // =====================================================================
   function townInfo() { return K.summary(stOf(), null).town; }
-  const stOf = function () { return { view: state.view, mode: state.mode, b: state.b, from: state.from, to: state.to, town: state.town, pop: state.pop }; };
+  const stOf = function () { return { mountains: barrier(), view: state.view, mode: state.mode, b: state.b, from: state.from, to: state.to, town: state.town, pop: state.pop }; };
   function snapshot(act) {
     const m = K.summary(stOf(), state.view === 'areas' ? AR : null);
     if (m.pair) delete m.pair.at;
@@ -471,6 +514,9 @@
       setStatus(state.mode === 'hsr' ? T('距離改用交通時間：高鐵沿線的城市彼此靠近了。', 'Distance is now travel time: cities along the high-speed rail move closer.') : T('距離改回直線公里數。', 'Distance is straight-line kilometres again.'));
     });
   });
+  $('mountains').addEventListener('click', function () {
+    acted(); state.mountains=!barrier(); afterChange(true,'mountains'); say();
+  });
   $('townBtn').addEventListener('click', function () {
     acted();
     if (state.town) { state.town = null; if (state.from === 'new') state.from = 'tpe'; if (state.to === 'new') state.to = 'txg'; }
@@ -537,11 +583,12 @@
   const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: function () { return { v: state.view, m: state.mode, f: state.from, t: state.to, n: state.town ? [state.town.lon, state.town.lat] : null }; },
+    get: function () { return { ...(barrier()?{mtn:1}:{}), v: state.view, m: state.mode, f: state.from, t: state.to, n: state.town ? [state.town.lon, state.town.lat] : null }; },
     set: function (o) {
       if (!o) return;
       if (['flows', 'areas', 'decay'].indexOf(o.v) >= 0) state.view = o.v;
       if (['km', 'hsr'].indexOf(o.m) >= 0) state.mode = o.m;
+      state.mountains=o.mtn===1;
       const ok = function (id) { return K.CITIES.some(function (c) { return c.id === id; }); };
       if (ok(o.f)) state.from = o.f;
       if (ok(o.t) && o.t !== state.from) state.to = o.t;

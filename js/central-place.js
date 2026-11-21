@@ -38,6 +38,189 @@
   /** 一種商品模式現在的店距（動畫中是 grow.s，其他時候是均衡間距） */
   function spacingNow() { return state.grow.s != null ? state.grow.s : S1.d; }
 
+  const density = { mode:'uniform', multiple:10, seed:1, rerolls:0 };
+  const variable = () => state.mode === 'single' && density.mode !== 'uniform';
+  const relocationMs=3000;
+  let marketKey='', model=null, current=null, playing=false, elapsed=relocationMs, lastTick=null;
+  function ensureMarket() {
+    const v=mapView(), width=v.x1-v.x0, height=v.y1-v.y0;
+    const key=[width,height,state.rho,state.T,state.R,density.mode,density.multiple,density.seed].join('|');
+    if(key===marketKey) return;
+    model=K.market({...density,width,height,rho:state.rho,T:state.T,R:state.R});
+    current=model.final; marketKey=key; elapsed=relocationMs; playing=false;
+  }
+  function setMarketTime(ms) {
+    elapsed=ms;
+    current=ms===relocationMs ? model.final :
+      K.marketFrame(model.grid,K.marketSitesAt(model,ms/relocationMs),state.R);
+  }
+  function nearestMarket(x,y) {
+    const v=mapView();
+    return current.shops.map((p,i)=>({p,i,dist:Math.hypot(p.x+v.x0-x,p.y+v.y0-y)})).sort((a,b)=>a.dist-b.dist)[0];
+  }
+  function marketControls() {
+    const active=variable(), single=state.mode==='single';
+    const densityLabel = el.rho.labels[0];
+    if (active && !densityLabel.hasAttribute('data-uniform-title')) {
+      densityLabel.dataset.uniformTitle = densityLabel.title;
+      densityLabel.title = T('整個視窗平均每平方公里的人數。','Average residents per square kilometre across the window.');
+    } else if (!active && densityLabel.hasAttribute('data-uniform-title')) {
+      densityLabel.title = densityLabel.dataset.uniformTitle;
+      delete densityLabel.dataset.uniformTitle;
+    }
+    $('lab').classList.toggle('variable',active);
+    $('hierPlain').hidden=single;
+    for(const b of $('densitySeg').querySelectorAll('button')){
+      b.disabled=!single; b.setAttribute('aria-pressed',String(b.dataset.density===(single?density.mode:'uniform')));
+    }
+    $('contrastRow').hidden=!active || density.mode!=='gradient'; $('reroll').hidden=!active || density.mode!=='random';
+    $('areaRibbon').hidden=!active; $('marketStats').hidden=!active;
+    $('cardS').querySelector('dl').hidden=active;
+    if(!active) return;
+    ensureMarket();
+    $('legS').hidden=true; $('sGrow').hidden=true;
+    $('denser').hidden=true; $('looser').hidden=true; $('run').disabled=false; $('rewind').disabled=false;
+    setText('run',playing?T('暫停','Pause'):elapsed>0 && elapsed<relocationMs?T('繼續','Resume'):T('看商店開張','Watch shops open'));
+    const cvValue=num(current.cv,3);
+    setText('areaRibbon',density.mode==='random'
+      ? T('每家人數變異係數 CV '+cvValue+'（店數 '+current.count+'）','Population CV per shop '+cvValue+' ('+current.count+' shops)')
+      : T('市中心／邊緣面積比','Centre / edge area')+'  '+num(current.areaRatio,3));
+    setText('marketCount',String(current.count)); setText('marketMean',people(current.mean));
+    setText('marketCv',cvValue); setText('marketAreas',num(current.min,1)+' / '+area(current.max));
+    setText('marketReach',pct(current.coverage)); setText('marketSeed',String(density.seed));
+    $('marketSeed').hidden=$('marketSeed').previousElementSibling.hidden=density.mode!=='random';
+    setOut($('densityContrast'),String(density.multiple));
+    const selected=state.probe && nearestMarket(state.probe.x,state.probe.y);
+    const detail=selected ? T('第 '+(selected.i+1)+' 家店','Shop '+(selected.i+1))+' · '+people(selected.p.pop)+' · '+area(selected.p.area) : '';
+    $('pHint').hidden=false;
+    setText('pHint',detail || T('點市場區，查看最近商店的人數與面積。','Tap a market to inspect its population and area.'));
+    setHTML('pTab',''); setText('srNow',$('areaRibbon').textContent+' '+detail);
+  }
+  function marketSnapshot(act) {
+    return {act, mode:density.mode, multiple:density.multiple, rerolls:density.rerolls, cv:current.cv,
+      areaRatio:current.areaRatio, count:current.count, settled:elapsed===relocationMs};
+  }
+  function playMarkets(rewind) {
+    acted();
+    if(rewind || elapsed>=relocationMs) setMarketTime(0);
+    playing=!rewind && !playing; lastTick=null;
+    afterChange(true,'relocate');
+  }
+  function densityFrame(t) {
+    ensureMarket();
+    if(playing){
+      if(lastTick!==null && t>lastTick){
+        setMarketTime(Math.min(relocationMs,elapsed+t-lastTick));
+        playing=elapsed<relocationMs;
+        marketControls();
+        if(!playing) emit(marketSnapshot('settled'));
+      }
+      lastTick=t;
+    }
+    drawMarkets();
+    if(playing) requestDraw();
+  }
+  // Clip each shop's rectangle against the bisectors of its Voronoi neighbours.
+  function cellOutline(shop, neighbours,w,h) {
+    let poly=[[0,0],[w,0],[w,h],[0,h]];
+    function clip(other) {
+      const dx=other.x-shop.x, dy=other.y-shop.y;
+      const half=(other.x+shop.x)*dx/2+(other.y+shop.y)*dy/2;
+      const cut=[];
+      for(let i=0;i<poly.length;i++){
+        const a=poly[i], b=poly[(i+1)%poly.length];
+        const da=a[0]*dx+a[1]*dy-half, db=b[0]*dx+b[1]*dy-half;
+        if(da<=0) cut.push(a);
+        if((da<=0)!==(db<=0)){const t=da/(da-db);cut.push([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])]);}
+      }
+      poly=cut;
+    }
+    for (const id of neighbours) clip(current.shops[id]);
+    // A very short edge can fall between raster samples. Only a shop within
+    // twice the remaining cell radius can cut this provisional polygon.
+    const radiusSq = Math.max(0, ...poly.map(([x,y]) => (x-shop.x)**2 + (y-shop.y)**2));
+    current.shops.forEach((other,id) => {
+      if (other !== shop && !neighbours.has(id) &&
+          (other.x-shop.x)**2 + (other.y-shop.y)**2 <= 4*radiusSq) clip(other);
+    });
+    return poly;
+  }
+  let raster=null, rasterFrame=null, rasterTheme=null, outlines=[];
+  function drawMarkets(){
+    const v=mapView(),g=model.grid, f=current;
+    if(rasterFrame!==f || rasterTheme!==C.surface){
+      const neighbours=f.shops.map(()=>new Set());
+      raster=document.createElement('canvas'); raster.width=g.nx; raster.height=g.ny;
+      const rc=raster.getContext('2d'), pixels=rc.createImageData(g.nx,g.ny);
+      const rgb=key=>C[key].match(/[0-9a-f]{2}/gi).map(x=>parseInt(x,16));
+      const base=rgb('cp-ground'), high=rgb('cp-l1'), gap=rgb('cp-gap');
+      for(let j=0;j<g.ny;j++) for(let i=0;i<g.nx;i++){
+        const q=j*g.nx+i, id=f.owner[q], p=((g.ny-1-j)*g.nx+i)*4;
+        const tone=1-Math.exp(-0.7*g.field[q]/state.rho);
+        for(let c=0;c<3;c++) pixels.data[p+c]=f.served[q]?base[c]+tone*(high[c]-base[c]):gap[c];
+        pixels.data[p+3]=255;
+        for(const other of [i?f.owner[q-1]:id,j?f.owner[q-g.nx]:id]){
+          if(id!==other){neighbours[id].add(other);neighbours[other].add(id);}
+        }
+      }
+      rc.putImageData(pixels,0,0);
+      outlines=f.shops.map((p,i)=>cellOutline(p,neighbours[i],g.width,g.height));
+      rasterFrame=f;rasterTheme=C.surface;
+    }
+    ctx.drawImage(raster,0,0,v.w,v.h);
+    const selected=state.probe?nearestMarket(state.probe.x,state.probe.y).i:-1;
+    outlines.forEach((poly,i)=>{
+      ctx.beginPath();poly.forEach(([x,y],k)=>{if(k)ctx.lineTo(x*v.s,v.h-y*v.s);else ctx.moveTo(x*v.s,v.h-y*v.s);});ctx.closePath();
+      ctx.strokeStyle=D.alpha(C.text,0.5);ctx.lineWidth=1;ctx.stroke();
+      if(i===selected){ctx.fillStyle=D.alpha(C['cp-probe'],0.3);ctx.fill();}
+    });
+    const spacing = S1.d || S1.dT;
+    const uniformRadius = Math.min(7, spacing * v.s * 0.07);
+    const uniformCount = g.width * g.height / K.hexArea(spacing);
+    const radius = Math.max(3.5, uniformRadius * Math.min(1, Math.sqrt(uniformCount / f.count)));
+    const pins = f.shops.map(p => ({x:p.x*v.s, y:v.h-p.y*v.s}));
+    for (const [i,p] of pins.entries()) {
+      D.ball(ctx,p.x,p.y,radius,C['cp-l2'],{shadow:true});
+      if (i === selected) {
+        ctx.beginPath(); ctx.arc(p.x,p.y,radius+3,0,2*Math.PI);
+        ctx.strokeStyle=C['cp-probe']; ctx.lineWidth=2.5; ctx.stroke();
+      }
+    }
+    if (density.mode === 'gradient' && f.count > 1) {
+      const placed = [];
+      for (const [id,label] of [[f.center,T('中心店','Centre')],[f.edge,T('邊緣店','Edge')]]) {
+        const {x,y} = pins[id], face = font(12,700);
+        ctx.font = face;
+        const metrics = ctx.measureText(label), w = metrics.width+12, h = D.textHeight(metrics,15)+3;
+        // Try the nearest clear space first, keeping both shop markers and earlier labels visible.
+        let box;
+        for (let gap=radius+6; !box && gap<v.w; gap+=8) {
+          for (const [dx,dy] of [[1,0],[-1,0],[0,-1],[0,1],[1,-1],[-1,-1],[1,1],[-1,1]]) {
+            const l=x+dx*gap+(dx-1)*w/2, t=y+dy*gap+(dy-1)*h/2, r=l+w, b=t+h;
+            if (l<4 || r>v.w-4 || t<30 || b>v.h-34) continue;
+            if (placed.some(o=>l<o.r+2 && r>o.l-2 && t<o.b+2 && b>o.t-2)) continue;
+            if (pins.some(p=>Math.hypot(Math.max(l-p.x,0,p.x-r),Math.max(t-p.y,0,p.y-b)) < radius+5)) continue;
+            box={l,t,r,b}; break;
+          }
+        }
+        if (box) {
+          const endX=Math.max(box.l,Math.min(x,box.r)), endY=Math.max(box.t,Math.min(y,box.b));
+          const length=Math.hypot(endX-x,endY-y), inset=(radius+4)/length;
+          ctx.strokeStyle=C.text; ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(x+(endX-x)*inset,y+(endY-y)*inset); ctx.lineTo(endX,endY); ctx.stroke();
+          D.pill(ctx,label,box.l,box.b,C.text,'left',face);
+          placed.push(box);
+        }
+      }
+    }
+    scaleBar(v);
+    const densityKey = T('綠色越濃，人口越密','Deeper green: denser population');
+    const rangeKey = f.coverage < 1 ? T('；紅色超出商品圈',' · red: out of range') : '';
+    const label = selected < 0 ? densityKey + rangeKey :
+      people(f.shops[selected].pop) + ' · ' + area(f.shops[selected].area);
+    D.pill(ctx,label,8,25,C.text,'left',font(12,650));
+  }
+
   // ---------- 顏色與格式 ----------
   let C = {};
   function readColors() {
@@ -90,6 +273,7 @@
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     size = { w: w, h: h };
+    if(variable() && S1){ensureMarket();marketControls();}
   }
   /** 地圖的半寬（公里）：一種商品看商品圈，中地體系看最高一級的間距 */
   function halfWidth() {
@@ -570,6 +754,8 @@
     $('roads').setAttribute('aria-pressed', state.roads ? 'true' : 'false');
     cv.classList.toggle('rot', !single && state.view === '3d');
     if (single) updateSingle(); else updateHier();
+    marketControls();
+    if(variable()) return;
     updateProbe();
     $('srNow').textContent = single
       ? T(STATUS[S1.status][0], STATUS[S1.status][1])
@@ -580,6 +766,7 @@
   // 任務事件
   // =====================================================================
   function snapshot(act) {
+    if(variable()) return marketSnapshot(act);
     const p = state.probe;
     let probe = null;
     if (p) {
@@ -604,7 +791,7 @@
     };
   }
   let lastEmit = 0, emitTimer = 0;
-  function emit(data) { if (state.acted && window.LabMission) window.LabMission.emit('cp', data); }
+  function emit(data) { if (state.acted && window.LabMission) window.LabMission.emit(variable()?'cp-density':'cp', data); }
   function acted() { state.acted = true; }
   function afterChange(force, act) {
     recompute();
@@ -620,6 +807,7 @@
   function requestDraw() { if (!raf) raf = requestAnimationFrame(frame); }
   function frame(t) {
     raf = 0;
+    if(variable()){densityFrame(t);return;}
     if (state.mode === 'single' && state.grow.run) tick(t);
     else lastT = 0;
     if (state.mode === 'single') drawSingle();
@@ -647,6 +835,7 @@
     if (t - lastEmit > 250) { lastEmit = t; emit(snapshot('grow')); }
   }
   $('run').addEventListener('click', function () {
+    if(variable()){playMarkets(false);return;}
     if (S1.status === 'none') return;
     acted();
     const g = state.grow;
@@ -662,6 +851,7 @@
     afterChange(true, 'play');
   });
   $('rewind').addEventListener('click', function () {
+    if(variable()){playMarkets(true);return;}
     if (S1.status === 'none') return;
     acted();
     state.grow.s = S1.start; state.grow.run = false;
@@ -721,8 +911,25 @@
       b.addEventListener('click', function () { acted(); apply(b.getAttribute(attr)); });
     });
   }
+  function setDensity(mode){
+    if(mode!==density.mode) state.probe=null;
+    density.mode=mode; playing=false; state.grow.run=false; state.grow.s=null;
+    if(!variable()) setText('pHint',T('點地圖放一位消費者。','Tap the map to place a shopper.'));
+    afterChange(true,'distribution');
+    if(!variable()) setStatus(T(STATUS[S1.status][0],STATUS[S1.status][1]));
+  }
+  segClick('#densitySeg','data-density',setDensity);
+  function changeContrast(e) {
+    acted();
+    density.multiple = Math.min(30,Math.max(1,Math.round(val(e.target))));
+    afterChange(e.type === 'change','contrast');
+  }
+  $('densityContrast').addEventListener('input',changeContrast);
+  $('densityContrast').addEventListener('change',changeContrast);
+  $('reroll').addEventListener('click',function(){acted();density.seed=(density.seed+1)>>>0;density.rerolls++;afterChange(true,'reroll');});
   segClick('#modeSeg', 'data-mode', function (m) {
     if (m === state.mode) return;
+    playing=false; setText('pHint',T('點地圖放一位消費者。','Tap the map to place a shopper.'));
     state.mode = m; state.probe = null; state.grow.run = false;
     if (m === 'hier') { setStatus(T('最低級的中地（村）排成三角形格子；每升一級，間距變成 √k 倍。', 'The lowest-rank places (villages) form a triangular grid; each rank up, the spacing grows by √k.')); }
     else setStatus(T(STATUS[S1.status][0], STATUS[S1.status][1]));
@@ -786,6 +993,10 @@
     return best ? { x: best.x, y: best.y } : null;
   }
   function setProbe(x, y, act, force, snapPx, from) {
+    if(variable()){
+      const v=mapView();state.probe={x:Math.max(v.x0,Math.min(v.x1,x)),y:Math.max(v.y0,Math.min(v.y1,y))};
+      afterChange(force,'inspect');return;
+    }
     const W = halfWidth() * 3;
     x = Math.max(-W, Math.min(W, x)); y = Math.max(-W, Math.min(W, y));
     const sn = snapPx ? snapToPlace(x, y, snapPx) : null;
@@ -795,6 +1006,7 @@
     afterChange(force, act || 'probe');
   }
   function probeStatus() {
+    if(variable()) return;
     const p = state.probe;
     if (!p) return;
     if (state.mode === 'hier') {
@@ -864,10 +1076,11 @@
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
-      return { m: state.mode, v: state.view, k: state.k, n: state.N, sh: state.show, rd: state.roads ? 1 : 0, p: state.probe ? [state.probe.x, state.probe.y] : null };
+      return { ...(variable()?{density:density.mode,contrast:density.multiple,seed:density.seed}:{}), m: state.mode, v: state.view, k: state.k, n: state.N, sh: state.show, rd: state.roads ? 1 : 0, p: state.probe ? [state.probe.x, state.probe.y] : null };
     },
     set: function (o) {
       if (!o) return;
+      if(['gradient','random'].includes(o.density)){density.mode=o.density;density.multiple=Math.max(1,Math.min(30,Number(o.contrast)||10));density.seed=Number(o.seed)>>>0;$('densityContrast').value=density.multiple;}
       if (o.m === 'single' || o.m === 'hier') state.mode = o.m;
       if (o.v === 'map' || o.v === '3d') state.view = o.v;
       if ([3, 4, 7].indexOf(+o.k) >= 0) state.k = +o.k;

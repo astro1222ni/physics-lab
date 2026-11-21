@@ -65,17 +65,44 @@
   /** 開車時間（分鐘） */
   const carMin = km => km * ROAD / CAR * 60;
   /** 兩地之間的「距離」：mode = 'km'（直線距離）、'car'（開車分鐘）、'hsr'（開車與「開車到高鐵站＋高鐵＋開車」取快的） */
-  function dist(a, b, mode) {
+  const RIDGE = [[121.83,24.98],[121.55,24.75],[121.35,24.45],[121.22,24.15],[121.12,23.75],[120.98,23.30],[120.88,22.90],[120.78,22.45],[120.76,22.32]].map(([lon,lat]) => ({lon,lat}));
+  const NANGANG = {lon:121.62, lat:25.05}, TOUCHENG = {lon:121.83, lat:24.86}, FENGGANG = {lon:120.70, lat:22.195};
+  const tunnelTime = haversine(NANGANG, TOUCHENG) / 80 * 60;
+  function side(p) {
+    if (p.lat < RIDGE[RIDGE.length - 1].lat) return 'south';
+    if (p.lat >= RIDGE[0].lat) return 'west';
+    const i = RIDGE.findIndex(q => q.lat <= p.lat), a = RIDGE[i - 1], b = RIDGE[i];
+    const lon = a.lon + (b.lon - a.lon) * (p.lat - a.lat) / (b.lat - a.lat);
+    return p.lon > lon ? 'east' : 'west';
+  }
+  function access(p) {
+    const bank = side(p);
+    return { bank, north: carMin(haversine(p, bank === 'east' ? TOUCHENG : NANGANG)), south: carMin(haversine(p, FENGGANG)) };
+  }
+  function crosses(a,b) { return a.bank !== b.bank && a.bank !== 'south' && b.bank !== 'south'; }
+  function roadTime(km,a,b) {
+    if (!crosses(a,b)) return carMin(km);
+    return Math.min(a.north + b.north + tunnelTime, a.south + b.south);
+  }
+  function carRoad(a,b) { return roadTime(haversine(a,b),access(a),access(b)); }
+  function roadRoute(a,b) {
+    const x = access(a), y = access(b);
+    const gate = !crosses(x,y) ? null : x.north + y.north + tunnelTime <= x.south + y.south ? 'north' : 'south';
+    const via = !gate ? [] : gate === 'south' ? [FENGGANG] : x.bank === 'east' ? [TOUCHENG,NANGANG] : [NANGANG,TOUCHENG];
+    return {gate, points:[a,...via,b], minutes:roadTime(haversine(a,b),x,y)};
+  }
+  function dist(a, b, mode, mountains = false) {
     const km = haversine(a, b);
     if (mode === 'km' || !mode) return km;
-    const car = carMin(km);
+    const car = mountains ? carRoad(a,b) : carMin(km);
     if (mode === 'car') return car;
     let best = car;
     // 最近的高鐵站（各自開車過去）
     const sa = nearestStation(a), sb = nearestStation(b);
     if (sa.st.id !== sb.st.id) {
       const rail = haversine(sa.st, sb.st) / HSR_V * 60;
-      best = Math.min(best, carMin(sa.km) + carMin(sb.km) + HSR_WAIT + rail);
+      const legs = mountains ? carRoad(a,sa.st) + carRoad(b,sb.st) : carMin(sa.km) + carMin(sb.km);
+      best = Math.min(best, legs + HSR_WAIT + rail);
     }
     return best;
   }
@@ -89,12 +116,12 @@
   /** 互動量 T = Pi Pj / d^b（d 太小時以 1 計，避免無限大） */
   function interaction(Pi, Pj, d, b) { return Pi * Pj / Math.pow(Math.max(d, 1), b); }
   /** 某一個城市對其他城市的互動：回傳依大小排序的 [{ j, T, d, share }] */
-  function flowsFrom(list, i, b, mode) {
+  function flowsFrom(list, i, b, mode, mountains = false) {
     const out = [];
     let sum = 0;
     list.forEach((c, j) => {
       if (j === i) return;
-      const d = dist(list[i], c, mode), T = interaction(list[i].pop, c.pop, d, b);
+      const d = dist(list[i], c, mode, mountains), T = interaction(list[i].pop, c.pop, d, b);
       out.push({ j, T, d }); sum += T;
     });
     out.forEach(o => { o.share = o.T / sum; });
@@ -102,10 +129,10 @@
     return out;
   }
   /** 所有城市對（i < j）的互動 */
-  function allPairs(list, b, mode) {
+  function allPairs(list, b, mode, mountains = false) {
     const out = [];
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-      const d = dist(list[i], list[j], mode);
+      const d = dist(list[i], list[j], mode, mountains);
       out.push({ i, j, d, T: interaction(list[i].pop, list[j].pop, d, b) });
     }
     out.sort((x, y) => y.T - x.T);
@@ -114,11 +141,11 @@
   /** 雷利分界點：從 i 出發、在 i 與 j 連線上的距離比例 x/d */
   function breakFrac(Pi, Pj, b) { return 1 / (1 + Math.pow(Pj / Pi, 1 / b)); }
   /** 引力（某一點受城市 c 吸引的大小） */
-  function pull(c, p, b, mode) { return c.pop / Math.pow(Math.max(dist(c, p, mode), 1), b); }
+  function pull(c, p, b, mode, mountains = false) { return c.pop / Math.pow(Math.max(dist(c, p, mode, mountains), 1), b); }
   /** 某一點的勢力歸屬：回傳 { k（最大的城市）, ratio（第一名 ÷ 第二名） } */
-  function dominant(list, p, b, mode) {
+  function dominant(list, p, b, mode, mountains = false) {
     let k = -1, f1 = -1, f2 = -1;
-    list.forEach((c, i) => { const f = pull(c, p, b, mode); if (f > f1) { f2 = f1; f1 = f; k = i; } else if (f > f2) f2 = f; });
+    list.forEach((c, i) => { const f = pull(c, p, b, mode, mountains); if (f > f1) { f2 = f1; f1 = f; k = i; } else if (f > f2) f2 = f; });
     return { k, ratio: f2 > 0 ? f1 / f2 : Infinity };
   }
   /** 最小平方法：由 (d, T/(PiPj)) 的對數擬合 b（斜率的負值） */
@@ -160,16 +187,25 @@
     return g;
   }
   /** 勢力範圍：每一格歸給引力最大的城市；回傳 { grid, k（每格的城市編號）, ratio（第一名 ÷ 第二名）, area（每個城市的面積 km^2） } */
-  function areas(list, b, mode, step) {
+  function areas(list, b, mode, step, mountains = false) {
     const g = grid(step || 3), n = g.cells.length, k = new Int16Array(n), ratio = new Float32Array(n), area = list.map(() => 0);
     const cs = list.map(c => nearestStation(c));
+    const barrier = mountains && mode !== 'km';
+    const approach = barrier ? list.map(access) : null;
+    const stationLeg = barrier ? list.map((c,i) => carRoad(c,cs[i].st)) : null;
     for (let q = 0; q < n; q++) {
       const cell = g.cells[q], p = cell.p;
+      const gates = barrier ? access(p) : null;
+      const lastLeg = barrier ? roadTime(cell.ns.km,gates,access(cell.ns.st)) : 0;
       let f1 = -1, f2 = -1, best = -1;
       for (let i = 0; i < list.length; i++) {
         const c = list[i], km = haversine(c, p);
         let d = km;
-        if (mode === 'hsr') {
+        if (barrier) {
+          d = roadTime(km, approach[i], gates);
+          if (mode === 'hsr' && cs[i].st.id !== cell.ns.st.id)
+            d = Math.min(d, stationLeg[i] + lastLeg + HSR_WAIT + haversine(cs[i].st, cell.ns.st) / HSR_V * 60);
+        } else if (mode === 'hsr') {
           d = carMin(km);
           if (cs[i].st.id !== cell.ns.st.id) d = Math.min(d, carMin(cs[i].km) + carMin(cell.ns.km) + HSR_WAIT + haversine(cs[i].st, cell.ns.st) / HSR_V * 60);
         }
@@ -193,7 +229,7 @@
   function summary(st, ar) {
     const list = withTown(st.town ? { lon: st.town.lon, lat: st.town.lat, pop: st.pop } : null);
     const ix = id => list.findIndex(c => c.id === id);
-    const fl = flowsFrom(list, ix(st.from), st.b, st.mode), shares = {};
+    const fl = flowsFrom(list, ix(st.from), st.b, st.mode, st.mountains), shares = {};
     fl.forEach(o => { shares[list[o.j].id] = o.share; });
     const a = list[ix(st.from)], b = list[ix(st.to)];
     let pair = null;
@@ -202,13 +238,13 @@
       const bp = fromXY(pa[0] + f * (pb[0] - pa[0]), pa[1] + f * (pb[1] - pa[1]));
       let near = null, nk = Infinity;
       CITIES.forEach(c => { if (c.id === a.id || c.id === b.id) return; const d = haversine(c, bp); if (d < nk) { nk = d; near = c.id; } });
-      pair = { km, car: dist(a, b, 'car'), hsr: dist(a, b, 'hsr'), frac: f, fracBig: a.pop >= b.pop ? f : 1 - f,
+      pair = { km, car: dist(a, b, 'car', st.mountains), hsr: dist(a, b, 'hsr', st.mountains), frac: f, fracBig: a.pop >= b.pop ? f : 1 - f,
         popRatio: Math.max(a.pop, b.pop) / Math.min(a.pop, b.pop), near, nearKm: nk, at: bp };
     }
     let town = null;
     if (st.town) {
-      const ti = list.length - 1, t = list[ti], tf = flowsFrom(list, ti, st.b, st.mode);
-      const pulls = CITIES.map(c => ({ id: c.id, f: pull(c, t, st.b, st.mode) })).sort((x, y) => y.f - x.f);
+      const ti = list.length - 1, t = list[ti], tf = flowsFrom(list, ti, st.b, st.mode, st.mountains);
+      const pulls = CITIES.map(c => ({ id: c.id, f: pull(c, t, st.b, st.mode, st.mountains) })).sort((x, y) => y.f - x.f);
       let off = null;
       if (pair && a.id !== 'new' && b.id !== 'new') {
         const pa = toXY(a), pb = toXY(b), pt = toXY(t), dx = pb[0] - pa[0], dy = pb[1] - pa[1];
@@ -216,16 +252,27 @@
         off = Math.hypot(pt[0] - pa[0] - u * dx, pt[1] - pa[1] - u * dy);
       }
       town = { lon: t.lon, lat: t.lat, pop: st.pop, top: list[tf[0].j].id, dom: pulls[0].id, top3: pulls[0].f / pulls[2].f,
-        pf: a && a.id !== 'new' ? pull(a, t, st.b, st.mode) : null, pt: b && b.id !== 'new' ? pull(b, t, st.b, st.mode) : null,
+        pf: a && a.id !== 'new' ? pull(a, t, st.b, st.mode, st.mountains) : null, pt: b && b.id !== 'new' ? pull(b, t, st.b, st.mode, st.mountains) : null,
         off, area: ar ? ar.area[ti] : null };
     }
     let area = null;
     if (ar) { area = {}; list.forEach((c, i) => { area[c.id] = ar.area[i]; }); }
-    return { view: st.view, mode: st.mode, b: st.b, from: st.from, to: st.to, order: fl.map(o => list[o.j].id), shares, pair, town, area, flows: fl, list };
+    const extra = {};
+    if (st.mountains && st.mode === 'hsr' && pair) {
+      extra.mtn = true;
+      extra.fromSide = side(a);
+      extra.toSide = side(b);
+      const west = extra.fromSide === 'west' ? a : b;
+      extra.gate = roadRoute(a,b).gate;
+      extra.ratio = pair.km > 0 ? pair.car / carMin(pair.km) : null;
+      extra.detour = extra.ratio == null ? 0 : extra.ratio - 1;
+      extra.southToHualien = side(west) === 'west' && roadRoute(west,CITIES.find(c => c.id === 'hua')).gate === 'south';
+    }
+    return { ...extra, view: st.view, mode: st.mode, b: st.b, from: st.from, to: st.to, order: fl.map(o => list[o.j].id), shares, pair, town, area, flows: fl, list };
   }
 
   return {
-    summary,
+    RIDGE, NANGANG, TOUCHENG, FENGGANG, side, carRoad, roadRoute, summary,
     R_EARTH, CITIES, HSR, COAST, ROAD, CAR, HSR_V, HSR_WAIT, KX, KY,
     haversine, carMin, dist, nearestStation, interaction, flowsFrom, allPairs, breakFrac, pull, dominant, fitB,
     toXY, fromXY, inside, withTown, grid, areas

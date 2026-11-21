@@ -103,4 +103,41 @@ test('新市鎮：加在清單最後；摘要的占比、分界點、新市鎮�
   assert.strictEqual(m0.town, null); assert.strictEqual(m0.order[0], 'chw');
 });
 
+test('山脈關閉：逐對比較 19 × 19 城市的三種舊公式',()=>{
+  for(const a of K.CITIES) for(const b of K.CITIES){
+    const km=K.haversine(a,b), car=K.carMin(km), sa=K.nearestStation(a), sb=K.nearestStation(b);
+    const rail=sa.st.id===sb.st.id?car:Math.min(car,K.carMin(sa.km)+K.carMin(sb.km)+K.HSR_WAIT+K.haversine(sa.st,sb.st)/K.HSR_V*60);
+    for(const [mode,want] of [['km',km],['car',car],['hsr',rail]]) assert.strictEqual(K.dist(a,b,mode,false),want);
+  }
+});
+test('同側、南端與兩個山口的行車時間',()=>{
+  assert.deepStrictEqual(K.CITIES.filter(c=>K.side(c)==='east').map(c=>c.id),['ila','hua','ttt']);
+  for(const [a,b,mid,gate] of [['ila','hua',107.5,null],['tpe','hua',180,'north'],['khh','ttt',180,'south']]){
+    const r=K.roadRoute(C(a),C(b));assert.strictEqual(r.gate,gate);near(r.minutes,mid,mid*0.2);
+    near(K.carRoad(C(b),C(a)),r.minutes,1e-10);
+  }
+  assert.strictEqual(K.carRoad(C('hua'),C('ila')),K.dist(C('hua'),C('ila'),'car'));
+  assert.strictEqual(K.roadRoute(K.FENGGANG,C('hua')).gate,null);
+  assert.ok(K.carRoad(C('txg'),C('hua'))>K.carRoad(C('tpe'),C('hua')));
+  assert.ok(K.carRoad(C('txg'),C('hua'))>=2*K.dist(C('txg'),C('hua'),'car'));
+});
+test('跨山任務逐對回報所在側與開車倍數，關閉時保留原事件欄位',()=>{
+  for (const a of K.CITIES) for (const b of K.CITIES) {
+    if (a === b) continue;
+    const st = {from:a.id,to:b.id,view:'flows',mode:'hsr',b:2};
+    const off = K.summary(st,null), on = K.summary({...st,mountains:true},null);
+    assert.strictEqual(on.fromSide,K.side(a));
+    assert.strictEqual(on.toSide,K.side(b));
+    assert.strictEqual(on.ratio,on.pair.car/off.pair.car);
+    for (const field of ['fromSide','toSide','ratio','mtn']) assert.ok(!(field in off));
+  }
+});
+test('山脈改變高鐵接駁及東部勢力範圍；逐格驗證快取',()=>{
+  const a=K.areas(K.CITIES,2,'hsr',3), b=K.areas(K.CITIES,2,'hsr',3,true);
+  for(const id of ['hua','ttt']) assert.ok(b.area[ix(id)]>a.area[ix(id)]);
+  for(let q=0;q<b.grid.cells.length;q+=29) assert.strictEqual(b.k[q],K.dominant(K.CITIES,b.grid.cells[q].p,2,'hsr',true).k);
+  const list=K.allPairs(K.CITIES,2,'hsr',true);
+  for(const p of list) assert.strictEqual(p.d,K.dist(K.CITIES[p.i],K.CITIES[p.j],'hsr',true));
+});
+
 console.log('\n' + passed + ' 項通過');

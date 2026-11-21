@@ -70,10 +70,30 @@
     .vpad-lens .vpad-reading { white-space: normal; }
     .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
     .lab-vpad .geo-target { grid-area: 2 / 2; padding: 1px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: calc(13px * var(--fs, 1)); line-height: 1.1; overflow-wrap: anywhere; }
-    .geo-target::after { content: "⇄"; display: block; font-size: 13px; line-height: 1; }
+    .geo-target::after { content: "⇄"; display: block; font-size: calc(13px * var(--fs, 1)); line-height: 1; }
     @media (orientation: landscape) and (max-height: 600px) {
       #cv { max-height: calc(100dvh - 78px); }
     }
+    @media (max-width: 880px) and (orientation: portrait) {
+      .gm.barrier .stage { display: flex; flex-direction: column; }
+      .gm.barrier #legend, .gm.barrier #cvHint { order: 1; }
+    }
+    #mountains { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    #mountains svg { flex: none; }
+    #mountains .summit { fill: none; stroke: currentColor; }
+    #mountains .tick { display: none; }
+    #mountains[aria-pressed="true"] { color: var(--surface); background: var(--accent); border-color: var(--accent); }
+    #mountains[aria-pressed="true"] .summit { fill: currentColor; }
+    #mountains[aria-pressed="true"] .tick { display: inline; stroke: var(--accent); }
+    #flowTab col:nth-child(1) { width: 30%; }
+    #flowTab col:nth-child(2) { width: 22%; }
+    #flowTab col:nth-child(3) { width: 28%; }
+    #flowTab.travel-time { table-layout: auto; }
+    #flowTab.travel-time col:nth-child(2) { width: auto; }
+    #flowTab.travel-time col:nth-child(3) { width: 19%; }
+    #flowTab.travel-time :is(td,th):nth-child(2) { white-space: nowrap; padding-inline: 2px; }
+    #roadReadout { font-size: calc(14px * var(--fs, 1)); margin: 4px 0; color: var(--text); font-weight: 650; }
+    .gm.barrier #status { display:none; }
   </style>
   <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
@@ -97,6 +117,7 @@
         </div>
         <canvas id="cv" aria-label="臺灣本島的城市與互動流量；點一座城市當作出發地" data-en-aria-label="Cities of Taiwan and their interactions; tap a city to start from it"></canvas>
         <div class="row town-actions"><button type="button" id="townBtn" aria-pressed="false" data-en="＋ Add a new town">＋ 加入新市鎮</button></div>
+        <p id="roadReadout" hidden></p>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="cvHint"></p>
@@ -124,6 +145,13 @@
             <button type="button" data-mode="km" aria-pressed="true" data-en="Straight-line km">直線距離（km）</button>
             <button type="button" data-mode="hsr" aria-pressed="false" data-en="Travel time with HSR" title="開車，或開車到高鐵站再搭高鐵，取比較快的（分鐘）" data-en-title="Drive, or drive to the high-speed rail and ride it — whichever is faster (minutes)">交通時間（含高鐵）</button>
           </div>
+          <button type="button" id="mountains" aria-pressed="false" disabled aria-describedby="mtnHint">
+            <svg width="24" height="20" viewBox="0 0 24 20" aria-hidden="true" stroke-linejoin="round" stroke-width="1.8">
+              <path class="summit" d="M1.5 17.5 8 6.5l2.5 3.3L15 2l7.5 15.5Z"/>
+              <path class="tick" d="m10.5 13 2 2 4-5" fill="none" stroke-linecap="round"/>
+            </svg><span data-en="Mountain barrier">中央山脈擋路</span>
+          </button>
+          <small id="mtnHint" data-en="Affects travel time only">只影響時間距離</small>
         </section>
         <section class="card">
           <h2 data-en="A new town">新市鎮</h2>
@@ -149,6 +177,10 @@
       <p data-en-html="Between two cities, a shopper is pulled equally where \(P_A/x^b = P_B/(d - x)^b\), that is \[x = \frac{d}{1 + (P_B/P_A)^{1/b}}\] from A. The bigger city's trade area reaches further. Giving every point on the map to the city that pulls it hardest draws the trade areas; with unequal cities, the line of equal pull is not straight but a circle around the smaller city.">兩城之間，消費者受兩邊吸引一樣大的地方是 \(P_A/x^b = P_B/(d - x)^b\)，也就是離 A \[x = \frac{d}{1 + (P_B/P_A)^{1/b}}\] 大城的勢力伸得比較遠。把地圖上每一點都歸給引力最大的城市，就畫出勢力範圍；兩城大小不同時，引力相等的界線不是直線，而是圍著小城的一個圓。</p>
       <h3 data-en="Time–space convergence">時空收斂</h3>
       <p data-en="Measured in travel time instead of kilometres, places on a fast line move closer together. In this page's model, Taipei to Kaohsiung shrinks from about 390 minutes by car to about 130 minutes with the high-speed railway, while the east coast, which has none, stays just as far.">距離改用交通時間來量，在快速路線上的地方就彼此靠近。在本頁的模型裡，臺北到高雄開車約 390 分鐘，搭高鐵約 130 分鐘；沒有高鐵的東部，距離一點都沒有縮短。</p>
+      <h3 data-en="Driving around the mountains">開車如何繞過中央山脈？</h3>
+      <p data-en="The dashed line represents the watershed. Cross-side drives use the quicker passage. Nangang–Toucheng is about 30 km from the coordinates, an estimate rather than official mileage. The Xueshan Tunnel is about 12.9 km long. Its speed limit rose from 70 to 90 km/h. The model assumes 80 km/h on this segment to allow for traffic and varying limits, about 23 minutes. The southern route uses Highway 9 via Fenggang. Other road legs use straight-line distance × 1.3 at 60 km/h.">虛線示意分水嶺。跨側取北口與南口中較快的一條。北口南港系統至頭城交流道長約 30 公里，以座標估計，並非官方里程。雪隧長約 12.9 公里，速限曾由 70 調至 90 公里／小時。考量南港至坪林的車流與速限，模型假設這段取 80 公里／小時，約 23 分鐘。南口走台 9 線經楓港。其他開車段沿用直線乘 1.3、時速 60 公里的模型假設。</p>
+      <p data-en="TVBS (2020) reported about 100 minutes from Yilan to Hualien after the Suhua Highway Improvement opened. Rail access and egress use the road model. Trade areas use travel time. The Reilly point on the straight line is a geometric reference.">蘇花改通車後，宜蘭到花蓮約 100 分鐘（TVBS，2020）。高鐵接駁也用同一套開車模型。勢力範圍按交通時間著色，直線上的雷利分界點則是幾何距離的參照。</p>
+      <p data-en="Guguan–Deji remains closed to general traffic after the 921 earthquake. Temporary Highway 8-37 requires permission (Highway Bureau Guguan maintenance office briefing). Highway 20 reopened in 2022 with weekly closures between Yakou and Xiangyang (United Daily News, 2025). Winding Highway 14A via Hehuanshan faces winter ice and snow closures. Omitting these routes may overestimate driving time from Nantou or Taichung to Hualien.">中橫谷關至德基段在九二一地震後未開放一般車輛，台 8 臨 37 便道須申請通行（公路局谷關工務段簡報）。南橫台 20 線於 2022 年復通，埡口至向陽段每週有固定封閉日（聯合報，2025）。合歡山台 14 甲可通行，但山路多彎，冬季常因霜雪封路。模型省略這三條路，南投、臺中到花蓮的車程可能比實際走合歡山長。</p>
       <h3 data-en="Things to try">可以試試看</h3>
       <ul>
         <li data-en="Small b or large b: which city does Taipei interact with most, and how much goes to Kaohsiung?">b 小與 b 大：臺北和誰互動最多？流到高雄的有多少？</li>
@@ -158,7 +190,7 @@
       <h3 data-en="Simplifications">簡化</h3>
       <ul>
         <li data-en="Each county or city is one point near its government seat, with its population rounded to 10,000 (end of 2024). Outlying islands are left out.">每個縣市只用縣市政府附近的一個點，人口取到萬人的約略值（2024 年底）；外島沒有列入。</li>
-        <li data-en="Driving time is straight-line distance × 1.3 at 60 km/h, so mountains are ignored. The rail option is: drive to the nearest HSR station, 25 minutes to get on and off, 200 km/h between stations, drive again. Real timetables and roads differ. Trips between eastern and western Taiwan have to go around the Central Mountain Range, so real driving times are much longer than this, and the model overstates the interaction between eastern and western cities.">開車時間＝直線距離 × 1.3 ÷ 時速 60 公里，所以沒有考慮山脈；高鐵的走法是：開車到最近的高鐵站、上下車等候 25 分鐘、站間平均時速 200 公里、再開車。和真正的時刻表與道路不同。臺灣東西部之間要繞過中央山脈，實際開車時間比這裡算的長得多，所以這個模型會高估東部城市和西部城市之間的互動。</li>
+        <li data-en="With the mountain barrier off, driving time is straight-line distance × 1.3 divided by 60 km/h. Ignoring the mountains overestimates interaction between eastern and western cities. With the barrier on, cross-mountain drives go via the Xueshan Tunnel or the South Link, as described above in “Driving around the mountains”. For high-speed rail, drive to the nearest station, allow 25 minutes for boarding and alighting, travel between stations at 200 km/h, then drive to the destination. Actual timetables and roads differ.">關掉「中央山脈擋路」時，開車時間＝直線距離 × 1.3 ÷ 時速 60 公里，沒有考慮山脈，會高估東西部城市之間的互動；打開後，跨山的車要繞雪隧或南迴，見上方「開車如何繞過中央山脈？」。高鐵的走法是開車到最近的高鐵站、上下車等候 25 分鐘、站間平均時速 200 公里、再開車。和真正的時刻表與道路不同。</li>
         <li data-en="The model has no k and no real trip data: only the relative sizes of the flows mean anything.">模型沒有常數 k，也沒有真實的旅次資料；只有流量之間的相對大小有意義。</li>
         <li data-en="The coastline is a simplified outline for illustration.">海岸線是簡化的示意輪廓。</li>
       </ul>
@@ -167,7 +199,10 @@
         <li data-en="Curriculum: High school Geography, settlements and transport; spatial interaction (Bd-Ⅴ).">課綱對應：高中地理・聚落與交通、空間互動（地 Bd-Ⅴ）。</li>
         <li data-en="W. J. Reilly (1931), The Law of Retail Gravitation; J. Q. Stewart (1948), Demographic gravitation, Sociometry 11.">W. J. Reilly（1931），《The Law of Retail Gravitation》；J. Q. Stewart（1948），Demographic gravitation，Sociometry 11。</li>
         <li data-en="Populations: Ministry of the Interior, Department of Household Registration, population statistics by county and city (end of 2024), rounded (Open Government Data License, version 1.0).">人口：內政部戶政司各縣市人口統計（2024 年底），取到萬人（政府資料開放授權條款第 1 版）。</li>
-        <li data-en="Positions of county seats and HSR stations are approximate; all distances and times are computed on the page.">縣市政府與高鐵站的位置是約略值；距離與時間都由頁面計算。</li>
+        <li data-en="Positions of county seats and HSR stations are approximate; all distances and times are computed on the page. The northern passage distance is estimated from the coordinates of Nangang Junction and Toucheng Interchange.">縣市政府與高鐵站的位置是約略值；距離與時間都由頁面計算。北口里程以南港系統、頭城交流道座標估計。</li>
+        <li data-en="TVBS (2020), report on Yilan–Hualien driving time after the Suhua Highway Improvement opened.">TVBS（2020），蘇花改通車後宜蘭到花蓮車程報導。</li>
+        <li data-en="United Daily News (2025), report on scheduled closure days on the Southern Cross-Island Highway.">聯合報（2025），南橫固定封閉日報導。</li>
+        <li data-en="Highway Bureau, Ministry of Transportation and Communications, Guguan Maintenance Office briefing on the Central Cross-Island Highway access road.">交通部公路局谷關工務段簡報（中橫便道）。</li>
       </ul>
     </section>
 

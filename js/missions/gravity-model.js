@@ -19,6 +19,15 @@
   const pairIs = function (d, a, b) { return (d.from === a && d.to === b) || (d.from === b && d.to === a); };
   const NORTH = ['tpe', 'ntp', 'tyn', 'kee'];
 
+  const oppositeSides = (a,b) => (a === 'west' && b === 'east') || (a === 'east' && b === 'west');
+  const sideLabels = {west:['西','west'], east:['東','east'], south:['南端','southern tip']};
+  function selectedSide(d, id, reported) {
+    if (reported) return reported;
+    const core = window.GravityCore;
+    const point = id === 'new' ? d.town : core?.CITIES.find(c => c.id === id);
+    return point && core ? core.side(point) : null;
+  }
+  const gateName=(d,en)=>d.gate==='north'?(en?'Xueshan':'雪隧'):d.gate==='south'?(en?'South Link':'南迴'):'—';
   LabMission.register('gravity-model', [
     {
       id: 'gravity-model-1', level: 1,
@@ -93,6 +102,38 @@
       check: function (ev) { const d = V(ev); return !!d && d.view === 'areas' && !!d.area && d.area.ntp > d.area.txg; }
     },
 
+    {
+      id:'gravity-model-13', level:4,
+      title:{zh:'直線很近，開車很遠',en:'Close on the map, far by road'},
+      desc:{zh:'開啟中央山脈擋路，找一對分在山脈兩邊的城市，讓開車時間變成關掉時的兩倍以上。',en:'Enable the mountain barrier and find two cities on opposite sides whose driving time is at least twice as long as with the barrier off.'},
+      check(ev) {
+        const d = V(ev);
+        return !!d?.mtn && oppositeSides(d.fromSide,d.toSide) && d.ratio >= 2;
+      },
+      need(ctx) {
+        const d = ctx.last('grav') || window.__gm?.snapshot() || {};
+        const a = selectedSide(d,d.from,d.fromSide), b = selectedSide(d,d.to,d.toSide);
+        const [az,ae] = sideLabels[a] || ['—','—'], [bz,be] = sideLabels[b] || ['—','—'];
+        const ratio = Number.isFinite(d.ratio) ? d.ratio.toFixed(2) : (!d.mtn && d.pair?.km > 0 ? '1.00' : '—');
+        return [
+          [d.mode === 'hsr','選交通時間','Select travel time'],
+          [!!d.mtn,'開啟山脈','Enable the barrier'],
+          [oppositeSides(a,b),'兩城須分在西、東兩側，目前 '+az+'／'+bz,'Choose opposite sides, currently '+ae+' / '+be],
+          [d.ratio >= 2,'開車時間至少 2 倍，目前 '+ratio+' 倍','Driving time must at least double, currently '+ratio+'×']
+        ];
+      }
+    },
+    {
+      id:'gravity-model-14', level:6,
+      title:{zh:'從南端過山',en:'Around the southern tip'},
+      desc:{zh:'開啟山脈，選一座西部城市與臺東，讓這座西部城市到臺東、花蓮都以南迴最快。',en:'Enable the barrier. Pair Taitung with a western city whose fastest drive to both Taitung and Hualien uses the South Link.'},
+      check(ev){const d=V(ev);return !!d?.mtn && [d.from,d.to].includes('ttt') && ![d.from,d.to].includes('new') && d.gate==='south' && d.southToHualien;},
+      need(ctx){const d=ctx.last('grav')||{}, name=(id,en)=>{const c=window.GravityCore.CITIES.find(p=>p.id===id);return c?(en?c.en:c.zh):'—';};return [
+        [!!d.mtn,'開啟山脈','Enable the barrier'],
+        [[d.from,d.to].includes('ttt'),'臺東與西部縣市：'+name(d.from,false)+'／'+name(d.to,false),'Taitung and a western city: '+name(d.from,true)+' / '+name(d.to,true)],
+        [d.gate==='south','到臺東經南迴，目前：'+gateName(d,false),'South Link to Taitung; current route: '+gateName(d,true)],
+        [!!d.southToHualien,'西部城市到花蓮也經南迴','South Link also fastest to Hualien']];}
+    },
     // ---------------- 隱藏任務 ----------------
     {
       id: 'gravity-model-h1', level: 3, hidden: true,

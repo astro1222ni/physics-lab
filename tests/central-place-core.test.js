@@ -161,4 +161,56 @@ test('商品在哪一級賣：市場區人口 ≥ 門檻的最低一級', () => 
   near(g.fill, 9340 / H[1].pop, 1e-12); near(g.reach, 10 / H[1].far, 1e-12); near(g.coverage, K.coverage(H[1].d, 10), 1e-12);
 });
 
+const windowModel={rho:100,T:2000,R:5,width:32,height:24,seed:2,multiple:10};
+test('均勻分布逐欄使用舊解析解，包含無店與空隙',()=>{
+  for(const R of [0.5,2.6,5]) assert.deepStrictEqual(K.market({...windowModel,R,mode:'uniform'}),K.single(100,2000,R));
+});
+test('遞減場守恆，中心商圈較小，每店人口 CV < 0.15',()=>{
+  const {final:f,grid:g}=K.market({...windowModel,mode:'gradient'});
+  assert.strictEqual(f.count,38);
+  near(f.total,32*24*100,1e-6);
+  near(f.shops.reduce((a,p)=>a+p.area,0),32*24,1e-8);
+  assert.ok(f.cv<0.15 && f.areaRatio<1);
+  for(let j=0;j<g.ny;j+=11) for(let i=0;i<g.nx;i+=7){
+    const x=(i+0.5)*g.dx,y=(j+0.5)*g.dy,q=j*g.nx+i;
+    const ds=f.shops.map(p=>(x-p.x)**2+(y-p.y)**2);
+    near(ds[f.owner[q]],Math.min(...ds),1e-10);
+    assert.strictEqual(Boolean(f.served[q]),Math.min(...ds)<=25);
+  }
+});
+test('隨機種子重現且換種子改變市場；小商品圈留下空隙',()=>{
+  const run=seed=>K.market({...windowModel,mode:'random',seed,R:1}).final;
+  const a=run(2);
+  assert.deepStrictEqual(a,run(2)); assert.notDeepStrictEqual(a.owner,run(3).owner);
+  near(a.total,32*24*100,1e-6); assert.ok(a.coverage>0 && a.coverage<1);
+  assert.ok(a.cv<=0.12 && a.min<a.max);
+});
+test('單店時面積比為一，密度倍數一讓全窗密度相同',()=>{
+  const m=K.market({...windowModel,mode:'gradient',multiple:1,T:100000});
+  assert.strictEqual(m.final.count,1); near(m.final.areaRatio,1,0); near(m.final.cv,0,1e-12);
+  assert.ok(m.grid.field.every(x=>x===100));
+});
+
+test('店址從規則格子出發，按所有商店的平均累積路程等速播放',()=>{
+  const travel=(a,b)=>a.reduce((s,p,i)=>s+Math.hypot(p.x-b[i].x,p.y-b[i].y),0)/a.length;
+  for (const mode of ['gradient','random']) {
+    const m=K.market({...windowModel,mode}), frames=m.history, times=[0];
+    const rows=[...new Set(frames[0].map(p=>p.y))];
+    for (const [row,y] of rows.entries()) {
+      const shops=frames[0].filter(p=>p.y===y);
+      near(y,(row+0.5)*windowModel.height/rows.length,1e-12);
+      shops.forEach((p,i)=>near(p.x,(i+0.5)*windowModel.width/shops.length,1e-12));
+    }
+    for(let i=1;i<frames.length;i++) times.push(times[i-1]+travel(frames[i-1],frames[i]));
+    for (const f of [1/3,2/3]) {
+      const target=f*times.at(-1), i=times.findIndex(t=>t>=target)-1;
+      near(times[i]+travel(frames[i],K.marketSitesAt(m,f)),target,1e-10);
+    }
+    assert.strictEqual(K.marketSitesAt(m,0),frames[0]);
+    assert.deepStrictEqual(K.marketFrame(m.grid,K.marketSitesAt(m,1),windowModel.R),m.final);
+  }
+  const point=[{x:1,y:1}];
+  assert.deepStrictEqual(K.marketSitesAt({history:[point,point],distance:[0,0]},1/3),point);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

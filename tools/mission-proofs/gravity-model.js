@@ -192,6 +192,19 @@ console.log('\n[隨機亂玩]');
   expect('隨機亂玩 ' + tries + ' 次（每次 ' + steps + ' 步），隱藏任務碰巧完成的比例都低於 3%', Object.keys(cnt).every(x => cnt[x] / tries < 0.03), worst);
 }
 
+for(const [id,from,to] of [['13','txg','hua'],['14','pif','ttt']]){
+  const s=st({from,to,b:3,mode:'hsr',mountains:true}),e=snap(s,'mountains');
+  expect(id+' 單獨完成',firing(e).join()===id, '經 '+e.data.gate+'，車程 '+e.data.ratio.toFixed(2)+' 倍');
+  expect(id+' 關閉時不完成',!firing(snap({...s,mountains:false},'mountains')).includes(id));
+}
+for (const [from,to] of [['tpe','hua'],['ila','hua']]) {
+  const e = snap(st({from,to,mode:'hsr',mountains:true}),'mountains');
+  expect(from+'–'+to+' 不通過 13',!firing(e).includes('13'),e.data.ratio.toFixed(2)+' 倍');
+}
+const new13 = missions.find(m => m.id === 'gravity-model-13');
+const example = snap(st({from:'txg',to:'hua',mode:'hsr',mountains:true}),'mountains');
+expect('13 的門檻含恰好兩倍',new13.check({...example,data:{...example.data,ratio:2}}));
+expect('13 排除南端',!new13.check({...example,data:{...example.data,fromSide:'south'}}));
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
 console.log('\n合計：' + ok + ' 項通過，' + bad + ' 項失敗');
 console.log('公開 ' + pub.length + ' 個（' + pub.reduce((a, m) => a + m.level, 0) + ' 顆星），隱藏 ' + hid.length + ' 個（' + hid.reduce((a, m) => a + 2 * m.level, 0) + ' 顆星）；7 級以上的隱藏任務 ' + hid.filter(m => m.level >= 7).length + ' 個');

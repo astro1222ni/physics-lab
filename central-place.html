@@ -90,6 +90,12 @@
     table.tab tr.hl td { background: var(--accent-soft); }
     .legend i.ring { background: none !important; border: 2px solid currentColor; border-radius: 50%; }
     .legend i.dash { height: 0; border-top: 2px dashed currentColor; background: none !important; }
+    #contrastRow[hidden], #marketStats[hidden], #marketStats [hidden], #reroll[hidden], #hierPlain[hidden], body:has(.cp.variable) #cardS dl[hidden] { display: none !important; }
+    #areaRibbon { padding: 4px 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 650; color: var(--accent); }
+    @media (max-width: 600px) {
+      #areaRibbon { padding-inline: 60px 12px; text-align: right; }
+    }
+    .cp.variable #status { display: none; }
     .notes li { overflow-wrap: anywhere; }
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
@@ -123,6 +129,7 @@
           </div>
         </div>
         <canvas id="cv" aria-label="平原上的商店或中地與它們的市場區；點一下放一位消費者" data-en-aria-label="Shops or central places on the plain and their market areas; tap to place a shopper"></canvas>
+        <div id="areaRibbon" hidden></div>
         <div class="playbar" id="playbar">
           <button id="run" type="button" data-en="Watch shops open">看商店開張</button>
           <button id="denser" type="button" hidden data-en="Shops closer" title="暫停時把店再排密一點" data-en-title="While paused, move the shops a little closer">店靠近一點</button>
@@ -154,6 +161,23 @@
           <h2 data-en="Shoppers">消費者</h2>
           <div class="slider"><label for="rho" data-en="Population density (people per km²)" title="平原上每平方公里住幾個人（到處一樣）" data-en-title="People living on each square kilometre of the plain (the same everywhere)">人口密度（人／平方公里）</label><output></output>
             <input id="rho" type="range" min="10" max="1000" step="10" value="100" data-decimals="0"></div>
+          <div class="slider" id="contrastRow" hidden><label for="densityContrast" data-en="Centre to outer edge (times)">市中心是邊緣的幾倍</label><output>10</output><input id="densityContrast" type="range" min="1" max="30" value="10" step="1"></div>
+          <p class="segl" id="densityLabel" data-en="Population distribution">人口分布</p>
+          <div class="segw" role="group" aria-labelledby="densityLabel" id="densitySeg">
+            <button type="button" data-density="uniform" aria-pressed="true" data-en="Uniform">均勻</button>
+            <button type="button" data-density="gradient" aria-pressed="false" data-en="City-centre peak">向市中心遞減</button>
+            <button type="button" data-density="random" aria-pressed="false" data-en="Random hills">隨機起伏</button>
+          </div>
+          <button type="button" id="reroll" hidden data-en="🎲 Redraw">🎲 重抽</button>
+          <p class="hint" id="hierPlain" hidden data-en="Hierarchy uses Christaller’s uniform plain.">體系模式維持克里斯泰勒的均質平原。</p>
+          <dl class="readout" id="marketStats" hidden>
+            <dt data-en="Shops">店數</dt><dd id="marketCount">—</dd>
+            <dt data-en="Mean population per shop">每家平均人數</dt><dd id="marketMean">—</dd>
+            <dt data-en="Population CV">人數變異係數</dt><dd id="marketCv">—</dd>
+            <dt data-en="Smallest / largest area">最小／最大面積</dt><dd id="marketAreas">—</dd>
+            <dt data-en="Population within range">買得到的人口</dt><dd id="marketReach">—</dd>
+            <dt data-en="Random seed">亂數種子</dt><dd id="marketSeed">—</dd>
+          </dl>
         </section>
         <section class="card" id="cardS">
           <h2 data-en="The good">商品</h2>
@@ -253,23 +277,28 @@
       </table></div>
       <p data-en-html="With \(n\) ranks, the spacing grows by \(\sqrt k\) from one rank to the next, and one top-rank market area contains \(k^{\,n-1}\) rank-1 market areas. Counting places that are exactly rank \(L\), there are \(1\), \(k-1\), \(k(k-1)\), … of them per top-rank area: far more villages than cities.">有 \(n\) 個等級時，每升一級間距變成 \(\sqrt k\) 倍，一個最高級市場區包含 \(k^{\,n-1}\) 個第 1 級市場區。數「剛好是第 \(L\) 級」的中地，每個最高級市場區裡依序有 \(1\)、\(k-1\)、\(k(k-1)\)……個：村比城市多得多。</p>
       <p data-en="Christaller found this pattern in southern Germany: the smallest market towns were about 7 km apart, and the next ranks about 12, 21, 36 and 62 km — each about √3 times the one before, as the market principle predicts.">克里斯泰勒在德國南部找到的就是這種規律：最小的市集鎮大約相隔 7 公里，往上幾級大約相隔 12、21、36、62 公里，每一級約是前一級的 √3 倍，正是市場原則的預測。</p>
+      <h3 data-en="When population is uneven">人口分布如何改變商圈？</h3>
+      <p data-en="With the same total population, a shop in a dense neighbourhood needs less land to reach its threshold. In Clark’s exponential model, the slider gives the ratio of population density at the city centre to density at the four corners of the map, the points farthest from the centre.">總人口相同，市中心人住得密，一家店只需較小的市場區就能湊足門檻。遞減模式採 Clark 的負指數模型。滑桿的倍數是市中心和視窗四角（離市中心最遠處）的密度比。</p>
+      <p data-en="Model assumptions: seeded hills are reproducible. Shop count is total population divided by the threshold, rounded to the nearest integer (at least one). Residents choose the nearest shop. Lloyd iterations weight density squared to bring market populations closer. Only people within range can buy. Roads, competing goods and suboptimal locations are omitted.">模型假設：隨機小丘用種子重現。視窗總人口除以門檻後四捨五入，至少一家。居民歸最近商店，以密度平方為權重做 Lloyd 迭代，使各市場區人數接近。超過商品圈的人仍住在市場區裡，但買不到商品。模型省略交通網、多種商品並存與店址欠佳等因素。</p>
       <h3 data-en="Things to try">可以試試看</h3>
       <ul>
         <li data-en="Make the range just a little bigger than the threshold radius. Where are the people who cannot buy the good?">讓商品圈只比門檻半徑大一點點：買不到的人住在哪裡？</li>
         <li data-en="In the hierarchy, put a shopper on a rank-1 place. How many equally near rank-2 places can they choose from under k = 3, 4 and 7?">在中地體系裡，把消費者放在一個第 1 級中地上：k = 3、4、7 時，各有幾個一樣近的第 2 級中地可以選？</li>
         <li data-en="Raise the threshold of a good step by step. At which values does it jump to the next rank?">把一種商品的門檻一點一點調高：在哪些數字會跳到更高一級？</li>
+        <li data-en="Choose city-centre peak and slowly increase the density multiple from 1 to 30. How do the market areas in the centre change? What happens to the number of people each shop serves?">切到向市中心遞減，把倍數從 1 慢慢調到 30：市中心的市場區怎麼變？每家店的人數呢？</li>
       </ul>
       <h3 data-en="Simplifications">簡化</h3>
       <ul>
-        <li data-en="The plain is perfectly flat and uniform, travel costs the same in every direction, and every shopper goes to the nearest place that sells the good.">平原完全平坦均質，往各方向移動的成本一樣，每個人都到最近一個有賣的地方買。</li>
-        <li data-en="Shops of one good are placed on a perfect triangular grid. Real towns are shaped by rivers, mountains, history and roads, so the pattern is never this regular; the theory explains the tendency, not every town.">同一種商品的店排成完美的三角形格子。真實的城鎮受到河流、山地、歷史與交通的影響，不會這麼規則；中地理論說明的是傾向，不是每一個城鎮。</li>
-        <li data-en="The opening animation shows free entry: shops start with their ranges just touching and move closer while each still has more customers than the threshold.">開店動畫是「自由進入」的示意：一開始商品圈剛好相切，只要每家店的顧客還比門檻多，店就越開越密。</li>
+        <li data-en="In uniform mode, the plain is perfectly flat and uniform. Travel costs the same in every direction, and shoppers go to the nearest place that sells the good. In city-centre peak and random hills modes, population density varies. Terrain and travel costs remain uniform.">均勻模式的平原完全平坦均質，往各方向移動的成本一樣，每個人都到最近一個有賣的地方買。遞減與隨機模式讓人口不均，但地形、交通仍然均質。</li>
+        <li data-en="In uniform mode, shops of one good are placed on a perfect triangular grid. Real towns are shaped by rivers, mountains, history and roads, so the pattern is never this regular; the theory explains the tendency, not every town.">均勻模式時，同一種商品的店排成完美的三角形格子。真實的城鎮受到河流、山地、歷史與交通的影響，不會這麼規則；中地理論說明的是傾向，不是每一個城鎮。</li>
+        <li data-en="In uniform mode the opening animation shows free entry: shops start with their ranges just touching and move closer while each still has more customers than the threshold.">均勻模式的開店動畫是「自由進入」的示意：一開始商品圈剛好相切，只要每家店的顧客還比門檻多，店就越開越密。</li>
       </ul>
       <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Geography · Settlements and transport (Bd-Ⅴ, central places).">課綱對應：高中地理・聚落與交通（地 Bd-Ⅴ，中地）。</li>
         <li data-en="W. Christaller (1933), Die zentralen Orte in Süddeutschland, Jena: Gustav Fischer. English translation by C. W. Baskin (1966), Central Places in Southern Germany, Prentice-Hall.">W. Christaller（1933），《Die zentralen Orte in Süddeutschland》（德國南部的中地），耶拿：Gustav Fischer；C. W. Baskin 英譯（1966），《Central Places in Southern Germany》，Prentice-Hall。</li>
         <li data-en="A. Lösch (1940), Die räumliche Ordnung der Wirtschaft (The Economics of Location), Jena: Gustav Fischer.">A. Lösch（1940），《Die räumliche Ordnung der Wirtschaft》（區位經濟學），耶拿：Gustav Fischer。</li>
+        <li lang="en">Clark, C. (1951). Urban population densities. <i>Journal of the Royal Statistical Society, Series A (General)</i>, 114(4), 490–496.</li>
         <li data-en="All numbers in this lab are invented for teaching; no outside data are used.">本實驗的數字都是為了教學而設計的，沒有使用外部資料。</li>
       </ul>
     </section>

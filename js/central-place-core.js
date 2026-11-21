@@ -166,7 +166,125 @@
     };
   }
 
+  // Physical coordinates are kilometres from the south-west corner of the displayed window.
+  function generator(seed) {
+    return () => {
+      seed = (seed + 0x6d2b79f5) >>> 0;
+      let x = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      x ^= x + Math.imul(x ^ x >>> 7, 61 | x);
+      return ((x ^ x >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function densityGrid(o) {
+    const {width, height, rho, mode, multiple = 10, seed = 1} = o;
+    const nx = 120, ny = 120, dx = width / nx, dy = height / ny;
+    const field = new Float64Array(nx * ny), rand = generator(seed);
+    const hills = Array.from({length: 8 + Math.floor(rand()*7)}, () => ({
+      x:rand()*width, y:rand()*height, radius:(0.08+0.15*rand())*Math.min(width,height), mass:0.35+rand()
+    }));
+    const edge = Math.hypot(width,height)/2;
+    let sum = 0, peak = 0;
+    for (let j=0; j<ny; j++) for (let i=0; i<nx; i++) {
+      const x=(i+0.5)*dx, y=(j+0.5)*dy;
+      let d;
+      if (mode === 'gradient') d = Math.exp(-Math.log(multiple)*Math.hypot(x-width/2,y-height/2)/edge);
+      else d = hills.reduce((a,h) => a+h.mass*Math.exp(-((x-h.x)**2+(y-h.y)**2)/(2*h.radius**2)),0);
+      field[j*nx+i]=d; peak=Math.max(peak,d);
+    }
+    for (let i=0; i<field.length; i++) {
+      if (mode === 'random') field[i]=0.3+2.2*field[i]/peak;
+      sum+=field[i];
+    }
+    for (let i=0; i<field.length; i++) field[i] *= rho*field.length/sum;
+    return {nx,ny,dx,dy,field,width,height};
+  }
+
+  // For a fixed scanline all squared-distance parabolas share their quadratic term.
+  // Their lower envelope gives the exact nearest shop without testing every shop at every pixel.
+  function marketFrame(grid, sites, range) {
+    const {nx,ny,dx,dy,field,width,height}=grid;
+    const shops=sites.map(p=>({x:p.x,y:p.y,area:0,pop:0,weight:0,mx:0,my:0}));
+    const sorted=shops.map((_,i)=>i).sort((a,b)=>shops[a].x-shops[b].x);
+    const owner=new Int32Array(nx*ny), served=new Uint8Array(nx*ny);
+    const cell=dx*dy;
+    let total=0, reachable=0;
+    for (let j=0;j<ny;j++) {
+      const y=(j+0.5)*dy, hull=[], starts=[];
+      for(const id of sorted) {
+        const b=shops[id];
+        let start=-Infinity;
+        while(hull.length) {
+          const a=shops[hull[hull.length-1]];
+          if (a.x===b.x) start=Math.abs(b.y-y)<Math.abs(a.y-y)?-Infinity:Infinity;
+          else start=(a.x+b.x)/2+((b.y-y)**2-(a.y-y)**2)/(2*(b.x-a.x));
+          if(start>starts[starts.length-1]) break;
+          hull.pop(); starts.pop();
+        }
+        if(start!==Infinity){starts.push(hull.length?start:-Infinity); hull.push(id);}
+      }
+      let k=0;
+      for(let i=0;i<nx;i++){
+        const x=(i+0.5)*dx, q=j*nx+i;
+        while(k+1<hull.length && starts[k+1]<x) k++;
+        const id=hull[k], p=shops[id], d=field[q], weight=d*d;
+        owner[q]=id; p.area+=cell; p.pop+=d*cell;
+        p.weight+=weight; p.mx+=weight*x; p.my+=weight*y;
+        total+=d*cell;
+        if((x-p.x)**2+(y-p.y)**2 <= range*range){served[q]=1; reachable+=d*cell;}
+      }
+    }
+    const count=shops.length, mean=total/count;
+    let center=0, edge=0, near=Infinity, far=-1, min=Infinity, max=0, variance=0;
+    shops.forEach((p,i)=>{
+      const r=Math.hypot(p.x-width/2,p.y-height/2);
+      if(r<near){near=r;center=i;} if(r>far){far=r;edge=i;}
+      min=Math.min(min,p.area); max=Math.max(max,p.area); variance+=(p.pop-mean)**2;
+    });
+    return {shops,owner,served,count,mean,cv:Math.sqrt(variance/count)/mean,min,max,center,edge,
+      areaRatio:shops[center].area/shops[edge].area,coverage:reachable/total,total};
+  }
+  function market(o) {
+    if (!o.mode || o.mode === 'uniform') return single(o.rho,o.T,o.R);
+    const grid=densityGrid(o), count=Math.max(1,Math.round(o.width*o.height*o.rho/o.T));
+    const rand=generator(1121), rows=Math.max(1,Math.min(count,Math.round(Math.sqrt(count*o.height/o.width))));
+    const lattice=[];
+    let sites=[];
+    for(let j=0;j<rows;j++){
+      const cols=Math.floor((j+1)*count/rows)-Math.floor(j*count/rows);
+      for(let i=0;i<cols;i++) {
+        lattice.push({x:(i+0.5)*o.width/cols, y:(j+0.5)*o.height/rows});
+        sites.push({x:(i+0.5+0.22*(rand()-0.5))*o.width/cols,
+          y:(j+0.5+0.22*(rand()-0.5))*o.height/rows});
+      }
+    }
+    // Keep the solver's seeded perturbation, but show the regular lattice at time zero.
+    const history=[lattice], distance=[0];
+    for(let it=0;it<80;it++){
+      const f=marketFrame(grid,sites,o.R);
+      sites=f.shops.map(p=>p.weight ? {x:p.mx/p.weight,y:p.my/p.weight} : {x:p.x,y:p.y});
+      const previous=history[history.length-1];
+      const travel=sites.reduce((sum,p,i)=>sum+Math.hypot(p.x-previous[i].x,p.y-previous[i].y),0)/count;
+      distance.push(distance[distance.length-1]+travel);
+      history.push(sites);
+    }
+    return {grid,history,distance,final:marketFrame(grid,sites,o.R)};
+  }
+  // Parameterize the recorded paths by mean distance traveled per shop.
+  function marketSitesAt(model, fraction) {
+    const {history,distance}=model, last=history.length-1;
+    if(fraction<=0) return history[0];
+    if(fraction>=1 || distance[last]===0) return history[last];
+    const target=fraction*distance[last], end=distance.findIndex(d=>d>=target);
+    const start=end-1, span=distance[end]-distance[start];
+    const t=span>0 ? (target-distance[start])/span : 0;
+    return history[start].map((p,i)=>{
+      const q=history[end][i];
+      return {x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t};
+    });
+  }
+
   return {
+    market, marketFrame, marketSitesAt,
     R3: R3, HEX: HEX, MEAN_K: MEAN_K, SYS: SYS,
     thresholdRadius: thresholdRadius, spacingFor: spacingFor, hexArea: hexArea, circumradius: circumradius, meanDist: meanDist,
     coverage: coverage, customers: customers, equilibrium: equilibrium, single: single,
