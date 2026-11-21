@@ -8,3 +8,6 @@ Thumbs.db
 # 學習分支：講義 PDF 與原文摘錄只留本機（11/20）
 *.pdf
 learn-src/
+
+# 11/21：子任務工作樹不進版本控制
+.claude/worktrees/
