@@ -104,8 +104,9 @@ const C7 = 12 + 18;   // β 血紅素第 7 個密碼子 GAG 的第一個鹼基
 // ---------- 5、7、9 ----------
 {
   const L = Lab('hbb');
-  const e = L.ins(12 + 12, 'A');
-  claim(check('5', e), '5 移碼：第 5 個密碼子前插入 A，' + e.data.dAA + ' 個胺基酸不同');
+  const e = L.ins(15, 'A');
+  claim(!check('5', { type: e.type, data: { ...e.data, pRef: 'MAAAAA', pMut: 'M', dAA: 5 } }), '5 提早終止少五個位置，沒有五個同位置替換');
+  claim(check('5', e), '5 移碼：第 2 個密碼子前插入 A，' + e.data.dAA + ' 個胺基酸不同');
   const L2 = Lab('hbb'); L2.ins(12 + 12, 'A'); L2.ins(12 + 12, 'A'); const e2 = L2.ins(12 + 12, 'A');
   claim(!check('5', e2) && e2.data.kind === 'inframe', '5 對照：一次插入三個鹼基是框內插入（' + e2.data.kind + '），不算移碼');
 }

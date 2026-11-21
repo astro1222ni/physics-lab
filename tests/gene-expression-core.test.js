@@ -165,3 +165,9 @@ test('Meselson–Stahl：第 1 代排除全保留，第 2 代（或第 1 代加�
 });
 
 console.log(passed + ' 項通過');
+
+test('相鄰世代依雙股分子數混合，總比例守恆', () => {
+  assert.deepStrictEqual(G.cohortBands(1, 0.5), [0, 0.75, 0.25]);
+  assert.deepStrictEqual(G.cohortBands(0, 0), [1, 0, 0]);
+  assert.deepStrictEqual(G.cohortBands(0, 1), [0, 1, 0]);
+});

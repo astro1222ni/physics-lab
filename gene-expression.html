@@ -234,6 +234,14 @@
           <div class="slider"><label for="gen" data-en-html="Generations in light nitrogen (<sup>14</sup>N)">移到輕氮後的代數</label><output id="geno"></output>
             <input id="gen" type="range" min="0" max="4" step="1" value="1" data-decimals="0"></div>
           <button type="button" class="tog" id="denatBtn" aria-pressed="false" data-en="Heat first: separate the strands">先加熱：把雙股分開</button>
+          <details><summary data-en="Compare an asynchronous sample">比較非同步樣本</summary>
+            <label><span data-en="Fraction of sampled DNA from the next generation">樣本中來自下一代的 DNA 比例</span>
+              <select id="nextShare"><option>0</option><option>0.25</option><option selected>0.5</option><option>0.75</option><option>1</option></select></label>
+            <label><span data-en="DNA molecules sampled">取樣 DNA 分子數</span> <select id="sampleCount"><option>20</option><option>100</option><option>1000</option></select></label>
+            <label><span data-en="Seed">種子</span> <input id="sampleSeed" type="number" min="0" max="4294967295" step="1" value="1" required></label>
+            <button id="sampleDraw" type="button" data-en="Resample with a new seed">換種子重抽</button>
+            <p id="sampleResult" aria-live="polite"></p>
+          </details>
           <p class="hint" data-en-html="The bacteria first grew for many generations with heavy nitrogen, <sup>15</sup>N, then were moved to ordinary <sup>14</sup>N. Generation 0 is the moment of the move.">細菌先在重氮 <sup>15</sup>N 中培養很多代，再移到一般的 <sup>14</sup>N 培養液。第 0 代就是剛移過去的時候。</p>
         </section>
         <section class="card" data-deck="三種假說|Three hypotheses" data-deck-order="2" data-section="lab2">
@@ -265,7 +273,7 @@
         <li data-en-html="<strong>Missense</strong>: one amino acid becomes another. In sickle-cell disease, codon 7 of β-globin changes from GAG to GTG, so glutamic acid (written as position 6 of the mature protein, because the first methionine is removed) becomes valine. The haemoglobin sticks together when oxygen is low and bends the red cells into sickles."><strong>錯義突變</strong>：一個胺基酸變成另一個。鐮刀型貧血症就是 β 血紅素第 7 個密碼子從 GAG 變成 GTG，麩胺酸變成纈胺酸（成熟的蛋白質會切掉開頭的甲硫胺酸，所以文獻寫成第 6 個胺基酸）。缺氧時這種血紅素會黏成長條，把紅血球撐成鐮刀形。</li>
         <li data-en-html="<strong>Nonsense</strong>: a codon becomes a stop codon and the protein is cut short."><strong>無意義突變</strong>：一個密碼子變成終止密碼子，蛋白質提早結束。</li>
         <li data-en-html="<strong>Frameshift</strong>: inserting or deleting a number of bases that is not a multiple of three shifts every codon after it. Crick, Brenner and colleagues (1961) showed that a +1 and a −1 change close together restore the reading frame — the first evidence that the code is read in threes from a fixed start."><strong>移碼突變</strong>：插入或刪除的鹼基數不是 3 的倍數，後面每一個密碼子都錯開。Crick、Brenner 等人（1961）發現，一個 +1 加上附近一個 −1 可以把讀碼框救回來——這是「密碼從固定起點、每三個一讀」的第一個證據。</li>
-        <li data-en-html="<strong>In-frame deletion</strong>: removing exactly three bases removes one amino acid. The commonest cystic fibrosis mutation, ΔF508, removes one phenylalanine this way."><strong>框內缺失</strong>：剛好刪掉三個鹼基，就只少一個胺基酸。囊腫纖維化最常見的突變 ΔF508 就是這樣少了一個苯丙胺酸。</li>
+        <li data-en="Deleting three bases inside a coding region preserves the downstream reading frame. Removing one whole sense codon removes its amino acid. A deletion spanning two codons can also change the amino acid at the junction or create a stop codon.">在編碼區內刪去三個鹼基，下游讀框仍維持。若刪去一個完整的有義密碼子，就少掉它對應的胺基酸。若跨兩個密碼子刪除，接合處也可能改編成另一個胺基酸或終止密碼子。</li>
       </ul>
 
       <h3 data-en="Meselson and Stahl">Meselson 與 Stahl</h3>

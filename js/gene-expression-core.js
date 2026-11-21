@@ -193,6 +193,16 @@
     if (model === 'disp') return [{ rho: RHO.L + SS + (RHO.H - RHO.L) * h, frac: 1, label: 'd' }];
     return mergeB([{ rho: RHO.H + SS, frac: h, label: 'h' }, { rho: RHO.L + SS, frac: 1 - h, label: 'l' }]);
   }
+  // 按樣本中雙股 DNA 分子數混合兩個相鄰世代。
+  function cohortBands(n, share) {
+    const weights = new Map();
+    for (const [generation, weight] of [[n, 1 - share], [n + 1, share]]) {
+      for (const band of bands('semi', generation, false)) {
+        weights.set(band.label, (weights.get(band.label) || 0) + weight * band.frac);
+      }
+    }
+    return ['H', 'M', 'L'].map(label => weights.get(label) || 0);
+  }
   function mergeB(list) { return list.filter(function (b) { return b.frac > 1e-12; }); }
   /** 兩組條帶是否相同（密度差 < 0.0015、比例差 < 0.02） */
   function sameBands(a, b) {
@@ -220,6 +230,6 @@
     orf: orf, protein: protein, diffProtein: diffProtein, classify: classify, bothStrands: bothStrands,
     synonymous: synonymous, encodeCount: encodeCount,
     editsFromMap: editsFromMap, oneAAdeleted: oneAAdeleted, isPalindrome: isPalindrome, rng: rng, target: target, encode: encode,
-    RHO: RHO, SS: SS, bands: bands, sameBands: sameBands, consistent: consistent, canEliminate: canEliminate, HBB: HBB, DEMO: DEMO
+    RHO: RHO, SS: SS, bands: bands, cohortBands: cohortBands, sameBands: sameBands, consistent: consistent, canEliminate: canEliminate, HBB: HBB, DEMO: DEMO
   };
 });

@@ -47,7 +47,7 @@
       id: 'gene-expression-5', level: 2,
       title: { zh: '全部錯開', en: 'Everything shifts' },
       desc: { zh: '在讀碼框裡插入或刪除鹼基，讓後面至少 5 個胺基酸都改變（移碼突變）。', en: 'Insert or delete bases inside the reading frame so that at least 5 amino acids after it change (a frameshift).' },
-      check: function (ev) { const d = gene(ev); return !!d && d.kind === 'frameshift' && d.dAA >= 5; }
+      check: function (ev) { const d = gene(ev); return !!d && d.kind === 'frameshift' && d.dAA - Math.abs(d.pRef.length - d.pMut.length) >= 5; }
     },
     {
       id: 'gene-expression-6', level: 3,

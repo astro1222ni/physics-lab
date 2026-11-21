@@ -760,7 +760,26 @@
   const st2 = { denat: false, view: 'semi', obs: [], elim: { semi: false, cons: false, disp: false }, spins: 0 };
   const elGen = $('gen');
   function genV() { return Math.round(val(elGen)); }
-  function refresh2() { $('geno').textContent = genV() + T(' 代', ''); }
+  function renderSample() {
+    if (!$('sampleSeed').validity.valid) return;
+    const n = genV(), share = Number($('nextShare').value), size = Number($('sampleCount').value);
+    const weights = G.cohortBands(n, share), counts = [0, 0, 0];
+    let seed = Number($('sampleSeed').value);
+    for (let i = 0; i < size; i++) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      const u = seed / 4294967296;
+      counts[u < weights[0] ? 0 : u < weights[0] + weights[1] ? 1 : 2]++;
+    }
+    $('sampleResult').textContent = T('半保留、雙股：第 ', 'Semiconservative duplexes: generations ') + n +
+      T('、', ' and ') + (n + 1) + T(' 代。重／混合／輕帶預期比例 ', '. Heavy / hybrid / light fractions ') +
+      weights.map(w => num(w * 100, 2) + '%').join(' / ') + T('；實抽顆數 ', '. Sample counts ') + counts.join(' / ');
+  }
+  ['nextShare', 'sampleCount', 'sampleSeed'].forEach(id => $(id).addEventListener('input', renderSample));
+  $('sampleDraw').addEventListener('click', function () {
+    $('sampleSeed').value = (Math.random() * 4294967296) >>> 0;
+    renderSample();
+  });
+  function refresh2() { renderSample(); $('geno').textContent = genV() + T(' 代', ''); }
   function bandName(b) {
     const m = { H: ['重', 'heavy'], M: ['中', 'hybrid'], L: ['輕', 'light'], h: ['重單股', 'heavy single'], l: ['輕單股', 'light single'], D: ['一條', 'one'], d: ['一條', 'one'] };
     const q = m[b.label] || ['', ''];
@@ -893,7 +912,7 @@
   }
   /** 「前文 + 上標質量數 + 後文」，基線置中對齊 y */
   function iso(g, pre, mass, post, x, y) {
-    const font = '11px ' + FONT, sf = '8px ' + FONT;
+    const font = '12px ' + FONT, sf = '10px ' + FONT;
     g.font = font; const w1 = g.measureText(pre).width;
     g.font = sf; const w2 = g.measureText(mass).width;
     D.haloText(g, pre, x, y, D.c.muted, 'left', 'middle', font);
