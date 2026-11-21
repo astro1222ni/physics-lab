@@ -177,6 +177,7 @@
         <div id="view3"></div>
         <div class="playbar">
           <button id="runBtn" type="button" class="primary" data-en="Start">開始反應</button>
+          <button hidden type="button" id="lateEndpoint" data-en="Observe the next endpoint">觀察下一個褪色終點</button>
           <button id="skipBtn" type="button" data-en="Skip to the end" title="直接跳到 20 分鐘" data-en-title="Jump straight to 20 minutes">直接看結果</button>
           <button id="scanBtn" type="button" data-en="Temperature scan" title="在選取試管的 pH 下，從 0 到 80 °C 每個溫度各量一次" data-en-title="At the selected tube’s pH, measure once at every temperature from 0 to 80 °C">溫度掃描</button>
           <button id="clear1" type="button" data-en="Clear all" title="清除反應、溫度掃描與紀錄表；試管的設定不變" data-en-title="Clear the reaction, the temperature scans and the table; the tube settings stay">全部清除</button>
@@ -199,6 +200,12 @@
           </label>
         </section>
         <section class="card" data-deck="試管|Test tube" data-deck-order="2" data-section="lab1">
+          <details><summary data-en="Prepare five replicate baths">配製五支重複試管</summary>
+            <label><span data-en="Temperature spread around the selected bath">相對於選取水浴的溫差</span>
+            <select id="tempSpread"><option value="0">±0 °C</option><option value="2">±2 °C</option><option value="5">±5 °C</option></select></label>
+            <label><span data-en="Seed">種子</span> <input id="bathSeed" type="number" min="0" max="4294967295" step="1" value="1" required></label>
+            <button type="button" id="drawBaths" data-en="Prepare at the selected pH">依選取的 pH 配製</button>
+          </details>
           <h2 id="tubeTitle">第 1 支試管</h2>
           <div class="slider"><label for="tT" data-en="Temperature (°C)">溫度（°C）</label><output id="tTo"></output>
             <input id="tT" type="range" min="0" max="90" step="1" value="37" data-decimals="1"></div>

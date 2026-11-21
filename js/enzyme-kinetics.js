@@ -116,14 +116,14 @@
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
   function title(g, s, x, y, col, align) { D.haloText(g, s, x, y, col || D.c.text, align || 'left', 'middle', '600 12px ' + FONT); }
-  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
+  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '12px ' + FONT); }
   function evPos(c, ev) {
     const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
     return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
   }
   /** 坐標軸與格線 */
   function axes(g, p, xt, yt, X, Y, xfmt, yfmt) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted;
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted;
     g.textAlign = 'center'; g.textBaseline = 'top';
     xt.forEach(function (v) {
       const x = X(v);
@@ -219,6 +219,7 @@
     updateRunBtn();
   }
   function updateRunBtn() {
+    $('lateEndpoint').hidden = !run.finished || !tubes.some(tb => Number.isFinite(tb.end) && tb.end > run.t);
     $('runBtn').textContent = run.on ? T('暫停', 'Pause') : run.finished ? T('再做一次', 'Run again') : run.started ? T('繼續', 'Resume') : T('開始反應', 'Start');
   }
   function startOrPause() {
@@ -433,10 +434,10 @@
     panel(g, R.x, R.y, R.w, R.h);
     title(g, T('受質剩下多少', 'Substrate left'), R.x + 12, R.y + 16);
     const p = { x0: R.x + 44, y0: R.y + 32, x1: R.x + R.w - (R.short ? 22 : 12), y1: R.y + R.h - 24 };
-    const X = function (s) { return p.x0 + s / TMAX * (p.x1 - p.x0); };
+    const X = function (s) { return p.x0 + s / Math.max(TMAX, run.t) * (p.x1 - p.x0); };
     const Y = function (f) { return p.y1 - f * (p.y1 - p.y0); };
-    axes(g, p, [0, 5, 10, 15, 20].map(function (m) { return m * 60; }), [0, 0.5, 1], X, Y,
-      function (s) { return (s / 60) + (s === TMAX ? T(' 分', ' min') : ''); }, function (f) { return num(f * 100, 0) + '%'; });
+    axes(g, p, [0, 5, 10, 15, 20].map(function (m) { return m / 20 * Math.max(TMAX, run.t); }), [0, 0.5, 1], X, Y,
+      function (s) { return num(s / 60, s % 60 ? 1 : 0) + (s === Math.max(TMAX, run.t) ? T(' 分', ' min') : ''); }, function (f) { return num(f * 100, 0) + '%'; });
     g.setLineDash([5, 4]); g.strokeStyle = D.alpha(C['ek-good'], 0.8); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(p.x0, Y(0.1)); g.lineTo(p.x1, Y(0.1)); g.stroke(); g.setLineDash([]);
     small(g, T('完成（剩 10%）', 'done (10% left)'), p.x1 - 2, Y(0.1) - 8, C['ek-good'], 'right');
@@ -488,7 +489,7 @@
       } else small(g, lab, xo + (xo > p.x1 - 90 ? -8 : 8), yo - 10, col, xo > p.x1 - 90 ? 'right' : 'left');
     });
     // 選取試管的溫度虛線會穿過這裡：用有底色的膠囊蓋在線上
-    if (!scans.length) D.pill(g, T('按「溫度掃描」', 'Press “Temperature scan”'), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2 + 9, D.c.muted, 'center', '11px ' + FONT);
+    if (!scans.length) D.pill(g, T('按「溫度掃描」', 'Press “Temperature scan”'), (p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2 + 9, D.c.muted, 'center', '12px ' + FONT);
     else small(g, enzName(scans[scans.length - 1].enz) + '・pH ' + num(scans[scans.length - 1].pH, 1), p.x1, R.y + (R.short ? 32 : 16), D.c.muted, 'right');
   }
   function draw1() {
@@ -857,6 +858,26 @@
   [el.tT, el.tpH].forEach(function (r) { r.addEventListener('input', function () { tubeChanged(); steamT = performance.now(); rebuild3(); }); });
   el.ta.addEventListener('input', function () { refreshOutputs(); rebuild3(); });
   $('runBtn').addEventListener('click', startOrPause);
+  $('lateEndpoint').addEventListener('click', function () {
+    const later = tubes.map(tb => tb.end).filter(t => Number.isFinite(t) && t > run.t);
+    if (!later.length) return;
+    run.t = Math.min(...later);
+    tubes.forEach((tb, i) => { if (tb.end <= run.t) run.doneMask |= 1 << i; });
+    updateRunBtn(); renderRo1(); request();
+    setStatus('status', T('延長觀察至 ', 'Extended observation to ') + mmss(run.t));
+  });
+  $('drawBaths').addEventListener('click', function () {
+    if (!$('bathSeed').reportValidity()) return;
+    const center = tubes[sel].T, pH = tubes[sel].pH, spread = Number($('tempSpread').value);
+    let seed = Number($('bathSeed').value);
+    tubes.forEach(tb => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      const delta = Math.floor(seed / 4294967296 * (2 * spread + 1)) - spread;
+      tb.T = Math.min(Number(el.tT.max), Math.max(Number(el.tT.min), center + delta));
+      tb.pH = pH;
+    });
+    recompute(); restartRun(false); selectTube(sel);
+  });
   $('skipBtn').addEventListener('click', function () { if (!run.started || run.finished) restartRun(false); finishRun(); });
   $('scanBtn').addEventListener('click', doScan);
   $('clear1').addEventListener('click', function () {
