@@ -53,7 +53,7 @@ verify('有阻力的入框速度獨立用四倍細步長重算',()=>{
   for(const key of ['x','y','vx','vy'])near(cross[key],ref[key],2e-8);
   near(cross.angle,Math.atan2(-ref.vy,Math.abs(ref.vx))/rad,2e-7);
 });
-verify('有效開口小於球徑，即使對準仍碰前框，動畫停在接觸點',()=>{
+verify('有效開口小於球徑，即使對準仍碰前框，舊版診斷止於接觸點',()=>{
   const r=run({speed:9.41,angle:29});
   assert.ok(Math.abs(r.crossing.x-base.distance)<.028&&r.opening<.245);
   assert.equal(r.rimHit.side,'front');near(r.rimHit.t,r.T);
@@ -131,8 +131,93 @@ verify('可達高度包絡線與最低速率相切，門檻兩側可分辨',()=>
     assert.ok(C.heightEnvelope(min.speed+.001,distance,height)>C.rimHeight);
   }
 });
-verify('40 個見證、單球與比較跨事件、20,000 組配對互斥、211,001 個站位皆可達',()=>{
+verify('正面逐欄重播 v1 快照，含五種結果與打板資料',()=>{
+  const snap=require('./fixtures/basketball-shot-v1.json');
+  assert.ok(snap.rows.length>=2000&&Object.keys(snap.counts).length===5);
+  function compare(actual,expected,label){
+    if(typeof expected==='number')assert.ok(Math.abs(actual-expected)<=1e-9,label+' '+actual+' / '+expected);
+    else if(expected&&typeof expected==='object'){
+      assert.deepEqual(Object.keys(actual).sort(),Object.keys(expected).sort(),label);
+      for(const k of Object.keys(expected))compare(actual[k],expected[k],label+'.'+k);
+    }else assert.equal(actual,expected,label);
+  }
+  for(const [distance,speed,angle,height,drag,...values] of snap.rows){
+    const r=run({distance,speed,angle,height,drag:!!drag,bearing:0});
+    snap.keys.forEach((k,i)=>compare(r[k],values[i],k));
+  }
+});
+verify('薄殼球碰撞含自旋的總動能不增，無阻力飛行段機械能守恆',()=>{
+  const r=run({bearing:45}),x0=r.path[0],p=r.station;
+  const vx=base.speed*Math.cos(base.angle*rad),vy=base.speed*Math.sin(base.angle*rad);
+  for(const [x,y,z,t] of r.path.filter(q=>q[3]<r.contacts[0].t)){
+    near(x,x0[0]+vx*p.c*t,1e-9);near(z,x0[2]-vx*p.s*t,1e-9);
+    near(g*y+(vx**2+(vy-g*t)**2)/2,g*base.height+base.speed**2/2,1e-9);
+  }
+  for(const over of [{},{angle:44,speed:7.81},{speed:7.24},{bearing:45,speed:7.81,angle:44}]){
+    for(const c of run(over).contacts)assert.ok(c.energyOut<=c.energyIn+1e-9,c.type);
+  }
+});
+verify('從球底 1.80 m 無旋落下，第一次反彈高度符合 FIBA 球底規格',()=>{
+  const r=run({speed:0,height:1.80+C.ballRadius,spinHz:0}),floor=r.contacts.filter(c=>c.type==='floor');
+  const apex=Math.max(...r.path.filter(q=>q[3]>floor[0].t&&q[3]<floor[1].t).map(q=>q[1]))-C.ballRadius;
+  assert.ok(apex>=1.035&&apex<=1.085);near(apex,1.06,.0001);
+});
+verify('入網後水平速率下降，球穿出網底後才碰地',()=>{
+  const r=run({}),net=r.contacts.find(e=>e.type==='net'),idx=r.path.findIndex(q=>q[3]>net.t&&q[1]<C.rimHeight-.40);
+  const b=r.path[idx],a=r.path[idx-1];
+  assert.ok(r.final.made&&idx>1&&r.contacts.find(e=>e.type==='floor').t>b[3]);
+  assert.ok(Math.hypot(b[0]-a[0],b[2]-a[2])/(b[3]-a[3])<.60*net.horizontalIn);
+});
+verify('往上穿入網底時開始受阻，這次穿越不算得分',()=>{
+  const r=run({distance:2,speed:9.1842428,angle:55,height:.5});
+  const first=r.contacts[0];
+  assert.equal(first.type,'net');
+  near(first.y,C.rimHeight-.40,1e-9);
+  const i=r.path.findIndex(point=>point[3]>=first.t);
+  const [entry,a,b]=r.path.slice(i,i+3);
+  assert.ok(a[1]>entry[1]&&b[1]>a[1]);
+  assert.ok((b[0]-a[0])/(b[3]-a[3])<first.horizontalIn);
+  assert.equal(r.final.made,false);
+});
+verify('從板後擦過上緣依邊線法向反彈，出界球在延伸一公尺處結束',()=>{
+  const r=run({distance:3.23,bearing:40,speed:7.915,angle:67.96,height:2.64});
+  const board=r.contacts[0];
+  assert.equal(board.type,'board');
+  assert.ok(board.x>C.court.boardOffset&&board.y>C.court.boardBottom+C.court.boardHeight);
+  near(C.boardGap(board),0,1e-9);
+  assert.equal(r.final.reason,'out');near(r.final.restAt[0],2.575,1e-9);
+});
+verify('斜向打板偏離投籃平面，左右站位的接觸、終局與世界軌跡互為鏡像',()=>{
+  for(const angle of [15,45,80]){
+    const p={bearing:angle,speed:7.81,angle:44},a=run(p),b=run({...p,bearing:-angle});
+    assert.equal(a.final.how,b.final.how);assert.equal(a.path.length,b.path.length);
+    assert.deepEqual(a.contacts.map(e=>e.type),b.contacts.map(e=>e.type));
+    for(let i=0;i<a.path.length;i++){const q=a.path[i],w=b.path[i];near(q[0],w[0]);near(q[1],w[1]);near(q[2],-w[2]);near(q[3],w[3]);}
+    if(angle===45){
+      assert.ok(a.contacts.some(e=>e.type==='board'));
+      assert.ok(a.path.some(([x,,z])=>Math.abs(x*a.station.s+z*a.station.c)>.2));
+    }
+  }
+  near(C.station(9,80).z,7.3);near(C.station(9,-80).z,-7.3);
+});
+verify('1,200 組固定種子三維出手，逐點檢查框板距離、碰撞能量與結束條件',()=>{
+  let seed=0x13179a3;
+  const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<1200;i++){
+    const p={bearing:(rand()*2-1)*80,distance:2+7*rand(),angle:10+70*rand(),height:3*rand(),speed:3+15*rand(),drag:i%2===0};
+    const r=run(p);assert.ok(Number.isFinite(r.final.tEnd)&&r.final.tEnd>0);
+    const end=r.path.at(-1);near(end[3],r.final.tEnd);near(end[0],r.final.restAt[0]);near(end[2],r.final.restAt[1]);
+    if(r.final.reason==='out')near(Math.min(2.575-end[0],end[0]+13.425,8.5-Math.abs(end[2])),0,1e-9);
+    for(const [x,y,z] of r.path){
+      const d={x,y,z};assert.ok(C.rimGap(d)>=-.001&&C.boardGap(d)>=-.001&&y>=C.ballRadius-.001,JSON.stringify({p,d}));
+    }
+    for(const c of r.contacts)assert.ok(c.energyOut<=c.energyIn+1e-9);
+    assert.ok(r.contacts.length===0||r.final.tEnd<=r.contacts[0].t+6.00001);
+  }
+});
+
+verify('44 個見證、單球與比較跨事件、20,000 組配對互斥、211,001 個站位皆可達',()=>{
   const report=require('../tools/mission-proofs/basketball-shot.cjs').verifyAll();
-  assert.equal(report.crossEvents.missions,20);
+  assert.equal(report.crossEvents.missions,22);
   assert.equal(report.random.maximumAcrossOrders,1);
 });

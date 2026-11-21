@@ -4,7 +4,7 @@
   const near=(a,b,t=.0001)=>Math.abs(a-b)<=t;
   const shot=d=>d?.mode==='shot', toss=d=>d?.mode==='throw';
   const direct=d=>shot(d)&&d.scored&&!d.bank;
-  const sameCourt=(a,b)=>shot(a)&&shot(b)&&near(a.height,b.height)&&near(a.distance,b.distance)&&a.drag===b.drag;
+  const sameCourt=(a,b)=>shot(a)&&shot(b)&&near(a.height,b.height)&&near(a.distance,b.distance)&&near(a.bearing??0,b.bearing??0)&&a.drag===b.drag;
   const sameThrow=(a,b)=>toss(a)&&toss(b)&&near(a.speed,b.speed)&&near(a.height,b.height);
   const complementary=(a,b)=>sameThrow(a,b)&&!a.drag&&!b.drag&&near(a.angle+b.angle,90,.12)&&Math.abs(a.angle-b.angle)>=12;
   const optimal=d=>d.bestRange!=null&&near(d.R,d.bestRange,.02);
@@ -18,12 +18,12 @@
     const reference=data.prior;
     if(data.trialRole!=='comparison'||reference?.trialRole!=='reference'||data.mode!==reference.mode)return false;
     return data.drag!==reference.drag||!near(data.speed,reference.speed)||!near(data.angle,reference.angle)||
-      !near(data.height,reference.height)||(shot(data)&&!near(data.distance,reference.distance));
+      !near(data.height,reference.height)||(shot(data)&&(!near(data.distance,reference.distance)||!near(data.bearing??0,reference.bearing??0)));
   }
   const pair=step('兩球的項目、高度和速率','Sport, height and speed of the two releases',sameThrow,(d,p)=>p?value(d.height-p.height,' m')+' / '+value(d.speed-p.speed,' m/s',3):'—');
   const makes=step('同站位、同阻力的兩顆直接進球','Two direct baskets at the same spot and drag setting',(d,p)=>sameCourt(d,p)&&direct(d)&&direct(p),(d,p)=>Number(direct(d))+Number(direct(p))+' / 2');
-  function normal(id,title,en,desc,english,paired,steps){
-    return {id:slug+'-'+id,level:id,title:{zh:title,en},desc:{zh:desc,en:english},
+  function normal(id,title,en,desc,english,paired,steps,level=id){
+    return {id:slug+'-'+id,level,title:{zh:title,en},desc:{zh:desc,en:english},
       check:e=>e.type==='recorded'&&recordedTrial(e.data,paired)&&steps.every(s=>s.test(e.data,e.data.prior)),
       need(ctx){
         const d=ctx.last('recorded'),ready=recordedTrial(d,paired);
@@ -39,7 +39,7 @@
     return {id:slug+'-h'+n,level,hidden:true,riddle:{zh,en},
       check:e=>e.type==='recorded'&&recordedTrial(e.data,paired)&&!!test(e.data,e.data.prior)};
   }
-  window.LabMission.register(slug,[
+  const original=[
     normal(1,'十公尺落點','The ten-metre mark','用壘球瞄準 10 m 標記，讓落點離標記不超過 10 cm。','Throw a softball within 10 cm of the ten-metre mark.',false,[
       step('運動項目','Sport',toss,subject),step('落點與標記的距離','Distance from the mark',d=>near(d.R,10,.10),d=>value(Math.abs(d.R-10)*100,' cm',1))]),
     normal(2,'就差半顆球','Half a ball short','讓籃球避開器材，最高點落在框高下方一個球半徑以內。','Avoid the equipment and make the basketball peak within one ball radius below hoop height.',false,[
@@ -53,10 +53,10 @@
       step('球面至框緣的間隙','Ball-to-rim clearance',d=>d.scored&&d.margin<=.01,d=>value(d.margin==null?null:d.margin*100,' cm',1))]),
     normal(5,'借籃板轉彎','Take it off the glass','讓籃球先碰籃板，再順著反彈路徑穿過籃框。','Send the basketball off the board and through the hoop.',false,[
       step('打板後進框','Basket after board contact',d=>shot(d)&&d.bank,d=>d.bank?['已進','made']:d.board?['已打板','board hit']:['尚未打板','no board contact'])]),
-    normal(6,'把壘球送得更遠','Approach the longest throw','先投一顆較短的壘球作為基準。同速、同高、同阻力再擲，讓第二球比基準多飛逾 2 cm，並落在這組條件的最遠射程 2 cm 內。','Throw a shorter softball reference first. At the same speed, height and drag setting, land the second throw more than 2 cm beyond the reference and within 2 cm of the maximum range.',true,[
+    normal(6,'把壘球送得更遠','Approach the longest throw','先投一顆較短的壘球作為基準。同速、同高、同阻力再擲，讓第二球比基準多飛逾 2 cm，並落在這組條件的最遠射程 0.05 cm 內。','Throw a shorter softball reference first. At the same speed, height and drag setting, land the second throw more than 2 cm beyond the reference and within 0.05 cm of the maximum range.',true,[
       pair,step('阻力設定相同','Matching drag settings',(d,p)=>d.drag===p.drag,(d,p)=>d.drag===p.drag?['相同','same']:['不同','different']),
       step('本球超越基準落點的距離','Distance gained beyond the reference landing point',(d,p)=>d.R-p.R>.02,diff('R',' cm',100,2)),
-      step('距離最遠射程的差距','Shortfall from maximum range',optimal,d=>value(d.bestRange==null?null:(d.bestRange-d.R)*100,' cm',1))]),
+      step('距離最遠射程的差距','Shortfall from maximum range',d=>d.bestRange!=null&&near(d.R,d.bestRange,.0005),d=>value(d.bestRange==null?null:(d.bestRange-d.R)*100,' cm',3))]),
     normal(7,'兩條弧線都能進','Two routes to a basket','先直接投進一顆低弧基準球。同站位、同阻力，提高出手角至少 8° 並加速至少 0.30 m/s，讓高弧球也直接進框。','Make a low direct basket as the reference. From the same spot with the same drag, raise the release angle by at least 8° and the speed by at least 0.30 m/s. Make the higher shot directly as well.',true,[
       makes,step('本球相較基準提高的出手角','Rise in angle from the reference',(d,p)=>d.angle-p.angle>=8,diff('angle','°')),
       step('本球相較基準增加的速率','Increase in speed from the reference',(d,p)=>d.speed-p.speed>=.30-1e-8,diff('speed',' m/s',3))]),
@@ -82,7 +82,7 @@
     hidden(5,9,'直路和折返路，在門口行了同一個禮。','The straight road and the returning road bow alike at the door.',true,
       (d,p)=>sameCourt(d,p)&&direct(p)&&d.bank&&near(d.crossing.angle,p.crossing.angle,.75)),
     hidden(6,7,'同一扇窗前，兩位客人的行囊輕重不同。','Two guests at one window carry different loads.',true,
-      (d,p)=>direct(d)&&direct(p)&&d.drag===p.drag&&near(d.distance,p.distance)&&near(d.angle,p.angle)&&Math.abs(d.height-p.height)>=.35&&(d.speed-p.speed)*Math.sign(d.height-p.height)<-.12),
+      (d,p)=>direct(d)&&direct(p)&&d.drag===p.drag&&near(d.distance,p.distance)&&near(d.bearing??0,p.bearing??0)&&near(d.angle,p.angle)&&Math.abs(d.height-p.height)>=.35&&(d.speed-p.speed)*Math.sign(d.height-p.height)<-.12),
     hidden(7,8,'同一條路的兩張地圖，在空氣裡悄悄岔開。','Two maps of the same road quietly part in the air.',true,
       (d,p)=>{if(!sameThrow(d,p)||d.drag===p.drag||!optimal(d)||!optimal(p))return false;
         const [air,vac]=d.drag?[d,p]:[p,d];return air.bestAngle<vac.bestAngle&&air.angle<vac.angle-.65&&air.R<vac.R;}),
@@ -93,5 +93,22 @@
     hidden(10,10,'兩級臺階，共用一把尺。最後一筆正落在方格的對角。','Two steps share one ruler. The last stroke finds the diagonal.',true,
       (d,p)=>toss(d)&&toss(p)&&!d.drag&&!p.drag&&near(d.speed,p.speed)&&near(d.angle,p.angle)&&d.height>p.height&&
         p.vxLand>-p.vyLand+.10&&near(d.vxLand,-d.vyLand,.025)&&d.vLand-d.speed>.45)
-  ]);
+  ];
+  const extra=[
+    normal(11,'從底角也能進','A corner basket','在距框心至少 6.60 m、站位角度絕對值至少 60° 的底角直接投進。若同時符合舊任務，記錄重點選「站位與反彈」。','Make a direct shot from at least 6.60 m away at a bearing of at least 60° on either side. To prioritise this observation choose Position and rebound.',false,[
+      step('站在三分底角','Corner position',d=>shot(d)&&Math.abs(d.bearing)>=60&&d.distance>=6.60,d=>value(d.distance,' m')+' / '+value(d.bearing,'°',1)),
+      step('直接進球','Direct basket',direct,d=>direct(d)?['進球','Made']:['尚未進球','Pending'])],5),
+    normal(12,'碰框彈進','In off the rim','讓球先碰前框或後框，再彈進網。若同時符合舊任務，記錄重點選「站位與反彈」。','Hit the front or back rim first and rebound into the basket. To prioritise this observation choose Position and rebound.',false,[
+      step('首次碰到框緣','First contact is the rim',d=>shot(d)&&!!d.rimHit&&!d.board&&['front','back'].includes(d.outcome)&&d.firstContact==='rim',d=>d.rimHit&&!d.board?['碰框','Rim']:['尚未達成','Pending']),
+      step('反彈後進網','Basket after the rebound',d=>!!d.final?.made,d=>d.final?.made?['進球','Made']:['尚未進球','Pending'])],6)
+  ];
+  // A single record can match a corner shot and a clearance experiment. The
+  // recorder keeps the original award by default and lets the student select the new observation.
+  const oldChecks=original.map(m=>m.check), finishChecks=extra.map(m=>m.check);
+  for(const m of original){const test=m.check;m.check=(e,c)=>test(e,c)&&(e.data?.focus!=='finish'||!finishChecks.some(check=>check(e,c)));}
+  for(const m of extra){
+    const test=m.check;
+    m.check=(e,c)=>test(e,c)&&(e.data.focus==='finish'||!oldChecks.some(check=>check(e,c)));
+  }
+  window.LabMission.register(slug,[...original,...extra]);
 })();

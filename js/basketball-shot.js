@@ -3,7 +3,7 @@
   const C = window.BasketballShotCore, D = window.LabDraw, N = window.LabNum, T = window.LabSettings.t;
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), layer = document.createElement('canvas');
-  const brush = layer.getContext('2d'), keys = ['speed', 'angle', 'height', 'distance'];
+  const brush = layer.getContext('2d'), keys = ['speed', 'angle', 'height', 'distance', 'bearing'];
   const history = [], settings = {};
   let mode = 'shot', state, reference = null, completed = null, bestKey = '', best = null, bestPath = null;
   let palette, layout, frozen = null, grab = null, hover = false, batching = false, bgValid = false;
@@ -13,7 +13,7 @@
   const font = (size, weight = 400) => weight+' '+(size*Math.max(1,fontScale)*pointsPerCssPixel)+'pt '+D.FONT;
   const comparedHere=()=>compared?.current===state && compared.reference===reference;
   const matchingTrials=()=>comparedHere() && reference.p.mode===mode && state.p.height===reference.p.height &&
-    (mode==='shot' ? !state.p.drag && !reference.p.drag && state.p.distance===reference.p.distance :
+    (mode==='shot' ? !state.p.drag && !reference.p.drag && state.p.distance===reference.p.distance && state.data.bearing===reference.data.bearing :
       state.p.drag===reference.p.drag && state.p.speed===reference.p.speed);
   const rad = Math.PI / 180, num = (x, n = 2) => x == null ? '—' : x.toFixed(n);
   const unit = (x, u, n = 2) => x == null ? '—' : num(x, n) + u;
@@ -37,9 +37,22 @@
     back: T('碰後框','Back rim'), miss: r.board ? T('打板未進','Bank miss') : T('未進框','Miss'),
     land: T('壘球落地','Softball lands')
   })[r.outcome];
+  function finalLabel(d){
+    const labels={swish:['空心進','Swish'],bank:['打板進','Banked in'],'rim-in':['碰框彈進','Rimmed in'],'bank-rim-in':['打板碰框進','Bank and rim in'],
+      'rim-out':['碰框彈出','Rimmed out'],'board-out':['打板彈出','Banked out'],airball:['籃外空心','Airball']};
+    return T(...labels[d.final.how]);
+  }
+  function projected(r,pt){
+    const [x,y,z,t]=pt,{c,s}=r.station;
+    return [r.distance+x*c-z*s,y,t,x*s+z*c,x,z];
+  }
+  function playback(r){
+    return r.path?r.path.map(pt=>projected(r,pt)):r.points;
+  }
   function compute() {
     const p = { mode, drag: $('drag').checked };
     keys.forEach(k => { p[k] = N.value($(k)); });
+    if(mode==='throw')p.bearing=0;
     const result = C.launch(p);
     if (mode === 'throw') {
       const key = [p.speed, p.height, p.drag].join('/');
@@ -78,7 +91,7 @@
     const items = [[T('最高點','Apex height'), unit(d.H,' m')], [T('飛行時間','Flight time'), unit(d.T,' s')]];
     const virtual=d.rimHit?T('若沒碰框 · ','Without rim contact · '):'';
     if (isShot) {
-      items.push([virtual+T('穿越框高的位置','Crossing position'),unit(d.crossing?.x,' m',3)],
+      items.push([T('實際站位角度','Court bearing'),unit(d.bearing,'°',1)], [T('最後結果','Final result'),finalLabel(d)], [virtual+T('穿越框高的位置','Crossing position'),unit(d.crossing?.x,' m',3)],
         [T('球面至框緣最小間隙','Closest ball-to-rim clearance'),unit(100*d.margin,' cm',2)]);
       if(d.envelope!=null){
         const deficit=C.rimHeight-d.envelope;
@@ -107,10 +120,11 @@
     const delta = (a,b,suffix,n=2) => (a-b>0?'+':'')+unit(a-b,suffix,n);
     readings('comparison', !prev ? [] : [
       [T('出手速率差','Release speed change'),delta(d.speed,prev.speed,' m/s',3)],
-      ...(isShot ? [[T('下降角（基準 → 本球）','Descent (reference → current)'),(prev.rimHit?T('若沒碰框 ','Without rim contact '):'')+unit(prev.crossing?.angle,'°')+' → '+virtual+unit(d.crossing?.angle,'°')]] :
+      ...(isShot ? [[T('站位角度差','Bearing change'),delta(d.bearing,prev.bearing,'°',1)],[T('下降角（基準 → 本球）','Descent (reference → current)'),(prev.rimHit?T('若沒碰框 ','Without rim contact '):'')+unit(prev.crossing?.angle,'°')+' → '+virtual+unit(d.crossing?.angle,'°')]] :
         [[T('射程差','Range change'),delta(d.R,prev.R,' m')]]),
       [T('最高點差','Apex change'),delta(d.H,prev.H,' m')] ]);
-    $('play').disabled = $('reference').disabled = !!flight;
+    $('reference').disabled = !!flight;
+    $('play').title=flight?T('跳到這球的結束位置','Skip to the end of this release'):T('出手','Release');
     $('record').disabled = !present || d.trialRole!=='single';
     $('compare').disabled = !canCompare();
     $('clearReference').disabled = !reference;
@@ -123,9 +137,15 @@
         (isShot?outcome(r)+' ('+num(r.distance)+' m)':unit(r.R,' m'));
       return row;
     }));
-    $('distanceRow').hidden = !isShot;
-    keys.forEach(k => { if (!$(k+'o').dataset.editing) $(k+'o').textContent = unit(d[k], {speed:' m/s',angle:'°',height:' m',distance:' m'}[k],k==='speed'?3:2); });
+    for(const id of ['distanceRow','bearingRow','spots','bearingHint','courtMap','focusRow'])$(id).hidden=!isShot;
+    if(isShot){
+      const limited=Math.abs(d.bearing-state.p.bearing)>.001;
+      $('bearingHint').textContent=T('從中場面向籃框，正角在右手邊。','Face the hoop from midcourt. Positive angles are to your right.')+
+        (limited?T(' 已靠近邊線，實際站位 ',' Sideline limit. Actual bearing ')+unit(d.bearing,'°',1):'');
+    }
+    keys.forEach(k => { if (!$(k+'o').dataset.editing) $(k+'o').textContent = unit(state.p[k], {bearing:'°',speed:' m/s',angle:'°',height:' m',distance:' m'}[k],k==='speed'?3:k==='bearing'?0:2); });
     const legend = [[palette.path,T('本球','Current'), 'solid'],
+      ...(isShot&&state.result.path.some(([x,,z])=>Math.abs(x*state.result.station.s+z*state.result.station.c)>.02)?[[palette.path,T('離開投籃平面','Out of shot plane'),'dashed']]:[]),
       ...(mode==='throw'&&matchingTrials()?[[palette.best,T('最遠軌跡','Optimal throw'),'dashed']]:[]),
       ...(history.some(s=>s.p.mode===mode)?[[palette.muted,T('最近三球','Last three'),'dotted']]:[]),
       ...(prev?[[palette.ref,T('基準球','Reference'),'dashed']]:[])];
@@ -147,7 +167,7 @@
     $('instruments').hidden=!isShot;
     if(isShot){
       $('gapValue').textContent=unit(d.margin*100,' cm',2);
-      $('lensNote').textContent=d.rimHit?T('實線止於碰框處。虛線球是假設沒碰框的預測。','Solid path ends at contact. Dashed ball assumes no rim contact.'):
+      $('lensNote').textContent=d.rimHit?T('虛線球顯示若沒碰框時的落點。','Dashed ball shows the crossing without rim contact.'):
         d.crossing?T('十字為框心，圓點為球心。','Cross marks the hoop centre. Dot marks the ball centre.'):
         T('球心未從上方穿越框高。','The centre never descends through hoop height.');
     }
@@ -172,6 +192,7 @@
     let left=shot?Math.min(-1.15,d-C.court.threePoint-.45):-1.35, right=shot?d+1.9:4, top=shot?4.55:2.3;
     for(const {result:r} of tracks()){
       top=Math.max(top,r.H+.28); left=Math.min(left,r.R-.35); right=Math.max(right,r.R+.45);
+      if(r.path){for(const pt of r.path){const [x,y]=projected(state.result,pt);left=Math.min(left,x-.2);right=Math.max(right,x+.2);top=Math.max(top,y+.25);}}
       if(r.board) right=Math.max(right,r.board.x+.5);
     }
     const baseline=h*.77, roof=h<250?29:52;
@@ -179,6 +200,10 @@
     const ox=(w-(right-left)*scale)/2-left*scale;
     return {w,h,scale,baseline,ox, at:(x,y,z=0)=>[ox+(x+z*.26)*scale,baseline+(-y+z*.12)*scale],
       arrowScale:Math.min(w*.018,h*.021,8.4)};
+  }
+  function courtView(f){
+    const d=state.p.distance,{s,c}=state.result.station;
+    return (along,y,z=0)=>f.at(d+(along-d)*c-z*s,y,(along-d)*s+z*c);
   }
   function room(c,f) {
     const {w,h,baseline:b,scale:s,at}=f, p=palette, horizon=b-h*.105;
@@ -221,16 +246,18 @@
     }
     const marking=alpha(p.white,.85);
     if(mode==='shot'){
-      const d=state.p.distance,ft=d-C.court.freeThrow,base=d+1.575;
+      const at=courtView(f),d=state.p.distance,ft=d-4.225,base=d+1.575;
       const quad=(x0,x1,z0,z1)=>[at(x0,0,z0),at(x1,0,z0),at(x1,0,z1),at(x0,0,z1)];
       shape(c,quad(ft,base,-2.45,2.45),alpha(p.pad,.26),marking,1.6);
       const arc=(center,r,a,zSpan,beta)=>Array.from({length:71},(_,i)=>{
         const t=a+(beta-a)*i/70;return at(center-r*Math.cos(t),0,r*Math.sin(t)*zSpan);
       });
-      line(c,arc(d,C.court.threePoint,-1.32,1,1.32),marking,Math.max(1.45,s*.045));
+      const join=Math.asin(6.6/6.75);
+      line(c,[at(base,0,-6.6),...arc(d,6.75,-join,1,join),at(base,0,6.6)],marking,Math.max(1.45,s*.045));
+      line(c,arc(d,1.275,-Math.PI/2,1,Math.PI/2),marking,1.2);
       line(c,arc(ft,1.8,-Math.PI/2,1,Math.PI/2),marking,1.35);
       line(c,arc(ft,1.8,Math.PI/2,1,Math.PI*1.5),alpha(p.white,.65),1,[3,4]);
-      line(c,[at(base,0,-7),at(base,0,7)],marking,1.5);
+      line(c,[at(base,0,-7.5),at(base,0,7.5)],marking,1.5);
     }
     const beam=c.createLinearGradient(0,0,w,h);beam.addColorStop(0,alpha(p.white,0));beam.addColorStop(.5,alpha(p.white,p.dark?.035:.09));beam.addColorStop(1,alpha(p.white,0));
     shape(c,[[w*.24,sill],[w*.48,sill],[w*.20,h],[-w*.20,h]],beam);
@@ -248,7 +275,7 @@
   }
 
   function courtRig(c,f) {
-    const {at,scale:s}=f, d=state.p.distance, board=d+C.court.boardOffset,p=palette;
+    const at=courtView(f),s=f.scale, d=state.p.distance, board=d+C.court.boardOffset,p=palette;
     const rod=(a,b,w,col)=>{line(c,[at(...a),at(...b)],p.deep,w+1.6);line(c,[at(...a),at(...b)],col,w);};
     const feet=at(board+1.02,0);
     D.contactShadow(c,...feet,s*.75,0);
@@ -261,6 +288,11 @@
     }
     const panel=(y,dy,half)=>[at(board,y,-half),at(board,y,half),at(board,y+dy,half),at(board,y+dy,-half)];
     shape(c,panel(C.court.boardBottom,C.court.boardHeight,C.court.boardWidth/2),alpha(shade(p.path,.60),.43),p.metal,Math.max(2,s*.055));
+    const spot=state.result.station;
+    if(Math.abs(C.court.boardOffset*spot.s/spot.c)<=C.court.boardWidth/2){
+      const cut=d+C.court.boardOffset/spot.c;
+      line(c,[f.at(cut,C.court.boardBottom),f.at(cut,C.court.boardBottom+C.court.boardHeight)],alpha(p.white,.8),1,[3,3]);
+    }
     const outside=panel(C.court.boardBottom+.04,C.court.boardHeight-.08,.86);
     line(c,[...outside,outside[0]],p.white,1.3);
     const target=panel(C.rimHeight,.45,.295);line(c,[...target,target[0]],p.white,1.4);
@@ -335,6 +367,7 @@
     const c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
     paint(c,w,h);
   }
+  let closeTrace=null,closeResult=null;
   function instruments(){
     if(!state || mode!=='shot'||document.hidden)return;
     const d=state.data,p=palette;
@@ -343,11 +376,13 @@
       c.fillStyle=p.bg;c.fillRect(0,0,w,h);
       if(!d.crossing){line(c,[[cx-6,cy],[cx+6,cy]],p.muted,2);return;}
       const b=d.opening*scale/2, y=cy-d.viewOffset*scale,br=C.ballRadius*scale;
+      const cross=d.crossing, horizontal=Math.hypot(cross.worldVx||0,cross.worldVz||0);
+      const x=cx+(horizontal?(cross.worldZ*cross.worldVx-cross.worldX*cross.worldVz)/horizontal*scale:0);
       ellipse(c,cx,cy,r,Math.max(.5,b),alpha(p.orange,.12),p.orange,2.3);
       line(c,[[cx-4,cy],[cx+4,cy]],p.ink);line(c,[[cx,cy-4],[cx,cy+4]],p.ink);
       if(y+br>=0&&y-br<=h){
-        c.setLineDash(d.rimHit?[3,3]:[]);ellipse(c,cx,y,br,br,alpha(p.path,.24),p.path,1.8);c.setLineDash([]);
-        ellipse(c,cx,y,2.2,2.2,p.path);
+        c.setLineDash(d.rimHit?[3,3]:[]);ellipse(c,x,y,br,br,alpha(p.path,.24),p.path,1.8);c.setLineDash([]);
+        ellipse(c,x,y,2.2,2.2,p.path);
       }else{
         const edge=y<0?7:h-7,sign=y<0?-1:1;
         line(c,[[cx-4,edge-sign*4],[cx,edge],[cx+4,edge-sign*4]],p.path,2);
@@ -356,7 +391,7 @@
     instrument('closeCam',(c,w,h)=>{
       const scale=w*.72,mid=w*.47,ry=h*.47,X=x=>mid+(x-d.distance)*scale,Y=y=>ry-(y-C.rimHeight)*scale;
       c.fillStyle=gradient(c,0,h,p.wall,p.pad);c.fillRect(0,0,w,h);
-      const x0=X(d.distance-C.rimRadius),x1=X(d.distance+C.rimRadius),board=X(d.distance+C.court.boardOffset);
+      const x0=X(d.distance-C.rimRadius),x1=X(d.distance+C.rimRadius),board=X(d.distance+C.court.boardOffset/d.station.c);
       line(c,[[board,Y(3.82)],[board,Y(C.court.boardBottom)]],p.white,4);
       line(c,[[x1,ry+2],[board,ry+2]],p.orange,3);
       // The crossed cords taper from the rim to the narrow bottom of the net.
@@ -369,7 +404,10 @@
           line(c,path,alpha(p.white,j<6?.88:.46),j<6?1.1:.8);
         }
       }
-      const pts=state.result.points.filter(q=>Math.abs(X(q[0])-mid)<w*.70&&Math.abs(Y(q[1])-ry)<h*.9);
+      if(closeResult!==state.result){
+        closeResult=state.result;closeTrace=C.displayPath(closeResult,320).map(q=>projected(closeResult,q));
+      }
+      const pts=closeTrace.filter(q=>Math.abs(X(q[0])-mid)<w*.70&&Math.abs(Y(q[1])-ry)<h*.9);
       line(c,pts.map(q=>[X(q[0]),Y(q[1])]),alpha(p.path,.85),1.5);
       line(c,[[x0,ry],[x1,ry]],p.orange,3);
       const sample=d.rimHit||d.crossing||{x:d.R,y:0};
@@ -383,6 +421,16 @@
     });
   }
   function outlineTrack(c,f,track) {
+    if(track.result.path){
+      const r=track.result,pts=C.displayPath(r,400);
+      let linePoints=[],outside=false;
+      function stroke(){if(linePoints.length>1)line(c,linePoints,alpha(track.ink,track.opacity*(outside?.50:1)),outside?1.8:2.3,outside?[5,4]:track.dash||[]);}
+      for(let i=0;i<pts.length;i++){
+        const q=projected(state.result,pts[i]),xy=f.at(q[0],q[1]),away=Math.abs(q[3])>.02;
+        if(away!==outside){linePoints.push(xy);stroke();linePoints=[xy];outside=away;}else linePoints.push(xy);
+      }
+      stroke();return;
+    }
     const pts=track.result.points, str=Math.max(1,Math.floor(pts.length/420)), xy=[];
     for(let i=0;i<pts.length;i++) if(i%str===0||i===pts.length-1||Math.abs(pts[i][2]-(track.result.board?.t??-9))<1e-8)xy.push(f.at(pts[i][0],pts[i][1]));
     c.save();c.globalAlpha=track.opacity;
@@ -392,16 +440,15 @@
   function scaleMarks(c,f) {
     const {w,h,at,scale:s}=f, d=state.p.distance,p=palette;
     if(mode==='shot'){
-      const textSize=font(13,600);
+      const textSize=font(Math.max(11,Math.min(13,h*.055)),600);
       const marks=[[d-C.court.threePoint,T('三分','3PT')+' 6.75 m'],[d-C.court.freeThrow,T('罰球','FT')+' 4.23 m']];
       let previous=null;
       for(const [distance,name] of marks){
-        const [x,y]=at(distance,0);
+        const [x,y]=distance===d-C.court.freeThrow?courtView(f)(distance,0):at(distance,0);
         c.font=textSize;
         const metrics=c.measureText(name),width=metrics.width+12;
-        const left=Math.max(4,Math.min(w-4-width,x-width/2));
-        const overlaps=previous && left<previous.x+previous.w+5;
-        const bottom=overlaps?previous.y-5:h-5;
+        const left=Math.max(previous?previous.x+previous.w+5:4,Math.min(w-4-width,x-width/2));
+        const bottom=h-4;
         const top=bottom-D.textHeight(metrics,15*fontScale)-3;
         const anchor=Math.max(left+5,Math.min(left+width-5,x));
         line(c,[[x,y+1],[anchor,y>bottom?bottom:top]],alpha(p.deep,.62),1,[2,3]);
@@ -476,7 +523,9 @@
     $('aim').style.left=a.tx+'px';$('aim').style.top=a.ty+'px';
     const pos=ball||[0,state.p.height],xy=f.at(pos[0],pos[1]);
     const radius=C.balls[mode].diameter*f.scale/2;
-    ballArt(ctx,...xy,radius);
+    const lateral=pos[3]||0;
+    ballArt(ctx,...xy,radius*Math.max(.83,Math.min(1.17,1+.055*lateral)),clock*5*Math.PI);
+    if(Math.abs(lateral)>.02)D.pill(ctx,T('離開投籃平面','Out of shot plane'),w-5,h-5,palette.ink,'right',font(11,600));
     if(impactMark && !D.reducedMotion()){
       const u=(performance.now()-impactMark.start)/260;
       D.ripple(ctx,...f.at(impactMark.x,impactMark.y),Math.max(7,radius),u,palette.orange);
@@ -484,7 +533,7 @@
     }
   }
   function redraw(geometry=true) {
-    bgValid=false;
+    bgValid=false;drawMap();
     if(world){if(geometry)world.refresh(state,tracks(),palette);if(flight&&clock<0)world.prepare(1+clock/.32);else if(ball)world.move(ball,clock);else world.prepare(0);instruments();}
     else draw();
   }
@@ -495,10 +544,13 @@
     if(batching)return;
     stop();completed=null;compared=null;state=compute();$('feedback').textContent='';
     updateDisplay();redraw();
+    settings[mode]={...state.p};
+    try{localStorage.setItem(prefsKey,JSON.stringify({mode,settings}));}catch{}
   }
-  function cue(type) {
+  function cue(type,speedIn=0) {
     if(!window.LabSound.enabled())return;
     if(type==='net')LabSound.noise({filter:3300,q:.75,dur:.15,gain:.38,attack:.018});
+    if(type==='floor')LabSound.tone({type:'sine',freq:270,dur:.08,gain:Math.min(.38,speedIn*.04)});
     if(type==='rim')LabSound.tone({type:'triangle',freq:1140,dur:.24,gain:.26});
     if(type==='board')LabSound.tone({type:'triangle',freq:285,dur:.09,gain:.42});
   }
@@ -507,15 +559,16 @@
     clock=Math.min(flight.T,clock+(stamp?Math.min((now-stamp)/1000,1/30):0)*.60);stamp=now;
     if(clock<0){world?.prepare(1+clock/.32);frame=requestAnimationFrame(animate);return;}
     while(eventIndex<flight.events.length && flight.events[eventIndex].t<=clock+.000001){
-      const type=flight.events[eventIndex++].type;
-      cue(type);
-      const hit=type==='board'?flight.board:type==='rim'?flight.rimHit:null;
+      const e=flight.events[eventIndex++],type=e.type;
+      cue(type,e.speedIn);
+      if(world)world.contact(e);
+      const hit=flight.station?{x:projected(flight,[e.x,e.y,e.z,e.t])[0],y:e.y}:null;
       if(hit&&!world&&!D.reducedMotion())impactMark={x:hit.x,y:hit.y,start:performance.now()};
     }
     const pts=flight.points;
     while(flight.i<pts.length-1 && pts[flight.i][2]<clock)flight.i++;
     const b=pts[flight.i],a=pts[Math.max(0,flight.i-1)],dt=b[2]-a[2],u=dt?Math.max(0,Math.min(1,(clock-a[2])/dt)):0;
-    ball=[a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u];
+    ball=a.map((v,i)=>v+(b[i]-v)*u);
     if(world){world.move(ball,clock);instruments();}else draw();
     if(clock>=flight.T){
       finish();
@@ -536,30 +589,45 @@
     if(state.data.trialRole==='reference')next=T('改變條件，再出手比較。','Change a condition, then release for comparison.');
     if(state.data.trialRole==='comparison')next=canCompare()?T('可以比較兩球。','Compare the two releases.'):
       T('先投基準球，再用不同條件出手。','Shoot a reference, then release under different conditions.');
-    $('feedback').textContent=outcome(state.data)+T('。','. ')+next;
+    const r=state.result;
+    let ending='';
+    if(mode==='shot'){
+      const floors=r.contacts.filter(e=>e.type==='floor').length;
+      const passage=r.final.made?T('球穿過籃網','The ball went through the net'):T('球沒有進網','The ball missed the basket');
+      const floorText=floors?T('，落地 '+floors+' 次',', with '+floors+(floors===1?' floor contact':' floor contacts')):'';
+      const reason={rest:T('球已停下','The ball came to rest'),out:T('球已越過半場外的界限','The ball left the half-court buffer'),
+        time:T('已播放到首次接觸後 6 秒','Playback reached six seconds after first contact')}[r.final.reason];
+      ending=passage+floorText+T('。','. ')+reason+T('。','. ');
+    }
+    $('feedback').textContent=outcome(state.data)+T('。','. ')+(ending?'\n'+ending:'')+next;
   }
   function release(action='release') {
     const replay=action==='replay';
-    if(flight || (replay && completed!==state))return;
+    if(flight){if(action==='release')skipFlight();return;}
+    if(replay && completed!==state)return;
     stop();replaying=replay;completed=null;
     if(!replay){
       const trialRole=action==='reference'?'reference':reference?'comparison':'single';
-      state={...state,data:{...state.data,trialRole},against:trialRole==='comparison'?reference:null};
+      state={...state,data:{...state.data,trialRole},recordFocus:null,against:trialRole==='comparison'?reference:null};
       compared=null;
     }
     world?.frameRelease();
     if(!replay && D.reducedMotion()){
-      ball=state.result.points.at(-1);clock=state.result.T;
-      for(const e of state.result.events)cue(e.type);
-      finish();return;
+      skipFlight();return;
     }
-    flight={...state.result,i:0};clock=world?-.32:0;world?.prepare(0);updateDisplay();
+    const r=state.result;
+    flight={station:r.station,distance:r.distance,T:r.final?.tEnd??r.T,events:r.contacts??r.events,points:playback(r),i:0};clock=world?-.32:0;world?.prepare(0);updateDisplay();
     $('feedback').textContent=T('球已出手。','Ball in flight.');frame=requestAnimationFrame(animate);
+  }
+  function skipFlight(){
+    cancelAnimationFrame(frame);const r=state.result;
+    ball=r.path?projected(r,r.path.at(-1)):r.points.at(-1);clock=r.final?.tEnd??r.T;finish();
   }
   function record(pair) {
     if(completed!==state || (pair?!canCompare():state.data.trialRole!=='single'))return;
     if(pair){compared={current:state,reference};updateDisplay();redraw();}
-    window.LabMission?.emit('recorded',{...state.data,prior:pair?reference.data:null});
+    state.recordFocus??=pair||mode!=='shot'?'auto':$('recordFocus').value;
+    window.LabMission?.emit('recorded',{...state.data,focus:state.recordFocus,prior:pair?reference.data:null});
     $('feedback').textContent=pair?T('已記錄這一組比較。','Comparison recorded.'):T('已記錄這一球。','Result recorded.');
   }
   function soundButton(){
@@ -595,11 +663,63 @@
   function changeMode(next) {
     if(next===mode)return;
     settings[mode]={...state.p};mode=next;reference=null;
-    const saved=settings[next]||{speed:11,angle:38,height:1.6,distance:4.23,drag:false};
+    const saved=settings[next]||{speed:next==='shot'?7.3:11,angle:next==='shot'?55:38,height:next==='shot'?2:1.6,distance:4.23,bearing:0,drag:false};
     batching=true;keys.forEach(k=>N.set($(k),saved[k]));$('drag').checked=saved.drag;batching=false;
     document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
     update();
   }
+  function setSpot(distance,bearing){
+    batching=true;
+    N.set($('distance'),Math.round(Math.min(9,Math.max(2,distance))*100)/100);
+    N.set($('bearing'),Math.max(-80,Math.min(80,Math.round(bearing))));
+    batching=false;update();
+  }
+  const mapScale=8.4;
+  function mapPoint(x,z){return [75+z*mapScale,11+(1.575-x)*mapScale];}
+  function drawMap(){
+    const canvas=$('mapCanvas'),p=palette;
+    if(mode!=='shot'||canvas.hidden)return;
+    const c=canvas.getContext('2d'),spot=state.result.station;
+    c.setTransform(2,0,0,2,0,0);
+    c.fillStyle=p.pad;c.fillRect(0,0,150,140);
+    const mark=(pts,ink=p.white,width=1)=>line(c,pts.map(([x,z])=>mapPoint(x,z)),ink,width);
+    const arc=(cx,r,angle)=>Array.from({length:61},(_,i)=>[cx-r*Math.cos((i/30-1)*angle),r*Math.sin((i/30-1)*angle)]);
+    mark([[1.575,-7.5],[-12.425,-7.5],[-12.425,7.5],[1.575,7.5],[1.575,-7.5]]);
+    shape(c,[[1.575,-2.45],[-4.225,-2.45],[-4.225,2.45],[1.575,2.45]].map(v=>mapPoint(...v)),alpha(p.timber,.75),p.white,1);
+    mark([[1.575,-6.6],...arc(0,6.75,Math.asin(6.60/6.75)),[1.575,6.6]]);
+    mark(arc(0,1.275,Math.PI/2));mark(arc(-4.225,1.8,Math.PI/2));
+    mark([[.375,-.9],[.375,.9]],p.white,2);ellipse(c,...mapPoint(0,0),2.2,2.2,p.orange);
+    if(completed===state){
+      const landing=state.result.contacts.find(e=>e.type==='floor');
+      if(landing)ellipse(c,...mapPoint(landing.x,landing.z),3,3,null,p.white,1.5);
+      const [x,z]=state.result.final.restAt,[mx,my]=mapPoint(x,z);
+      line(c,[[mx-3,my-3],[mx+3,my+3]],p.ref,2);line(c,[[mx+3,my-3],[mx-3,my+3]],p.ref,2);
+    }
+    mark([[spot.x,spot.z],[0,0]],alpha(p.path,.8),1);
+    ellipse(c,...mapPoint(spot.x,spot.z),4.3,4.3,p.path,p.deep,1.6);
+  }
+  $('mapCanvas').width=300;$('mapCanvas').height=280;
+  function dragSpot(e){
+    const rect=$('mapCanvas').getBoundingClientRect();
+    const z=((e.clientX-rect.left)*150/rect.width-75)/mapScale, x=1.575-((e.clientY-rect.top)*140/rect.height-11)/mapScale;
+    setSpot(Math.hypot(x,z),Math.atan2(z,-x)/rad);
+  }
+  $('mapCanvas').onpointerdown=e=>{if(e.button===0){e.currentTarget.setPointerCapture(e.pointerId);dragSpot(e);}};
+  $('mapCanvas').onpointermove=e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))dragSpot(e);};
+  $('toggleMap').onclick=()=>{const map=$('mapCanvas');map.hidden=!map.hidden;$('toggleMap').setAttribute('aria-expanded',String(!map.hidden));drawMap();};
+  $('spots').onclick=e=>{const spot=e.target.closest('[data-spot]');if(spot)setSpot(...spot.dataset.spot.split(',').map(Number));};
+  const prefsKey='basketball-shot-settings-v2';
+  function applyRelease(saved){
+    if(!saved||!['shot','throw'].includes(saved.mode))return;
+    batching=true;mode=saved.mode;
+    for(const k of keys){
+      const el=$(k),value=Number(saved[k]??el.defaultValue);
+      if(Number.isFinite(value))N.set(el,Math.min(+el.max,Math.max(+el.min,value)));
+    }
+    $('drag').checked=saved.drag===true;batching=false;
+    document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+  }
+  (window.LAB_SHARE_EXTRAS=window.LAB_SHARE_EXTRAS||[]).push({get:()=>({...state.p}),set:p=>{applyRelease(p);update();}});
   function setAim(angle,speed) {
     batching=true;N.set($('angle'),angle);N.set($('speed'),speed);batching=false;update();
   }
@@ -657,8 +777,15 @@
     const second=!!base && !!canCompare();
     const comparedPair=second && comparedHere();
     const aimText=trial=>num(trial.p.speed,3)+' m/s · '+num(trial.p.angle,2)+'°';
-    const settingsTab=$('angle').closest('.labdeck-pane[inert]')?.getAttribute('aria-labelledby');
-    const settingTarget=settingsTab?$(settingsTab):$('angle');
+    const setupTab=()=>{
+      const pane=$('angle').closest('.labdeck-pane[inert]');
+      return pane?$(pane.getAttribute('aria-labelledby')):null;
+    };
+    const sliderGuide=(id,zh,en)=>({
+      target:()=>setupTab()||$(id),
+      hint:()=>setupTab()?T('投籃設定','Setup'):T(zh,en),
+      action:()=>setupTab()?'tap':'drag'
+    });
     const resultNeed=(trial,available)=>{
       if(trial){
         const result=mode==='shot'?outcome(trial.data):unit(trial.data.R,' m');
@@ -676,8 +803,7 @@
         done:!!base,target:'#reference',hint:['投基準球','Shoot reference'],
         need:[[true,'出手速率與角度 · '+aimText(base||state),'Release speed and angle · '+aimText(base||state)],refNeed]},
       {html:T('調整出手條件，觀察它與基準球的差異。','Change a release condition and check it against the reference.'),
-        done:!!setting,target:settingTarget,hint:settingsTab?['出手分頁','Release tab']:['出手角','Release angle'],
-        action:settingsTab?'tap':'drag',need:[refNeed,changeNeed(base,setting)]},
+        done:!!setting,...sliderGuide('angle','出手角','Release angle'),need:[refNeed,changeNeed(base,setting)]},
       {html:T('用新條件出手，取得這一球的結果。','Release with the new settings to get a second result.'),
         done:second,target:'#play',hint:releaseHint,need:[changeNeed(base,setting),resultNeed(second?completed:null,!!setting)]},
       {html:T('比較這次出手與基準球的結果。','Compare the new release with the reference.'),
@@ -685,13 +811,36 @@
         need:[resultNeed(second?completed:null,!!setting),[comparedPair?true:second?false:null,
           '本組已記錄的比較 · '+Number(comparedPair)+'/1','Comparison recorded for this pair · '+Number(comparedPair)+'/1']]}
     ];
+    if(mode==='shot'){
+      const moved=!!base&&(base.data.distance!==state.data.distance||base.data.bearing!==state.data.bearing);
+      rows.splice(1,0,{html:T('換個站位，觀察人與籃板的相對位置。','Try another court spot and observe the board.'),
+        done:moved,...sliderGuide('bearing','站位角度','Court bearing'),
+        need:[[!!base,'已投基準球','Reference shot released'],[moved,'距離或角度已改變','Distance or bearing changed']]});
+    }
     const current=rows.findIndex(step=>!step.done);
     rows.forEach((step,index)=>{step.current=index===current;});
     return rows;
   }
+  function learningPanel(){
+    if(!window.LabModeGate?.studying)return;
+    const panel=window.LabPanel;
+    panel.mount({tabs:['concept','examples']});
+    const concept=document.createElement('p');
+    concept.textContent=T('先從正面投一球，再把站位轉到 45°，保持出手速率和仰角。看看直接進球的路徑有什麼變化，再試打板球，觀察球往哪一側彈。','Release from the front, then move to 45° with the same speed and elevation. Compare the direct paths. Try a bank shot and watch which way the ball rebounds.');
+    panel.setContent('concept',concept);
+    const examples=[['正面打板','Bank from the front',7.81,44,0],['斜向打板','Bank from the wing',7.81,44,45],['前框彈進','In off the front rim',7.22,55,0]];
+    const makeExample=([zh,en,speed,angle,bearing])=>{
+      const b=document.createElement('button');b.type='button';b.textContent=T(zh,en);
+      b.onclick=()=>{applyRelease({mode:'shot',speed,angle,bearing,distance:4.23,height:2,drag:false});update();panel.close();};
+      return b;
+    };
+    $('learnExamples').replaceChildren(...examples.map(makeExample));
+    panel.setContent('examples',examples.map(makeExample));panel.setStrip(T('比較正面與斜向打板','Compare a front and a wing bank shot'),'concept');
+    panel.close();
+  }
   function changedSetting(base){
-    return ['angle','speed','height','distance','drag'].find(key=>
-      (key!=='distance'||mode==='shot') && base.p[key]!==state.p[key]);
+    return ['angle','speed','height','distance','bearing','drag'].find(key=>
+      (mode==='shot'||(key!=='distance'&&key!=='bearing')) && base.data[key]!==state.data[key]);
   }
   function changeNeed(base,setting){
     if(!base)return [null,'出手條件 · 待投基準球','Release conditions · waiting for a reference'];
@@ -699,23 +848,24 @@
     const [zh,en,suffix,places]={
       angle:['出手角','Release angle','°',2],speed:['出手速率','Release speed',' m/s',3],
       height:['出手高度','Release height',' m',2],distance:['距籃框中心','Distance to hoop centre',' m',2],
-      drag:['空氣阻力','Air resistance','',0]
+      bearing:['站位角度','Court bearing','°',0],drag:['空氣阻力','Air resistance','',0]
     }[key];
-    const values=(on,off)=>[base.p[key],state.p[key]].map(val=>key==='drag'?(val?on:off):unit(val,suffix,places)).join(' → ');
+    const values=(on,off)=>[base.data[key],state.data[key]].map(val=>key==='drag'?(val?on:off):unit(val,suffix,places)).join(' → ');
     return [!!setting,zh+'（基準 → 本球）· '+values('開','關'),en+' (reference → current) · '+values('on','off')];
   }
-  function updateProcedureGuide(manual=false){
+  function updateProcedureGuide(manual=false,selected){
     const guide=window.LabStepGuide;
     if(!guide||(!manual&&(!guide.state.showing||guide.state.key!==procedureKey)))return;
-    const rows=steps(),index=rows.findIndex(step=>step.current);
+    const rows=steps(),index=Number.isInteger(selected)?selected:rows.findIndex(step=>step.current);
     if(index<0||flight){guide.hide();return;}
     guide.define(rows,{key:procedureKey});
-    if(manual)guide.show(index,{key:procedureKey});
+    if(manual){guide.update(rows.findIndex(step=>step.current),{key:procedureKey,auto:true});guide.update(index,{key:procedureKey});}
     else guide.update(index,{key:procedureKey,auto:true});
   }
   document.addEventListener('DOMContentLoaded',()=>{
     applySettings();
-    const side=LabSide.mount({module:procedureKey,steps,guide:()=>updateProcedureGuide(true)});
+    learningPanel();
+    const side=LabSide.mount({module:procedureKey,steps,guide:i=>requestAnimationFrame(()=>updateProcedureGuide(true,i))});
     const root=document.documentElement;
     const context=()=>[root.dataset.labsideTab||'',side.railOpen].join('/');
     let lastContext=context();
@@ -738,10 +888,13 @@
   window.addEventListener('lab:themechange',()=>{palette=colors();updateDisplay();redraw();});
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   motion.addEventListener('change',()=>{
-    if(motion.matches&&flight&&!replaying){cancelAnimationFrame(frame);ball=state.result.points.at(-1);clock=state.result.T;finish();}
+    if(motion.matches&&flight&&!replaying){skipFlight();}
     else{updateDisplay();redraw();}
   });
   document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(frame);stamp=0;if(!document.hidden){if(flight)frame=requestAnimationFrame(animate);else draw();}});
   const resize=new ResizeObserver(()=>{bgValid=false;draw();});resize.observe(cv);resize.observe($('instruments'));
+  try{
+    const saved=JSON.parse(localStorage.getItem(prefsKey));if(saved?.settings&&!window.LAB_SHARE_HASH){Object.assign(settings,saved.settings);applyRelease(settings[saved.mode]);}
+  }catch{}
   palette=colors();soundButton();update();
 })();
