@@ -4,7 +4,7 @@
 推送到 `main` 後由 GitHub Pages 自動部署（約 1–2 分鐘）。
 **接手或開新工作串時，先讀 `HANDOFF.md`**（目前狀態、開發工具、整合流程、待辦事項）。
 
-**11/14 改名與四大類**（站長：「好，就照你最後的推薦，非常棒。」）：品牌改成「讓倪動手⚡高中全科模擬實驗室／Astro Ni Lab」（和「讓倪秒懂」「讓倪悟理」同系列，倪＝你）；首頁標誌是週期表的鎳格「28 Ni 倪」，Astro Ni 的 A 和 I 用 `--ai` 色標出，首頁頁尾有 AI 彩蛋句。首頁科目選單分四大類：數理（物理、化學、生物、地科、數學、資訊科技）、人文與社會（地理；國文、英文、歷史、公民製作中）、藝能科（音樂；美術、體育、健護、家政、生科製作中）、其他（全民國防、生涯規劃、探究與實作製作中）；規劃在 `G:\physics-lab-wt\規劃\四大類.md`。新科目上線時：在 `LAB_SUBJECTS` 補 `page`（完整英文、小寫連字號）、`dom`（科目區舊 id）、`group`，從 `LAB_SUBJECT_GROUPS.soon` 移除該科；建立自己的根目錄科目頁與 `docs/directory/<科>.json`，卡片放在科目頁。`npm run seo` 自動產生首頁大卡、科目數字與錨點相容表。分享卡的品牌字在 `tools/seo.cjs`（改了要 `--force` 重做）。
+**11/14 改名與四大類**（站長：「好，就照你最後的推薦，非常棒。」）：品牌改成「讓倪動手⚡高中全科模擬實驗室／Astro Ni Lab」（和「讓倪秒懂」「讓倪悟理」同系列，倪＝你）；首頁標誌是週期表的鎳格「28 Ni 倪」，Astro Ni 的 A 和 I 用 `--ai` 色標出，首頁頁尾有 AI 彩蛋句。首頁科目選單分四大類：數理（物理、化學、生物、地科、數學、資訊科技）、人文與社會（地理；國文、英文、歷史、公民製作中）、藝能科（音樂；美術、體育、健護、家政、生科製作中）、其他（全民國防、生涯規劃、探究與實作製作中）；規劃在 `G:\physics-lab-wt\規劃\四大類.md`。新科目上線時：在 `LAB_SUBJECTS` 補 `page`（完整英文、小寫連字號）、`dom`（科目區舊 id）、`group`，從 `LAB_SUBJECT_GROUPS.soon` 移除該科；建立自己的根目錄科目頁與 `docs/directory/<科>.json`，卡片放在科目頁。`npm run seo` 自動產生 labs.html 的科目大卡、科目數字與首頁的錨點相容表（11/21 起四大類在 labs.html「全科模擬實驗室」，首頁不再放）。分享卡的品牌字在 `tools/seo.cjs`（改了要 `--force` 重做）。
 
 ## 與站長合作的方式
 
@@ -25,7 +25,8 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `index.html` | 首頁大廳：我的狀態、四大類八科入口、最新上架、本機推薦；頁尾全站統計 |
+| `index.html` | 首頁（11/21 起只留四塊）：標頭、搜尋、「全科模擬實驗室」／「物理自習室」兩張入口卡、我的狀態＋每日任務；下面接「最新上架」10 個（實驗與自習室單元混排，`npm run seo` 產生）；頁尾全站統計 |
+| `labs.html`、`js/labs-hall.js` | 全科模擬實驗室大廳（11/21 站長：「分到各個科目的實驗室，你必須要點入那個實驗室的那個方框進去」）：四大類 details 與各科卡（`npm run seo` 產生 SUBJECTS、HALLCOUNT）、開合記憶、登入後各科星星；首頁舊錨點 `#subjects` 轉到這頁 |
 | `<模組>.html`、`js/<模組>.js`、`js/<模組>-core.js`、`tests/<模組>-core.test.js` | 各實驗模組 |
 | `lab.css` | 共用樣式與色彩代號（淺色＋深色兩組），字體一律 `calc(Npx * var(--fs, 1))` |
 | `js/settings.js` | 齒輪設定：繁體／简体／English、字體大小、淺色／深色、音效。放在每頁 `<head>` 緊接 `<meta charset>` |
@@ -153,7 +154,8 @@
 - 八科頁：physics、chemistry、biology、earth-science、mathematics、information-technology、geography、music（皆在根目錄）。唯一頁名／分類來源是 LAB_SUBJECTS 與 LAB_SUBJECT_GROUPS。
 - 首頁沒有分支、章或完整實驗卡列。原本科目區完整搬到科目頁；實驗 slug、網址、任務、星星、成就、catalog 的 s/d/b/c 與章制霸對照不變。搬遷不變量在 tools/home-v2-invariants.json。
 - 新實驗卡片加入對應科目頁；新科目先建科目頁和目錄，再讓首頁的製作中文字列變成科目按鍵。請勿再跑一次性 tools/split-home.cjs。
-- npm run seo 先 build-catalog，再 SEO：科目卡數字、規劃數、最新四張、上架日、相似實驗、搜尋索引、同步錨點轉址表、科目分享卡／結構化資料／網站地圖。科目頁為非實驗頁，不得進入任務試玩或縮圖的實驗清單。
+- **11/21 改版**：首頁不再有科目大分類與「從這裡開始」推薦；科目大分類在 labs.html（body `.labs-page`，原本 `.home-page .subject-*` 的樣式改掛 `.labs-page`）。首頁兩張入口卡名稱：「全科模擬實驗室／Simulation Lab」「物理自習室／Physics Study Room」（站長 11/21）。「最新上架」10 張照上架日、同日再照 Git 第一次新增的 commit 時間由新到舊，實驗與 `LAB_LEARN_UNITS`（js/missions/index.js，學習單元要有 `href`、`thumb`、`chapterEn`）混排，自習室卡有「自習室」標記與 `--learn` 色。科目頁麵包屑是「首頁 / 全科模擬實驗室 / 科目」。
+- npm run seo 先 build-catalog，再 SEO：科目卡數字、規劃數、最新十張、上架日、相似實驗、搜尋索引、同步錨點轉址表、科目分享卡／結構化資料／網站地圖。科目頁為非實驗頁，不得進入任務試玩或縮圖的實驗清單。
 - search-index.js 只在聚焦搜尋或 ?q= 時載入。科目頁以 data-scope 限定本科，另連全科搜尋。home.js 在首次繪製後載入 catalog；LabThumbs.apply(root) 支援新卡與深淺色。
 - stats.js 的 labHist 只存本機，最多 200 筆；推薦純前端，日期固定排序，限制同章／同科數並保留跨科。排行榜將本人全科名次存 labRank:<uid>，首頁只顯示快取，不現算排名。
 - 首頁個人資料只讀 profiles/<uid>、scores/<uid>、daily/<uid>、completions/<uid>、bag/<uid>，共五筆且共用暱稱資料；既有登入選單另查一次 admins/<uid> 權限。未登入不查帳號節點，絕不讀全份 scores。統計為匿名節點，sessionStorage 快取五分鐘。

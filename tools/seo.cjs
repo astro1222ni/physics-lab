@@ -47,7 +47,9 @@ const pages = [
   { slug: 'index', url: SITE, title: SITE_ZH + '｜Astro Ni', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '給高中生的互動模擬實驗室。', kind: 'home' },
   { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科星星排行、寶物累計與總價值排行、任務進度與成就。', kind: 'page' },
   { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天十個每日任務，每個一天完成一次：銅幣必掉，銀幣、金幣、鑽石與稀有鑰匙獨立掉落；機率依難度，數量權重固定。', kind: 'page' },
-  { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: '讓倪動手⚡高中全科模擬實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
+  { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: '讓倪動手⚡高中全科模擬實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' },
+  // 11/21 全科模擬實驗室大廳：首頁的四大類科目區搬到這裡
+  { slug: 'labs', url: SITE + 'labs.html', title: '全科模擬實驗室｜' + SITE_ZH, desc: '全科模擬實驗室：數理、人文與社會、藝能科、其他四大類，' + subjects.filter(s => labs.some(l => l.subject.id === s.id)).length + ' 科、' + labs.length + ' 個互動模擬實驗，點科目進去照課本分支與章挑實驗。', kind: 'labs' }
 ].concat(subjects.map(s => {
   const own = labs.filter(l => l.subject.id === s.id), names = [...new Set(own.map(l => l.branch.zh))];
   return { slug: s.page, url: SITE + s.page + '.html', title: s.zh + '｜' + SITE_ZH,
@@ -98,6 +100,8 @@ function block(pg) {
       hasPart: subjects.map(s => ({ '@type': 'CollectionPage', name: s.zh, alternateName: s.en, url: SITE + s.page + '.html' })) };
   }
   if (pg.kind === 'subject') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: pg.subject.zh, alternateName: pg.subject.en, description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE }, hasPart: pg.labs.map(l => ({ '@type': 'LearningResource', name: l.zh, alternateName: l.en, url: SITE + l.slug + '.html' })) };
+  if (pg.kind === 'labs') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: '全科模擬實驗室', alternateName: 'Simulation Lab', description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE },
+    hasPart: subjects.map(s => ({ '@type': 'CollectionPage', name: s.zh, alternateName: s.en, url: SITE + s.page + '.html' })) };
   if (pg.kind === 'about') {
     ld = { '@context': 'https://schema.org', '@type': 'AboutPage', name: pg.title, url: pg.url, description: pg.desc, inLanguage: ['zh-Hant', 'zh-Hans', 'en'],
       isPartOf: { '@type': 'WebSite', name: SITE_ZH, alternateName: SITE_EN, url: SITE },
@@ -107,7 +111,7 @@ function block(pg) {
   if (ld) L.push('<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script>');
   if (pg.kind === 'lab' || pg.kind === 'subject') {
     const s = pg.kind === 'lab' ? pg.lab.subject : pg.subject;
-    const crumbs = [{ name: '首頁', item: SITE }, { name: s.zh, item: SITE + s.page + '.html' }];
+    const crumbs = [{ name: '首頁', item: SITE }].concat(pg.kind === 'subject' ? [{ name: '全科模擬實驗室', item: SITE + 'labs.html' }] : [], [{ name: s.zh, item: SITE + s.page + '.html' }]);
     if (pg.kind === 'lab') crumbs.push({ name: pg.lab.branch.zh, item: SITE + s.page + '.html#' + pg.lab.branch.id }, { name: pg.lab.chapter.zh, item: SITE + s.page + '.html#' + pg.lab.chapter.id }, { name: pg.lab.zh, item: pg.url });
     L.push('<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => Object.assign({ '@type': 'ListItem', position: i + 1 }, c)) }).replace(/</g, '\\u003c') + '</script>');
   }
@@ -254,6 +258,7 @@ if (NO_OG) process.exit(0);
     // 排行榜沿用首頁的分享卡
     fs.copyFileSync(path.join(outDir, 'index.jpg'), path.join(outDir, 'leaderboard.jpg'));
     fs.copyFileSync(path.join(outDir, 'index.jpg'), path.join(outDir, 'about.jpg'));
+    fs.copyFileSync(path.join(outDir, 'index.jpg'), path.join(outDir, 'labs.jpg'));
     fs.copyFileSync(path.join(outDir, 'index.jpg'), path.join(outDir, 'daily.jpg'));
   }
   fs.writeFileSync(verFile, JSON.stringify(vers, null, 1) + '\n');

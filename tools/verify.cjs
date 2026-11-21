@@ -39,7 +39,7 @@ const warn = (area, page, msg) => report.warnings.push({ area, page, msg });
 const w = {};
 new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
 const LIVE = w.LAB_LIVE_MODULES || [];
-const ENTRY = ['index', ...(w.LAB_SUBJECTS || []).map(s => s.page)];
+const ENTRY = ['index', 'labs', ...(w.LAB_SUBJECTS || []).map(s => s.page)];
 const PAGES = only.length ? only : ENTRY.concat(['leaderboard', 'about'], LIVE);
 
 function run(label, cmd, cmdArgs) {

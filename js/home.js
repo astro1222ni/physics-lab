@@ -1,4 +1,4 @@
-/* 首頁：只讀個人的五個小節點；科目入口與每日活動先出現。 */
+/* 首頁：只讀個人的五個小節點；入口卡與每日活動先出現。科目大分類 11/21 搬到 labs.html（js/labs-hall.js）。 */
 (function () {
   'use strict';
   const T = (zh, en) => window.LabSettings ? LabSettings.t(zh, en) : zh;
@@ -12,22 +12,6 @@
   const treasureNames = { cu: ['銅幣', 'Copper coin'], ag: ['銀幣', 'Silver coin'], au: ['金幣', 'Gold coin'], dia: ['鑽石', 'Diamond'], key: ['稀有鑰匙', 'Rare key'] };
   let catalog = [], core, data = {}, user = null, admin = false, hist = {}, pending = 0, iconSerial = 0;
   const title = x => T(x.zh, x.en);
-  function equalKeys() {
-    const root = document.querySelector('.subject-groups'), cards = [...root.querySelectorAll('.subject-card')];
-    root.style.removeProperty('--subject-key-min');
-    root.style.setProperty('--subject-key-min', Math.ceil(Math.max(...cards.map(a => a.getBoundingClientRect().height))) + 'px');
-  }
-  window.addEventListener('resize', equalKeys);
-  // 11/15 站長：四大類區塊點開才展開；記住每個人上次開了哪幾塊（只存在這台裝置）
-  document.querySelectorAll('details.subject-group').forEach(d => {
-    const open = read('labHomeGroups', {});
-    if (open[d.dataset.group]) d.open = true;
-    d.addEventListener('toggle', () => {
-      const o = read('labHomeGroups', {}); o[d.dataset.group] = d.open ? 1 : 0;
-      try { localStorage.setItem('labHomeGroups', JSON.stringify(o)); } catch (e) {}
-      if (d.open) equalKeys();
-    });
-  });
   const clock = () => Date.now() + (window.LAB_MISSIONS_BACKEND ? +(localStorage.getItem('mockoffset') || 0) : 0);
   function recent() { return Object.keys(hist).filter(s => catalog.some(x => x.s === s)).sort((a, b) => hist[b].t - hist[a].t).slice(0, 3).map(s => catalog.find(x => x.s === s)); }
   function thumb(x) { const img = el('img', 'module-thumb'); img.dataset.thumb = x.s; img.alt = ''; img.width = 96; img.height = 60; img.loading = 'lazy'; return img; }
@@ -52,7 +36,7 @@
     } else {
       left.append(copy('strong', 'guest-title', '登入，收集倪的星星', 'Sign in. Start collecting Ni stars.'), copy('p', '', '星星、名次、寶物都會留下來。', 'Keep your stars, rank and treasures.'));
       if (hasPast) { right.classList.add('has-pills'); right.appendChild(copy('small', '', '最近玩過', 'Recently played')); const pills = el('div', 'recent-pills'); for (let i = 0; i < 3; i++) { const pill = el('span', 'recent-lab'); pill.append(el('span', 'module-thumb'), el('strong', '', '…')); pills.appendChild(pill); } right.appendChild(pills); }
-      else right.appendChild(copy('p', 'no-history', '還沒玩過，從下面挑一科開始。', 'Your first lab is waiting. Pick a subject below.'));
+      else right.appendChild(copy('p', 'no-history', '還沒玩過，點上面的實驗室挑一科。', 'Your first lab is waiting. Open the Simulation Lab above.'));
     }
     const cta = el('button', 'status-primary home-cta'); cta.disabled = true; cta.append(el('span', member ? 'star-icon' : 'google-icon', member ? '★' : 'G'), copy('span', '', member ? '我的星星與成就 →' : '登入，看我的星星與成就', member ? 'My stars & achievements →' : 'Sign in to see my stars & achievements'));
     const footer = el('div', 'status-links'); footer.appendChild(copy('span', 'skeleton-board', '全站排行榜 →', 'Leaderboard →'));
@@ -94,7 +78,7 @@
     } else if (!user) {
       left.appendChild(el('strong', 'guest-title', T('登入，收集倪的星星', 'Sign in. Start collecting Ni stars.')));
       left.appendChild(el('p', '', T('星星、名次、寶物都會留下來。', 'Keep your stars, rank and treasures.')));
-      if (!past.length) right.appendChild(el('p', 'no-history', T('還沒玩過，從下面挑一科開始。', 'Your first lab is waiting. Pick a subject below.')));
+      if (!past.length) right.appendChild(el('p', 'no-history', T('還沒玩過，點上面的實驗室挑一科。', 'Your first lab is waiting. Open the Simulation Lab above.')));
       else { right.classList.add('has-pills'); right.appendChild(el('small', '', T('最近玩過', 'Recently played'))); const pills = el('div', 'recent-pills'); past.forEach(x => pills.appendChild(makeRecent(x))); right.appendChild(pills); }
     } else {
       const summary = link('leaderboard.html', '', 'status-summary'); summary.appendChild(el('span', 'status-nickname', data.profile?.nickname || T('探索者', 'Explorer')));
@@ -112,7 +96,6 @@
     const icon = el('span', user ? 'star-icon' : 'google-icon', user ? '★' : ''); if (!user && window.LabAccount) icon.innerHTML = LabAccount.googleIcon(); icon.setAttribute('aria-hidden', 'true'); cta.prepend(icon);
     const footer = el('div', 'status-links'); footer.appendChild(link('leaderboard.html#board', T('全站排行榜 →', 'Leaderboard →'))); if (admin) footer.appendChild(link('admin.html', T('管理員・管理頁 →', 'Admin · Dashboard →'), 'admin-badge'));
     status.append(left, right, cta, footer);
-    document.querySelectorAll('.subject-card').forEach(a => { const n = +data.score?.s?.[a.dataset.subject] || 0, star = a.querySelector('.subject-stars'); star.hidden = !user || data.unavailable || !n; star.textContent = n ? '★ ' + n.toLocaleString() : ''; });
     if (window.LabThumbs) LabThumbs.apply(status);
   }
   function renderDaily() {
@@ -126,42 +109,21 @@
     actions.appendChild(primary('daily', T('去做每日任務 →', 'Go to daily missions →'), T('登入，開始每日任務', 'Sign in to start'), 'daily-primary'));
     document.getElementById('daily-peek').hidden = !!user;
   }
-  function renderRecommendations() {
-    const done = core.doneCounts(catalog, data.done || {}), past = recent(), result = core.recommend(catalog, hist, done, clock(), user && past[0] ? past[0].s : '');
-    document.getElementById('recommend-title').textContent = result.personal ? T('為你推薦', 'Picked for you') : T('從這裡開始', 'Start here');
-    const root = document.getElementById('recommendations'); root.replaceChildren();
-    result.items.forEach(it => {
-      const x = it.lab, sb = window.LAB_SUBJECTS.find(s => s.dom === x.d), a = link(x.s + '.html', '', 'entry-card'), subjectCard = document.querySelector('.subject-card[data-subject="' + sb.id + '"]');
-      a.dataset.hansSubject = sb.id; a.style.setProperty('--c', subjectCard.style.getPropertyValue('--c')); a.appendChild(thumb(x)); a.appendChild(el('span', 'subject-tag', T(sb.zh, sb.en))); a.appendChild(renderFormula(el('h3'), title(x)));
-      const p = it.reason && result.byId[it.reason.source], type = it.reason?.type; let reason;
-      if (p) { const name = core.shortName(title(p));
-        if (type === 'chapter') reason = T('同一章：你玩過〈' + name + '〉', 'Same chapter as ' + name);
-        else if (type === 'cross') reason = T('跨科：和〈' + name + '〉同主題', 'Across subjects: related to ' + name);
-        else if (type === 'branch') reason = T('同一領域：你玩過〈' + name + '〉', 'Same field as ' + name);
-        else reason = T('因為你玩過〈' + name + '〉', 'Because you tried ' + name);
-      } else reason = type === 'starter' ? T(x.bzh + '入門', 'Starter · ' + x.ben) : T('換個領域，試試新的發現。', 'Try a new field. Find a new idea.');
-      const note = renderFormula(el('p', 'entry-note'), reason); note.title = plain(reason); a.appendChild(note); root.appendChild(a);
-    });
-    if (window.LabThumbs) LabThumbs.apply(root);
-  }
   async function accountChange(e) {
     const state = e.detail || {}, seq = ++pending, nextUser = state.user || null; user = nextUser; admin = !!state.admin; data = {};
     if (!core) return;
     let fetched = {};
     if (nextUser && window.LabAccount) { status.setAttribute('aria-busy', 'true'); try { fetched = await LabAccount.readHome(nextUser.uid); } catch (e) { fetched = { unavailable: true }; } }
     if (seq !== pending) return; data = fetched;
-    renderStatus(); renderDaily(); renderRecommendations(); equalKeys();
+    renderStatus(); renderDaily();
   }
   try { renderSkeleton(); } catch (e) { /* 儲存空間不可用時，保留靜態骨架。 */ }
   window.addEventListener('lab:account', accountChange);
-  document.fonts.ready.then(equalKeys);
-  requestAnimationFrame(equalKeys);
-  document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(equalKeys));
   setInterval(() => { if (core) renderDaily(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && core) renderDaily(); });
   window.addEventListener('storage', e => { if (e.key === 'mockoffset' && core) renderDaily(); });
   requestAnimationFrame(() => setTimeout(async () => {
     try { await Promise.all([load('home-core.js'), load('catalog.js')]); core = window.LabHomeCore; catalog = window.LAB_CATALOG; hist = core.trimHistory(read('labHist', {})); await accountChange({ detail: window.LabAccount ? LabAccount.state() : {} }); }
-    catch (e) { status.setAttribute('aria-busy', 'false'); status.textContent = T('先選一科開始，登入功能稍後再試。', 'Pick a subject to begin. Sign-in can wait.'); }
+    catch (e) { status.setAttribute('aria-busy', 'false'); status.textContent = T('先進實驗室挑一科，登入功能稍後再試。', 'Open the Simulation Lab to begin. Sign-in can wait.'); }
   }, 0));
 })();

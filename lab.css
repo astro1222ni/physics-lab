@@ -1717,7 +1717,7 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .subject-soon::before { content:''; display:inline-block; width:12px; height:12px; border:1px dashed currentColor; border-radius:50%; margin-right:6px; vertical-align:-1px; }
 .subject-card:hover { transform:translateY(-1px); box-shadow:inset 0 1px 0 var(--home-key-highlight),0 6px 0 var(--key-edge),0 10px 20px var(--home-key-hover-shadow); }
 .subject-card:active { transform:translateY(4px); box-shadow:inset 0 1px 0 var(--home-key-pressed),0 1px 0 var(--key-edge),0 2px 4px var(--home-key-shadow); }
-.home-page .subject-card:focus-visible { outline:3px solid var(--key); outline-offset:3px; }
+.labs-page .subject-card:focus-visible { outline:3px solid var(--key); outline-offset:3px; }
 .home-entries { margin-top:28px; }
 .entry-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .entry-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border-radius:12px; border:1px solid var(--border); background:var(--surface); text-decoration:none; color:var(--text); padding-bottom:10px; }
@@ -1840,7 +1840,7 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 @media (max-width:560px) { .home-page .home-top > .brand-row { padding-right:0; } }
 @media (min-width:1024px) { .home-page .home-top > .brand-row { margin-right:75px; } }
 /* 11/15 站長：四大類先收成四個區塊（點開才展開各科），手機一排兩科 */
-.home-page .subject-groups { gap:14px; }
+.labs-page .subject-groups { gap:14px; }
 .sg-head { list-style:none; cursor:pointer; position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:12px; row-gap:2px; align-items:center; min-height:64px; padding:14px 18px; border:2px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 4px 0 var(--border); transition:transform 120ms ease-out,box-shadow 120ms ease-out; -webkit-tap-highlight-color:transparent; }
 .sg-head::-webkit-details-marker { display:none; }
 .sg-head::marker { content:''; }
@@ -1852,29 +1852,29 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .subject-group[open] > .sg-head .sg-chev { transform:rotate(-135deg); margin:6px 6px 0 0; }
 .sg-head:hover { border-color:var(--accent); }
 .sg-head:active { transform:translateY(3px); box-shadow:0 1px 0 var(--border); }
-.home-page .sg-head:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.labs-page .sg-head:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
 .subject-group .subject-soon { margin:10px 4px 0; }
 .subject-group:not([open]) .subject-soon { display:none; }
-.home-page .subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:10px; row-gap:16px; }
+.labs-page .subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:10px; row-gap:16px; }
 @media (max-width:560px) {
-  .home-page .subject-card { grid-template-columns:calc(34px * var(--fs,1)) minmax(0,1fr); column-gap:8px; row-gap:4px; padding:12px 10px 10px; min-height:0; }
-  .home-page .subject-card > svg { width:calc(34px * var(--fs,1)); height:calc(34px * var(--fs,1)); grid-row:1; align-self:start; }
-  .home-page .subject-name { flex-direction:column; align-items:flex-start; gap:0; }
-  .home-page .subject-name h3 { font-size:calc(22px * var(--fs,1)); }
-  .home-page .subject-branches { display:none; }
-  .home-page .subject-extra { grid-column:1 / -1; }
+  .labs-page .subject-card { grid-template-columns:calc(34px * var(--fs,1)) minmax(0,1fr); column-gap:8px; row-gap:4px; padding:12px 10px 10px; min-height:0; }
+  .labs-page .subject-card > svg { width:calc(34px * var(--fs,1)); height:calc(34px * var(--fs,1)); grid-row:1; align-self:start; }
+  .labs-page .subject-name { flex-direction:column; align-items:flex-start; gap:0; }
+  .labs-page .subject-name h3 { font-size:calc(22px * var(--fs,1)); }
+  .labs-page .subject-branches { display:none; }
+  .labs-page .subject-extra { grid-column:1 / -1; }
 }
 @media (min-width:1100px) {
-  .home-page .subject-groups { grid-template-columns:minmax(0,1fr); }
-  .home-page .group-sci { grid-column:auto; }
-  .home-page .subject-grid, .home-page .group-sci .subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .labs-page .subject-groups { grid-template-columns:minmax(0,1fr); }
+  .labs-page .group-sci { grid-column:auto; }
+  .labs-page .subject-grid, .labs-page .group-sci .subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
 @media (prefers-reduced-motion:reduce) { .sg-head, .sg-chev { transition:none; } }
 /* 手機兩欄：圖示放上面、科目名整行，「地球科學」「Information Technology」在特大字也不會從字中間斷開 */
 @media (max-width:560px) {
-  .home-page .subject-card { grid-template-columns:minmax(0,1fr); }
-  .home-page .subject-name h3 { word-break:keep-all; overflow-wrap:break-word; }
-  html[lang="en"] .home-page .subject-name h3 { font-size:calc(19px * var(--fs,1)); hyphens:auto; }
+  .labs-page .subject-card { grid-template-columns:minmax(0,1fr); }
+  .labs-page .subject-name h3 { word-break:keep-all; overflow-wrap:break-word; }
+  html[lang="en"] .labs-page .subject-name h3 { font-size:calc(19px * var(--fs,1)); hyphens:auto; }
 }
 /* 11/16 站長：手機上「我的狀態」「每日任務」縮小、左右並排成兩個方塊，首頁一進來就看得到科目大分類。
    繼續上次的實驗、排行榜／管理頁連結在手機收起（排行榜由「我的星星與成就」頁進入，管理頁在帳號選單）。 */
@@ -2132,3 +2132,21 @@ html.mg-open, html.mg-open body { overflow: hidden; }
 /* 實驗模式沒有範例、沒有學習說明側板（站長 11/16：「實驗模式不會有範例，實驗模式也不會有學習說明的側版」） */
 html[data-lab-mode="lab"] .ex-bar, html[data-lab-mode="lab"] .lp-panel, html[data-lab-mode="lab"] .lp-strip, html[data-lab-mode="lab"] .lp-dock-tab { display: none !important; }
 html[data-lab-mode="lab"].lp-docked body { padding-right: 0 !important; }
+/* 11/21 物理自習室（學習）的顏色：首頁入口卡、「最新上架」的自習室卡共用（learn.css 也有同值） */
+:root { --learn:#536927; }
+:root[data-theme="dark"] { --learn:#bfda92; }
+@media (prefers-color-scheme:dark) { :root:not([data-theme="light"]) { --learn:#bfda92; } }
+/* 「最新上架」實驗與自習室單元混排：自習室卡在縮圖左上角掛「自習室」標記，標籤與外框用學習色 */
+.entry-card.entry-learn { position:relative; border-color:color-mix(in srgb,var(--learn) 55%,var(--border)); }
+.entry-card .learn-badge { position:absolute; left:8px; top:8px; margin:0; padding:2px 10px; border-radius:999px; background:var(--learn); color:var(--surface); font-size:calc(12px * var(--fs,1)); font-weight:800; line-height:1.5; letter-spacing:.04em; box-shadow:0 1px 4px rgba(0,0,0,.25); }
+@media (min-width:720px) { .home-page #latest-labs { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (min-width:1024px) { .home-page #latest-labs { grid-template-columns:repeat(5,minmax(0,1fr)); } }
+/* 全科模擬實驗室大廳（labs.html）：頁首沿用科目頁的 domain-head，下面接搜尋與四大類 */
+.labs-page .labs-head svg { width:52px; height:52px; flex:none; color:var(--c); }
+.labs-page .labs-head .hall-count { font-size:calc(14px * var(--fs,1)); font-weight:700; color:var(--accent); margin:6px 0 0; }
+.labs-page .search { margin:4px 0 18px; }
+.labs-page .search-results[hidden] { display:none; }
+.labs-page .subjects { margin-bottom:8px; }
+.labs-page #site-totals { margin-top:28px; }
+.labs-page .stats-total { margin:0; padding:10px 0; border:0; background:transparent; font-size:calc(13px * var(--fs,1)); justify-content:center; }
+@media (max-width:719px) { .labs-page .labs-head svg { width:40px; height:40px; } }

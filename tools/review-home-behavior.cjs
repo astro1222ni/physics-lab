@@ -76,7 +76,9 @@ async function main(){
       assert((await page.locator('#daily-content').innerText()).includes('今天全部完成！明天 00:00 再來。'));pass('全部十個完成的文案正確');await ctx.close();
     }
     {
-      const {ctx,page}=await visit();await page.locator('.subject-card').first().focus();
+      // 11/21：科目鍵在全科模擬實驗室大廳（labs.html），從首頁入口卡進去、點開四大類再用 Tab 焦點
+      const {ctx,page}=await visit();await page.locator('#entry-labs').click();await page.waitForURL('**/labs.html');await H.ready(page,'labs');
+      await page.locator('details.subject-group').first().evaluate(d=>{d.open=true;});await page.locator('.subject-card').first().focus();
       assert.equal(await page.locator('.subject-card').first().evaluate(e=>getComputedStyle(e).outlineWidth),'3px');
       await page.keyboard.press('Enter');await page.waitForURL('**/physics.html');await H.ready(page,'physics');pass('科目按鍵可用Tab焦點與Enter開啟');
       const fade=async(sel,end)=>page.locator(sel).evaluate((e,end)=>{e.scrollLeft=end?e.scrollWidth:0;e.dispatchEvent(new Event('scroll'));return {left:e.parentElement.classList.contains('can-left'),right:e.parentElement.classList.contains('can-right')};},end);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * build-catalog.cjs — 從各科目頁產生全站實驗目錄、搜尋索引與首頁靜態入口（npm run seo）
+ * build-catalog.cjs — 從各科目頁產生全站實驗目錄、搜尋索引、首頁「最新上架」與 labs.html 科目大分類（npm run seo）
  *
  * 每個已上線的實驗：代號、中英標題、中英說明、科目（首頁科目區塊的 id：physics／chemistry／biology／earth）、分支、章、最後更新日期 u（git）。
  * js/classroom.js 用它在每個實驗頁底部列出「相關實驗」（同章 → 同分支 → 首頁上前後相鄰的實驗）。
@@ -176,10 +176,31 @@ for (const s of subjects) {
 }
 fs.writeFileSync(path.join(ROOT, 'js/search-index.js'), '/* 搜尋索引，由 tools/build-catalog.cjs 產生。 */\nwindow.LAB_SEARCH_INDEX = ' + JSON.stringify(search) + ';\n');
 let home = read('index.html');
-const ordered = list.slice().sort((a, b) => b.l.localeCompare(a.l) || a.s.localeCompare(b.s));
-const latest = [], counts = {};
-for (const x of ordered) if ((counts[x.d] || 0) < 2 && latest.length < 4) { latest.push(x); counts[x.d] = (counts[x.d] || 0) + 1; }
-home = marker(home, 'LATEST', latest.map(x => miniCard(x, text(x.l.slice(5).replace('-', '/') + ' 上架', 'Added ' + x.l.slice(5).replace('-', '/'), 'p', 'class="entry-note"'))).join('\n'));
+// 11/21 站長：「首頁進去就只顯示這個畫面，然後下面就是最新上架的十個單元，包括實驗室還有學習模式裏面的單元都算。」
+// 實驗與物理自習室單元混排，照上架日由新到舊；同一天再比 Git 第一次新增的 commit 時間。
+const commitTimes = {};
+const commitTime = c => { if (!c) return 0; if (!(c in commitTimes)) commitTimes[c] = +git(['show', '-s', '--format=%ct', c]) || 0; return commitTimes[c]; };
+const learnUnits = (W.LAB_LEARN_UNITS || []).filter(u => u.href && fs.existsSync(path.join(ROOT, u.href.split(/[?#]/)[0])));
+const learnPages = [...new Set(learnUnits.map(u => u.href.split(/[?#]/)[0].replace(/\.html$/, '')))];
+const learnFirst = historyDates(learnPages);
+const slugOrder = list.map(x => x.s).sort();
+const fresh = list.map(x => ({ x, l: x.l, t: firstDates[x.s] && firstDates[x.s].date === x.l ? commitTime(firstDates[x.s].commit) : 0, o: slugOrder.indexOf(x.s) }))
+  .concat(learnUnits.map((u, i) => {
+    const page = u.href.split(/[?#]/)[0].replace(/\.html$/, ''), f = learnFirst[page];
+    const l = u.l || (f && f.date) || (dirty.has(page + '.html') ? today : '');
+    return { u, l, t: !u.l && f ? commitTime(f.commit) : 0, o: i };
+  }).filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e.l) && e.l <= today))
+  .sort((a, b) => b.l.localeCompare(a.l) || b.t - a.t || (!a.u === !b.u ? a.o - b.o : 0));
+const added = l => text(l.slice(5).replace('-', '/') + ' 上架', 'Added ' + l.slice(5).replace('-', '/'), 'p', 'class="entry-note"');
+const learnCard = (u, meta) => `<a class="entry-card entry-learn" href="${esc(u.href)}" data-learn-unit="${esc(u.id)}" data-hans-subject="${esc(u.subject || 'phy')}" style="--c:var(--learn)"><img class="module-thumb" data-thumb="${esc(u.thumb)}" src="img/thumbs/${esc(u.thumb)}-hant-light.webp" alt="" width="720" height="405" loading="lazy">${text('自習室', 'Study Room', 'span', 'class="learn-badge"')}${text('物理自習室・' + esc(u.chapter), 'Physics Study Room · ' + esc(u.chapterEn || u.chapter), 'span', 'class="subject-tag"')}${formulaLabel(u.zh, u.en, 'h3')}${meta}</a>`;
+for (const u of learnUnits) if (!u.thumb || !fs.existsSync(path.join(ROOT, 'img/thumbs', u.thumb + '-hant-light.webp'))) throw new Error('物理自習室單元缺縮圖 thumb：' + u.id);
+home = marker(home, 'LATEST', fresh.slice(0, 10).map(e => e.u ? learnCard(e.u, added(e.l)) : miniCard(e.x, added(e.l))).join('\n'));
+// 首頁「全科模擬實驗室」入口卡的實驗數
+{
+  const re = /<span id="entry-lab-count" data-en="[^"]*">[^<]*<\/span>/;
+  if (!re.test(home)) throw new Error('首頁缺少 #entry-lab-count');
+  home = home.replace(re, '<span id="entry-lab-count" data-en="' + list.length + ' labs">' + list.length + ' 個實驗</span>');
+}
 const groups = W.LAB_SUBJECT_GROUPS.map(g => {
   const cards = subjects.filter(s => s.group === g.id).map(s => {
     const a = asset(s), live = list.filter(x => x.d === s.dom), plan = dirs[s.id].branches.flatMap(b => b.chapters.flatMap(c => c.modules || [])).filter(m => !W.LAB_LIVE_MODULES.includes(m)).length;
@@ -195,10 +216,17 @@ const groups = W.LAB_SUBJECT_GROUPS.map(g => {
   const meta = gs.length ? text(gs.length + ' 科・' + nLive + ' 個實驗', gs.length + (gs.length > 1 ? ' subjects' : ' subject') + ' · ' + nLive + ' labs', 'span', 'class="sg-meta"') : text('製作中', 'Coming soon', 'span', 'class="sg-meta"');
   return `<details class="subject-group group-${g.id}" data-group="${g.id}"><summary class="sg-head">${text(g.zh, g.en, 'h3', 'id="group-' + g.id + '"')}${meta}${names}<span class="sg-chev" aria-hidden="true"></span></summary>${cards.length ? '<div class="subject-grid">' + cards.join('\n') + '</div>' : ''}${soon}</details>`;
 }).join('\n');
-home = marker(home, 'SUBJECTS', '<div class="subject-groups">' + groups + '</div>');
+// 11/21 站長：科目大分類要「點入那個實驗室的那個方框進去」才看得到，搬到 labs.html（全科模擬實驗室）
+let hall = read('labs.html');
+hall = marker(hall, 'SUBJECTS', '<div class="subject-groups">' + groups + '</div>');
+{
+  const nSub = subjects.filter(s => list.some(x => x.d === s.dom)).length;
+  hall = marker(hall, 'HALLCOUNT', text(nSub + ' 科・' + list.length + ' 個實驗', nSub + ' subjects · ' + list.length + ' labs', 'p', 'class="hall-count"'));
+}
+fs.writeFileSync(path.join(ROOT, 'labs.html'), hall);
 const daily = require('../js/daily-core.js');
 home = marker(home, 'TREASURE', daily.ITEMS.map(it => '<span data-treasure="' + it.id + '">' + daily.icon(it.id) + '</span>').join(''));
-home = marker(home, 'REDIRECT', '<script>/* 舊錨點保留：由科目清單與完整目錄產生 */\n(function(){var m=' + JSON.stringify(redirects) + ';var h;try{h=decodeURIComponent(location.hash.slice(1));}catch(e){return;}if(Object.prototype.hasOwnProperty.call(m,h))location.replace(m[h]+".html"+location.search+(' + JSON.stringify(subjects.map(s => s.dom)) + '.indexOf(h)>=0?"":"#"+encodeURIComponent(h)));})();\n</script>');
+home = marker(home, 'REDIRECT', '<script>/* 舊錨點保留：由科目清單與完整目錄產生 */\n(function(){var m=' + JSON.stringify(Object.assign({ subjects: 'labs' }, redirects)) + ';var h;try{h=decodeURIComponent(location.hash.slice(1));}catch(e){return;}if(Object.prototype.hasOwnProperty.call(m,h))location.replace(m[h]+".html"+location.search+(' + JSON.stringify(subjects.map(s => s.dom)) + '.indexOf(h)>=0?"":"#"+encodeURIComponent(h)));})();\n</script>');
 fs.writeFileSync(path.join(ROOT, 'index.html'), home);
 const noCh = list.filter(x => !x.c).map(x => x.s);
 console.log('實驗目錄：' + list.length + ' 個實驗' + (noCh.length ? '；沒有章的：' + noCh.join('、') : ''));

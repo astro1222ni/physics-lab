@@ -5,10 +5,10 @@ const fs = require('fs'), path = require('path'), assert = require('assert/stric
 const H = require('./home-browser.cjs'), { ROOT, W, read } = require('./home-data.cjs');
 const OUT = path.join(ROOT, '.shots/home-v2-r2'), RAW = path.join(OUT, 'raw');
 const LANG = { 'zh-Hant': '繁體', 'zh-Hans': '簡體', en: 'English' };
-const NAME = { index: '首頁', ...Object.fromEntries(H.subjects.map(s => [s.page, s.zh])) };
+const NAME = { index: '首頁', labs: '全科模擬實驗室', ...Object.fromEntries(H.subjects.map(s => [s.page, s.zh])) };
 const STATE = { guest: '未登入', member: '已登入', admin: '管理員', history: '有本機紀錄' };
 const specs = [];
-for (const slug of ['index', 'physics']) for (const w of [390, 1280]) for (const theme of ['light', 'dark']) for (const lang of Object.keys(LANG)) specs.push({ slug, w, theme, lang, state: 'guest', kind: 'matrix' });
+for (const slug of ['index', 'labs', 'physics']) for (const w of [390, 1280]) for (const theme of ['light', 'dark']) for (const lang of Object.keys(LANG)) specs.push({ slug, w, theme, lang, state: 'guest', kind: 'matrix' });
 for (const slug of ['mathematics', 'music']) for (const [w, theme, lang] of [[390, 'light', 'zh-Hant'], [1280, 'dark', 'en'], [390, 'dark', 'zh-Hans']]) specs.push({ slug, w, theme, lang, state: 'guest', kind: 'matrix' });
 // 八科均看 390/1280、淺/深完整頁；原本三語矩陣照留。
 for(const subject of H.subjects) for(const w of [390,1280]) for(const theme of ['light','dark']) {
@@ -39,16 +39,21 @@ async function main() {
       if (s.mode === 'redirect') await page.waitForURL('**/physics.html#ch-newton');
       await H.ready(page, s.slug);
       if (s.mode === 'search') { await page.locator('#q').fill('電場'); await page.waitForFunction(() => document.querySelectorAll('#search-results a').length > 0); }
-      if (s.mode === 'recommend' || s.mode === 'cold') await page.locator('#recommend-title').scrollIntoViewIfNeeded();
+      if (s.mode === 'recommend' || s.mode === 'cold') await page.locator('#latest-title').scrollIntoViewIfNeeded();
       if (s.mode === 'sticky') { await page.locator('#ch-newton').scrollIntoViewIfNeeded(); await page.waitForFunction(() => document.querySelector('.subjbar.show')); }
       const thumbnails = await H.primeImages(page);
-      if (s.mode === 'recommend' || s.mode === 'cold') await page.locator('#recommend-title').scrollIntoViewIfNeeded();
+      if (s.mode === 'recommend' || s.mode === 'cold') await page.locator('#latest-title').scrollIntoViewIfNeeded();
       if (s.mode === 'sticky') await page.locator('#ch-newton').scrollIntoViewIfNeeded();
       const r = await H.inspect(page); assert.equal(r.sw, r.vw, label(s) + ' 橫向溢出'); assert.equal(r.cjk.length, 0, label(s) + ' 英文有中文'); assert.equal(errors.length, 0, label(s) + ' 頁面錯誤');
+      // 11/21：首頁只留入口與最新上架；科目鍵（等寬等高、次要字對比）改在 labs.html 檢查。
+      if (s.slug === 'index' || s.slug === 'labs') assert.equal(r.smallText.length,0,label(s)+' 字級小於12 × fs：'+JSON.stringify(r.smallText));
       if (s.slug === 'index') {
-        assert.equal(r.smallText.length,0,label(s)+' 字級小於12 × fs：'+JSON.stringify(r.smallText)); assert(r.mutedContrast>=4.5,label(s)+' 次要字對比不足');
-        assert.equal(r.cards.length, 8); assert(r.cards.every(c => Math.abs(c.w - r.cards[0].w) < 1 && c.h === r.cards[0].h && c.font === r.cards[0].font));
-        if (!s.mode && s.w === 390 && !s.fs) { assert(r.cards[0].y < 844, label(s) + ' 首張按鍵上緣未進入首屏'); assert((await page.locator('.daily-banner').boundingBox()).y + (await page.locator('.daily-banner').boundingBox()).height <= 844, label(s) + ' 每日橫幅未完整進入首屏'); }
+        assert.equal(r.cards.length, 0, label(s) + ' 首頁不該再有科目鍵');
+        if (!s.mode && s.w === 390 && !s.fs) { assert((await page.locator('#entry-labs').boundingBox()).y < 844, label(s) + ' 實驗室入口卡未進入首屏'); assert((await page.locator('.daily-banner').boundingBox()).y + (await page.locator('.daily-banner').boundingBox()).height <= 844, label(s) + ' 每日橫幅未完整進入首屏'); }
+      }
+      if (s.slug === 'labs') {
+        await page.evaluate(() => document.querySelectorAll('details.subject-group').forEach(d => { d.open = true; })); const open = await H.inspect(page);
+        assert(open.mutedContrast>=4.5,label(s)+' 次要字對比不足'); assert.equal(open.cards.length, H.subjects.length);
       }
       if (!s.mode || !['sticky', 'switch', 'redirect', 'recommend', 'cold'].includes(s.mode)) await page.evaluate(() => scrollTo(0, 0));
       await shot(page, path.join(RAW, id + '.png'), s.kind !== 'interaction');
@@ -77,8 +82,10 @@ async function main() {
     }
     {
       const ctx = await H.context(browser, base, { js: false }), page = await ctx.newPage(); await page.goto(base + 'index.html');
-      additional.staticLatest = await page.locator('#latest-labs .entry-card').count() === 4;
-      additional.staticSubjects = await page.locator('.subject-card').count() === 8;
+      additional.staticLatest = await page.locator('#latest-labs .entry-card').count() === 10;
+      additional.staticLearn = await page.locator('#latest-labs .entry-learn').count() > 0;
+      await page.goto(base + 'labs.html');
+      additional.staticSubjects = await page.locator('.subject-card').count() === H.subjects.length;
       await ctx.close();
     }
     {

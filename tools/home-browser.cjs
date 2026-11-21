@@ -67,7 +67,9 @@ async function context(browser, base, opts = {}) {
   return ctx;
 }
 async function ready(page, slug) {
-  if (slug === 'index') await page.waitForFunction(() => document.querySelectorAll('#recommendations .entry-card').length === 4 && document.querySelector('#home-status')?.getAttribute('aria-busy') === 'false' && Number.isFinite(window.__statusHeightBefore) && Number.isFinite(window.__dailyHeightBefore));
+  // 11/21 首頁只留入口＋最新上架十個（實驗與物理自習室混排）；科目大分類在 labs.html
+  if (slug === 'index') await page.waitForFunction(() => document.querySelectorAll('#latest-labs .entry-card').length === 10 && document.querySelector('#home-status')?.getAttribute('aria-busy') === 'false' && Number.isFinite(window.__statusHeightBefore) && Number.isFinite(window.__dailyHeightBefore));
+  else if (slug === 'labs') await page.waitForFunction(() => document.querySelectorAll('.subject-groups .subject-card').length > 0);
   else await page.waitForFunction(() => document.querySelector('.subject-count')?.textContent.length > 0);
   await page.evaluate(() => document.fonts.ready);
 }
@@ -75,12 +77,12 @@ async function inspect(page) {
   return page.evaluate(() => {
     const sw = document.documentElement.scrollWidth, vw = innerWidth;
     const smallText=[]; let mutedContrast=null;
-    if(document.body.classList.contains('home-page')) {
+    if(document.body.classList.contains('home-page')||document.body.classList.contains('labs-page')) {
       const fs=+getComputedStyle(document.documentElement).getPropertyValue('--fs')||1,walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
       for(let n;(n=walk.nextNode());){const e=n.parentElement;if(!n.textContent.trim()||e.closest('svg,script,style,.lab-settings,.lab-set-panel,.lab-gear,[aria-hidden="true"]')||!e.getClientRects().length)continue;const s=getComputedStyle(e);if(s.visibility!=='hidden'&&parseFloat(s.fontSize)+.05<12*fs)smallText.push({text:n.textContent.trim().slice(0,40),px:s.fontSize});}
       const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number),lum=c=>c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0),contrast=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
-      const fg=rgb(getComputedStyle(document.querySelector('.subject-branches')).color),dark=getComputedStyle(document.body).backgroundColor==='rgb(15, 21, 23)',faces=dark?[[37,44,53],[26,31,38]]:[[255,255,255],[241,244,247]];
-      const ratios=[];document.querySelectorAll('.subject-card').forEach(e=>{const wash=getComputedStyle(e).getPropertyValue('--key-wash').match(/[\d.]+/g).map(Number);for(const f of faces){ratios.push(contrast(fg,f),contrast(fg,f.map((n,i)=>n*(1-wash[3])+wash[i]*wash[3])));}});mutedContrast=Math.min(...ratios);
+      if(document.querySelector('.subject-branches')){const fg=rgb(getComputedStyle(document.querySelector('.subject-branches')).color),dark=getComputedStyle(document.body).backgroundColor==='rgb(15, 21, 23)',faces=dark?[[37,44,53],[26,31,38]]:[[255,255,255],[241,244,247]];
+      const ratios=[];document.querySelectorAll('.subject-card').forEach(e=>{const wash=getComputedStyle(e).getPropertyValue('--key-wash').match(/[\d.]+/g).map(Number);for(const f of faces){ratios.push(contrast(fg,f),contrast(fg,f.map((n,i)=>n*(1-wash[3])+wash[i]*wash[3])));}});mutedContrast=Math.min(...ratios);}
     }
     const cards = [...document.querySelectorAll('.subject-card')].map(a => { const r = a.getBoundingClientRect(), h = getComputedStyle(a.querySelector('h3')); return { w: r.width, h: r.height, font: h.fontSize, y: r.top, bottom: r.bottom, href: a.getAttribute('href') }; });
     const cjk = []; if (document.documentElement.lang === 'en') { const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n; (n = walker.nextNode());) if (/[一-鿿]/.test(n.textContent) && !n.parentElement.closest('script,style,.lab-settings,.lab-set-panel,.lab-gear,body [lang^="zh"]')) cjk.push(n.textContent.slice(0, 50)); }

@@ -32,7 +32,7 @@ if (missing.length) { console.error('✗ 找不到頁面：' + missing.join('、
 if (!pages.length) {
   const w = {};
   new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
-  pages = ['index', ...(w.LAB_SUBJECTS || []).map(s => s.page), 'leaderboard'].concat(w.LAB_LIVE_MODULES || []);
+  pages = ['index', 'labs', ...(w.LAB_SUBJECTS || []).map(s => s.page), 'leaderboard'].concat(w.LAB_LIVE_MODULES || []);
 }
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
