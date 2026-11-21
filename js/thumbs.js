@@ -212,6 +212,11 @@
       const src = 'img/thumbs/' + s + '-' + L + '-' + theme + '.webp?v=' + V[s];
       if (img.getAttribute('src') !== src) img.setAttribute('src', src);
     });
+    // 學測題目縮圖（首頁「最新上架」的學測合成卡）：版本號寫在 data-v，不進上面的版本表
+    root.querySelectorAll('img.module-thumb[data-exam-thumb]').forEach(function (img) {
+      const src = 'img/thumbs/' + img.getAttribute('data-exam-thumb') + '-' + L + '-' + theme + '.webp?v=' + img.getAttribute('data-v');
+      if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    });
   }
   apply();
   window.LabThumbs = { apply: apply }; // 實驗頁的「相關實驗」（classroom.js）插入卡片後呼叫

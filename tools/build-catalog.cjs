@@ -181,10 +181,21 @@ let home = read('index.html');
 const commitTimes = {};
 const commitTime = c => { if (!c) return 0; if (!(c in commitTimes)) commitTimes[c] = +git(['show', '-s', '--format=%ct', c]) || 0; return commitTimes[c]; };
 // 11/21 站長選「合成一張卡」：同一份考卷（同一個 file）的題目在「最新上架」只佔一張卡，連到學習大廳的學測分頁
+// 11/21 站長：合成卡的縮圖「要完全就是那一題的圖」，不用實驗室圖。封面用哪一題寫在這裡，沒寫就用第一題；
+// 圖是 tools/make-exam-thumbs.cjs 產生的 exam-<年>-<題>-<語言>-<深淺>.webp，data-v 用同一套內容雜湊，js/thumbs.js 依語言與深淺色換圖
+// 選圖時注意：卡片左上角會疊「自習室」標籤、左右各裁掉約 4%，挑左上角空白、字不貼邊的題目（113-21 的「眼睛」會被蓋住）
+const EXAM_COVER = { 'exam-113': 27, 'exam-114': 27 };
+const examCover = (file, g) => {
+  const q = EXAM_COVER[file] || +String(g[0].id).split('-').pop(), id = file + '-' + q;
+  const files = ['hant', 'hans', 'en'].flatMap(lk => ['light', 'dark'].map(t => path.join(ROOT, 'img/thumbs', `${id}-${lk}-${t}.webp`)));
+  if (!files.every(f => fs.existsSync(f))) throw new Error('學測合成卡缺題目縮圖（node tools/make-exam-thumbs.cjs）：' + id);
+  const h = require('crypto').createHash('sha1'); files.forEach(f => h.update(fs.readFileSync(f)));
+  return { thumb: id, examV: h.digest('hex').slice(0, 8) };
+};
 const examGroups = {};
 for (const u of W.LAB_LEARN_UNITS || []) if (u.file && fs.existsSync(path.join(ROOT, u.file + '.html'))) (examGroups[u.file] = examGroups[u.file] || []).push(u);
 const learnUnits = (W.LAB_LEARN_UNITS || []).filter(u => !u.file && u.href && fs.existsSync(path.join(ROOT, u.href.split(/[?#]/)[0])))
-  .concat(Object.entries(examGroups).map(([file, g]) => ({ id: file, subject: g[0].subject, chapter: g[0].chapter, chapterEn: g[0].chapterEn, zh: '學測物理 ' + g.length + ' 題詳解', en: 'GSAT physics, ' + g.length + ' worked problems', href: 'learn.html?view=exam', page: file, thumb: g[0].thumb, l: g.map(u => u.l || '').sort().pop() || undefined })));
+  .concat(Object.entries(examGroups).map(([file, g]) => ({ id: file, subject: g[0].subject, chapter: g[0].chapter, chapterEn: g[0].chapterEn, zh: '學測物理 ' + g.length + ' 題詳解', en: 'GSAT physics, ' + g.length + ' worked problems', href: 'learn.html?view=exam', page: file, ...examCover(file, g), l: g.map(u => u.l || '').sort().pop() || undefined })));
 const learnPage = u => u.page || u.href.split(/[?#]/)[0].replace(/\.html$/, '');
 const learnPages = [...new Set(learnUnits.map(learnPage))];
 const learnFirst = historyDates(learnPages);
@@ -197,7 +208,7 @@ const fresh = list.map(x => ({ x, l: x.l, t: firstDates[x.s] && firstDates[x.s].
   }).filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e.l) && e.l <= today))
   .sort((a, b) => b.l.localeCompare(a.l) || b.t - a.t || (!a.u === !b.u ? a.o - b.o : 0));
 const added = l => text(l.slice(5).replace('-', '/') + ' 上架', 'Added ' + l.slice(5).replace('-', '/'), 'p', 'class="entry-note"');
-const learnCard = (u, meta) => `<a class="entry-card entry-learn" href="${esc(u.href)}" data-learn-unit="${esc(u.id)}" data-hans-subject="${esc(u.subject || 'phy')}" style="--c:var(--learn)"><img class="module-thumb" data-thumb="${esc(u.thumb)}" src="img/thumbs/${esc(u.thumb)}-hant-light.webp" alt="" width="720" height="405" loading="lazy">${text('自習室', 'Study Room', 'span', 'class="learn-badge"')}${text('物理自習室・' + esc(u.chapter), 'Physics Study Room · ' + esc(u.chapterEn || u.chapter), 'span', 'class="subject-tag"')}${formulaLabel(u.zh, u.en, 'h3')}${meta}</a>`;
+const learnCard = (u, meta) => `<a class="entry-card entry-learn" href="${esc(u.href)}" data-learn-unit="${esc(u.id)}" data-hans-subject="${esc(u.subject || 'phy')}" style="--c:var(--learn)">${u.examV ? `<img class="module-thumb" data-exam-thumb="${esc(u.thumb)}" data-v="${u.examV}" src="img/thumbs/${esc(u.thumb)}-hant-light.webp?v=${u.examV}" alt="" width="720" height="405" loading="lazy">` : `<img class="module-thumb" data-thumb="${esc(u.thumb)}" src="img/thumbs/${esc(u.thumb)}-hant-light.webp" alt="" width="720" height="405" loading="lazy">`}${text('自習室', 'Study Room', 'span', 'class="learn-badge"')}${text('物理自習室・' + esc(u.chapter), 'Physics Study Room · ' + esc(u.chapterEn || u.chapter), 'span', 'class="subject-tag"')}${formulaLabel(u.zh, u.en, 'h3')}${meta}</a>`;
 for (const u of learnUnits) if (!u.thumb || !fs.existsSync(path.join(ROOT, 'img/thumbs', u.thumb + '-hant-light.webp'))) throw new Error('物理自習室單元缺縮圖 thumb：' + u.id);
 home = marker(home, 'LATEST', fresh.slice(0, 10).map(e => e.u ? learnCard(e.u, added(e.l)) : miniCard(e.x, added(e.l))).join('\n'));
 // 首頁「全科模擬實驗室」入口卡的實驗數
