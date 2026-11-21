@@ -166,7 +166,7 @@
   }
   /** 橫軸刻度；最右邊留給單位 */
   function xTicks(g, p, lo, hi, step, fmt, xOf, unit) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
     g.textAlign = 'right';
     const wl = g.measureText(unit).width;
     g.fillText(unit, p.x1, p.y1 + 6);
@@ -180,7 +180,7 @@
     }
   }
   function yTicksLin(g, p, lo, hi, step, fmt, yOf) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) {
       const y = yOf(v);
       g.fillText(fmt(v), p.x0 - 7, y);
@@ -228,18 +228,21 @@
   let W1 = 0, H1 = 0, L1 = null;
 
   function params1() {
-    return { model: s1.model, stoch: s1.stoch, r: val(el.r), K: val(el.K), N0: Math.max(1, Math.round(val(el.N0))), tEnd: val(el.tEnd) };
+    const custom = s1.model === 'expo' && $('independentRates').checked;
+    const birth = custom ? Number($('birthRate').value) : undefined;
+    const death = custom ? Number($('deathRate').value) : undefined;
+    return { model: s1.model, stoch: s1.stoch, custom, birth, death, r: custom ? birth - death : val(el.r), K: val(el.K), N0: Math.max(1, Math.round(val(el.N0))), tEnd: val(el.tEnd) };
   }
   function theoryN(r1, t) { return r1.model === 'expo' ? P.expo(r1.N0, r1.r, t) : P.logistic(r1.N0, r1.r, r1.K, t); }
   function simulate1(det) {
     const p = params1();
     if (det) p.stoch = false;
-    p.env = p.stoch ? Number($('env').value) : 0;
+    p.env = p.stoch && !p.custom ? Number($('env').value) : 0;
     const Kx = p.model === 'expo' ? Infinity : p.K;
     const o = Object.assign({}, p, { Kx: Kx, head: 0, playing: false, emitted: false, id: ++runSeq, capT: NaN, extinct: false, tExt: NaN, nDouble: 0, full: false });
     if (p.stoch) {
       o.seed = cultureSeed();
-      const g = P.gillespie({ N0: p.N0, r: p.r, K: Kx, tEnd: p.tEnd, rand: P.rng(o.seed), seed: o.seed, env: o.env, cap: isFinite(Kx) ? 1e7 : STOCH_CAP, every: p.tEnd / 1500 });
+      const g = P.gillespie({ N0: p.N0, r: p.r, birth: p.birth, death: p.death, K: Kx, tEnd: p.tEnd, rand: P.rng(o.seed), seed: o.seed, env: o.env, cap: isFinite(Kx) ? 1e7 : STOCH_CAP, every: p.tEnd / 1500 });
       o.years = g.years;
       o.t = g.t; o.N = g.N; o.extinct = g.extinct; o.tExt = g.tExtinct;
       const tl = g.t[g.t.length - 1], Nl = g.N[g.N.length - 1];
@@ -438,8 +441,8 @@
     D.pill(g, T('第 ', 'Day ') + num(t, 1) + T(' 天', ''), cx, cy - R - 8, D.c.text, 'center', '600 12px ' + FONT);
     const lab = 'N = ' + fmtN(N);
     const bx = D.pill(g, lab, cx, cy + R + 24, C['pg-n'], 'center', '700 13px ' + FONT);
-    if (per > 1.0001 && L1.narrow === false) D.haloText(g, T('每個點約代表 ', 'each dot ≈ ') + fmtN(per) + T(' 隻', ''), cx, bx.y + bx.h + 13, D.c.muted, 'center', 'middle', '11px ' + FONT);
-    else if (per > 1.0001) D.haloText(g, T('每點約 ', '1 dot ≈ ') + fmtN(per), cx + R * 0.98, cy + R - 4, D.c.muted, 'right', 'middle', '11px ' + FONT);
+    if (per > 1.0001 && L1.narrow === false) D.haloText(g, T('每個點約代表 ', 'each dot ≈ ') + fmtN(per) + T(' 隻', ''), cx, bx.y + bx.h + 13, D.c.muted, 'center', 'middle', '12px ' + FONT);
+    else if (per > 1.0001) D.haloText(g, T('每點約 ', '1 dot ≈ ') + fmtN(per), cx + R * 0.98, cy + R - 4, D.c.muted, 'right', 'middle', '12px ' + FONT);
     if (o.extinct && t >= o.tExt) D.pill(g, T('族群滅絕', 'Died out'), cx, cy + 9, D.c.neg || '#b91c1c', 'center', '700 14px ' + FONT);
   }
 
@@ -452,7 +455,7 @@
     plotFrame(g, p);
     // 縱軸刻度
     if (s1.logY) {
-      g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+      g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
       const every = Math.max(1, Math.ceil((S.hi - S.lo) / 6));
       for (let e = S.lo; e <= S.hi; e += every) { const y = S.yOf(Math.pow(10, e)); g.fillText(countTick(Math.pow(10, e)), p.x0 - 7, y); hLine(g, p, y, 0.08); }
     } else {
@@ -484,7 +487,7 @@
       const yH = capacityLine(0.5);
       g.setLineDash([]);
       D.haloText(g, 'K', p.x1 - 4, yK - 8, C['pg-k'], 'right', 'middle', 'italic 700 12px ' + FONT);
-      D.haloText(g, 'K/2', p.x1 - 4, yH - 8, D.alpha(C['pg-k'], 0.85), 'right', 'middle', 'italic 600 11px ' + FONT);
+      D.haloText(g, 'K/2', p.x1 - 4, yH - 8, D.alpha(C['pg-k'], 0.85), 'right', 'middle', 'italic 600 12px ' + FONT);
     }
     // 保留的曲線
     kept.forEach(function (k) {
@@ -508,7 +511,7 @@
       const xc = S.xOf(o.capT);
       g.strokeStyle = D.alpha(D.c.muted, 0.6); g.setLineDash([2, 3]);
       g.beginPath(); g.moveTo(xc, p.y0); g.lineTo(xc, p.y1); g.stroke(); g.setLineDash([]);
-      D.haloText(g, T('超過 3000 隻後改用平均值', 'mean after 3000'), Math.min(xc + 4, p.x1 - 4), p.y0 + 10, D.c.muted, xc + 140 > p.x1 ? 'right' : 'left', 'middle', '11px ' + FONT);
+      D.haloText(g, T('超過 3000 隻後改用平均值', 'mean after 3000'), Math.min(xc + 4, p.x1 - 4), p.y0 + 10, D.c.muted, xc + 140 > p.x1 ? 'right' : 'left', 'middle', '12px ' + FONT);
     }
     // 檢視點
     if (inspectT != null) {
@@ -532,7 +535,7 @@
     const xM = niceCeil(Nmax);
     const xOf = function (N) { return p.x0 + (p.x1 - p.x0) * N / xM; };
     let lo = 0, hi;
-    if (o.model === 'expo') hi = niceCeil(o.r * xM * 1.05);
+    if (o.model === 'expo') { hi = o.r > 0 ? niceCeil(o.r * xM * 1.05) : 1; lo = o.r < 0 ? -niceCeil(-o.r * xM * 1.05) : 0; }
     else { hi = niceCeil(o.r * o.K / 4 * 1.2); lo = Math.min(0, rateAt(o, xM)); if (lo < 0) lo = -niceCeil(-lo * 1.05); }
     const yOf = function (v) { return p.y1 - (p.y1 - p.y0) * (v - lo) / (hi - lo); };
     yTicksLin(g, p, lo, hi, niceStep(hi - lo, 3), countTick, yOf);
@@ -557,7 +560,7 @@
       const yTop = yOf(o.r * o.K / 4);
       g.strokeStyle = D.alpha(C['pg-k'], 0.7); g.lineWidth = 1; g.setLineDash([2, 3]);
       g.beginPath(); g.moveTo(p.x0, yTop); g.lineTo(xOf(o.K / 2), yTop); g.stroke(); g.setLineDash([]);
-      D.haloText(g, 'rK/4', p.x0 + 4, yTop - 8, C['pg-k'], 'left', 'middle', 'italic 600 11px ' + FONT);
+      D.haloText(g, 'rK/4', p.x0 + 4, yTop - 8, C['pg-k'], 'left', 'middle', 'italic 600 12px ' + FONT);
     }
     const Nh = nAt(o, o.head);
     D.ball(g, Math.min(p.x1, xOf(Nh)), Math.max(p.y0, Math.min(p.y1, yOf(rateAt(o, Nh)))), 5, C['pg-n']);
@@ -598,7 +601,7 @@
       Nend: o.Nend, Nmax: o.Nmax, extinct: o.extinct, tExt: o.extinct ? o.tExt : null, td: P.doublingTime(o.r)
     };
     addRow(o);
-    if (!silent) emit('grow', data);
+    if (!silent && !o.custom) emit('grow', data);
     setStatus(status1For(o));
     say(status1For(o));
     updateReadouts1();
@@ -612,6 +615,8 @@
         'Day ' + num(o.tEnd, 0) + ': ' + fmtN(o.Nend) + ' individuals, with ' + setting + ' this year.');
     }
     if (o.extinct) return T('族群在第 ' + num(o.tExt, 1) + ' 天滅絕了。小族群的出生與死亡全靠運氣，碰到 0 就回不來。', 'The population died out on day ' + num(o.tExt, 1) + '. In a small population births and deaths are down to chance, and zero is a one-way door.');
+    if (o.model === 'expo' && o.r <= 0) return T('淨成長率 ', 'Net growth rate ') + num(o.r, 2) +
+      T('／天；期末數量 ', ' per day; final size ') + fmtN(o.Nend) + '.';
     if (o.model === 'expo') return T(num(o.tEnd, 0) + ' 天後，族群從 ' + fmtN(o.N0) + ' 隻變成 ' + fmtN(o.Nend) + ' 隻，每 ' + num(P.doublingTime(o.r), 2) + ' 天翻一倍。', 'After ' + num(o.tEnd, 0) + ' days the population went from ' + fmtN(o.N0) + ' to ' + fmtN(o.Nend) + ', doubling every ' + num(P.doublingTime(o.r), 2) + ' days.');
     const f = o.Nend / o.K;
     return T(num(o.tEnd, 0) + ' 天後族群有 ' + fmtN(o.Nend) + ' 隻，是負荷量的 ' + num(f * 100, 1) + '%。', 'After ' + num(o.tEnd, 0) + ' days the population is ' + fmtN(o.Nend) + ', ' + num(f * 100, 1) + '% of the carrying capacity.');
@@ -637,7 +642,7 @@
     const o = annualParams(run, run.head);
     const Nh = nAt(o, o.head);
     let h = '<dt>' + T('模型', 'Model') + '</dt><dd>' + (o.model === 'expo' ? T('指數成長', 'Exponential') : T('邏輯斯成長', 'Logistic')) + (o.stoch ? '<small>' + T('一隻一隻數', 'counting individuals') + '</small>' : '') + '</dd>';
-    h += '<dt>' + T('倍增時間', 'Doubling time') + ' ln2/r</dt><dd>' + days(P.doublingTime(o.r), 2) + (o.model === 'logi' ? '<small>' + T('族群遠小於 K 時', 'while N is far below K') + '</small>' : '') + '</dd>';
+    h += '<dt>' + T('倍增時間', 'Doubling time') + ' ln2/r</dt><dd>' + (o.r > 0 ? days(P.doublingTime(o.r), 2) : '—') + (o.model === 'logi' ? '<small>' + T('族群遠小於 K 時', 'while N is far below K') + '</small>' : '') + '</dd>';
     if (o.model === 'logi') h += '<dt>' + T('最快的成長速率', 'Fastest growth') + ' rK/4</dt><dd>' + fmtN(o.r * o.K / 4) + T(' 隻／天', ' per day') + '</dd>';
     h += '<dt>' + T('此刻', 'Now') + '<small>' + T('第 ', 'day ') + num(o.head, 1) + T(' 天', '') + '</small></dt><dd>N = ' + fmtN(Nh, true) + '<small>dN/dt = ' + fmtN(rateAt(o, Nh), true) + T(' 隻／天', ' per day') + '</small></dd>';
     if (inspectT != null) {
@@ -649,9 +654,9 @@
         const effective = o.model === 'logi' ? 'K = ' + fmtN(o.K) : 'r = ' + num(o.r, 3);
         h += '<dt>' + T('當年環境', 'This year') + '</dt><dd>' + effective + '</dd>';
       }
-      h += '<dt>' + T('出生率', 'Birth rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>λ = ' + num(run.r + o.r, 3) + '</dd>';
-      h += '<dt>' + T('死亡率', 'Death rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>μ = ' + num(run.r, 3) + (o.model === 'logi' ? '<small>+ ' + num(o.r, 3) + '·N/K</small>' : '') + '</dd>';
-      if (o.model === 'expo' && !o.env) h += '<dt>' + T('最後滅絕的機率', 'Chance of dying out') + '</dt><dd>(μ/λ)<sup>N<sub>0</sub></sup> = ' + num(100 * P.extinctionProb(o.N0), o.N0 > 6 ? 3 : 1) + '%</dd>';
+      h += '<dt>' + T('出生率', 'Birth rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>λ = ' + num(o.birth ?? (run.r + o.r), 3) + '</dd>';
+      h += '<dt>' + T('死亡率', 'Death rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>μ = ' + num(o.death ?? run.r, 3) + (o.model === 'logi' ? '<small>+ ' + num(o.r, 3) + '·N/K</small>' : '') + '</dd>';
+      if (o.model === 'expo' && !o.env) h += '<dt>' + T('最終滅絕機率', 'Eventual extinction probability') + (o.custom ? '' : T('（此設定死亡率／出生率為 0.5）', ' (death/birth ratio fixed at 0.5)')) + '</dt><dd>' + num(100 * P.extinctionProb(o.N0, o.birth, o.death), o.N0 > 6 ? 3 : 1) + '%</dd>';
     }
     $('ro1').innerHTML = h;
   }
@@ -668,7 +673,7 @@
   function emitInspect() {
     if (!run || inspectT == null || run.initial) return;
     const t = Math.min(inspectT, run.head), o = annualParams(run, t), N = nAt(o, t);
-    emit('inspect', { env: o.env, model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, t: t, N: N, frac: o.model === 'logi' ? N / o.K : null, rate: rateAt(o, N), rmax: o.model === 'logi' ? o.r * o.K / 4 : null });
+    if (!o.custom) emit('inspect', { env: o.env, model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, t: t, N: N, frac: o.model === 'logi' ? N / o.K : null, rate: rateAt(o, N), rmax: o.model === 'logi' ? o.r * o.K / 4 : null });
   }
   let drag1 = false;
   function tFromX(x) { const p = L1.pN; return (x - p.x0) / (p.x1 - p.x0) * run.tEnd; }
@@ -973,7 +978,7 @@
       if (px && py && py.t <= head && xOf(py.t) - xOf(px.t) > 18) {
         const yy = Math.max(p.y0 + 10, Math.min(yOf(px.v), yOf(py.v)) - 22);
         D.arrow(g, xOf(px.t), yy, xOf(py.t), yy, D.c.muted, 1.2);
-        D.haloText(g, T('延遲 ', 'delay ') + num(py.t - px.t, 1), (xOf(px.t) + xOf(py.t)) / 2, yy - 9, D.c.muted, 'center', 'middle', '11px ' + FONT);
+        D.haloText(g, T('延遲 ', 'delay ') + num(py.t - px.t, 1), (xOf(px.t) + xOf(py.t)) / 2, yy - 9, D.c.muted, 'center', 'middle', '12px ' + FONT);
       }
     }
     const xh = xOf(head), i = Math.min(sim.t.length - 1, Math.round(head / (sim.t[1] - sim.t[0] || 1)));
@@ -1046,7 +1051,7 @@
     g.stroke(); g.setLineDash([]);
     g.restore();
     // 零成長線的標籤
-    const lab = function (pos, txt, align) { if (pos) D.haloText(g, txt, Math.max(p.x0 + 4, Math.min(p.x1 - 4, pos[0])), Math.max(p.y0 + 8, Math.min(p.y1 - 8, pos[1])), C['pg-eq'], align, 'middle', '600 11px ' + FONT); };
+    const lab = function (pos, txt, align) { if (pos) D.haloText(g, txt, Math.max(p.x0 + 4, Math.min(p.x1 - 4, pos[0])), Math.max(p.y0 + 8, Math.min(p.y1 - 8, pos[1])), C['pg-eq'], align, 'middle', '600 12px ' + FONT); };
     if (mode2 === 'pp') {
       lab(labY, (L2.narrow ? '' : nameY(true)) + ' dy/dt = 0', 'left');
       if (labX) lab([labX[0], labX[1] - 9], (L2.narrow ? '' : nameX(true)) + ' dx/dt = 0', 'right');
@@ -1171,12 +1176,17 @@
   }
   /** 參數一改：停止播放，顯示新設定的完整理論結果（不回報任務） */
   function reset1() {
-    $('cultureControls').hidden = $('rowEnv').hidden = !s1.stoch;
+    const custom = s1.model === 'expo' && $('independentRates').checked;
+    $('rateControls').hidden = s1.model !== 'expo';
+    el.r.disabled = custom;
+    $('birthRate').disabled = $('deathRate').disabled = !custom;
+    $('cultureControls').hidden = !s1.stoch; $('rowEnv').hidden = !s1.stoch || custom;
     el.tEnd.max = s1.stoch && s1.model === 'logi' && Number($('env').value) > 0 ? 730 : 200;
     $('envo').textContent = $('env').value;
     $('tEndo').textContent = num(val(el.tEnd), 0);
     // 隨機模型不預先擲骰：先顯示平均的理論曲線
     run = simulate1(true);
+    if (custom) $('ro').textContent = num(run.r, 3);
     run.color = keptColor(run.id - 1);
     run.head = run.tStop; run.emitted = true; run.initial = true;
     inspectT = null;
@@ -1193,7 +1203,7 @@
     legend1();
   }
   document.querySelectorAll('#modelSeg button').forEach(function (b) { b.addEventListener('click', function () { setModel(b.getAttribute('data-model')); }); });
-  [el.r, el.K, el.N0, el.tEnd, $('env')].forEach(function (r) { r.addEventListener('input', function () { refreshOutputs(); reset1(); }); });
+  [el.r, el.K, el.N0, el.tEnd, $('env'), $('independentRates'), $('birthRate'), $('deathRate')].forEach(function (r) { r.addEventListener('input', function () { refreshOutputs(); reset1(); }); });
   $('stoch').addEventListener('change', function () { s1.stoch = this.checked; reset1(); legend1(); setStatus(s1.stoch ? T('選擇種子後按「開始培養」。', 'Choose a seed and press “Grow”.') : ''); });
   $('logY').addEventListener('change', function () { s1.logY = this.checked; request(); });
   $('keep').addEventListener('change', function () { s1.keep = this.checked; if (!s1.keep) kept = []; request(); });

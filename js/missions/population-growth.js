@@ -44,7 +44,7 @@
       id: 'population-growth-4', level: 3,
       title: { zh: '此起彼落', en: 'Rise and fall' },
       desc: { zh: '讓掠食者與獵物至少完成兩個完整的循環：獵物的高峰先到，掠食者隨後。', en: 'Let predator and prey go through at least two full cycles: the prey peak comes first and the predators follow.' },
-      check: function (ev) { const d = ev.data; return pp(ev) && d.cycles >= 2 && d.lag > 0 && d.lag < 0.5 * d.period && d.amp > 0.05; }
+      check: function (ev) { const d = ev.data; return pp(ev) && d.cycles >= 2 && d.lag > 0 && d.lag < 0.5 * d.period; }
     },
     {
       id: 'population-growth-5', level: 4,

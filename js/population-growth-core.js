@@ -68,7 +68,7 @@
     return factors;
   }
   function gillespie(o) {
-    const r = o.r, K = o.K, lam = r / (1 - M_FRAC), mu = M_FRAC * lam, rand = o.rand || Math.random;
+    const r = o.r, K = o.K, lam = o.birth ?? r / (1 - M_FRAC), mu = o.death ?? M_FRAC * lam, rand = o.rand || Math.random;
     const cap = o.cap || 1e6, every = o.every || 0.01;
     let N = Math.round(o.N0), t = 0;
     const T = [0], NN = [N];
@@ -81,7 +81,7 @@
       const dper = isFinite(K) ? mu + (lam - mu) * N / (K * factor) : mu;
       const d = Math.max(0, dper) * N;
       const tot = b + d;
-      if (tot <= 0) break;
+      if (tot <= 0) { t = o.tEnd; break; }
       const next = t - Math.log(1 - rand()) / tot;
       const boundary = (year + 1) * 365;
       if (years && next >= boundary && boundary < o.tEnd) {
@@ -97,7 +97,11 @@
     return { ...(years ? { years } : {}), t: T, N: NN, extinct: N === 0, tExtinct: N === 0 ? t : NaN, lam: lam, mu: mu };
   }
   /** 從 N0 個體開始、指數成長的隨機模型最後滅絕的機率 (μ/λ)^N0 */
-  function extinctionProb(N0) { return Math.pow(M_FRAC, N0); }
+  function extinctionProb(N0, birth = 1, death = M_FRAC) {
+    if (N0 <= 0) return 1;
+    if (death === 0) return 0;
+    return birth <= death ? 1 : Math.pow(death / birth, N0);
+  }
 
   // ---------- 兩個物種 ----------
   /** 掠食者–獵物的參數：{ a, b, c, d, K（Infinity = 沒有負荷量）, E（捕撈）} */

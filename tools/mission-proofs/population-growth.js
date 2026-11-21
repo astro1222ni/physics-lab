@@ -118,6 +118,9 @@ function compEv(o) {
 // ---------- 4 此起彼落 ----------
 {
   const e = ppEv({});
+  const smallCycles = ppEv({ x0: 81, y0: 50, tEnd: 80 });
+  claim(check('4', smallCycles), '4 小振幅的完整循環');
+  claim(['h1', 'h2', 'h3'].every(id => !check(id, smallCycles)), '4 小振幅路線不連帶完成隱藏任務');
   claim(check('4', e), `4 循環：預設（起點 (40, 20)、60 天）一按就完成：${e.data.cycles} 個循環、週期 ${f(e.data.period, 2)} 天、延遲 ${f(e.data.lag, 2)} 天`);
   claim(!check('4', ppEv({ x0: 80, y0: 50 })), '4 循環：從平衡點出發不算（不動）');
 }

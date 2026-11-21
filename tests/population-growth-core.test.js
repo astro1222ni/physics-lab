@@ -194,4 +194,14 @@ test('環境關閉逐點等於舊軌跡；年度波動可重播且會增加小�
   assert.ok(counts[1] > counts[0] + 60);
 });
 
+
+test('出生與死亡分別指定，零與負淨成長皆可抽樣', () => {
+  close(P.extinctionProb(2, 0.5, 0.25), 0.25, 1e-12);
+  assert.strictEqual(P.extinctionProb(2, 0.5, 0.5), 1);
+  assert.strictEqual(P.extinctionProb(2, 0, 0), 0);
+  const o = { N0: 8, K: Infinity, tEnd: 100, r: 0, birth: 0, death: 0, rand: P.rng(1) };
+  assert.deepStrictEqual(P.gillespie(o).N, [8, 8]);
+  assert.ok(P.gillespie({ ...o, r: -1, death: 1 }).extinct);
+});
+
 console.log(passed + ' 項通過');

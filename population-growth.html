@@ -140,6 +140,7 @@
         font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
       }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -188,6 +189,12 @@
             <label><input type="checkbox" id="cultureLock"><span data-en="Reuse seed">沿用種子</span></label>
             <button type="button" id="cultureDraw" data-en="Draw new seed">重抽種子</button>
           </div>
+          <details id="rateControls"><summary data-en="Birth and death rates">出生率與死亡率</summary>
+            <label><input id="independentRates" type="checkbox"> <span data-en="Set independent birth and death rates for exponential growth">指數成長分開設定出生率與死亡率</span></label>
+            <label><span data-en="Birth rate per day">每隻每日出生率</span> <select class="sample-control" id="birthRate"><option>0</option><option>0.25</option><option>0.5</option><option selected>1</option></select></label>
+            <label><span data-en="Death rate per day">每隻每日死亡率</span> <select class="sample-control" id="deathRate"><option>0</option><option>0.25</option><option selected>0.5</option><option>1</option></select></label>
+            <p data-en="Exponential growth missions use the original growth-rate slider.">指數成長任務使用原本的成長率滑桿。</p>
+          </details>
         </section>
         <section class="card" data-deck="成長條件|Growth conditions" data-deck-order="2" data-section="lab1">
           <h2 data-en="Growth conditions">成長條件</h2>
@@ -322,9 +329,9 @@
       <p data-en-html="Real cultures follow this shape surprisingly well when the conditions are kept steady: in the 1930s G. F. Gause grew paramecia in test tubes and got clean S curves. The numbers on this page are illustrative, not his data.">條件保持穩定時，真實的培養常常相當接近這個形狀：1930 年代高斯（G. F. Gause）在試管裡養草履蟲，就得到漂亮的 S 型曲線。本頁的數字是示意，不是他的實驗數據。</p>
 
       <h3 data-en="Counting individuals: chance and extinction">一隻一隻數：運氣與滅絕</h3>
-      <p data-en-html="The equations describe an average. Real populations are made of whole individuals, and each birth or death happens by chance. With “Count individuals” on, the page simulates every birth and death (the Gillespie algorithm): each individual gives birth at rate λ = 2<em>r</em> and dies at rate μ = <em>r</em> (plus, in the logistic case, an extra death rate that rises with crowding, so that λ − μ still falls to zero at <em>K</em>). Large populations follow the smooth curve closely. Small ones wobble — and can hit zero, after which there is no coming back. Starting from <em>N</em><sub>0</sub> individuals with unlimited food, the chance that the line eventually dies out is">方程式描述的是「平均」。真實的族群由一個一個個體組成，每一次出生、死亡都帶有隨機性。勾選「一隻一隻數」時，本頁模擬每一次出生與死亡（Gillespie 演算法）：每個個體的出生率 λ = 2<em>r</em>、死亡率 μ = <em>r</em>（邏輯斯時再加上隨擁擠程度上升的死亡率，讓 λ − μ 在 <em>K</em> 時降到零）。族群大的時候，隨機結果緊貼著平滑曲線；族群小的時候忽上忽下，一旦碰到零就再也回不來。資源無限、從 <em>N</em><sub>0</sub> 個個體開始，最後滅絕的機率是</p>
-      <div class="formula">\[ P_{\text{ext}} =\left(\frac{\mu}{\lambda}\right)^{N_0} = \left(\tfrac12\right)^{N_0} \]</div>
-      <p data-en-html="One founder: a coin toss. Ten founders: about one in a thousand. This is one reason conservation biologists worry about very small populations even when, on paper, they should grow.">只有一個個體：像擲硬幣一樣。十個個體：大約千分之一。這是保育生物學家擔心極小族群的原因之一：就算照平均算它應該會成長，運氣不好還是可能消失。</p>
+      <p data-en-html="The equations describe an average. Real populations are made of whole individuals, and each birth or death happens by chance. With “Count individuals” on, the page simulates every birth and death (the Gillespie algorithm): by default each individual gives birth at rate λ = 2<em>r</em> and dies at rate μ = <em>r</em> (plus, in the logistic case, an extra death rate that rises with crowding, so that λ − μ still falls to zero at <em>K</em>). Large populations follow the smooth curve closely. Small ones wobble — and can hit zero, after which there is no coming back. With unlimited food, constant rates, and at least one founder, the eventual extinction probability is">方程式描述的是「平均」。真實的族群由一個一個個體組成，每一次出生、死亡都帶有隨機性。勾選「一隻一隻數」時，本頁模擬每一次出生與死亡（Gillespie 演算法）：預設每個個體的出生率 λ = 2<em>r</em>、死亡率 μ = <em>r</em>（邏輯斯時再加上隨擁擠程度上升的死亡率，讓 λ − μ 在 <em>K</em> 時降到零）。族群大的時候，隨機結果緊貼著平滑曲線；族群小的時候忽上忽下，一旦碰到零就再也回不來。當資源無限、兩種速率固定且至少有一個創始個體時，最終滅絕機率為</p>
+      <div class="formula">\[ P_{\text{ext}} =\begin{cases}(\mu/\lambda)^{N_0}, & \lambda>\mu \\ 1, & 0<\mu,\ \lambda\le\mu \\ 0, & \lambda=\mu=0\end{cases} \]</div>
+      <p data-en-html="At the default rates, one founder has a 1/2 chance of extinction and ten founders have a 1/1024 chance. With one founder, compare birth/death rates of 0.25/0 and 0.5/0.25 per day. Both net 0.25 per day, yet the extinction probabilities are 0 and 1/2. This is one reason conservation biologists worry about very small populations even when, on paper, they should grow.">預設情境中，一個創始個體的滅絕機率是 1/2，十個是 1/1024。以一個個體開始，若每日出生率／死亡率選 0.25／0 或 0.5／0.25，淨成長率都是每天 0.25，滅絕機率卻分別為 0 和 1/2。這是保育生物學家擔心極小族群的原因之一：就算照平均算它應該會成長，運氣不好還是可能消失。</p>
 
       <h3 data-en="Predator and prey: the Lotka–Volterra cycles">掠食者與獵物：Lotka–Volterra 循環</h3>
       <p data-en-html="Let <em>x</em> be the prey and <em>y</em> the predators. Prey breed at rate <em>a</em> and are eaten at a rate proportional to how often the two meet, <em>bxy</em>; predators turn the prey they eat into offspring (<em>cxy</em>) and die at rate <em>d</em>:">設 <em>x</em> 是獵物、<em>y</em> 是掠食者。獵物以 <em>a</em> 的速率繁殖，被吃掉的速率和兩者相遇的機會成正比，是 <em>bxy</em>；掠食者把吃到的獵物轉換成後代（<em>cxy</em>），並以 <em>d</em> 的速率死亡：</p>
@@ -361,7 +368,7 @@
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en="The smooth curves of part 1 use the exact solutions above. Time is in days and all parameters are illustrative: real paramecia in a rich medium divide about once or twice a day.">第一部分的平滑曲線直接用上面的解析解。時間單位是天，所有參數都是示意；真實的草履蟲在營養充足的培養液中，大約一天分裂一到兩次。</li>
-        <li data-en="“Count individuals” uses the Gillespie algorithm, which draws the exact random time to the next birth or death. In a fixed environment births happen at 2r per individual and deaths at r, plus r·N/K in the logistic case. Above 3000 individuals with unlimited food the page stops counting one by one and follows the average.">「一隻一隻數」用 Gillespie 演算法，精確地抽出下一次出生或死亡的隨機時刻。固定環境中，每個個體的出生率 2r、死亡率 r，邏輯斯時再加 r·N/K。資源無限、超過 3000 個個體時，本頁不再逐一計算，改用平均值。</li>
+        <li data-en="“Count individuals” uses the Gillespie algorithm, which draws the exact random time to the next birth or death. With the default birth-to-death ratio in a fixed environment, births happen at 2r per individual and deaths at r, plus r·N/K in the logistic case. Above 3000 individuals with unlimited food the page stops counting one by one and follows the average.">「一隻一隻數」用 Gillespie 演算法，精確地抽出下一次出生或死亡的隨機時刻。採用預設出生死亡率且環境固定時，每個個體的出生率 2r、死亡率 r，邏輯斯時再加 r·N/K。資源無限、超過 3000 個個體時，本頁不再逐一計算，改用平均值。</li>
         <li data-en="Part 2 is integrated with the fourth-order Runge–Kutta method in steps of 0.005 days. Without a carrying capacity the conserved quantity of the Lotka–Volterra model changes by less than one part in ten million over 60 days, so the loops really close.">第二部分用四階 Runge–Kutta 法積分，步長 0.005 天。沒有負荷量時，Lotka–Volterra 模型的守恆量在 60 天內的變化小於千萬分之一，所以圈真的是封閉的。</li>
         <li data-en="The period is measured from the first to the last prey peak; the averages are taken over those whole cycles. The delay is the mean time from each prey peak to the next predator peak.">週期由第一個到最後一個獵物高峰量出；平均值只取這些完整循環內的時間。延遲是每個獵物高峰到下一個掠食者高峰的平均時間。</li>
         <li data-en="Populations here are continuous numbers. Real cycles, such as the snowshoe hare and lynx records of the Hudson’s Bay Company, are noisier and are shaped by more than one predator and one prey.">本頁的族群數量是連續的數字。真實的循環，例如哈德遜灣公司毛皮紀錄中的雪鞋兔與山貓，雜亂得多，也不只受一種掠食者、一種獵物影響。</li>
