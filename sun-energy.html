@@ -96,6 +96,19 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
+    @media (max-width: 560px) and (orientation: portrait) {
+      #cv { max-height: 536px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -115,11 +128,16 @@
           <button type="button" data-mode="fusion" aria-pressed="false" data-en="Fusion and the Sun’s lifetime">核融合與太陽的壽命</button>
         </div>
         <canvas id="cv" aria-label="恆星的光向外擴散" data-en-aria-label="Starlight spreading out"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">送出一道光</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">送出一道光</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="cvHint">—</p>
@@ -135,7 +153,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="starCard">
+        <section class="card" id="starCard" data-deck="恆星|The star" data-deck-order="1">
           <h2 data-en="The star">恆星</h2>
           <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
           <div class="slider" id="rBox"><label for="rad" data-en="Radius R (solar radii)">半徑 R（太陽半徑）</label><output></output>
@@ -147,7 +165,7 @@
         </section>
 
         <div id="fluxPanel">
-          <section class="card">
+          <section class="card" data-deck="距離|Distance" data-deck-order="0">
             <h2 data-en="Distance">距離</h2>
             <div class="slider"><label for="dist" data-en="Distance from the star d (AU)">離恆星的距離 d（AU）</label><output></output>
               <input id="dist" type="range" min="-2" max="1.699" step="0.001" value="0"></div>
@@ -167,7 +185,7 @@
         </div>
 
         <div id="groundPanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="太陽與天空|Sun and sky" data-deck-order="2">
             <h2 data-en="Sun and sky">太陽與天空</h2>
             <div class="slider"><label for="alt" data-en="Sun’s altitude h (°)">太陽高度角 h（°）</label><output></output>
               <input id="alt" type="range" min="2" max="90" step="0.5" value="60" data-decimals="1"></div>
@@ -199,7 +217,7 @@
         </div>
 
         <div id="fusionPanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="燃料|Fuel" data-deck-order="3">
             <h2 data-en="Fuel">燃料</h2>
             <div class="slider"><label for="frac" data-en="Mass turned from hydrogen into helium (%)">氫變成氦的質量（占全部 %）</label><output></output>
               <input id="frac" type="range" min="1" max="100" step="0.5" value="10" data-decimals="1"></div>
@@ -265,18 +283,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210921"></script>
-  <script src="js/sun-energy-core.js?v=202611210921"></script>
-  <script src="js/sound.js?v=202611210921"></script>
-  <script src="js/numinput.js?v=202611210921"></script>
-  <script src="js/labdeck.js?v=202611210921"></script>
-  <script src="js/drawkit.js?v=202611210921"></script>
-  <script src="js/keys.js?v=202611210921"></script>
-  <script src="js/sun-energy.js?v=202611210921"></script>
-  <script src="js/firebase-config.js?v=202611210921"></script>
-  <script src="js/missions.js?v=202611210921" data-module="sun-energy"></script>
-  <script src="js/missions/sun-energy.js?v=202611210921"></script>
-  <script src="js/stats.js?v=202611210921" data-module="sun-energy"></script>
-  <script src="js/comments.js?v=202611210921"></script>
+  <script src="js/math.js?v=202611210920"></script>
+  <script src="js/sun-energy-core.js?v=202611210920"></script>
+  <script src="js/sound.js?v=202611210920"></script>
+  <script src="js/numinput.js?v=202611210920"></script>
+  <script>
+    // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
+    document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
+      card._deckWraps = [card.parentElement];
+    });
+  </script>
+  <script src="js/labdeck.js?v=202611210920"></script>
+  <script src="js/drawkit.js?v=202611210920"></script>
+  <script src="js/keys.js?v=202611210920"></script>
+  <script src="js/sun-energy.js?v=202611210920"></script>
+  <script src="js/firebase-config.js?v=202611210920"></script>
+  <script src="js/missions.js?v=202611210920" data-module="sun-energy"></script>
+  <script src="js/missions/sun-energy.js?v=202611210920"></script>
+  <script src="js/stats.js?v=202611210920" data-module="sun-energy"></script>
+  <script src="js/comments.js?v=202611210920"></script>
 </body>
 </html>

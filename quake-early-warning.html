@@ -100,6 +100,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -114,11 +124,16 @@
     <div class="lab ew" id="lab">
       <div class="stage" id="stage">
         <canvas id="cv" aria-label="臺灣地圖：震央、地震站、P 波與 S 波的波前、盲區與預警時間" data-en-aria-label="Map of Taiwan: epicentre, seismic stations, P- and S-wave fronts, the blind zone and the warning times"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">發生地震</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄與畫面上的波；震央與設定不變" data-en-title="Clear the comparison log and the waves on the map; the epicentre and the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">發生地震</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄與畫面上的波；震央與設定不變" data-en-title="Clear the comparison log and the waves on the map; the epicentre and the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="segw" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
           <button type="button" data-speed="0.5" aria-pressed="false" data-en="Slow ×0.5">慢動作 ×0.5</button>
@@ -139,7 +154,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="地震|The earthquake" data-deck-order="0">
           <h2 data-en="The earthquake">地震</h2>
           <div class="presets" role="group" aria-label="真實的地震" data-en-aria-label="Real earthquakes" id="quakeSeg">
             <button type="button" data-q="hualien2024" aria-pressed="true" data-en="2024 Hualien" title="2024 年 4 月 3 日花蓮外海，深 15.5 km，ML 7.2（Mw 約 7.4）" data-en-title="3 April 2024, off Hualien, 15.5 km deep, ML 7.2 (Mw about 7.4)">2024 花蓮</button>
@@ -153,7 +168,7 @@
             <input id="dep" type="range" min="3" max="100" step="0.5" value="15.5" data-decimals="1"></div>
           <p class="hint" id="epiHint">—</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="預警系統|The warning system" data-deck-order="1">
           <h2 data-en="The warning system">預警系統</h2>
           <div class="slider"><label for="spc" data-en="Station spacing (km)">地震站的間距（km）</label><output></output>
             <input id="spc" type="range" min="5" max="50" step="1" value="20" data-decimals="1"></div>
@@ -175,7 +190,7 @@
             <dt data-en="Stations in the network">測站數</dt><dd id="rNs">—</dd>
           </dl>
         </section>
-        <section class="card">
+        <section class="card" data-deck="這個地方|At this place" data-deck-order="2">
           <h2 data-en="At this place">這個地方</h2>
           <div class="site-row"><label for="site" data-en="Place">地點</label><select id="site"></select></div>
           <p class="lead-big" id="lead">—</p>

@@ -102,6 +102,19 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
+    @media (max-width: 560px) and (orientation: portrait) {
+      #cv { max-height: 552px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -135,10 +148,15 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="艾克曼螺旋：左邊從上往下看各深度的海流，右邊是斜看的海流柱" data-en-aria-label="Ekman spiral: currents at each depth seen from above (left) and as a tilted column (right)"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="playBtn" type="button" data-en="Play" hidden>播放</button>
-          <button id="clearBtn" type="button" data-en="Clear all" title="時間歸零、清掉圖表上的軌跡；滑桿設定不變" data-en-title="Reset the time and clear the traces on the chart; the sliders stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="playBtn" type="button" data-en="Play" hidden>播放</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clearBtn" type="button" data-en="Clear all" title="時間歸零、清掉圖表上的軌跡；滑桿設定不變" data-en-title="Reset the time and clear the traces on the chart; the sliders stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="legend" id="legend" aria-hidden="true"></div>
         <p class="status" id="status" aria-live="polite"></p>
@@ -152,7 +170,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="windCard">
+        <section class="card" id="windCard" data-deck="風與緯度|Wind and latitude" data-deck-order="0">
           <h2 data-en="Wind and latitude">風與緯度</h2>
           <div class="segw" role="group" aria-label="半球" data-en-aria-label="Hemisphere" id="hemiSeg">
             <button type="button" data-hemi="N" aria-pressed="true" data-en="Northern Hemisphere">北半球</button>
@@ -166,7 +184,7 @@
             <input id="windFrom" type="range" min="0" max="359" step="1" value="0" data-decimals="1"></div>
           <p class="hint" id="windHint">—</p>
         </section>
-        <section class="card" id="spiralCard">
+        <section class="card" id="spiralCard" data-deck="艾克曼螺旋|Ekman spiral" data-deck-order="1">
           <h2 data-en="Ekman spiral">艾克曼螺旋</h2>
           <div class="slider"><label for="Av" data-en-html="Eddy viscosity A&lt;sub&gt;v&lt;/sub&gt; (m&lt;sup&gt;2&lt;/sup&gt;/s)">渦黏滯係數 A<sub>v</sub>（m<sup>2</sup>/s）</label><output></output>
             <input id="Av" type="range" min="0.005" max="0.1" step="0.001" value="0.02" data-decimals="4"></div>
@@ -174,7 +192,7 @@
             <input id="zProbe" type="range" min="0" max="300" step="1" value="30" data-decimals="1"></div>
           <p class="hint" data-en="The eddy viscosity measures how strongly turbulence passes momentum downward: stronger mixing gives a deeper spiral.">渦黏滯係數代表亂流把動量往下傳的能力：混合越強，螺旋伸得越深。</p>
         </section>
-        <section class="card" id="coastCard" hidden>
+        <section class="card" id="coastCard" hidden data-deck="海岸|Coast" data-deck-order="2">
           <h2 data-en="Coast">海岸</h2>
           <div class="segw" role="group" aria-label="海岸方向" data-en-aria-label="Which side the sea is on" id="coastSeg">
             <button type="button" data-coast="W" aria-pressed="true" data-en="Sea to the west (e.g. California, Peru)">海在西邊（例：加州、秘魯）</button>
@@ -185,7 +203,7 @@
           <div class="slider"><label for="days" data-en="Days the wind has blown">風吹了幾天</label><output></output>
             <input id="days" type="range" min="0" max="20" step="0.1" value="0" data-decimals="2"></div>
         </section>
-        <section class="card" id="eqCard" hidden>
+        <section class="card" id="eqCard" hidden data-deck="信風|Trade winds" data-deck-order="3">
           <h2 data-en="Trade winds">信風</h2>
           <div class="slider"><label for="p" data-en="Trade-wind stress (% of normal; negative = westerly)">信風的風應力（平常的 %；負＝西風）</label><output></output>
             <input id="p" type="range" min="-50" max="200" step="1" value="100" data-decimals="1"></div>

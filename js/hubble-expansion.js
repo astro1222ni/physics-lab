@@ -237,6 +237,9 @@
     });
     // 光
     const run = state.run.expand, tg = state.target;
+    const homeTxt = same(state.home, MW_POS) ? T('家：銀河系', 'Home: the Milky Way') : T('新家', 'New home');
+    const homeFont = '700 11.5px ' + FONT;
+    let homeY = cy - 23;
     if (tg) {
       const r = rel(tg), tx = cx + r.x * a * L_BOX * s, ty = cy - r.y * a * L_BOX * s;
       if (run) {
@@ -251,12 +254,14 @@
       const d = a * chiOf(tg), lab = mpc(d) + '｜' + sig(H_SIM * chiOf(tg) / HC.C_KMS, 2) + ' c';
       g.font = '700 11px ' + FONT; const lw = g.measureText(lab).width / 2 + 6;
       const lxx = Math.min(b.x + b.w - lw, Math.max(b.x + lw, tx)), lyy = ty + 23 > b.y + b.h - 10 ? ty - 23 : ty + 23;
+      g.font = homeFont;
+      // 避開橫放時靠近銀河系標籤的目標星系讀數。
+      if (Math.abs(lxx - cx) < lw + g.measureText(homeTxt).width / 2 && Math.abs(lyy - homeY) < 18) homeY = cy + 23;
       sText(g, lab, lxx, lyy, C['hb-target'], 'center', 'middle', '700 11px ' + FONT);
     }
     // 家
     g.strokeStyle = C['hb-home']; g.lineWidth = 2.4; g.beginPath(); g.arc(cx, cy, 13, 0, Math.PI * 2); g.stroke();
-    const homeTxt = same(state.home, MW_POS) ? T('家：銀河系', 'Home: the Milky Way') : T('新家', 'New home');
-    sText(g, homeTxt, cx, cy - 23, C['hb-home'], 'center', 'middle', '700 11.5px ' + FONT);
+    sText(g, homeTxt, cx, homeY, C['hb-home'], 'center', 'middle', homeFont);
     if (run && run.arrived && run.flash > 0) { g.fillStyle = D.alpha(C['hb-light'], 0.5 * run.flash); g.beginPath(); g.arc(cx, cy, 30 * (1.2 - run.flash * 0.2), 0, Math.PI * 2); g.fill(); }
     // 哈伯半徑的字
     const lx = cx + rh * Math.cos(-2.4), ly = cy - rh * Math.sin(-2.4);

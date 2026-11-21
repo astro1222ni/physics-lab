@@ -91,6 +91,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -110,11 +120,16 @@
           <button type="button" data-mode="river" aria-pressed="false" data-en="Mountains to the sea">從山到海</button>
         </div>
         <canvas id="cv" aria-label="河床上的顆粒" data-en-aria-label="Grains on a river bed"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">從上游放一把</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">從上游放一把</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="cvHint">—</p>
@@ -130,7 +145,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="grainCard">
+        <section class="card" id="grainCard" data-deck="你的顆粒|Your grain" data-deck-order="0">
           <h2 data-en="Your grain">你的顆粒</h2>
           <div class="slider"><label for="size" data-en="Grain diameter D (mm)">粒徑 D（mm）</label><output></output>
             <input id="size" type="range" min="-3" max="2.301" step="0.001" value="-0.699"></div>
@@ -144,7 +159,7 @@
         </section>
 
         <div id="bedPanel">
-          <section class="card">
+          <section class="card" data-deck="河水|The river" data-deck-order="1">
             <h2 data-en="The river">河水</h2>
             <div class="slider"><label for="vel" data-en="Mean flow speed U (m/s)">平均流速 U（m/s）</label><output></output>
               <input id="vel" type="range" min="-3" max="0.699" step="0.001" value="-0.699"></div>
@@ -170,7 +185,7 @@
         </div>
 
         <div id="settlePanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="水管|The water column" data-deck-order="2">
             <h2 data-en="The water column">水管</h2>
             <div class="slider"><label for="temp" data-en="Water temperature (°C)">水溫（°C）</label><output></output>
               <input id="temp" type="range" min="0" max="40" step="0.5" value="20" data-decimals="1"></div>
@@ -190,7 +205,7 @@
         </div>
 
         <div id="riverPanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="河流|The river" data-deck-order="3">
             <h2 data-en="The river">河流</h2>
             <div class="slider"><label for="u0" data-en="Flow speed in the mountains (m/s)">山上的流速（m/s）</label><output></output>
               <input id="u0" type="range" min="0.5" max="5" step="0.05" value="2" data-decimals="2"></div>
@@ -236,18 +251,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210921"></script>
-  <script src="js/sediment-transport-core.js?v=202611210921"></script>
-  <script src="js/sound.js?v=202611210921"></script>
-  <script src="js/numinput.js?v=202611210921"></script>
-  <script src="js/labdeck.js?v=202611210921"></script>
-  <script src="js/drawkit.js?v=202611210921"></script>
-  <script src="js/keys.js?v=202611210921"></script>
-  <script src="js/sediment-transport.js?v=202611210921"></script>
-  <script src="js/firebase-config.js?v=202611210921"></script>
-  <script src="js/missions.js?v=202611210921" data-module="sediment-transport"></script>
-  <script src="js/missions/sediment-transport.js?v=202611210921"></script>
-  <script src="js/stats.js?v=202611210921" data-module="sediment-transport"></script>
-  <script src="js/comments.js?v=202611210921"></script>
+  <script src="js/math.js?v=202611210920"></script>
+  <script src="js/sediment-transport-core.js?v=202611210920"></script>
+  <script src="js/sound.js?v=202611210920"></script>
+  <script src="js/numinput.js?v=202611210920"></script>
+  <script>
+    // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
+    document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
+      card._deckWraps = [card.parentElement];
+    });
+  </script>
+  <script src="js/labdeck.js?v=202611210920"></script>
+  <script src="js/drawkit.js?v=202611210920"></script>
+  <script src="js/keys.js?v=202611210920"></script>
+  <script src="js/sediment-transport.js?v=202611210920"></script>
+  <script src="js/firebase-config.js?v=202611210920"></script>
+  <script src="js/missions.js?v=202611210920" data-module="sediment-transport"></script>
+  <script src="js/missions/sediment-transport.js?v=202611210920"></script>
+  <script src="js/stats.js?v=202611210920" data-module="sediment-transport"></script>
+  <script src="js/comments.js?v=202611210920"></script>
 </body>
 </html>

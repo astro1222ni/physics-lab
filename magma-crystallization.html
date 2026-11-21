@@ -91,6 +91,19 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
+    @media (max-width: 560px) and (orientation: portrait) {
+      #cv { max-height: 550px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -109,11 +122,16 @@
           <button type="button" data-mode="plag" aria-pressed="false" data-en="Plagioclase and Bowen’s series">斜長石與鮑文反應序列</button>
         </div>
         <canvas id="cv" aria-label="岩體剖面的溫度與偏光顯微鏡下的薄片" data-en-aria-label="Temperature in the cross-section of the magma body and the thin section under the microscope"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">開始冷卻</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄並回到冷卻前；設定不變" data-en-title="Clear the comparison log and go back to before cooling; the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">開始冷卻</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄並回到冷卻前；設定不變" data-en-title="Clear the comparison log and go back to before cooling; the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="cvHint">—</p>
@@ -126,14 +144,14 @@
 
       <aside class="panel">
         <div id="coolPanel">
-          <section class="card" data-deck-order="3">
+          <section class="card" data-deck="冷卻圖表|Cooling charts" data-deck-order="15">
             <h2 data-en="Cooling charts">冷卻圖表</h2>
             <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
               <button type="button" data-chart="Tt" aria-pressed="true" data-en="Temperature and crystals over time">溫度與結晶的歷程</button>
               <button type="button" data-chart="IG" aria-pressed="false" data-en="Nucleation and growth rates">成核與成長速率</button>
             </div>
           </section>
-          <section class="card">
+          <section class="card" data-deck="岩漿種類|Magma type" data-deck-order="2">
             <h2 data-en="Magma type">岩漿種類</h2>
             <div class="presets" role="group" aria-label="真實的岩石" data-en-aria-label="Real rocks" id="presetSeg"></div>
             <div class="segw" role="group" aria-label="岩漿的種類" data-en-aria-label="Kind of magma" id="typeSeg">
@@ -142,7 +160,7 @@
               <button type="button" data-type="rhyolite" aria-pressed="false" data-en="Rhyolitic">流紋岩質</button>
             </div>
           </section>
-          <section class="card" data-deck-order="1">
+          <section class="card" data-deck="岩體與取樣|Sampling" data-deck-order="0">
             <h2 data-en="Body and sampling point">岩體與取樣點</h2>
             <div class="slider"><label for="size" data-en="Half-thickness of the body a (m)">岩體的半厚 a（m）</label><output></output>
               <input id="size" type="range" min="-2" max="3.4771" step="0.01" value="0.6021"></div>
@@ -173,7 +191,7 @@
           </section>
         </div>
         <div id="plagPanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="斜長石|Plagioclase" data-deck-order="3">
             <h2 data-en="Plagioclase crystallising">斜長石的結晶</h2>
             <div class="segw" role="group" aria-label="結晶的方式" data-en-aria-label="How it crystallises" id="methSeg">
               <button type="button" data-meth="eq" aria-pressed="true" data-en="Equilibrium" title="晶體一直和熔體反應，整顆晶體的成分一起改變" data-en-title="The crystals keep reacting with the melt, so the whole crystal changes composition">平衡結晶</button>
@@ -236,18 +254,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210921"></script>
-  <script src="js/magma-crystallization-core.js?v=202611210921"></script>
-  <script src="js/sound.js?v=202611210921"></script>
-  <script src="js/numinput.js?v=202611210921"></script>
-  <script src="js/labdeck.js?v=202611210921"></script>
-  <script src="js/drawkit.js?v=202611210921"></script>
-  <script src="js/keys.js?v=202611210921"></script>
-  <script src="js/magma-crystallization.js?v=202611210921"></script>
-  <script src="js/firebase-config.js?v=202611210921"></script>
-  <script src="js/missions.js?v=202611210921" data-module="magma-crystallization"></script>
-  <script src="js/missions/magma-crystallization.js?v=202611210921"></script>
-  <script src="js/stats.js?v=202611210921" data-module="magma-crystallization"></script>
-  <script src="js/comments.js?v=202611210921"></script>
+  <script src="js/math.js?v=202611210920"></script>
+  <script src="js/magma-crystallization-core.js?v=202611210920"></script>
+  <script src="js/sound.js?v=202611210920"></script>
+  <script src="js/numinput.js?v=202611210920"></script>
+  <script>
+    // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
+    document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
+      card._deckWraps = [card.parentElement];
+    });
+  </script>
+  <script src="js/labdeck.js?v=202611210920"></script>
+  <script src="js/drawkit.js?v=202611210920"></script>
+  <script src="js/keys.js?v=202611210920"></script>
+  <script src="js/magma-crystallization.js?v=202611210920"></script>
+  <script src="js/firebase-config.js?v=202611210920"></script>
+  <script src="js/missions.js?v=202611210920" data-module="magma-crystallization"></script>
+  <script src="js/missions/magma-crystallization.js?v=202611210920"></script>
+  <script src="js/stats.js?v=202611210920" data-module="magma-crystallization"></script>
+  <script src="js/comments.js?v=202611210920"></script>
 </body>
 </html>

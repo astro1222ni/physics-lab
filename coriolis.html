@@ -67,7 +67,7 @@
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
     .co .slider input[type="range"] { height: 28px; margin: 0; }
     .co [hidden] { display: none !important; }
-    .co.turn .only-earth, .co:not(.turn) .only-turn { display: none !important; }
+    html:has(.co.turn) .only-earth, html:has(.co:not(.turn)) .only-turn { display: none !important; }
     .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
     dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
@@ -105,6 +105,16 @@
     .notes li { overflow-wrap: anywhere; }
     #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
     #view3 [class$="-hud"] { bottom: 52px; }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -137,12 +147,17 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="轉盤：左邊從外面看、右邊站在盤上看" data-en-aria-label="Turntable: seen from outside on the left, from the turntable on the right"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="launch" class="primary only-turn" type="button" data-en="Launch the ball">發射</button>
-          <button id="play" class="primary only-earth" type="button">播放</button>
-          <button id="releaseBtn" class="only-earth" type="button" data-en="Release here" title="在十字游標的位置放出一團空氣（也可以直接點地圖）" data-en-title="Release a parcel of air at the cross-hair (or just tap the map)">在游標處放出</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除所有軌跡，滑桿設定不變" data-en-title="Clear every track; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="launch" class="primary only-turn" type="button" data-en="Launch the ball">發射</button>
+            <button id="play" class="primary only-earth" type="button">播放</button>
+            <button id="releaseBtn" class="only-earth" type="button" data-en="Release here" title="在十字游標的位置放出一團空氣（也可以直接點地圖）" data-en-title="Release a parcel of air at the cross-hair (or just tap the map)">在游標處放出</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除所有軌跡，滑桿設定不變" data-en-title="Clear every track; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="segw only-earth" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
           <button type="button" data-speed="1" aria-pressed="false" data-en="1 h per second">每秒 1 小時</button>
@@ -169,7 +184,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card only-turn">
+        <section class="card only-turn" data-deck="轉盤|Turntable" data-deck-order="0">
           <h2 data-en="Turntable">轉盤</h2>
           <p class="seglabel" data-en="Direction of spin (seen from above)">轉向（從上往下看）</p>
           <div class="segw" role="group" aria-label="轉向" data-en-aria-label="Direction of spin" id="spinSeg">
@@ -197,7 +212,7 @@
           </dl>
         </section>
 
-        <section class="card only-earth">
+        <section class="card only-earth" data-deck="地點與氣壓|Place and pressure" data-deck-order="1">
           <h2 data-en="Place and pressure">地點與氣壓</h2>
           <div class="slider"><label for="lat" data-en="Latitude (°; negative = south)">緯度（°，負＝南緯）</label><output></output>
             <input id="lat" type="range" min="-90" max="90" step="0.5" value="25" data-decimals="2"></div>
@@ -217,7 +232,7 @@
             <input id="fric" type="range" min="0" max="10" step="0.1" value="2" data-decimals="2"></div>
           <p class="hint" data-en-html="<b>0</b>: high above the ground, no friction. Near the surface friction slows the wind — less over the sea, more over rough land.">  <b>0</b>：高空，沒有摩擦。靠近地面時摩擦讓風變慢——海面上小，粗糙的陸地上大。</p>
         </section>
-        <section class="card only-earth">
+        <section class="card only-earth" data-deck="空氣初速|Initial wind" data-deck-order="2">
           <h2 data-en="Starting wind of a new parcel">新放出空氣的初速</h2>
           <div class="slider"><label for="v0" data-en="Speed (m/s)">風速（m/s）</label><output></output>
             <input id="v0" type="range" min="0" max="40" step="0.5" value="0" data-decimals="2"></div>

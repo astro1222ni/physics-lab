@@ -263,7 +263,8 @@
     D.pill(g, T('取樣點 ', 'Sample ') + num(st.T, 0) + ' °C', Math.min(sx + 10, s.x + s.w - 6), sy - 9, C.accent, sx + 10 > s.x + s.w - 120 ? 'right' : 'left', '700 11.5px ' + FONT);
     // 標籤
     const f11 = '600 11px ' + FONT;
-    D.pill(g, T('圍岩 ', 'Country rock ') + num(r.Tr, 0) + ' °C' + T('（深 ', ' (') + num(r.z, 1) + T(' km）', ' km deep)'), s.x + 8, s.y + 24, C.text, 'left', f11);
+    const hostLabel = T('圍岩 ', 'Country rock ') + num(r.Tr, 0) + ' °C' + T('（深 ', ' (') + num(r.z, 1) + T(' km）', ' km deep)');
+    D.pill(g, hostLabel, s.x + 8, s.y + 24, C.text, 'left', f11);
     D.haloText(g, T('岩漿', 'Magma'), s.x + 10, Y(r.a) + 16, C.text, 'left', 'middle', '700 12px ' + FONT);
     // 2a 的比例尺
     const bx = s.x + s.w - 10;
@@ -272,8 +273,18 @@
     D.pill(g, '2a = ' + lenM(2 * r.a), bx - 6, Y(-r.a) + 22, C.text, 'right', f11);
     // 時間
     const tt = molten ? T('剛侵入（t = 0）', 'Just intruded (t = 0)') : run && !run.done ? 't = ' + dur(t) : (r.end === 'glass' ? T('凍成玻璃（', 'Frozen to glass (') : T('取樣點凝固（', 'Sample solid (')) + dur(r.tEnd) + T('）', ')');
-    D.pill(g, tt, s.x + s.w - 8, s.y + (L.wide ? 24 : 48), C.text, 'right', '700 12px ' + FONT);
-    D.haloText(g, T('紅線：溫度剖面', 'Red: temperature profile'), s.x + 10, s.y + 44, C['mc-T'], 'left', 'alphabetic', '600 11px ' + FONT);
+    const timeFont = '700 12px ' + FONT;
+    const profileLabel = T('紅線：溫度剖面', 'Red: temperature profile');
+    g.font = f11;
+    const hostWidth = g.measureText(hostLabel).width + 12;
+    const profileWidth = g.measureText(profileLabel).width;
+    g.font = timeFont;
+    const timeWidth = g.measureText(tt).width + 12;
+    // 剖面窄時分行排列，避免圍岩、時間與溫度曲線的標籤互相遮住。
+    const timeY = L.wide && hostWidth + timeWidth + 22 <= s.w ? 24 : 48;
+    const profileY = timeY === 48 && profileWidth + timeWidth + 24 > s.w ? 66 : 44;
+    D.pill(g, tt, s.x + s.w - 8, s.y + timeY, C.text, 'right', timeFont);
+    D.haloText(g, profileLabel, s.x + 10, s.y + profileY, C['mc-T'], 'left', 'alphabetic', f11);
   }
 
   // ---------- 冷卻：顯微鏡 ----------

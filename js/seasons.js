@@ -234,11 +234,14 @@
   function layout() {
     W = cv.clientWidth;
     if (!W) return false;
-    const shortHeight = parseFloat(getComputedStyle(cv).maxHeight) || 0;
+    const canvasStyle = getComputedStyle(cv);
+    const shortHeight = parseFloat(canvasStyle.maxHeight) || 0;
     narrow = W < 640;
     if (narrow && !shortHeight) {
       // 天空：天球半徑 Rd ≈ 0.44 W，高度 = 上方標題 40 + Rd (1 + sin 28°) + 下方標籤 46
-      const h1 = Math.round(clamp(W * 0.82, 260, 340)), h2 = Math.round(40 + Math.min(W * 0.44, 200) * (1 + Math.sin(28 * DEG)) + 46);
+      const orbitHeightLimit = parseFloat(canvasStyle.getPropertyValue('--orbit-height-limit')) || Infinity;
+      const h1 = Math.min(Math.round(clamp(W * 0.82, 260, 340)), orbitHeightLimit);
+      const h2 = Math.round(40 + Math.min(W * 0.44, 200) * (1 + Math.sin(28 * DEG)) + 46);
       H = h1 + h2 + 8;
       P.orbit = { x: 0, y: 0, w: W, h: h1 };
       P.sky = { x: 0, y: h1 + 8, w: W, h: h2 };

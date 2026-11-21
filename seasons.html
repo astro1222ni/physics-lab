@@ -138,6 +138,19 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
+    @media (max-width: 560px) and (orientation: portrait) {
+      #cv { --orbit-height-limit: 264px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -166,14 +179,19 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="四季與太陽軌跡模擬畫布：左邊是地球繞太陽的軌道與四季的位置，右邊是觀察者看到的天空與太陽軌跡"></canvas>
         <div id="view3" class="k3-wrap"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button">播放</button>
-          <div class="seg" role="group" aria-label="播放方式" data-en-aria-label="Play mode">
-            <button type="button" id="modeDay" aria-pressed="true" data-en="One day" title="時間前進，日期不變" data-en-title="Time runs, the date stays the same">一天</button>
-            <button type="button" id="modeYear" aria-pressed="false" data-en="One year" title="日期前進，每天都在同一個時刻" data-en-title="The date runs, always at the same clock time">一年</button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button">播放</button>
           </div>
-          <button id="clear" type="button" data-en="Clear all" title="清除所有記錄的竿影軌跡，滑桿設定不變" data-en-title="Clear all recorded shadow tracks; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <div class="seg" role="group" aria-label="播放方式" data-en-aria-label="Play mode">
+              <button type="button" id="modeDay" aria-pressed="true" data-en="One day" title="時間前進，日期不變" data-en-title="Time runs, the date stays the same">一天</button>
+              <button type="button" id="modeYear" aria-pressed="false" data-en="One year" title="日期前進，每天都在同一個時刻" data-en-title="The date runs, always at the same clock time">一年</button>
+            </div>
+            <button id="clear" type="button" data-en="Clear all" title="清除所有記錄的竿影軌跡，滑桿設定不變" data-en-title="Clear all recorded shadow tracks; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
@@ -199,7 +217,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="地點|Place" data-deck-order="1">
           <h2 data-en="Place">地點</h2>
           <div class="chips" id="locs" role="group" aria-label="地點" data-en-aria-label="Place"></div>
           <div class="slider"><label for="lat" data-en="Latitude φ (north +, south −)">緯度 φ（北緯為正、南緯為負）</label><output id="lato"></output>
@@ -207,7 +225,7 @@
           <p class="hint locinfo" id="locInfo"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="日期|Date" data-deck-order="2">
           <h2 data-en="Date">日期</h2>
           <div class="seg4" id="seasonBtns" role="group" aria-label="二分二至" data-en-aria-label="Equinoxes and solstices">
             <button type="button" data-season="mar" aria-pressed="false" data-en="Mar equinox">春分</button>
@@ -220,7 +238,7 @@
           <div class="datepick"><label for="datePick" data-en="Pick a date:">直接選日期：</label><input type="date" id="datePick" min="2026-01-01" max="2026-12-31" value="2026-06-21"><button type="button" id="today" data-en="Today">今天</button></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="時刻|Time" data-deck-order="0">
           <h2 data-en="Time and playback">時刻與播放</h2>
           <div class="slider"><label for="clock" data-en="Local clock time (hours)">當地鐘錶時間（小時）</label><output id="clocko"></output>
             <input id="clock" type="range" min="0" max="24" step="0.05" value="9.5" data-decimals="3"></div>
@@ -235,7 +253,7 @@
             <input id="speed" type="range" min="1" max="10" step="1" value="5" data-decimals="0"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="地軸與顯示|Axis and display" data-deck-order="3">
           <h2 data-en="The Earth">地球</h2>
           <div class="slider"><label for="eps" data-en="Axial tilt ε">自轉軸傾角 ε</label><output id="epso"></output>
             <input id="eps" type="range" min="0" max="90" step="0.01" value="23.44" data-decimals="2"></div>
@@ -264,7 +282,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="地軸與顯示|Axis and display" data-deck-order="4">
           <h2 data-en="Options">選項</h2>
           <div class="checks">
             <label><input id="optRefract" type="checkbox" checked><span data-en="Refraction in sunrise/sunset (−0.833°)">日出日落計入大氣折射（−0.833°）</span></label>

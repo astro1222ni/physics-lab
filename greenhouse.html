@@ -118,6 +118,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -146,11 +156,16 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="能量流：陽光、反射、地表與大氣的紅外線" data-en-aria-label="Energy flow: sunlight, reflection, and infrared from the surface and the atmosphere"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button">播放</button>
-          <button id="jump" type="button" data-en="Jump to equilibrium" title="直接跳到這組設定最後會停下來的溫度" data-en-title="Go straight to the temperature these settings finally settle at">跳到平衡</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除溫度紀錄與遲滯圖的軌跡，時間歸零；溫度與設定不變" data-en-title="Clear the temperature record and the hysteresis trace and reset the clock; temperature and settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button">播放</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="jump" type="button" data-en="Jump to equilibrium" title="直接跳到這組設定最後會停下來的溫度" data-en-title="Go straight to the temperature these settings finally settle at">跳到平衡</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除溫度紀錄與遲滯圖的軌跡，時間歸零；溫度與設定不變" data-en-title="Clear the temperature record and the hysteresis trace and reset the clock; temperature and settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="segw" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
           <button type="button" data-speed="1" aria-pressed="false" data-en="1 year per second">每秒 1 年</button>
@@ -179,7 +194,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="太陽與地表|Sun and surface" data-deck-order="1">
           <h2 data-en="Sun and surface">太陽與地表</h2>
           <div class="slider"><label for="sun" data-en="Brightness of the Sun (% of today)">太陽亮度（今天＝100%）</label><output></output>
             <input id="sun" type="range" min="70" max="140" step="0.5" value="100" data-decimals="2"></div>
@@ -188,7 +203,7 @@
             <input id="alb" type="range" min="0" max="0.9" step="0.01" value="0.3" data-decimals="3"></div>
           <p class="hint" id="albHint" hidden>—</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="溫室氣體|Greenhouse gases" data-deck-order="0">
           <h2 data-en="Greenhouse gases">溫室氣體</h2>
           <div class="slider"><label for="co2" data-en-html="Carbon dioxide CO<sub>2</sub> (ppm)">二氧化碳 CO<sub>2</sub>（ppm）</label><output></output>
             <input id="co2" type="range" min="100" max="2000" step="5" value="280" data-decimals="1"></div>

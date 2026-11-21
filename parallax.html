@@ -84,6 +84,19 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
+    @media (max-width: 560px) and (orientation: portrait) {
+      #cv { max-height: 554px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -103,12 +116,17 @@
           <button type="button" data-mode="baseline" aria-pressed="false" data-en="A longer baseline">拉長基線</button>
         </div>
         <canvas id="cv" aria-label="恆星視差" data-en-aria-label="Stellar parallax"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">播放一年</button>
-          <button id="burst" type="button" hidden>兩年拍 12 張</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除照片與動畫；設定不變" data-en-title="Clear the photos and the animation; the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">播放一年</button>
+            <button id="burst" type="button" hidden>兩年拍 12 張</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除照片與動畫；設定不變" data-en-title="Clear the photos and the animation; the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="cvHint">—</p>
@@ -120,18 +138,18 @@
       </div>
 
       <aside class="panel">
-        <section class="card" data-deck-order="3">
+        <section class="card" data-deck="圖表|Charts" data-deck-order="15">
           <h2 data-en="Charts">圖表</h2>
           <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
             <button type="button" data-chart="a" aria-pressed="true">—</button>
             <button type="button" data-chart="b" aria-pressed="false">—</button>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="恆星|The star" data-deck-order="2">
           <h2 data-en="The star">恆星</h2>
           <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
         </section>
-        <section class="card" data-deck-order="1">
+        <section class="card" data-deck="距離與自行|Distance and motion" data-deck-order="0">
           <h2 data-en="Distance and motion">距離與自行</h2>
           <div class="slider"><label for="dist" data-en="Distance d (pc)">距離 d（pc）</label><output></output>
             <input id="dist" type="range" min="0" max="4" step="0.001" value="0.115"></div>
@@ -144,7 +162,7 @@
           <p class="hint" id="starHint">—</p>
         </section>
 
-        <section class="card" id="dateCard">
+        <section class="card" id="dateCard" data-deck="日期|Date" data-deck-order="3">
           <h2 data-en="Date">日期</h2>
           <div class="slider"><label for="date" data-en="Time since 1 January of year 1 (years)">從第 1 年 1 月 1 日起（年）</label><output></output>
             <input id="date" type="range" min="0" max="3" step="0.0027379" value="0" data-decimals="3"></div>
@@ -168,7 +186,7 @@
         </div>
 
         <div id="measurePanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="儀器|Instrument" data-deck-order="4">
             <h2 data-en="Instrument">儀器</h2>
             <div class="segw col" role="group" aria-label="儀器" data-en-aria-label="Instrument" id="instSeg"></div>
             <div class="segw" role="group" aria-label="怎麼解" data-en-aria-label="What to solve for" id="fitSeg">
@@ -192,7 +210,7 @@
         </div>
 
         <div id="basePanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="基線|The baseline" data-deck-order="5">
             <h2 data-en="The baseline">基線</h2>
             <div class="slider"><label for="base" data-en="Distance between the observers B (AU)">兩個觀測者的距離 B（AU）</label><output></output>
               <input id="base" type="range" min="-4.5" max="2.301" step="0.001" value="0.301"></div>
@@ -241,18 +259,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210921"></script>
-  <script src="js/parallax-core.js?v=202611210921"></script>
-  <script src="js/sound.js?v=202611210921"></script>
-  <script src="js/numinput.js?v=202611210921"></script>
-  <script src="js/labdeck.js?v=202611210921"></script>
-  <script src="js/drawkit.js?v=202611210921"></script>
-  <script src="js/keys.js?v=202611210921"></script>
-  <script src="js/parallax.js?v=202611210921"></script>
-  <script src="js/firebase-config.js?v=202611210921"></script>
-  <script src="js/missions.js?v=202611210921" data-module="parallax"></script>
-  <script src="js/missions/parallax.js?v=202611210921"></script>
-  <script src="js/stats.js?v=202611210921" data-module="parallax"></script>
-  <script src="js/comments.js?v=202611210921"></script>
+  <script src="js/math.js?v=202611210920"></script>
+  <script src="js/parallax-core.js?v=202611210920"></script>
+  <script src="js/sound.js?v=202611210920"></script>
+  <script src="js/numinput.js?v=202611210920"></script>
+  <script>
+    // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
+    document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
+      card._deckWraps = [card.parentElement];
+    });
+  </script>
+  <script src="js/labdeck.js?v=202611210920"></script>
+  <script src="js/drawkit.js?v=202611210920"></script>
+  <script src="js/keys.js?v=202611210920"></script>
+  <script src="js/parallax.js?v=202611210920"></script>
+  <script src="js/firebase-config.js?v=202611210920"></script>
+  <script src="js/missions.js?v=202611210920" data-module="parallax"></script>
+  <script src="js/missions/parallax.js?v=202611210920"></script>
+  <script src="js/stats.js?v=202611210920" data-module="parallax"></script>
+  <script src="js/comments.js?v=202611210920"></script>
 </body>
 </html>

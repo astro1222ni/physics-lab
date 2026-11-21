@@ -82,6 +82,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -101,12 +111,17 @@
           <button type="button" data-mode="age" aria-pressed="false" data-en="The age of the universe">宇宙的年齡</button>
         </div>
         <canvas id="cv" aria-label="膨脹的宇宙" data-en-aria-label="The expanding universe"></canvas>
-        <div class="playbar">
-          <button id="go" class="primary" type="button">膨脹</button>
-          <button id="burst" type="button" hidden>全部量一遍</button>
-          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除量測與動畫；設定不變" data-en-title="Clear the measurements and the animation; the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="go" class="primary" type="button">膨脹</button>
+            <button id="burst" type="button" hidden>全部量一遍</button>
+            <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除量測與動畫；設定不變" data-en-title="Clear the measurements and the animation; the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="cvHint">—</p>
@@ -123,7 +138,7 @@
 
       <aside class="panel">
         <div id="expandPanel">
-          <section class="card">
+          <section class="card" data-deck="拉長空間|Stretching space" data-deck-order="0">
             <h2 data-en="Stretching space">拉長空間</h2>
             <div class="slider"><label for="scale" data-en="Scale factor a (now = 1)">尺度因子 a（現在 = 1）</label><output></output>
               <input id="scale" type="range" min="0.4" max="3" step="0.01" value="1" data-decimals="2"></div>
@@ -147,7 +162,7 @@
         </div>
 
         <div id="measurePanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="量距離的方法|Measuring distance" data-deck-order="1">
             <h2 data-en="Measuring distance">量距離的方法</h2>
             <div class="segw col" role="group" aria-label="方法" data-en-aria-label="Method" id="methodSeg"></div>
             <p class="hint" id="methodHint">—</p>
@@ -174,7 +189,7 @@
         </div>
 
         <div id="agePanel" hidden>
-          <section class="card">
+          <section class="card" data-deck="宇宙的成分|What the universe is made of" data-deck-order="2">
             <h2 data-en="What the universe is made of">宇宙的成分</h2>
             <div class="slider"><label for="h0" data-en-html="Hubble constant H<sub>0</sub> (km/s/Mpc)">哈伯常數 H<sub>0</sub>（km/s/Mpc）</label><output></output>
               <input id="h0" type="range" min="1.602" max="2.778" step="0.0005" value="1.8287"></div>
@@ -228,18 +243,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210921"></script>
-  <script src="js/hubble-expansion-core.js?v=202611210921"></script>
-  <script src="js/sound.js?v=202611210921"></script>
-  <script src="js/numinput.js?v=202611210921"></script>
-  <script src="js/labdeck.js?v=202611210921"></script>
-  <script src="js/drawkit.js?v=202611210921"></script>
-  <script src="js/keys.js?v=202611210921"></script>
-  <script src="js/hubble-expansion.js?v=202611210921"></script>
-  <script src="js/firebase-config.js?v=202611210921"></script>
-  <script src="js/missions.js?v=202611210921" data-module="hubble-expansion"></script>
-  <script src="js/missions/hubble-expansion.js?v=202611210921"></script>
-  <script src="js/stats.js?v=202611210921" data-module="hubble-expansion"></script>
-  <script src="js/comments.js?v=202611210921"></script>
+  <script src="js/math.js?v=202611210920"></script>
+  <script src="js/hubble-expansion-core.js?v=202611210920"></script>
+  <script src="js/sound.js?v=202611210920"></script>
+  <script src="js/numinput.js?v=202611210920"></script>
+  <script>
+    // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
+    document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
+      card._deckWraps = [card.parentElement];
+    });
+  </script>
+  <script src="js/labdeck.js?v=202611210920"></script>
+  <script src="js/drawkit.js?v=202611210920"></script>
+  <script src="js/keys.js?v=202611210920"></script>
+  <script src="js/hubble-expansion.js?v=202611210920"></script>
+  <script src="js/firebase-config.js?v=202611210920"></script>
+  <script src="js/missions.js?v=202611210920" data-module="hubble-expansion"></script>
+  <script src="js/missions/hubble-expansion.js?v=202611210920"></script>
+  <script src="js/stats.js?v=202611210920" data-module="hubble-expansion"></script>
+  <script src="js/comments.js?v=202611210920"></script>
 </body>
 </html>

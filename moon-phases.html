@@ -129,6 +129,16 @@
     .mp .loccard .hint b { font-weight: 600; }
     #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
     #view3 [class$="-hud"] { bottom: 52px; }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -158,10 +168,15 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="俯視的太陽、地球、月球軌道圖：可拖曳月球、升交點與近地點" data-en-aria-label="Top view of the Sun, Earth and the Moon’s orbit: drag the Moon, the ascending node and the perigee"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button">暫停</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除事件紀錄與畫面上的比較標記，滑桿設定不變" data-en-title="Clear the event log and the comparison marks; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button">暫停</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除事件紀錄與畫面上的比較標記，滑桿設定不變" data-en-title="Clear the event log and the comparison marks; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="stepbar" role="group" aria-label="跳到" data-en-aria-label="Jump">
           <button type="button" id="dayBack" data-en="−1 day">−1 天</button>
@@ -200,7 +215,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card loccard" data-share-skip>
+        <section class="card loccard" data-share-skip data-deck="觀測地點|Where you watch from" data-deck-order="1">
           <h2 data-en="Where you watch from">觀測地點</h2>
           <label class="field-label" for="place" data-en="Location (Taiwan, 18 cities, or your own)">地點（臺灣、世界 18 個城市或自訂）</label>
           <select id="place"></select>
@@ -213,7 +228,7 @@
           <p class="hint" data-en="Dates and times on this page are the local time of the chosen place. The cities follow their own time zones, with daylight saving time by the 2026 rules; a location you enter uses the fixed UTC offset you give, with no daylight saving. South latitudes and west longitudes are negative. Changing the place keeps the local date and time, so the real instant — and the Moon — moves by the time difference.">頁面上的日期與時刻都是所選地點的當地時間。城市依各自的時區，夏令時間照 2026 年的規則；自訂地點用你填的固定 UTC 時差，不計夏令時間。南緯、西經填負數。換地點時保持當地的日期與時刻，所以真實的瞬間差了一個時差，月球也跟著移動一點。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="時間|Time" data-deck-order="0">
           <h2 data-en="Time">時間</h2>
           <div class="slider"><label for="doy" data-en="Date (day of the year)">日期（一年中的第幾天）</label><output id="doyo"></output>
             <input id="doy" type="range" min="1" max="365" step="1" value="266" data-decimals="0"></div>
@@ -224,7 +239,7 @@
           <p class="hint" data-en="Time moves the Sun, the Earth’s rotation and the Moon together. Tap a number to type an exact value.">時間會同時推動太陽、地球自轉與月球。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="月球與軌道|The Moon and its orbit" data-deck-order="2">
           <h2 data-en="The Moon and its orbit">月球與軌道</h2>
           <div class="slider"><label for="elong" data-en="Moon’s position: ecliptic longitude minus the Sun’s (°)">月球位置：與太陽的黃經差（°）</label><output id="elongo"></output>
             <input id="elong" type="range" min="0" max="360" step="1" value="120" data-decimals="3"></div>
@@ -239,7 +254,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="3">
           <h2 data-en="Display">顯示</h2>
           <div class="seg2" role="group" aria-label="參考方向" data-en-aria-label="Reference frame">
             <button type="button" id="frSun" aria-pressed="true" data-en="Sun fixed (right)">太陽固定在右方</button>

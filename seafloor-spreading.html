@@ -122,6 +122,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -150,10 +160,15 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="海底擴張剖面：上方是磁異常曲線，下方是海水、海床與磁化的地殼" data-en-aria-label="Seafloor spreading section: the magnetic anomaly on top, the sea, seafloor and magnetised crust below"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button">播放</button>
-          <button id="restart" type="button" data-en="Clear all" title="時間回到 800 萬年前、船回到中洋脊；擴張速率等設定不變" data-en-title="Go back 8 million years and return the ship to the ridge; the spreading rates and other settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button">播放</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="restart" type="button" data-en="Clear all" title="時間回到 800 萬年前、船回到中洋脊；擴張速率等設定不變" data-en-title="Go back 8 million years and return the ship to the ridge; the spreading rates and other settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <div class="segw" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
           <button type="button" data-speed="0.1" aria-pressed="false" data-en="0.1 Myr per second">每秒 10 萬年</button>
@@ -183,7 +198,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="rateCard">
+        <section class="card" id="rateCard" data-deck="擴張|Spreading" data-deck-order="0">
           <h2 data-en="Spreading">擴張</h2>
           <label class="check"><input type="checkbox" id="sym" checked><span data-en="Same rate on both sides (symmetric)">兩邊一樣快（對稱擴張）</span></label>
           <div class="slider"><label for="uR" data-en="Half-rate, right side (cm/yr)">右邊的半擴張速率（cm/yr）</label><output></output>
@@ -197,7 +212,7 @@
           </div>
           <p class="hint" id="rateHint">—</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="磁力計|The magnetometer" data-deck-order="1">
           <h2 data-en="The magnetometer">磁力計</h2>
           <div class="slider"><label for="zs" data-en="Towed depth below the sea surface (km)">拖曳深度（海面下，km）</label><output></output>
             <input id="zs" type="range" min="0" max="2.5" step="0.05" value="0" data-decimals="2"></div>
@@ -224,7 +239,7 @@
           </dl>
           <p class="sr-only" id="srNow" aria-live="polite"></p>
         </section>
-        <section class="card mystery">
+        <section class="card mystery" data-deck="神秘海脊|Mystery ridge" data-deck-order="2">
           <h2 data-en="Mystery ridge">神秘海脊</h2>
           <p class="hint" data-en="The rate is hidden (and so is everything that would give it away). Measure the profile and guess the half-rate.">擴張速率藏起來了（會洩露答案的讀數也藏起來）。量剖面，猜出半擴張速率。</p>
           <div class="presets"><button type="button" id="mysteryBtn" data-en="New mystery ridge">出一題神秘海脊</button><button type="button" id="revealBtn" data-en="Reveal" disabled>揭曉</button></div>

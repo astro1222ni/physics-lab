@@ -141,6 +141,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -169,11 +179,16 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="山脈的剖面：氣塊沿迎風坡上升、成雲降雨、越過山頂再沿背風坡下沉；點一下剖面可以把氣塊移到那裡" data-en-aria-label="Cross-section of a mountain range: the air parcel rises up the windward slope, forms cloud and rain, crosses the crest and sinks down the lee slope; tap the section to move the parcel there"></canvas>
         <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" class="primary" type="button">暫停</button>
-          <button id="recBtn" type="button" data-en="Record this point" title="把氣塊目前的高度、溫度、露點與溼度記到下面的表格" data-en-title="Add the parcel’s current height, temperature, dew point and humidity to the table below">記錄這一點</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除測量紀錄，滑桿設定不變" data-en-title="Clear the measurement records; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button">暫停</button>
+            <button id="recBtn" type="button" data-en="Record this point" title="把氣塊目前的高度、溫度、露點與溼度記到下面的表格" data-en-title="Add the parcel’s current height, temperature, dew point and humidity to the table below">記錄這一點</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除測量紀錄，滑桿設定不變" data-en-title="Clear the measurement records; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
@@ -201,7 +216,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="山腳空氣|Windward air" data-deck-order="0">
           <h2 data-en="Air at the windward foot">迎風山腳的空氣</h2>
           <div class="slider"><label for="t0" data-en="Air temperature (°C)">氣溫（°C）</label><output></output>
             <input id="t0" type="range" min="-10" max="40" step="0.5" value="28" data-decimals="2"></div>
@@ -210,7 +225,7 @@
           <p class="hint" id="airHint">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="山與降雨|Mountain and rain" data-deck-order="1">
           <h2 data-en="Mountain and rain">山與降雨</h2>
           <div class="slider"><label for="hm" data-en="Height of the mountain (m)">山高（m）</label><output></output>
             <input id="hm" type="range" min="0" max="4000" step="50" value="1500" data-decimals="1"></div>
@@ -219,7 +234,7 @@
           <p class="hint" data-en-html="Precipitation efficiency is the share of the condensed water that falls out as rain at once. <b>100%</b>: all of it rains out on the windward side; <b>0%</b>: it stays in the parcel as cloud droplets and evaporates again on the way down. Taiwan’s highest peak, Yushan, is 3952 m.">降水效率＝凝結出來的水有多少比例立刻變成雨落下。<b>100%</b>：全部下在迎風坡；<b>0%</b>：全部留在氣塊裡當雲滴，下坡時再蒸發回去。臺灣最高的玉山是 3952 m。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="周圍大氣|Ambient air" data-deck-order="2">
           <h2 data-en="Surrounding atmosphere">周圍的大氣</h2>
           <div class="slider"><label for="gam" data-en="Lapse rate of the surrounding air (°C per km)">周圍大氣的遞減率（°C／km）</label><output></output>
             <input id="gam" type="range" min="3" max="11" step="0.1" value="5.5" data-decimals="2"></div>

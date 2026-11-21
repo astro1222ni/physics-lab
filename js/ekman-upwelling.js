@@ -188,14 +188,22 @@
   function drawSpiral(g, W, H, wide, fs) {
     let pl, co;
     if (wide) { const pw = Math.round(W * 0.47); pl = { x: 0, y: 0, w: pw, h: H }; co = { x: pw + 14, y: 0, w: W - pw - 14, h: H }; }
-    else { const ph = Math.round(Math.min(W, 420)); pl = { x: 0, y: 0, w: W, h: ph }; co = { x: 0, y: ph + 14, w: W, h: H - ph - 14 }; }
-    drawPlan(g, pl, fs);
+    else {
+      // 限高時也為下方的立體海流柱留足高度。
+      const ph = Math.round(Math.min(W, 420, H * 0.52));
+      pl = { x: 0, y: 0, w: W, h: ph };
+      co = { x: 0, y: ph + 14, w: W, h: H - ph - 14 };
+    }
+    drawPlan(g, pl, fs, !wide);
     drawColumn(g, co, fs);
   }
   function levels() { const n = 14, zm = zMax(), out = []; for (let i = n; i >= 0; i--) out.push(-i * zm / n); return out; }
-  function drawPlan(g, r, fs) {
+  function drawPlan(g, r, fs, stacked) {
     title(g, T('從上往下看各深度的海流（北在上）', 'Currents at each depth, seen from above (north up)'), r.x + 6, r.y + 11, fs);
-    const cx = r.x + r.w / 2, cy = r.y + 22 + (r.h - 22) / 2, R = Math.max(40, Math.min(r.w, r.h - 22) / 2 - 30);
+    // 上下排列時，為羅盤南方標字與半球提示保留各自的空間。
+    const circleHeight = r.h - (stacked ? 18 : 0);
+    const cx = r.x + r.w / 2, cy = r.y + 22 + (circleHeight - 22) / 2;
+    const R = Math.max(40, Math.min(r.w, circleHeight - 22) / 2 - 30);
     // 海面圓盤與方位
     const bg = g.createRadialGradient(cx, cy, R * 0.1, cx, cy, R);
     bg.addColorStop(0, D.alpha(C['ek-sea'], D.dark ? 0.14 : 0.1)); bg.addColorStop(1, D.alpha(C['ek-sea'], D.dark ? 0.06 : 0.04));
@@ -329,7 +337,11 @@
   function drawCoast(g, W, H, wide, fs) {
     let mp, sc;
     if (wide) { const mw = Math.round(W * 0.38); mp = { x: 0, y: 0, w: mw, h: H }; sc = { x: mw + 16, y: 0, w: W - mw - 16, h: H }; }
-    else { const mh = Math.round(Math.min(W * 0.8, 340)); mp = { x: 0, y: 0, w: W, h: mh }; sc = { x: 0, y: mh + 14, w: W, h: H - mh - 14 }; }
+    else {
+      const mh = Math.round(Math.min(W * 0.8, 340, H * 0.52));
+      mp = { x: 0, y: 0, w: W, h: mh };
+      sc = { x: 0, y: mh + 14, w: W, h: H - mh - 14 };
+    }
     drawCoastMap(g, mp, fs);
     drawCoastSection(g, sc, fs);
   }

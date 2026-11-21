@@ -446,7 +446,7 @@
     }
     const lab = degC(p.T) + ' · ' + pct(p.RH);
     const lx = Math.max(l.pad.l + 40, Math.min(l.W - l.pad.r - 40, px));
-    D.pill(g, lab, lx, py - 2 * rad - 2, col, 'center');
+    place(lab, lx, py - 2 * rad - 2, col, 'center');
     // 比例尺與高度誇大倍數（右上角）
     const ty = l.pad.t + 16;
     const exTxt = l.W < 560 ? T('高度 ×', 'Heights ×') + Math.round(l.exag) : T('高度誇大約 ', 'Heights ×') + Math.round(l.exag) + T(' 倍', '');

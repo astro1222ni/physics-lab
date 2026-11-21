@@ -129,6 +129,16 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+
+    /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
+    @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+      .stage-playback > .playbar { display: contents; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-playback { gap: 4px; margin-block: 4px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -152,12 +162,17 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <div id="view3"></div>
         <canvas id="cv" tabindex="0" aria-label="地震波模擬畫布" data-en-aria-label="Seismic wave simulation"></canvas>
-        <div class="playbar">
-          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
-          <button id="quake" type="button" data-en="Make an earthquake">發生地震</button>
-          <button id="reset" type="button" data-en="Clear all" title="清除紀錄、畫的圓與定位紀錄，滑桿設定不變" data-en-title="Clear the records, the circles and the location history; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion">慢動作</span></label>
+        <div class="stage-playback">
+          <div class="playbar playbar-primary">
+            <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+            <button id="quake" type="button" data-en="Make an earthquake">發生地震</button>
+          </div>
+          <div data-deck-anchor hidden></div>
+          <div class="playbar">
+            <button id="reset" type="button" data-en="Clear all" title="清除紀錄、畫的圓與定位紀錄，滑桿設定不變" data-en-title="Clear the records, the circles and the location history; slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+            <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion">慢動作</span></label>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" data-m="waves">
@@ -191,7 +206,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="1">
           <h2 data-en="Mode">模式</h2>
           <div class="seg3 modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="waves" aria-pressed="true" data-en="P, S and surface waves">P、S 波與表面波</button>
@@ -201,7 +216,7 @@
         </section>
 
         <!-- ===== 模式一 ===== -->
-        <section class="card" data-m="waves">
+        <section class="card" data-m="waves" data-deck="震源與測站|Focus and station" data-deck-order="0">
           <h2 data-en="Focus and station">震源與測站</h2>
           <div class="slider"><label for="h1" data-en="Focal depth h">震源深度 h</label><output id="h1o"></output>
             <input id="h1" type="range" min="2" max="40" step="1" value="15" data-decimals="1"></div>
@@ -209,7 +224,7 @@
             <input id="x1" type="range" min="0" max="100" step="1" value="60" data-decimals="1"></div>
           <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
         </section>
-        <section class="card" data-m="waves">
+        <section class="card" data-m="waves" data-deck="地殼的波速|Wave speeds in the crust" data-deck-order="2">
           <h2 data-en="Wave speeds in the crust">地殼的波速</h2>
           <div class="slider"><label for="vp1" data-en-html="P-wave speed V<sub>P</sub>">P 波速度 V<sub>P</sub></label><output id="vp1o"></output>
             <input id="vp1" type="range" min="4" max="8" step="0.05" value="6" data-decimals="2"></div>
@@ -235,7 +250,7 @@
             <dt data-en-html="Rayleigh-wave speed V<sub>R</sub>">雷利波速 V<sub>R</sub></dt><dd id="r1VR">—</dd>
           </dl>
         </section>
-        <section class="card" data-m="waves">
+        <section class="card" data-m="waves" data-deck="顯示|Display" data-deck-order="3">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showDots" type="checkbox" checked><span data-en="Particles">質點</span></label>
@@ -245,7 +260,7 @@
         </section>
 
         <!-- ===== 模式二 ===== -->
-        <section class="card" data-m="locate" hidden>
+        <section class="card" data-m="locate" hidden data-deck="地震|Earthquake" data-deck-order="4">
           <h2 data-en="Earthquake">地震</h2>
           <div class="btnrow">
             <button type="button" id="rand" class="primary" data-en="Random earthquake">隨機地震</button>
@@ -269,7 +284,7 @@
             <p class="hint" data-en="The 21 September 1999 Chi-Chi earthquake: epicenter about 23.85° N, 120.82° E, focal depth about 8 km (Central Weather Administration).">1999 年 9 月 21 日集集大地震：震央約在北緯 23.85°、東經 120.82°，震源深度約 8 km（中央氣象署）。</p>
           </details>
         </section>
-        <section class="card" data-m="locate" hidden>
+        <section class="card" data-m="locate" hidden data-deck="測站|Stations" data-deck-order="5">
           <h2 data-en="Stations">測站</h2>
           <p class="seg-label" id="nLabel" data-en="Number of stations:">使用的測站數：</p>
           <div class="seg4" role="group" aria-labelledby="nLabel">
@@ -280,7 +295,7 @@
           </div>
           <p class="hint" data-en="Stations start at Central Weather Administration cities. Drag a station on the map to move it; near a city it snaps to it. Its record and cursors are then redone.">測站一開始放在中央氣象署測站所在的城市。在地圖上拖曳可移動測站，靠近城市時會吸附過去；移動後該站的紀錄與游標重新來過。</p>
         </section>
-        <section class="card" data-m="locate" hidden>
+        <section class="card" data-m="locate" hidden data-deck="換算用的波速|Speeds used to convert S−P" data-deck-order="6">
           <h2 data-en="Speeds used to convert S−P">換算用的波速</h2>
           <div class="slider"><label for="vpc" data-en-html="V<sub>P</sub>">V<sub>P</sub></label><output id="vpco"></output>
             <input id="vpc" type="range" min="4" max="8" step="0.05" value="6" data-decimals="2"></div>
@@ -291,7 +306,7 @@
           </dl>
           <p class="hint" data-en-html="The crust in this simulation really has V<sub>P</sub> = 6.0 km/s and V<sub>S</sub> = 3.5 km/s. Try converting with wrong speeds and see what happens to the circles.">這個模擬的地殼實際上 V<sub>P</sub> = 6.0 km/s、V<sub>S</sub> = 3.5 km/s。試試用錯的波速換算，看看圓會怎樣。</p>
         </section>
-        <section class="card" data-m="locate" hidden>
+        <section class="card" data-m="locate" hidden data-deck="量測表|Readings" data-deck-order="7">
           <h2 data-en="Readings">量測表</h2>
           <table class="picks" id="picks"></table>
           <div class="checks" style="margin-top:6px">
@@ -299,7 +314,7 @@
           </div>
         </section>
         <!-- 標震央與確認另成一張卡片：寬螢幕時版面平衡（js/lab-layout.js）才能把它單獨搬到地圖下方 -->
-        <section class="card" data-m="locate" hidden>
+        <section class="card" data-m="locate" hidden data-deck="標出震央|Locate the epicenter" data-deck-order="8">
           <h2 data-en="Locate the epicenter">標出震央</h2>
           <p class="seg-label" id="mkLabel" data-en="My markers:">我標的震央：</p>
           <div class="seg2" role="group" aria-labelledby="mkLabel">
@@ -333,7 +348,7 @@
         </section>
 
         <!-- ===== 模式三 ===== -->
-        <section class="card" data-m="earth" hidden>
+        <section class="card" data-m="earth" hidden data-deck="射線|Rays" data-deck-order="9">
           <h2 data-en="Rays">射線</h2>
           <div class="seg3" role="group" aria-label="波的種類" data-en-aria-label="Wave type">
             <button type="button" data-wave="P" aria-pressed="false" data-en="P waves">P 波</button>
@@ -359,7 +374,7 @@
             <dt data-en="At the core–mantle boundary">在核幔界面</dt><dd id="e3cmb">—</dd>
           </dl>
         </section>
-        <section class="card" data-m="earth" hidden>
+        <section class="card" data-m="earth" hidden data-deck="測站|Station" data-deck-order="10">
           <h2 data-en="Station">測站</h2>
           <div class="slider"><label for="rcv" data-en="Angular distance from the earthquake Δ">與地震的角距 Δ</label><output id="rcvo"></output>
             <input id="rcv" type="range" min="0" max="180" step="0.5" value="60" data-decimals="1"></div>
