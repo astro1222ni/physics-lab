@@ -845,6 +845,12 @@
 
   const mathPad = window.LabMathPad?.mount({
     id: 'regression', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    // 畫布下方畫了相關係數量尺與殘差長條，小鍵盤放在散布圖框的右下角，不蓋讀數
+    home: function (w, h) {
+      if (!L) return null;
+      const r = cv.getBoundingClientRect(), P = L.plot;
+      return { x: r.left + P.x1 - w - 4, y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.top + P.y1 - h - 4)) };
+    },
     visible: canFineMove,
     onSelect: function (i) { state.sel = i; requestDraw(); },
     targets: function () {

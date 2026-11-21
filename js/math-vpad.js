@@ -60,8 +60,9 @@
       visible: function () { return list().length > 0 && (!o.visible || o.visible()); },
       home: o.home || function (w, h) {
         const r = o.canvas.getBoundingClientRect(), t = get(), p = t ? t.point() : null;
-        // 放在離選取的點較遠的那一邊，不蓋住它
-        const right = !p || p.x < r.width / 2;
+        // 收起的小圓鈕固定放右下角（數學頁的格距、比例標示多在左下，狀態與方程式在上方），選取的點貼近右下才改左下；
+        // 展開時放在離選取的點較遠的那一邊，不蓋住它
+        const right = w < 80 ? !p || !(p.x > r.width - w - 40 && p.y > r.height - h - 40) : !p || p.x < r.width / 2;
         return { x: right ? r.right - w - 4 : r.left + 4, y: Math.max(r.top + 4, Math.min(innerHeight, r.bottom) - h - 4) };
       },
       viewport: function () {

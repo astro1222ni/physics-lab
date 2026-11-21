@@ -1060,6 +1060,12 @@
 
   window.LabMathPad?.mount({
     id: 'linear-programming', canvas: cv, steps: [0.01, 0.1, 0.5], step: 0.1,
+    // 右下角、左下角有可行域頂點的標籤與格距（例如 (6, 0) z = 18），收起的圓鈕放右上角（可行域外）；展開時照共用的擺法
+    home: function (w, h) {
+      if (w >= 80) return null;
+      const r = cv.getBoundingClientRect();
+      return { x: r.right - w - 4, y: Math.max(4, r.top + 4) };
+    },
     targets: function () {
       return [{
         key: 'P', label: ['點 P', 'Point P'], html: 'P',

@@ -202,6 +202,7 @@
     c.strokeStyle = alpha(C.text, 0.5); c.lineWidth = 1.4;
     c.beginPath(); c.moveTo(b.x, snap(Y(0))); c.lineTo(b.x + b.w, snap(Y(0))); c.moveTo(snap(X(0)), b.y); c.lineTo(snap(X(0)), b.y + b.h); c.stroke();
     // 刻度與軸名：畫在單位圓、向量之後（加襯底），單位圓與藍線經過 ±1、±i 時數字仍看得清楚
+    let axisBoxes = [];
     const drawTicks = function () {
       const yAx = clampv(Y(0), b.y + 12, b.y + b.h - 4), xAx = clampv(X(0), b.x + 4, b.x + b.w - 24);
       for (let g = Math.ceil(vb[0] / st) * st; g <= vb[1]; g += st) {
@@ -218,6 +219,10 @@
       }
       D.haloText(c, T('實軸', 'Re'), b.x + b.w - 8, yAx - 8, C.text, 'right', 'bottom', fnt(12, 600));
       D.haloText(c, T('虛軸', 'Im'), xAx + 8, b.y + 14, C.text, 'left', 'middle', fnt(12, 600));
+      // 軸名的位置先佔起來，結果標籤（例如 zw）碰到就讓位
+      c.font = fnt(12, 600);
+      const wRe = c.measureText(T('實軸', 'Re')).width, wIm = c.measureText(T('虛軸', 'Im')).width;
+      axisBoxes = [{ x: b.x + b.w - 12 - wRe, y: yAx - 26, w: wRe + 8, h: 20 }, { x: xAx + 4, y: b.y + 4, w: wIm + 8, h: 20 }];
       D.haloText(c, '0', X(0) - 4, Y(0) + 4, C.muted, 'right', 'top', fnt(11, 'italic'));
     };
     // 單位圓
@@ -230,7 +235,7 @@
     else if (state.mode === 'pow') drawPow(c, labels);
     else drawRoot(c, labels);
     drawTicks();
-    placeLabels(c, labels);
+    placeLabels(c, labels, axisBoxes);
     c.restore();
     // 上方的狀態
     let msg = null, mcol = C.text;
@@ -254,9 +259,9 @@
   /** 點與標籤 */
   function dot(c, z, col, r, glow) { D.ball(c, X(z.re), Y(z.im), r || 6.5, col, { glow: glow == null ? 0.3 : glow }); }
   function lbl(labels, z, text, col, pri, sup) { labels.push({ x: X(z.re), y: Y(z.im), text: text, col: col, pri: pri || 0, sup: sup }); }
-  function placeLabels(c, labels) {
-    // 依優先順序放標籤；每個標籤試幾個方向，避開已放的標籤
-    const boxes = [];
+  function placeLabels(c, labels, reserved) {
+    // 依優先順序放標籤；每個標籤試幾個方向，避開已放的標籤與軸名
+    const boxes = (reserved || []).slice();
     labels.sort(function (a, b2) { return b2.pri - a.pri; }).forEach(function (L) {
       c.font = fnt(11.5, 700);
       const w = c.measureText(L.text).width + 12, h = 18;
