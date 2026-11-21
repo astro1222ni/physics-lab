@@ -327,3 +327,10 @@ html.learn-class {--teaching:1.4}
 .learn-rmenu button[aria-pressed="true"] {background:var(--accent);border-color:var(--accent);color:var(--surface)}
 @media(orientation:landscape) and (max-height:600px){.transport {flex-wrap:wrap;row-gap:2px}.seek {flex:1 1 220px}.transport-buttons {flex:1 1 auto;min-width:0;flex-wrap:wrap;row-gap:3px}}
 @media(orientation:landscape) and (max-height:600px){body.exam-page .transport {padding-right:40px}}
+
+/* 層級導覽列（11/21 站長：「你沒有返回前幾層的個層級按鍵」）：和實驗頁同一套 .crumbs */
+#learn-unit:has(> .learn-crumbs) {grid-template-rows:auto auto auto minmax(0,1fr)}
+.learn-crumbs {padding:0 12px;line-height:1.2}
+.learn-crumbs a,.learn-crumbs span,.learn-lobby-page .crumbs a,.learn-lobby-page .crumbs span {white-space:nowrap}
+.learn-crumbs a {padding:6px 5px;min-width:0}
+.learn-class .learn-crumbs {display:none}
