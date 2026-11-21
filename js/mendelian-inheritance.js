@@ -39,7 +39,10 @@
     speed: 1, merge: false, genoChart: false, fresh: false, showRange: true, showMendel: true,
     my: { on: false, truth: [2, 2], hyp: [1, 1], id: 0, answered: false }
   };
-  const rand = MC.rng((Math.random() * 4294967296) >>> 0);
+  const drawHarvestSeed = () => (Math.random() * 4294967296) >>> 0;
+  const seedInput = $('harvestSeed');
+  seedInput.value = drawHarvestSeed();
+  let rand = MC.rng(Number(seedInput.value));
   let cr = null, crShow = null, counts = null; // 實際的雜交、畫面上比較用的雜交（神秘模式為「你的假說」）、計數
   let seq = 0, trayArr = [], recent = [];
   let batches = [], flights = [], drops = [];
@@ -483,7 +486,7 @@
     txt(g, who === 1 ? T('母本 ♀', 'Mother ♀') : T('父本 ♂', 'Father ♂'), r.x + 12, r.y + 17 * k, { size: 13, weight: 700, color: col, halo: false, maxW: r.w * 0.5 });
     if (who === 1 && state.my.on) {
       g.save();
-      LD.pill(g, state.my.answered ? T('已揭曉', 'Revealed') : T('神秘豌豆', 'Mystery pea'), r.x + r.w - 8, r.y + 21 * k, LD.c.probe, 'right', '600 11px ' + FONT);
+      LD.pill(g, state.my.answered ? T('已揭曉', 'Revealed') : T('神秘豌豆', 'Mystery pea'), r.x + r.w - 8, r.y + 21 * k, LD.c.probe, 'right', '600 12px ' + FONT);
       g.restore();
     }
     const top = r.y + 24 * k;
@@ -799,7 +802,7 @@
     g.restore();
     const plotTop = pillY + 8 + 30 * k;
     const labH = Math.round((gmode ? 30 : (L === 2 ? 66 : 52)) * k);
-    g.font = '11px ' + FONT;
+    g.font = '12px ' + FONT;
     const axW = g.measureText('100%').width + 10;
     const plot = { x: B.x + axW, y: plotTop, w: B.w - axW - 4, h: B.y + B.h - labH - plotTop };
     // 縱軸範圍：照資料調整
@@ -1297,6 +1300,16 @@
   });
 
   // ---------- 全部清除、產生子代、音效 ----------
+  function replayHarvest() {
+    if (!seedInput.reportValidity()) return;
+    $('reset').click();
+    rand = MC.rng(Number(seedInput.value));
+  }
+  $('replayHarvest').addEventListener('click', replayHarvest);
+  $('newHarvest').addEventListener('click', function () {
+    seedInput.value = drawHarvestSeed();
+    replayHarvest();
+  });
   $('sow1').addEventListener('click', function () { sow(1, true); });
   $('sow10').addEventListener('click', function () { sow(10, true); });
   $('sow100').addEventListener('click', function () { sow(100, true); });

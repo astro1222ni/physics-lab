@@ -223,6 +223,11 @@
             <label><input id="showRange" type="checkbox" checked><span data-en="Show the 95% range">顯示約 95% 範圍</span></label>
             <label><input id="showMendel" type="checkbox" checked><span data-en="Compare with Mendel’s data">與孟德爾的數據比較</span></label>
           </div>
+          <details><summary data-en="Replay a harvest">重播收成</summary>
+            <label><span data-en="Random seed">亂數種子</span> <input id="harvestSeed" type="number" min="0" max="4294967295" step="1" required></label>
+            <button id="replayHarvest" type="button" data-en="Start from this seed">從此種子重新開始</button>
+            <button id="newHarvest" type="button" data-en="Draw a new seed">重抽種子</button>
+          </details>
           <p class="hint" data-en="Tap a number to type an exact value. At most 20 000 offspring can be kept. Tick “Clear before each batch” to repeat the same-sized experiment again and again and compare one tray with the next.">點一下數字可直接輸入精確數值。子代最多累積 20 000 個。勾選「每一批先清除」，就能反覆做同樣大小的實驗，比較每一盤的結果。</p>
         </section>
 
@@ -285,7 +290,7 @@
       </table></div>
       <ul>
         <li data-en-html="<strong>p &gt; 0.05 does not prove the hypothesis</strong>: it only says the data do not contradict it. With few offspring almost any hypothesis survives."><strong>p &gt; 0.05 不等於證明了假說</strong>：只代表數據和假說沒有明顯矛盾。子代很少的時候，幾乎什麼假說都推翻不了。</li>
-        <li data-en-html="<strong>Even a true hypothesis is rejected 5% of the time</strong>: that is exactly what “p &lt; 0.05” means. Run many experiments and some will look suspicious by pure chance."><strong>即使假說正確，也有 5% 的機會被拒絕</strong>：這正是「p &lt; 0.05」的意思。做很多次實驗，總有幾次會純粹因為運氣而看起來可疑。</li>
+        <li data-en="The 5% significance level is nominal. For eight offspring with a 3 to 1 expectation, the Pearson test rejects for five or more recessive offspring. Their binomial probability totals 2.73%.">5% 是名目顯著水準。預期比為 3 比 1、子代共 8 個時，隱性子代至少 5 個才會超過 Pearson 卡方臨界值。把這些結果的二項機率加起來，實際拒絕率約為 2.73%。</li>
         <li data-en-html="<strong>Expected counts should be at least 5</strong>: for smaller expected counts the chi-square distribution is a poor approximation, and the page warns you."><strong>每一類的期望次數最好至少 5</strong>：期望次數太小時，卡方分布不是好的近似，頁面會提醒你。</li>
         <li data-en-html="<strong>A class the hypothesis forbids</strong> (for example a wrinkled pea from RR × rr) rejects it outright: \(\chi^2 = \infty\), \(p = 0\)."><strong>出現假說認為不可能的類別</strong>（例如 RR × rr 竟然出現皺縮的種子），假說直接被推翻：\(\chi^2 = \infty\)，\(p = 0\)。</li>
       </ul>
@@ -326,7 +331,7 @@
       <ul>
         <li data-en="Each parent’s gametes are the cells of the classic Punnett square: 2 for one trait, 4 for two (a homozygous gene simply repeats its allele). Every offspring picks one egg cell and one sperm cell uniformly at random, which is exactly the same as letting each gene segregate independently with probability 1/2.">每個親本的配子就是傳統龐氏方格的格子：單性狀 2 格、雙性狀 4 格（同型合子的基因，兩格寫的對偶基因相同）。每個子代從卵細胞與精細胞各隨機抽一格，這和「每個基因各自以 1/2 的機率分離」完全等價。</li>
         <li data-en="The expected ratios are computed as exact fractions, so 9/16, 3/16 and 1/16 are not rounded. The p-value uses the regularised incomplete gamma function (series and continued fraction), checked against the critical values in the table above.">期望比例用精確的分數計算，9/16、3/16、1/16 都沒有四捨五入。p 值用正則化不完全伽瑪函數（級數與連分數）計算，並以上表的臨界值核對過。</li>
-        <li data-en="Random numbers come from a seedable generator, so the core can be tested with reproducible results; in the page a new seed is used every time.">亂數由可設定種子的產生器產生，核心程式因此能用可重現的結果測試；頁面上每次都用新的種子。</li>
+        <li data-en="Replay a seed with the same cross and batch sizes to reproduce the harvest.">沿用種子，選相同的親本並依序產生相同批量，可重播收成。</li>
         <li data-en="Assumptions: complete dominance, independent assortment, no mutation, and every fertilised egg develops equally well. Real crosses can depart from all of these.">假設：完全顯性、獨立分配、沒有突變、每個受精卵都同樣能發育。真實的雜交可能偏離以上任何一點。</li>
         <li data-en="With up to 20 offspring at a time every fertilisation is animated; larger batches pour into the tray and the counts rise as they land. With reduced motion turned on, the counts are added at once.">一次 20 個以內的子代，每一次受精都有動畫；更多時改成一次倒進收成盤，計數隨落下而增加。開啟「減少動態效果」時，計數直接加上。</li>
       </ul>
