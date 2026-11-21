@@ -99,6 +99,11 @@
     /* 速度數字欄的隱形觸控範圍往上 17 px，會被上方按鈕列蓋掉一點；多留 6 px 才滿 44 px */
     .pr .stage .playbar + .slider { margin-top: 16px; }
     .hop-summary { margin: 4px 2px 0; padding: 5px 10px; border-inline-start: 3px solid var(--pr-router); background: var(--accent-soft); color: var(--text); font-weight: 650; font-size: calc(14px * var(--fs, 1)); }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -113,28 +118,26 @@
     <div class="lab pr" id="lab">
       <div class="stage" id="stage">
         <canvas id="cv" tabindex="0" aria-label="網路圖：左邊是你的電腦，右邊是伺服器，中間是路由器和連線，線上的數字是延遲（毫秒）。點一下連線可以切斷或接回，點一下路由器可以看它的路由表。用左右方向鍵選連線，Enter 或空白鍵切斷或接回。" data-en-aria-label="Network map: your computer on the left, the server on the right, routers and links in between; the number on each link is its delay in milliseconds. Tap a link to cut or reconnect it, tap a router to see its routing table. Use the left and right arrow keys to choose a link and Enter or Space to cut or reconnect it."></canvas>
-        <p id="hopSummary" class="hop-summary" aria-live="polite"></p>
         <div class="playbar">
           <button id="sendBtn" type="button" class="primary" data-en="Send message">傳送訊息</button>
           <button id="traceBtn" type="button" data-en="Traceroute">追蹤路由</button>
           <button id="pauseBtn" type="button" aria-pressed="false" data-en="Pause">暫停</button>
           <button id="stepBtn" type="button" title="暫停，並跳到下一個事件（封包抵達、遺失、逾時……）" data-en-title="Pause and jump to the next event (a packet arriving, being lost, a timeout…)" data-en="Step">單步</button>
         </div>
-        <div class="legend">
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-data)&quot;></i>Data packet"><i class="sw" style="background:var(--pr-data)"></i>資料封包</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-ack)&quot;></i>Acknowledgement (ACK)"><i class="sw" style="background:var(--pr-ack)"></i>確認（ACK）</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-probe)&quot;></i>Probe"><i class="sw" style="background:var(--pr-probe)"></i>探測封包</span>
-          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-icmp)&quot;></i>ICMP reply"><i class="sw" style="background:var(--pr-icmp)"></i>ICMP 回報</span>
-          <span style="color:var(--pr-path-ink)" data-en-html="<i style=&quot;background:var(--pr-path)&quot;></i>Current route"><i style="background:var(--pr-path)"></i>目前的路</span>
-          <span style="color:var(--pr-cut)" data-en-html="<i class=&quot;dash&quot;></i>Cut link"><i class="dash"></i>斷線</span>
-        </div>
-        <div class="slider"><label for="speed" data-en="Playback speed (1 = 8 ms of network time per second)">播放速度（1 倍 = 每秒 8 毫秒）</label><output id="speedo"></output>
-          <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" data-decimals="2"></div>
-        <div class="playbar2">
-          <button id="wipeBtn" type="button" data-en="Clear all" title="停止目前的傳送，清掉封包列、時間圖、追蹤路由的回報與結果；網路、連線和滑桿都不變" data-en-title="Stop the current transfer and clear the packet strip, the timing chart, the traceroute replies and the results; the network, the links and the sliders stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
+        <p id="hopSummary" class="hop-summary" aria-live="polite"></p>
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="legend">
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-data)&quot;></i>Data packet"><i class="sw" style="background:var(--pr-data)"></i>資料封包</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-ack)&quot;></i>Acknowledgement (ACK)"><i class="sw" style="background:var(--pr-ack)"></i>確認（ACK）</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-probe)&quot;></i>Probe"><i class="sw" style="background:var(--pr-probe)"></i>探測封包</span>
+            <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-icmp)&quot;></i>ICMP reply"><i class="sw" style="background:var(--pr-icmp)"></i>ICMP 回報</span>
+            <span style="color:var(--pr-path-ink)" data-en-html="<i style=&quot;background:var(--pr-path)&quot;></i>Current route"><i style="background:var(--pr-path)"></i>目前的路</span>
+            <span style="color:var(--pr-cut)" data-en-html="<i class=&quot;dash&quot;></i>Cut link"><i class="dash"></i>斷線</span>
+          </div>
+        </section>
         <canvas id="cv2" aria-label="封包列：上面一排是電腦送出的封包（綠色打勾是已收到確認），下面一排是伺服器收到的封包（角落的數字是第幾個到達），最下面是依序號重組出來的訊息。點一下封包可以看它的表頭。" data-en-aria-label="Packet strip: the top row is the packets the computer sends (a green tick means its acknowledgement came back), the bottom row is the packets the server has received (the small number is the order of arrival), and below is the message put back together by sequence number. Tap a packet to see its header."></canvas>
         <div class="hdr" id="hdr" aria-live="polite"></div>
         <canvas id="cv3" aria-label="時間圖：橫軸是每包字數，縱軸是整封訊息送達的時間（毫秒）。在同一條路、沒有遺失時，每傳送一次就記一個點。" data-en-aria-label="Timing chart: characters per packet across, and the time for the whole message to arrive (ms) up. With the same route and no losses, every transfer adds one point."></canvas>
@@ -148,9 +151,9 @@
           <input id="msg" class="txt" type="text" maxlength="48" value="Hello from Astro Ni Lab" autocomplete="off" spellcheck="false" aria-describedby="msgHint">
           <div class="slider"><label for="k" data-en="Characters per packet">每包字數</label><output id="ko"></output>
             <input id="k" type="range" min="1" max="16" step="1" value="5" data-decimals="0"></div>
-          <div class="slider"><label for="ttl" data-en="TTL (routers a packet may pass)">TTL（最多能經過幾台路由器）</label><output id="ttlo"></output>
+          <div class="slider"><label for="ttl" data-en="TTL (max routers)">TTL（最多經過幾台路由器）</label><output id="ttlo"></output>
             <input id="ttl" type="range" min="1" max="32" step="1" value="16" data-decimals="0"></div>
-          <div class="slider"><label for="loss" data-en="Loss rate (% of packets lost on the way)">遺失率（每個封包在路上遺失的機率，%）</label><output id="losso"></output>
+          <div class="slider"><label for="loss" data-en="Loss rate per packet (%)">遺失率（每個封包，%）</label><output id="losso"></output>
             <input id="loss" type="range" min="0" max="30" step="1" value="0" data-decimals="0"></div>
           <dl class="readout">
             <dt data-en="Characters M">字數 M</dt><dd id="rM">—</dd>
@@ -216,6 +219,16 @@
           <p class="hint" data-en="The computer sends probes with TTL = 1, 2, 3, … The router where the TTL runs out answers “time exceeded” (ICMP), so the route is revealed one hop at a time. * means no answer came back; !N means a router had no route.">電腦依序送出 TTL = 1、2、3…… 的探測封包；TTL 在哪一台路由器用完，那台就回報「時間超過」（ICMP），於是一站一站問出整條路。* 表示等不到回應；!N 表示那台路由器沒有路可走。</p>
           <div class="tablewrap"><table class="data" id="ttab"></table></div>
           <p class="log-empty" id="traceEmpty" data-en="Press “Traceroute” to start.">按「追蹤路由」開始。</p>
+        </section>
+        <!-- 11/21 手機操作台緊貼畫布：播放速度、清除、音效收成操作台的「播放」分頁 -->
+        <section class="card">
+          <h2 data-en="Playback">播放</h2
+          <div class="slider"><label for="speed" data-en="Speed (1× = 8 ms per second)">播放速度（1 倍 = 每秒 8 毫秒）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" data-decimals="2"></div>
+          <div class="playbar2">
+            <button id="wipeBtn" type="button" data-en="Clear all" title="停止目前的傳送，清掉封包列、時間圖、追蹤路由的回報與結果；網路、連線和滑桿都不變" data-en-title="Stop the current transfer and clear the packet strip, the timing chart, the traceroute replies and the results; the network, the links and the sliders stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </section>
       </aside>
     </div>

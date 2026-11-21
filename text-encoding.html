@@ -110,6 +110,11 @@
     .quiz-stat b { color: var(--text); }
     .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 4px 0; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
     .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -128,11 +133,15 @@
           <button id="prevBtn" type="button" data-en="Previous character">上一個字</button>
           <button id="nextBtn" type="button" data-en="Next character">下一個字</button>
         </div>
-        <div class="playbar2">
-          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉亂碼接力的紀錄與挑戰紀錄；文字和編碼的選擇不變" data-en-title="Clear the relay log and the challenge log; the text and the chosen encodings stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="wipeBtn" type="button" data-en="Clear all" title="清掉亂碼接力的紀錄與挑戰紀錄；文字和編碼的選擇不變" data-en-title="Clear the relay log and the challenge log; the text and the chosen encodings stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <canvas id="cv2" aria-label="位元組長條：上面三條是同一段文字用 UTF-8、UTF-16、Big5 存起來的長度；下面是存檔後的每一個位元組，上方括號是原來的字，下方括號是用開檔編碼切出來的字，切錯的地方用紅色標出。點一塊位元組可以選取那個字。" data-en-aria-label="Byte strips: the three bars at the top are the lengths of the text stored as UTF-8, UTF-16 and Big5. Below are the saved bytes one by one, with brackets for the original characters above and for the characters cut out by the opening encoding below; wrong cuts are marked in red. Tap a byte to select that character."></canvas>
         <div class="legend" aria-hidden="true">
           <span><i style="background: var(--te-b1)"></i><span data-en="1 byte">1 位元組</span></span>

@@ -105,10 +105,14 @@
     /* 挑戰時把會洩漏答案的讀數藏起來 */
     .bn.quizzing .noquiz { display: none !important; }
     .legend .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
-    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    .labdeck .slider output.lab-num { min-width: 44px; display: inline-grid; place-items: center end; justify-self: end; }
     /* 操作台分頁「十進位／轉二進位」只在標題裡的零寬空格斷行 */
     .labdeck-tabs button { word-break: keep-all; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -130,12 +134,16 @@
           <button id="shrBtn" type="button" class="op" title="除以 2（取整數）：每個位元往右移一格，最右邊的位元就是餘數" data-en-title="Divide by 2 (whole number): every bit moves one place to the right; the bit that falls off is the remainder">÷2</button>
           <button id="clearBtn" type="button" data-en="Reset to 0">歸零</button>
         </div>
-        <div class="playbar2">
-          <button id="autoBtn" type="button" aria-pressed="false" data-en="Count automatically">自動數數</button>
-          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉波形圖、除法階梯與挑戰紀錄；位元數與燈號不變" data-en-title="Clear the timing chart, the division ladder and the challenge log; the number of bits and the lamps stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="autoBtn" type="button" aria-pressed="false" data-en="Count automatically">自動數數</button>
+            <button id="wipeBtn" type="button" data-en="Clear all" title="清掉波形圖、除法階梯與挑戰紀錄；位元數與燈號不變" data-en-title="Clear the timing chart, the division ladder and the challenge log; the number of bits and the lamps stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <canvas id="cv2" aria-label="波形圖：每一列是一個位元，從上到下是最高位到最低位；往右是時間（數值每變一次就記一格）。自動數數時，最低位每次都翻轉，往上一位翻轉的頻率是下面一位的一半。" data-en-aria-label="Timing chart: one row per bit, from the highest bit at the top to the lowest at the bottom; time runs to the right, one step per change of the number. When counting, the lowest bit flips every step and each bit above flips half as often as the one below it."></canvas>
         <p class="chart-cap" data-en="Timing chart: each row is one bit (highest at the top); each step to the right is one change of the number. Count automatically and compare how often each row flips.">波形圖：每一列是一個位元（最高位在上），往右每一格是數值改變一次。按「自動數數」，比較每一列翻轉得多快。</p>
       </div>

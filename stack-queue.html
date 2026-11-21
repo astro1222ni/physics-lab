@@ -134,6 +134,11 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
     .legend .sq-box { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>

@@ -112,6 +112,11 @@
       .lab .stage .playbar { grid-template-columns: repeat(7, minmax(0, 1fr)); }
       .lab .stage .sound-btn svg { display: none; }
     }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -132,11 +137,17 @@
           <button id="play" type="button" class="primary" data-en="Play">播放</button>
           <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
           <button id="reset" type="button" data-en="Restart">重來</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表與圖上跑過的點，回到第 0 步；參考字串與設定不變" data-en-title="Remove the records and the points you have run on the chart and go back to step 0; the reference string and the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div data-deck-anchor hidden></div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表與圖上跑過的點，回到第 0 步；參考字串與設定不變" data-en-title="Remove the records and the points you have run on the chart and go back to step 0; the reference string and the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <div class="legend">
           <span data-en-html="<span class=&quot;sym hit&quot;>✓</span>Hit: the page is already in memory"><span class="sym hit">✓</span>命中：這一頁已經在記憶體裡</span>
           <span data-en-html="<span class=&quot;sym fault&quot;>✗</span>Page fault: load it (and evict one if memory is full)"><span class="sym fault">✗</span>缺頁：要載入（記憶體滿了就換出一頁）</span>

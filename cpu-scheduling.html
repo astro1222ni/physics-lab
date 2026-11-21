@@ -115,8 +115,7 @@
     table.nums td.pend { color: var(--muted); }
     table.nums .chip { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
-    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
-    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    .labdeck .slider output.lab-num { min-width: 44px; display: inline-grid; place-items: center end; justify-self: end; }
     @media (orientation: landscape) and (max-height: 600px) {
       .lab .stage .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
       .lab .stage .playbar button { min-height: 44px; padding: 4px 2px; line-height: 1.15; }
@@ -125,6 +124,11 @@
       .lab .stage .playbar { grid-template-columns: repeat(7, minmax(0, 1fr)); }
       .lab .stage .sound-btn svg { display: none; }
     }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -153,18 +157,24 @@
           <button id="play" type="button" class="primary" data-en="Play">播放</button>
           <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
           <button id="reset" type="button" data-en="Restart">重來</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表，回到 t = 0；工作表與設定不變" data-en-title="Remove the record table and go back to t = 0; the table of processes and the settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
-        <div class="legend">
-          <span data-en-html="<i class=&quot;run&quot;></i>Running (one colour, pattern and number per process)"><i class="run"></i>執行（每個行程一種顏色、花紋與編號）</span>
-          <span data-en-html="<i class=&quot;wait&quot;></i>Waiting in the ready queue"><i class="wait"></i>在就緒佇列等待</span>
-          <span data-en-html="<i class=&quot;sw&quot;></i>Context switch"><i class="sw"></i>情境切換</span>
-          <span data-en-html="<i class=&quot;idle&quot;></i>CPU idle"><i class="idle"></i>CPU 閒置</span>
-          <span data-en-html="<span class=&quot;sym&quot;>▼</span>Arrival"><span class="sym">▼</span>到達</span>
-          <span data-en-html="<span class=&quot;sym&quot;>¦</span>Quantum used up, nobody else waiting: keeps going"><span class="sym">¦</span>時間片用完、沒人在等：繼續做</span>
-        </div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表，回到 t = 0；工作表與設定不變" data-en-title="Remove the record table and go back to t = 0; the table of processes and the settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+          <div class="legend">
+            <span data-en-html="<i class=&quot;run&quot;></i>Running (one colour, pattern and number per process)"><i class="run"></i>執行（每個行程一種顏色、花紋與編號）</span>
+            <span data-en-html="<i class=&quot;wait&quot;></i>Waiting in the ready queue"><i class="wait"></i>在就緒佇列等待</span>
+            <span data-en-html="<i class=&quot;sw&quot;></i>Context switch"><i class="sw"></i>情境切換</span>
+            <span data-en-html="<i class=&quot;idle&quot;></i>CPU idle"><i class="idle"></i>CPU 閒置</span>
+            <span data-en-html="<span class=&quot;sym&quot;>▼</span>Arrival"><span class="sym">▼</span>到達</span>
+            <span data-en-html="<span class=&quot;sym&quot;>¦</span>Quantum used up, nobody else waiting: keeps going"><span class="sym">¦</span>時間片用完、沒人在等：繼續做</span>
+          </div>
+        </section>
 
         <div class="chart-head">
           <h2 data-en="All six side by side">六種方法並排比較</h2>

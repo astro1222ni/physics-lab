@@ -46,7 +46,7 @@
     .kn .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
     .kn .playbar button { padding: 6px 4px; line-height: 1.25; }
     .kn .playbar .wide { grid-column: span 2; }
-    @media (max-width: 520px) { .kn .playbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    /* 11/21 手機操作台緊貼畫布：主鍵在窄螢幕也排成一列 */
     .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
@@ -112,6 +112,11 @@
     .knn-pad .vpad-select.is-red { background: var(--text) !important; color: var(--surface) !important; }
     .knn-pad .vpad-classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 2px; }
     .knn-pad:has([data-object="query"]) :is(.vpad-classes, .vpad-record) { display: none; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -131,11 +136,17 @@
           <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
           <button id="runBtn" type="button" title="把留一法剩下的點一次走完" data-en-title="Go through the rest of leave-one-out at once" data-en="Finish leave-one-out">跑完留一法</button>
           <button id="restartBtn" type="button" title="留一法從第一個點重新走；資料與設定不變" data-en-title="Start leave-one-out again from the first point; data and settings stay" data-en="Restart">重來</button>
-          <button id="wipeBtn" type="button" title="清掉實驗紀錄、正確率圖上疊著的舊曲線，留一法從頭走；資料與設定不變" data-en-title="Clear the log and the old curves on the accuracy chart, and restart leave-one-out; data and settings stay" data-en="Clear all">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div data-deck-anchor hidden></div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="wipeBtn" type="button" title="清掉實驗紀錄、正確率圖上疊著的舊曲線，留一法從頭走；資料與設定不變" data-en-title="Clear the log and the old curves on the accuracy chart, and restart leave-one-out; data and settings stay" data-en="Clear all">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <div class="legend" aria-hidden="true">
           <span><span class="sw round" style="background:var(--kn-a)"></span><span data-en="class A (circle)">A 類（圓）</span></span>
           <span><span class="sw sq" style="background:var(--kn-b)"></span><span data-en="class B (square)">B 類（方塊）</span></span>

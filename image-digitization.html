@@ -138,6 +138,11 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .image-digitization-pad.expanded { width: 164px; }
     .image-digitization-pad .vpad-select.is-red { background: var(--text) !important; color: var(--surface) !important; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -164,21 +169,25 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv"></canvas>
         <div id="view3"></div>
-        <section class="pixel-inspector">
-          <div class="px-head">
-            <button id="recBtn" type="button" class="primary" data-en="Record this setting">記下這一組</button>
-            <div class="px-sw" id="pxSw" aria-hidden="true"></div>
-            <div class="px-pos" id="pxPos" aria-live="polite"></div>
-          </div>
-          <div class="tablewrap"><table class="data" id="pxTab"></table></div>
-          <p class="px-empty" id="pxEmpty" data-en="Tap a pixel in the image (or focus the image and use the arrow keys) to read its values.">點一下圖上的像素（或選取畫布後用方向鍵），讀出它的數值。</p>
-        </section>
         <div class="split-row">
           <div class="slider"><label for="split" data-en="Original ◀ divider ▶ digitized (%)">原圖 ◀ 分界 ▶ 數位化（%）</label><output id="splito"></output>
             <input id="split" type="range" min="0" max="100" step="1" value="50" data-decimals="0"></div>
         </div>
-        <div data-deck-anchor hidden></div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <section class="pixel-inspector">
+            <div class="px-head">
+              <button id="recBtn" type="button" class="primary" data-en="Record this setting">記下這一組</button>
+              <div class="px-sw" id="pxSw" aria-hidden="true"></div>
+              <div class="px-pos" id="pxPos" aria-live="polite"></div>
+            </div>
+            <div class="tablewrap"><table class="data" id="pxTab"></table></div>
+            <p class="px-empty" id="pxEmpty" data-en="Tap a pixel in the image (or focus the image and use the arrow keys) to read its values.">點一下圖上的像素（或選取畫布後用方向鍵），讀出它的數值。</p>
+          </section>
+        </section>
         <canvas id="cv2" aria-label="量化的階梯圖：橫軸是原圖的值（0 到 255），縱軸是存下來的值。斜虛線是完全不失真，階梯是目前位元數能存的值；選取的像素標成圓點，圓點和斜線的距離就是量化誤差。" data-en-aria-label="Quantization staircase: the original value from 0 to 255 across, the stored value up. The dashed diagonal means no loss; the staircase shows the values the current number of bits can store. The selected pixel is shown as dots, and the gap between a dot and the diagonal is the quantization error."></canvas>
         <p class="chart-cap" data-en-html="Quantization: with b bits a channel has only 2<sup>b</sup> steps, so every value is rounded to the nearest step. Fewer bits → bigger steps → bigger errors.">量化：每個色版 b 位元只有 2<sup>b</sup> 階，每個值都被四捨五入到最近的一階。位元越少 → 階越大 → 誤差越大。</p>
         <p class="hint l3" data-en="Choose Rotate or Pan, then drag the cube. Scroll or pinch to zoom. Each dot is one pixel, placed at its color (R, G, B).">選「旋轉」或「平移」後拖曳色立方，用滾輪或雙指縮放。每個點是一個像素，放在它的顏色（R, G, B）的位置。</p>

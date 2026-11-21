@@ -151,6 +151,11 @@
     .answers button.wrong { background: color-mix(in srgb, var(--hn-bad) 18%, var(--surface)); border-color: var(--hn-bad); }
     .big { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     pre.code { margin: 8px 0; padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.55; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -179,14 +184,18 @@
           <button type="button" id="peg1" aria-pressed="false" data-en="Peg B">B 柱</button>
           <button type="button" id="peg2" aria-pressed="false" data-en="Peg C">C 柱</button>
         </div>
-        <div class="playbar">
-          <button id="undoBtn" type="button" title="把最後一步倒回去" data-en-title="Take back the last move" data-en="Undo">上一步</button>
-          <button id="resetBtn" type="button" title="整疊放回 A 柱，步數歸零" data-en-title="Put the whole tower back on peg A and start counting again" data-en="Restart">重來</button>
-          <button id="shuffleBtn" type="button" title="隨機排成一個合法但不整齊的狀態" data-en-title="Arrange the discs into a random legal but untidy position" data-en="Shuffle">打亂</button>
-          <button id="clearBtn" type="button" title="清掉步數、走過的路徑、搜尋結果與挑戰紀錄，從目前的狀態重新計算；盤子數、目標與其他設定不變" data-en-title="Clear the move count, the path walked, the search result and the quiz record and start counting from the current position; the number of discs, the target and other settings stay" data-en="Clear all">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar">
+            <button id="undoBtn" type="button" title="把最後一步倒回去" data-en-title="Take back the last move" data-en="Undo">上一步</button>
+            <button id="resetBtn" type="button" title="整疊放回 A 柱，步數歸零" data-en-title="Put the whole tower back on peg A and start counting again" data-en="Restart">重來</button>
+            <button id="shuffleBtn" type="button" title="隨機排成一個合法但不整齊的狀態" data-en-title="Arrange the discs into a random legal but untidy position" data-en="Shuffle">打亂</button>
+            <button id="clearBtn" type="button" title="清掉步數、走過的路徑、搜尋結果與挑戰紀錄，從目前的狀態重新計算；盤子數、目標與其他設定不變" data-en-title="Clear the move count, the path walked, the search result and the quiz record and start counting from the current position; the number of discs, the target and other settings stay" data-en="Clear all">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <canvas id="cvRec" aria-label="遞迴圖：左邊（窄螢幕在上方）是呼叫堆疊，由最外層的呼叫到目前這一層；右邊是遞迴樹，每個節點是一次呼叫，橫向位置是它搬盤子的那一步，高度是搬的盤子大小，所以排起來像尺上的刻度。" data-en-aria-label="Recursion view: the call stack on the left (on top on narrow screens), from the outermost call down to the current one; on the right the recursion tree, where each node is one call placed at the step where it moves its disc and drawn as high as that disc is large, so the nodes line up like the marks on a ruler."></canvas>
         <p class="chart-cap" id="recCap" data-en="Recursion tree: reading the nodes from left to right gives the order of the moves; the height of each node is the disc it moves (1, 2, 1, 3, 1, 2, 1, …).">遞迴樹：節點由左到右的順序就是搬的順序；節點的高度是它搬的盤子（1、2、1、3、1、2、1……）。</p>
         <canvas id="cvGraph" tabindex="0" aria-label="狀態圖：每一個點是一種合法的擺法，每一條線是一次合法的移動；三個角是整疊在 A、B、C。亮點是目前的狀態，圓圈是目標。點一個點可以看它離目前幾步；選了「自訂目標」時，點一下就把它設成目標。" data-en-aria-label="State graph: each dot is one legal arrangement and each line is one legal move; the three corners are the whole tower on A, B and C. The bright dot is the current state and the ring is the target. Tap a dot to see how far it is from here; with “Custom target” selected, tapping a dot makes it the target."></canvas>

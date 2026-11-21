@@ -118,8 +118,12 @@
     @media (orientation: landscape) and (max-height: 600px) {
       .texts .outbox { max-height: 4.5em; }
     }
-    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
-    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    .labdeck .slider output.lab-num { min-width: 44px; display: inline-grid; place-items: center end; justify-self: end; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -140,13 +144,17 @@
           <button type="button" role="tab" id="tabRsa" aria-selected="false" aria-controls="cv" data-tab="rsa" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10.5" width="16" height="11" rx="2.5" fill="currentColor"/><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="15.5" r="1.6" fill="var(--surface)"/></svg><span data-en="Public keys">公鑰的概念</span></button>
         </div>
         <canvas id="cv" tabindex="0" aria-label="加密實驗畫布" data-en-aria-label="Encryption canvas"></canvas>
-        <div class="bar">
-          <button id="sampleBtn" type="button" data-tabs="caesar freq vig" data-en="Another sample">換一段範例</button>
-          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉破解紀錄、加密紀錄與畫面上的標記；設定和文字不變" data-en-title="Clear the crack log, the encryption log and the marks on the canvas; settings and text stay">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-        </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
         <div data-deck-anchor hidden></div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="bar">
+            <button id="sampleBtn" type="button" data-tabs="caesar freq vig" data-en="Another sample">換一段範例</button>
+            <button id="wipeBtn" type="button" data-en="Clear all" title="清掉破解紀錄、加密紀錄與畫面上的標記；設定和文字不變" data-en-title="Clear the crack log, the encryption log and the marks on the canvas; settings and text stay">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </section>
         <p class="safe" data-en-html="<strong>⚠ None of these ciphers is safe.</strong> Caesar and Vigenère were broken centuries ago, and the RSA here uses primes below 100, which trial division factors in a blink. Real systems use standardised algorithms such as AES (keys of 128, 192 or 256 bits) and RSA with keys of at least 2048 bits, plus random padding. Never use this page to protect real data. Your text is processed only inside your browser and is never sent or stored — still, do not type real passwords or personal details."><strong>⚠ 這一頁的密碼全都不安全。</strong>凱撒與維吉尼亞早在幾百年前就被破解，這裡的 RSA 只用 100 以內的質數，用試除法一下子就分解了。真實世界用標準化的演算法，例如 AES（金鑰 128、192 或 256 位元）與至少 2048 位元的 RSA，還要加上隨機的填充。不要用這一頁的方法保護真的資料。你輸入的文字只在你的瀏覽器裡計算，不會送出或儲存——但也不要輸入真正的密碼或個人資料。</p>
       </div>
 

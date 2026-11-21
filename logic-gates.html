@@ -131,6 +131,11 @@
     table.tt td.l { text-align: left; }
     .tcap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -156,17 +161,23 @@
         <div class="playbar">
           <button id="stepBtn" type="button" class="primary" data-en="Step" title="往前走 1 個閘延遲；已經穩定時從 t = 0 重新看" data-en-title="Move forward one gate delay; once settled, start again from t = 0">單步</button>
           <button id="replayBtn" type="button" data-en="Replay" title="把剛才那一次輸入的變化從 t = 0 再播一次" data-en-title="Play the last change of the inputs again from t = 0">重播</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉打勾的真值表列與計算紀錄；電路與開關不變" data-en-title="Remove the ticks in the truth table and the calculation log; the circuit and the switches are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
-        <div class="legend">
-          <span data-en-html="<i style=&quot;background:var(--lg-hi)&quot;></i>1 (on)"><i style="background:var(--lg-hi)"></i>1（通電）</span>
-          <span data-en-html="<i style=&quot;background:var(--lg-lo)&quot;></i>0 (off)"><i style="background:var(--lg-lo)"></i>0（不通電）</span>
-          <span style="color:var(--lg-x-ink)" data-en-html="<i class=&quot;dash&quot;></i>X (not connected)"><i class="dash"></i>X（沒接線，未知）</span>
-          <span data-en-html="<i style=&quot;background:var(--lg-glitch)&quot;></i>Glitch (wrong for a moment)"><i style="background:var(--lg-glitch)"></i>突波（短暫的錯誤值）</span>
-          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Gate still working"><i class="dot" style="background:var(--accent)"></i>閘還在反應中</span>
-        </div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="clear" type="button" data-en="Clear all" title="清掉打勾的真值表列與計算紀錄；電路與開關不變" data-en-title="Remove the ticks in the truth table and the calculation log; the circuit and the switches are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+          <div class="legend">
+            <span data-en-html="<i style=&quot;background:var(--lg-hi)&quot;></i>1 (on)"><i style="background:var(--lg-hi)"></i>1（通電）</span>
+            <span data-en-html="<i style=&quot;background:var(--lg-lo)&quot;></i>0 (off)"><i style="background:var(--lg-lo)"></i>0（不通電）</span>
+            <span style="color:var(--lg-x-ink)" data-en-html="<i class=&quot;dash&quot;></i>X (not connected)"><i class="dash"></i>X（沒接線，未知）</span>
+            <span data-en-html="<i style=&quot;background:var(--lg-glitch)&quot;></i>Glitch (wrong for a moment)"><i style="background:var(--lg-glitch)"></i>突波（短暫的錯誤值）</span>
+            <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Gate still working"><i class="dot" style="background:var(--accent)"></i>閘還在反應中</span>
+          </div>
+        </section>
         <canvas id="cv2" aria-label="時序圖：橫軸是時間（單位是閘延遲），每一列是一條導線的值，高是 1、低是 0；粉紅色的區段是突波，直線游標是目前播放到的時間。" data-en-aria-label="Timing diagram: time in gate delays across, one row per wire, high for 1 and low for 0; pink stretches are glitches and the vertical cursor is the time being shown."></canvas>
         <p class="chart-cap" id="chartCap" data-en="Timing diagram: every wire, gate delay by gate delay. The dashed line marks the longest path through the circuit — the slowest it can ever be.">時序圖：每一條導線隨時間（以閘延遲為單位）的值。虛線標出電路裡最長的路徑——最慢也不會超過它。</p>
       </div>

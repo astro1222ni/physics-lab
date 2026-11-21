@@ -108,12 +108,16 @@
     .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 14px 4px 0; }
     .chart-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
     .chart-head span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
-    .labdeck .slider output.lab-num { min-width: 44px; min-height: 44px !important; display: inline-grid; place-items: center; justify-self: end; }
-    .labdeck .slider output.lab-num::after { inset: 0; width: auto; transform: none; }
+    .labdeck .slider output.lab-num { min-width: 44px; display: inline-grid; place-items: center end; justify-self: end; }
     @media (orientation: landscape) and (max-height: 600px) {
       .lab .stage .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
       .lab .stage .playbar button { min-height: 44px; padding: 4px 2px; line-height: 1.15; }
     }
+    /* 11/21 站長第 5 條：操作台相鄰滑桿上下間距 ≤ 56 px。數字框 24 px、滑桿 28 px；觸控區仍由共用的看不見 ::after 放大 */
+    .labdeck .slider { margin: 0 0 2px !important; row-gap: 0; }
+    .labdeck .slider .lab-num { height: 24px; min-height: 24px !important; line-height: 24px; }
+    .labdeck .slider input[type="range"] { height: 28px !important; min-height: 0 !important; margin: 0; }
+    .lab > .stage > p.status { margin: 4px 2px 0; line-height: 1.35; min-height: 0; } /* 11/21 畫布下的讀數壓成精簡列 */
   </style>
 </head>
 <body data-en-ready>
@@ -141,17 +145,23 @@
           <button id="play" type="button" class="primary" data-en="Play">播放</button>
           <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
           <button id="reset" type="button" data-en="Restart">重來</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉圖上所有的點與比賽紀錄，回到第 0 步；資料與演算法的設定不變" data-en-title="Remove every point from the chart and the race record, and go back to step 0; the data and algorithm settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <!-- 11/21 調整時要盯著的讀數留在畫布正下方 -->
         <p class="status" id="status" aria-live="polite"></p>
-        <div class="legend">
-          <span style="color:var(--so-cmp-ink)" data-en-html="<span class=&quot;sym&quot;>▼</span>Comparing"><span class="sym">▼</span>比較中</span>
-          <span style="color:var(--so-swap)" data-en-html="<span class=&quot;sym&quot;>⇄</span>Swapping"><span class="sym">⇄</span>交換中</span>
-          <span style="color:var(--so-done)" data-en-html="<span class=&quot;sym&quot;>●</span>In its final place"><span class="sym">●</span>已就位</span>
-          <span style="color:var(--so-pivot)" data-en-html="<span class=&quot;sym&quot;>◆</span>Pivot / current minimum"><span class="sym">◆</span>樞紐／目前最小值</span>
-          <span style="color:var(--so-write)" data-en-html="<span class=&quot;sym&quot;>↓</span>Written back (merge sort)"><span class="sym">↓</span>寫回（合併排序）</span>
-        </div>
+        <!-- 11/21 站長：手機操作台要緊貼動畫。清除、音效、圖例排到操作台後面 -->
+        <section class="after-deck">
+          <div class="playbar2">
+            <button id="clear" type="button" data-en="Clear all" title="清掉圖上所有的點與比賽紀錄，回到第 0 步；資料與演算法的設定不變" data-en-title="Remove every point from the chart and the race record, and go back to step 0; the data and algorithm settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+          <div class="legend">
+            <span style="color:var(--so-cmp-ink)" data-en-html="<span class=&quot;sym&quot;>▼</span>Comparing"><span class="sym">▼</span>比較中</span>
+            <span style="color:var(--so-swap)" data-en-html="<span class=&quot;sym&quot;>⇄</span>Swapping"><span class="sym">⇄</span>交換中</span>
+            <span style="color:var(--so-done)" data-en-html="<span class=&quot;sym&quot;>●</span>In its final place"><span class="sym">●</span>已就位</span>
+            <span style="color:var(--so-pivot)" data-en-html="<span class=&quot;sym&quot;>◆</span>Pivot / current minimum"><span class="sym">◆</span>樞紐／目前最小值</span>
+            <span style="color:var(--so-write)" data-en-html="<span class=&quot;sym&quot;>↓</span>Written back (merge sort)"><span class="sym">↓</span>寫回（合併排序）</span>
+          </div>
+        </section>
 
         <div class="chart-head">
           <h2 data-en="Comparisons against n">比較次數對 n</h2>
