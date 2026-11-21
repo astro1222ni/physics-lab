@@ -278,8 +278,11 @@
       const reveal=U.reveal[p.id];
       const r=reveal&&(klass?showClass:t>=tm.marks[reveal[0]]);
       const board=by('board'),visible=step()||p.id==='7-2b'?[]:klass&&p.id.startsWith('6-')?(showClass?rows:[]):shown;
-      const sig=p.id+'|'+visible.length+'|'+!!r+'|'+showClass;
+      const sig=p.id+'|'+visible.length+'|'+!!r+'|'+showClass+'|'+landscape.matches;
       if(sig!==stamp){stamp=sig;formulaLines(board,visible);board.hidden=!visible.length;
+        // 試玩 B13：手機橫放時板書在右欄，0:00 還沒寫字會留一大片空白 → 先說明這裡等一下會寫什麼
+        const wait=!visible.length&&landscape.matches&&!klass&&rows.length&&!step()&&p.id!=='7-2b'&&!p.id.startsWith('6-');board.classList.toggle('board-wait',!!wait);
+        if(wait){board.hidden=false;board.replaceChildren(el('p',null,T('▶ 按播放，本頁 '+rows.length+' 行板書會跟著旁白寫在這裡。','▶ Press play: '+rows.length+' board line'+(rows.length>1?'s':'')+' will be written here as you listen.')));}
         if(p.id.startsWith('6-')&&visible.length)board.scrollTop=board.scrollHeight;
         const disclosure=by('prediction-result');if(disclosure){disclosure.hidden=!r;if(r)rich(disclosure,T(reveal[1],reveal[2]));}}
       scene.render(p,t,tm,frameModel,en,klass);

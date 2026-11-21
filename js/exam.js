@@ -42,7 +42,7 @@
   const load=()=>{try{return JSON.parse(localStorage.getItem(storageKey()))||{};}catch{return {};}};
   let state=load(), owner=storageKey(), mounted=false;
   function emit(){
-    LabMission.emit('exam-progress',{unit,first:state.first===true,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment,relearn:!!state.relearn,later:!!state.later,national:!!state.national});
+    LabMission.emit('exam-progress',{unit,first:state.first===true||!!state.recovered,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment,relearn:!!state.relearn,later:!!state.later,national:!!state.national});
   }
   function save(){try{localStorage.setItem(storageKey(),JSON.stringify(state));}catch{}emit();refreshSide();}
   function milestone(key){if(!state[key]){state[key]=true;save();}}
@@ -111,8 +111,8 @@
   function statistics(){
     const body=by('national-body');body.replaceChildren();
     if(!Q.key&&Q.marking){body.append(paragraph(T('大考中心未公布非選題得分率','The CEEC did not publish a national score rate for this constructed-response question.')),paragraph(tr(Q.marking)));return;}
-    if(!Q.key){body.append(paragraph(T('大考中心未公布非選題得分率','The CEEC did not publish a national score rate for this constructed-response question.')),paragraph(T('大考中心評分原則：(a) 45–55 mV、(b) 125–175 Ω 都給分，單位必寫。','CEEC marking ranges: (a) 45–55 mV and (b) 125–175 Ω. Include both units.')));return;}
-    body.append(paragraph((single?T('全國答對率 ','National correct rate '):T('全國得分率 ','National score rate '))+Q.rate+'%'));
+    if(!Q.key){body.append(paragraph(T('大考中心未公布非選題得分率','The CEEC did not publish a national score rate for this constructed-response question.')),paragraph(T('大考中心評分原則：(a) 45–55 mV、(b) 125–175 Ω 都給分；單位要寫對才有機會拿滿分，過程對但漏寫單位可能只拿部分分數。','CEEC marking ranges: (a) 45–55 mV and (b) 125–175 Ω. Correct units are needed for full credit; sound work with a missing unit may earn partial credit.')));return;}
+    body.append(paragraph((single?T('全國答對率 ','National correct rate '):T('全國得分率 ','National score rate '))+Q.rate+'%'+(Q.full!=null?T('｜全對率 '+Q.full+'%',' | Fully correct '+Q.full+'%'):''))); // 11/21 試玩：多選的得分率含部分給分，另標全對率
     const progress=make('progress');progress.max=100;progress.value=Q.rate;progress.setAttribute('aria-label',T('全國得分率','National score rate'));body.append(progress);
     const largest=Math.max(...Q.shares.filter((_,i)=>!Q.key.includes('ABCDE'[i])));
     Q.shares.forEach((v,i)=>{
@@ -128,6 +128,7 @@
     by('explain').hidden=!(state.correct||state.attempts>=2||params.get('class')==='1');
     if(!rec)return;
     const result=by('result');result.replaceChildren(make('strong',(rec.score===points?T('答對了','Correct'):T('本次得分','Your score'))+'　'+rec.score+' / '+points));
+    if(!Q.key)result.append(paragraph(T('這是網頁練習分數：只看數值和單位，不看過程；正式閱卷還會看計算過程。','This is a practice score: only the values and units are checked, not your working. Real marking also looks at the working.')));
     if(rec.score<points)result.append(paragraph(tr(Q.hint)));
     if(restore){if(Q.key){document.querySelectorAll('[name=choice]').forEach(x=>x.checked=rec.selected.includes(x.value));}
       else rec.fields.forEach(({value,unit},i)=>{if(by('value-'+i))by('value-'+i).value=value;if(by('unit-'+i))by('unit-'+i).value=unit;});}
@@ -145,9 +146,13 @@
         if(fields.every(f=>!f.value.trim())){by('value-0').focus();return;}
         rec={fields,...await (Q.grade?Q.grade(fields,LearnEngine):ExamPhysics.gradeChannel(fields,LearnEngine))};
       }
-      const ok=rec.score===points;if(!state.attempts)state.first=ok;
+      const ok=rec.score===points,day=twDay();if(!state.attempts){state.first=ok;state.firstDay=day;}
       // 11/21 站長：「萬一第一次沒有通過的，他要怎麼補救」→ 聽完解題後再答對、隔天（臺灣日期）再答對，各有任務
-      if(ok){const day=twDay();if(state.viewed)state.relearn=true;if(state.okDay&&state.okDay!==day)state.later=true;if(!state.okDay)state.okDay=day;}
+      if(ok){if(state.viewed)state.relearn=true;if(state.okDay&&state.okDay!==day)state.later=true;if(!state.okDay)state.okDay=day;}
+      // 11/21 站長：「補救的方式是這七顆，不是額外再七顆」→ 第一次沒拿滿分：聽完全部解題，換一天，當天第一次送出就拿滿分，「第一次就答對」照樣給
+      if(state.attempts){if(!state.firstDay)state.firstDay=day;if(!state.lastDay)state.lastDay=day;} // 舊紀錄沒有日期：當作今天，最快明天補救
+      if(ok&&state.first===false&&state.viewed&&state.firstDay!==day&&state.lastDay!==day)state.recovered=true;
+      state.lastDay=day;
       state.correct=!!state.correct||ok;state.attempts=(state.attempts||0)+1;state.last=rec;save();feedback();
       if(LabSettings.get('sound'))LabSound.tone({freq:ok?740:295,dur:.14,type:'triangle',gain:.15});
     }finally{btn.disabled=false;}
@@ -207,7 +212,13 @@
   }
   function needList(items){const ul=make('ul');for(const [ok,zh,en] of items){const li=make('li'),mark=make('span',ok===true?'✓':ok===false?'✗':'→');mark.className='ms-need-mark';if(ok===true)li.className='ms-need-ok';else mark.dataset.ok=String(ok);li.append(mark,make('span',T(zh,en)));ul.append(li);}return ul;}
   function missionNeed(m){const flag=['correct','first','viewed','experiment','relearn','later','national'][+m.id.split('-').pop()-1],att=state.attempts||0;
-    if(flag==='first')return [att?[state.first===true,state.first?'第一次送出就拿滿分':'第一次送出沒拿到滿分，這顆錯過了；改拿「聽完再答對」「隔天再答對」補回來',state.first?'Full credit on the first try':'Missed on the first submission; earn “Solve it after the solution” and “Solve it again tomorrow” instead']:[null,'還沒送出：第一次送出就要全對','Not submitted yet: get it fully right the first time']];
+    if(flag==='first'){if(!att)return [[null,'還沒送出：第一次送出就要全對','Not submitted yet: get it fully right the first time']];
+      if(state.first===true)return [[true,'第一次送出就拿滿分','Full credit on the first try']];
+      if(state.recovered)return [[true,'補救成功：聽完解題、換一天再答對','Recovered: played the solution and solved it on another day']];
+      const h=heard(),today=twDay();
+      return [[false,'第一次送出沒拿到滿分，還可以補救，拿回這 '+m.level+' 顆','Missed on the first try; you can still recover these '+m.level+' stars'],
+        [state.viewed||h===tracks.length?true:null,'聽完全部解題（已聽 '+h+' / '+tracks.length+' 句）','Play the whole solution ('+h+' / '+tracks.length+')'],
+        [null,(state.lastDay===today?'明天（臺灣時間 00:00 以後）再來':'今天')+'，當天第一次送出就拿滿分',(state.lastDay===today?'Come back tomorrow (after midnight Taiwan time); ':'Today, ')+'get full credit on that day’s first submission']];}
     if(flag==='relearn'){const h=heard();return [[state.viewed||h===tracks.length?true:null,'先聽完全部解題（已聽 '+h+' / '+tracks.length+' 句）','Play the whole solution first ('+h+' / '+tracks.length+')'],[state.relearn?true:null,'聽完之後再送出一次，拿到滿分','Then submit again for full credit']];}
     if(flag==='later')return [[state.okDay?true:null,state.okDay?'已在 '+state.okDay+' 拿過滿分':'先拿到一次滿分',state.okDay?'Full credit on '+state.okDay:'Get full credit once'],[state.later?true:null,'換日（臺灣時間 00:00）之後再送出一次，又拿滿分','After midnight (Taiwan time), submit again for full credit']];
     if(flag==='national')return [[att?true:null,'先送出作答','Submit first'],[!!state.national,'打開「全國資料」，看全國怎麼選','Open National results']];
