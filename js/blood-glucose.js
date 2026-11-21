@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -286,8 +287,13 @@
       const H = 470, px = Math.round(w * 0.58);
       L = { w: w, h: H, wide: true, g: { x0: 54, x1: px - 12, y0: 40, y1: 290 }, i: { y0: 318, y1: 408 }, ax: 428, body: { x: px + 4, y: 10, w: w - px - 12, h: H - 20 } };
     } else {
-      const H = 650;
-      L = { w: w, h: H, wide: false, g: { x0: 46, x1: w - 12, y0: 40, y1: 250 }, i: { y0: 274, y1: 330 }, ax: 346, body: { x: 6, y: 368, w: w - 12, h: H - 376 } };
+      const portrait = narrowPortrait.matches;
+      const h = portrait ? 544 : 650, graphBottom = portrait ? 190 : 250;
+      const insulinTop = graphBottom + 24, insulinBottom = insulinTop + (portrait ? 42 : 56);
+      const bodyTop = insulinBottom + 38;
+      L = { w, h, wide: false, g: { x0: 46, x1: w - 12, y0: 40, y1: graphBottom },
+        i: { y0: insulinTop, y1: insulinBottom }, ax: insulinBottom + 16,
+        body: { x: 6, y: bodyTop, w: w - 12, h: h - bodyTop - 8 } };
     }
     fit(cv, ctx, L.h);
     st1.L = L;
@@ -439,7 +445,7 @@
     for (let h = 0; h <= 24; h += 3) {
       const x = xOf(h * 60);
       if (!L.short && !L.wide && h % 6) { g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x, L.ax - 10); g.lineTo(x, L.ax - 6); g.stroke(); continue; }
-      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax - (L.short && h % 6 ? 14 : 0), D.c.muted, L.short && h === 24 ? 'right' : 'center', 'middle', 10.5);
+      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax - (L.short && h % 6 ? 14 : 0), D.c.muted, h === 24 && (L.short || narrowPortrait.matches) ? 'right' : 'center', 'middle', 10.5);
     }
   }
   function drawCursor(g, L, yG) {

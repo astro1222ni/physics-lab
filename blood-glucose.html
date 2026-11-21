@@ -133,6 +133,17 @@
       html.labdeck-panel .lab { margin-right: 28px; }
     }
     .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    @media (max-width: 480px) and (orientation: portrait) {
+      #lab1 > .stage > .playbar { display: grid; grid-template-columns: 1.1fr 1.1fr 1.05fr 1.1fr 44px 44px; gap: 4px; }
+      #lab1 > .stage > .playbar #soundLabel {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+      }
+      #lab1 > .stage > .playbar button {
+        min-width: 0; min-height: 44px; padding: 4px 3px;
+        font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -194,8 +205,9 @@
             <input id="basal" type="range" min="0" max="40" step="0.5" value="0" data-decimals="1"></div>
           <div class="slider"><label for="ratio" data-en="Rapid-acting at each meal: units per 10 g of carbohydrate">速效（每餐）：每 10 g 醣打幾單位</label><output id="ratioo"></output>
             <input id="ratio" type="range" min="0" max="3" step="0.05" value="0" data-decimals="2"></div>
-          <div class="slider"><label for="lead" data-en="Inject how many minutes before eating (negative = after)">飯前幾分鐘打（負的是飯後才打）</label><output id="leado"></output>
+          <div class="slider"><label for="lead" data-en="Inject minutes before eating">飯前注射時間（分）</label><output id="leado"></output>
             <input id="lead" type="range" min="-30" max="60" step="5" value="0" data-decimals="0"></div>
+          <p class="hint" data-en="A negative time means injection after eating.">負值代表飯後注射。</p>
         </section>
         <section class="card" data-deck="運動|Exercise" data-deck-order="4" data-section="lab1">
           <h2 data-en="Exercise">運動</h2>
