@@ -4,6 +4,7 @@
   <meta charset="utf-8">
 <meta name="lab-updated" content="2026-11-21 09:08">
   <script src="js/settings.js?v=202611210908"></script>
+  <script src="js/modegate.js" data-lab="選站位、調角度，投一球｜看球碰框、刷網與落地｜比較兩次出手的結果" data-lab-en="Choose a spot and release|Follow rim, net and floor contacts|Compare two releases" data-learn="照步驟投一顆基準球｜換站位或出手條件｜觀察兩球差異並查看公式" data-learn-en="Shoot a reference step by step|Change a court spot or release condition|Compare the readings and explore the formula"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Basketball Shots and Throwing for Distance | Astro Ni Lab">投籃與擲遠｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -119,12 +120,29 @@
       .labdeck-drawer .labdeck .slider output {grid-column:2;grid-row:1/3;min-width:44px;display:grid;align-content:center;}
       .labdeck-drawer .labdeck .checks label {min-height:44px;display:flex;align-items:center;gap:4px;}
     }
+      .shot-spots {display:flex;flex-wrap:wrap;gap:4px}
+    #courtMap {position:absolute;right:5px;top:5px;display:grid;justify-items:end;max-width:28%}
+    #mapCanvas {aspect-ratio:15/14;width:clamp(88px,15vw,116px);max-width:100%;height:auto;border-radius:5px;touch-action:none;cursor:crosshair}
+    .shot-model p,.top p {text-wrap:pretty}
+    @media(max-width:440px) and (orientation:portrait){
+      .shot-actions:not(.shot-secondary){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+      .shot-actions:not(.shot-secondary) button{padding-inline:3px}
+    }
+    #feedback {white-space:pre-line}
+    #bearingHint {max-width:42em}
+    #focusRow select {min-height:44px;}
+    #toggleMap {padding:0 8px;min-height:24px;position:relative;font-size:12px;border-radius:5px}
+    #toggleMap::before {content:"";position:absolute;inset:-10px 0}
+    .shot-lab .labdeck output.lab-num,.shot-lab .panel output.lab-num {min-height:0}
+    .shot-lab .panel .slider {margin-bottom:0}
+    .shot-lab .panel .slider input[type=range]{min-height:0;height:28px}
+    @media(orientation:landscape) and (max-height:600px){#mapCanvas{width:80px}}
   </style>
 </head>
 <body data-en-ready>
 <div class="wrap">
   <header class="top">
-    <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;physical-education.html&quot;&gt;Physical Education&lt;/a&gt; / &lt;a href=&quot;physical-education.html#sport-skills&quot;&gt;Sports Skills and Principles&lt;/a&gt; / &lt;a href=&quot;physical-education.html#ch-shooting-throwing&quot;&gt;Shooting and Throwing Techniques&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="physical-education.html">體育</a> / <a href="physical-education.html#sport-skills">運動技能與原理</a> / <a href="physical-education.html#ch-shooting-throwing">投籃與投擲動作</a></nav>
+    <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;physical-education.html&quot;&gt;Physical Education&lt;/a&gt; / &lt;a href=&quot;physical-education.html#sport-skills&quot;&gt;Sports Skills and Principles&lt;/a&gt; / &lt;a href=&quot;physical-education.html#ch-shooting-throwing&quot;&gt;Shooting and Throwing Techniques&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> <span>/&nbsp;<a href="physical-education.html">體育</a></span> <span>/&nbsp;<a href="physical-education.html#sport-skills">運動技能與原理</a></span> <span>/&nbsp;<a href="physical-education.html#ch-shooting-throwing">投籃與投擲動作</a></span></nav>
     <h1 data-en="Basketball Shots and Throwing for Distance">投籃與擲遠</h1>
     <p data-en="Why does one shot aimed at the hoop’s centre hit the rim while another swishes? See how a higher arc changes the available space.">同樣瞄準框心，為什麼一球碰框，另一球卻空心入網？把弧線拉高，看看球多了多少空間。</p>
   </header>
@@ -146,7 +164,7 @@
         <button type="button" id="ballCam" aria-pressed="false" data-en="Ball view">球的視角</button>
       </div>
       <div id="strip" class="court-strip" aria-live="off"></div>
-      <div id="view2"><canvas id="cv" role="img" aria-label="側面球場。拖箭頭可調出手方向與速度，也可使用下方滑桿。" data-en-aria-label="Court in side view. Drag the arrow to aim or use the release controls."></canvas><button type="button" id="aim" aria-label="拖動出手箭頭。方向鍵可調角度與速率。" data-en-aria-label="Drag the release arrow. Arrow keys adjust angle and speed."></button></div>
+      <div id="view2"><canvas id="cv" role="img" aria-label="側面球場。拖箭頭可調出手方向與速度，也可使用下方滑桿。" data-en-aria-label="Court in side view. Drag the arrow to aim or use the release controls."></canvas><button type="button" id="aim" aria-label="拖動出手箭頭。方向鍵可調角度與速率。" data-en-aria-label="Drag the release arrow. Arrow keys adjust angle and speed."></button><div id="courtMap"><button type="button" id="toggleMap" aria-expanded="true" aria-controls="mapCanvas" data-en="Court map">站位圖</button><canvas id="mapCanvas" width="150" height="140" aria-label="半場俯視，點或拖曳選站位，亦可用站位滑桿" data-en-aria-label="Half court. Tap or drag to choose a spot, or use the sliders."></canvas></div></div>
       <div id="view3" hidden></div>
       <p id="viewMsg" class="hint" role="status" hidden></p>
       <div class="shot-actions">
@@ -173,8 +191,8 @@
       <p class="status" id="feedback" role="status"></p>
     </div>
     <aside class="panel">
-      <section class="card" data-deck="出手|Release" data-deck-order="0">
-        <h2 data-en="Release">出手設定</h2>
+      <section class="card" data-deck="投籃設定|Setup" data-deck-order="0">
+        <h2 data-en="Setup">投籃設定</h2>
         <div class="slider" id="speedRow"><label for="speed" data-en="Release speed">出手速率</label><output for="speed" id="speedo"></output>
           <input type="range" id="speed" min="3" max="18" step="0.1" value="7.3" data-decimals="3"></div>
         <div class="slider" id="angleRow"><label for="angle" data-en="Release angle">出手角</label><output for="angle" id="angleo"></output>
@@ -183,7 +201,17 @@
           <input type="range" id="height" min="0" max="3" step="0.1" value="2" data-decimals="2"></div>
         <div class="slider" id="distanceRow"><label for="distance" data-en="Distance to hoop centre">距籃框中心</label><output for="distance" id="distanceo"></output>
           <input type="range" id="distance" min="2" max="9" step="0.01" value="4.23" data-decimals="2"></div>
+        <div class="slider" id="bearingRow"><label for="bearing" data-en="Court bearing φ">站位角度 φ</label><output for="bearing" id="bearingo"></output>
+          <input type="range" id="bearing" min="-80" max="80" step="1" value="0" data-decimals="0"></div>
+        <div id="spots" class="shot-spots" role="group" aria-label="球場站位" data-en-aria-label="Court spots">
+          <button type="button" data-spot="4.23,0" data-en="Free throw">罰球線</button><button type="button" data-spot="2,0" data-en="Paint">禁區</button>
+          <button type="button" data-spot="6.75,0" data-en="Top three">三分正面</button><button type="button" data-spot="6.75,45" data-en="Wing 45°">三分 45°</button>
+          <button type="button" data-spot="6.70,80" data-en="Corner three">三分底角</button>
+        </div>
+        <p id="bearingHint" class="hint" data-en="Face the hoop from midcourt. Positive angles are to your right.">從中場面向籃框，正角在右手邊。</p>
         <div class="checks"><label><input type="checkbox" id="drag"> <span data-en="Air resistance">空氣阻力</span></label></div>
+        <div id="learnExamples" class="ex-bar" data-learn-entry></div>
+        <label id="focusRow"><span data-en="Single-shot record">單球記錄重點</span> <select id="recordFocus"><option value="auto" data-en="Automatic">自動判讀</option><option value="finish" data-en="Position and rebound">站位與反彈</option></select></label>
         <p class="status" data-en="Tap a number to enter a precise value.">點選數字可輸入精確值。</p>
       </section>
       <section class="card" data-deck="兩球比較|Compare" data-deck-order="1">
@@ -202,24 +230,39 @@
   </div>
   <section class="notes shot-model">
     <h2 data-en="What does the ball see?">球看得見多大的框？</h2>
-    <p data-en="The entry angle is the angle between the ball’s instantaneous velocity and the floor as it crosses hoop height on the way down. Viewed along that velocity, the hoop projects to an ellipse. Its short diameter is the effective opening. A steeper entry makes the opening wider.">球心下降到框高的那一刻，速度方向與水平面的夾角稱為入框角。沿球落下的方向看，籃框投影成橢圓，短徑就是有效開口。入框角越大，開口越寬。</p>
+    <p data-en="The entry angle is the angle between the ball’s instantaneous velocity and the floor as it crosses hoop height on the way down. Horizontal speed includes both court directions. Viewed along that velocity, the hoop projects to an ellipse. Its short diameter is the effective opening. A steeper entry makes the opening wider.">球心下降到框高的那一刻，速度方向與水平面的夾角稱為入框角，水平速率含球場兩個方向的分量。沿球落下的方向看，籃框投影成橢圓，短徑就是有效開口。入框角越大，開口越寬。</p>
     <details><summary data-en="Court measurements and the scoring model">球場尺寸與進框判定</summary>
       <p data-en="The hoop is 3.05 m high with a 45 cm inside diameter. Along the centre line, the free-throw line is about 4.23 m from the hoop and 4.60 m from the board. The three-point arc is 6.75 m from the hoop. The board is 1.80 m wide and 1.05 m high.">框高 3.05 m，內徑 45 cm。沿球場中線量，罰球線到框心約 4.23 m，到籃板約 4.60 m。三分線圓弧距框心 6.75 m。籃板寬 1.80 m、高 1.05 m。</p>
-      <div class="formula">\[\beta=\operatorname{atan2}(-v_y,|v_x|)\]</div>
+      <div class="formula">\[v_{\mathrm{h}}=\sqrt{v_x^2+v_z^2},\qquad \beta=\operatorname{atan2}(-v_y,v_{\mathrm{h}})\]</div>
       <div class="formula">\[w_{\rm eff}\approx D_{\rm rim}\sin\beta\]</div>
       <p data-en="This projection neglects the thickness of the rim tube. The ball view looks along the descending velocity at hoop height and uses parallel projection to compare the opening with the ball diameter. A player standing still sees the same hoop shape for every arc.">有效開口的公式忽略框管粗度。「球的視角」沿球心抵達框高時的下降速度做平行投影，方便比較開口與球徑。球員站在原處時，眼中的籃框形狀保持相同。</p>
-      <p data-en="For a basket the entire ball must pass through the rim on the way down. The simulation checks both edges along the path and stops at the first rim contact. After contact, the dashed marker shows where the centre would cross hoop height without the rim.">整顆球要在下降時穿過框口才算進球。程式沿路檢查前、後框緣，首次碰框就停止。碰框時，虛線球心標記顯示若沒碰框會穿越框高的位置。</p>
-      <p data-en="Both views use the same vertical flight path. The front of the ball meets the board when its centre is one ball radius from the face. The centre must also be at least one radius inside the top and bottom edges, between 3.0225 m and 3.8275 m high. Horizontal velocity reverses and retains 75% of its magnitude. Vertical velocity stays the same. Edge collisions, rim rebounds, sideways motion, wind and spin are omitted.">兩個視圖共用同一條鉛直平面內的軌跡。球心距板面一個球半徑、距上緣和下緣也都至少一個球半徑時，才計入正面打板。球心的有效高度為 3.0225 至 3.8275 m。打板後水平速度反向，大小保留 75%，鉛直速度維持原值。模型忽略板緣碰撞、碰框後的反彈、左右偏移、風與旋轉。</p>
-      <p data-en="Measure horizontal position from the release point. The hoop centre is at distance d, and the board face is 0.375 m beyond it. The ball radius is r.">水平位置從出手點量起。框心距離記為 d，板面在框心後方 0.375 m，球半徑記為 r。</p>
+      <p data-en="The first classification describes the incoming attempt. A dashed marker predicts where the centre would cross hoop height if the rim were absent. The final result follows the physical ball through rebounds and the net.">第一個判定描述原來的出手。虛線標記是假設沒有框時，球心下降穿越框高的位置。最後結果則追蹤實際的反彈與進網。</p>
+      <p data-en="The front-on readings retain the original board test: the centre must be at least one ball radius inside its margins. The full physical path also checks edges. Height zero in the readings uses the original point release, while the physical ball starts at least one radius above the floor.">正面舊讀數沿用板面判定，球心須落在板緣內至少一個球半徑。完整軌跡另計板緣接觸。零高度舊讀數沿用球心點出手，實體球的起點最低為離地一個球半徑。</p>
+      <p data-en="For a front-on shot, measure horizontal position from the release point. The hoop centre is at distance d, and the board face is 0.375 m beyond it. The ball radius is r.">正面出手時，水平位置從出手點量起。框心距離記為 d，板面在框心後方 0.375 m，球半徑記為 r。</p>
       <div class="formula">\[x_{\rm hit}=d+0.375\,\mathrm{m}-r\]</div>
-      <p><a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2024-v10a.pdf" data-en="FIBA court rules, article 2.5">FIBA 球場規則第 2.5 條</a> · <a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2024-official-basketball-rules-and-basketball-equipment.pdf" data-en="FIBA basketball equipment, section 1">FIBA 籃球設備規格第 1 節</a></p>
+      <p data-en="The corner three-point line runs 6.60 m to the side of the hoop. At 80°, the distance from the hoop to that line is about 6.70 m.">底角三分線到框心的橫向距離是 6.60 m。站在 80° 方向與這條線的交點時，距框心約 6.70 m。</p>
+      <p><a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2026-v1-1.pdf" data-en="FIBA court rules, article 2.5">FIBA 球場規則第 2.5 條</a> · <a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2026-equipment-v1-0.pdf" data-en="FIBA basketball equipment, section 1">FIBA 籃球設備規格第 1 節</a></p>
     </details>
     <details><summary data-en="Air resistance and the two balls">兩種球的空氣阻力</summary>
       <div class="formula">\[\frac{k}{m}=\frac{\rho C_{\rm d}\pi r^2}{2m}\]</div>
       <div class="formula">\[\vec a_{\rm drag}=-(k/m)|\vec v|\vec v\]</div>
       <p data-en="Air density is 1.2 kg per cubic metre. The radius sets the frontal area. Each ball has its own mass and drag coefficient. We integrate its flight using the unrounded result.">空氣密度取每立方公尺 1.2 kg，迎風面積由半徑決定。每種球有自己的質量與阻力係數，軌跡計算採用公式的未捨入值。</p>
-      <p data-en="The basketball has a mass of 0.62 kg, a diameter of 24.5 cm and a drag coefficient of 0.50. These give about 0.02281 per metre. The softball has a mass of 0.19 kg, a diameter of 9.7 cm and a coefficient of 0.35, giving about 0.00817 per metre.">籃球質量 0.62 kg、直徑 24.5 cm，阻力係數取 0.50，算得每公尺約 0.02281。壘球質量 0.19 kg、直徑 9.7 cm，阻力係數取 0.35，算得每公尺約 0.00817。</p>
-      <p><a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" data-en="NASA Glenn drag equation">NASA Glenn 阻力方程式</a></p>
+      <p data-en="The drag coefficients and air density are representative estimates. The basketball has a mass of 0.62 kg, a diameter of 24.5 cm and a drag coefficient of 0.50. These give about 0.02281 per metre. The softball has a mass of 0.19 kg, a diameter of 9.7 cm and a coefficient of 0.35, giving about 0.00817 per metre.">阻力係數與空氣密度取教學估計值。籃球質量 0.62 kg、直徑 24.5 cm，阻力係數取 0.50，算得每公尺約 0.02281。壘球質量 0.19 kg、直徑 9.7 cm，阻力係數取 0.35，算得每公尺約 0.00817。</p>
+          </details>
+    <details><summary data-en="After the ball hits the rim">碰到框以後</summary>
+      <p data-en="Watch the seam when the spinning ball hits a surface. The normal impulse reverses its approach. The restitution coefficient sets the fraction of normal speed returned. Friction exchanges translation and spin until the contact point stops slipping.">看球縫怎麼轉。碰撞時，法向衝量讓球反彈，恢復係數決定法向速率保留多少。摩擦把部分平移轉為旋轉，也可能把旋轉轉回平移，接觸點停止滑動時便停止施加摩擦衝量。</p>
+      <div class="formula">\[ I=\tfrac23 m r^2,\qquad v_n'=-e v_n,\qquad |J_t|\leq\mu |J_n| \]</div>
+      <p data-en="We model a thin shell with 2.5 revolutions of backspin per second and omit wind and Magnus lift. The rim tube is represented by one circle of effective radius 0.225 m. The board is a finite rectangle with edges and two faces. The support is scenery.">球採薄殼模型，出手後旋每秒 2.5 轉，略去風和馬格努斯力。框管粗細折入半徑 0.225 m 的細圓圈。籃板包含兩面與板緣，支架只呈現外觀。</p>
+      <p data-en="Floor restitution is 0.767, from a drop of 1.80 m and a rebound of 1.06 m, both measured to the ball’s underside. For this teaching model the rim restitution (0.55) and friction coefficient for the floor (0.45) are teaching estimates. Leather-on-rim friction (0.50) and glass-board friction (0.60) use published slip measurements as impact approximations. Board restitution 0.75 is the original model estimate. A first board contact has no friction.">地板恢復係數約 0.767，由球底落下 1.80 m、回彈 1.06 m 推算。框的恢復係數 0.55、地板摩擦係數 0.45 是教學估計值，用來呈現能量損耗與接觸點滑動。框與板的摩擦係數分別取 0.50、0.60，以皮球對框和玻璃板的滑動實驗近似撞擊時的摩擦。板的恢復係數 0.75 沿用舊版估計值，首次先碰板時不計摩擦。</p>
+      <p data-en="The net is a 0.40 m tapered drag region. Inside it the ball slows and is drawn towards the axis. A ball arriving from the side is pushed out. Below the net it falls freely. Weak bounces become rolling. Rolling deceleration (0.85 metres per second per second) and net damping are teaching estimates. Playback ends at rest, 1 m beyond the half court, or 6 s after first contact. On the court map the solid dot marks the player, the open circle the first bounce, and the cross the last position at the stopping time.">籃網用深 0.40 m 的漸縮阻力區近似，未逐條模擬網繩。入網後球減速、向中央收，側面撞網則往外彈，離開網底後自由落下。微小彈跳後轉為滾動，滾動減速與網內阻力均採教學估計值。球停下、越出半場 1 m 或首次接觸後滿 6 秒就結束，俯視圖上的實心點是球員，空心圈是第一次落地點，叉號是模擬結束時的位置。</p>
+    </details>
+    <details id="sources"><summary data-en="Sources">資料來源</summary>
+      <ul><li><span data-en="FIBA, Official Basketball Rules (effective 1 Oct 2026), art. 2. Half court 14 × 15 m. Hoop to baseline 1.575 m. The 6.75 m arc joins straight lines 6.60 m from the centre axis. Lane width 4.90 m, free-throw line 5.80 m from the baseline. The no-charge semicircle measures 1.25 m to the inner edge and 1.30 m to the outer edge.">FIBA《籃球規則》（2026-10-01 生效）第 2 條。半場 14 × 15 m，框心距底線 1.575 m。三分圓弧半徑 6.75 m，接到離中軸 6.60 m 的直線。禁區寬 4.90 m，罰球線距底線 5.80 m。合理衝撞區半圓內緣半徑 1.25 m、外緣 1.30 m。</span> <a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2026-v1-1.pdf" data-en="Official rules PDF">規則原文</a></li>
+      <li><span data-en="FIBA, Basketball Equipment (effective 1 Oct 2026), sections 1–2. Net length 0.40–0.45 m. The ball must rebound to 1.035–1.085 m from a 1.80 m drop, measured at its underside.">FIBA《籃球設備》（2026-10-01 生效）第 1、2 節。網長 0.40–0.45 m。球底從 1.80 m 落下，回彈時球底須達 1.035–1.085 m。</span> <a href="https://assets.fiba.basketball/image/upload/documents-corporate-fiba-official-rules-2026-equipment-v1-0.pdf" data-en="Equipment PDF">設備原文</a></li>
+      <li><span data-en="C. M. Tran and L. M. Silverberg (2008), Optimal release conditions for the free throw in men’s basketball. Their simulation explored backspin up to 3 Hz. We use 2.5 Hz as a representative release.">Tran 與 Silverberg（2008）研究男子罰球的出手條件，分析結果建議後旋可至每秒 3 轉，本頁取每秒 2.5 轉為代表值。</span> <a href="https://doi.org/10.1080/02640410802004948" data-en="Research paper">研究論文</a></li>
+      <li><span data-en="H. Okubo and M. Hubbard (2010), Identification of basketball parameters for a simulation model, section 3.3. They report friction of 0.5 for a leather ball on the rim and about 0.6 on tempered glass.">Okubo 與 Hubbard（2010）以碰撞試驗辨識籃球模型參數，第 3.3 節報告皮球對框的摩擦係數為 0.5，對強化玻璃板約為 0.6。</span> <a href="https://www.sciencedirect.com/science/article/pii/S1877705810003991" data-en="Experimental study">實驗論文</a></li>
+      <li><span data-en="WBSC, Official Rules of Softball, Fast Pitch (2026–2029), appendix 3. A 12-inch softball has a circumference of 30.2–30.8 cm and mass of 178.0–198.4 g. The model uses a diameter of 9.7 cm and mass of 190 g.">世界棒壘球總會（WBSC）《2026–2029 快速壘球規則》附錄三。12 吋球的周長為 30.2–30.8 cm，質量為 178.0–198.4 g。本頁取直徑 9.7 cm、質量 190 g。</span> <a href="https://static.wbsc.org/uploads/federations/8/cms/documents/e044bf0e-5318-23e3-9d48-32fda7d42482.pdf" data-en="Ball standards">壘球規格</a></li>
+<li><span data-en="NASA Glenn Research Center, Drag Equation (accessed 21 November 2026). The drag model uses air density, frontal area and the square of speed.">NASA 格倫研究中心〈阻力方程式〉（2026-11-21 查閱）。模型以空氣密度、迎風面積及速率平方計算阻力。</span> <a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" data-en="NASA Glenn drag equation">NASA Glenn 阻力方程式</a></li></ul>
     </details>
     <p id="formulaHint" data-en="Compare two throws at the same speed and height, or two drag-free shots at the same spot, to open the corresponding formula.">把同速同高的兩次試擲，或同站位的兩次無阻力投籃作比較，可查看對應的推導。</p>
     <details id="resultFormula" hidden><summary data-en="Minimum speed and maximum range">最小出手速率與最遠射程</summary>
@@ -245,6 +288,7 @@
 <script src="js/drawkit.js?v=202611210908"></script>
 <script src="js/view3d-nav.js?v=202611210908"></script>
 <script src="js/stepguide.js?v=202611210908"></script>
+<script src="js/labpanel.js"></script>
 <script src="js/labside.js?v=202611210908"></script>
 <script src="js/basketball-shot.js?v=202611210908"></script>
 <script src="js/firebase-config.js?v=202611210908"></script>

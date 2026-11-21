@@ -27,14 +27,14 @@ function floorMap(x0,x1,width,shot,p) {
     c.save();c.scale(w/(x1-x0),h/width);c.translate(-x0,width/2);
     c.strokeStyle=p.white;c.lineWidth=.05;
     if(shot){
-      const ft=-C.court.freeThrow,base=1.575;
+      const ft=-4.225,base=1.575;
       c.fillStyle=D.alpha(p.pad,.48);c.fillRect(ft,-2.45,base-ft,4.9);c.strokeRect(ft,-2.45,base-ft,4.9);
       c.strokeRect(base-28,-7.5,28,15);
       c.beginPath();c.arc(ft,0,1.80,Math.PI/2,1.5*Math.PI);c.stroke();
       c.setLineDash([.26,.25]);c.beginPath();c.arc(ft,0,1.8,-Math.PI/2,Math.PI/2);c.stroke();c.setLineDash([]);
       const r=C.court.threePoint,z=6.6,join=-Math.sqrt(r*r-z*z),a=Math.acos(join/r);
       c.beginPath();c.moveTo(base,-z);c.lineTo(join,-z);c.arc(0,0,r,-a,a,true);c.lineTo(base,z);c.stroke();
-      c.beginPath();c.arc(0,0,1.30,Math.PI/2,1.5*Math.PI);c.stroke();
+      c.beginPath();c.arc(0,0,1.275,Math.PI/2,1.5*Math.PI);c.stroke();
       c.beginPath();c.arc(base-14,0,1.8,0,2*Math.PI);c.stroke();
       c.fillRect(base-14,-7.5,.05,15);
       for(const x of [-1.12,-1.99,-2.90,-3.78])for(const s of [-1,1])c.fillRect(x,s*2.45,.055,s*.18);
@@ -91,13 +91,15 @@ function gym(g,x0,x1,isShot,p) {
   const pad=material(p.pad),wall=material(p.wall),beam=material(p.metal,{metalness:.43}),
     glass=material(mix(p.wall,p.path,.23),{emissive:shade(p.wall,-.52),roughness:.27}),
     rail=material(shade(p.timber,.14)),stripe=material(p.orange),lamp=material(p.white,{emissive:shade(p.white,-.15)});
+  const sideWall=new THREE.Group(),endWall=new THREE.Group();
+  g.add(sideWall,endWall);
   const mid=(x0+x1)/2;
-  box(g,wall,mid,3.75,-8.94,x1-x0,7.5,.15);
-  box(g,wall,x1,3.75,0,.18,7.5,18);
-  for(let x=x0+.55;x<x1;x+=1.12)box(g,pad,x,.85,-8.79,1.08,1.65,.16);
-  for(let z=-8.45;z<8.8;z+=1.12)box(g,pad,x1-.13,.85,z,.14,1.65,1.08);
-  box(g,stripe,mid,1.83,-8.78,x1-x0,.09,.10);
-  box(g,stripe,x1-.13,1.83,0,.10,.09,18);
+  box(sideWall,wall,mid,3.75,-8.94,x1-x0,7.5,.15);
+  box(endWall,wall,x1,3.75,0,.18,7.5,18);
+  for(let x=x0+.55;x<x1;x+=1.12)box(sideWall,pad,x,.85,-8.79,1.08,1.65,.16);
+  for(let z=-8.45;z<8.8;z+=1.12)box(endWall,pad,x1-.13,.85,z,.14,1.65,1.08);
+  box(sideWall,stripe,mid,1.83,-8.78,x1-x0,.09,.10);
+  box(endWall,stripe,x1-.13,1.83,0,.10,.09,18);
   // Perforated acoustic timber and the dark reveal above the wall padding.
   const acoustic=texture(256,128,(c,w,h)=>{
     c.fillStyle=mix(p.timber,p.wall,.34);c.fillRect(0,0,w,h);
@@ -109,25 +111,26 @@ function gym(g,x0,x1,isShot,p) {
   });
   acoustic.wrapS=THREE.RepeatWrapping;acoustic.repeat.x=(x1-x0)/3;
   const lining=material(p.white,{map:acoustic});
-  box(g,lining,mid,2.85,-8.83,x1-x0,1.85,.07);
-  box(g,lining,x1-.095,2.85,0,.065,1.85,17.9);
+  box(sideWall,lining,mid,2.85,-8.83,x1-x0,1.85,.07);
+  box(endWall,lining,x1-.095,2.85,0,.065,1.85,17.9);
   for(let x=x0+1.35;x<x1-1;x+=3){
-    box(g,glass,x,5.34,-8.79,2.74,2.07,.07);
-    box(g,beam,x,5.34,-8.70,.045,2.09,.05);
-    box(g,beam,x,5.35,-8.70,2.73,.05,.05);
-    box(g,beam,x-1.43,3.7,-8.7,.105,7.4,.15);
-    strut(g,beam,[x-1.43,6.55,-8.7],[x-1.43,8,-3],.07);
-    strut(g,beam,[x-1.43,7.65,-8.7],[x-1.43,8,-3],.055);
-    box(g,lamp,x-1.43,7.58,-3.45,.14,.07,1.4);
+    box(sideWall,glass,x,5.34,-8.79,2.74,2.07,.07);
+    box(sideWall,beam,x,5.34,-8.70,.045,2.09,.05);
+    box(sideWall,beam,x,5.35,-8.70,2.73,.05,.05);
+    box(sideWall,beam,x-1.43,3.7,-8.7,.105,7.4,.15);
+    strut(sideWall,beam,[x-1.43,6.55,-8.7],[x-1.43,8,-3],.07);
+    strut(sideWall,beam,[x-1.43,7.65,-8.7],[x-1.43,8,-3],.055);
+    box(sideWall,lamp,x-1.43,7.58,-3.45,.14,.07,1.4);
   }
   for(let z=-7;z<8;z+=3.2){
-    box(g,glass,x1-.14,5.34,z,.06,2.07,2.86);box(g,beam,x1-.20,5.34,z,.05,.05,2.86);
-    box(g,beam,x1-.20,5.34,z,.05,2.07,.05);
+    box(endWall,glass,x1-.14,5.34,z,.06,2.07,2.86);box(endWall,beam,x1-.20,5.34,z,.05,.05,2.86);
+    box(endWall,beam,x1-.20,5.34,z,.05,2.07,.05);
   }
   for(let x=x0+2;x<x1-2;x+=4){
-    box(g,rail,x,.49,-7.22,2.8,.10,.42);box(g,rail,x,.83,-7.42,2.8,.22,.07);
-    for(const dx of [-1.05,1.05])box(g,beam,x+dx,.24,-7.22,.07,.48,.31);
+    box(sideWall,rail,x,.49,-7.22,2.8,.10,.42);box(sideWall,rail,x,.83,-7.42,2.8,.22,.07);
+    for(const dx of [-1.05,1.05])box(sideWall,beam,x+dx,.24,-7.22,.07,.48,.31);
   }
+  return {sideWall,endWall,endX:x1};
 }
 function basket(g,p) {
   const board=C.court.boardOffset,y=C.rimHeight, steel=material(p.metal,{metalness:.56,roughness:.4}),
@@ -151,14 +154,16 @@ function basket(g,p) {
   rect(board-.014,y,.45,.59,.04,white);
   box(g,orange,board-.08,y,0,.16,.035,.09);
   const rim=mesh(g,new THREE.TorusGeometry(C.rimRadius+.009,.009,10,80),orange,0,y,0);rim.rotation.x=Math.PI/2;
-  const cord=(a,r,y)=>[r*Math.cos(a),y,r*Math.sin(a)];
+  const cords=new THREE.Group();g.add(cords);cords.position.y=y;
+  const cord=(a,r,height)=>[r*Math.cos(a),height-y,r*Math.sin(a)];
   for(let i=0;i<12;i++){
     const a=i*Math.PI/6;
     for(const sign of [-1,1]){
       const pts=[cord(a,.225,y-.009),cord(a+sign*.27,.190,2.88),cord(a+sign*.58,.144,2.71),cord(a+sign*.80,.128,2.64)];
-      for(let j=1;j<pts.length;j++)strut(g,net,pts[j-1],pts[j],.0045,.0045,5);
+      for(let j=1;j<pts.length;j++)strut(cords,net,pts[j-1],pts[j],.0045,.0045,5);
     }
   }
+  return cords;
 }
 // Smooth transverse sections give the body a jaw, rib cage, waist and changing
 // muscle bellies. Each row is [height, front radius, side radius, front offset].
@@ -482,8 +487,8 @@ function athlete(g,h,p,radius) {
 // Fit each ball, the player and the basket in the perspective frustum. For a
 // point of depth z, its horizontal image limit is (eyeZ-z)*kx; the vertical
 // calculation is identical. This also fits steep shots on a wide, short canvas.
-function frameCourt(camera,controls,points,behind) {
-  const out=(behind?v(-1,.31,.42):v(-.10,.10,1)).normalize();
+function frameCourt(camera,controls,points,behind,bearing) {
+  const out=(behind?v(-1,.31,.42):v(-.22,.16,1)).applyAxisAngle(v(0,1,0),bearing).normalize();
   const right=v(0,1,0).cross(out).normalize(),up=out.clone().cross(right);
   const ky=.87*Math.tan(camera.fov*Math.PI/360),kx=ky*camera.aspect;
   let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity,z0=Infinity,z1=-Infinity;
@@ -517,7 +522,19 @@ export function createGym(host,T,onLoss,navHost=host) {
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.00035;sun.shadow.normalBias=.016;
   Object.assign(sun.shadow.camera,{left:-15,right:15,top:12,bottom:-12,far:50});scene.add(hemi,sun,sun.target);
   let pose=null,data,ball=null,staticKey='',actorKey='',ballKey='',framing='',name='side',raf=0,gone=false,origin=0;
-  let framePoints=[];
+  let framePoints=[],walls=null,net=null,lastContact=null,netTime=-10;
+  const flash=mesh(scene,new THREE.SphereGeometry(.06,12,8),new THREE.MeshBasicMaterial({color:0xffba45,transparent:true}),0,0,0);
+  flash.castShadow=false;flash.visible=false;
+  const spinAxis=v(),spinTurn=new THREE.Quaternion();
+  function spinBall(t){
+    ball.quaternion.identity();
+    const spins=data.result.spins||[];
+    for(let i=0;i<spins.length&&spins[i][0]<t;i++){
+      const [start,x,y,z]=spins[i],duration=Math.min(t,spins[i+1]?.[0]??t)-start;
+      spinAxis.set(x,y,z);const rate=spinAxis.length();
+      if(rate)ball.quaternion.premultiply(spinTurn.setFromAxisAngle(spinAxis.multiplyScalar(1/rate),rate*duration));
+    }
+  }
   const incoming=new THREE.Vector3(), endOfApproach=new THREE.Plane();
   function styleTrails(){
     for(const trail of paths.children){
@@ -538,15 +555,21 @@ export function createGym(host,T,onLoss,navHost=host) {
     if(raf||gone||document.hidden)return;
     raf=requestAnimationFrame(()=>{
       raf=0;if(gone||document.hidden)return;
-      controls.update();if(cam===ballCam)updateBallProjection();renderer.render(scene,cam);
+      controls.update();if(cam===ballCam)updateBallProjection();
+      // Cut away the foreground wall and its fittings when an orbit crosses outside the gym.
+      if(walls){
+        walls.sideWall.visible=cam.position.z>-7.0;
+        walls.endWall.visible=cam.position.x<walls.endX-.4;
+      }
+      renderer.render(scene,cam);
     });
   }
   function markCrossing(s,p){
     crossingMarker.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});crossingMarker.clear();
     const cross=s.result.crossing;
     if(!cross||s.p.mode!=='shot')return;
-    crossingMarker.position.set(origin+cross.x,C.rimHeight,0);
-    crossingMarker.quaternion.setFromUnitVectors(v(0,0,1),v(cross.vx,cross.vy,0).normalize());
+    crossingMarker.position.set(cross.worldX??origin+cross.x,C.rimHeight,cross.worldZ??0);
+    crossingMarker.quaternion.setFromUnitVectors(v(0,0,1),v(cross.worldVx??cross.vx,cross.vy,cross.worldVz??0).normalize());
     const points=Array.from({length:97},(_,i)=>v(C.ballRadius*Math.cos(i*Math.PI/48),C.ballRadius*Math.sin(i*Math.PI/48),0));
     const paint=s.result.rimHit?new THREE.LineDashedMaterial({color:p.path,dashSize:.019,gapSize:.012}):new THREE.LineBasicMaterial({color:p.path});
     const outline=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),paint);
@@ -567,12 +590,12 @@ export function createGym(host,T,onLoss,navHost=host) {
     controls.maxPolarAngle=name==='ball'?Math.PI/2:Math.PI*.496;
     if(name==='ball'){
       const r=data.result;
-      incoming.set(shot?r.crossing.vx:r.vxLand,shot?r.crossing.vy:r.vyLand,0).normalize();
+      incoming.set(shot?(r.crossing.worldVx??r.crossing.vx):r.vxLand,shot?r.crossing.vy:r.vyLand,r.crossing?.worldVz??0).normalize();
       controls.target.set(shot?0:origin+r.R,shot?C.rimHeight:0,0);
       cam.position.copy(controls.target).addScaledVector(incoming,shot?-1.65:-4.2);
       cam.zoom=1;updateBallProjection();
       endOfApproach.setFromNormalAndCoplanarPoint(incoming,controls.target.clone().addScaledVector(incoming,-.025));
-    }else frameCourt(cam,controls,framePoints,name==='back');
+    }else frameCourt(cam,controls,framePoints,name==='back',actor.rotation.y);
     styleTrails();controls.update();nav.home();request();
   }
   function resize(){
@@ -587,32 +610,35 @@ export function createGym(host,T,onLoss,navHost=host) {
     const radius=C.balls[s.p.mode].diameter/2;
     framePoints=[[v(origin-.94,0,0),.12],[v(origin-.34,Math.max(1.80,s.p.height-.15),0),.16],
       [v(origin,s.p.height,0),radius],[v(origin-.22,.10,.16),.15]];
+    const spot=s.result.station;
+    actor.position.set(spot?.x??0,0,spot?.z??0);actor.rotation.y=(spot?.bearing??0)*Math.PI/180;
+    if(shot)for(const [point] of framePoints)point.applyAxisAngle(v(0,1,0),actor.rotation.y);
     if(shot)for(const side of [-1,1]){
       framePoints.push([v(C.court.boardOffset,C.court.boardBottom+C.court.boardHeight,side*C.court.boardWidth/2),.06],
         [v(0,C.rimHeight,side*C.rimRadius),.06],[v(C.court.boardOffset+1.6,.15,side*.42),.15]);
     }
     for(const {result:r} of traces){
-      for(const [x,y] of r.points){
-        xmin=Math.min(xmin,origin+x-radius);xmax=Math.max(xmax,origin+x+radius);top=Math.max(top,y+radius);
-        framePoints.push([v(origin+x,y,0),radius]);
+      for(const [x,y,z] of r.path||r.points){
+        xmin=Math.min(xmin,x-radius);xmax=Math.max(xmax,x+radius);top=Math.max(top,y+radius);
+        framePoints.push([v(x,y,shot?z:0),radius]);
       }
     }
     const x0=Math.min(-15,Math.floor(xmin/5)*5-2),x1=Math.max(4.6,Math.ceil(xmax/5)*5+.5);
     const sk=[p.dark,shot,x0,x1].join('/');
     if(sk!==staticKey){
-      staticKey=sk;clear(fixed);gym(fixed,x0,x1,shot,p);if(shot)basket(fixed,p);
+      staticKey=sk;clear(fixed);walls=gym(fixed,x0,x1,shot,p);net=shot?basket(fixed,p):null;
       scene.background=new THREE.Color(p.wall);scene.fog=new THREE.FogExp2(p.wall,.025);
       hemi.color.set(shade(p.wall,.8));hemi.groundColor.set(shade(p.timber,-.12));hemi.intensity=p.dark?1.48:1.64;
       sun.color.set(shade(p.timber,.74));sun.intensity=p.dark?2.05:2.18;
     }
     const ak=[s.p.mode,s.p.height,p.dark].join('/');
     if(ak!==actorKey){actorKey=ak;clear(actor);pose=athlete(actor,s.p.height,p,C.balls[s.p.mode].diameter/2);}
-    actor.position.x=origin;
+
     clear(paths);
     for(const tr of traces){
-      const pts=tr.result.points,keep=[],step=Math.max(1,Math.floor(pts.length/88));
-      for(let i=0;i<pts.length;i++)if(i%step===0||i===pts.length-1||Math.abs(pts[i][2]-(tr.result.board?.t??-9))<1e-9)
-        keep.push(v(origin+pts[i][0],pts[i][1],0));
+      const pts=shot?C.displayPath(tr.result,120):tr.result.points,keep=[],step=shot?1:Math.max(1,Math.floor(pts.length/88));
+      for(let i=0;i<pts.length;i++)if(i%step===0||i===pts.length-1||Math.abs(pts[i][shot?3:2]-(tr.result.board?.t??-9))<1e-9)
+        keep.push(v(pts[i][0],pts[i][1],shot?pts[i][2]:0));
       if(tr.dash){
         const dashed=new THREE.LineDashedMaterial({color:tr.ink,dashSize:tr.dash[0]<4?.025:.11,gapSize:.075,transparent:true,opacity:tr.opacity});
         const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(keep),dashed);line.computeLineDistances();line.userData.opacity=tr.opacity;paths.add(line);continue;
@@ -640,11 +666,16 @@ export function createGym(host,T,onLoss,navHost=host) {
   function lost(e){e.preventDefault();if(!gone)onLoss();}
   canvas.addEventListener('webglcontextlost',lost);controls.addEventListener('change',request);
   document.addEventListener('visibilitychange',request);resize();
-  return {refresh,preset,frameRelease(){if(name!=='ball')preset(name);},
-    prepare(fraction){if(ball&&pose){const held=pose(fraction,0,data.p.angle);ball.position.copy(held);ball.position.x+=origin;request();}},
-    move(pos,t=0){if(ball&&pose){pose(1,THREE.MathUtils.smoothstep(t,0,.16),data.p.angle,t);ball.position.set(origin+pos[0],pos[1],0);request();}},
+  return {refresh,preset,contact(e){lastContact=e;if(e.type==='net')netTime=e.t;},
+    frameRelease(){if(name!=='ball')preset(name);},
+    prepare(fraction){if(ball&&pose){const held=pose(fraction,0,data.p.angle);ball.position.copy(actor.localToWorld(held));ball.quaternion.identity();flash.visible=false;lastContact=null;netTime=-10;if(net)net.rotation.set(0,0,0);request();}},
+    move(pos,t=0){if(ball&&pose){pose(1,THREE.MathUtils.smoothstep(t,0,.16),data.p.angle,t);ball.position.set(pos[4]??pos[0],pos[1],pos[5]??0);spinBall(t);
+      if(net){const elapsed=t-netTime;net.rotation.z=elapsed>=0?.15*Math.sin(elapsed*21)*Math.exp(-elapsed*5):0;}
+      flash.visible=!!lastContact&&t>=lastContact.t&&t-lastContact.t<.18;
+      if(flash.visible){flash.position.set(lastContact.x,lastContact.y,lastContact.z);flash.material.opacity=1-(t-lastContact.t)/.18;}
+      request();}},
     dispose(){gone=true;cancelAnimationFrame(raf);observer.disconnect();canvas.removeEventListener('webglcontextlost',lost);
       document.removeEventListener('visibilitychange',request);controls.removeEventListener('change',request);
-      nav.dispose();controls.dispose();clear(fixed);clear(actor);clear(paths);clear(equipment);sun.shadow.dispose();renderer.dispose();renderer.forceContextLoss();clear(crossingMarker);canvas.remove();}
+      nav.dispose();controls.dispose();clear(fixed);clear(actor);clear(paths);clear(equipment);flash.geometry.dispose();flash.material.dispose();sun.shadow.dispose();renderer.dispose();renderer.forceContextLoss();clear(crossingMarker);canvas.remove();}
   };
 }

@@ -4,7 +4,7 @@ const root = path.resolve(__dirname, '../..'), slug = 'basketball-shot';
 const C = require(path.join(root, 'js/basketball-shot-core.js'));
 const page = fs.readFileSync(path.join(root, slug+'.html'), 'utf8');
 const defaults = {mode:'shot',drag:false}, limits = {};
-for (const id of ['speed','angle','height','distance']) {
+for (const id of ['speed','angle','height','distance','bearing']) {
   const input = page.match(new RegExp('<input[^>]*type="range"[^>]*id="'+id+'"[^>]*>'))[0];
   const attr = name => Number(input.match(new RegExp('\\b'+name+'="([^"]+)"'))[1]);
   defaults[id] = attr('value');
@@ -22,11 +22,13 @@ const examples = {
   '3': [[{speed: 7.31}], [{angle: 67, speed: 8.03}]],
   '4': [[{angle: 57, speed: 7.32}], [{distance: 3.7, angle: 60, speed: 7.03}]],
   '5': [[{angle: 44, speed: 7.81}], [{angle: 67, speed: 8.51}]],
-  '6': [[{mode:'throw',height:1.2,speed:7,angle:39.0},{mode:'throw',height:1.2,speed:7,angle:24}], [{mode:'throw',height:1.2,speed:7,angle:40.0},{mode:'throw',height:1.2,speed:7,angle:27}]],
+  '6': [[{mode:'throw',height:1.2,speed:7,angle:39.42},{mode:'throw',height:1.2,speed:7,angle:24}], [{mode:'throw',height:1.2,speed:7,angle:39.41},{mode:'throw',height:1.2,speed:7,angle:27}]],
   '7': [[{angle: 62, speed: 7.59}, {angle: 50, speed: 7.29}], [{angle: 69, speed: 8.28}, {angle: 50, speed: 7.29}]],
   '8': [[{mode: "throw", height: 1.2, speed: 16, angle: 40, drag: true}, {mode: "throw", height: 1.2, speed: 16, angle: 40}], [{mode: "throw", height: 1.2, speed: 17, angle: 32, drag: true}, {mode: "throw", height: 1.2, speed: 17, angle: 32}]],
   '9': [[{mode: "throw", height: 0, speed: 7, angle: 62}, {mode: "throw", height: 0, speed: 7, angle: 28}], [{mode: "throw", height: 0, speed: 9, angle: 62}, {mode: "throw", height: 0, speed: 9, angle: 28}]],
   '10': [centrePair(4.23,2.2,.004),centrePair(2.3,1.2,.012)],
+  '11': [[{bearing:80,distance:6.70,angle:55,speed:8.84}],[{bearing:-80,distance:6.70,angle:55,speed:8.88}]],
+  '12': [[{angle:55,speed:7.22}],[{angle:55,speed:7.24}]],
   'h1': [[{angle: 29, speed: 9.43}], [{angle: 32, speed: 8.75}]],
   'h2': [[{speed: 8.55, height: 1.2, distance: 3.2, angle: 52.28}], [{speed: 9.12, height: 1.2, distance: 3.7, angle: 50.61}]],
   'h3': [[{angle: 27, speed: 10}], [{distance: 2.65, height: 2.3, angle: 31, speed: 7.46}]],
@@ -47,10 +49,10 @@ function measure(changes) {
 }
 function awarded(data,type='recorded') {return missions.filter(m=>m.check({type,data},{})).map(m=>m.id);}
 function release(measurement,trialRole){
-  return Object.freeze({...measurement,trialRole});
+  return Object.freeze(Object.assign(Object.create(measurement),{trialRole}));
 }
 function compare(current,reference){
-  return {...current,prior:reference};
+  return Object.assign(Object.create(current),{prior:reference});
 }
 function investigation(current,reference){
   return compare(release(current,'comparison'),release(reference,'reference'));
@@ -91,6 +93,8 @@ function verifyEventOrders(current,reference,describe){
 }
 function verifyConditions() {
   const has=(id,now,ref)=>awarded(ref?investigation(measure(now),measure(ref)):release(measure(now),'single')).includes(slug+'-'+id);
+  const softball={mode:'throw',height:1.6,speed:11};
+  for(const angle of [40,42])assert.ok(!has('6',{...softball,angle},{...softball,angle:38}));
   const flat={mode:'throw',height:0,speed:9,angle:28},high={...flat,angle:62};
   assert.equal(limits.height.min,0);
   assert.ok(has('9',high,flat));
@@ -113,14 +117,19 @@ function verifyConditions() {
   assert.ok(Math.abs(outside.crossing.x-outside.distance)>C.rimRadius-C.ballRadius);
   assert.ok(awarded(release(inside,'single')).includes(slug+'-h1'));
   assert.ok(!awarded(release(outside,'single')).includes(slug+'-h1'));
+  assert.ok(!has('7',{...highArc,bearing:35},lowArc));
+  const corner=measure({bearing:80,distance:6.7,angle:55,speed:8.86});
+  assert.deepEqual(awarded(release(corner,'single')),[slug+'-3']);
+  assert.deepEqual(awarded({...corner,trialRole:'single',focus:'finish'}),[slug+'-11']);
+  assert.deepEqual(awarded({...corner,trialRole:'reference',focus:'finish'}),[]);
   const [drag,ideal]=examples.h7[0];
   assert.ok(has('h7',ideal,drag)&&!has('h7',drag));
   assert.ok(!has('h7',{...ideal,drag:true},ideal)); // Only the drag switch changed.
   assert.ok(!has('h7',{...drag,angle:30},ideal)&&!has('h7',drag,{...ideal,angle:30}));
 }
 function verify() {
-  assert.equal(missions.length,20);
-  assert.equal(new Set(missions.map(m=>m.id)).size,20);
+  assert.equal(missions.length,22);
+  assert.equal(new Set(missions.map(m=>m.id)).size,22);
   assert.equal(missions.filter(m=>m.hidden).length,10);
   assert.ok(missions.filter(m=>m.hidden&&m.level>=7).length>=3);
   for(const d of [measure({}),measure({mode:'throw',speed:11,angle:38,height:1.6})]){
@@ -149,7 +158,7 @@ function verify() {
     }
     console.log('✓ '+m.id+' · '+m.level+' 級 · 兩組獨立解');
   }
-  console.log('20/20 題、40/40 組獨立解；投籃與擲遠預設、重複基準、自動事件皆未觸發。');
+  console.log('22/22 題、44/44 組獨立解；投籃與擲遠預設、重複基準、自動事件皆未觸發。');
   return report;
 }
 // Invert the vacuum trajectory, then quantize to values accepted by the actual controls.
