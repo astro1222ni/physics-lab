@@ -36,6 +36,41 @@
         }
       }
     },
+    "qstats": {
+      ".read": true,
+      "$mod": {
+        ".validate": "$mod.matches(/^[a-z0-9-]{1,40}$/) && newData.hasChildren()",
+        "done": {
+          ".write": "newData.exists()",
+          ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+        },
+        "q": {
+          "$q": {
+            ".validate": "$q.matches(/^[a-z0-9_-]{1,40}$/) && newData.hasChildren()",
+            "n": {
+              ".write": "newData.exists()",
+              ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+            },
+            "ok": {
+              ".write": "newData.exists()",
+              ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+            },
+            "m": {
+              "$myth": {
+                ".write": "newData.exists()",
+                ".validate": "$myth.matches(/^[A-Za-z0-9-]{1,32}$/) && newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "clock": {
       ".read": true,
       ".write": true,

@@ -8,6 +8,7 @@
  *   // 假的伺服器時間：localStorage 'mockoffset' = 毫秒（伺服器時間 = 本機時間 + 這個值；測試換日用）
  *   // 模擬「正式站還是舊規則」：localStorage 'mockoldrules' = '1'（拒絕各科星星 s/sa、每日任務 daily/、寶物 bag/）
  * 資料存在 localStorage 'mdb'，並模擬資料庫規則（firebase/database.rules.json）：
+ *   匿名作答統計 qstats/<代號>：只能寫 done、q/<題>/n、ok、m/<迷思> 這些葉節點，每次剛好 +1，格式不對或多的鍵一律擋；
  *   任務只能領一次、星星數必須等於 missionDefs（1–20）、總分遞增正確、各科星星只增不減且加總不超過總星數；
  *   補發 bonus/<uid>/<任務>：只增不減、完成紀錄 + 補發 = missionDefs、總分剛好加上差額、必須和總分一起寫；
  *   每日任務的換日、兩次完成至少隔 10 秒、每天最多 10 次；五種寶物可同時增加，各有上限，必須和每日任務一起寫入。
@@ -31,6 +32,22 @@
   const get = (db, path) => path.split('/').reduce((o, k) => (o == null ? null : o[k]), db) ?? null;
   const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math', 'info', 'geog', 'music', 'civ', 'health', 'pe', 'art'];
   const TW = 8 * 3600000, DAY = 86400000;
+
+  // ---------- 規則：匿名作答統計 qstats（龍騰網頁講義、學習分支共用；11/21） ----------
+  // 只能寫到葉節點、每次剛好 +1：done、q/<題>/n、q/<題>/ok、q/<題>/m/<迷思>；代號、題號、迷思代號限定格式，其他鍵一律擋。不存 uid、時間。
+  function checkQstats(ks, old, v0) {
+    const p = ks.join('/');
+    if (!/^[a-z0-9-]{1,40}$/.test(ks[1] || '')) return p + ': qstats 代號格式不對';
+    const qok = ks[2] === 'q' && /^[a-z0-9_-]{1,40}$/.test(ks[3] || '');
+    const leaf = (ks.length === 3 && ks[2] === 'done') ||
+      (ks.length === 5 && qok && (ks[4] === 'n' || ks[4] === 'ok')) ||
+      (ks.length === 6 && qok && ks[4] === 'm' && /^[A-Za-z0-9-]{1,32}$/.test(ks[5]));
+    if (!leaf) return p + ': qstats 只能寫 done、q/<題>/n、q/<題>/ok、q/<題>/m/<迷思>';
+    const prev = typeof old === 'number' ? old : 0;
+    const next = v0 && typeof v0 === 'object' && v0.__inc != null ? prev + v0.__inc : v0;
+    if (typeof next !== 'number' || next !== prev + 1) return p + ': qstats 每次只能 +1';
+    return null;
+  }
 
   // ---------- 規則：各科星星 ----------
   const oldRules = () => !!localStorage.getItem('mockoldrules');
@@ -209,6 +226,7 @@
       const learnPaths = new Set();
       for (const [path, v0] of Object.entries(map)) {
         const ks = path.split('/');
+        if (ks[0] === 'qstats') { const why = checkQstats(ks, get(before, path), v0); if (why) return deny(why); }
         if (['daily', 'bag', 'userStats', 'achievements', 'treasureBoard', 'profiles', 'scores'].includes(ks[0]) && (!user || ks[1] !== user.uid)) return deny(path + ': 不是本人');
         if (ks[0] === 'learn') {
           if (ks.length < 3 || !user || ks[1] !== user.uid) return deny(path + ': 只有本人能寫單元');
