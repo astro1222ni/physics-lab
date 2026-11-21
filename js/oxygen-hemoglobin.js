@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -114,7 +115,9 @@
   /** 下標文字：parts = [[文字, 是否下標], …]；回傳寬度 */
   function subText(g, parts, x, y, color, size, weight, align) {
     size = size || 12; weight = weight || '';
-    const f0 = (weight ? weight + ' ' : '') + size + 'px ' + FONT, f1 = (weight ? weight + ' ' : '') + (g === ctx && L1.short ? 11 : Math.round(size * 0.74)) + 'px ' + FONT;
+    const subSize = L1.short ? 11 : narrowPortrait.matches ? 10 : Math.round(size * 0.74);
+    const f0 = (weight ? weight + ' ' : '') + size + 'px ' + FONT;
+    const f1 = (weight ? weight + ' ' : '') + subSize + 'px ' + FONT;
     let w = 0;
     parts.forEach(function (p) { g.font = p[1] ? f1 : f0; w += g.measureText(p[0]).width; });
     let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
@@ -237,7 +240,7 @@
     W1 = drawingWidth(cv) || 300;
     const narrow = W1 < 640;
     const short = shortLandscape.matches && W1 < 700;
-    H1 = short ? 316 : narrow ? 580 : 480;
+    H1 = short ? 316 : narrowPortrait.matches ? 530 : narrow ? 580 : 480;
     fit(cv, ctx, H1);
     if (short) {
       const PL = { x: 56, y: 107, w: W1 - 205, h: H1 - 153 };
@@ -304,7 +307,7 @@
     }
     g.restore();
     small(g, T('氧分壓（mmHg）', 'Oxygen partial pressure (mmHg)'), PL.x + PL.w / 2, PL.y + PL.h + 32, D.c.muted, 'center');
-    g.save(); g.translate(13, PL.y + PL.h / 2); g.rotate(-Math.PI / 2);
+    g.save(); g.translate(narrowPortrait.matches ? 7 : 13, PL.y + PL.h / 2); g.rotate(-Math.PI / 2);
     small(g, T('氧飽和度', 'Oxygen saturation'), 0, 0, D.c.muted, 'center'); g.restore();
     // 典型位置
     [[100, '肺', 'lungs'], [40, '安靜組織', 'resting tissue'], [20, '用力的肌肉', 'working muscle']].forEach(function (z) {

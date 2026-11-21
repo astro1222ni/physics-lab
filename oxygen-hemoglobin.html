@@ -126,6 +126,17 @@
     @media (min-width: 881px) and (max-width: 1220px) {
       html.labdeck-panel .lab { margin-right: 28px; }
     }
+    @media (max-width: 480px) and (orientation: portrait) {
+      #lab1 > .stage > .playbar { display: grid; grid-template-columns: 1.15fr 1.15fr 1.15fr 44px 1fr 44px; gap: 4px; }
+      #lab1 > .stage > .playbar #soundLabel {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+      }
+      #lab1 > .stage > .playbar button {
+        min-width: 0; min-height: 44px; padding: 4px 3px;
+        font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -174,10 +185,11 @@
           <h2 data-en="Lungs and air">肺與空氣</h2>
           <div class="slider"><label for="alt" data-en="Altitude (m)">海拔（m）</label><output id="alto"></output>
             <input id="alt" type="range" min="0" max="8848" step="1" value="0" data-decimals="0"></div>
-          <div class="slider"><label for="pco2" data-en-html="Arterial P<sub>CO<sub>2</sub></sub> (mmHg) — lower when you breathe harder">動脈 P<sub>CO<sub>2</sub></sub>（mmHg）——呼吸越用力越低</label><output id="pco2o"></output>
+          <div class="slider"><label for="pco2" data-en-html="Arterial P<sub>CO<sub>2</sub></sub> (mmHg)">動脈 P<sub>CO<sub>2</sub></sub>（mmHg）</label><output id="pco2o"></output>
             <input id="pco2" type="range" min="7" max="80" step="0.5" value="40" data-decimals="1"></div>
           <div class="slider"><label for="ppm" data-en="Carbon monoxide in the air (ppm)">空氣中的一氧化碳（ppm）</label><output id="ppmo"></output>
             <input id="ppm" type="range" min="0" max="1000" step="5" value="0" data-decimals="0"></div>
+          <p class="hint" data-en="Arterial CO2 pressure falls when you breathe harder.">呼吸越用力，動脈二氧化碳的分壓越低。</p>
         </section>
         <section class="card" data-deck="血液|Blood" data-deck-order="4" data-section="lab1">
           <h2 data-en="Blood">血液</h2>
