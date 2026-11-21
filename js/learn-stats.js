@@ -1,0 +1,212 @@
+/* learn-stats.js — 物理自習室的匿名統計（第一階段）：瀏覽次數、操作次數、累積學習時間、目前在線
+   11/21 站長要學習分支照龍騰網頁講義的「兩階段教室統計」做（原話：「將這個統計的方式通知"實驗室「學習」分支"工作串，請他一樣照做。」）。
+   做法照龍騰 js/lt-stats.js 第一階段，資料用實驗室現成的路徑與規則（firebase/database.rules.json，不用改規則）：
+   - /stats/<代號>：views（單元頁每載入一次 +1）、ops（按鈕、作答、拖圖）、seconds（學習時間）。代號＝learn-phy-5-1、exam-114-19…
+     實驗室首頁的「全站累計」只加首頁列出的實驗，自習室的數字不會混進去。
+   - /online/<分鐘>：開在前景的分頁每分鐘在 n（全站）與 m/<代號> 各加 1；大廳記在 learn-lobby。顯示上一分鐘的數字，至少算自己一個。
+   - 學習時間：旁白在播（LearnPlayer.snapshot.playing）就算；否則只算最近一次操作後 30 秒內。
+   - 放哪裡：大廳首頁兩張大卡下面「物理自習室累計」；課本分頁 5-1 卡片下一行小字；學測分頁 14 題卡片下面「114 學測累計」；
+     單元頁畫面上不放統計，只在右側「步驟・任務」側板頂端一行「現在有 N 人在學這一題／這一節」。
+   - 讀到數字才出現；沒有資料庫設定（私人試玩版、本機）或連不上就整條藏起來。只記匿名數字，不收任何個人資料。
+   測試：window.LAB_STATS_DB 指到假資料庫、window.LAB_STATS_WRITE_AT 指定每分鐘第幾秒寫（規劃\學習-學測114\fix1121\stats-test.cjs）。 */
+(function () {
+  'use strict';
+  var DB = String(window.LAB_STATS_DB || (window.LAB_FIREBASE && window.LAB_FIREBASE.databaseURL) || '').replace(/\/+$/, '');
+  if (!DB || !window.fetch) return;
+  var IDLE = 30, REFRESH_EVERY = 120, KEEP_MINUTES = 10, MOD_RE = /^[a-z0-9-]{1,40}$/;
+  var en = function () { return !!(window.LabSettings && LabSettings.lang === 'en'); };
+  var T = function (z, e) { return en() ? e : z; };
+
+  function fmtInt(n) { return Math.round(n || 0).toLocaleString(en() ? 'en-US' : 'zh-TW'); }
+  function fmtSI(n) {
+    var x = Math.floor(n || 0), P = [[1e9, 'G'], [1e6, 'M'], [1e3, 'k']];
+    for (var i = 0; i < P.length; i++) if (x >= P[i][0]) { var v = x / P[i][0], d = v >= 100 ? 0 : v >= 10 ? 1 : 2; return (Math.floor(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d) + ' ' + P[i][1]; }
+    return String(x);
+  }
+  function fmtTime(sec) {
+    sec = Math.round(sec || 0);
+    if (sec < 60) return sec + T(' 秒', ' s');
+    var m = Math.floor(sec / 60), h = Math.floor(m / 60), d = Math.floor(h / 24), out = [];
+    if (d > 0) out.push(fmtInt(d) + T(' 天', ' d'));
+    if (h > 0) out.push((h % 24) + T(' 小時', ' h'));
+    out.push((m % 60) + T(' 分', ' min'));
+    return out.join(' ');
+  }
+  function getJSON(p) { return fetch(DB + p + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); }
+  function inc(n) { return { '.sv': { increment: n } }; }
+
+  // 對時：分鐘以伺服器時間為準（和實驗室 stats.js 共用 sessionStorage 的 lab-skew）
+  var skew = 0;
+  function serverNow() { return Date.now() + skew; }
+  function syncClock() {
+    try { var c = JSON.parse(sessionStorage.getItem('lab-skew') || 'null'); if (c && Math.abs(Date.now() - c.at) < 1800000 && isFinite(c.s)) { skew = c.s; return Promise.resolve(); } } catch (e) { /* 略 */ }
+    var t0 = Date.now();
+    return fetch(DB + '/clock.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ '.sv': 'timestamp' }) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (t) { if (typeof t !== 'number') return; var t1 = Date.now(); skew = Math.round(t - (t0 + t1) / 2); try { sessionStorage.setItem('lab-skew', JSON.stringify({ s: skew, at: t1 })); } catch (e) { /* 略 */ } })
+      .catch(function () { /* 對時失敗就用本機時間 */ });
+  }
+
+  // ---------- 畫面：沿用實驗室首頁的 .stats-bar 樣式 ----------
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function bar(zh, enT) {
+    var b = el('div', 'stats-bar learn-stats',
+      '<span class="stats-title">' + T(zh, enT) + '</span>' +
+      '<span class="stat"><span class="stat-label">' + T('瀏覽次數', 'Views') + '</span><span class="stat-value" data-k="views">—</span></span>' +
+      '<span class="stat"><span class="stat-label">' + T('操作次數', 'Actions') + '</span><span class="stat-value" data-k="ops">—</span></span>' +
+      '<span class="stat stat-time"><span class="stat-label">' + T('累積學習時間', 'Time studied') + '</span><span class="stat-value" data-k="seconds">—</span></span>' +
+      '<span class="stat stat-on" hidden><span class="stat-label"><i class="online-dot" aria-hidden="true"></i>' + T('目前在線', 'Online now') + '</span><span class="stat-value" data-k="online">—</span></span>');
+    b.hidden = true; b.setAttribute('aria-live', 'polite');
+    return b;
+  }
+  function fill(b, s) {
+    ['views', 'ops'].forEach(function (k) { var v = b.querySelector('[data-k="' + k + '"]'); v.textContent = fmtSI(s[k]) + T(' 次', ''); v.title = fmtInt(s[k]); });
+    b.querySelector('[data-k="seconds"]').textContent = fmtTime(s.seconds);
+    b.hidden = false;
+  }
+  function setOnline(b, n) {
+    var it = b.querySelector('.stat-on'); if (n == null || b.hidden) { it.hidden = true; return; }
+    it.hidden = false; b.querySelector('[data-k="online"]').textContent = fmtInt(n) + T(' 人', '');
+  }
+  function line(r) {   // 卡片下一行小字：每段不斷開，只在「・」之間換行（龍騰 11/21 的斷行教訓）
+    return '<span class="ls-seg">' + T('瀏覽 ', 'Views ') + fmtSI(r.views) + T(' 次', '') + '</span>・<span class="ls-seg">' + T('操作 ', 'Actions ') + fmtSI(r.ops) + T(' 次', '') +
+      '</span>・<span class="ls-seg">' + T('學習 ', 'Studied ') + fmtTime(r.seconds) + '</span>';
+  }
+
+  // ---------- 在線：每分鐘一個計數器（同實驗室新做法） ----------
+  var here = '', showKeys = [], onlineCb = null, extraParts = null, onlineN = null;
+  var writeAt = typeof window.LAB_STATS_WRITE_AT === 'number' ? window.LAB_STATS_WRITE_AT : 2 + Math.random() * 50;
+  var lastWriteMin = -1, lastShowMin = -1, writing = false;
+  function showOnline() {
+    if (!showKeys.length) return;
+    getJSON('/online/' + (Math.floor(serverNow() / 60000) - 1) + '/m').then(function (m) {
+      m = m || {}; var n = 0; showKeys.forEach(function (k) { n += +m[k] || 0; });
+      onlineN = Math.max(n, document.visibilityState === 'visible' ? 1 : 0);   // 剛打開的分頁不在上一分鐘的數字裡：至少算自己
+      if (onlineCb) onlineCb(onlineN, m);
+    }).catch(function () { onlineN = null; if (onlineCb) onlineCb(null, null); });
+  }
+  function sweep(min) {
+    fetch(DB + '/online.json?orderBy=' + encodeURIComponent('"k"') + '&endAt=' + (min - KEEP_MINUTES) + '&limitToFirst=5', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (all) { var keys = Object.keys(all || {}); if (!keys.length) return; var body = {}; keys.forEach(function (k) { body[k] = null; });
+        return fetch(DB + '/online.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); })
+      .catch(function () { /* 略 */ });
+  }
+  function minuteWrite(min) {
+    var b = 'online/' + min + '/', body = {};
+    body[b + 'k'] = min; body[b + 'n'] = inc(1); body[b + 'm/' + here] = inc(1);
+    var extra = extraParts ? extraParts() : null;
+    if (extra) Object.keys(extra.body).forEach(function (k) { body[k] = extra.body[k]; });
+    writing = true;
+    fetch(DB + '/.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); if (extra) extra.done(true);
+        return r.json().then(function (d) { var n = d && d['online/' + min + '/n']; if (n === 1 || Math.random() < 0.01) sweep(min); }).catch(function () { /* 略 */ }); })
+      .catch(function () { if (extra) extra.done(false); })
+      .then(function () { writing = false; });
+  }
+  function tick() {
+    if (document.visibilityState !== 'visible' || writing) return;
+    var t = serverNow(), min = Math.floor(t / 60000), sec = (t % 60000) / 1000;
+    if (min !== lastWriteMin && sec >= writeAt) { lastWriteMin = min; minuteWrite(min); }
+    if (min !== lastShowMin && sec >= Math.min(writeAt + 3, 59)) { lastShowMin = min; showOnline(); }
+  }
+  function startOnline() {
+    syncClock().then(function () { lastShowMin = Math.floor(serverNow() / 60000); showOnline(); tick(); setInterval(tick, 1000); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') showOnline(); });
+  }
+
+  // ---------- 單元頁：計數與學習時間 ----------
+  function startCounting(mod) {
+    var path = '/stats/' + mod, pending = { views: 1, ops: 0, seconds: 0 }, tot = { ops: 0, seconds: 0 }, sending = false, lastActive = -Infinity;
+    function take() { return { views: Math.min(pending.views, 1), ops: Math.min(pending.ops, 300), seconds: Math.min(pending.seconds, 180) }; }   // 每次上限同資料庫規則
+    function settle(sent) { ['views', 'ops', 'seconds'].forEach(function (k) { pending[k] -= sent[k]; }); }
+    function parts() {
+      if (sending) return null;
+      var sent = take(), body = {}, any = false;
+      ['views', 'ops', 'seconds'].forEach(function (k) { if (sent[k] > 0) { body['stats/' + mod + '/' + k] = inc(sent[k]); any = true; } });
+      if (!any) return null;
+      sending = true;
+      return { body: body, done: function (ok) { if (ok) settle(sent); sending = false; } };
+    }
+    function flush() {
+      if (sending) return;
+      var sent = take(), body = {}, any = false;
+      ['views', 'ops', 'seconds'].forEach(function (k) { if (sent[k] > 0) { body[k] = inc(sent[k]); any = true; } });
+      if (!any) return;
+      sending = true;
+      fetch(DB + path + '.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); settle(sent); })
+        .catch(function () { /* 留著下次再送 */ })
+        .then(function () { sending = false; });
+    }
+    function activity() { lastActive = performance.now(); }
+    function op() { pending.ops++; tot.ops++; activity(); }
+    document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('input, select, textarea')) op(); }, true);
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('button, summary, [role="button"], [role="tab"]')) op(); }, true);
+    document.addEventListener('pointerdown', function (e) { if (e.target.closest && e.target.closest('canvas, svg')) op(); }, true);
+    ['input', 'pointermove', 'keydown', 'wheel', 'touchmove', 'scroll'].forEach(function (t) { document.addEventListener(t, activity, { capture: true, passive: true }); });
+    setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      var idle = (performance.now() - lastActive) / 1000, p = window.LearnPlayer, busy = false;
+      try { busy = !!(p && p.snapshot && p.snapshot.playing); } catch (e) { /* 略 */ }
+      if (idle <= IDLE || busy) { pending.seconds++; tot.seconds++; }
+    }, 1000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+    window.addEventListener('pagehide', flush);
+    extraParts = parts;
+    window.LearnStats = { _pending: function () { return { ops: tot.ops, seconds: tot.seconds, left: { views: pending.views, ops: pending.ops, seconds: pending.seconds } }; } };   // 測試用
+  }
+
+  // ---------- 兩種頁面 ----------
+  function start() {
+    var units = (window.LAB_LEARN_UNITS || []).map(function (u) { return u.id; }).filter(function (m) { return MOD_RE.test(m); });
+    if (document.body.classList.contains('learn-lobby-page')) {
+      here = 'learn-lobby'; showKeys = [here].concat(units);
+      var all = {}, bars = [];
+      // 大廳首頁：兩張大卡下面「物理自習室累計」
+      var home = document.getElementById('lobby-home'), bHome = bar('物理自習室累計', 'Physics Study Room total');
+      if (home) { home.insertAdjacentElement('afterend', bHome); bars.push([bHome, units]); }
+      // 學測分頁：14 題卡片下面「114 學測累計」
+      var grid = document.querySelector('#exam-114 .exam-entries'), e114 = units.filter(function (m) { return /^exam-114-/.test(m); }), bExam = bar('114 學測累計', '2025 GSAT total');
+      if (grid && e114.length) { grid.insertAdjacentElement('afterend', bExam); bars.push([bExam, e114]); }
+      Promise.all(units.map(function (m) { return getJSON('/stats/' + m).then(function (v) { return v || {}; }, function () { return null; }); })).then(function (rows) {
+        if (rows.every(function (r) { return r === null; })) return;   // 連不上：整個不顯示
+        rows.forEach(function (r, i) { all[units[i]] = r || {}; });
+        bars.forEach(function (x) {
+          var sum = { views: 0, ops: 0, seconds: 0 };
+          x[1].forEach(function (m) { ['views', 'ops', 'seconds'].forEach(function (k) { sum[k] += +(all[m] || {})[k] || 0; }); });
+          fill(x[0], sum);
+        });
+        // 課本分頁：5-1 卡片下一行小字
+        var card = document.querySelector('#unit-link .unit-copy');
+        if (card && all['learn-phy-5-1']) { var s = el('small', 'ls-line', line(all['learn-phy-5-1'])); s.setAttribute('data-mod', 'learn-phy-5-1'); card.appendChild(s); }
+      });
+      onlineCb = function (n, m) {
+        bars.forEach(function (x) {
+          if (x[0] === bHome) { setOnline(bHome, n); return; }
+          var k = 0; x[1].forEach(function (mm) { k += +(m && m[mm]) || 0; }); setOnline(x[0], m ? k : null);
+        });
+        var on = m ? +m['learn-phy-5-1'] || 0 : 0, l = document.querySelector('.ls-line[data-mod="learn-phy-5-1"]');
+        if (l) { var o = l.querySelector('.ls-on'); if (!o) { o = el('span', 'ls-on'); l.appendChild(o); } o.innerHTML = on ? ' <span class="ls-seg"><i class="online-dot" aria-hidden="true"></i>' + fmtInt(on) + T(' 人在學', ' studying') + '</span>' : ''; }
+      };
+      startOnline();
+      return;
+    }
+    // 單元頁：學測頁照題號，5-1 照 script 的 data-module
+    var me = document.querySelector('script[src*="learn-stats.js"]');
+    var mod = window.Exam114 ? 'exam-114-' + Exam114.number : (me && me.dataset.module) || '';
+    if (!mod || !MOD_RE.test(mod)) return;
+    here = mod; showKeys = [here];
+    var head = document.getElementById('side-header'), p = el('p', 'ls-here'); p.hidden = true;
+    if (head) head.insertAdjacentElement('afterend', p);
+    onlineCb = function (n) {
+      if (n == null) { p.hidden = true; return; }
+      p.innerHTML = '<i class="online-dot" aria-hidden="true"></i>' + T('現在有 <b>' + fmtInt(n) + '</b> 人在學這一' + (window.Exam114 ? '題' : '節'), '<b>' + fmtInt(n) + '</b> studying this ' + (window.Exam114 ? 'question' : 'section') + ' now');
+      p.hidden = false;
+    };
+    startCounting(here);
+    startOnline();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(start, 0); });
+  else setTimeout(start, 0);
+})();
