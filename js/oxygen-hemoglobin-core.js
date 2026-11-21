@@ -72,8 +72,8 @@
   }
   function content(P, S, Hb) { return 1.34 * Hb * S + 0.0031 * P; }
   function Pb(hm) { const h = hm / 1000; return Math.exp(6.63268 - 0.1112 * h - 0.00149 * h * h); }
-  function PAO2(hm, PaCO2) { return Math.max(0, 0.2095 * (Pb(hm) - 47) - PaCO2 / 0.8); }
-  function PaO2(hm, PaCO2) { return 0.95 * PAO2(hm, PaCO2); }
+  function PAO2(hm, PaCO2, fio2 = 0.2095, rq = 0.8) { return Math.max(0, fio2 * (Pb(hm) - 47) - PaCO2 / rq); }
+  function PaO2(hm, PaCO2, fio2, rq) { return 0.95 * PAO2(hm, PaCO2, fio2, rq); }
   function PCOalv(ppm, hm) { return ppm * 1e-6 * (Pb(hm) - 47); }
 
   /**
@@ -88,7 +88,7 @@
     // 靜脈端：CO2 多 6 mmHg（典型的動靜脈差，示意），pH 跟著降
     const PvCO2 = o.PaCO2 + 6, pHv = pHof(PvCO2, o.HCO3 + 1);
     const cv = { pH: pHv, PCO2: PvCO2, T: o.T, BPG: o.BPG };
-    const Pa = PaO2(o.alt, o.PaCO2);
+    const Pa = PaO2(o.alt, o.PaCO2, o.fio2, o.rq);
     const PCO = PCOalv(o.ppm, o.alt);
     const sa = sat(Pa, ca, o.type, PCO);
     const Ca = content(Pa, sa.O2, o.Hb);
@@ -104,7 +104,7 @@
     const sv = sat(Pv, cv, o.type, PCO);
     const Cv = deficit ? 0 : Cvof(Pv);
     return {
-      pH: pH, pHv: pHv, Pb: Pb(o.alt), PAO2: PAO2(o.alt, o.PaCO2), Pa: Pa, Pv: Pv, PCO: PCO, deficit: deficit,
+      pH: pH, pHv: pHv, Pb: Pb(o.alt), PAO2: PAO2(o.alt, o.PaCO2, o.fio2, o.rq), Pa: Pa, Pv: Pv, PCO: PCO, deficit: deficit,
       Sa: sa.O2, Sv: deficit ? 0 : sv.O2, COHb: sa.CO, Ca: Ca, Cv: Cv, dC: Ca - Cv, frac: Ca > 0 ? (Ca - Cv) / Ca : 0,
       Ca0: content(Pa, sat(Pa, ca, o.type, 0).O2, o.Hb),
       P50: p50(ca, o.type, PCO), P50free: p50(ca, o.type, 0), n: hillN(ca, o.type), ca: ca, cv: cv

@@ -137,6 +137,7 @@
         font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
       }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -190,6 +191,11 @@
           <div class="slider"><label for="ppm" data-en="Carbon monoxide in the air (ppm)">空氣中的一氧化碳（ppm）</label><output id="ppmo"></output>
             <input id="ppm" type="range" min="0" max="1000" step="5" value="0" data-decimals="0"></div>
           <p class="hint" data-en="Arterial CO2 pressure falls when you breathe harder.">呼吸越用力，動脈二氧化碳的分壓越低。</p>
+          <details><summary data-en="Inspired gas">吸入氣體</summary>
+            <label><span data-en="Inspired oxygen fraction">吸入氧比例</span> <select class="sample-control" id="fio2"><option>0.18</option><option selected>0.2095</option><option>0.25</option><option>0.30</option></select></label>
+            <label><span data-en="Respiratory quotient">呼吸商</span> <select class="sample-control" id="rq"><option>0.7</option><option selected>0.8</option><option>1</option></select></label>
+            <p data-en="Oxygen transport missions use an inspired oxygen fraction of 0.2095 and a respiratory quotient of 0.8.">氧運送任務採用吸入氧比例 0.2095、呼吸商 0.8。</p>
+          </details>
         </section>
         <section class="card" data-deck="血液|Blood" data-deck-order="4" data-section="lab1">
           <h2 data-en="Blood">血液</h2>
@@ -227,7 +233,7 @@
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
         <div class="bio-figure">
-          <canvas id="cv2" tabindex="0" aria-label="左邊是 48 個血紅素分子，方形是 T 狀態、圓形是 R 狀態，紅色的格子結合了氧；右邊上圖是飽和度曲線與量到的點，下圖是 Hill 圖。點選畫布後，左右鍵改氧分壓、Enter 量一次" data-en-aria-label="On the left, 48 haemoglobin molecules: squares are in the T state, circles in the R state, red subunits carry oxygen. On the right, the saturation curve with your measurements and, below, the Hill plot. Focus the canvas, change the oxygen pressure with the left and right keys and press Enter to measure"></canvas>
+          <canvas id="cv2" tabindex="0" aria-label="左邊是血紅素分子，方形是 T 狀態、圓形是 R 狀態，紅色的格子結合了氧；右邊上圖是飽和度曲線與量到的點，下圖是 Hill 圖。點選畫布後，左右鍵改氧分壓、Enter 量一次" data-en-aria-label="On the left, haemoglobin molecules: squares are in the T state, circles in the R state, red subunits carry oxygen. On the right, the saturation curve with your measurements and, below, the Hill plot. Focus the canvas, change the oxygen pressure with the left and right keys and press Enter to measure"></canvas>
         </div>
         <div id="view3"></div>
         <div class="playbar">
@@ -245,6 +251,12 @@
           <h2 data-en="Oxygen">氧氣</h2>
           <div class="slider"><label for="p2" data-en-html="P<sub>O<sub>2</sub></sub> (mmHg)">P<sub>O<sub>2</sub></sub>（mmHg）</label><output id="p2o"></output>
             <input id="p2" type="range" min="0" max="400" step="1" value="243" data-decimals="2"></div>
+          <details><summary data-en="Molecule sample">分子樣本</summary>
+            <label><span data-en="Molecules">分子數</span> <select class="sample-control" id="molCount"><option>8</option><option>24</option><option selected>48</option></select></label>
+            <label><span data-en="Seed">種子</span> <input class="sample-control" id="molSeed" type="number" min="0" max="4294967295" step="1" required value="20261112"></label>
+            <button type="button" id="molReplay" data-en="Restart sample">重建樣本</button>
+            <p data-en="Molecular experiments use 48 molecules for mission scoring.">分子實驗的任務使用 48 個分子。</p>
+          </details>
         </section>
         <section class="card" data-deck="兩種形狀|Two shapes" data-deck-order="2" data-section="lab2">
           <h2 data-en="Two shapes">兩種形狀</h2>
@@ -282,7 +294,7 @@
       <div class="formula">\[ C_{a\mathrm{O_2}} = 1.34\,[\mathrm{Hb}]\,S + 0.0031\,P_{\mathrm{O_2}} \quad (\text{mL/dL}) \]</div>
 
       <h3 data-en="High altitude">高山</h3>
-      <p data-en-html="Air is always 20.95% oxygen, but the pressure falls with height: about 253 mmHg on the summit of Everest. The alveolar gas equation, P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8, shows why climbers must breathe hard: lowering the CO<sub>2</sub> makes room for oxygen. On the summit in 1981, the arterial P<sub>CO<sub>2</sub></sub> of a climber was only about 7.5 mmHg (West and colleagues, 1983).">空氣裡的氧一直是 20.95%，但氣壓隨高度降低：聖母峰頂約 253 mmHg。肺泡氣體方程式 P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8 說明登山者為什麼要拚命呼吸：把 CO<sub>2</sub> 降下來，才有位置留給氧。1981 年在峰頂量到的登山者動脈 P<sub>CO<sub>2</sub></sub> 只有約 7.5 mmHg（West 等，1983）。</p>
+      <p data-en-html="Dry ambient air contains about 20.95% oxygen, but the pressure falls with height: about 253 mmHg on the summit of Everest. At the default inspired oxygen fraction and respiratory quotient, the simplified alveolar equation, P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8, shows why climbers must breathe hard: lowering the CO<sub>2</sub> makes room for oxygen. On the summit in 1981, the arterial P<sub>CO<sub>2</sub></sub> of a climber was only about 7.5 mmHg (West and colleagues, 1983).">乾燥大氣的氧含量約為 20.95%，但氣壓隨高度降低：聖母峰頂約 253 mmHg。在預設吸入氧比例與呼吸商下，簡化肺泡氣體式 P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8 說明登山者為什麼要拚命呼吸：把 CO<sub>2</sub> 降下來，才有位置留給氧。1981 年在峰頂量到的登山者動脈 P<sub>CO<sub>2</sub></sub> 只有約 7.5 mmHg（West 等，1983）。</p>
 
       <h3 data-en="Where the S comes from: the MWC model">S 形從哪裡來：MWC 模型</h3>
       <p data-en-html="Monod, Wyman and Changeux (1965) proposed that the four subunits switch shape together, between a tense T state that holds oxygen weakly and a relaxed R state that holds it strongly. Empty molecules prefer T (L = [T<sub>0</sub>]/[R<sub>0</sub>] is large), but every oxygen that binds tips the balance towards R, which makes the next oxygen bind more easily. With α = P/K<sub>R</sub>:">Monod、Wyman 和 Changeux（1965）提出：四個亞基一起換形狀，在抓氧弱的緊張 T 狀態和抓氧強的鬆弛 R 狀態之間切換。空的分子偏愛 T（L = [T<sub>0</sub>]/[R<sub>0</sub>] 很大），但每結合一個氧，就把天平往 R 推一點，下一個氧就更容易結合。令 α = P/K<sub>R</sub>：</p>
@@ -298,9 +310,10 @@
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en-html="Curves: Severinghaus (1979) with his virtual-P<sub>O<sub>2</sub></sub> correction. The 2,3-BPG term (log<sub>10</sub> P<sub>50</sub> changes by 0.04 per mM, so P<sub>50</sub> ≈ 17 mmHg with no BPG as in old stored blood), fetal haemoglobin (P<sub>50</sub> 19 mmHg, half the BPG effect) and myoglobin (hyperbola with P<sub>50</sub> 2.8 mmHg, no Bohr effect) are illustrative fits.">曲線：Severinghaus（1979）及他的虛擬 P<sub>O<sub>2</sub></sub> 修正。2,3-BPG 項（每 mM 讓 log<sub>10</sub> P<sub>50</sub> 改變 0.04，所以沒有 BPG 的庫存血 P<sub>50</sub> ≈ 17 mmHg）、胎兒血紅素（P<sub>50</sub> 19 mmHg、BPG 效應減半）、肌紅素（P<sub>50</sub> 2.8 mmHg 的雙曲線，不受波耳效應影響）是示意的擬合。</li>
-        <li data-en-html="Barometric pressure: West’s model atmosphere (1996). Arterial P<sub>O<sub>2</sub></sub> is taken as 95% of alveolar (an illustrative alveolar–arterial gap). Venous blood carries 6 mmHg more CO<sub>2</sub>. Venous P<sub>O<sub>2</sub></sub> is found from Fick’s principle: the arterial content minus the oxygen handed over.">大氣壓：West（1996）的模型大氣。動脈 P<sub>O<sub>2</sub></sub> 取肺泡的 95%（示意的肺泡—動脈差）。靜脈血的 CO<sub>2</sub> 多 6 mmHg。靜脈 P<sub>O<sub>2</sub></sub> 由 Fick 原理算出：動脈含氧量減去交出的氧。</li>
+        <li data-en="The oxygen content equation uses 1.34 mL/g for bound oxygen and 0.0031 mL/(dL·mmHg) for dissolved oxygen. The simplified alveolar equation defaults to a respiratory quotient of 0.8 (model values also used by Herrmann et al., 2020, Modeling lung perfusion abnormalities to explain early COVID-19 hypoxemia).">含氧量式中，結合氧的係數為 1.34 mL/g，溶解氧的係數為 0.0031 mL/(dL·mmHg)。簡化肺泡氣體式預設呼吸商為 0.8。Herrmann 等人（2020）的肺灌流模型也採用這組係數。</li>
+        <li data-en-html="Barometric pressure: West’s model atmosphere (1996). Arterial P<sub>O<sub>2</sub></sub> is taken as 95% of alveolar (an illustrative alveolar–arterial gap). Venous CO<sub>2</sub> pressure rises by 6 mmHg and bicarbonate by 1 mmol/L in this scenario. At 46 mmHg, increasing bicarbonate from 24 to 25 mmol/L raises calculated pH from 7.340 to 7.358, partially offsetting the CO<sub>2</sub>-induced fall in oxygen affinity. Venous P<sub>O<sub>2</sub></sub> is found from Fick’s principle: the arterial content minus the oxygen handed over.">大氣壓：West（1996）的模型大氣。動脈 P<sub>O<sub>2</sub></sub> 取肺泡的 95%（示意的肺泡—動脈差）。此情境的靜脈二氧化碳分壓增加 6 mmHg，碳酸氫根濃度增加 1 mmol/L，在 46 mmHg 下，碳酸氫根由 24 增至 25 mmol/L，使估計 pH 由 7.340 升至 7.358，部分抵銷二氧化碳上升使氧親和力降低的效果。靜脈 P<sub>O<sub>2</sub></sub> 由 Fick 原理算出：動脈含氧量減去交出的氧。</li>
         <li data-en-html="Carbon monoxide is in steady state with the air (after hours of exposure); M = 210 for haemoglobin and 25 for myoglobin.">一氧化碳假設已和空氣達到穩定（吸了好幾個小時）；血紅素 M = 210、肌紅素 M = 25。</li>
-        <li data-en-html="MWC: L = 9000 and c = 0.014 are the textbook values for haemoglobin; K<sub>R</sub> ≈ 2.7 mmHg is chosen so that P<sub>50</sub> = 26.9 mmHg. Each of the 48 molecules redraws its state from the equilibrium distribution about three times a second, so a 2-second measurement averages a few hundred molecules.">MWC：L = 9000、c = 0.014 是血紅素的教科書常用值；K<sub>R</sub> ≈ 2.7 mmHg 讓 P<sub>50</sub> = 26.9 mmHg。48 個分子每個每秒約重抽三次平衡狀態，所以量 2 秒大約平均了幾百個分子。</li>
+        <li data-en-html="MWC: L = 9000 and c = 0.014 are the textbook values for haemoglobin; K<sub>R</sub> ≈ 2.7 mmHg is chosen so that P<sub>50</sub> = 26.9 mmHg. At the default sample size, each of the 48 molecules redraws its state from the equilibrium distribution about three times a second, so a 2-second measurement averages a few hundred molecules.">MWC：L = 9000、c = 0.014 是血紅素的教科書常用值；K<sub>R</sub> ≈ 2.7 mmHg 讓 P<sub>50</sub> = 26.9 mmHg。預設 48 個分子，每個每秒約重抽三次平衡狀態，所以量 2 秒大約平均了幾百個分子。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

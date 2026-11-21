@@ -20,7 +20,8 @@
   })();
   const FONT = D.FONT;
   const XMAX = 150;             // 第一部分橫軸上限（mmHg）
-  const NMOL = 48, RATE = 3;    // 第二部分：48 個分子，每個平均每秒重抽 3 次
+  let NMOL = 48;
+  const RATE = 3;    // 第二部分：每個分子平均每秒重抽 3 次
   const MEAS_T = 2;             // 量一次平均 2 秒
   const MAX_KEEP = 4, MAX_ROWS = 20, MAX_PTS = 30;
 
@@ -98,7 +99,8 @@
   }
   function setStatus(id, s) { $(id).textContent = s; }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  function emit(type, data) { if (type.startsWith('mwc') && NMOL !== 48) return;
+    if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = drawingWidth(c) || 300;
@@ -111,7 +113,7 @@
     g.fillStyle = D.alpha(D.c.surface, D.dark ? 0.35 : 0.72); g.fill();
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
-  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
+  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '12px ' + FONT); }
   /** 下標文字：parts = [[文字, 是否下標], …]；回傳寬度 */
   function subText(g, parts, x, y, color, size, weight, align) {
     size = size || 12; weight = weight || '';
@@ -145,7 +147,7 @@
 
   function inputs() {
     return {
-      alt: val(el.alt), PaCO2: val(el.pco2), HCO3: val(el.hco3), T: val(el.temp), BPG: val(el.bpg),
+      fio2: Number($('fio2').value), rq: Number($('rq').value), alt: val(el.alt), PaCO2: val(el.pco2), HCO3: val(el.hco3), T: val(el.temp), BPG: val(el.bpg),
       Hb: val(el.hb), ppm: val(el.ppm), D: val(el.dem), type: st1.type
     };
   }
@@ -160,6 +162,7 @@
   }
   function matchScen() {
     const cur = { alt: val(el.alt), pco2: val(el.pco2), ppm: val(el.ppm), hco3: val(el.hco3), temp: val(el.temp), bpg: val(el.bpg), hb: val(el.hb), dem: val(el.dem) };
+    if (Number($('fio2').value) !== 0.2095 || Number($('rq').value) !== 0.8) return null;
     for (const k in SCEN) {
       const v = Object.assign({}, BASE, SCEN[k].v);
       let ok = true;
@@ -285,7 +288,7 @@
     D.haloText(g, 'pH ' + num(s.pH, 2), W1 - 12, 18, D.c.text, 'right', 'middle', '600 13px ' + FONT);
     const longInfo = T('海拔 ' + num(o.alt, 0) + ' m・大氣壓 ' + num(s.Pb, 0) + ' mmHg・肺泡氧分壓 ' + num(s.PAO2, 1) + ' mmHg・' + num(o.T, 1) + ' °C',
       'Altitude ' + num(o.alt, 0) + ' m · air ' + num(s.Pb, 0) + ' mmHg · alveolar oxygen ' + num(s.PAO2, 1) + ' mmHg · ' + num(o.T, 1) + ' °C');
-    g.font = '11px ' + FONT;
+    g.font = '12px ' + FONT;
     const info = L1.short ? T('海拔 ', 'Alt. ') + num(o.alt, 0) + ' m · ' + T('氣壓 ', 'Air ') + num(s.Pb, 0) + ' mmHg · ' +
       T('肺泡 ', 'Alveolar ') + num(s.PAO2, 1) + ' mmHg · ' + num(o.T, 1) + ' °C' : g.measureText(longInfo).width < W1 - 24 ? longInfo :
       T(num(o.alt, 0) + ' m・氣壓 ' + num(s.Pb, 0) + '・肺泡 ' + num(s.PAO2, 1) + ' mmHg', num(o.alt, 0) + ' m · air ' + num(s.Pb, 0) + ' · alveolar ' + num(s.PAO2, 1) + ' mmHg');
@@ -316,7 +319,7 @@
       g.beginPath(); g.moveTo(x - 4, PL.y - 13); g.lineTo(x + 4, PL.y - 13); g.lineTo(x, PL.y - 8); g.closePath(); g.fill();
       const label = T(z[1], z[2]);
       if (L1.short && z[0] === 20) {
-        g.font = '11px ' + FONT;
+        g.font = '12px ' + FONT;
         small(g, label, Math.max(x, 4 + g.measureText(label).width), PL.y - 20, D.c.muted, 'right');
       } else small(g, label, x, PL.y - 20, D.c.muted, z[0] === 20 ? 'right' : z[0] === 40 ? 'left' : 'center');
     });
@@ -344,7 +347,7 @@
       if (!isFinite(k.P50) || k.P50 > XMAX) return;
       const x = xp(k.P50), y = yp(0.5);
       D.ball(g, x, y, 8, C[k.color], { glow: 0 });
-      D.haloText(g, String(k.no), x, y + 0.5, '#ffffff', 'center', 'middle', (L1.short ? '600 11px ' : '600 10px ') + FONT);
+      D.haloText(g, String(k.no), x, y + 0.5, '#ffffff', 'center', 'middle', (L1.short ? '600 12px ' : '600 12px ') + FONT);
     });
     // P50
     if (isFinite(s.P50) && s.P50 <= XMAX) {
@@ -441,7 +444,7 @@
       for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 14) labs[i].y = labs[i - 1].y + 14;
       for (let i = labs.length - 2; i >= 0; i--) if (labs[i + 1].y > B.y + B.h && labs[i + 1].y - labs[i].y < 14) labs[i].y = labs[i + 1].y - 14;
       labs.forEach(function (l) {
-        D.haloText(g, l.t, B.x + B.w + 8, l.y, l.c, 'left', 'middle', (l.b ? '600 ' : '') + '11px ' + FONT);
+        D.haloText(g, l.t, B.x + B.w + 8, l.y, l.c, 'left', 'middle', (l.b ? '600 ' : '') + '12px ' + FONT);
       });
     } else {
       const bx = function (v) { return B.x + B.w * v / CAP; };
@@ -461,7 +464,7 @@
       g.restore();
       // 上方：靜脈、動脈；下方：交出、CO、上限
       const vt = T('靜脈 ', 'venous ') + num(cv0, 1), at = T('動脈 ', 'arterial ') + num(s.Ca, 1);
-      g.font = '11px ' + FONT;
+      g.font = '12px ' + FONT;
       const vw = s.deficit ? 0 : g.measureText(vt).width + 12, aw = g.measureText(at).width;
       if (!s.deficit) small(g, vt, B.x, B.y - 10, C['oh-ven'], 'left');
       small(g, at, Math.max(B.x + vw + aw, Math.min(B.x + B.w, bx(s.Ca))), B.y - 10, C['oh-art'], 'right');
@@ -482,6 +485,7 @@
     clearTimeout(emitTimer);
     emitTimer = setTimeout(function () {
       const s = st1.s, o = st1.o;
+      if (o.fio2 !== 0.2095 || o.rq !== 0.8) return;
       emit('oxy', {
         type: o.type, alt: o.alt, PaCO2: o.PaCO2, HCO3: o.HCO3, T: o.T, BPG: o.BPG, Hb: o.Hb, ppm: o.ppm, D: o.D,
         probe: val(el.probe), Sp: st1.Sp, pH: s.pH, PAO2: s.PAO2, Pa: s.Pa, Sa: s.Sa, Pv: s.Pv, Sv: s.Sv, Ca: s.Ca, Ca0: s.Ca0,
@@ -500,7 +504,9 @@
     request1();
     scheduleEmit();
   }
+  ['fio2', 'rq'].forEach(id => $(id).addEventListener('change', () => update1()));
   function setScen(k) {
+    $('fio2').value = '0.2095'; $('rq').value = '0.8';
     const v = Object.assign({}, BASE, SCEN[k].v);
     const map = { alt: el.alt, pco2: el.pco2, ppm: el.ppm, hco3: el.hco3, temp: el.temp, bpg: el.bpg, hb: el.hb, dem: el.dem };
     for (const q in map) {
@@ -646,6 +652,13 @@
     if (had) setStatus('status2', T('換了 L 或 c，就是另一種分子：量過的點已清除。', 'A new L or c is a different molecule, so the measured points were cleared.'));
     emitMwc();
   }
+  $('molReplay').addEventListener('click', function () {
+    if (!$('molSeed').reportValidity()) return;
+    NMOL = Number($('molCount').value);
+    st2.pop = O.pop(NMOL, Number($('molSeed').value), RATE);
+    st2.pop.init(st2.dist); st2.pts = []; st2.fit = null; st2.meas = null;
+    renderRo2(); renderRows2(); updateMeasBtn(); request2(true);
+  });
   function startMeasure() {
     if (st2.meas) return;
     st2.meas = { phase: 'wait', t0: st2.pop.t, acc: 0, T: 0, P: st2.P };
@@ -843,7 +856,7 @@
     const n = O.mwcN(st2.L, st2.c);
     let txt = T('理論 n = ', 'theory n = ') + num(n, 2);
     if (st2.fit) txt = T('擬合斜率 ', 'fitted slope ') + num(st2.fit.slope, 2) + '・' + txt;
-    D.haloText(g, txt, p2.x + 8, p2.y + 12, D.c.text, 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(g, txt, p2.x + 8, p2.y + 12, D.c.text, 'left', 'middle', '600 12px ' + FONT);
     small(g, T('Hill 圖：斜率就是 Hill 係數 n', 'Hill plot: the slope is the Hill coefficient n'), p2.x + p2.w / 2, p2.y + p2.h + 28, D.c.muted, 'center');
   }
 
