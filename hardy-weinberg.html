@@ -140,6 +140,7 @@
         font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
       }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -251,6 +252,14 @@
             <button type="button" id="driftDraw" data-en="Redraw">重抽</button>
           </div>
           <p class="hint" data-en="Each population has 2N copies of the gene, so the frequency moves in steps of 1/(2N). Tap a number to type an exact value.">每個族群有 2N 個基因，所以頻率一次變 1/(2N)。點一下數字可直接輸入精確數值。</p>
+          <details><summary data-en="Founders and bottlenecks">創始族群與瓶頸</summary>
+            <label><input type="checkbox" id="sampleFounders"> <span data-en="Sample founder alleles independently in each population">各族群分別抽樣創始等位基因</span></label>
+            <label><input type="checkbox" id="bottleneckOn"> <span data-en="Temporary bottleneck">暫時瓶頸</span></label>
+            <label><span data-en="First bottleneck generation">瓶頸起始代</span> <input type="number" class="sample-control" id="bottleStart" min="1" max="1000" step="1" value="5" required></label>
+            <label><span data-en="Duration in generations">持續代數</span> <input type="number" class="sample-control" id="bottleDuration" min="1" max="1000" step="1" value="1" required></label>
+            <label><span data-en="Bottleneck size">瓶頸個體數</span> <input type="number" class="sample-control" id="bottleSize" min="1" max="1000" step="1" value="2" required></label>
+            <p data-en="Drift missions use a fixed founder frequency and a constant population size.">漂變任務使用固定奠基頻率與固定族群大小。</p>
+          </details>
         </section>
         <section class="card" data-deck="天擇（相對適應度）|Natural selection (relative fitness)" data-deck-order="2" data-section="lab2">
           <h2 data-en="Natural selection (relative fitness)">天擇（相對適應度）</h2>

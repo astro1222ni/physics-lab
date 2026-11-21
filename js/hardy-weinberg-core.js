@@ -176,11 +176,11 @@
   // ---------------------------------------------------------------------
   // 第二部分：Wright–Fisher（遷移 → 天擇 → 突變 → 漂變）
   // ---------------------------------------------------------------------
-  /** 天擇一代（無限大族群，合子照哈溫比例形成）；w̄ = 0 時（全部死光）維持原頻率 */
+  /** 天擇一代（無限大族群，合子照哈溫比例形成）；無存活親本時頻率無定義 */
   function selectP(p, w) {
     const q = 1 - p;
     const wbar = p * p * w[0] + 2 * p * q * w[1] + q * q * w[2];
-    if (!(wbar > 0)) return p;
+    if (!(wbar > 0)) return NaN;
     return (p * p * w[0] + p * q * w[1]) / wbar;
   }
   /** 確定性的一代（族群無限大）：遷移、天擇、突變 */
@@ -213,41 +213,54 @@
     const rnd = rng(o.seed == null ? 12345 : o.seed);
     const G = gens + 1;
     const P = new Float32Array(pops * G);
+    const size = Array.from({ length: G }, (_, t) => o.bottleneck && t >= o.bottleneck.start &&
+      t < o.bottleneck.start + o.bottleneck.duration ? Math.min(N, o.bottleneck.size) : N);
+    const decay = new Float64Array(G); decay[0] = 1;
+    for (let t = 1; t < G; t++) decay[t] = decay[t - 1] * (1 - 1 / (2 * size[t]));
     const meanP = new Float64Array(G), meanH = new Float64Array(G);
     const fixGen = new Int32Array(pops).fill(-1), lostGen = new Int32Array(pops).fill(-1);
     const absorbing = !(o.u > 0) && !(o.v > 0) && !(o.m > 0);
     for (let k = 0; k < pops; k++) {
       // 起點：2N 個基因中，A 的個數取最接近 2N·p0 的整數
-      let n = Math.round(twoN * o.p0);
+      let n = o.sampleFounders ? binom(twoN, o.p0, rnd) : Math.round(twoN * o.p0);
       let p = n / twoN;
       P[k * G] = p;
+      if (p === 1) fixGen[k] = 0;
+      if (p === 0) lostGen[k] = 0;
       for (let t = 1; t <= gens; t++) {
-        if (absorbing && (n === 0 || n === twoN)) { P[k * G + t] = p; continue; }
+        const copies = 2 * size[t];
+        if (absorbing && ((p === 0 && (!o.w || o.w[2] > 0)) || (p === 1 && (!o.w || o.w[0] > 0)))) {
+          P[k * G + t] = p; continue;
+        }
         const x = detStep(p, o);
-        n = binom(twoN, x, rnd);
-        p = n / twoN;
+        if (!Number.isFinite(x)) {
+          P.fill(NaN, k * G + t, (k + 1) * G);
+          break;
+        }
+        n = binom(copies, x, rnd);
+        p = n / copies;
         P[k * G + t] = p;
-        if (n === twoN && fixGen[k] < 0) fixGen[k] = t;
+        if (n === copies && fixGen[k] < 0) fixGen[k] = t;
         else if (n === 0 && lostGen[k] < 0) lostGen[k] = t;
-        if (!absorbing && n > 0 && n < twoN) { fixGen[k] = -1; lostGen[k] = -1; }   // 有突變或遷移時可以再回來：只記最後一次
+        if (!absorbing && n > 0 && n < copies) { fixGen[k] = -1; lostGen[k] = -1; }   // 有突變或遷移時可以再回來：只記最後一次
       }
     }
     for (let t = 0; t < G; t++) {
-      let s = 0, h = 0;
-      for (let k = 0; k < pops; k++) { const p = P[k * G + t]; s += p; h += 2 * p * (1 - p); }
-      meanP[t] = s / pops; meanH[t] = h / pops;
+      let s = 0, h = 0, living = 0;
+      for (let k = 0; k < pops; k++) { const p = P[k * G + t]; if (!Number.isFinite(p)) continue; living++; s += p; h += 2 * p * (1 - p); }
+      meanP[t] = s / living; meanH[t] = h / living;
     }
-    return { o: o, N: N, pops: pops, gens: gens, P: P, meanP: meanP, meanH: meanH, fixGen: fixGen, lostGen: lostGen, det: detTraj(o.p0, gens, o) };
+    return { o: o, size, decay, N: N, pops: pops, gens: gens, P: P, meanP: meanP, meanH: meanH, fixGen: fixGen, lostGen: lostGen, det: detTraj(o.p0, gens, o) };
   }
   /** 第 t 代的狀態統計：固定、消失、還在分離的族群數 */
   function census(sim, t) {
     const G = sim.gens + 1;
-    let fixed = 0, lost = 0;
+    let fixed = 0, lost = 0, extinct = 0;
     for (let k = 0; k < sim.pops; k++) {
       const p = sim.P[k * G + t];
-      if (p >= 1) fixed++; else if (p <= 0) lost++;
+      if (!Number.isFinite(p)) extinct++; else if (p >= 1) fixed++; else if (p <= 0) lost++;
     }
-    return { fixed: fixed, lost: lost, seg: sim.pops - fixed - lost };
+    return { fixed: fixed, lost: lost, ...(extinct ? { extinct } : {}), seg: sim.pops - fixed - lost - extinct };
   }
   /** 第 t 代的 p 分布直方圖：bins 個區間（不含 0 與 1），另外回傳剛好 0（消失）與 1（固定）的數量 */
   function histogram(sim, t, bins) {
@@ -255,6 +268,7 @@
     let lost = 0, fixed = 0;
     for (let k = 0; k < sim.pops; k++) {
       const p = sim.P[k * G + t];
+      if (!Number.isFinite(p)) continue;
       if (p <= 0) lost++;
       else if (p >= 1) fixed++;
       else h[Math.min(bins - 1, Math.floor(p * bins))]++;
@@ -335,11 +349,11 @@
       N: sim.N, pops: sim.pops, p0: p0, n0: n0, gens: gens, w: [w[0], w[1], w[2]],
       u: o.u || 0, v: o.v || 0, m: o.m || 0, pm: o.pm == null ? 0.5 : o.pm,
       neutral: neutral, kind: kind,
-      fixed: c.fixed, lost: c.lost, seg: c.seg,
+      fixed: c.fixed, lost: c.lost, seg: c.seg, extinct: c.extinct || 0,
       meanP: sim.meanP[gens], detP: sim.det[gens],
-      H0: H0, Hend: Hend, Hratio: H0 > 0 ? Hend / H0 : null, Htheory: hetDecay(1, sim.N, gens),
+      H0: H0, Hend: Hend, Hratio: H0 > 0 ? Hend / H0 : null, Htheory: sim.decay[gens],
       fixTime: nFix ? fixT / nFix : null,
-      uFix: !(o.u > 0) && !(o.v > 0) && mutOnly ? fixProb(p0, sim.N, w) : null,
+      uFix: !o.bottleneck && !o.sampleFounders && !(o.u > 0) && !(o.v > 0) && mutOnly ? fixProb(p0, sim.N, w) : null,
       pHat: kind === 'het' ? hetEquilibrium(w) : null,
       lethalQ: Math.abs(w[0] - w[1]) < 1e-9 && w[2] < 1e-6 && w[0] > 0 ? (1 - p0) / (1 + gens * (1 - p0)) : null,
       mutSelQ: Math.abs(w[0] - w[1]) < 1e-9 && w[2] < w[0] && w[0] > 0 && o.u > 0 ? Math.sqrt(o.u / (1 - w[2] / w[0])) : null

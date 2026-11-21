@@ -294,8 +294,8 @@
       const pm = [], pd = [];
       for (let r = 0; r < rows; r++) {
         const t = Math.min(sim.gens, r * step), z = Zg(t);
-        pm.push(Xp(sim.meanP[t]), 0.012, z);
-        pd.push(Xp(sim.det[t]), 0.01, z);
+        if (Number.isFinite(sim.meanP[t])) pm.push(Xp(sim.meanP[t]), 0.012, z);
+        if (Number.isFinite(sim.det[t])) pd.push(Xp(sim.det[t]), 0.01, z);
       }
       meanLine = lineOf(pm, D.c.text, 0.95); world.add(meanLine);
       detLine = lineOf(pd, C['hw-eq'], 0.9, true); world.add(detLine);

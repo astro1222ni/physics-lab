@@ -62,6 +62,8 @@ const START = [0.5, 0, 0.5];   // 頁面預設：紅白各半
 {
   const e = genEvents(START, [[1, 0]]);
   claim(check('1', e[0]), '1：預設（紅白各半）隨機交配一代 → 到哈溫平衡');
+  const mild = genEvents([0.26, 0.48, 0.26], [[1, 0]])[0];
+  claim(mild.data.devStart > 0 && mild.data.devStart < 0.05 && !check('1', mild), '1 初始 AA 偏差 0.01，未達題示 0.05');
   claim(!check('1', genEvents(START, [[10, 0]])[0]), '1：一次跑 10 代不算（要看到一代的效果）');
   claim(!check('1', genEvents(H.genotypes(0.3), [[1, 0]])[0]), '1：本來就在平衡不算');
   claim(!check('1', genEvents(START, [[1, 0.5]])[0]), '1：有自花授粉時一代到不了');

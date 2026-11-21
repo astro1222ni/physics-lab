@@ -198,4 +198,26 @@ test('保留 Pearson 舊值；稀樣本精確尾機率與單型樣本', () => {
   }
 });
 
+
+test('無存活親本時終止該群，單型致死也不能延續', () => {
+  for (const [p0, w] of [[0.5,[0,0,0]], [1,[0,1,1]], [0,[1,1,0]]]) {
+    const sim = H.simulate({ N: 10, pops: 4, p0, gens: 3, w, seed: 1 });
+    assert.strictEqual(H.census(sim, 1).extinct, 4);
+    assert.ok(Number.isNaN(sim.meanP[3]));
+  }
+});
+test('短期瓶頸恢復原大小，創始者抽樣可重播', () => {
+  const o = { N: 20, pops: 12, gens: 5, p0: 0.5, seed: 41,
+    sampleFounders: true, bottleneck: { start: 2, duration: 2, size: 2 } };
+  const sim = H.simulate(o);
+  assert.deepStrictEqual(sim.size, [20,20,2,2,20,20]);
+  assert.deepStrictEqual(sim.P, H.simulate(o).P);
+  assert.ok(new Set(Array.from({ length: 12 }, (_, i) => sim.P[i*6])).size > 1);
+  for (let k = 0; k < 12; k++) assert.ok(Number.isInteger(sim.P[k*6+2] * 4));
+});
+
+test('奠基時已固定的族群，固定時間為第零代', () => {
+  const sim = H.simulate({ N: 2, pops: 8, gens: 4, p0: 1, w: [1, 1, 1], seed: 7, sampleFounders: true });
+  assert.strictEqual(H.summarize(sim).fixTime, 0);
+});
 console.log(passed + ' 項通過');

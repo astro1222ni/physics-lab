@@ -19,7 +19,7 @@
     {
       id: 'hardy-weinberg-1', level: 1,
       title: { zh: '一代就平衡', en: 'Balanced in one generation' },
-      desc: { zh: '從不在哈溫平衡的花圃出發，只讓它隨機交配一代，就到達哈溫平衡。', en: 'Start from a garden that is not in Hardy–Weinberg equilibrium, let it mate at random for just one generation, and reach the equilibrium.' },
+      desc: { zh: '從花圃中 AA 實際比例與平衡預期比例相差至少 0.05 的狀態出發，只讓它隨機交配一代，就到達哈溫平衡。', en: 'Start with a garden whose observed AA fraction differs from its equilibrium expectation by at least 0.05, let it mate at random for just one generation, and reach the equilibrium.' },
       check: function (ev) { const d = ev.data; return ev.type === 'gen' && d.gen === 1 && d.sigMax === 0 && d.devStart >= 0.05 && d.dev < 1e-9; }
     },
     {

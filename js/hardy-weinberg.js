@@ -150,7 +150,7 @@
     g.beginPath(); g.moveTo(p.x0, Math.round(y) + 0.5); g.lineTo(p.x1, Math.round(y) + 0.5); g.stroke();
   }
   function xTicks(g, p, lo, hi, step, fmt, xOf, unit) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
     g.textAlign = 'right';
     const wl = g.measureText(unit).width;
     g.fillText(unit, p.x1, p.y1 + 6);
@@ -164,7 +164,7 @@
     }
   }
   function yTicks(g, p, lo, hi, step, fmt, yOf) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) {
       const y = yOf(v);
       g.fillText(fmt(v), p.x0 - 7, y);
@@ -421,19 +421,19 @@
   function drawSquare(g, gd) {
     const q0 = L1.sq, S = q0.s, x0 = q0.x, y0 = q0.y;
     title(g, T('配子方格', 'Gamete square'), x0, y0 - 34);
-    D.haloText(g, T('（隨機交配的部分）', '(random-mating part)'), x0, y0 - 19, D.c.muted, 'left', 'middle', '11px ' + FONT);
+    D.haloText(g, T('（隨機交配的部分）', '(random-mating part)'), x0, y0 - 19, D.c.muted, 'left', 'middle', '12px ' + FONT);
     const p = H.alleleP(gd), xs = x0 + 16, ys = y0 + 14, s = S - 18, cut = s * p;
     const cell = function (x, y, w, h, col, lbl, edge) {
       if (w < 0.5 || h < 0.5) return;
       g.fillStyle = col; g.fillRect(x, y, w, h);
       g.strokeStyle = edge ? C['hw-edge'] : D.alpha(D.c['canvas-bg'], 0.9); g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-      if (w > 26 && h > 16) { g.font = '600 11px ' + FONT; g.fillStyle = '#1f2937'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(lbl, x + w / 2, y + h / 2); }
+      if (w > 26 && h > 16) { g.font = '600 12px ' + FONT; g.fillStyle = '#1f2937'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(lbl, x + w / 2, y + h / 2); }
     };
     cell(xs, ys, cut, cut, GCOL(0), 'AA', false);
     cell(xs + cut, ys, s - cut, cut, GCOL(1), 'Aa', false);
     cell(xs, ys + cut, cut, s - cut, GCOL(1), 'Aa', false);
     cell(xs + cut, ys + cut, s - cut, s - cut, GCOL(2), 'aa', true);
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'bottom'; g.textAlign = 'center';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'bottom'; g.textAlign = 'center';
     if (cut > 12) g.fillText('A', xs + cut / 2, ys - 2);
     if (s - cut > 12) g.fillText('a', xs + cut + (s - cut) / 2, ys - 2);
     g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -447,7 +447,7 @@
       g.font = '600 11.5px ' + FONT; g.fillStyle = D.c.text;
       g.fillText(T('三角圖怎麼看', 'Reading the triangle'), x0, y);
       y += 19;
-      g.font = '11px ' + FONT; g.fillStyle = D.c.muted;
+      g.font = '12px ' + FONT; g.fillStyle = D.c.muted;
       [T('點到三個邊的距離＝三種基因型的比例。', 'A point’s distances to the three sides are the three genotype shares.'),
         T('紫色虛線上的點＝哈溫平衡。', 'Points on the purple curve are in Hardy–Weinberg equilibrium.'),
         T('交配不改變 p，點只會上下移動。', 'Mating does not change p, so the point only moves up or down.')].forEach(function (para) {
@@ -733,7 +733,7 @@
     bar(p.x0, hs.lost, C['hw-lost']);
     for (let i = 0; i < B; i++) bar(p.x0 + gap + cw * (i + 1), hs.h[i], D.alpha(C['hw-seg'], 0.85));
     bar(p.x1 - cw, hs.fixed, C['hw-fix']);
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top'; g.textAlign = 'center';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top'; g.textAlign = 'center';
     g.fillText('0', p.x0 + cw / 2, p.y1 + 6);
     g.fillText('1', p.x1 - cw / 2, p.y1 + 6);
     g.fillText('0.5', p.x0 + gap + cw * (1 + B / 2), p.y1 + 6);
@@ -746,18 +746,18 @@
     const xm = p.x0 + gap + cw + (p.x1 - p.x0 - 2 * gap - 2 * cw) * mp;
     g.fillStyle = D.c.text;
     g.beginPath(); g.moveTo(xm, p.y1 + 1); g.lineTo(xm - 5, p.y1 + 9); g.lineTo(xm + 5, p.y1 + 9); g.closePath(); g.fill();
-    D.haloText(g, T('縱軸：族群數（共 ', 'up: number of populations (of ') + pops + T('）', ')'), p.x0, p.y0 - 13, D.c.muted, 'left', 'middle', '11px ' + FONT);
+    D.haloText(g, T('縱軸：族群數（共 ', 'up: number of populations (of ') + pops + T('）', ')'), p.x0, p.y0 - 13, D.c.muted, 'left', 'middle', '12px ' + FONT);
   }
   function drawHet(g) {
     const p = L2.pZ;
     plotFrame(g, p);
     title(g, T('平均異型合子度 H = 2pq', 'Mean heterozygosity H = 2pq'), p.x0, p.y0 - 31);
-    D.haloText(g, T('所有族群的平均；虛線是理論值', 'mean of all populations; dashed = theory'), p.x0, p.y0 - 13, D.c.muted, 'left', 'middle', '11px ' + FONT);
+    D.haloText(g, T('存活族群的平均；虛線是理論值', 'mean of surviving populations; dashed = theory'), p.x0, p.y0 - 13, D.c.muted, 'left', 'middle', '12px ' + FONT);
     if (!run2) return;
     const sim = run2.sim, hg = headGen();
     const xOf = function (t) { return p.x0 + (p.x1 - p.x0) * t / sim.gens; };
     let mx = 0;
-    for (let t = 0; t <= sim.gens; t++) mx = Math.max(mx, sim.meanH[t], 2 * sim.det[t] * (1 - sim.det[t]));
+    for (let t = 0; t <= sim.gens; t++) mx = Math.max(mx, sim.meanH[t] || 0, 2 * sim.det[t] * (1 - sim.det[t]) || 0);
     const top = Math.min(0.5, niceCeil(Math.max(0.05, mx * 1.08)));
     const yOf = function (v) { return p.y1 - (p.y1 - p.y0) * v / top; };
     yTicks(g, p, 0, top, niceStep(top, 3), function (v) { return num(v, 2); }, yOf);
@@ -768,7 +768,7 @@
     g.beginPath();
     const neutralSel = H.selKind(sim.o.w) === 'neutral' && !(sim.o.u > 0) && !(sim.o.v > 0) && !(sim.o.m > 0);
     for (let t = 0; t <= sim.gens; t += step) {
-      const v = neutralSel ? H.hetDecay(sim.meanH[0], sim.N, t) : 2 * sim.det[t] * (1 - sim.det[t]);
+      const v = neutralSel ? sim.meanH[0] * sim.decay[t] : 2 * sim.det[t] * (1 - sim.det[t]);
       if (t) g.lineTo(xOf(t), yOf(v)); else g.moveTo(xOf(t), yOf(v));
     }
     g.stroke(); g.setLineDash([]);
@@ -784,10 +784,23 @@
   function legend2() {
     const sw = function (col, txt, cls) { return '<span><i' + (cls ? ' class="' + cls + '"' : '') + ' style="background:' + col + ';color:' + col + '"></i>' + txt + '</span>'; };
     $('legend2').innerHTML = sw(C['hw-seg'], T('還在分離（A 與 a 都在）', 'still segregating (both alleles)')) + sw(C['hw-fix'], T('A 固定（p = 1）', 'A fixed (p = 1)')) + sw(C['hw-lost'], T('A 消失（p = 0）', 'A lost (p = 0)')) +
-      sw(D.c.text, T('所有族群的平均', 'mean of all populations')) + sw(C['hw-eq'], T('理論：無限大族群／漂變公式', 'theory: infinite population / drift formula'), 'dash');
+      sw(D.c.text, T('存活族群的平均', 'mean of surviving populations')) + sw(C['hw-eq'], T('理論：無限大族群／漂變公式', 'theory: infinite population / drift formula'), 'dash');
   }
   function start2() {
     const o = params2();
+    if ($('bottleneckOn').checked) {
+      if (!['bottleStart', 'bottleDuration', 'bottleSize'].every(id => $(id).reportValidity())) return;
+      o.bottleneck = { start: Number($('bottleStart').value), duration: Number($('bottleDuration').value), size: Number($('bottleSize').value) };
+      if (o.bottleneck.size > o.N || o.bottleneck.start > o.gens) {
+        setStatus2(T('請將瓶頸規模設在原族群數以內，起始代設在觀察期間內。', 'Choose a bottleneck no larger than the original population and a start within the observation period.')); return;
+      }
+    }
+    o.sampleFounders = $('sampleFounders').checked;
+    if (o.w.every(w => w === 0)) {
+      run2 = null; inspectG = null; $('ro2').innerHTML = '';
+      setStatus2(T('三種基因型的適應度皆為零，沒有存活親本可以繁殖下一代。', 'All three fitnesses are zero. No parents survive to produce a new generation.'));
+      request(); return;
+    }
     o.seed = driftSeed();
     const sim = H.simulate(o);
     runId++;
@@ -806,8 +819,9 @@
     const row = { id: run2.id, o: run2.o, s: s };
     rows2.push(row); if (rows2.length > 30) rows2.shift();
     renderRows2();
-    emit('drift', s);
+    if (!run2.o.bottleneck && !run2.o.sampleFounders && !s.extinct) emit('drift', s);
     let msg = T('跑完 ', 'Done: ') + s.gens + T(' 代：', ' generations — ') + s.fixed + T(' 個族群 A 固定、', ' fixed, ') + s.lost + T(' 個 A 消失、', ' lost, ') + s.seg + T(' 個還在分離。', ' still segregating.');
+    if (s.extinct) msg += T(' 無存活親本的族群數：', ' Populations with no surviving parents: ') + s.extinct + '.';
     if (s.neutral && s.H0 > 0) msg += T(' 平均異型合子度剩下 ', ' Mean heterozygosity is down to ') + pct(s.Hratio, 0) + T('（理論 ', ' (theory ') + pct(s.Htheory, 0) + T('）。', ').');
     setStatus2(msg);
     say(msg);
@@ -828,15 +842,17 @@
     if (!run2) { $('ro2').innerHTML = '<dt>' + T('狀態', 'Status') + '</dt><dd>' + T('還沒開始', 'not started') + '</dd>'; return; }
     const sim = run2.sim, t = curG(), c = H.census(sim, t), s0 = run2.sum0;
     let h = '<dt>' + T('檢視的世代', 'Generation shown') + '</dt><dd>' + t + T(' ／ ', ' / ') + sim.gens + '</dd>';
+    if (sim.o.bottleneck) h += '<dt>' + T('本代個體數（各存活群）', 'Individuals per surviving population') + '</dt><dd>' + sim.size[t] + '</dd>';
+    if (c.extinct) h += '<dt>' + T('無存活親本', 'No surviving parents') + '</dt><dd>' + c.extinct + '</dd>';
     h += '<dt>' + T('A 的平均頻率', 'Mean frequency of A') + '</dt><dd>' + num(sim.meanP[t], 3) + '<small>' + T('無限大族群：', 'infinite population: ') + num(sim.det[t], 3) + '</small></dd>';
     h += '<dt>' + T('族群的結局', 'Fate of the populations') + '<small>(' + T('固定, 消失, 分離中', 'fixed, lost, segregating') + ')</small></dt><dd>(' + c.fixed + ', ' + c.lost + ', ' + c.seg + ')</dd>';
-    h += '<dt>' + T('平均異型合子度', 'Mean heterozygosity') + '</dt><dd>' + num(sim.meanH[t], 3) + (s0.neutral && sim.meanH[0] > 0 ? '<small>' + T('漂變公式 H<sub>0</sub>(1 − 1/2N)<sup>t</sup> = ', 'drift formula H<sub>0</sub>(1 − 1/2N)<sup>t</sup> = ') + num(H.hetDecay(sim.meanH[0], sim.N, t), 3) + '</small>' : '') + '</dd>';
+    h += '<dt>' + T('平均異型合子度', 'Mean heterozygosity') + '</dt><dd>' + num(sim.meanH[t], 3) + (s0.neutral && sim.meanH[0] > 0 ? '<small>' + (sim.o.bottleneck ? T('按各代族群大小計算的期望值 ', 'expected from each generation’s population size ') : T('漂變公式 H<sub>0</sub>(1 − 1/2N)<sup>t</sup> = ', 'drift formula H<sub>0</sub>(1 − 1/2N)<sup>t</sup> = ')) + num(sim.meanH[0] * sim.decay[t], 3) + '</small>' : '') + '</dd>';
     if (s0.uFix != null) h += '<dt>' + T('A 最後固定的機率', 'Chance that A is fixed') + '<small>' + T('木村的擴散公式', 'Kimura’s diffusion formula') + '</small></dt><dd>' + (s0.uFix < 0.001 ? num(s0.uFix * 100, 3) + '%' : pct(s0.uFix)) + '<small>' + T('起點 1/(2N) 的中性突變：', 'a neutral new mutation, 1/(2N): ') + pct(1 / (2 * sim.N), 2) + '</small></dd>';
     if (run2.done && run2.sum.fixTime != null) h += '<dt>' + T('平均固定所需的世代', 'Mean time to fixation') + '</dt><dd>' + num(run2.sum.fixTime, 1) + '</dd>';
     if (s0.pHat != null) h += '<dt>' + T('異型合子優勢的平衡', 'Heterozygote-advantage equilibrium') + '</dt><dd>p̂ = ' + num(s0.pHat, 3) + '</dd>';
     if (s0.lethalQ != null) h += '<dt>' + T('隱性致死：a 的頻率', 'Recessive lethal: frequency of a') + '<small>q<sub>0</sub>/(1 + t·q<sub>0</sub>)</small></dt><dd>' + num((1 - s0.p0) / (1 + t * (1 - s0.p0)), 4) + '<small>' + T('模擬的平均：', 'simulated mean: ') + num(1 - sim.meanP[t], 4) + '</small></dd>';
     if (s0.mutSelQ != null) h += '<dt>' + T('突變–天擇平衡', 'Mutation–selection balance') + '<small>q̂ ≈ √(u/s)</small></dt><dd>' + num(s0.mutSelQ, 4) + '<small>' + T('模擬的平均 q：', 'simulated mean q: ') + num(1 - sim.meanP[t], 4) + '</small></dd>';
-    if (sim.o.m > 0) h += '<dt>' + T('每代的移入個體數', 'Migrants per generation') + '</dt><dd>Nm = ' + num(sim.N * sim.o.m, 1) + '</dd>';
+    if (sim.o.m > 0) h += '<dt>' + T('每代的移入個體數', 'Migrants per generation') + '</dt><dd>Nm = ' + num(sim.size[t] * sim.o.m, 1) + '</dd>';
     $('ro2').innerHTML = h;
   }
 
@@ -1034,6 +1050,7 @@
     if (run2 && run2.playing) { run2.playing = false; }
     if (run2) setStatus2(T('設定改了：按「開始演化」用新的設定重新跑。', 'Settings changed: press “Evolve” to run again with them.'));
   }
+  ['sampleFounders','bottleneckOn','bottleStart','bottleDuration','bottleSize'].forEach(id => $(id).addEventListener('change', changed2));
   [el.N, el.pops, el.p0, el.gens, el.wAA, el.wAa, el.waa, el.mu, el.nu, el.mig, el.pm].forEach(function (r) {
     r.addEventListener('input', function () { refreshOutputs(); markPreset(); changed2(); });
   });
