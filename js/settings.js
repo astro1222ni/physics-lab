@@ -1,3 +1,21 @@
+/* 11/21 舊瀏覽器相容（試玩串跨瀏覽器報告，physics-lab-playtest-claude 的 報告/10-跨瀏覽器）：
+ * 補上 Chrome／Edge 86、Safari／iOS 14、Firefox 79 缺的四個函式，全站每頁最先載入這支，所以放最前面。
+ * 新瀏覽器本來就有，這段什麼都不做。 */
+(function () {
+  function def(p, k, v) { if (p && !p[k]) Object.defineProperty(p, k, { value: v, configurable: true, writable: true }); }
+  def(Object, 'hasOwn', function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); });
+  function at(n) { n = Math.trunc(n) || 0; if (n < 0) n += this.length; return n < 0 || n >= this.length ? undefined : this[n]; }
+  def(Array.prototype, 'at', at); def(String.prototype, 'at', at);
+  if (typeof Int8Array !== 'undefined') def(Object.getPrototypeOf(Int8Array.prototype), 'at', at);
+  def(String.prototype, 'replaceAll', function (s, r) {
+    if (s instanceof RegExp) { if (!s.global) throw new TypeError('replaceAll must be called with a global RegExp'); return this.replace(s, r); }
+    return this.replace(new RegExp(String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), r);
+  });
+  function replaceChildren() { while (this.lastChild) this.removeChild(this.lastChild); this.append.apply(this, arguments); }
+  if (typeof Element !== 'undefined') def(Element.prototype, 'replaceChildren', replaceChildren);
+  if (typeof Document !== 'undefined') def(Document.prototype, 'replaceChildren', replaceChildren);
+  if (typeof DocumentFragment !== 'undefined') def(DocumentFragment.prototype, 'replaceChildren', replaceChildren);
+})();
 /*
  * settings.js — 齒輪設定：語言（繁體／简体／English）、字體大小、外觀（淺色／深色）
  *

@@ -787,7 +787,7 @@
   function drawMsg(g, text) {
     g.save();
     g.fillStyle = col.muted; g.font = fsz(13) + 'px ' + LD.FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
-    const words = text.split(/(?<=[，。：；、,.;:\s])/);
+    const words = (text.match(/[^，。：；、,.;:\s]*[，。：；、,.;:\s]|[^，。：；、,.;:\s]+$/g) || ['']);
     const out = []; let lt = '';
     words.forEach(function (w) { if (g.measureText(lt + w).width > gw - 40 && lt) { out.push(lt); lt = w; } else lt += w; });
     if (lt) out.push(lt);

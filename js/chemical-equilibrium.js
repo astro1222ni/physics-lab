@@ -878,7 +878,7 @@
   function drawMsg(g, text) {
     g.save();
     g.font = fsz(14) + 'px ' + LD.FONT; g.fillStyle = col.muted; g.textAlign = 'center'; g.textBaseline = 'middle';
-    const words = text.split(/(?<=[，。,.;：:])/);
+    const words = (text.match(/[^，。,.;：:]*[，。,.;：:]|[^，。,.;：:]+$/g) || ['']);
     let lineTxt = '', y = gh / 2 - 20, out = [];
     words.forEach(function (w) { if (g.measureText(lineTxt + w).width > gw - 40 && lineTxt) { out.push(lineTxt); lineTxt = w; } else lineTxt += w; });
     out.push(lineTxt);

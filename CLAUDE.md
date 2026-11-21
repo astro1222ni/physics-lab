@@ -29,7 +29,7 @@
 | `labs.html`、`js/labs-hall.js` | 全科模擬實驗室大廳（11/21 站長：「分到各個科目的實驗室，你必須要點入那個實驗室的那個方框進去」）：四大類 details 與各科卡（`npm run seo` 產生 SUBJECTS、HALLCOUNT）、開合記憶、登入後各科星星；首頁舊錨點 `#subjects` 轉到這頁 |
 | `<模組>.html`、`js/<模組>.js`、`js/<模組>-core.js`、`tests/<模組>-core.test.js` | 各實驗模組 |
 | `lab.css` | 共用樣式與色彩代號（淺色＋深色兩組），字體一律 `calc(Npx * var(--fs, 1))` |
-| `js/settings.js` | 齒輪設定：繁體／简体／English、字體大小、淺色／深色、音效。放在每頁 `<head>` 緊接 `<meta charset>` |
+| `js/settings.js` | 齒輪設定：繁體／简体／English、字體大小、淺色／深色、音效。放在每頁 `<head>` 緊接 `<meta charset>`。**開頭是全站舊瀏覽器補丁**（11/21，試玩串跨瀏覽器報告）：`Object.hasOwn`、`.at()`、`replaceAll`、`replaceChildren`，讓 Chrome／Edge 86、Safari／iOS 14、Firefox 79 以後都能用。新程式**不可用後顧正規式** `(?<=…)`／`(?<!…)`（Safari 16.3 以前整支程式讀不進來，`tests/old-browser-compat.test.js` 會擋）；要用其他新函式（例如 `structuredClone`、`Array.prototype.findLast`）先在這裡補 |
 | `js/hans-map.js` | 簡體對照表，由 `tools/build-hans.cjs` 產生（名詞對照在該檔 `PHRASES`，長詞先轉；依科目覆寫在 `SUBJECT_PHRASES`，例如數學頁的「向量」不轉成物理用的「矢量」，頁面清單由任務清單的分支自動算出，**新增數學實驗後要重跑 `node tools/build-hans.cjs`**） |
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
