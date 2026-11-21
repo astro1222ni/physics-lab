@@ -80,7 +80,7 @@
   function build() {
     let anchor = doc.querySelector('[data-deck-anchor]');
     cards = Array.prototype.slice.call(doc.querySelectorAll('[data-deck]'));
-    if (!cards.length && !anchor) { cards = autoCards(); if (cards.length) anchor = autoAnchor(); }
+    if (!cards.length) { cards = autoCards(); if (cards.length && !anchor) anchor = autoAnchor(); } // 11/21：只放了 data-deck-anchor、卡片沒標 data-deck 時，照樣自動收卡放到錨點（數學串回報）
     if (!anchor || !cards.length) return false;
     if (cards.length && cards[0].hasAttribute('data-deck-auto')) doc.documentElement.classList.add('labdeck-auto');
     offClass = anchor.dataset.deckOff || '';
