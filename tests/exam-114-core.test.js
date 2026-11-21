@@ -28,5 +28,28 @@ const C=require('../js/exam/114-core'), engine=require('../js/learn');
   assert.equal((await grade('50','','150','Ω')).score,2);
   assert.equal((await grade('44','mV','176','Ω')).score,0);
   assert.equal((await grade('50mV','V','150','V')).score,0);
+  // 其餘 11 題
+  const Q=4.3e17;
+  assert.equal(C.single('B','B').score,2);assert.equal(C.single('C','B').score,0);
+  const m=C.melt(Q);assert.equal(m.latent,3.2e5);assert.ok(Math.abs(m.mass/1.34e12-1)<.01);assert.equal(C.magnitude(m.mass),12);
+  assert.equal(C.magnitude(Q/80),16);                          // 錯選 C：大卡沒換焦耳
+  const L=C.lift(Q);assert.equal(L.perReservoir,3.2e15);assert.ok(Math.abs(L.count-134.4)<.1);assert.equal(C.magnitude(L.count),2);
+  assert.equal(C.magnitude(Q/(8e7*10*4000)),5);                  // 錯選 B：立方公尺當公斤
+  const tr=C.trip();assert.equal(tr.distance,1.8e11);assert.ok(Math.abs(tr.speed-1.0417e4)<1);assert.equal(C.magnitude(tr.speed),4);
+  assert.equal(C.magnitude(1.8e11/(200*1440)),6);                // 錯選 D：只換到分鐘
+  assert.equal(C.level(1),-13.6);assert.ok(Math.abs(C.emission(3,2).wavelength-656.3)<1.5);
+  assert.ok(C.emission(3,1).wavelength<C.emission(2,1).wavelength&&C.emission(3,2).wavelength>C.emission(2,1).wavelength);
+  assert.equal(C.slit(0),1);assert.ok(C.slit(.5)<1e-12&&C.slit(1)>.85);
+  const hits=C.electrons(4000,7),bright=hits.filter(([u])=>Math.abs(u-Math.round(u))<.15).length,dark=hits.filter(([u])=>Math.abs(u-Math.round(u)-.5)<.15||Math.abs(u-Math.round(u)+.5)<.15).length;
+  assert.ok(bright>8*dark);assert.deepEqual(C.electrons(5,3),C.electrons(5,3));
+  assert.equal(C.induction(.3,{ac:false}).emf,0);assert.ok(Math.abs(C.induction(0,{freq:2}).emf+4*Math.PI)<1e-9);
+  assert.ok(Math.abs(C.induction(.25,{freq:1}).emf)<1e-9);       // 電流最大時 dI/dt＝0
+  assert.ok(C.isEnergy([['e',1],['E',1]])&&C.isEnergy([['alpha',1],['T',1]]));
+  assert.ok(!C.isEnergy([['T',1]])&&!C.isEnergy([['alpha',1],['e',-1]])&&!C.isEnergy([['T',1],['e',-1]]));
+  assert.ok(Math.abs(C.voltageRatio(27,17)-300.15/290.15)<1e-12&&Math.abs(C.voltageRatio(27,17)-300/290)<.001);
+  assert.ok(Math.abs(C.cutoff(3.2)-388.5)<.5&&Math.abs(C.photonEV(400)-3.0996)<.001&&C.photonEV(400)<3.2);
+  const cat=(v,u,r,w)=>C.gradeCatalyst([{value:v,unit:u},{value:r},{value:w}],engine);
+  assert.equal((await cat('388','nm','<','longer')).score,4);assert.equal((await cat('3.9×10^-7','m','<','longer')).score,4);
+  assert.equal((await cat('388','','<','shorter')).score,0);assert.equal((await cat('0.39','μm','>','longer')).score,2);
   console.log('114 GSAT physics and grading passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

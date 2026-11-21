@@ -5,7 +5,7 @@
   const by=id=>document.getElementById(id), T=(z,e)=>LabSettings.t(z,e), tr=pair=>T(...pair);
   const make=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   const params=new URLSearchParams(location.search);
-  const tracks=ExamTracks['Q'+q], points=Q.key?2:4;
+  const tracks=ExamTracks['Q'+q], points=Q.points||(Q.key?2:4), single=!!Q.key&&Q.key.length===1;
   function rich(node,text){
     node.replaceChildren();
     for(const part of text.split(/(\\\([\s\S]*?\\\))/)){
@@ -42,10 +42,11 @@
   const load=()=>{try{return JSON.parse(localStorage.getItem(storageKey()))||{};}catch{return {};}};
   let state=load(), owner=storageKey(), mounted=false;
   function emit(){
-    LabMission.emit('exam-progress',{unit,first:state.first===true,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment});
+    LabMission.emit('exam-progress',{unit,first:state.first===true,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment,relearn:!!state.relearn,later:!!state.later,national:!!state.national});
   }
   function save(){try{localStorage.setItem(storageKey(),JSON.stringify(state));}catch{}emit();refreshSide();}
   function milestone(key){if(!state[key]){state[key]=true;save();}}
+  const twDay=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
   function circuit(){
     const host=by('circuit');
     host.innerHTML='<svg viewBox="0 0 175 222" role="img"><g fill="none" stroke="currentColor" stroke-width="2.5"><path d="M64 55V30H135V106 M135 119V195H64V171 M64 55V94l-5 4 10 5-10 5 10 5-10 5 5 4v14 M64 146v25"/><path d="M51 137h26 M44 145h40 M126 108h18 M119 117h32"/><rect x="22" y="54" width="83" height="119" rx="3" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M76 94V71m-4 7 4-7 4 7"/></g><g fill="currentColor"><circle cx="64" cy="55" r="3.5"/><circle cx="64" cy="171" r="3.5"/></g><g fill="currentColor" font-size="14" font-family="system-ui"><text x="81" y="78">I<tspan dy="3" font-size="10">Na</tspan></text><text x="76" y="118">R<tspan dy="3" font-size="10">Na</tspan></text><text x="77" y="159">E<tspan dy="3" font-size="10">Na</tspan></text><text x="32" y="136">−</text><text x="32" y="160">+</text><text x="148" y="106">−</text><text x="147" y="133">+</text><text x="151" y="119">V</text><text x="20" y="20">'+T('細胞外部','Outside')+'</text><text x="20" y="215">'+T('細胞內部','Inside')+'</text></g></svg>';
@@ -57,31 +58,42 @@
     document.documentElement.classList.toggle('learn-class',params.get('class')==='1');
     document.title=T('第 '+q+' 題・','Question '+q+' · ')+tr(Q.title)+' · Astro Ni Lab';
     for(const [n,question] of Object.entries(questions)){
-      const a=make('a',T('第 '+n+' 題','Q'+n));const url=new URL(location.href);url.searchParams.set('q',n);
+      const a=make('a');a.innerHTML='<span class="nav-word">'+T('第 ','Q')+'</span>'+n+'<span class="nav-word">'+T(' 題','')+'</span>';a.setAttribute('aria-label',T('第 '+n+' 題','Question '+n));const url=new URL(location.href);url.searchParams.set('q',n);
       ['line','seg','p','t'].forEach(k=>url.searchParams.delete(k));a.href=url.href;a.title=tr(question.title);
       if(+n===q)a.setAttribute('aria-current','page');by('exam-nav').append(a);
     }
     by('kind').textContent=T('114 學測自然','114 GSAT Science')+'　/　'+T('第 '+q+' 題','Question '+q);
-    by('point-label').textContent=(Q.key?T('多選','Multiple response'):T('非選','Constructed response'))+' · '+T(points+' 分',points+' points');
+    by('point-label').textContent=(Q.key?(single?T('單選','Single choice'):T('多選','Multiple response')):T('非選','Constructed response'))+' · '+T(points+' 分',points+' points');
     by('exam-title').textContent=tr(Q.title);
     if(Q.group){
-      const d=by('passage');d.hidden=false;d.open=q===23;d.querySelector('summary').textContent=tr(Q.group);
+      const d=by('passage');d.hidden=false;d.open=Q.open??q===23;d.querySelector('summary').textContent=tr(Q.group);
       const body=d.querySelector('div');for(const para of Q.passage)body.append(paragraph(tr(para)));
-      if(q===49){const im=make('img');im.src='img/exam114/fig12-14'+(LabSettings.lang==='en'?'-en':'')+'.png';im.alt=T('圖 12 神經細胞、圖 13 傳訊放大圖、圖 14 膜電容與三條並聯支路','Original figures 12–14: neurons, magnified signaling, membrane capacitor and three parallel branches');body.append(im);}
+      if(q===49||Q.figs==='fig12-14'){const im=make('img');im.src='img/exam114/fig12-14'+(LabSettings.lang==='en'?'-en':'')+'.png';im.alt=T('圖 12 神經細胞、圖 13 傳訊放大圖、圖 14 膜電容與三條並聯支路','Original figures 12–14: neurons, magnified signaling, membrane capacitor and three parallel branches');body.append(im);}
     }
     if(Q.stem)by('problem-text').append(paragraph(tr(Q.stem)));
-    by('problem-text').append(paragraph(tr(Q.ask)));
+    tr(Q.ask).split('\n').forEach(t=>by('problem-text').append(paragraph(t)));
     if(q===49){by('opening-art').hidden=true;by('figures').hidden=false;by('figure-tabs').hidden=false;
       by('figure-tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
         by('figures').dataset.figure=b.dataset.figure;for(const tab of by('figure-tabs').children)tab.setAttribute('aria-pressed',String(tab===b));};
       circuit();ExamScene.preview(by('printed-graph'),q);}
-    else{const figure=by('opening-art');figure.querySelector('figcaption').textContent=q===19?T('地球、近地軌道與同步軌道','Earth, low Earth orbit and synchronous orbit'):T('地球端監測太空船傳回的訊號','Earth monitors the signal from the spacecraft');
+    else{const figure=by('opening-art');figure.querySelector('figcaption').textContent=Q.caption?tr(Q.caption):q===19?T('地球、近地軌道與同步軌道','Earth, low Earth orbit and synchronous orbit'):T('地球端監測太空船傳回的訊號','Earth monitors the signal from the spacecraft');
       ExamScene.preview(figure.querySelector('canvas'),q);}
     const fields=by('answer-fields');
     if(Q.key) Q.choices.forEach((pair,i)=>{
-      const row=make('label');row.className='exam-choice';const box=make('input');box.type='checkbox';box.name='choice';box.value='ABCDE'[i];
-      const caption=make('span');rich(caption,tr(pair));row.append(box,make('b',box.value),caption);fields.append(row);
+      const row=make('label');row.className='exam-choice';const box=make('input');box.type=single?'radio':'checkbox';box.name='choice';box.value='ABCDE'[i];
+      const caption=make('span');rich(caption,tr(pair));row.append(box,make('b',box.value),caption);
+      if(Q.choiceArt){const art=make('canvas');art.className='choice-art';art.setAttribute('aria-hidden','true');row.classList.add('has-art');row.append(art);requestAnimationFrame(()=>Q.choiceArt(art,i));}
+      fields.append(row);
     });
+    else if(Q.fields){
+      Q.fields.forEach((f,i)=>{
+        const row=make('div');row.className='numeric-field'+(f.options?' select-field':'');const id='value-'+i,label=make('label',tr(f.label));label.htmlFor=id;
+        if(f.options){const sel=make('select');sel.id=id;[[ '',T('請選擇','Choose')],...f.options.map(o=>[o[0],tr(o[1])])].forEach(([v,t])=>{const opt=make('option',t);opt.value=v;sel.append(opt);});row.append(label,sel);}
+        else{const input=make('input');input.id=id;input.autocomplete='off';input.inputMode='decimal';const select=make('select');select.id='unit-'+i;select.setAttribute('aria-label',tr(f.label)+' '+T('單位','unit'));
+          [T('單位','Unit'),...f.units].forEach((u,j)=>{const opt=make('option',u);opt.value=j?u:'';select.append(opt);});row.append(label,input,select);}
+        fields.append(row);});
+      if(Q.fieldNote)fields.append(make('small',tr(Q.fieldNote)));
+    }
     else{
       for(const [i,name,units] of [[0,T('平衡電壓','Voltage'),['mV','V']],[1,T('電阻值','Resistance'),['Ω','kΩ']]]){
         const row=make('div');row.className='numeric-field';const id='value-'+i,label=make('label','('+'ab'[i]+') '+name);label.htmlFor=id;
@@ -98,8 +110,9 @@
   }
   function statistics(){
     const body=by('national-body');body.replaceChildren();
+    if(!Q.key&&Q.marking){body.append(paragraph(T('大考中心未公布非選題得分率','The CEEC did not publish a national score rate for this constructed-response question.')),paragraph(tr(Q.marking)));return;}
     if(!Q.key){body.append(paragraph(T('大考中心未公布非選題得分率','The CEEC did not publish a national score rate for this constructed-response question.')),paragraph(T('大考中心評分原則：(a) 45–55 mV、(b) 125–175 Ω 都給分，單位必寫。','CEEC marking ranges: (a) 45–55 mV and (b) 125–175 Ω. Include both units.')));return;}
-    body.append(paragraph(T('全國得分率 ','National score rate ')+Q.rate+'%'));
+    body.append(paragraph((single?T('全國答對率 ','National correct rate '):T('全國得分率 ','National score rate '))+Q.rate+'%'));
     const progress=make('progress');progress.max=100;progress.value=Q.rate;progress.setAttribute('aria-label',T('全國得分率','National score rate'));body.append(progress);
     const largest=Math.max(...Q.shares.filter((_,i)=>!Q.key.includes('ABCDE'[i])));
     Q.shares.forEach((v,i)=>{
@@ -117,7 +130,7 @@
     const result=by('result');result.replaceChildren(make('strong',(rec.score===points?T('答對了','Correct'):T('本次得分','Your score'))+'　'+rec.score+' / '+points));
     if(rec.score<points)result.append(paragraph(tr(Q.hint)));
     if(restore){if(Q.key){document.querySelectorAll('[name=choice]').forEach(x=>x.checked=rec.selected.includes(x.value));}
-      else rec.fields.forEach(({value,unit},i)=>{by('value-'+i).value=value;by('unit-'+i).value=unit;});}
+      else rec.fields.forEach(({value,unit},i)=>{if(by('value-'+i))by('value-'+i).value=value;if(by('unit-'+i))by('unit-'+i).value=unit;});}
     statistics();by('national').open=rec.score===points;
   }
   async function check(e){
@@ -126,13 +139,15 @@
       let rec;
       if(Q.key){const selected=[...document.querySelectorAll('[name=choice]:checked')].map(x=>x.value).join('');
         if(!selected){by('result').hidden=false;by('result').textContent=T('請先勾選你的答案。','Select your answer first.');return;}
-        rec={selected,...ExamPhysics.multiple(selected,Q.key)};
+        rec={selected,...(single?ExamPhysics.single(selected,Q.key):ExamPhysics.multiple(selected,Q.key))};
       }else{
-        const fields=[0,1].map(i=>({value:by('value-'+i).value,unit:by('unit-'+i).value}));
+        const n=Q.fields?Q.fields.length:2,fields=Array.from({length:n},(_,i)=>({value:by('value-'+i).value,unit:by('unit-'+i)?.value||''}));
         if(fields.every(f=>!f.value.trim())){by('value-0').focus();return;}
-        rec={fields,...await ExamPhysics.gradeChannel(fields,LearnEngine)};
+        rec={fields,...await (Q.grade?Q.grade(fields,LearnEngine):ExamPhysics.gradeChannel(fields,LearnEngine))};
       }
       const ok=rec.score===points;if(!state.attempts)state.first=ok;
+      // 11/21 站長：「萬一第一次沒有通過的，他要怎麼補救」→ 聽完解題後再答對、隔天（臺灣日期）再答對，各有任務
+      if(ok){const day=twDay();if(state.viewed)state.relearn=true;if(state.okDay&&state.okDay!==day)state.later=true;if(!state.okDay)state.okDay=day;}
       state.correct=!!state.correct||ok;state.attempts=(state.attempts||0)+1;state.last=rec;save();feedback();
       if(LabSettings.get('sound'))LabSound.tone({freq:ok?740:295,dur:.14,type:'triangle',gain:.15});
     }finally{btn.disabled=false;}
@@ -142,7 +157,7 @@
     if(!mounted){
       const timing={},audio={};const pages=tracks.map(row=>{
         const speech=[subtitle(row.disp),subtitle(row.en)];timing[row.id]={dur:row.duration+.6,marks:{}};audio[row.id]=true;
-        return {...row,speech,caption:speech.map(s=>s.replace(focusWords[q],'**$&**')),title:Q.groups[row.row]};
+        return {...row,speech,caption:speech.map(s=>s.replace(Q.focus||focusWords[q],'**$&**')),title:Q.groups[row.row]};
       });
       const select=by('sentence');for(const [i,p] of pages.entries()){
         const opt=make('option',(i+1)+' · '+tr(p.title));opt.value=i;select.append(opt);}
@@ -151,7 +166,7 @@
         viewed(all){if(all)milestone('viewed');refreshSide();}
       };
       window.LearnUnit={id:unit,slug:'exam-114',pages,presentation,reveal:{},board:id=>{
-        const p=pages.find(page=>page.id===id),formula=specific[id]||formulas[p.row];
+        const p=pages.find(page=>page.id===id),formula=(Q.specific||{})[id]||specific[id]||(Q.board?Q.board[p.row]:formulas[p.row]);if(!formula)return [];
         const lines=params.get('class')==='1'?formula.split(',\\quad'): [formula];
         return lines.map(line=>['',line.trim()]);}};
       window.LearnTimings={zh:timing,en:timing,audio:{zh:audio,en:audio}};
@@ -166,17 +181,20 @@
   const tabNames={steps:['步驟','Steps'],concept:['觀念','Concept'],missions:['任務','Missions'],comments:['留言','Comments']};
   const SIDE_KEY='exam-side-open',wide=()=>innerWidth>=1240;
   function heard(){try{const a=JSON.parse(localStorage.getItem('learn-activity:'+unit+':'+(LabMission._state.user?.uid||'guest')))||{};const v=a.viewed||{};return tracks.filter(r=>v[r.id]).length;}catch{return 0;}}
-  function filled(){return Q.key?document.querySelectorAll('[name=choice]:checked').length:[0,1].filter(i=>by('value-'+i)?.value.trim()&&by('unit-'+i)?.value).length;}
+  const fieldCount=Q.fields?Q.fields.length:2;
+  const fieldDone=i=>!!by('value-'+i)?.value.trim()&&(!by('unit-'+i)||!!by('unit-'+i).value);
+  function filled(){return Q.key?document.querySelectorAll('[name=choice]:checked').length:Array.from({length:fieldCount},(_,i)=>i).filter(fieldDone).length;}
   const solvable=()=>!!(state.correct||state.attempts>=2||params.get('class')==='1');
   const handsGoal=()=>{const m=(LabMission.all()[unit]||[]).find(x=>x.id===unit+'-4');return m?[m.desc.zh,m.desc.en]:Q.hands;};
   function steps(){
     const n=tracks.length,h=heard(),c=filled(),att=state.attempts||0;
     return [
-      {goal:Q.key?['勾選你的答案','Choose your answer']:['填數值和單位','Enter values and units'],target:'#answer-fields',
-        hint:Q.key?['多選題：每個你認為對的選項都勾','Multiple response: tick every statement you think is true']:['兩格都要填數值，並選單位','Fill both values and choose a unit for each'],
-        done:att>0||(Q.key?c>0:c===2),
+      {goal:Q.key?(single?['選一個答案','Pick one answer']:['勾選你的答案','Choose your answer']):['填答每一格','Fill in every box'],target:'#answer-fields',
+        hint:Q.key?(single?['單選題：只有一個答案','Single choice: one answer']:['多選題：每個你認為對的選項都勾','Multiple response: tick every statement you think is true']):['每一格都要填，有單位的要選單位','Fill every box and choose units where asked'],
+        done:att>0||(Q.key?c>0:c===fieldCount),
         need:Q.key?[[c>0||att>0,'已勾選 '+c+' 個選項',c+' option(s) ticked']]
-          :[[!!(by('value-0')?.value.trim()&&by('unit-0')?.value)||att>0,'(a) 平衡電壓：數值＋單位','(a) Voltage: value and unit'],[!!(by('value-1')?.value.trim()&&by('unit-1')?.value)||att>0,'(b) 電阻值：數值＋單位','(b) Resistance: value and unit']]},
+          :Q.fields?Q.fields.map((f,i)=>[fieldDone(i)||att>0,f.label[0]+(f.options?'：選一項':'：數值＋單位'),f.label[1]+(f.options?': choose one':': value and unit')])
+          :[[fieldDone(0)||att>0,'(a) 平衡電壓：數值＋單位','(a) Voltage: value and unit'],[fieldDone(1)||att>0,'(b) 電阻值：數值＋單位','(b) Resistance: value and unit']]},
       {goal:['送出作答','Submit'],target:'#send-answer',hint:['按「送出作答」看得分','Press Submit answer to see your score'],done:att>0,
         need:[[att>0,'已送出 '+att+' 次',att+' submission(s)']]},
       {goal:['對照全國資料','Compare with the nation'],target:()=>by('national').querySelector('summary'),hint:['打開「全國資料」，看全國怎麼選','Open National results'],done:!!state.national,
@@ -188,8 +206,11 @@
     ];
   }
   function needList(items){const ul=make('ul');for(const [ok,zh,en] of items){const li=make('li'),mark=make('span',ok===true?'✓':ok===false?'✗':'→');mark.className='ms-need-mark';if(ok===true)li.className='ms-need-ok';else mark.dataset.ok=String(ok);li.append(mark,make('span',T(zh,en)));ul.append(li);}return ul;}
-  function missionNeed(m){const flag=['correct','first','viewed','experiment'][+m.id.split('-').pop()-1],att=state.attempts||0;
-    if(flag==='first')return [att?[state.first===true,state.first?'第一次送出就拿滿分':'第一次送出沒拿到滿分，這顆星錯過了',state.first?'Full credit on the first try':'The first submission was not full credit']:[null,'還沒送出：第一次送出就要全對','Not submitted yet: get it fully right the first time']];
+  function missionNeed(m){const flag=['correct','first','viewed','experiment','relearn','later','national'][+m.id.split('-').pop()-1],att=state.attempts||0;
+    if(flag==='first')return [att?[state.first===true,state.first?'第一次送出就拿滿分':'第一次送出沒拿到滿分，這顆錯過了；改拿「聽完再答對」「隔天再答對」補回來',state.first?'Full credit on the first try':'Missed on the first submission; earn “Solve it after the solution” and “Solve it again tomorrow” instead']:[null,'還沒送出：第一次送出就要全對','Not submitted yet: get it fully right the first time']];
+    if(flag==='relearn'){const h=heard();return [[state.viewed||h===tracks.length?true:null,'先聽完全部解題（已聽 '+h+' / '+tracks.length+' 句）','Play the whole solution first ('+h+' / '+tracks.length+')'],[state.relearn?true:null,'聽完之後再送出一次，拿到滿分','Then submit again for full credit']];}
+    if(flag==='later')return [[state.okDay?true:null,state.okDay?'已在 '+state.okDay+' 拿過滿分':'先拿到一次滿分',state.okDay?'Full credit on '+state.okDay:'Get full credit once'],[state.later?true:null,'換日（臺灣時間 00:00）之後再送出一次，又拿滿分','After midnight (Taiwan time), submit again for full credit']];
+    if(flag==='national')return [[att?true:null,'先送出作答','Submit first'],[!!state.national,'打開「全國資料」，看全國怎麼選','Open National results']];
     if(flag==='correct')return [[state.correct?true:att?false:null,state.correct?'已拿到滿分':'已送出 '+att+' 次，還沒拿到滿分',state.correct?'Full credit earned':att+' submission(s), no full credit yet']];
     if(flag==='viewed'){const h=heard();return [[solvable()?true:null,'打開「看解答」','Open the solution'],[h===tracks.length?true:null,'已聽完 '+h+' / '+tracks.length+' 句',h+' / '+tracks.length+' sentences played']];}
     return [[!!state.experiment,...handsGoal()]];}

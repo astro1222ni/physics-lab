@@ -205,8 +205,19 @@ window.LAB_BRANCH_NAMES = {"cell":{"zh":"細胞與分子","en":"Cells and Molecu
 window.LAB_LEARN_UNITS = [
   { id: 'learn-phy-5-1', subject: 'phy', branch: 'mech', chapter: '必修物理 5-1', chapterEn: 'Required Physics 5-1', zh: '功與能量的形式', en: 'Work and forms of energy', href: 'learn-phy-5-1.html', thumb: 'incline-friction' },
   { id: 'exam-114-19', subject: 'phy', branch: 'mech', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '衛星的軌道', en: 'Satellite orbits', file: 'exam-114', href: 'exam-114.html?q=19', thumb: 'kepler' },
+  { id: 'exam-114-20', subject: 'phy', branch: 'thermo', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '比特幣融冰山', en: 'Melting ice with Bitcoin', file: 'exam-114', thumb: 'specific-heat' },
+  { id: 'exam-114-21', subject: 'phy', branch: 'mech', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '把水庫抬上玉山', en: 'Lifting a reservoir', file: 'exam-114', thumb: 'energy-coaster' },
+  { id: 'exam-114-22', subject: 'phy', branch: 'mech', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '飛到火星的平均速率', en: 'Average speed to Mars', file: 'exam-114', thumb: 'doppler' },
   { id: 'exam-114-23', subject: 'phy', branch: 'wave', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '太空船的訊號', en: 'Signals from a spacecraft', file: 'exam-114', href: 'exam-114.html?q=23', thumb: 'doppler' },
-  { id: 'exam-114-49', subject: 'phy', branch: 'em', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '鈉離子通道', en: 'The sodium channel', file: 'exam-114', href: 'exam-114.html?q=49', thumb: 'action-potential' }
+  { id: 'exam-114-24', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '原子能階', en: 'Atomic energy levels', file: 'exam-114', thumb: 'hydrogen-spectrum' },
+  { id: 'exam-114-25', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '電子雙狹縫', en: 'Electron double slit', file: 'exam-114', thumb: 'slit-interference' },
+  { id: 'exam-114-26', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '四種基本交互作用', en: 'Fundamental interactions', file: 'exam-114', thumb: 'electric-field' },
+  { id: 'exam-114-27', subject: 'phy', branch: 'em', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '手機無線充電', en: 'Wireless charging', file: 'exam-114', thumb: 'faraday' },
+  { id: 'exam-114-47', subject: 'phy', branch: 'em', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '神經細胞膜：單位', en: 'Units in the membrane model', file: 'exam-114', thumb: 'ohms-law' },
+  { id: 'exam-114-48', subject: 'phy', branch: 'thermo', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '平衡電壓與絕對溫度', en: 'Equilibrium voltage and temperature', file: 'exam-114', thumb: 'ideal-gas' },
+  { id: 'exam-114-49', subject: 'phy', branch: 'em', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '鈉離子通道', en: 'The sodium channel', file: 'exam-114', href: 'exam-114.html?q=49', thumb: 'action-potential' },
+  { id: 'exam-114-50', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '光觸媒的能隙', en: 'Band gap of a photocatalyst', file: 'exam-114', thumb: 'photoelectric' },
+  { id: 'exam-114-51', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '光觸媒的最長波長', en: 'Longest usable wavelength', file: 'exam-114', thumb: 'photoelectric' }
 ];
 window.LAB_MODULE_BRANCH = {
   'learn-phy-5-1': 'mech',

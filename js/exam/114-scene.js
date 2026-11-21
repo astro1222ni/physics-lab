@@ -166,8 +166,50 @@ window.ExamScene=(()=>{
     if(s.zero){const x=PX(lineFit.voltage),y=PY(0);dot(g,x,y,7,'#ff9c96');label(g,lineFit.voltage.toFixed(1)+' mV',x-9,y-12,'#ffb5ab',16,'right');}
   }
   const defaults=()=>({height:420,mass:1,zoom:1,angle:0,different:false,t:0,real:false,phase:0,extent:[0,0,0],points:[-80,-20],triangle:false,zero:false});
-  const painter={19:orbit,23:doppler,49:channel};
+  const painter={19:orbit,23:doppler,49:channel}, extra={};
+  // 其餘題目：ExamScene.add(N,{state(),paint(g,s),preview(g,s)?,lesson(s,p,part,t),interactive(api)})
+  function add(q,def){extra[q]=def;}
+  // ── 其餘 11 題共用的畫法（11/21）
+  // sci：畫布上的數學字。^{…} 或 ^x 是上標、_{…} 或 _x 是下標（畫布不能用 KaTeX，也不准用 ⁴⁵ 這類字元）。
+  function sci(g,s,x,y,color=white,size=16,align='left',weight=600){
+    const parts=[],re=/([\^_])(\{[^}]*\}|[^\s×·÷/()=,，]+)/g;let last=0,m;
+    while((m=re.exec(s))){if(m.index>last)parts.push([s.slice(last,m.index),0]);parts.push([m[2].replace(/^\{|\}$/g,''),m[1]==='^'?-1:1]);last=re.lastIndex;}
+    if(last<s.length)parts.push([s.slice(last),0]);
+    const font=k=>weight+' '+(k?size*.64:size)+'px system-ui,sans-serif';
+    const widths=parts.map(([t,k])=>{g.font=font(k);return g.measureText(t).width;}),total=widths.reduce((a,b)=>a+b,0);
+    let pos=x-(align==='right'?total:align==='center'?total/2:0);g.textAlign='left';g.fillStyle=color;
+    parts.forEach(([t,k],i)=>{g.font=font(k);g.fillText(t,pos,y+(k<0?-size*.4:k>0?size*.24:0));pos+=widths[i];});
+    return total;
+  }
+  function arrow(g,x,y,X,Y,color,width=2,head=8){
+    const a=Math.atan2(Y-y,X-x);line(g,x,y,X-Math.cos(a)*head*.6,Y-Math.sin(a)*head*.6,color,width);
+    g.beginPath();g.moveTo(X,Y);g.lineTo(X-head*Math.cos(a-.42),Y-head*Math.sin(a-.42));g.lineTo(X-head*Math.cos(a+.42),Y-head*Math.sin(a+.42));g.closePath();g.fillStyle=color;g.fill();
+  }
+  function box(g,x,y,w,h,r,fill,stroke,width=1.5){
+    g.beginPath();g.roundRect(x,y,w,h,r);if(fill){g.fillStyle=fill;g.fill();}if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.stroke();}
+  }
+  // 打勾或打叉
+  function mark(g,x,y,ok,size=12){
+    g.save();g.lineCap='round';g.lineJoin='round';g.lineWidth=size/4;g.strokeStyle=ok?'#6fe0a8':'#ff8a80';g.beginPath();
+    if(ok){g.moveTo(x-size,y);g.lineTo(x-size*.3,y+size*.7);g.lineTo(x+size,y-size*.8);}else{g.moveTo(x-size*.8,y-size*.8);g.lineTo(x+size*.8,y+size*.8);g.moveTo(x+size*.8,y-size*.8);g.lineTo(x-size*.8,y+size*.8);}
+    g.stroke();g.restore();
+  }
+  // 斜投影的立方體（冰塊、水塊）：x、y 是正面左下角
+  function cube(g,x,y,a,front,top,side,edge='#ffffff55'){
+    const d=a*.42;
+    g.beginPath();g.moveTo(x,y-a);g.lineTo(x+d,y-a-d*.7);g.lineTo(x+a+d,y-a-d*.7);g.lineTo(x+a,y-a);g.closePath();g.fillStyle=top;g.fill();
+    g.beginPath();g.moveTo(x+a,y);g.lineTo(x+a+d,y-d*.7);g.lineTo(x+a+d,y-a-d*.7);g.lineTo(x+a,y-a);g.closePath();g.fillStyle=side;g.fill();
+    g.fillStyle=front;g.fillRect(x,y-a,a,a);g.strokeStyle=edge;g.lineWidth=1;g.strokeRect(x,y-a,a,a);
+  }
+  const ease=t=>t<=0?0:t>=1?1:t*t*(3-2*t), seg=(t,a,b)=>ease((t-a)/(b-a));
+  // 科學記號：sciText 給畫布（^{}），sciHTML 給讀數（<sup>）
+  const sciParts=(x,d=1)=>{if(!x)return ['0',0];let e=Math.floor(Math.log10(Math.abs(x))),m=(x/10**e).toFixed(d);if(Math.abs(+m)>=10){e++;m=(x/10**e).toFixed(d);}return [m,e];};
+  const sciText=(x,d=1)=>{const [m,e]=sciParts(x,d);return e===0?m:m+'×10^{'+String(e).replace('-','−')+'}';};
+  const sciHTML=(x,d=1)=>{const [m,e]=sciParts(x,d);return e===0?m:m+'×10<sup>'+String(e).replace('-','−')+'</sup>';};
+  const kit={surface,label,line,dot,stars,earth,spacecraft,clamp,T,sci,arrow,box,mark,cube,ease,seg,sciParts,sciText,sciHTML,colors:{teal,gold,white,faint,red:'#ff8a80',green:'#6fe0a8',blue:'#7fb6ff',violet:'#c7a4ff'}};
   function lesson(canvas,q){
+    if(extra[q]){const d=extra[q],s=d.state();const redraw=surface(canvas,g=>d.paint(g,s));
+      return {colors:{},reset(){},render(p,t,tm){d.lesson(s,p,Math.min(1,t/tm.dur),t);redraw();}};}
     let s=defaults();const redraw=surface(canvas,g=>painter[q](g,s));
     return {colors:{},reset(){},render(p,t,tm){
       const part=Math.min(1,t/tm.dur);
@@ -181,15 +223,16 @@ window.ExamScene=(()=>{
     }};
   }
   function interactive(root,q,complete){
-    const s=defaults(), canvas=document.createElement('canvas'), controls=document.createElement('div'), readings=document.createElement('div');
+    const def=extra[q], s=def?def.state():defaults(), canvas=document.createElement('canvas'), controls=document.createElement('div'), readings=document.createElement('div');
     canvas.className='exam-canvas';canvas.setAttribute('role','img');canvas.setAttribute('aria-label',T(...Exam114.question.hands));
     controls.className='sim-controls';readings.className='sim-readings';root.append(canvas,controls,readings);
-    const redraw=surface(canvas,g=>painter[q](g,s));
+    const redraw=surface(canvas,g=>(def?def.paint:painter[q])(g,s));
     const output=document.createElement('output');readings.append(output);
     let additions=()=>{}, frame=0, generation=0;
     function render(){
       redraw();
-      if(q===19){
+      if(def){def.read?.(s,output);}
+      else if(q===19){
         const o=C.orbit(s.height,s.mass),geo=C.orbit(35800,s.mass);
         output.innerHTML='r = R + h = <b>'+(o.radius/1000).toLocaleString('en-US')+' km</b><br>T <b>'+(o.period/3600).toFixed(2)+' h</b> · v <b>'+(o.speed/1000).toFixed(2)+' km/s</b> · a <b>'+o.acceleration.toFixed(3)+' m/s<sup>2</sup></b>';
         additions(o,geo);
@@ -222,6 +265,7 @@ window.ExamScene=(()=>{
           T('兩顆等質量','Equal masses')+' · U = '+(o.potential/1e6).toFixed(2)+' MJ · E = '+(o.energy/1e6).toFixed(2)+' MJ　'+T('同步軌道','Synchronous')+' U = '+(geo.potential/1e6).toFixed(2)+' MJ · E = '+(geo.energy/1e6).toFixed(2)+' MJ';};
     }
     let move, hit;
+    if(def){const r=def.interactive({s,canvas,controls,readings,output,range,btn,toggle,complete,render:()=>render(),root})||{};hit=r.hit;move=r.move;}
     if(q===23){
       const stageButtons=[];let scrubControl;
       const stop=()=>{generation++;cancelAnimationFrame(frame);};
@@ -277,6 +321,7 @@ window.ExamScene=(()=>{
     render();return render;
   }
   function preview(canvas,q){
+    if(extra[q]){const d=extra[q],s=d.state();return surface(canvas,g=>(d.preview||d.paint)(g,s));}
     const s=defaults();
     if(q===49)return surface(canvas,g=>channel(g,s));
     return surface(canvas,g=>{
@@ -295,5 +340,5 @@ window.ExamScene=(()=>{
       }
     });
   }
-  return {interactive,lesson,preview};
+  return {interactive,lesson,preview,add,kit};
 })();

@@ -37,7 +37,11 @@ window.Exam114 = (() => {
       groups:{wrong:['辨認座標軸','Read the axes'],solveA:['讀取平衡電壓','Read the equilibrium voltage'],solveB:['量出電阻','Measure the resistance'],grade:['給分範圍','Marking ranges'],alt:['聯立兩式','Solve two equations'],joke:['細胞裡的電池','The cell’s battery'],trick:['斜率與截距','Slope and intercept']}
     }
   };
+  // 其餘 11 題（11/21 站長：「你把 114 的全部做完」）：題號與名稱先放這裡給題號列用，內容由 js/exam/114/q<N>.js 用 add() 補進來。
+  for(const [n,zh,en] of [[20,'比特幣融冰山','Melting ice with Bitcoin'],[21,'把水庫抬上玉山','Lifting a reservoir'],[22,'飛到火星的平均速率','Average speed to Mars'],[24,'原子能階','Atomic energy levels'],[25,'電子雙狹縫','Electron double slit'],[26,'四種基本交互作用','Fundamental interactions'],[27,'手機無線充電','Wireless charging'],[47,'神經細胞膜：單位','Units in the membrane model'],[48,'平衡電壓與絕對溫度','Equilibrium voltage and temperature'],[50,'光觸媒的能隙','Band gap of a photocatalyst'],[51,'光觸媒的最長波長','Longest usable wavelength']])
+    questions[n]={title:[zh,en],file:true};
   const wanted=new URLSearchParams(location.search).get('q');
   const number=Object.hasOwn(questions,wanted)?Number(wanted):19;
-  return {number,question:questions[number],questions};
+  const add=(n,data)=>Object.assign(questions[n],data);
+  return {number,question:questions[number],questions,add};
 })();

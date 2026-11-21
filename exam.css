@@ -1,8 +1,10 @@
 /* Exam paper, response and measurement bench. Shared playback controls live in learn.css. */
 html.ms-docked body.exam-page{padding-right:0}
 .exam-page #learn-unit{max-width:1140px;height:auto;min-height:100dvh;display:block}
-#exam-nav{display:flex;gap:8px;margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:8px}
-#exam-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;text-decoration:none;color:var(--muted);border-radius:8px;font-weight:700}
+#exam-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:8px}
+/* 題號 14 題（11/21）：手機 7 欄只寫數字，兩排放完、不撐出頁寬 */
+@media(max-width:600px){#exam-nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}#exam-nav a{padding:0}#exam-nav .nav-word{display:none}}
+#exam-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;text-decoration:none;color:var(--muted);border-radius:8px;font-weight:700}
 #exam-nav [aria-current=page]{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 -3px var(--accent)}
 .exam-paper,.exam-block{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:clip;margin-bottom:14px}
 .exam-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border)}
@@ -119,3 +121,8 @@ html.learn-class:has(body.exam-page){scroll-behavior:auto}
   body.exam-page.side-open{padding-right:356px}
   .exam-page #study-side{top:68px;right:10px;width:336px;max-height:calc(100dvh - 80px);border-radius:14px}
 }
+/* 選項附小圖（第 25 題）、下拉選項（第 51 題）（11/21） */
+.exam-choice.has-art>span{flex:1;min-width:0}
+.choice-art{width:136px;height:64px;flex:none;border-radius:6px;background:#06141f}
+.select-field{grid-template-columns:minmax(80px,1fr) minmax(0,1.7fr)}
+@media(max-width:600px){.choice-art{width:118px;height:56px}}
