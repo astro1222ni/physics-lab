@@ -45,5 +45,7 @@ window.Exam114 = (() => {
   const wanted=new URLSearchParams(location.search).get('q');
   const number=Object.hasOwn(questions,wanted)?Number(wanted):19;
   const add=(n,data)=>Object.assign(questions[n],data);
-  return {number,question:questions[number],questions,add};
+  return {number,question:questions[number],questions,add,year:114};
 })();
+// 11/21 113 學測共用同一套引擎：exam.js、114-scene.js、learn-stats.js 一律讀 ExamPaper（年份在 year）。
+window.ExamPaper=window.Exam114;

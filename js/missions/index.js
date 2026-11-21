@@ -217,7 +217,19 @@ window.LAB_LEARN_UNITS = [
   { id: 'exam-114-48', subject: 'phy', branch: 'thermo', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '平衡電壓與絕對溫度', en: 'Equilibrium voltage and temperature', file: 'exam-114', thumb: 'ideal-gas' },
   { id: 'exam-114-49', subject: 'phy', branch: 'em', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '鈉離子通道', en: 'The sodium channel', file: 'exam-114', href: 'exam-114.html?q=49', thumb: 'action-potential' },
   { id: 'exam-114-50', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '光觸媒的能隙', en: 'Band gap of a photocatalyst', file: 'exam-114', thumb: 'photoelectric' },
-  { id: 'exam-114-51', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '光觸媒的最長波長', en: 'Longest usable wavelength', file: 'exam-114', thumb: 'photoelectric' }
+  { id: 'exam-114-51', subject: 'phy', branch: 'modern', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '光觸媒的最長波長', en: 'Longest usable wavelength', file: 'exam-114', thumb: 'photoelectric' },
+  { id: 'exam-113-19', subject: 'phy', branch: 'modern', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '核能發電', en: 'Nuclear power', file: 'exam-113', href: 'exam-113.html?q=19', thumb: 'radioactive-decay' },
+  { id: 'exam-113-20', subject: 'phy', branch: 'modern', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '四種基本交互作用', en: 'Fundamental interactions', file: 'exam-113', href: 'exam-113.html?q=20', thumb: 'electric-field' },
+  { id: 'exam-113-21', subject: 'phy', branch: 'wave', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '眼睛與相機的成像', en: 'Eyes and cameras', file: 'exam-113', href: 'exam-113.html?q=21', thumb: 'lens-mirror' },
+  { id: 'exam-113-22', subject: 'phy', branch: 'modern', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '射束的粒子與光子', en: 'Particles and photons in the beams', file: 'exam-113', href: 'exam-113.html?q=22', thumb: 'photoelectric' },
+  { id: 'exam-113-23', subject: 'phy', branch: 'modern', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '深度與吸收劑量', en: 'Depth and absorbed dose', file: 'exam-113', href: 'exam-113.html?q=23', thumb: 'radioactive-decay' },
+  { id: 'exam-113-24', subject: 'phy', branch: 'thermo', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '冰箱的冷卻循環', en: 'The refrigeration cycle', file: 'exam-113', href: 'exam-113.html?q=24', thumb: 'heat-engine' },
+  { id: 'exam-113-25', subject: 'phy', branch: 'thermo', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '性能係數與度電', en: 'COP and kilowatt-hours', file: 'exam-113', href: 'exam-113.html?q=25', thumb: 'heat-engine' },
+  { id: 'exam-113-26', subject: 'phy', branch: 'thermo', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '安全氣囊的壓力門檻', en: 'The airbag’s pressure threshold', file: 'exam-113', href: 'exam-113.html?q=26', thumb: 'ideal-gas' },
+  { id: 'exam-113-27', subject: 'phy', branch: 'mech', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '碰撞中的定力', en: 'A constant force in a crash', file: 'exam-113', href: 'exam-113.html?q=27', thumb: 'collision' },
+  { id: 'exam-113-44', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '磁鐵穿越環圈的磁力', en: 'The force on a magnet through a loop', file: 'exam-113', href: 'exam-113.html?q=44', thumb: 'faraday' },
+  { id: 'exam-113-45', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '感應電流的大小', en: 'The size of the induced current', file: 'exam-113', href: 'exam-113.html?q=45', thumb: 'faraday' },
+  { id: 'exam-113-46', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '畫出離開時的應電流', en: 'Draw the current as the magnet leaves', file: 'exam-113', href: 'exam-113.html?q=46', thumb: 'faraday' }
 ];
 window.LAB_MODULE_BRANCH = {
   'learn-phy-5-1': 'mech',

@@ -1,7 +1,7 @@
 /* Question intake and answer feedback; LearnEngine owns the lesson transport. */
 (() => {
   'use strict';
-  const {number:q,question:Q,questions}=Exam114, unit='exam-114-'+q;
+  const {number:q,question:Q,questions,year}=ExamPaper, unit='exam-'+year+'-'+q;
   const by=id=>document.getElementById(id), T=(z,e)=>LabSettings.t(z,e), tr=pair=>T(...pair);
   const make=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   const params=new URLSearchParams(location.search);
@@ -54,7 +54,7 @@
     host.append(make('figcaption',T('圖 15　虛線框為細胞膜','Figure 15 · Dashed membrane boundary')));
   }
   function buildProblem(){
-    document.body.dataset.q=q;document.body.dataset.commentsUrl=Q.lab+'.html';
+    document.body.dataset.q=q;if(Q.phoneArt)document.body.dataset.fig=Q.figs||'1';document.body.dataset.commentsUrl=Q.lab+'.html';
     document.documentElement.classList.toggle('learn-class',params.get('class')==='1');
     document.title=T('第 '+q+' 題・','Question '+q+' · ')+tr(Q.title)+' · Astro Ni Lab';
     for(const [n,question] of Object.entries(questions)){
@@ -62,13 +62,13 @@
       ['line','seg','p','t'].forEach(k=>url.searchParams.delete(k));a.href=url.href;a.title=tr(question.title);
       if(+n===q)a.setAttribute('aria-current','page');by('exam-nav').append(a);
     }
-    by('kind').textContent=T('114 學測自然','114 GSAT Science')+'　/　'+T('第 '+q+' 題','Question '+q);
+    by('kind').textContent=T(year+' 學測自然',year+' GSAT Science')+'　/　'+T('第 '+q+' 題','Question '+q);
     by('point-label').textContent=(Q.key?(single?T('單選','Single choice'):T('多選','Multiple response')):T('非選','Constructed response'))+' · '+T(points+' 分',points+' points');
     by('exam-title').textContent=tr(Q.title);
     if(Q.group){
       const d=by('passage');d.hidden=false;d.open=Q.open??q===23;d.querySelector('summary').textContent=tr(Q.group);
       const body=d.querySelector('div');for(const para of Q.passage)body.append(paragraph(tr(para)));
-      if(q===49||Q.figs==='fig12-14'){const im=make('img');im.src='img/exam114/fig12-14'+(LabSettings.lang==='en'?'-en':'')+'.png';im.alt=T('圖 12 神經細胞、圖 13 傳訊放大圖、圖 14 膜電容與三條並聯支路','Original figures 12–14: neurons, magnified signaling, membrane capacitor and three parallel branches');body.append(im);}
+      if((year===114&&q===49)||Q.figs==='fig12-14'){const im=make('img');im.src='img/exam114/fig12-14'+(LabSettings.lang==='en'?'-en':'')+'.png';im.alt=T('圖 12 神經細胞、圖 13 傳訊放大圖、圖 14 膜電容與三條並聯支路','Original figures 12–14: neurons, magnified signaling, membrane capacitor and three parallel branches');body.append(im);}
     }
     if(Q.stem)by('problem-text').append(paragraph(tr(Q.stem)));
     tr(Q.ask).split('\n').forEach(t=>by('problem-text').append(paragraph(t)));
@@ -106,7 +106,7 @@
     by('experiment').querySelector('summary').textContent=T('能動手的圖','Hands-on graph')+' · '+tr(Q.hands);
     ExamScene.interactive(by('experiment-body'),q,()=>milestone('experiment'));
     by('lab-link').href=Q.lab+'.html';by('lab-link').textContent=T('去 Lab 試：','Try the lab: ')+tr(Q.labName)+' ↗';
-    by('credit').textContent=T('試題出處：大學入學考試中心 114 學年度學科能力測驗自然考科第 '+q+' 題；全國資料：大考中心 114 學測選項分析及答對率統計。','Source: CEEC 114 GSAT Natural Sciences, question '+q+'. National data: CEEC 114 GSAT option analysis and score statistics.');
+    by('credit').textContent=T('試題出處：大學入學考試中心 '+year+' 學年度學科能力測驗自然考科第 '+q+' 題；全國資料：大考中心 '+year+' 學測選項分析及答對率統計。','Source: CEEC '+year+' GSAT Natural Sciences, question '+q+'. National data: CEEC '+year+' GSAT option analysis and score statistics.');
   }
   function statistics(){
     const body=by('national-body');body.replaceChildren();
@@ -130,7 +130,7 @@
     by('explain').hidden=!(state.correct||state.attempts>=2||params.get('class')==='1');
     if(!rec)return;
     const result=by('result');result.replaceChildren(make('strong',(rec.score===points?T('答對了','Correct'):T('本次得分','Your score'))+'　'+rec.score+' / '+points));
-    if(!Q.key)result.append(paragraph(T('這是網頁練習分數：只看數值和單位，不看過程；正式閱卷還會看計算過程。','This is a practice score: only the values and units are checked, not your working. Real marking also looks at the working.')));
+    if(!Q.key)result.append(paragraph(Q.gradeNote?tr(Q.gradeNote):T('這是網頁練習分數：只看數值和單位，不看過程；正式閱卷還會看計算過程。','This is a practice score: only the values and units are checked, not your working. Real marking also looks at the working.')));
     if(rec.score<points)result.append(paragraph(tr(Q.hint)));
     if(restore){if(Q.key){document.querySelectorAll('[name=choice]').forEach(x=>x.checked=rec.selected.includes(x.value));}
       else rec.fields.forEach(({value,unit},i)=>{if(by('value-'+i))by('value-'+i).value=value;if(by('unit-'+i))by('unit-'+i).value=unit;});}
@@ -166,7 +166,7 @@
     if(!mounted){
       const timing={},audio={};const pages=tracks.map(row=>{
         const speech=[subtitle(row.disp),subtitle(row.en)];timing[row.id]={dur:row.duration+.6,marks:{}};audio[row.id]=true;
-        return {...row,speech,caption:speech.map(s=>s.replace(Q.focus||focusWords[q],'**$&**')),title:Q.groups[row.row]};
+        return {...row,speech,caption:speech.map(s=>s.replace(Q.focus||(year===114&&focusWords[q])||/$^/,'**$&**')),title:Q.groups[row.row]};
       });
       const select=by('sentence');for(const [i,p] of pages.entries()){
         const opt=make('option',(i+1)+' · '+tr(p.title));opt.value=i;select.append(opt);}
@@ -174,8 +174,8 @@
         show(p,i){select.value=i;by('folio').textContent=(i+1)+' / '+pages.length;if(p.row===Q.mid)by('experiment').open=true;side.page=p;refreshSide();},
         viewed(all){if(all)milestone('viewed');refreshSide();}
       };
-      window.LearnUnit={id:unit,slug:'exam-114',pages,presentation,reveal:{},board:id=>{
-        const p=pages.find(page=>page.id===id),formula=(Q.specific||{})[id]||specific[id]||(Q.board?Q.board[p.row]:formulas[p.row]);if(!formula)return [];
+      window.LearnUnit={id:unit,slug:'exam-'+year,pages,presentation,reveal:{},board:id=>{
+        const p=pages.find(page=>page.id===id),formula=(Q.specific||{})[id]||(year===114&&specific[id])||(Q.board?Q.board[p.row]:formulas[p.row]);if(!formula)return [];
         const lines=params.get('class')==='1'?formula.split(',\\quad'): [formula];
         return lines.map(line=>['',line.trim()]);}};
       window.LearnTimings={zh:timing,en:timing,audio:{zh:audio,en:audio}};

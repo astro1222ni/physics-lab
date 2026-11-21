@@ -67,7 +67,7 @@ body[data-q="49"] .experiment-body canvas,body[data-q="23"] .experiment-body can
 .sim-readings .uncertain{border-color:#db6655;color:var(--danger,var(--text));background:#e35d521a}
 #credit{padding:12px 0 24px;border-top:1px solid var(--border)}
 @media(max-width:800px){.problem-grid,.experiment-body{grid-template-columns:1fr}.response-column{border-left:0;border-top:1px solid var(--border)}.exam-source,.response-column,.exam-heading{padding:10px 13px}
-#opening-art{display:none}.exam-heading h1{font-size:calc(22px * var(--lesson-fs))}
+#opening-art{display:none}body[data-fig] #opening-art{display:block;max-width:none}.exam-heading h1{font-size:calc(22px * var(--lesson-fs))}
 .exam-source p{font-size:calc(16px * var(--lesson-fs));line-height:1.48}
 .exam-page #learn-unit{padding:0 9px 12px}.exam-page .learn-mast{height:auto;min-height:66px}
 #exam-nav{margin-bottom:8px}.exam-page #scene{max-height:none}

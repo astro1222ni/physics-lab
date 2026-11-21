@@ -131,6 +131,7 @@
 ## 上線後不可隨意更動的約定
 - **Google Search Console**（11/13 站長驗證通過，網址前置字元 https://lab.astroni.org/、HTML 標記）：`index.html` 的 `<meta name="google-site-verification" …>` **不可刪除**，刪了驗證會失效；它在 SEO 自動區塊外面，`npm run seo` 不會動到。
 
+- **分享的 QR code 直接連現在的網址，不另做短網址**（11/21 站長：「分享的 QR code 要直接連現在的網址（加上不改網址、要搬就留轉址兩條規矩）」「請遵循這個原則」）：實驗頁、自習室單元、學測題目頁（`exam-<年>.html?q=N`，「分享這一題」由 `js/classroom.js` 的 `[data-lab-tools]` 產生）的網址印進 QR code 就不能改；真的要搬，舊網址一定留轉址頁。
 - **實驗代號（slug）與網址不改**：統計、任務、成就、留言都用它當鍵，站長的 YouTube 影片也可能連到這些網址。
 - **網址三條規矩（11/21 站長：「將這個原則套用到整個 Astro Ni Lab 網站。」）**：
   1. 分享用的 QR code、分享卡、講義上的連結，一律直接連現在的網址，不另加短網址或轉址服務（目前 `js/classroom.js`、`js/sharecard.js`、`img/qr-site.svg`、自習室卡片都是直接網址）。

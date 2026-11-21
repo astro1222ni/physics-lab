@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant" data-lab-mode="learn">
+<head>
+  <meta charset="utf-8">
+  <script>try{window.learnDefaultSound=typeof JSON.parse(localStorage.getItem('lab-settings')||'{}').sound!=='boolean';}catch{window.learnDefaultSound=true;}</script>
+  <script src="js/settings.js?v=202611211106"></script>
+  <script>if(window.learnDefaultSound)LabSettings.set('sound',true);</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-en="113 GSAT solutions · Astro Ni Lab">113 學測解題・讓倪動手</title>
+  <link rel="stylesheet" href="lab.css?v=202611211106">
+  <link rel="stylesheet" href="lab-tools.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="learn.css"><link rel="stylesheet" href="exam.css">
+</head>
+<body class="learn-page exam-page" data-en-ready >
+  <div id="learn-unit">
+    <header class="learn-mast">
+      <a href="learn.html?view=exam" class="learn-brand"><b aria-hidden="true">Ni</b><span data-en="‹ Physics Study Room">‹ 物理自習室</span></a>
+      <span class="course-name" data-en="113 GSAT · Science">113 學測・自然考科</span>
+      <button type="button" id="class-mode" data-en="Class mode">上課模式</button>
+    </header>
+    <nav id="exam-nav" aria-label="題號" data-en-aria-label="Question number"></nav>
+    <main>
+      <article class="exam-paper">
+        <header class="exam-heading"><div><span id="kind"></span><h1 id="exam-title"></h1></div><span id="point-label"></span></header>
+        <div class="exam-tools" data-lab-tools="exam" data-lab-tools-keep="q"></div>
+        <div class="problem-grid">
+          <div class="exam-source">
+            <details id="passage" hidden><summary></summary><div></div></details>
+            <div id="problem-text"></div>
+            <figure id="opening-art"><canvas class="exam-canvas"></canvas><figcaption></figcaption></figure>
+            <nav id="figure-tabs" hidden aria-label="試卷圖" data-en-aria-label="Exam figures"><button type="button" aria-pressed="false" data-figure="15" data-en="15 · Circuit">圖 15・電路</button><button type="button" aria-pressed="true" data-figure="16" data-en="16 · Measurements">圖 16・數據</button></nav>
+            <div id="figures" data-figure="16" hidden><figure id="circuit"></figure><figure><canvas id="printed-graph" class="exam-canvas" role="img" aria-label="電流對電壓趨勢線" data-en-aria-label="Current versus voltage with trend line"></canvas><figcaption data-en="Figure 16 · Sodium channel current–voltage characteristic">圖 16　鈉離子通道的電流–電壓特性</figcaption></figure></div>
+          </div>
+          <div class="response-column"><form id="exam-answer"><fieldset><legend data-en="Your answer">你的作答</legend><div id="answer-fields"></div></fieldset><button class="primary" id="send-answer" type="submit" data-en="Submit answer">送出作答</button></form>
+            <div id="result" role="status" hidden></div><button type="button" id="explain" hidden data-en="Show solution">看解答</button>
+          </div>
+        </div>
+      </article>
+      <details id="national" class="exam-block" hidden><summary data-en="National results">全國資料</summary><div id="national-body"></div></details>
+      <section id="explanation" hidden aria-label="逐句解題" data-en-aria-label="Step-by-step solution">
+        <div class="learn-layout">
+          <article class="lesson-card" id="workpad"><header class="page-heading"><label for="sentence" id="page-title" data-en="Solution">逐句解題</label><select id="sentence"></select><span id="folio"></span></header>
+            <div class="visual-column"><div id="scene"><canvas id="lesson-art" class="exam-canvas"></canvas></div><div class="board-panel" id="board"></div></div>
+            <div class="lesson-text"><div class="caption-card"><p id="caption"></p></div></div>
+        <footer class="transport">
+          <div class="seek"><output id="time" for="playhead"></output><input id="playhead" type="range" min="0" step="0.01" value="0" aria-label="本句播放進度" data-en-aria-label="Page playhead"></div>
+          <div class="transport-buttons"><button id="previous" type="button" aria-label="上一句" data-en-aria-label="Previous sentence" title="上一句" data-en-title="Previous sentence">◀</button><button id="play" type="button"></button><button id="next" type="button" aria-label="下一句" data-en-aria-label="Next sentence" title="下一句" data-en-title="Next sentence">▶</button><button id="replay" type="button" aria-label="重播本句" data-en-aria-label="Replay sentence" title="重播本句" data-en-title="Replay sentence">↺</button><button id="speed" type="button" aria-label="播放速度" data-en-aria-label="Playback speed"></button><button id="sound" type="button" aria-label="音效與旁白" data-en-aria-label="Sound and narration"></button><label class="auto-next"><input id="auto" type="checkbox"><span data-en="Auto next">自動下一句</span></label></div>
+        </footer>
+          </article>
+        </div>
+      </section>
+      <details id="experiment" class="exam-block"><summary></summary><div class="experiment-body" id="experiment-body"></div></details>
+      <a class="learn-link" id="lab-link"></a>
+    </main><footer id="credit"></footer>
+    <aside id="study-side" class="learn-side" hidden>
+      <div id="side-header"><h2 id="side-title"></h2><button id="side-close" type="button" data-en="Close ›">收起 ›</button></div>
+      <nav id="side-tabs" role="tablist" aria-label="學習側板" data-en-aria-label="Learning side panel"></nav>
+      <div id="side-body"></div><div id="comment-mount" hidden></div>
+    </aside>
+    <button type="button" id="edge" aria-controls="study-side" aria-expanded="false" aria-label="開合步驟與任務側板" data-en-aria-label="Toggle steps and missions panel"><span aria-hidden="true">‹</span><b data-en="Steps · Missions">步驟・任務</b><i id="edge-count"></i></button>
+  </div>
+  <script src="vendor/katex/katex.min.js"></script><script src="js/sound.js?v=202611211106"></script><script src="js/stepguide.js?v=202611211106"></script>
+  <script src="js/firebase-config.js?v=202611211106"></script><script src="js/missions/index.js?v=202611211106"></script>
+  <script src="js/exam/113.js?v=202611211106"></script>
+  <script>document.write('<script src="js/missions.js?v=202611211106" data-module="exam-113-'+Exam113.number+'"><\/script>');</script>
+  <script src="js/missions/exam-113.js?v=202611211106"></script><script src="js/comments.js?v=202611211106"></script>
+  <script src="js/exam/114-core.js?v=202611211106"></script><script src="js/exam/113-core.js"></script>
+  <script src="js/exam/114-scene.js?v=202611211106"></script><script src="js/exam/113-draw.js"></script><script>if(Exam113.question.file)document.write('<script src="js/exam/113/q'+Exam113.number+'.js?v='+(document.querySelector('script[src*="114-scene.js"]').src.split('v=')[1]||'')+'"><\/script>');</script><script src="js/learn.js?v=202611211106"></script><script src="js/exam.js?v=202611211106"></script>
+  <script src="js/learn-stats.js?v=202611211106"></script>
+</body></html>

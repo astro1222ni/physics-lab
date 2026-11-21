@@ -18,7 +18,7 @@ window.ExamScene=(()=>{
       g.setTransform(scale,0,0,scale,(w-460*scale)/2,(h-250*scale)/2);
       const bg=g.createLinearGradient(0,0,450,250);
       bg.addColorStop(0,'#132e43');bg.addColorStop(1,'#081c2c');
-      g.fillStyle=bg;g.fillRect(0,0,460,250);
+      g.fillStyle=bg;g.fillRect(-460,-250,1380,750); // 比例和 460:250 不同時，兩側也是同一片漸層，不留色帶
       paint(g);
     }
     new ResizeObserver(render).observe(canvas);render();return render;
@@ -224,7 +224,7 @@ window.ExamScene=(()=>{
   }
   function interactive(root,q,complete){
     const def=extra[q], s=def?def.state():defaults(), canvas=document.createElement('canvas'), controls=document.createElement('div'), readings=document.createElement('div');
-    canvas.className='exam-canvas';canvas.setAttribute('role','img');canvas.setAttribute('aria-label',T(...Exam114.question.hands));
+    canvas.className='exam-canvas';canvas.setAttribute('role','img');canvas.setAttribute('aria-label',T(...ExamPaper.question.hands));
     controls.className='sim-controls';readings.className='sim-readings';root.append(canvas,controls,readings);
     const redraw=surface(canvas,g=>(def?def.paint:painter[q])(g,s));
     const output=document.createElement('output');readings.append(output);
@@ -252,7 +252,7 @@ window.ExamScene=(()=>{
     }
     function btn(name,click){const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>{click(b);render();};controls.append(b);return b;}
     function toggle(z,e,cb){const b=btn(T(z,e),b=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);cb(on);});b.setAttribute('aria-pressed','false');return b;}
-    if(q===19){
+    if(!def&&q===19){
       range(T('高度 (km)','Altitude (km)'),420,35800,420,v=>{s.height=v;if(Math.abs(C.orbit(v).period/86400-1)<=.01)complete();});
       range(T('衛星質量 (kg)','Satellite mass (kg)'),1,100,1,v=>s.mass=v);
       toggle('兩顆質量不同','Different masses',v=>s.different=v);
@@ -266,7 +266,7 @@ window.ExamScene=(()=>{
     }
     let move, hit;
     if(def){const r=def.interactive({s,canvas,controls,readings,output,range,btn,toggle,complete,render:()=>render(),root})||{};hit=r.hit;move=r.move;}
-    if(q===23){
+    if(!def&&q===23){
       const stageButtons=[];let scrubControl;
       const stop=()=>{generation++;cancelAnimationFrame(frame);};
       function stage(i){
@@ -296,7 +296,7 @@ window.ExamScene=(()=>{
       move=(_,x)=>{const d=clamp((x-97)/315,0,1)*2;scrub(d<.5?Math.sqrt(2*d):d<1.5?d+.5:3-Math.sqrt(2*(2-d)));render();};
       addEventListener('pagehide',stop);document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
     }
-    if(q===49){
+    if(!def&&q===49){
       s.triangle=true;const touched=new Set(),ranges=[];
       function set(i,v){
         v=clamp(Math.round(v),-100,60);
