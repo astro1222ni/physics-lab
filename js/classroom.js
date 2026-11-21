@@ -103,7 +103,17 @@
   const share = window.LabShare = {
     restoring: false,
     register: function (h) { if (h && typeof h.get === 'function' && typeof h.set === 'function' && extras.indexOf(h) < 0) extras.push(h); },
-    url: function (withState) { return location.origin + location.pathname + (withState === false ? '' : '#s=' + encode(capture())); },
+    // 題目頁這類沒有 .lab 的頁面：用 [data-lab-tools] 放工具列，data-lab-tools-keep 列出要留在網址的參數（例如 q），不帶 #s=
+    url: function (withState) {
+      const anchor = !document.querySelector('.lab') && document.querySelector('[data-lab-tools]');
+      if (anchor) {
+        const from = new URLSearchParams(location.search), keep = new URLSearchParams();
+        (anchor.getAttribute('data-lab-tools-keep') || '').split(/[\s,]+/).forEach(function (k) { if (k && from.has(k)) keep.set(k, from.get(k)); });
+        const qs = keep.toString();
+        return location.origin + location.pathname + (qs ? '?' + qs : '');
+      }
+      return location.origin + location.pathname + (withState === false ? '' : '#s=' + encode(capture()));
+    },
     capture: capture,
     restore: restore
   };
@@ -219,7 +229,7 @@
     });
   }
 
-  function openShare(btn) {
+  function openShare(btn, plain) {
     const dlg = document.createElement('div');
     dlg.className = 'lab-share';
     dlg.setAttribute('role', 'dialog');
@@ -227,20 +237,20 @@
     dlg.setAttribute('aria-labelledby', 'lab-share-title');
     dlg.innerHTML =
       '<div class="lab-share-card">' +
-      '<div class="lab-share-head"><strong id="lab-share-title">' + T('分享這個實驗', 'Share this experiment') + '</strong>' +
+      '<div class="lab-share-head"><strong id="lab-share-title">' + (plain ? T('分享這一題', 'Share this question') : T('分享這個實驗', 'Share this experiment')) + '</strong>' +
       '<button type="button" class="lab-share-x" aria-label="' + T('關閉', 'Close') + '">' + ICON.close + '</button></div>' +
-      '<label class="lab-share-opt"><input type="checkbox" checked> <span>' + T('包含目前的設定（滑桿、模式）', 'Include the current settings (sliders, modes)') + '</span></label>' +
+      '<label class="lab-share-opt"' + (plain ? ' hidden' : '') + '><input type="checkbox"' + (plain ? '' : ' checked') + '> <span>' + T('包含目前的設定（滑桿、模式）', 'Include the current settings (sliders, modes)') + '</span></label>' +
       '<div class="lab-share-row"><input class="lab-share-url" type="text" readonly aria-label="' + T('分享網址', 'Link to share') + '">' +
       '<button type="button" class="lab-tool lab-share-copy">' + T('複製', 'Copy') + '</button></div>' +
       '<button type="button" class="lab-share-qr" aria-label="' + T('放大 QR code（投影給全班掃描）', 'Enlarge the QR code (to project for the class)') + '"></button>' +
-      '<p class="lab-share-tip">' + T('點 QR code 可以放大投影，學生用手機相機掃描就會打開同樣的設定。', 'Tap the QR code to enlarge it for projection; students scan it with a phone camera to open the same setup.') + '</p>' +
+      '<p class="lab-share-tip">' + (plain ? T('點 QR code 可以放大投影，學生用手機相機掃描就會打開這一題。', 'Tap the QR code to enlarge it for projection; students scan it with a phone camera to open this question.') : T('點 QR code 可以放大投影，學生用手機相機掃描就會打開同樣的設定。', 'Tap the QR code to enlarge it for projection; students scan it with a phone camera to open the same setup.')) + '</p>' +
       '<div class="lab-share-to" role="group" aria-label="' + T('傳給學生', 'Send to students') + '">' +
       '<a class="lab-tool" data-to="line" target="_blank" rel="noopener">LINE</a>' +
       '<a class="lab-tool" data-to="classroom" target="_blank" rel="noopener">Google Classroom</a>' +
       '<button type="button" class="lab-tool" data-to="embed" aria-expanded="false">' + T('嵌入網頁', 'Embed') + '</button></div>' +
       '<div class="lab-share-embed" hidden><textarea class="lab-share-code" readonly rows="3" aria-label="' + T('嵌入用的程式碼', 'Embed code') + '"></textarea>' +
       '<button type="button" class="lab-tool lab-share-copy2">' + T('複製程式碼', 'Copy code') + '</button>' +
-      '<p class="lab-share-tip">' + T('貼進學校網站、Google 協作平台或 Moodle 等網頁的 HTML，就會顯示只有實驗本身的精簡版。', 'Paste into the HTML of a school site, Google Sites, Moodle and so on to show a compact version with just the experiment.') + '</p></div>' +
+      '<p class="lab-share-tip">' + (plain ? T('貼進學校網站、Google 協作平台或 Moodle 等網頁的 HTML，就會在那個網頁裡顯示這一題。', 'Paste into the HTML of a school site, Google Sites, Moodle and so on to show this question there.') : T('貼進學校網站、Google 協作平台或 Moodle 等網頁的 HTML，就會顯示只有實驗本身的精簡版。', 'Paste into the HTML of a school site, Google Sites, Moodle and so on to show a compact version with just the experiment.')) + '</p></div>' +
       '</div>';
     document.body.appendChild(dlg);
     const opt = dlg.querySelector('.lab-share-opt input');
@@ -254,7 +264,8 @@
       dlg.querySelector('[data-to="classroom"]').href = 'https://classroom.google.com/share?url=' + enc;
       const h1 = document.querySelector('h1');
       const title = (h1 ? h1.textContent.trim() : document.title).replace(/"/g, '&quot;');
-      const src = url.value.replace(/(#|$)/, '?embed=1$1');
+      let src;
+      try { const u = new URL(url.value); u.searchParams.set('embed', '1'); src = u.href; } catch (e) { src = url.value.replace(/(#|$)/, '?embed=1$1'); }
       code.value = '<iframe src="' + src + '" title="' + title + '" width="100%" height="720" style="border:0;max-width:100%" allow="fullscreen" loading="lazy"></iframe>';
       qr.innerHTML = '';
       qrSvg(url.value).then(function (svg) { qr.innerHTML = svg; })
@@ -267,7 +278,7 @@
     document.addEventListener('keydown', onKey);
     dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
     dlg.querySelector('.lab-share-x').addEventListener('click', close);
-    qr.addEventListener('click', function () { bigQR(url.value, T('用手機相機掃描，打開同樣的實驗設定', 'Scan with a phone camera to open the same setup')); });
+    qr.addEventListener('click', function () { bigQR(url.value, plain ? T('用手機相機掃描，打開這一題', 'Scan with a phone camera to open this question') : T('用手機相機掃描，打開同樣的實驗設定', 'Scan with a phone camera to open the same setup')); });
     dlg.querySelector('.lab-share-copy').addEventListener('click', function (e) { copyFrom(e.currentTarget, url, T('複製', 'Copy')); });
     dlg.querySelector('.lab-share-copy2').addEventListener('click', function (e) { copyFrom(e.currentTarget, code, T('複製程式碼', 'Copy code')); });
     const emb = dlg.querySelector('[data-to="embed"]');
@@ -303,15 +314,17 @@
   }
 
   function initLabTools() {
-    const lab = document.querySelector('.lab');
-    if (!lab || document.querySelector('.lab-tools')) return;
+    const lab = document.querySelector('.lab'), anchor = !lab && document.querySelector('[data-lab-tools]');
+    if ((!lab && !anchor) || document.querySelector('.lab-tools')) return;
+    const plain = !!anchor; // 題目頁：只放分享（與成績），不放投影（題目頁有自己的上課模式）
     const bar = document.createElement('div');
     bar.className = 'lab-tools';
     bar.setAttribute('role', 'toolbar');
     bar.setAttribute('aria-label', T('上課工具', 'Classroom tools'));
-    bar.innerHTML =
-      '<button type="button" class="lab-tool" data-tool="projector" aria-pressed="false" title="' + T('全螢幕、放大字，適合投影（Esc 離開）', 'Full screen with larger text for projection (Esc to exit)') + '">' + ICON.projector + '<span>' + T('投影', 'Project') + '</span></button>' +
-      '<button type="button" class="lab-tool" data-tool="share" title="' + T('產生分享網址與 QR code（可包含目前設定）', 'Get a link and QR code (can include the current settings)') + '">' + ICON.share + '<span>' + T('分享本實驗', 'Share this lab') + '</span></button>';
+    bar.innerHTML = (plain ? '' :
+      '<button type="button" class="lab-tool" data-tool="projector" aria-pressed="false" title="' + T('全螢幕、放大字，適合投影（Esc 離開）', 'Full screen with larger text for projection (Esc to exit)') + '">' + ICON.projector + '<span>' + T('投影', 'Project') + '</span></button>') +
+      (plain ? '<button type="button" class="lab-tool" data-tool="share" title="' + T('產生這一題的分享網址與 QR code', 'Get a link and QR code for this question') + '">' + ICON.share + '<span>' + T('分享這一題', 'Share this question') + '</span></button>'
+        : '<button type="button" class="lab-tool" data-tool="share" title="' + T('產生分享網址與 QR code（可包含目前設定）', 'Get a link and QR code (can include the current settings)') + '">' + ICON.share + '<span>' + T('分享本實驗', 'Share this lab') + '</span></button>');
     initResultsTool(bar);
     if (document.documentElement.classList.contains('lab-embed')) {
       const full = document.createElement('a');
@@ -323,6 +336,7 @@
       full.href = location.origin + location.pathname;
       bar.appendChild(full);
     }
+    if (plain) { anchor.appendChild(bar); bar.querySelector('[data-tool="share"]').addEventListener('click', function (e) { openShare(e.currentTarget, true); }); return; }
     lab.parentNode.insertBefore(bar, lab);
     const pBtn = bar.querySelector('[data-tool="projector"]');
     pBtn.addEventListener('click', function () { setProjector(!projOn, pBtn); });
