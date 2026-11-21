@@ -18,11 +18,12 @@ for (const [q,points,zh,en] of [
   const unit='exam-114-'+q;
   const defs=[
     ['correct',points,'答對本題','Solve the problem','任一次取得本題滿分。','Earn full credit on any attempt.'],
-    ['first',points,'第一次就答對','Right on the first try','第一次送出即取得滿分。','Earn full credit on the first submission.'],
+    // 11/21 站長：「補救的方式是這七顆，不是額外再七顆」→ 第一次沒拿滿分也能拿回同一顆任務（判定在 js/exam.js 的 recovered）
+    ['first',points,'第一次就答對','Right on the first try','第一次送出就拿滿分。沒拿到的話可以補救：聽完全部解題，換一天再來，當天第一次送出就拿滿分。','Earn full credit on the first submission. Missed it? Play the whole solution, come back another day, and earn full credit on that day’s first submission.'],
     ['viewed',1,'看完解題','Finish the solution','完整播放本題每一句解說。','Play every sentence to the end.'],
     ['experiment',1,'動手驗證','Test the model',zh,en],
     // 11/21 站長：第一次沒答對要有補救、星數別差太多 → 已上線的 1–4 不動，補三個中間星數的任務
-    ['relearn',Math.max(2,points-2),'聽完再答對','Solve it after the solution','聽完全部解題之後，再送出一次拿到滿分（第一次沒答對的補救）。','After playing the whole solution, submit again for full credit (the way back if the first try missed).'],
+    ['relearn',Math.max(2,points-2),'聽完再答對','Solve it after the solution','聽完全部解題之後，再送出一次拿到滿分。','After playing the whole solution, submit again for full credit.'],
     ['later',3,'隔天再答對','Solve it again tomorrow','拿過滿分之後，換日再送出一次，又拿到滿分。','After earning full credit, come back on another day and earn it again.'],
     ['national',1,'看全國怎麼選','See how the nation did','送出作答後，打開「全國資料」。','After submitting, open National results.']
   ];

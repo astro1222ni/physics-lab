@@ -137,11 +137,11 @@ window.ExamScene=(()=>{
   const PX=v=>59+(v+100)*376/160,PY=i=>28+(.4-i)*181/1.6;
   function channel(g,s){
     for(let v=-100;v<=60;v+=20){
-      line(g,PX(v),28,PX(v),209,'#4d6978',1,[3,4]);label(g,String(v),PX(v),228,faint,14,'center');
+      line(g,PX(v),28,PX(v),209,'#4d6978',1,[3,4]);label(g,String(v),v===-100?PX(v)-5:PX(v),231,faint,14,v===-100?'left':'center'); // 試玩 B8：-100 和縱軸的 -1.2 錯開
     }
-    for(let j=-3;j<=1;j++){const i=j*.4;line(g,59,PY(i),435,PY(i),i===0?white:'#4d6978',1,i===0?[]:[3,4]);label(g,i.toFixed(1),52,PY(i)+5,white,14,'right');}
+    for(let j=-3;j<=1;j++){const i=j*.4;line(g,59,PY(i),435,PY(i),i===0?white:'#4d6978',1,i===0?[]:[3,4]);label(g,i.toFixed(1),52,PY(i)+4,white,14,'right');}
     label(g,'I',14,18,white,16);label(g,'Na',20,22,white,10);label(g,'(mA)',40,18,white,14);
-    label(g,'V (mV)',435,246,white,15,'right');
+    label(g,'V (mV)',435,248,white,15,'right');
     const end=s.trace??60;line(g,PX(-100),PY(lineFit.current(-100)),PX(end),PY(lineFit.current(end)),teal,2);
     for(const [v,i] of C.samples)dot(g,PX(v),PY(i),4,white);
     if(s.triangle){

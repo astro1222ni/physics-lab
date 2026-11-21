@@ -32,7 +32,7 @@ html.learn-class {--teaching:1.4}
 .page-heading {padding:12px 19px;gap:12px;min-height:58px}
 #page-code {color:var(--accent);font-size:calc(17px * var(--lesson-fs));font-weight:750}
 #page-title {font-size:calc(22px * var(--lesson-fs));line-height:1.18;margin:0;color:var(--text)}
-#folio {font-size:calc(13px * var(--lesson-fs));color:var(--muted);white-space:nowrap;margin-left:auto}
+#folio {font-size:calc(15px * var(--lesson-fs));font-weight:700;color:var(--text);opacity:.86;white-space:nowrap;margin-left:auto} /* 試玩 B7：頁碼字偏小、對比低 */
 .visual-column {min-width:0;background:var(--chalk)}
 .visual-shell {height:clamp(280px,43vh,373px);display:flex;flex-direction:column;overflow:hidden}
 #scene {position:relative;min-height:110px;flex:1;overflow:hidden;isolation:isolate;background:var(--chalk)}
@@ -277,3 +277,14 @@ html.learn-class {--teaching:1.4}
   #learn-lobby .lobby-header{padding:0 0 4px}#learn-lobby .lobby-header h1{margin:6px 0 0;font-size:calc(28px * var(--fs,1))}
   .learn-lobby-page .crumbs{margin:2px 0}
 }
+
+/* 11/21 全站自查第 4 條：學測題卡也要有代表圖（借對應實驗的縮圖），題號疊在圖的左下角 */
+.exam-thumb{position:relative;flex:none;display:block;line-height:0}
+#learn-lobby .exam-thumb .module-thumb{width:72px;height:56px;max-width:none;border-radius:7px;display:block}
+.exam-entries .study-link .exam-thumb b{position:absolute;left:0;bottom:0;padding:1px 6px 0 5px;border-radius:0 7px 0 7px;background:rgba(8,20,28,.82);color:#9fe8cf;font:700 17px/1.25 Georgia,serif}
+#learn-lobby .study-link>span:not(.exam-thumb){text-wrap:pretty} /* 試玩 B1：卡片標題最後一個字不單獨折行 */
+@media(max-width:600px){#learn-lobby .exam-thumb .module-thumb{width:60px;height:48px}.exam-entries .study-link{gap:8px}}
+
+/* 試玩 B13：手機橫放 0:00 的板書預告（虛線框、淡字，開始寫字就換成板書） */
+#board.board-wait{border:1px dashed var(--border);border-radius:10px;margin-top:10px;padding:12px;opacity:.85;display:flex;align-items:center;justify-content:center;min-height:96px;text-align:center}
+#board.board-wait p{margin:0;color:#e3f2da;font-size:calc(15px * var(--fs,1));line-height:1.5;text-wrap:pretty}
