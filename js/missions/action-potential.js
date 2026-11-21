@@ -25,7 +25,7 @@
       id: 'action-potential-1', level: 1,
       title: { zh: '第一個動作電位', en: 'Your first action potential' },
       desc: { zh: '用單一脈衝刺激細胞膜，引發一個動作電位：膜電位從 −65 mV 衝到正值又落回來。', en: 'Stimulate the membrane with a single pulse and set off an action potential: the voltage leaps from −65 mV to positive and falls back.' },
-      check: function (ev) { return single(ev) && ev.data.fired1; }
+      check: function (ev) { return single(ev) && ev.data.fired1 && Math.abs(ev.data.rest + 65) <= 1 && ev.data.peak1 > 0 && ev.data.finalV < 0; }
     },
     {
       id: 'action-potential-2', level: 2,

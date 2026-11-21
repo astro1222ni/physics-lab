@@ -51,7 +51,7 @@ function stimEv(o) {
   return { type: 'stim', data: {
     mode, a1, a2: mode === 'paired' ? a2 : null, dur: mode === 'step' ? null : dur, gap: mode === 'paired' ? gap : null,
     T: e.T, ttx: e.ttx, tea: e.tea, kOut: e.kOut, naOut: e.naOut, env: key,
-    rest: an.rest, n: an.n, interrupted: !!o.interrupted,
+    rest: an.rest, finalV: rec.V[rec.V.length - 1], n: an.n, interrupted: !!o.interrupted,
     afterPulse: mode === 'single' ? sp.filter(s => s.t >= pulses[0].t0 + dur).length : 0,
     fired1: !!s1, fired2: !!s2, peak1: s1 ? s1.peak : null, peak2: s2 ? s2.peak : null,
     rise: an.rise, amp1: shape ? shape.amp : null, halfWidth: shape ? shape.halfWidth : null,
@@ -165,6 +165,7 @@ const THR = K.threshold(P0, 0.5);
   fresh('10');
   const ev = stimEv({ a1: 60, env: { naOut: 0.15 } });
   const no = stimEv({ a1: 60, env: { naOut: 0.3 } });
+  claim(!check('1', ev), '1 低鈉造成的非正峰不算');
   claim(check('10', ev) && !check('10', no), `任務 10：細胞外 Na×0.15、60 µA/cm² → 峰值 ${f(ev.data.peak1, 1)} mV、振幅 ${f(ev.data.amp1, 1)} mV；Na×0.3 時峰值 ${f(no.data.peak1, 1)} mV 不算`);
 }
 // 11. 等很久才發：剛好超過閾值一點點

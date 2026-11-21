@@ -343,7 +343,7 @@
     for (let i = 0; i < N; i++) { Ci[i] = node[i] ? P.C : P.C * cMy; gLi[i] = node[i] ? P.gL : P.gL * gMy; }
     const cab = {
       P: P, L: L, diam: diam, a: a, dx: dx, N: N, myelin: myelin, node: node, Ci: Ci, gLi: gLi,
-      V: V, m: m, h: h, n: n, t: 0, rest: rest.V,
+      V: V, m: m, h: h, n: n, t: 0, restGates: rest, rest: rest.V,
       ELmy: rest.V,
       Ri: o.Ri || HH.Ri,
       D: a / (2 * (o.Ri || HH.Ri)) * 1000, // a/(2Ri) 的單位是 1/Ω；乘 1000 讓 mV、µA、ms、µF 一致（見下）
@@ -442,7 +442,7 @@
   function measureVelocity(o) {
     const cab = makeCable(o);
     const x0 = o.x0 == null ? 0 : o.x0;
-    cab.stims.push({ x0: Math.max(0, x0 - 0.05), x1: Math.min(cab.L, x0 + 0.05), t0: 0.5, dur: o.stimDur || 0.5, amp: o.stimAmp || 150 });
+    cab.stims.push({ x0: Math.max(0, x0 - (o.stimHalf || 0.05)), x1: Math.min(cab.L, x0 + (o.stimHalf || 0.05)), t0: o.stimStart ?? 0.5, dur: o.stimDur || 0.5, amp: o.stimAmp || 150 });
     const x1 = o.x1 == null ? cab.L * 0.3 : o.x1, x2 = o.x2 == null ? cab.L * 0.7 : o.x2;
     const tMax = o.tMax || 40;
     while (cab.t < tMax) {
@@ -452,9 +452,13 @@
     return { v: velocity(cab, x1, x2), cab: cab };
   }
 
-  /** 纜線是否還有活動（有任何一段高於 −50 mV） */
+  /** 纜線是否還有活動（任一段偏離靜止電位超過 1 mV，或節點閘門偏離靜止值超過 0.02） */
   function cableActive(cab) {
-    for (let i = 0; i < cab.N; i++) if (cab.V[i] > -50) return true;
+    for (let i = 0; i < cab.N; i++) {
+      if (Math.abs(cab.V[i] - cab.rest) > 1) return true;
+      if (cab.node[i] && (Math.abs(cab.h[i] - cab.restGates.h) > 0.02 ||
+          Math.abs(cab.n[i] - cab.restGates.n) > 0.02 || Math.abs(cab.m[i] - cab.restGates.m) > 0.02)) return true;
+    }
     return false;
   }
   /**

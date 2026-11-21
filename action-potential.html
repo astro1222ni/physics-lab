@@ -117,6 +117,7 @@
     .ap3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
     .ap3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .ap3-hud span.m { color: var(--muted); }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -237,6 +238,12 @@
           </div>
           <p class="hint" data-en="Drag the electrodes along the axon (S = stimulate, R1 and R2 = record). Or focus the picture, press Enter to pick one and move it with the arrow keys (Shift for big steps).">拖曳電極可以改變位置（S 是刺激、R1 與 R2 是記錄）。也可以點選畫面，按 Enter 選電極、用方向鍵移動（加 Shift 一次移比較多）。</p>
           <p class="hint" data-en="Temperature, ions and drugs come from the settings in part 1.">溫度、離子與藥物用第一部分的設定。</p>
+          <details><summary data-en="Axon stimulus">軸突刺激</summary>
+            <label><span data-en-html="Current density (µA/cm<sup>2</sup>)">電流密度（µA/cm<sup>2</sup>）</span> <select class="sample-control" id="cabAmp"><option>150</option><option>750</option><option selected>1500</option><option>3000</option></select></label>
+            <label><span data-en="Duration (ms)">時間（ms）</span> <select class="sample-control" id="cabDur"><option>0.1</option><option selected>0.5</option><option>1</option></select></label>
+            <label><span data-en="Width (mm)">寬度（mm）</span> <select class="sample-control" id="cabWidth"><option>0.5</option><option selected>1</option><option>2</option></select></label>
+            <p data-en="Conduction missions use the reference stimulus of 1500 microamperes per square centimetre for 0.5 ms across 1 mm.">傳導任務採用基準刺激（每平方公分 1500 微安培、0.5 ms、寬 1 mm）。</p>
+          </details>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -299,9 +306,9 @@
         <li data-en="The membrane patch is integrated with the fourth-order Runge–Kutta method in steps of 0.01 ms (smaller when it is warm), with the pulse edges falling exactly on steps. Hodgkin and Huxley’s original constants are used unchanged; voltages are written in today’s convention (inside minus outside, rest −65 mV).">膜片用四階 Runge–Kutta 法積分，步長 0.01 ms（溫度高時更小），脈衝的開始與結束都落在步長上。Hodgkin 與 Huxley 的原始常數完全不改；電壓用現在的寫法（細胞內減細胞外，靜止 −65 mV）。</li>
         <li data-en="An action potential is counted when the voltage crosses −20 mV and the membrane’s own net current has turned inward by at least 30 µA/cm² (a regenerative sodium current). A voltage pushed up only by the stimulus does not count.">判定動作電位：膜電位往上越過 −20 mV，而且細胞膜自己的淨電流曾經往內流 30 µA/cm² 以上（再生性的鈉電流）。只靠刺激電流硬推上去的不算。</li>
         <li data-en="The threshold used by the missions is found by bisection to 0.001%; the page does not show it — finding it is your job.">任務用到的閾值由程式以二分法算到 0.001%；頁面上不顯示——找到它是你的工作。</li>
-        <li data-en="The axon is cut into short segments (0.125–0.5 mm, finer for thin axons) with sealed ends. The gates use exponential integration and the voltage a semi-implicit scheme in steps of 0.005 ms (smaller when warm); halving both steps changes the speed by less than 1.5%. The stimulating electrode injects 1500 µA/cm² for 0.5 ms over 1 mm.">軸突切成很短的小段（0.125–0.5 mm，越細的軸突切得越細），兩端封閉。閘門用指數積分、電壓用半隱式法，步長 0.005 ms（溫度高時更小）；兩種步長都減半，速度的改變小於 1.5%。刺激電極在 1 mm 的範圍內通入 1500 µA/cm²、0.5 ms。</li>
+        <li data-en="The axon is cut into short segments (0.125–0.5 mm, finer for thin axons) with sealed ends. The gates use exponential integration and the voltage a semi-implicit scheme in steps of 0.005 ms (smaller when warm); halving both steps changes the speed by less than 1.5%. By default the stimulating electrode injects 1500 µA/cm² for 0.5 ms over 1 mm.">軸突切成很短的小段（0.125–0.5 mm，越細的軸突切得越細），兩端封閉。閘門用指數積分、電壓用半隱式法，步長 0.005 ms（溫度高時更小）；兩種步長都減半，速度的改變小於 1.5%。刺激電極預設在 1 mm 的範圍內通入 1500 µA/cm²、0.5 ms。</li>
         <li data-en="The speed is the distance between R1 and R2 divided by the difference in the times at which the voltage there first crosses −20 mV.">傳導速度 ＝ R1 與 R2 的距離 ÷ 兩處膜電位第一次越過 −20 mV 的時間差。</li>
-        <li data-en="Myelin is illustrative: squid axons have none. Between nodes every 5 mm, the membrane capacitance and leak are divided by 200 and there are no channels. Real myelinated fibres are about 1–20 µm thick with nodes about 1 µm wide every 0.2–2 mm.">髓鞘是示意：烏賊軸突沒有髓鞘。本頁每 5 mm 一個蘭氏結，節間的膜電容與漏電導都除以 200，而且沒有鈉鉀通道。真正的有髓神經纖維直徑約 1–20 µm，蘭氏結寬約 1 µm、每隔 0.2–2 mm 一個。</li>
+        <li data-en="Myelin is illustrative: squid axons have none. Between nodes every 5 mm, the membrane capacitance and leak are divided by 200 and there are no voltage-gated channels. The internode leak reversal potential equals the resting node voltage, so there is no initial axial current. Real myelinated fibres are about 1–20 µm thick with nodes about 1 µm wide every 0.2–2 mm.">髓鞘是示意：烏賊軸突沒有髓鞘。本頁每 5 mm 一個蘭氏結，節間的膜電容與漏電導都除以 200，而且沒有電壓閘控鈉鉀通道。節間漏電平衡電位設為節點的靜止電位，使初始軸向電流為零。真正的有髓神經纖維直徑約 1–20 µm，蘭氏結寬約 1 µm、每隔 0.2–2 mm 一個。</li>
         <li data-en-html="Changing the outside concentrations shifts E<sub>Na</sub> and E<sub>K</sub> by the Nernst equation; the channels themselves are unchanged. The reversal potentials are otherwise kept at Hodgkin and Huxley’s 6.3 °C values, so temperature acts only through the gates. In the 3D view the axon’s thickness is exaggerated.">改變細胞外濃度時，用能斯特方程式平移 E<sub>Na</sub> 與 E<sub>K</sub>，通道本身不變；除此之外平衡電位維持 Hodgkin 與 Huxley 在 6.3 °C 的值，溫度只透過閘門速度產生影響。3D 檢視中軸突的粗細是放大的示意。</li>
       </ul>
 

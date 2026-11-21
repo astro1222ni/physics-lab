@@ -14,7 +14,7 @@
   })();
   const FONT = D.FONT;
   const CAB_L = 10;          // 軸突長度（cm）
-  const CAB_T0 = 0.3, CAB_DUR = 0.5, CAB_AMP = 1500, CAB_HALF = 0.05; // 軸突刺激：0.3 ms 起、0.5 ms、1500 µA/cm²、電極下 ±0.05 cm
+  const CAB_T0 = 0.3; // 軸突刺激：0.3 ms 起、0.5 ms、1500 µA/cm²、電極下 ±0.05 cm
   const MAX_KEPT = 6;
 
   // =====================================================================
@@ -220,7 +220,7 @@
     const data = {
       mode: r.mode, a1: r.a1, a2: r.mode === 'paired' ? r.a2 : null, dur: r.mode === 'step' ? null : r.dur, gap: r.mode === 'paired' ? r.gap : null,
       T: r.env.T, ttx: r.env.ttx, tea: r.env.tea, kOut: r.env.kOut, naOut: r.env.naOut, env: r.key,
-      rest: r.an.rest, n: r.an.n, fired1: !!sp.s1, fired2: !!sp.s2,
+      rest: r.an.rest, finalV: r.rec.V[r.rec.V.length - 1], n: r.an.n, fired1: !!sp.s1, fired2: !!sp.s2,
       peak1: sp.s1 ? sp.s1.peak : null, peak2: sp.s2 ? sp.s2.peak : null,
       rise: r.an.rise, amp1: shape ? shape.amp : null, halfWidth: shape ? shape.halfWidth : null,
       thr: thr, a2alone: a2alone, rate: r.an.rate,
@@ -481,7 +481,7 @@
     D.pill(ctx, 'V = ' + signed(s.V, 1) + ' mV', tx, 22, C['ap-v'], 'right', '700 13px ' + FONT);
     const tt = run1 ? Math.min(run1.head, run1.tEnd) : 0;
     D.pill(ctx, 't = ' + num(tt, 2) + ' ms', tx, 44, D.c.muted, 'right', '600 12px ' + FONT);
-    D.haloText(ctx, T('示意圖（不按比例）', 'Schematic (not to scale)'), tx, L1.memH - 10, D.alpha(D.c.muted, 0.9), 'right', 'middle', '11px ' + FONT);
+    D.haloText(ctx, T('示意圖（不按比例）', 'Schematic (not to scale)'), tx, L1.memH - 10, D.alpha(D.c.muted, 0.9), 'right', 'middle', '12px ' + FONT);
   }
   /** 依此刻的鈉、鉀電流產生穿過通道的離子（純示意） */
   function stepFlux(s, dtReal, e) {
@@ -541,7 +541,7 @@
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
   function yTicks(g, p, lo, hi, step, fmt, yOf) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
       const y = yOf(v);
       g.fillText(fmt(v), p.x0 - 7, y);
@@ -551,7 +551,7 @@
   }
   /** 時間軸的刻度數字；最右邊留給「t (ms)」 */
   function timeTicks(g, p, tMax, step, xOf) {
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textBaseline = 'top';
     g.textAlign = 'right';
     const lab = 't (ms)', wl = g.measureText(lab).width;
     g.fillText(lab, p.x1, p.y1 + 6);
@@ -617,7 +617,7 @@
         // 窄直放時把 E_K 放到虛線下方，和上方的復極波形分開。
         const labelY = y + (narrowPortrait.matches && q[2] === 'K' ? 12 : -11);
         const w = subLabel(ctx, 'E', q[2], pV.x1 - 4 - 46, labelY, q[1], 'left');
-        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, labelY, q[1], 'left', 'middle', '600 11px ' + FONT);
+        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, labelY, q[1], 'left', 'middle', '600 12px ' + FONT);
       });
     }
     // 保留的波形
@@ -637,7 +637,7 @@
     ctx.restore();
     // 峰值標籤（第一個動作電位）
     const sp1 = r.an.spikes[0];
-    if (sp1 && head >= sp1.tPeak) D.pill(ctx, signed(sp1.peak, 1) + ' mV', Math.min(pV.x1 - 30, xOf(sp1.tPeak) + 8), yV(sp1.peak) + 4, C['ap-v'], 'left', '600 11px ' + FONT);
+    if (sp1 && head >= sp1.tPeak) D.pill(ctx, signed(sp1.peak, 1) + ' mV', Math.min(pV.x1 - 30, xOf(sp1.tPeak) + 8), yV(sp1.peak) + 4, C['ap-v'], 'left', '600 12px ' + FONT);
     // 播放頭
     if (r.playing || head < tMax) {
       const x = xOf(head);
@@ -712,7 +712,7 @@
     ctx.strokeStyle = C['ap-stim']; ctx.lineWidth = 1.6;
     series(ctx, rec.t, rec.I, head, xOf, yI);
     ctx.restore();
-    D.haloText(ctx, T('刺激電流', 'Stimulus current') + (iMax ? '  ' + (r.mode === 'paired' ? amp3(r.a1) + ' / ' + amp3(r.a2) : amp3(r.a1)) + ' ' + UA : ''), pI.x0, pI.y0 - 12, C['ap-stim'], 'left', 'middle', '600 11px ' + FONT);
+    D.haloText(ctx, T('刺激電流', 'Stimulus current') + (iMax ? '  ' + (r.mode === 'paired' ? amp3(r.a1) + ' / ' + amp3(r.a2) : amp3(r.a1)) + ' ' + UA : ''), pI.x0, pI.y0 - 12, C['ap-stim'], 'left', 'middle', '600 12px ' + FONT);
   }
 
   // =====================================================================
@@ -754,8 +754,9 @@
     const e = envNow();
     const cab = K.makeCable({ P: K.params(e), length: CAB_L, diam: val(el.diam), myelin: state.myelin });
     const xs = stimXs();
-    xs.forEach(function (x) { cab.stims.push({ x0: Math.max(0, x - CAB_HALF), x1: Math.min(CAB_L, x + CAB_HALF), t0: CAB_T0, dur: CAB_DUR, amp: CAB_AMP }); });
-    run2 = { cab: cab, playing: true, xs: xs.slice(), r1: state.el.r1, r2: state.el.r2, tr: { t: [0], v1: [cab.rest], v2: [cab.rest] },
+    const half = Number($('cabWidth').value) / 20, dur = Number($('cabDur').value), amp = Number($('cabAmp').value);
+    xs.forEach(function (x) { cab.stims.push({ x0: Math.max(0, x - half), x1: Math.min(CAB_L, x + half), t0: CAB_T0, dur, amp }); });
+    run2 = { cab: cab, half, dur, amp, quiet: 0, playing: true, xs: xs.slice(), r1: state.el.r1, r2: state.el.r2, tr: { t: [0], v1: [cab.rest], v2: [cab.rest] },
       env: e, key: envKey(e), diam: val(el.diam), myelin: state.myelin, nextRec: 0.01, arrived: [false, false], stimSnd: false };
     $('status2').textContent = T('刺激！看衝動沿著軸突往兩邊跑。', 'Stimulus! Watch the impulse run both ways along the axon.');
     if (reducedMotion) { while (run2.playing) advance2(1e9, 1e9); }
@@ -780,7 +781,8 @@
         r.tr.t.push(cab.t); r.tr.v1.push(vAt(cab, r.r1)); r.tr.v2.push(vAt(cab, r.r2));
         r.nextRec += 0.01;
       }
-      if ((cab.t > 2 && !K.cableActive(cab)) || cab.t >= 40) { finish2(); return; }
+      r.quiet = cab.t > CAB_T0 + r.dur && !K.cableActive(cab) ? r.quiet + cab.dt : 0;
+      if (r.quiet >= 1 || cab.t >= 80) { finish2(); return; }
       if (++k % 20 === 0 && performance.now() - t0 > budget) break;
     }
     // 到達記錄電極的聲音
@@ -809,17 +811,17 @@
     };
     r.data = data;
     addRow2(r);
-    const msg = status2For(r);
+    const msg = status2For(r) + (r.quiet < 1 ? T(' 已達 80 ms 觀察上限。', ' The 80 ms observation limit was reached.') : '');
     $('status2').textContent = msg; say(msg);
     updateReadouts2();
-    const go = function () { emit('cable', data); };
+    const go = function () { if (r.amp === 1500 && r.half === 0.05 && r.dur === 0.5) emit('cable', data); };
     if (r.env.ttx > 0 && clean) {
       // 比較用：同一條軸突、同樣的電極，但沒有河豚毒素時的速度
       setTimeout(function () {
         const e0 = Object.assign({}, r.env, { ttx: 0 });
-        const k = envKey(e0) + '|' + r.diam + '|' + r.myelin + '|' + [xs[0], r.r1, r.r2].join(',');
+        const k = envKey(e0) + '|' + r.diam + '|' + r.myelin + '|' + [xs[0], r.r1, r.r2, r.amp, r.dur, r.half].join(',');
         if (!vRefCache.has(k)) {
-          vRefCache.set(k, K.measureVelocity({ P: K.params(e0), length: CAB_L, diam: r.diam, myelin: r.myelin, x0: xs[0], x1: r.r1, x2: r.r2, stimAmp: CAB_AMP, tMax: 40 }).v);
+          vRefCache.set(k, K.measureVelocity({ P: K.params(e0), length: CAB_L, diam: r.diam, myelin: r.myelin, x0: xs[0], x1: r.r1, x2: r.r2, stimAmp: r.amp, stimDur: r.dur, stimHalf: r.half, stimStart: CAB_T0, tMax: 40 }).v);
         }
         data.vRef = vRefCache.get(k);
         updateReadouts2();
@@ -908,7 +910,7 @@
     g.restore();
     D.haloText(g, T('此刻沿軸突的膜電位（mV）', 'Membrane potential along the axon now (mV)'), p.x0 + 4, p.y0 + 7, C['ap-v'], 'left', 'middle', '600 11.5px ' + FONT);
     // 位置刻度（cm）
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'center'; g.textBaseline = 'top';
     const xs = L2.narrow ? 2 : 1;
     for (let x = 0; x <= CAB_L; x += xs) g.fillText(String(x), xPx(x), p.y1 + 6);
     g.textAlign = 'right'; g.fillText('cm', p.x0 - 8, p.y1 + 6);
@@ -963,9 +965,9 @@
         D.roundRect(g, b.x - 3, b.y - 3, b.w + 6, b.h + 6, (b.h + 6) / 2);
         g.strokeStyle = D.c.accent; g.lineWidth = 2; g.stroke();
       }
-      if (run2 && run2.playing && e.up && run2.cab.t >= CAB_T0 && run2.cab.t <= CAB_T0 + CAB_DUR) D.ripple(g, X, ay, rA + 2, (run2.cab.t - CAB_T0) / CAB_DUR, e.col);
+      if (run2 && run2.playing && e.up && run2.cab.t >= CAB_T0 && run2.cab.t <= CAB_T0 + run2.dur) D.ripple(g, X, ay, rA + 2, (run2.cab.t - CAB_T0) / run2.dur, e.col);
     });
-    if (cab.myelin) D.haloText(g, T('髓鞘（示意）', 'Myelin (illustrative)'), xb, ay - rA - 14, D.shade(C['ap-myelin'], D.dark ? 0 : -0.55), 'right', 'middle', '600 11px ' + FONT);
+    if (cab.myelin) D.haloText(g, T('髓鞘（示意）', 'Myelin (illustrative)'), xb, ay - rA - 14, D.shade(C['ap-myelin'], D.dark ? 0 : -0.55), 'right', 'middle', '600 12px ' + FONT);
     // ---- 示波器：R1、R2 的電壓 ----
     const sc = G.scope;
     plotFrame(g, sc);
@@ -989,11 +991,11 @@
         g.strokeStyle = D.alpha(D.c.text, 0.55); g.lineWidth = 1;
         g.beginPath(); g.moveTo(xT(t1), yb - 6); g.lineTo(xT(t1), yb + 6); g.moveTo(xT(t2), yb - 6); g.lineTo(xT(t2), yb + 6);
         g.moveTo(xT(t1), yb); g.lineTo(xT(t2), yb); g.stroke();
-        D.pill(g, 'Δt = ' + num(Math.abs(t2 - t1), 3) + ' ms', Math.min(sc.x1 - 4, Math.max(xT(t1), xT(t2)) + 8), yb + 9, D.c.text, Math.max(xT(t1), xT(t2)) + 90 > sc.x1 ? 'right' : 'left', '600 11px ' + FONT);
+        D.pill(g, 'Δt = ' + num(Math.abs(t2 - t1), 3) + ' ms', Math.min(sc.x1 - 4, Math.max(xT(t1), xT(t2)) + 8), yb + 9, D.c.text, Math.max(xT(t1), xT(t2)) + 90 > sc.x1 ? 'right' : 'left', '600 12px ' + FONT);
       }
     }
     D.haloText(g, T('記錄電極量到的電壓（mV）', 'Voltage at the recording electrodes (mV)'), sc.x0 + 4, sc.y0 + 7, D.c.text, 'left', 'middle', '600 11.5px ' + FONT);
-    if (run2) D.pill(g, 't = ' + num(tNow, 2) + ' ms', sc.x1 - 2, sc.y0 + 16, D.c.muted, 'right', '600 11px ' + FONT);
+    if (run2) D.pill(g, 't = ' + num(tNow, 2) + ' ms', sc.x1 - 2, sc.y0 + 16, D.c.muted, 'right', '600 12px ' + FONT);
   }
 
   // ---------- 拖曳與鍵盤（電極） ----------

@@ -218,4 +218,14 @@ test('極強的超極化電流（滑桿最小 −49.1 µA/cm² 持續 50 ms）�
   });
 });
 
+
+test('纜線終止須同時恢復電位與閘門', () => {
+  const cab = A.makeCable({ P: A.params({}) });
+  assert.strictEqual(A.cableActive(cab), false);
+  cab.V[0] -= 3;
+  assert.strictEqual(A.cableActive(cab), true);
+  cab.V[0] = cab.rest; cab.h[0] -= 0.1;
+  assert.strictEqual(A.cableActive(cab), true);
+});
+
 console.log(passed + ' 項通過');
