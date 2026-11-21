@@ -1114,7 +1114,7 @@
     if (m === state.mode) return;
     beginChange('mode');
     if (m === 'Q') {
-      state.Qfix = eq().Q;     // 斷開瞬間的電量（慢動作尚未結束時直接取平衡值）
+      state.Qfix = isFinite(state.q) ? state.q : eq().Q;     // 斷開瞬間極板上實際的電量（充放電還在進行時就停在當下的值，電荷守恆）
       state.q = state.Qfix;
       state.flowI = 0;
       setStatus(T('開關斷開：電荷無處可去，Q 固定。改變 d、A 或 κ，看看 V、E、U 怎麼變。',

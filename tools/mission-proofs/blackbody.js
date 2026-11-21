@@ -101,7 +101,7 @@ const pk = t => C.lamMax(t) / NM;
 expect('blackbody-1', [A.ref('body')], '按「人體」：λmax = ' + pk(310).toFixed(0) + ' nm（遠紅外線）');
 expect('blackbody-2', [A.T(5800)], 'T = 5800 K：λmax = ' + pk(5800).toFixed(1) + ' nm（太陽 5772 K 是 ' + pk(5772).toFixed(1) + ' nm，也在 ±1% 內）');
 expect('blackbody-3', [A.ref('body'), A.probePeak()], '按「人體」，游標放在峰：λ = ' + (pk(310) / 1000).toFixed(2) + ' μm');
-expect('blackbody-4', [A.T(2.898)], 'T = 2.898 K：λmax = ' + (pk(2.898) / 1e6).toFixed(4) + ' mm');
+expect('blackbody-4', [A.T(2.725)], 'T = 2.725 K（宇宙微波背景）：λmax = ' + (pk(2.725) / 1e6).toFixed(4) + ' mm');
 {
   const r = expect('blackbody-5', [A.T(1000), A.keep(), A.T(2000), A.keep()], '保留 1000 K、2000 K：M 比 16，峰高比 32');
   const k = r.pg.kept; console.log('     M 比 ' + (k[1].M / k[0].M).toFixed(3) + '、峰高比 ' + (k[1].Mpk / k[0].Mpk).toFixed(3));
@@ -248,7 +248,7 @@ REFIDS.concat(['T1000', 'T600', 'T700']).forEach(start => {
 console.log('OK   任務 11 的調溫度過程 ' + n11 + ' 組（打數字、拖曳滑桿）：沒有完成隱藏任務');
 // 4-6 一個學生依序做完全部公開任務（不清除保留的曲線）
 {
-  const all = [A.ref('body'), A.probe(10000), A.keep(), A.ref('body'), A.probePeak(), A.T(5800), A.T(2.898), A.T(1000), A.keep(), A.T(2000), A.keep(), A.T(3000), A.keep(),
+  const all = [A.ref('body'), A.probe(10000), A.keep(), A.ref('body'), A.probePeak(), A.T(5800), A.T(2.725), A.T(1000), A.keep(), A.T(2000), A.keep(), A.T(3000), A.keep(),
     A.rj(true), A.ref('sun'), A.probe(1e7), A.probe(100), A.probeNu(), A.T(6913), A.T(6500), A.rj(false), A.wien(true), A.T(1000), A.probe(10000), A.T(625),
     A.T(500), A.probePeak(), A.keep(), A.T(1000), A.probePeak(), A.keep(), A.T(2000), A.probePeak(), A.keep(), A.T(5000), A.probePeak(), A.keep()];
   const r = noHidden(all, '依序做完公開任務 1–12（不清除）');

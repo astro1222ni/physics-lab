@@ -47,8 +47,8 @@
     {
       id: 'blackbody-4', level: 4,
       title: { zh: '宇宙的餘暉', en: 'The afterglow of the universe' },
-      desc: { zh: '讓峰值波長落在 1 mm（±2%）。這已經是微波了：整個宇宙都浸在這種溫度的輻射裡。', en: 'Make the peak wavelength 1 mm (±2%). That is already microwaves: the whole universe is bathed in radiation at about this temperature.' },
-      check: function (ev) { return ev.type === 'temp' && near(ev.data.lamMax, 1e6, 0.02); }
+      desc: { zh: '親手調溫度（不按參考物體），讓峰值波長落在 1.063 mm（±2%），也就是宇宙微波背景（2.725 K）的峰值。這已經是微波了：整個宇宙都浸在這種溫度的輻射裡。', en: 'Set the temperature yourself (not with a reference object) so that the peak wavelength is 1.063 mm (±2%), the peak of the cosmic microwave background (2.725 K). That is already microwaves: the whole universe is bathed in radiation at this temperature.' },
+      check: function (ev) { return ev.type === 'temp' && !ev.data.preset && near(ev.data.lamMax, 1.063e6, 0.02); }
     },
     {
       id: 'blackbody-5', level: 5,

@@ -118,7 +118,7 @@
     {
       id: 'kepler-12', level: 10,
       title: { zh: '大師：擦過地表', en: 'Master: skimming the surface' },
-      desc: { zh: '以地球為中心，讓衛星的近地點距離介於 6 371 km（地球半徑）與 6 400 km 之間——貼著地表掠過卻不撞上，並繞完一整圈。', en: 'Around the Earth, put the perigee between 6,371 km (the Earth’s radius) and 6,400 km — skimming the surface without hitting it — and complete a full orbit.' },
+      desc: { zh: '以地球為中心，讓衛星的近地點距離介於 6 371 km（地球半徑）與 6 400 km 之間——貼著地表掠過卻不撞上，並繞完一整圈（這裡的地球沒有大氣；真實衛星在這個高度會被空氣拖慢，幾圈內就會墜落）。', en: 'Around the Earth, put the perigee between 6,371 km (the Earth’s radius) and 6,400 km — skimming the surface without hitting it — and complete a full orbit (this Earth has no atmosphere; a real satellite this low would be slowed by the air and fall within a few orbits).' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'lap' && d.preset === 'earth' && !d.crash && d.rpKm >= 6371 && d.rpKm <= 6400;

@@ -87,6 +87,12 @@
     return k >= 1 && Math.abs(r - k) < 1e-9 * Math.max(1, r) ? k : 0;
   }
 
+  /** d/a 不是整數時（例如 3/2），第 m 級若 m·a/d 是非零整數，仍剛好落在單狹縫暗紋上而缺級。 */
+  function landsOnDark(m, a, d) {
+    const q = Math.abs(m) * a / d, n = Math.round(q);
+    return n >= 1 && Math.abs(q - n) < 1e-9 * Math.max(1, q);
+  }
+
   /**
    * 所有可能出現的亮紋級數（主極大）：d sinθ = mλ，|sinθ| < 1。
    * 回傳 [{ m, sin, y, I, missing }]，依 m 由小到大。
@@ -102,7 +108,7 @@
         sin: s,
         y: yFromSin(s, p.L),
         I: m === 0 ? 1 : intensitySin(p, s),
-        missing: k > 0 && m !== 0 && m % k === 0
+        missing: m !== 0 && (k > 0 ? m % k === 0 : landsOnDark(m, p.a, p.d))
       });
     }
     return out;
