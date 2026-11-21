@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Esterification | Astro Ni Lab">酯化反應｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 酯化反應頁面專用樣式。元素與器材的顏色代號（淺色、深色兩組），其餘用 lab.css 的代號 */
     :root { --el-c: #4a5260; --el-o: #e0453a; --el-h: #f2f4f7; --el-18: #d39b06; --es-bath: #9ccbe6; --es-glass: #7d97a5; --es-liq: #e9eef2; --es-ester: #f3d58a; }
@@ -159,6 +159,8 @@
     @media (max-width: 880px) and (orientation: portrait) {
       .bench-screen:has(#cv) { display: grid; justify-items: center; }
       .bench-screen > #cv { --drawing-min-width: 370; width: auto !important; height: auto !important; max-width: 100%; max-height: 56dvh; }
+      /* 保留加熱與加料的鍵高，只收掉兩列之間的空白。 */
+      .bench-console .playbar, .addbar { gap: 4px; margin-top: 4px; }
     }
   </style>
 </head>
@@ -226,13 +228,14 @@
           <button type="button" id="addW" data-en="Add water">加水</button>
           <button type="button" id="addS" data-en="Add sieves" title="加入 20 g 分子篩（3A），會吸走水" data-en-title="Add 20 g of 3A molecular sieves, which soak up water">加分子篩</button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" data-en="The flask is heated in a water bath under a reflux condenser: anything that boils off condenses and runs back. The colour of the liquid is only a hint (all four liquids are colourless); the circle (on the right, or below on a phone) shows a few dozen molecules in the same proportions as in the flask.">燒瓶在水浴中加熱，上面接迴流冷凝管：蒸發的物質冷凝後流回燒瓶。液體的顏色只是示意（四種液體其實都無色）；圓圈（手機在下方）放大顯示幾十個分子，比例和瓶中相同。</p>
         <p class="hint l3" data-en-html="Ball-and-stick models with real bond lengths and angles. Grey carbon, red oxygen, white hydrogen; the gold oxygen is oxygen-18 from the alcohol. The motion is only a sketch: the real path goes through a tetrahedral intermediate and needs H&lt;sup&gt;+&lt;/sup&gt;.">球棍模型的鍵長、鍵角是真實的數值。灰色是碳、紅色是氧、白色是氫；金色的氧是醇裡的氧-18。運動過程只是示意：真實的反應途徑經過四面體中間體，而且需要 H<sup>+</sup> 幫忙。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="反應物|Reactants">
           <h2 data-en="Reactants">反應物</h2>
           <h3 id="acidLbl" data-en="Carboxylic acid">羧酸</h3>
           <div class="seg3" id="acidSeg" role="group" aria-labelledby="acidLbl">
@@ -248,7 +251,7 @@
           </div>
           <p class="prod" id="prodLine"></p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="用量與催化劑|Amounts and catalyst" data-deck-order="-1">
           <h2 data-en="Amounts and catalyst">用量與催化劑</h2>
           <div class="slider"><label for="nA" id="nALbl" data-en="Acid">酸</label><output id="nAo"></output>
             <input id="nA" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
@@ -265,7 +268,7 @@
           </div>
           <p class="hint" data-en="Changing anything on this card makes up a fresh flask.">改變這張卡上的設定，會重新配一瓶。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="水浴|Water bath">
           <h2 data-en="Water bath">水浴</h2>
           <div class="slider"><label for="temp" data-en="Temperature">溫度</label><output id="tempo"></output>
             <input id="temp" type="range" min="20" max="80" step="1" value="70" data-decimals="1"></div>
@@ -389,20 +392,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/esterification-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/esterification-3d.js?v=202611210931"></script>
-  <script src="js/esterification.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="esterification"></script>
-  <script src="js/missions/esterification.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="esterification"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/esterification-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/esterification-3d.js?v=202611210933"></script>
+  <script src="js/esterification.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="esterification"></script>
+  <script src="js/missions/esterification.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="esterification"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

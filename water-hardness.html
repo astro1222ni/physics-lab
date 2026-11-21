@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Water Hardness | Astro Ni Lab">水的硬度｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":4,"name":"有機與生活化學","item":"https://lab.astroni.org/chemistry.html#organic"},{"@type":"ListItem","position":5,"name":"生活中的化學","item":"https://lab.astroni.org/chemistry.html#ch-everyday"},{"@type":"ListItem","position":6,"name":"水的硬度","item":"https://lab.astroni.org/water-hardness.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 水的硬度頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .wh canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
@@ -188,15 +188,13 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
-        <div class="checks">
-          <label><input id="deterg" type="checkbox"><span data-en="Use synthetic detergent instead of soap">改用合成清潔劑</span></label>
-        </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="bstatus" aria-live="polite"></p>
         <p class="hint" data-en="Not to scale. The magnifier shows the cations in the water (one ball ≈ 0.05 mmol/L). Each treatment acts on the whole beaker; the soap test uses 5.00 mL of it in the test tube, with 0.050 M soap solution (one drop = 0.05 mL).">示意圖，未依比例。放大鏡畫出水中的陽離子（一顆約 0.05 mmol/L）。每種處理都作用在整杯水上；肥皂試驗從杯中取 5.00 mL 放進試管，肥皂水 0.050 M、一滴 0.05 mL。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="水樣|Water sample">
           <h2 id="presetLabel" data-en="Water sample">水樣</h2>
           <div class="seg3" id="presetSeg" role="group" aria-labelledby="presetLabel">
             <button type="button" data-preset="dist" aria-pressed="false" data-en="Distilled">蒸餾水</button>
@@ -210,8 +208,11 @@
           <div class="btns">
             <button id="answerEntry" type="button" disabled aria-controls="mysCard" data-en="Check">核對答案</button>
           </div>
+          <div class="checks">
+            <label><input id="deterg" type="checkbox"><span data-en="Use synthetic detergent instead of soap">改用合成清潔劑</span></label>
+          </div>
         </section>
-        <section class="card" id="customBox">
+        <section class="card" id="customBox" data-deck="離子濃度|Ion concentrations" data-deck-order="-1">
           <h2 data-en="Ion concentrations">離子濃度</h2>
             <div class="slider"><label for="ca" data-en-html="Ca&lt;sup&gt;2+&lt;/sup&gt; in the water">水中的 Ca<sup>2+</sup></label><output id="cao"></output>
               <input id="ca" type="range" min="0" max="200" step="0.5" value="36" data-decimals="2"></div>
@@ -227,7 +228,7 @@
           <dl class="readout" id="wout"><dt>—</dt><dd>—</dd></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="洗滌鹼與樹脂|Washing soda and resin">
           <h2 data-en="Washing soda and resin">洗滌鹼與樹脂</h2>
           <div class="slider"><label for="dose" data-en-html="Na&lt;sub&gt;2&lt;/sub&gt;CO&lt;sub&gt;3&lt;/sub&gt; added per litre">每升加入的 Na<sub>2</sub>CO<sub>3</sub></label><output id="doseo"></output>
             <input id="dose" type="range" min="0" max="600" step="1" value="200" data-decimals="1"></div>
@@ -283,7 +284,7 @@
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="要測什麼|What is measured">
           <h2 id="modeLabel" data-en="What is measured">要測什麼</h2>
           <div class="seg2" id="modeSeg" role="group" aria-labelledby="modeLabel">
             <button type="button" data-mode="A" aria-pressed="true" data-en-html="Total hardness&lt;small&gt;pH 10 buffer + EBT&lt;/small&gt;">總硬度<small>pH 10 緩衝液＋EBT</small></button>
@@ -295,7 +296,7 @@
           <p class="info" id="modeInfo">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="取樣與滴定液|Sample and titrant">
           <h2 data-en="Sample and titrant">取樣與滴定液</h2>
           <div class="slider"><label for="va" data-en="Volume of water sample (pipette)">水樣的體積（移液管）</label><output id="vao"></output>
             <input id="va" type="range" min="10" max="100" step="0.5" value="50" data-decimals="2"></div>
@@ -328,7 +329,7 @@
           <h2 data-en="Analysis">分析</h2>
           <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="mysCard" hidden data-share-skip>
+        <section class="card" id="mysCard" hidden data-share-skip data-deck="未知水樣的答案|Your answers for the unknown water">
           <h2 data-en="Your answers for the unknown water">未知水樣的答案</h2>
           <p class="hint" data-en-html="Titrate the unknown water for its total hardness (pH 10, EBT) and its calcium hardness (pH 12), both in mg/L as CaCO&lt;sub&gt;3&lt;/sub&gt;. Fill in one or both.">用 pH 10＋EBT 測總硬度、pH 12 測鈣硬度，單位都是 mg/L（以 CaCO<sub>3</sub> 計）。可以只填一個，也可以兩個都填。</p>
           <div class="ans"><label for="ansH" data-en="Total hardness (mg/L)">總硬度（mg/L）</label><input id="ansH" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 185.3" data-en-placeholder="e.g. 185.3"></div>
@@ -482,19 +483,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/water-hardness-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/water-hardness-3d.js?v=202611210931"></script>
-  <script src="js/water-hardness.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="water-hardness"></script>
-  <script src="js/missions/water-hardness.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="water-hardness"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/water-hardness-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/water-hardness-3d.js?v=202611210933"></script>
+  <script src="js/water-hardness.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="water-hardness"></script>
+  <script src="js/missions/water-hardness.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="water-hardness"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

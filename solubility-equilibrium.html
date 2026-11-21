@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Solubility Equilibria and Ksp | Astro Ni Lab">溶解平衡與 Ksp｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 溶解平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .se canvas { aspect-ratio: auto; touch-action: auto; }
@@ -144,23 +144,24 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="The beaker starts with 50 mL of pure water and holds up to 250 mL. The circle on the right is a particle view of the salt shown on the ion-product graph (not to scale): in a saturated solution, ions leave and join the crystal at the same rate.">燒杯一開始裝 50 mL 純水，最多裝 250 mL。右邊的圓圈是離子積圖上那種鹽的粒子示意（不照真實比例）：飽和時，離子離開與回到晶體的速率相等。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="加入溶液|Add a solution" data-deck-order="-1">
           <h2 data-en="Add a solution">加入溶液</h2>
-          <div class="reag" id="solnSeg" role="group" aria-label="溶液" data-en-aria-label="Solution"></div>
           <div class="slider"><label for="conc" data-en="Concentration">濃度</label><output id="conco"></output>
             <input id="conc" type="range" min="0" max="1000" step="1" value="800"></div>
+          <div class="reag" id="solnSeg" role="group" aria-label="溶液" data-en-aria-label="Solution"></div>
           <div class="btns">
             <button type="button" id="addDrop" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
             <button type="button" id="add1" data-en="1 mL">1 mL</button>
             <button type="button" id="add10" data-en="10 mL">10 mL</button>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="加入固體|Add a solid">
           <h2 data-en="Add a solid">加入固體</h2>
           <select id="solidSel" aria-label="難溶鹽" data-en-aria-label="Sparingly soluble salt"></select><span class="formula-choice" id="solidSelFormula" aria-hidden="true"></span>
           <div class="slider"><label for="mass" data-en="Mass">質量</label><output id="masso"></output>
@@ -291,17 +292,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/solubility-equilibrium-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/solubility-equilibrium.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="solubility-equilibrium"></script>
-  <script src="js/missions/solubility-equilibrium.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="solubility-equilibrium"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/solubility-equilibrium-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/solubility-equilibrium.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="solubility-equilibrium"></script>
+  <script src="js/missions/solubility-equilibrium.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="solubility-equilibrium"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

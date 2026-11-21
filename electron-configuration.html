@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electron Configuration | Astro Ni Lab">電子組態｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 電子組態頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ec canvas { aspect-ratio: auto; }
@@ -77,6 +77,9 @@
     .ec .ctl > button { flex: 1 1 auto; }
     .ec .checks { margin: 8px 4px 0; }
     .ec .checks label { min-height: 44px; }
+    /* 手機直放縮小組態讀數與按鍵之間的留白，保留整列觸控高度。 */
+    html.labdeck-stack .ec .cfgline { margin: 4px 4px 0; }
+    html.labdeck-stack .ec .bench-actions :is(.ctl, .checks) { margin-top: 4px; }
     .ec .toolseg button .ar { font-size: 1.25em; font-weight: 800; }
     .ec .buildmsg { margin: 8px 4px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: calc(14px * var(--fs, 1)); line-height: 1.5; min-height: 1.5em; }
     .ec .buildmsg.ok { border-color: var(--probe); }
@@ -211,13 +214,14 @@
           </div>
         </div>
 
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="stageHint"></p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="選擇原子或離子|Choose an atom or ion">
           <h2 data-en="Choose an atom or ion">選擇原子或離子</h2>
           <div class="slider"><label for="zIn" data-en="Atomic number Z">原子序 Z</label><output id="zOut"></output>
             <input id="zIn" type="range" min="1" max="118" step="1" value="8" data-decimals="0"></div>
@@ -252,7 +256,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="recCard" data-share-skip>
+        <section class="card" id="recCard" data-share-skip data-deck="看過的原子與離子|Atoms and ions you have looked at">
           <h2 data-en="Atoms and ions you have looked at">看過的原子與離子</h2>
           <p class="hint" data-en="Every atom or ion you choose is listed here. Rows with the same number of electrons as the current one are highlighted: they are isoelectronic.">每選一個原子或離子就記在這裡。和目前選的電子數相同的列會標出來：它們是等電子的粒子。</p>
           <div class="btns"><button type="button" id="clearAll" data-en="Clear all" title="清除看過的紀錄；目前選的原子或離子不變" data-en-title="Clear the list; the current atom or ion stays">全部清除</button></div>
@@ -340,21 +344,21 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/electron-configuration-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/electron-configuration-3d.js?v=202611210931"></script>
-  <script src="js/vpad.js?v=202611210931"></script>
-  <script src="js/electron-configuration.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="electron-configuration"></script>
-  <script src="js/missions/electron-configuration.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="electron-configuration"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/electron-configuration-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/electron-configuration-3d.js?v=202611210933"></script>
+  <script src="js/vpad.js?v=202611210933"></script>
+  <script src="js/electron-configuration.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="electron-configuration"></script>
+  <script src="js/missions/electron-configuration.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="electron-configuration"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

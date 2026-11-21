@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Acid–Base Titration | Astro Ni Lab">酸鹼滴定｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 酸鹼滴定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -70,7 +70,6 @@
     .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
     .r3-hud.tc { top: 44px; left: 50%; transform: translateX(-50%); color: var(--b-acidbase, var(--accent)); font-weight: 700; max-width: none; }
     .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); max-width: calc(100% - 16px); }
-    .ti .stage .rate { margin: 12px 4px 0; }
     .ti .stage .status { margin: 6px 4px 0; }
     .ti .stage .status.warn { color: var(--pos); font-weight: 600; }
     .ti .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
@@ -216,6 +215,7 @@
               <button id="tap" type="button" aria-pressed="false" data-share-skip data-en="Open stopcock">打開活栓</button>
               <button id="endBtn" type="button" data-en="Record end point">記錄終點</button>
             </div>
+            <div data-deck-anchor hidden></div>
             <div class="playbar">
               <button id="refill" type="button" data-en="Refill burette">補充滴定液</button>
               <button id="newFlask" type="button" data-en="New flask">換一瓶</button>
@@ -224,8 +224,11 @@
             </div>
           </div>
         </div>
-        <div class="slider rate"><label for="rate" data-en="Stopcock opening (flow rate)">活栓開度（流速）</label><output id="rateo"></output>
-          <input id="rate" type="range" min="0.1" max="2" step="0.05" value="0.5" data-decimals="2"></div>
+        <section class="card" data-deck="活栓流速|Stopcock flow" data-deck-order="-2">
+          <h2 data-en="Stopcock flow">活栓流速</h2>
+          <div class="slider"><label for="rate" data-en="Stopcock opening (flow rate)">活栓開度（流速）</label><output id="rateo"></output>
+            <input id="rate" type="range" min="0.1" max="2" step="0.05" value="0.5" data-decimals="2"></div>
+        </section>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Not to scale. One drop from the burette is 0.05 mL; a half drop is 0.025 mL (in the lab: let half a drop hang on the tip, touch it off on the inside of the flask and rinse it down with a little distilled water). Read the burette at the bottom of the meniscus with your eye at the same level, to 0.01 mL — the magnifier shows it close up. Put white paper under the flask so the colour change is easy to see.">示意圖，未依比例。滴定管一滴約 0.05 mL、半滴 0.025 mL（實際操作：讓半滴懸在尖端，用錐形瓶內壁輕碰沾下，再用洗瓶的少量蒸餾水沖入）。讀數時視線與彎月面最低點同高，估讀到 0.01 mL，放大鏡裡是液面的特寫。錐形瓶下墊白紙，顏色變化比較容易看出來。</p>
       </div>
@@ -236,7 +239,7 @@
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="滴定組合|What is titrated">
           <h2 id="sysLabel" data-en="What is titrated">滴定組合</h2>
           <div class="seg2" id="sysSeg" role="group" aria-labelledby="sysLabel">
             <button type="button" data-sys="sa" aria-pressed="true" data-en-html="HCl ← NaOH&lt;small&gt;strong acid + strong base&lt;/small&gt;">鹽酸 ← NaOH<small>強酸＋強鹼</small></button>
@@ -247,7 +250,7 @@
           <p class="info" id="sysInfo">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="溶液|Solutions" data-deck-order="-1">
           <h2 data-en="Solutions">溶液</h2>
           <div class="slider" id="caRow"><label for="ca" id="caLabel" data-en="Concentration of the sample">待測液的濃度</label><output id="cao"></output>
             <input id="ca" type="range" min="0" max="300" step="1" value="200"></div>
@@ -260,7 +263,7 @@
           <p class="hint" data-en="Changing any of these starts a fresh flask; the old curve stays on the graph for comparison (up to 5). Tap a number to type an exact value.">改這些設定會換一瓶新的溶液，舊的曲線留在圖上方便比較（最多 5 條）。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="指示劑與 pH 計|Indicator and pH meter">
           <h2 id="indLabel" data-en="Indicator and pH meter">指示劑與 pH 計</h2>
           <div class="inds" id="indSeg" role="group" aria-labelledby="indLabel">
             <button type="button" data-ind="none" aria-pressed="false"><i class="sw"></i><span data-en-html="None&lt;small&gt;—&lt;/small&gt;">不加<small>—</small></span></button>
@@ -296,7 +299,7 @@
           <h2 data-en="Analysis">分析</h2>
           <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="mysCard" hidden data-share-skip>
+        <section class="card" id="mysCard" hidden data-share-skip data-deck="未知弱酸的答案|Your answer for the unknown acid">
           <h2 data-en="Your answer for the unknown acid">未知弱酸的答案</h2>
           <p class="hint" data-en-html="A monoprotic weak acid HX: its concentration and K&lt;sub&gt;a&lt;/sub&gt; are both unknown (K&lt;sub&gt;a&lt;/sub&gt; is between 1.0 × 10&lt;sup&gt;−6&lt;/sup&gt; and 9.9 × 10&lt;sup&gt;−5&lt;/sup&gt;). Titrate it with NaOH, find the equivalence and half-equivalence points, then enter your results.">單質子弱酸 HX：濃度與 K<sub>a</sub> 都不知道（K<sub>a</sub> 在 1.0 × 10<sup>−6</sup> 到 9.9 × 10<sup>−5</sup> 之間）。用 NaOH 滴定，找出當量點與半當量點，再填入你的結果。</p>
           <div class="ans"><label for="ansC" data-en="Concentration c (M)">濃度 c（M）</label><input id="ansC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 0.0850" data-en-placeholder="e.g. 0.0850"></div>
@@ -442,19 +445,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/acid-base-titration-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/acid-base-titration-3d.js?v=202611210931"></script>
-  <script src="js/acid-base-titration.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="acid-base-titration"></script>
-  <script src="js/missions/acid-base-titration.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="acid-base-titration"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/acid-base-titration-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/acid-base-titration-3d.js?v=202611210933"></script>
+  <script src="js/acid-base-titration.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="acid-base-titration"></script>
+  <script src="js/missions/acid-base-titration.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="acid-base-titration"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

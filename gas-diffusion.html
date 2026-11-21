@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Gas Diffusion and Effusion (Graham's Law) | Astro Ni Lab">氣體擴散與逸散（格雷厄姆定律）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":4,"name":"物質與結構","item":"https://lab.astroni.org/chemistry.html#matter"},{"@type":"ListItem","position":5,"name":"氣體","item":"https://lab.astroni.org/chemistry.html#ch-gases"},{"@type":"ListItem","position":6,"name":"氣體擴散與逸散（格雷厄姆定律）","item":"https://lab.astroni.org/gas-diffusion.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 氣體擴散頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .gd canvas { aspect-ratio: auto; touch-action: auto; }
@@ -146,6 +146,9 @@
     .formula-choice:empty { display: none; }
     .selrow select { max-width: 100%; }
     .selrow .formula-choice { margin-inline-start: .4em; }
+    /* 直放分開主鍵與次要鍵，橫放與桌機沿用原本的按鍵列。 */
+    html.labdeck-stack .bench-toolbar,
+    html:not(.labdeck-stack) .bench-toolbar > .playbar { display: contents; }
   </style>
 </head>
 <body data-en-ready>
@@ -182,17 +185,22 @@
             <button type="button" data-delta="-1" aria-label="放大鏡左移" data-en-aria-label="Move magnifier left">−</button>
             <button type="button" data-delta="1" aria-label="放大鏡右移" data-en-aria-label="Move magnifier right">＋</button>
           </div>
-          <div class="playbar">
-            <button id="run" class="primary" type="button" data-en="Start">開始</button>
-            <button id="reset" type="button" data-en="Reset" title="清空玻璃管（或容器），回到開始前；設定不變" data-en-title="Empty the tube (or the containers) and go back to the start; the settings stay">重來</button>
-            <button id="clearAll" type="button" data-en="Clear all" title="清除測量紀錄表、環的位置圖與答題紀錄；設定不變" data-en-title="Clear the table of measurements, the ring-position graph and the answers; the settings stay">全部清除</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-              <div class="seg4" role="group" aria-labelledby="speedLabel">
-                <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
-                <button type="button" id="sp1" aria-pressed="false" data-en="×10">×10</button>
-                <button type="button" id="sp2" aria-pressed="true" data-en="×100">×100</button>
-                <button type="button" id="sp3" aria-pressed="false" data-en="×1000">×1000</button>
+          <div class="playbar bench-toolbar">
+            <div class="playbar">
+              <button id="run" class="primary" type="button" data-en="Start">開始</button>
+              <button id="reset" type="button" data-en="Reset" title="清空玻璃管（或容器），回到開始前；設定不變" data-en-title="Empty the tube (or the containers) and go back to the start; the settings stay">重來</button>
+            </div>
+            <div data-deck-anchor hidden></div>
+            <div class="playbar">
+              <button id="clearAll" type="button" data-en="Clear all" title="清除測量紀錄表、環的位置圖與答題紀錄；設定不變" data-en-title="Clear the table of measurements, the ring-position graph and the answers; the settings stay">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+                <div class="seg4" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
+                  <button type="button" id="sp1" aria-pressed="false" data-en="×10">×10</button>
+                  <button type="button" id="sp2" aria-pressed="true" data-en="×100">×100</button>
+                  <button type="button" id="sp3" aria-pressed="false" data-en="×1000">×1000</button>
+                </div>
               </div>
             </div>
           </div>
@@ -202,7 +210,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="實驗|Experiment">
           <h2 data-en="Experiment">實驗</h2>
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="diff" aria-pressed="true" data-en="Diffusion (glass tube)">擴散（玻璃管）</button>
@@ -210,8 +218,12 @@
           </div>
         </section>
 
-        <section class="card" id="diffCard">
+        <section class="card" id="diffCard" data-deck="玻璃管|Glass tube" data-deck-order="-1">
           <h2 data-en="Glass tube">玻璃管</h2>
+          <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
+            <input id="temp" type="range" min="263" max="343" step="1" value="298" data-decimals="1"></div>
+          <div class="slider"><label for="len" data-en="Tube length L">管長 L</label><output id="leno"></output>
+            <input id="len" type="range" min="30" max="150" step="1" value="100" data-decimals="1"></div>
           <span class="seg-lab" id="baseLab" data-en="Left end (base)">左端（鹼）</span>
           <div class="seg2" id="baseSeg" role="group" aria-labelledby="baseLab">
             <button type="button" data-g="NH3" aria-pressed="true" data-en-html="NH&lt;sub&gt;3&lt;/sub&gt; (ammonia)">NH<sub>3</sub>（氨）</button>
@@ -229,14 +241,10 @@
             <button type="button" data-model="graham" aria-pressed="true" data-en="Graham's law (ideal)">格雷厄姆（理想）</button>
             <button type="button" data-model="air" aria-pressed="false" data-en="Diffusion in air">在空氣中擴散</button>
           </div>
-          <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
-            <input id="temp" type="range" min="263" max="343" step="1" value="298" data-decimals="1"></div>
-          <div class="slider"><label for="len" data-en="Tube length L">管長 L</label><output id="leno"></output>
-            <input id="len" type="range" min="30" max="150" step="1" value="100" data-decimals="1"></div>
           <p class="hint" id="diffHint" data-en="Changing a setting empties the tube; press “Start” again.">改變設定會清空玻璃管，請再按「開始」。</p>
         </section>
 
-        <section class="card" id="effCard" hidden>
+        <section class="card" id="effCard" hidden data-deck="兩個容器，各有一個小孔|Two containers, one pinhole each">
           <h2 data-en="Two containers, one pinhole each">兩個容器，各有一個小孔</h2>
           <div class="selrow"><label for="gasA" data-en="Left container: gas A">左邊容器：氣體 A</label><select id="gasA"></select><span class="formula-choice" id="gasAFormula" aria-hidden="true"></span></div>
           <div class="selrow"><label for="gasB" data-en="Right container: gas B">右邊容器：氣體 B</label><select id="gasB"></select><span class="formula-choice" id="gasBFormula" aria-hidden="true"></span></div>
@@ -274,7 +282,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="unkCard" data-share-skip>
+        <section class="card" id="unkCard" data-share-skip data-deck="未知氣體|Unknown gas">
           <h2 id="unkTitle" data-en="Unknown gas">未知氣體</h2>
           <p class="hint" id="unkIntro"></p>
           <div class="btns"><button type="button" id="unkOn" data-en="Start the challenge">開始挑戰</button></div>
@@ -380,20 +388,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/gas-diffusion-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/gas-diffusion-3d.js?v=202611210931"></script>
-  <script src="js/gas-diffusion.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="gas-diffusion"></script>
-  <script src="js/missions/gas-diffusion.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="gas-diffusion"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/gas-diffusion-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/gas-diffusion-3d.js?v=202611210933"></script>
+  <script src="js/gas-diffusion.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="gas-diffusion"></script>
+  <script src="js/missions/gas-diffusion.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="gas-diffusion"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

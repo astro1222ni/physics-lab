@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Concentration and Preparing Solutions | Astro Ni Lab">濃度與溶液配製｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 濃度與溶液配製頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .sc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -179,12 +179,13 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="stageHint" data-en="The magnifier shows the mark as your eye sees it. One drop from the dropper is about 0.05 mL.">放大鏡裡是眼睛看到的刻度線。滴管一滴約 0.05 mL。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="配製步驟|Preparation steps">
           <h2 data-en="Preparation steps">配製步驟</h2>
           <div class="stepbar" id="stepBar">
             <button type="button" id="bDissolve" data-en="Dissolve">溶解</button>
@@ -200,13 +201,15 @@
             <button type="button" id="bDone" class="primary" data-en="Done">完成</button>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="配方與換算|Recipe and conversion" data-deck-order="-1">
           <div class="seg3 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="weigh" aria-pressed="true" data-en="Weigh a solid">秤量配製</button>
             <button type="button" data-mode="dilute" aria-pressed="false" data-en="Dilute">稀釋</button>
             <button type="button" data-mode="convert" aria-pressed="false" data-en="Convert">濃度換算</button>
           </div>
           <div id="weighCtl">
+            <div class="slider"><label for="mass" data-en="Mass on the balance">天平上的質量</label><output id="masso"></output>
+              <input id="mass" type="range" min="0" max="60" step="0.01" value="1" data-decimals="3"></div>
             <h3 data-en="Solid">固體</h3>
             <div class="seg4 wrap2" id="solidSeg" role="group" aria-label="固體" data-en-aria-label="Solid">
               <button type="button" data-solid="CuSO4-5H2O" aria-pressed="true">CuSO<sub>4</sub>·5H<sub>2</sub>O</button>
@@ -214,8 +217,6 @@
               <button type="button" data-solid="NaCl" aria-pressed="false">NaCl</button>
               <button type="button" data-solid="NaOH" aria-pressed="false">NaOH</button>
             </div>
-            <div class="slider"><label for="mass" data-en="Mass on the balance">天平上的質量</label><output id="masso"></output>
-              <input id="mass" type="range" min="0" max="60" step="0.01" value="1" data-decimals="3"></div>
             <p class="hint" id="solidInfo"></p>
           </div>
           <div id="diluteCtl" hidden>
@@ -245,7 +246,7 @@
             <p class="hint" id="convInfo"></p>
           </div>
         </section>
-        <section class="card" id="flaskCard">
+        <section class="card" id="flaskCard" data-deck="量瓶與目標|Flask and target">
           <h2 data-en="Flask and target">量瓶與目標</h2>
           <div class="seg4" id="flaskSeg" role="group" aria-label="量瓶" data-en-aria-label="Volumetric flask">
             <button type="button" data-vf="50" aria-pressed="false">50 mL</button>
@@ -380,19 +381,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/solution-concentration-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/solution-concentration-3d.js?v=202611210931"></script>
-  <script src="js/solution-concentration.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="solution-concentration"></script>
-  <script src="js/missions/solution-concentration.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="solution-concentration"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/solution-concentration-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/solution-concentration-3d.js?v=202611210933"></script>
+  <script src="js/solution-concentration.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="solution-concentration"></script>
+  <script src="js/missions/solution-concentration.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="solution-concentration"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

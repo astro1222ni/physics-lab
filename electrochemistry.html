@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electrochemical Cells and Electrolysis | Astro Ni Lab">化學電池與電解｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 化學電池與電解頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ec canvas { aspect-ratio: auto; touch-action: auto; }
@@ -156,28 +156,29 @@
             </div>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Small balls in the beakers are ions (number shown in proportion to concentration); yellow dots on the wire are electrons. Their motion is only illustrative — the voltage, current and amounts come from the calculation.">燒杯裡的小球是離子（數目依濃度的比例畫出），導線上的黃點是電子。它們的運動只是示意，電壓、電流與莫耳數都來自計算。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="化學電池與電解|Cell and electrolysis" data-deck-order="-1">
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="cell" aria-pressed="true" data-en="Galvanic cell">化學電池</button>
             <button type="button" data-mode="elec" aria-pressed="false" data-en="Electrolysis">電解</button>
           </div>
           <div id="cellCtl">
-            <h2 data-en="Left half-cell">左半電池</h2>
-            <div class="seg4 metals" id="metL" role="group" aria-label="左邊的金屬" data-en-aria-label="Left metal"></div>
-            <div class="slider"><label for="cL" data-en-html="Concentration of M&lt;sup&gt;z+&lt;/sup&gt;">M<sup>z+</sup> 的濃度</label><output id="cLo"></output>
+            <div class="slider"><label for="cL" data-en-html="Left M&lt;sup&gt;z+&lt;/sup&gt; concentration">左半電池 M<sup>z+</sup> 濃度</label><output id="cLo"></output>
               <input id="cL" type="range" min="0" max="1000" step="1" value="909" data-decimals="4"></div>
-            <h2 data-en="Right half-cell">右半電池</h2>
-            <div class="seg4 metals" id="metR" role="group" aria-label="右邊的金屬" data-en-aria-label="Right metal"></div>
-            <div class="slider"><label for="cR" data-en-html="Concentration of M&lt;sup&gt;z+&lt;/sup&gt;">M<sup>z+</sup> 的濃度</label><output id="cRo"></output>
+            <div class="slider"><label for="cR" data-en-html="Right M&lt;sup&gt;z+&lt;/sup&gt; concentration">右半電池 M<sup>z+</sup> 濃度</label><output id="cRo"></output>
               <input id="cR" type="range" min="0" max="1000" step="1" value="909" data-decimals="4"></div>
             <div class="slider"><label for="vol" data-en="Volume of each solution">每杯溶液的體積</label><output id="volo"></output>
               <input id="vol" type="range" min="50" max="250" step="10" value="100" data-decimals="0"></div>
+            <h2 data-en="Left half-cell">左半電池</h2>
+            <div class="seg4 metals" id="metL" role="group" aria-label="左邊的金屬" data-en-aria-label="Left metal"></div>
+            <h2 data-en="Right half-cell">右半電池</h2>
+            <div class="seg4 metals" id="metR" role="group" aria-label="右邊的金屬" data-en-aria-label="Right metal"></div>
           </div>
           <div id="elecCtl" hidden>
             <h2 data-en="Solution and electrodes">溶液與電極</h2>
@@ -196,7 +197,7 @@
           </div>
         </section>
 
-        <section class="card" id="circuitCard">
+        <section class="card" id="circuitCard" data-deck="外電路|Outer circuit">
           <h2 data-en="Outer circuit">外電路</h2>
           <div class="checks"><label><input id="bridge" type="checkbox"><span data-en-html="Salt bridge (KNO&lt;sub&gt;3&lt;/sub&gt;)">鹽橋（KNO<sub>3</sub>）</span></label></div>
           <div class="seg2" id="loadSeg" role="group" aria-label="外電路接什麼" data-en-aria-label="What is connected">
@@ -231,7 +232,7 @@
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="unkCard" data-share-skip>
+        <section class="card" id="unkCard" data-share-skip data-deck="未知金屬|Unknown metal">
           <h2 id="unkTitle" data-en="Unknown metal">未知金屬</h2>
           <p class="hint" id="unkHint"></p>
           <div class="btns"><button type="button" id="unkOn" data-en="Start">開始</button></div>
@@ -329,18 +330,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/electrochemistry-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/electrochemistry.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="electrochemistry"></script>
-  <script src="js/missions/electrochemistry.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="electrochemistry"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/electrochemistry-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/electrochemistry.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="electrochemistry"></script>
+  <script src="js/missions/electrochemistry.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="electrochemistry"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

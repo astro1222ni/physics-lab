@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Boiling-Point Elevation and Freezing-Point Depression | Astro Ni Lab">沸點上升與凝固點下降｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 沸點上升與凝固點下降頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .cp canvas { aspect-ratio: auto; touch-action: auto; }
@@ -140,6 +140,9 @@
     #view3 .r3-hud:empty { display: none; }
     .bench-screen > #view3 { width: 100%; }
     #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    /* 直放分開主鍵與次要鍵，橫放與桌機沿用原本的按鍵列。 */
+    html.labdeck-stack .bench-toolbar,
+    html:not(.labdeck-stack) .bench-toolbar > .playbar { display: contents; }
   </style>
 </head>
 <body data-en-ready>
@@ -171,18 +174,23 @@
             <canvas id="cv" role="img" aria-label="實驗裝置" data-en-aria-label="Apparatus"></canvas>
             <div id="view3"></div>
           </div>
-          <div class="playbar">
-            <button id="play" class="primary" type="button" data-en="Start">開始</button>
-            <button id="seedBtn" type="button" data-en="Add a seed crystal" title="丟入一小粒溶劑的晶體，讓過冷的液體立刻開始結晶" data-en-title="Drop in a tiny crystal of the solvent so a supercooled liquid starts to crystallise at once">加晶種</button>
-            <button id="restart" type="button" data-en="New run" title="同樣的設定，從室溫重新開始" data-en-title="Start again from room temperature with the same settings">重做一次</button>
-            <button id="clearAll" type="button" data-en="Clear all" title="清除我的測量紀錄與 ΔT—m 圖；目前這次的曲線保留" data-en-title="Clear my measurements and the ΔT–m graph; the current curve is kept">全部清除</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-              <div class="seg4" role="group" aria-labelledby="speedLabel">
-                <button type="button" id="sp0" aria-pressed="false">×1</button>
-                <button type="button" id="sp1" aria-pressed="false">×5</button>
-                <button type="button" id="sp2" aria-pressed="true">×20</button>
-                <button type="button" id="sp3" aria-pressed="false">×60</button>
+          <div class="playbar bench-toolbar">
+            <div class="playbar">
+              <button id="play" class="primary" type="button" data-en="Start">開始</button>
+              <button id="seedBtn" type="button" data-en="Add a seed crystal" title="丟入一小粒溶劑的晶體，讓過冷的液體立刻開始結晶" data-en-title="Drop in a tiny crystal of the solvent so a supercooled liquid starts to crystallise at once">加晶種</button>
+              <button id="restart" type="button" data-en="New run" title="同樣的設定，從室溫重新開始" data-en-title="Start again from room temperature with the same settings">重做一次</button>
+            </div>
+            <div data-deck-anchor hidden></div>
+            <div class="playbar">
+              <button id="clearAll" type="button" data-en="Clear all" title="清除我的測量紀錄與 ΔT—m 圖；目前這次的曲線保留" data-en-title="Clear my measurements and the ΔT–m graph; the current curve is kept">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+                <div class="seg4" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false">×1</button>
+                  <button type="button" id="sp1" aria-pressed="false">×5</button>
+                  <button type="button" id="sp2" aria-pressed="true">×20</button>
+                  <button type="button" id="sp3" aria-pressed="false">×60</button>
+                </div>
               </div>
             </div>
           </div>
@@ -192,7 +200,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="溶劑與溶質|Solvent and solute">
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="f" aria-pressed="true" data-en="Freezing point">凝固點下降</button>
             <button type="button" data-mode="b" aria-pressed="false" data-en="Boiling point">沸點上升</button>
@@ -221,7 +229,7 @@
             <label><input id="ideal" type="checkbox"><span data-en="Ideal i (complete dissociation)">理想 i（完全解離）</span></label>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="實驗條件|Conditions" data-deck-order="-1">
           <h2 data-en="Conditions">實驗條件</h2>
           <div id="fCtl">
             <div class="slider"><label for="Tbath" data-en="Cold bath temperature">冷浴的溫度</label><output id="Tbatho"></output>
@@ -253,7 +261,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="anaCard">
+        <section class="card" id="anaCard" data-deck="分析|Analysis">
           <h2 data-en="Analysis">分析</h2>
           <div class="seg2" id="methSeg" role="group" aria-label="求凝固點的方法" data-en-aria-label="How to read the transition temperature">
             <button type="button" data-meth="raw" aria-pressed="false" data-en="Read directly">直接讀</button>
@@ -267,7 +275,7 @@
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="unkCard" data-share-skip>
+        <section class="card" id="unkCard" data-share-skip data-deck="未知物 X|Unknown substance X">
           <h2 data-en="Unknown substance X">未知物 X</h2>
           <p class="hint" data-en="A non-volatile, non-electrolyte substance of unknown molar mass. Dissolve a weighed amount, measure ΔT, and work out its molar mass (g/mol).">一種不揮發、非電解質、莫耳質量未知的物質。秤一些溶進溶劑，量出 ΔT，算出它的莫耳質量（g/mol）。</p>
           <div class="btns" id="unkBtns">
@@ -371,20 +379,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/colligative-properties-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/colligative-properties-3d.js?v=202611210931"></script>
-  <script src="js/colligative-properties.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="colligative-properties"></script>
-  <script src="js/missions/colligative-properties.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="colligative-properties"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/colligative-properties-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/colligative-properties-3d.js?v=202611210933"></script>
+  <script src="js/colligative-properties.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="colligative-properties"></script>
+  <script src="js/missions/colligative-properties.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="colligative-properties"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

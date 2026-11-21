@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Heats of Reaction and Hess's Law | Astro Ni Lab">反應熱與赫斯定律｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 反應熱與赫斯定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .hl canvas { aspect-ratio: auto; touch-action: auto; }
@@ -156,44 +156,43 @@
             </div>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="The cup is drawn cut open so you can see inside. The wavy arrows show heat flowing between the cup and the room; the temperature is read from the digital thermometer (0.1 °C).">杯子畫成剖面，方便看到裡面。波浪箭頭表示杯子與空氣之間的熱流動；溫度由數位溫度計讀出（0.1 °C）。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="卡計與用量|Calorimeter and amounts" data-deck-order="-1">
           <div class="seg3 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
             <button type="button" data-mode="solid" aria-pressed="true" data-en="Solid + liquid">固體溶解</button>
             <button type="button" data-mode="mix" aria-pressed="false" data-en="Mix solutions">溶液混合</button>
             <button type="button" data-mode="cal" aria-pressed="false" data-en="Calibrate">卡計校正</button>
           </div>
           <div id="solidCtl">
+            <div class="slider"><label for="mass" data-en="Mass of solid">固體的質量</label><output id="masso"></output>
+              <input id="mass" type="range" min="0.5" max="8" step="0.05" value="2" data-decimals="2"></div>
+            <div class="slider"><label for="liqV" data-en="Volume of liquid in the cup">杯中液體體積</label><output id="liqVo"></output>
+              <input id="liqV" type="range" min="50" max="200" step="5" value="100" data-decimals="0"></div>
+            <div class="slider" id="liqCRow" hidden><label for="liqC" data-en="Concentration of HCl">HCl 的濃度</label><output id="liqCo"></output>
+              <input id="liqC" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
             <div class="seg3" id="solidSeg" role="group" aria-label="固體" data-en-aria-label="Solid">
               <button type="button" data-solid="NaOH" aria-pressed="true">NaOH</button>
               <button type="button" data-solid="NH4NO3" aria-pressed="false" data-en-html="NH&lt;sub&gt;4&lt;/sub&gt;NO&lt;sub&gt;3&lt;/sub&gt;">NH<sub>4</sub>NO<sub>3</sub></button>
               <button type="button" data-solid="X" aria-pressed="false" disabled data-en="Unknown X">未知 X</button>
             </div>
-            <div class="slider"><label for="mass" data-en="Mass of solid">固體的質量</label><output id="masso"></output>
-              <input id="mass" type="range" min="0.5" max="8" step="0.05" value="2" data-decimals="2"></div>
             <h3 data-en="Liquid in the cup">杯中的液體</h3>
             <div class="seg2" id="liqSeg" role="group" aria-label="杯中的液體" data-en-aria-label="Liquid in the cup">
               <button type="button" data-liq="water" aria-pressed="true" data-en="Water">水</button>
               <button type="button" data-liq="HCl" aria-pressed="false" data-en="Hydrochloric acid">鹽酸</button>
             </div>
-            <div class="slider"><label for="liqV" data-en="Volume">體積</label><output id="liqVo"></output>
-              <input id="liqV" type="range" min="50" max="200" step="5" value="100" data-decimals="0"></div>
-            <div class="slider" id="liqCRow" hidden><label for="liqC" data-en="Concentration of HCl">HCl 的濃度</label><output id="liqCo"></output>
-              <input id="liqC" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
           </div>
           <div id="mixCtl" hidden>
-            <h3 data-en="In the cup: NaOH(aq)" data-en-html="In the cup: NaOH(aq)">杯中：NaOH(aq)</h3>
-            <div class="slider"><label for="cb" data-en="Concentration">濃度</label><output id="cbo"></output>
+            <div class="slider"><label for="cb" data-en="NaOH(aq) in cup concentration">杯中 NaOH(aq) 濃度</label><output id="cbo"></output>
               <input id="cb" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
             <div class="slider"><label for="Vb" data-en="Volume">體積</label><output id="Vbo"></output>
               <input id="Vb" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
-            <h3 data-en="Poured in: HCl(aq)">倒入：HCl(aq)</h3>
-            <div class="slider"><label for="ca" data-en="Concentration">濃度</label><output id="cao"></output>
+            <div class="slider"><label for="ca" data-en="HCl(aq) added concentration">倒入的 HCl(aq) 濃度</label><output id="cao"></output>
               <input id="ca" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
             <div class="slider"><label for="Va" data-en="Volume">體積</label><output id="Vao"></output>
               <input id="Va" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
@@ -207,7 +206,7 @@
               <input id="Th" type="range" min="35" max="80" step="0.5" value="60" data-decimals="1"></div>
           </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="實驗條件|Conditions">
           <h2 data-en="Conditions">實驗條件</h2>
           <div class="slider"><label for="Troom" data-en="Room temperature">室溫</label><output id="Troomo"></output>
             <input id="Troom" type="range" min="15" max="30" step="0.5" value="25" data-decimals="1"></div>
@@ -234,7 +233,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="anaCard">
+        <section class="card" id="anaCard" data-deck="分析|Analysis">
           <h2 data-en="Analysis">分析</h2>
           <div class="seg2" id="methSeg" role="group" aria-label="求溫差的方法" data-en-aria-label="How to find ΔT">
             <button type="button" data-meth="raw" aria-pressed="false" data-en="Highest reading">最高溫度</button>
@@ -258,7 +257,7 @@
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="unkCard" data-share-skip>
+        <section class="card" id="unkCard" data-share-skip data-deck="未知固體 X|Unknown solid X">
           <h2 data-en="Unknown solid X">未知固體 X</h2>
           <p class="hint" data-en-html="Dissolve an unknown solid in water and find its molar enthalpy of solution ΔH (kJ/mol) with the “Analysis” card. Its molar mass is given.">把一種未知固體溶於水，用「分析」卡求它的莫耳溶解熱 ΔH（kJ/mol）。它的莫耳質量會告訴你。</p>
           <div class="btns" id="unkBtns">
@@ -348,18 +347,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/hess-law-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/hess-law.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="hess-law"></script>
-  <script src="js/missions/hess-law.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="hess-law"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/hess-law-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/hess-law.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="hess-law"></script>
+  <script src="js/missions/hess-law.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="hess-law"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

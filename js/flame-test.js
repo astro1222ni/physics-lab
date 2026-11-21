@@ -727,6 +727,7 @@
     ];
     if (state.lamp) rows.push([T('燈的亮度溫度', 'Lamp brightness temperature'), num(state.TL, 0) + ' K']);
     $('readout').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[2] ? ' class="big"' : '') + '>' + r[1] + '</dd>'; }).join('');
+    $('wireTemperature').textContent = T('白金絲處 ', 'At the wire ') + num(S.Tw, 0) + ' K';
     const lg = [];
     lg.push('<span><i style="background:linear-gradient(90deg,' + tempColor(500) + ',' + tempColor(1200) + ',' + tempColor(1850) + ')"></i>' + T('溫度（色條）', 'Temperature (colour bar)') + '</span>');
     lg.push('<span><i style="background:' + pal.pos + ';height:8px;width:8px;border-radius:50%"></i>' + T('最熱的地方', 'Hottest point') + '</span>');

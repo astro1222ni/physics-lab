@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Flame Tests and Line Spectra | Astro Ni Lab">焰色反應｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 焰色反應頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ft canvas { aspect-ratio: auto; }
@@ -132,6 +132,12 @@
       .bench-actions .playbar { gap: 4px; margin: 4px 0 0; }
       .bench-actions button { min-height: 44px; }
     }
+    .bench-reading { display: none; }
+    html.labdeck-stack .bench-reading {
+      display: block; margin: 4px 0 0; padding: 5px 8px; text-align: center;
+      color: var(--text); background: var(--canvas-bg); border-radius: 8px;
+      font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -164,13 +170,15 @@
             <div id="view3"></div>
           </div>
         </div>
+        <output class="bench-reading" id="wireTemperature" aria-live="off"></output>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Drag the wire up or down in the picture to move it through the flame. The colour bar beside the flame shows the temperature at each height; the star marks the hottest point. The strip at the bottom is what you see through the spectroscope's eyepiece.">在畫面上拖曳白金絲，可以上下移動它在火焰中的位置。火焰旁的色條是各高度的溫度，星號是最熱的地方。最下面的色帶是從分光鏡目鏡看到的光譜。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="白金絲上的樣品|Sample on the wire">
           <h2 data-en="Sample on the wire">白金絲上的樣品</h2>
           <div class="chips" id="sampleSeg" role="group" aria-label="樣品" data-en-aria-label="Sample">
             <button type="button" data-m="Li" aria-pressed="false">LiCl</button>
@@ -188,12 +196,14 @@
           <div class="slider"><label for="conc" data-en="Concentration">濃度</label><output id="conco"></output>
             <input id="conc" type="range" min="0" max="1000" step="1" value="667"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="本生燈|Bunsen burner" data-deck-order="-1">
           <h2 data-en="Bunsen burner">本生燈</h2>
           <div class="slider"><label for="air" data-en="Air hole open">空氣孔開度</label><output id="airo"></output>
             <input id="air" type="range" min="0" max="100" step="1" value="80" data-decimals="0"></div>
           <div class="slider"><label for="hgt" data-en="Height of the wire">白金絲高度</label><output id="hgto"></output>
             <input id="hgt" type="range" min="0" max="120" step="0.5" value="45" data-decimals="1"></div>
+          <div class="slider" id="tlRow"><label for="tl" data-en="Brightness temperature of the lamp">燈的亮度溫度</label><output id="tlo"></output>
+            <input id="tl" type="range" min="1000" max="3000" step="10" value="2400" data-decimals="0"></div>
           <div class="bench-fine" role="group" aria-label="白金絲高度" data-en-aria-label="Wire height">
             <span data-en="Wire height">白金絲高度</span>
             <button type="button" data-wire-step="-1" aria-label="白金絲高度減少" data-en-aria-label="Decrease wire height">−0.5 mm</button>
@@ -203,8 +213,6 @@
             <label><input id="cobalt" type="checkbox"><span data-en="Cobalt glass">鈷玻璃</span></label>
             <label><input id="lamp" type="checkbox"><span data-en="Lamp behind the flame">火焰後方的燈</span></label>
           </div>
-          <div class="slider" id="tlRow"><label for="tl" data-en="Brightness temperature of the lamp">燈的亮度溫度</label><output id="tlo"></output>
-            <input id="tl" type="range" min="1000" max="3000" step="10" value="2400" data-decimals="0"></div>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
       </aside>
@@ -240,7 +248,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="unkCard" data-share-skip>
+        <section class="card" id="unkCard" data-share-skip data-deck="未知樣品|Unknown sample">
           <h2 data-en="Unknown sample">未知樣品</h2>
           <div class="seg3" id="unkSeg" role="group" aria-label="未知樣品的種類" data-en-aria-label="Kind of unknown" style="grid-template-columns:repeat(2,1fr)">
             <button type="button" data-k="1" aria-pressed="true" data-en="One metal">一種金屬</button>
@@ -347,19 +355,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/flame-test-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/flame-test-3d.js?v=202611210931"></script>
-  <script src="js/flame-test.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="flame-test"></script>
-  <script src="js/missions/flame-test.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="flame-test"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/flame-test-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/flame-test-3d.js?v=202611210933"></script>
+  <script src="js/flame-test.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="flame-test"></script>
+  <script src="js/missions/flame-test.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="flame-test"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Buffer Solutions | Astro Ni Lab">緩衝溶液｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":4,"name":"酸鹼與氧化還原","item":"https://lab.astroni.org/chemistry.html#acidbase"},{"@type":"ListItem","position":5,"name":"酸鹼反應","item":"https://lab.astroni.org/chemistry.html#ch-acidbase"},{"@type":"ListItem","position":6,"name":"緩衝溶液","item":"https://lab.astroni.org/buffer-solutions.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 緩衝溶液頁面專用樣式（只用 lab.css 的顏色變數，深色模式自動適用） */
     .bs canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
@@ -75,7 +75,6 @@
     .r3-hud .chip { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 4px 0 8px; vertical-align: -1px; }
     .r3-hud .chip:first-child { margin-left: 0; }
     .r3-hud .tip { color: var(--muted); display: block; margin-top: 2px; }
-    .bs .stage .rate { margin: 12px 4px 0; }
     .bs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
     .bs .stage .status.warn { color: var(--pos); font-weight: 600; }
     .bs .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
@@ -188,6 +187,7 @@
               <button id="addBase" class="add" type="button" data-en="Add NaOH">加入 NaOH</button>
               <button id="addWater" type="button" title="在兩個燒杯各加入和原來體積一樣多的蒸餾水" data-en-title="Add as much distilled water as the starting volume to each beaker" data-en="Add water (dilute)">加水稀釋</button>
             </div>
+            <div data-deck-anchor hidden></div>
             <div class="playbar">
               <button id="newRun" type="button" title="換兩杯剛配好的溶液，圖上留下這一次的曲線" data-en-title="Start again with two freshly made solutions; this run’s curve stays on the graph" data-en="Fresh beakers">換新的兩杯</button>
               <button id="clearAll" type="button" title="清除圖上所有曲線與數據表，換兩杯剛配好的溶液；配方與對照的選擇不變" data-en-title="Clear every curve and the data table and start with two fresh beakers; the recipe and the comparison stay as they are" data-en="Clear all">全部清除</button>
@@ -195,8 +195,11 @@
             </div>
           </div>
         </div>
-        <div class="slider rate"><label for="cs" data-en="Concentration of the HCl and NaOH in the droppers">滴管裡 HCl 與 NaOH 的濃度</label><output id="cso"></output>
-          <input id="cs" type="range" min="0" max="1000" step="1" value="870"></div>
+        <section class="card" data-deck="滴管濃度|Dropper concentration" data-deck-order="-2">
+          <h2 data-en="Dropper concentration">滴管濃度</h2>
+          <div class="slider"><label for="cs" data-en="Concentration of the HCl and NaOH in the droppers">滴管裡 HCl 與 NaOH 的濃度</label><output id="cso"></output>
+            <input id="cs" type="range" min="0" max="1000" step="1" value="870"></div>
+        </section>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Not to scale. Both beakers always receive exactly the same thing. The colour is a universal indicator (a mixture of indicators; each brand’s colour chart differs a little) and does not change the pH. A beaker holds at most 250 mL.">示意圖，未依比例。兩個燒杯每次都加入完全一樣的東西。溶液的顏色是萬用指示劑（多種指示劑的混合物，各廠牌的色卡略有不同），不影響 pH。燒杯最多裝 250 mL。</p>
       </div>
@@ -207,15 +210,10 @@
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="緩衝溶液（左杯）|Buffer (left beaker)" data-deck-order="-1">
           <h2 id="sysLabel" data-en="Buffer (left beaker)">緩衝溶液（左杯）</h2>
           <div id="doseSettings" hidden>
             <h3 data-en="Dose and run controls">加液量與紀錄</h3>
-          </div>
-          <div class="seg2 three" id="sysSeg" role="group" aria-labelledby="sysLabel">
-            <button type="button" data-sys="ac" aria-pressed="true" data-en-html="Acetic acid + sodium acetate&lt;small&gt;CH&lt;sub&gt;3&lt;/sub&gt;COOH / CH&lt;sub&gt;3&lt;/sub&gt;COO&lt;sup&gt;−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 4.74&lt;/small&gt;">醋酸＋醋酸鈉<small>CH<sub>3</sub>COOH／CH<sub>3</sub>COO<sup>−</sup>，pK<sub>a</sub> 4.74</small></button>
-            <button type="button" data-sys="ph" aria-pressed="false" data-en-html="Phosphate: NaH&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt; + Na&lt;sub&gt;2&lt;/sub&gt;HPO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;H&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; / HPO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 7.21&lt;/small&gt;">磷酸二氫鈉＋磷酸氫二鈉<small>H<sub>2</sub>PO<sub>4</sub><sup>−</sup>／HPO<sub>4</sub><sup>2−</sup>，pK<sub>a</sub> 7.21</small></button>
-            <button type="button" data-sys="nh" aria-pressed="false" data-en-html="Ammonium chloride + ammonia&lt;small&gt;NH&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;+&lt;/sup&gt; / NH&lt;sub&gt;3&lt;/sub&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 9.26&lt;/small&gt;">氯化銨＋氨<small>NH<sub>4</sub><sup>+</sup>／NH<sub>3</sub>，pK<sub>a</sub> 9.26</small></button>
           </div>
           <div class="slider"><label for="cha" id="chaLabel">弱酸</label><output id="chao"></output>
             <input id="cha" type="range" min="0" max="400" step="1" value="300"></div>
@@ -223,11 +221,16 @@
             <input id="ca" type="range" min="0" max="400" step="1" value="300"></div>
           <div class="slider"><label for="v0" data-en="Volume of each solution">每杯溶液的體積</label><output id="v0o"></output>
             <input id="v0" type="range" min="20" max="200" step="1" value="100" data-decimals="1"></div>
+          <div class="seg2 three" id="sysSeg" role="group" aria-labelledby="sysLabel">
+            <button type="button" data-sys="ac" aria-pressed="true" data-en-html="Acetic acid + sodium acetate&lt;small&gt;CH&lt;sub&gt;3&lt;/sub&gt;COOH / CH&lt;sub&gt;3&lt;/sub&gt;COO&lt;sup&gt;−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 4.74&lt;/small&gt;">醋酸＋醋酸鈉<small>CH<sub>3</sub>COOH／CH<sub>3</sub>COO<sup>−</sup>，pK<sub>a</sub> 4.74</small></button>
+            <button type="button" data-sys="ph" aria-pressed="false" data-en-html="Phosphate: NaH&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt; + Na&lt;sub&gt;2&lt;/sub&gt;HPO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;H&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; / HPO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 7.21&lt;/small&gt;">磷酸二氫鈉＋磷酸氫二鈉<small>H<sub>2</sub>PO<sub>4</sub><sup>−</sup>／HPO<sub>4</sub><sup>2−</sup>，pK<sub>a</sub> 7.21</small></button>
+            <button type="button" data-sys="nh" aria-pressed="false" data-en-html="Ammonium chloride + ammonia&lt;small&gt;NH&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;+&lt;/sup&gt; / NH&lt;sub&gt;3&lt;/sub&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 9.26&lt;/small&gt;">氯化銨＋氨<small>NH<sub>4</sub><sup>+</sup>／NH<sub>3</sub>，pK<sub>a</sub> 9.26</small></button>
+          </div>
           <p class="info" id="sysInfo">—</p>
           <p class="hint" data-en="Changing the recipe or the comparison starts two fresh beakers; the old curve stays on the graph (up to 4). Tap a number to type an exact value.">改配方或對照會換兩杯新的溶液，舊曲線留在圖上（最多 4 條）。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="對照（右杯）|Comparison (right beaker)">
           <h2 id="cmpLabel" data-en="Comparison (right beaker)">對照（右杯）</h2>
           <div class="seg2" id="cmpSeg" role="group" aria-labelledby="cmpLabel">
             <button type="button" data-cmp="water" aria-pressed="true" data-en-html="Pure water&lt;small&gt;pH 7.00&lt;/small&gt;">純水<small>pH 7.00</small></button>
@@ -359,19 +362,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/buffer-solutions-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/buffer-solutions-3d.js?v=202611210931"></script>
-  <script src="js/buffer-solutions.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="buffer-solutions"></script>
-  <script src="js/missions/buffer-solutions.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="buffer-solutions"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/buffer-solutions-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/buffer-solutions-3d.js?v=202611210933"></script>
+  <script src="js/buffer-solutions.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="buffer-solutions"></script>
+  <script src="js/missions/buffer-solutions.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="buffer-solutions"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

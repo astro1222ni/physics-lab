@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Phase Diagrams: Triple Points and Critical Points | Astro Ni Lab">相圖：三相點與臨界點｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 相圖頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pd canvas { aspect-ratio: auto; touch-action: auto; }
@@ -43,6 +43,11 @@
     .pd .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
     .pd .playbar2 > button { flex: 1 1 auto; }
     @media (max-width: 560px) { .pd .playbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (390px <= width <= 560px) and (orientation: portrait) {
+      /* 四種路徑同列，下一列保留停止鍵。 */
+      .pd .playbar { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+      .pd .playbar2 { margin-top: 4px; }
+    }
     .pd .playbar button { padding: 4px 6px; line-height: 1.2; }
     .pd .playbar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
     .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
@@ -140,12 +145,13 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Tap the diagram to place a starting point. Drag the state point to trace phase changes (or focus the drawing and use the arrow keys: left and right change the temperature, up and down the pressure). The cylinder on the right is a sketch: a weighted piston keeps the pressure, a water or oil bath keeps the temperature; molecule numbers and volumes are not to scale.">點相圖空白處可選起點，拖曳狀態點可追蹤沿途的相變（或選取畫面後按方向鍵：左右改溫度、上下改壓力）。右邊的汽缸是示意圖：活塞上的砝碼維持壓力、外面的恆溫槽維持溫度；分子數與體積都不依比例。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="物質|Substance">
           <h2 data-en="Substance">物質</h2>
           <div class="seg3" id="subSeg" role="group" aria-label="物質" data-en-aria-label="Substance">
             <button type="button" data-sub="water" aria-pressed="true" data-en-html="Water H&lt;sub&gt;2&lt;/sub&gt;O">水 H<sub>2</sub>O</button>
@@ -155,7 +161,7 @@
           <p class="info" id="subInfo"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="條件|Conditions" data-deck-order="-1">
           <h2 data-en="Conditions">條件</h2>
           <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
             <input id="temp" type="range" min="-60" max="420" step="0.5" value="25" data-decimals="2"></div>
@@ -164,7 +170,7 @@
           <div class="checks"><label><input id="snap" type="checkbox" checked><span data-en="Snap to the lines while dragging">拖曳時吸附到相界線</span></label></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="生活中的例子|Everyday examples">
           <h2 data-en="Everyday examples">生活中的例子</h2>
           <div class="ex-grid" id="exGrid">
             <button type="button" data-ex="cooker" data-en="Pressure cooker">壓力鍋</button>
@@ -204,7 +210,7 @@
           <h2 data-en="Heat of phase change from two points">兩點求相變熱</h2>
           <p class="info" id="clapOut"></p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="溜冰與壓力熔冰|Pressure and skating">
           <h2 data-en="Pressure and skating">溜冰與壓力熔冰</h2>
           <div class="slider"><label for="mass" data-en="Skater's mass">溜冰者的質量</label><output id="masso"></output>
             <input id="mass" type="range" min="20" max="120" step="1" value="60" data-decimals="0"></div>
@@ -297,19 +303,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/phase-diagram-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/vpad.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/phase-diagram.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="phase-diagram"></script>
-  <script src="js/missions/phase-diagram.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="phase-diagram"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/phase-diagram-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/vpad.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/phase-diagram.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="phase-diagram"></script>
+  <script src="js/missions/phase-diagram.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="phase-diagram"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

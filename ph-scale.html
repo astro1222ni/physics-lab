@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Acid–Base Strength and pH | Astro Ni Lab">酸鹼強度與 pH｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 酸鹼強度與 pH 頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ph canvas { aspect-ratio: auto; touch-action: auto; }
@@ -181,33 +181,34 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="spLegend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="The magnifiers are drawn to scale in proportion, not in number: each beaker shows 40 particles of the dissolved substance (plus some water molecules), whatever the concentration. A coloured ring marks an ion (red: positive, blue: negative). With a weak acid you can watch protons hop on and off — the equilibrium never stops.">放大鏡依「比例」畫，不是依「數目」：不管濃度多少，每杯都畫 40 個溶質粒子（再加一些水分子）。帶顏色外圈的是離子（紅圈帶正電、藍圈帶負電）。弱酸裡可以看到質子跳上跳下——平衡一直在進行。</p>
       </div>
 
       <aside class="panel">
-        <section class="card" id="cardA">
+        <section class="card" id="cardA" data-deck="A 杯|Cup A" data-deck-order="-1">
           <h2><span class="beaker-tag" id="tagA" data-en="Cup A">A 杯</span></h2>
-          <div class="seg3 sp-seg" id="spA" role="group" aria-label="A 杯的物質" data-en-aria-label="Substance in beaker A"></div>
           <div class="slider"><label for="concA" id="concLabelA" data-en="Concentration (mol/L)">濃度（mol/L）</label>
             <input id="concA" class="concentration-entry" type="text" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="concNoteA">
             <small id="concNoteA" class="conc-note" role="status"></small>
             <input id="cA" aria-labelledby="concLabelA" type="range" min="0" max="800" step="1" value="600" data-decimals="2"></div>
           <p class="cval" id="cAv"></p>
+          <div class="seg3 sp-seg" id="spA" role="group" aria-label="A 杯的物質" data-en-aria-label="Substance in beaker A"></div>
           <div class="btns"><button type="button" id="dilA" data-en="Dilute 10 times with water">加水稀釋 10 倍</button></div>
         </section>
-        <section class="card" id="cardB">
+        <section class="card" id="cardB" data-deck="B 杯|Cup B">
           <h2><span class="beaker-tag" id="tagB" data-en="Cup B">B 杯</span></h2>
-          <div class="seg3 sp-seg" id="spB" role="group" aria-label="B 杯的物質" data-en-aria-label="Substance in beaker B"></div>
           <div class="slider"><label for="concB" id="concLabelB" data-en="Concentration (mol/L)">濃度（mol/L）</label>
             <input id="concB" class="concentration-entry" type="text" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="concNoteB">
             <small id="concNoteB" class="conc-note" role="status"></small>
             <input id="cB" aria-labelledby="concLabelB" type="range" min="0" max="800" step="1" value="700" data-decimals="2"></div>
           <p class="cval" id="cBv"></p>
+          <div class="seg3 sp-seg" id="spB" role="group" aria-label="B 杯的物質" data-en-aria-label="Substance in beaker B"></div>
           <div class="btns"><button type="button" id="dilB" data-en="Dilute 10 times with water">加水稀釋 10 倍</button></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="條件|Conditions">
           <h2 data-en="Conditions">條件</h2>
           <div class="slider"><label for="temp" data-en="Temperature T (both beakers)">溫度 T（兩杯相同）</label><output id="tempo"></output>
             <input id="temp" type="range" min="25" max="100" step="1" value="25" data-decimals="0"></div>
@@ -236,7 +237,7 @@
           <table class="mini" id="nowTbl"></table>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="xCard" data-share-skip>
+        <section class="card" id="xCard" data-share-skip data-deck="未知酸 HX|Unknown acid HX">
           <h2 data-en="Unknown acid HX">未知酸 HX</h2>
           <p class="hint" data-en-html="A weak acid whose K&lt;sub&gt;a&lt;/sub&gt; is hidden (pK&lt;sub&gt;a&lt;/sub&gt; between 2.5 and 6.0). Put “Unknown HX” in a beaker, read the pH and [H&lt;sub&gt;3&lt;/sub&gt;O&lt;sup&gt;+&lt;/sup&gt;], and work out pK&lt;sub&gt;a&lt;/sub&gt; = −log K&lt;sub&gt;a&lt;/sub&gt;.">一種看不到 K<sub>a</sub> 的弱酸（pK<sub>a</sub> 在 2.5 到 6.0 之間）。把一杯換成「未知酸 HX」，讀 pH 與 [H<sub>3</sub>O<sup>+</sup>]，算出 pK<sub>a</sub> = −log K<sub>a</sub>。</p>
           <div class="ans"><label for="ansK" data-en-html="Your pK&lt;sub&gt;a&lt;/sub&gt;">你算出的 pK<sub>a</sub></label><input id="ansK" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 4.20" data-en-placeholder="e.g. 4.20"></div>
@@ -334,19 +335,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/ph-scale-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/ph-scale-3d.js?v=202611210931"></script>
-  <script src="js/ph-scale.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="ph-scale"></script>
-  <script src="js/missions/ph-scale.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="ph-scale"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/ph-scale-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/ph-scale-3d.js?v=202611210933"></script>
+  <script src="js/ph-scale.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="ph-scale"></script>
+  <script src="js/missions/ph-scale.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="ph-scale"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

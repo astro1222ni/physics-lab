@@ -949,6 +949,7 @@
       [T('反應商 Q', 'Reaction quotient Q'), hide || wait ? '?' : q === 0 ? '0' : !isFinite(q) ? '∞' : sciHTML(q, 3)]
     ];
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
+    $('qkReading').innerHTML = 'Q ' + items[4][1] + '　K<sub>p</sub> ' + items[2][1];
     const box = $('qkBox');
     const g = lqk();
     if (wait) { box.className = 'qk'; box.textContent = T('先預測，再看 Q 與 K', 'Predict first, then look at Q and K'); }

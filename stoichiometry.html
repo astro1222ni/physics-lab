@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stoichiometry and Limiting Reactants | Astro Ni Lab">化學計量與限量試劑｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 化學計量與限量試劑頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .st canvas { aspect-ratio: auto; touch-action: auto; }
@@ -151,25 +151,25 @@
             </div>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Schematic drawing (the apparatus is not to scale). The cylinder's scale, the water levels inside and outside and the magnifier are exact: read the bottom of the meniscus, estimating one tenth of the smallest division.">示意圖（器材未依比例）。量筒的刻度、內外水面與放大鏡是精確的：讀彎月面的最低點，估計到最小刻度的十分之一。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
-          <h2 data-en="Magnesium ribbon">鎂帶</h2>
+        <section class="card" data-deck="反應物|Reactants">
+          <h2 data-en="Reactants">反應物</h2>
           <div class="slider"><label for="mass" data-en="Mass of magnesium">鎂的質量</label><output id="masso"></output>
             <input id="mass" type="range" min="0.01" max="0.2" step="0.001" value="0.05" data-decimals="4"></div>
-          <div class="checks">
-            <label><input id="polished" type="checkbox" checked><span data-en="Cleaned with sandpaper">先用砂紙磨亮</span></label>
-          </div>
-          <h3 data-en="Hydrochloric acid">鹽酸</h3>
-          <div class="slider"><label for="conc" data-en="Concentration">濃度</label><output id="conco"></output>
+          <div class="slider"><label for="conc" data-en="HCl concentration">鹽酸濃度</label><output id="conco"></output>
             <input id="conc" type="range" min="0.1" max="6" step="0.05" value="1" data-decimals="3"></div>
-          <div class="slider"><label for="vol" data-en="Volume">體積</label><output id="volo"></output>
+          <div class="slider"><label for="vol" data-en="HCl volume">鹽酸體積</label><output id="volo"></output>
             <input id="vol" type="range" min="1" max="50" step="0.5" value="10" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="polished" type="checkbox" checked><span data-en="Cleaned with sandpaper">先用砂紙磨亮鎂帶</span></label>
+          </div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="器材與環境|Apparatus and conditions">
           <h2 data-en="Apparatus and conditions">器材與環境</h2>
           <div class="seg3" id="cylSeg" role="group" aria-label="量筒" data-en-aria-label="Measuring cylinder">
             <button type="button" data-cyl="25" aria-pressed="false" data-en="25 mL cylinder">25 mL 量筒</button>
@@ -199,7 +199,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="anaCard">
+        <section class="card" id="anaCard" data-deck="分析|Analysis">
           <h2 data-en="Analysis">分析</h2>
           <div class="ans"><label for="inV" data-en="Cylinder reading V (mL)">量筒讀數 V（mL）</label><input id="inV" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="?"></div>
           <h3 id="limLabel" data-en="Which reactant ran out (limiting reactant)?">哪一個先用完（限量試劑）？</h3>
@@ -305,18 +305,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/stoichiometry-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/stoichiometry.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="stoichiometry"></script>
-  <script src="js/missions/stoichiometry.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="stoichiometry"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/stoichiometry-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/stoichiometry.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="stoichiometry"></script>
+  <script src="js/missions/stoichiometry.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="stoichiometry"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

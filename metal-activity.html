@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Metal Activity Series | Astro Ni Lab">金屬活性序｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 金屬活性序頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ma canvas { aspect-ratio: auto; }
@@ -162,6 +162,9 @@
       .labdeck-tabs button { grid-column: span 2; text-wrap: balance; }
       .labdeck-tabs button:nth-last-child(-n+2) { grid-column: span 3; }
     }
+    /* 直放分開主鍵與次要鍵，橫放與桌機沿用原本的按鍵列。 */
+    html.labdeck-stack .bench-toolbar,
+    html:not(.labdeck-stack) .bench-toolbar > .playbar { display: contents; }
   </style>
 </head>
 <body data-en-ready>
@@ -193,16 +196,21 @@
             <canvas id="cv" tabindex="0" aria-label="試管架：點一支試管可以選取它" data-en-aria-label="Test-tube rack: tap a tube to select it"></canvas>
             <div id="view3"></div>
           </div>
-          <div class="playbar">
-            <button id="insert" class="primary" type="button" data-en="Put in a tube">放入試管</button>
-            <button id="play" type="button" data-en="Pause">暫停</button>
-            <button id="clearAll" type="button" data-en="Clear all" title="清空試管架、觀察紀錄與排序；金屬、溶液與條件的選擇不變" data-en-title="Empty the rack, the record table and the ranking; the chosen metal, solution and conditions stay">全部清除</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-            <div class="speedbox"><span id="speedLabel" data-en="Time">時間倍率</span>
-              <div class="seg3" role="group" aria-labelledby="speedLabel">
-                <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
-                <button type="button" id="sp1" aria-pressed="true" data-en="×10">×10</button>
-                <button type="button" id="sp2" aria-pressed="false" data-en="×100">×100</button>
+          <div class="playbar bench-toolbar">
+            <div class="playbar">
+              <button id="insert" class="primary" type="button" data-en="Put in a tube">放入試管</button>
+              <button id="play" type="button" data-en="Pause">暫停</button>
+            </div>
+            <div data-deck-anchor hidden></div>
+            <div class="playbar">
+              <button id="clearAll" type="button" data-en="Clear all" title="清空試管架、觀察紀錄與排序；金屬、溶液與條件的選擇不變" data-en-title="Empty the rack, the record table and the ranking; the chosen metal, solution and conditions stay">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Time">時間倍率</span>
+                <div class="seg3" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
+                  <button type="button" id="sp1" aria-pressed="true" data-en="×10">×10</button>
+                  <button type="button" id="sp2" aria-pressed="false" data-en="×100">×100</button>
+                </div>
               </div>
             </div>
           </div>
@@ -212,16 +220,16 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="金屬|Metal">
           <h2 data-en="Metal">金屬</h2>
           <div class="grid4" id="metalSeg" role="group" aria-label="金屬" data-en-aria-label="Metal"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="液體|Liquid">
           <h2 data-en="Liquid">液體</h2>
           <div class="grid4" id="liqSeg" role="group" aria-label="液體" data-en-aria-label="Liquid"></div>
           <p class="hint" data-en-html="Metal-ion solutions are the nitrates, e.g. Cu(NO&lt;sub&gt;3&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt; for Cu&lt;sup&gt;2+&lt;/sup&gt;; HCl is dilute hydrochloric acid.">金屬離子溶液都是硝酸鹽，例如 Cu<sup>2+</sup> 是 Cu(NO<sub>3</sub>)<sub>2</sub>；HCl 是稀鹽酸。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="下一支試管的條件|Conditions for the next tube" data-deck-order="-1">
           <h2 data-en="Conditions for the next tube">下一支試管的條件</h2>
           <div class="slider"><label for="conc" data-en="Concentration c (ions or HCl)">濃度 c（離子或鹽酸）</label><output id="conco"></output>
             <input id="conc" type="range" min="0" max="1000" step="1" value="435" data-decimals="3"></div>
@@ -233,7 +241,7 @@
           </div>
           <p class="hint" id="condHint"></p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="未知金屬挑戰|Unknown-metal challenge">
           <h2 data-en="Unknown-metal challenge">未知金屬挑戰</h2>
           <div class="checks"><label><input id="unk" type="checkbox"><span data-en="Unknown-metal challenge">未知金屬挑戰</span></label></div>
           <p class="hint" data-en-html="Adds three grey metals X, Y and Z (and solutions of their 2+ ions) whose order is hidden. Find it by experiment, rank them below, then reveal. Turning the challenge on or off starts a new round and clears the rack.">加入三種灰色金屬 X、Y、Z（以及它們的 2+ 離子溶液），活性順序看不到。用實驗找出順序、在下方排好，再揭曉。打開或關閉挑戰會開始新的一輪並清空試管架。</p>
@@ -265,7 +273,7 @@
           <div class="eqn" id="eqn">—</div>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card rank-card" data-share-skip>
+        <section class="card rank-card" data-share-skip data-deck="排出活性序|Build the activity series">
           <h2 data-en="Build the activity series">排出活性序</h2>
           <p class="hint" data-en="What each metal did with each liquid (from the record table):">每種金屬在每種液體裡的結果（取自觀察紀錄）：</p>
           <div class="tablewrap"><table class="mtx" id="mtx"></table></div>
@@ -366,19 +374,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/metal-activity-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/metal-activity-3d.js?v=202611210931"></script>
-  <script src="js/metal-activity.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="metal-activity"></script>
-  <script src="js/missions/metal-activity.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="metal-activity"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/metal-activity-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/metal-activity-3d.js?v=202611210933"></script>
+  <script src="js/metal-activity.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="metal-activity"></script>
+  <script src="js/missions/metal-activity.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="metal-activity"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

@@ -226,7 +226,9 @@
     cw = w;
     const narrow = cw < 640;
     if (narrow) {
-      const h1 = Math.round(Math.min(420, cw * 0.95)), h2 = Math.round(Math.min(380, cw * 0.82));
+      // 手機直放時略收短下方截面圖，晶胞與第一根滑桿可同時看到。
+      const sectionRatio = matchMedia('(max-width: 480px) and (orientation: portrait)').matches ? 0.72 : 0.82;
+      const h1 = Math.round(Math.min(420, cw * 0.95)), h2 = Math.round(Math.min(380, cw * sectionRatio));
       ch = h1 + h2;
       PA = { x: 0, y: 0, w: cw, h: h1 }; PB = { x: 0, y: h1, w: cw, h: h2 };
     } else {

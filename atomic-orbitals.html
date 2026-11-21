@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Shapes of Atomic Orbitals | Astro Ni Lab">原子軌域的形狀｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 原子軌域頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ao #cv { aspect-ratio: 1 / 1; max-height: 640px; touch-action: none; cursor: crosshair; }
@@ -173,13 +173,14 @@
             <div id="view3"></div>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" id="stageHint" data-en="Tap or drag on the slice to place a probe and read the probability density there. In the 3D view, drag to rotate and pinch or scroll to zoom.">在切面上點一下或拖曳，放下探針讀出那一點的機率密度。3D 立體時拖曳可旋轉，雙指或滾輪可縮放。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="選軌域|Choose an orbital">
           <h2 data-en="Choose an orbital">選軌域</h2>
           <p class="lab-l" data-en="Principal quantum number n">主量子數 n</p>
           <div class="pick n5" id="nPick" role="group" aria-label="主量子數 n" data-en-aria-label="Principal quantum number n">
@@ -207,7 +208,7 @@
           <div class="checks"><label><input id="sumChk" type="checkbox"><span data-en="Whole subshell (sum of all its orbitals)">整個副層加總</span></label></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="2D 切面|2D slice">
           <h2 data-en="2D slice">2D 切面</h2>
           <div class="pick c3" id="planePick" role="group" aria-label="切面" data-en-aria-label="Slice plane">
             <button type="button" data-plane="xz" aria-pressed="true" data-en="xz plane">xz 平面</button>
@@ -216,17 +217,17 @@
           </div>
           <div class="slider"><label for="off" id="offLabel" data-en="Slice position (distance from the nucleus)">切面位置（離原子核的距離）</label><output id="offo"></output>
             <input id="off" type="range" min="-30" max="30" step="0.05" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="zoom" data-en="Half-width of the view">視野半寬</label><output id="zoomo"></output>
+            <input id="zoom" type="range" min="0" max="1000" step="1" value="500" data-decimals="1"></div>
           <div class="pick" style="grid-template-columns:1fr 1fr" id="dispPick" role="group" aria-label="顯示" data-en-aria-label="Show">
             <button type="button" data-disp="dens" aria-pressed="true" data-en-html="Density |ψ|&lt;sup&gt;2&lt;/sup&gt;">機率密度 |ψ|<sup>2</sup></button>
             <button type="button" data-disp="phase" aria-pressed="false" data-en="Wave function ψ (sign)">波函數 ψ（正負）</button>
           </div>
-          <div class="slider"><label for="zoom" data-en="Half-width of the view">視野半寬</label><output id="zoomo"></output>
-            <input id="zoom" type="range" min="0" max="1000" step="1" value="500" data-decimals="1"></div>
           <div class="checks"><label><input id="autoChk" type="checkbox" checked><span data-en="Auto zoom">自動縮放</span></label>
             <label><input id="logChk" type="checkbox"><span data-en="Log colour scale (see the faint parts)">對數色階（看清淡的地方）</span></label></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="3D 選項|3D options">
           <h2 data-en="3D options">3D 選項</h2>
           <div class="pick c3" id="stylePick" role="group" aria-label="3D 畫法" data-en-aria-label="3D style">
             <button type="button" data-style="iso" aria-pressed="true" data-en="Isosurface">等值面</button>
@@ -274,7 +275,7 @@
           <h2 data-en="Cursor and probe">游標與探針</h2>
           <dl class="readout" id="cOut"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card" id="quizCard" data-share-skip>
+        <section class="card" id="quizCard" data-share-skip data-deck="認軌域|Name that orbital">
           <h2 data-en="Name that orbital">認軌域</h2>
           <p class="hint" data-en="A mystery orbital is shown with its name hidden. Count its radial and angular nodes, then say which orbital it is. Changing the orbital yourself ends the round.">畫面換成一個不知名的軌域，名稱都藏起來。數一數它的徑向節面和角節面，說出它是哪一個軌域。自己換軌域就算放棄這一題。</p>
           <div class="btns">
@@ -389,20 +390,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/atomic-orbitals-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/atomic-orbitals-3d.js?v=202611210931"></script>
-  <script src="js/vpad.js?v=202611210931"></script>
-  <script src="js/atomic-orbitals.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="atomic-orbitals"></script>
-  <script src="js/missions/atomic-orbitals.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="atomic-orbitals"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/atomic-orbitals-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/atomic-orbitals-3d.js?v=202611210933"></script>
+  <script src="js/vpad.js?v=202611210933"></script>
+  <script src="js/atomic-orbitals.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="atomic-orbitals"></script>
+  <script src="js/missions/atomic-orbitals.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="atomic-orbitals"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Addition and Condensation Polymerisation | Astro Ni Lab">加成聚合與縮合聚合｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 加成聚合與縮合聚合頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pm canvas { aspect-ratio: auto; touch-action: auto; }
@@ -135,6 +135,9 @@
     #view3 .r3-hud:empty { display: none; }
     .bench-screen > #view3 { width: 100%; }
     #view3 .r3-hud.bl, #view3 .r3-hud.br { bottom: 62px; }
+    /* 直放分開主鍵與次要鍵，橫放與桌機沿用原本的按鍵列。 */
+    html.labdeck-stack .bench-toolbar,
+    html:not(.labdeck-stack) .bench-toolbar > .playbar { display: contents; }
   </style>
 </head>
 <body data-en-ready>
@@ -166,18 +169,23 @@
             <canvas id="cv" role="img" aria-label="反應器與分子放大圖" data-en-aria-label="Reactor and a magnified view of the molecules"></canvas>
             <div id="view3"></div>
           </div>
-          <div class="playbar">
-            <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
-            <button id="record" type="button" data-en="Record" title="把目前的轉化率、聚合度、分子量記到下面的紀錄表" data-en-title="Add the present conversion, degree of polymerisation and molar mass to the table below">記錄數據</button>
-            <button id="restart" type="button" data-en="New run" title="同樣的設定，從頭再做一次" data-en-title="Start again from the beginning with the same settings">重新開始</button>
-            <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上保留的舊曲線" data-en-title="Clear the table and the old curves kept on the graph">全部清除</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-              <div class="seg4" role="group" aria-labelledby="speedLabel">
-                <button type="button" id="sp0" aria-pressed="false">×1</button>
-                <button type="button" id="sp1" aria-pressed="true">×5</button>
-                <button type="button" id="sp2" aria-pressed="false">×20</button>
-                <button type="button" id="sp3" aria-pressed="false">×60</button>
+          <div class="playbar bench-toolbar">
+            <div class="playbar">
+              <button id="play" class="primary" type="button" data-en="Start">開始反應</button>
+              <button id="record" type="button" data-en="Record" title="把目前的轉化率、聚合度、分子量記到下面的紀錄表" data-en-title="Add the present conversion, degree of polymerisation and molar mass to the table below">記錄數據</button>
+            </div>
+            <div data-deck-anchor hidden></div>
+            <div class="playbar">
+              <button id="restart" type="button" data-en="New run" title="同樣的設定，從頭再做一次" data-en-title="Start again from the beginning with the same settings">重新開始</button>
+              <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上保留的舊曲線" data-en-title="Clear the table and the old curves kept on the graph">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+                <div class="seg4" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false">×1</button>
+                  <button type="button" id="sp1" aria-pressed="true">×5</button>
+                  <button type="button" id="sp2" aria-pressed="false">×20</button>
+                  <button type="button" id="sp3" aria-pressed="false">×60</button>
+                </div>
               </div>
             </div>
           </div>
@@ -188,12 +196,14 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="聚合條件|Polymerisation settings" data-deck-order="-1">
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="聚合的方式" data-en-aria-label="Type of polymerisation">
             <button type="button" data-mode="add" aria-pressed="true" data-en="Addition">加成聚合</button>
             <button type="button" data-mode="cond" aria-pressed="false" data-en="Condensation">縮合聚合</button>
           </div>
           <div id="addCtl">
+            <div class="slider"><label for="init" data-en="Initiator (mol % of the monomer)">起始劑（單體的莫耳 %）</label><output id="inito"></output>
+              <input id="init" type="range" min="0" max="1000" step="1" value="0" data-decimals="3"></div>
             <h3 id="monLabel" data-en="Monomer">單體</h3>
             <div class="seg2" id="monSeg" role="group" aria-labelledby="monLabel">
               <button type="button" data-mon="ethylene" aria-pressed="false" data-en="Ethene">乙烯</button>
@@ -203,8 +213,6 @@
               <button type="button" data-mon="styrene" aria-pressed="true" data-en="Styrene">苯乙烯</button>
               <button type="button" data-mon="mma" aria-pressed="false" data-en="Methyl methacrylate">甲基丙烯酸甲酯</button>
             </div>
-            <div class="slider"><label for="init" data-en="Initiator (mol % of the monomer)">起始劑（單體的莫耳 %）</label><output id="inito"></output>
-              <input id="init" type="range" min="0" max="1000" step="1" value="0" data-decimals="3"></div>
             <h3 id="termLabel" data-en="How the chains stop">鏈怎麼停下來（終止）</h3>
             <div class="seg2" id="termSeg" role="group" aria-labelledby="termLabel">
               <button type="button" data-term="comb" aria-pressed="true" data-en="Combination">結合</button>
@@ -213,14 +221,14 @@
             <p class="hint" data-en="Combination: two growing chains join into one. Disproportionation: one hydrogen atom moves from one chain end to the other, and both chains stop.">結合：兩條正在長的鏈接成一條。歧化：一個氫原子從一條鏈的末端移到另一條，兩條鏈各自停下。</p>
           </div>
           <div id="condCtl" hidden>
+            <div class="slider"><label for="ratio" id="ratioLabel" data-en="Mole ratio n(diacid) : n(diamine)">莫耳比 n(二酸) : n(二胺)</label><output id="ratioo"></output>
+              <input id="ratio" type="range" min="0" max="1000" step="1" value="500" data-decimals="4"></div>
             <h3 id="pairLabel" data-en="Polymer">聚合物</h3>
             <div class="seg3" id="pairSeg" role="group" aria-labelledby="pairLabel">
               <button type="button" data-pair="nylon66" aria-pressed="true" data-en="Nylon-6,6">耐綸-66</button>
               <button type="button" data-pair="pet" aria-pressed="false">PET</button>
               <button type="button" data-pair="pla" aria-pressed="false" data-en="PLA">聚乳酸</button>
             </div>
-            <div class="slider"><label for="ratio" id="ratioLabel" data-en="Mole ratio n(diacid) : n(diamine)">莫耳比 n(二酸) : n(二胺)</label><output id="ratioo"></output>
-              <input id="ratio" type="range" min="0" max="1000" step="1" value="500" data-decimals="4"></div>
             <div class="checks"><label><input id="dry" type="checkbox" checked><span data-en="Remove the water (under reduced pressure)">減壓除水（把生成的水抽走）</span></label></div>
             <p class="hint" data-en="Water removal can be switched on or off during the reaction; the other settings start a new run.">除水可以在反應中途切換；其他設定一改就重新開始。</p>
           </div>
@@ -338,19 +346,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/polymerization-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/polymerization-3d.js?v=202611210931"></script>
-  <script src="js/polymerization.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="polymerization"></script>
-  <script src="js/missions/polymerization.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="polymerization"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/polymerization-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/polymerization-3d.js?v=202611210933"></script>
+  <script src="js/polymerization.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="polymerization"></script>
+  <script src="js/missions/polymerization.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="polymerization"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

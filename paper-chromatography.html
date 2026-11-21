@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Paper Chromatography | Astro Ni Lab">紙色層分析｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 紙色層分析頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -149,6 +149,10 @@
     @media (orientation: landscape) and (max-height: 600px) {
       .bench-screen > #cv { width: 100% !important; height: 100% !important; }
     }
+    /* 直放分開主鍵與次要鍵，橫放與桌機沿用原本的按鍵列。 */
+    html.labdeck-stack .bench-toolbar,
+    html:not(.labdeck-stack) .bench-toolbar > .playbar { display: contents; }
+    html:not(.labdeck-stack) .bench-toolbar > .wetbar { order: 1; flex-basis: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -180,37 +184,42 @@
             <canvas id="cv" aria-label="展開槽與濾紙" data-en-aria-label="Developing tank and filter paper"></canvas>
             <div id="view3"></div>
           </div>
-          <div class="playbar">
-            <button id="play" class="primary" type="button" data-en="Put into the tank">放入展開槽</button>
-            <button id="take" type="button" disabled data-en="Take the paper out">取出濾紙</button>
-            <button id="mark" type="button" disabled data-en="Mark the solvent front" title="趁濾紙還沒乾，用鉛筆畫出溶劑前緣" data-en-title="Draw the solvent front in pencil before the paper dries">標記溶劑前緣</button>
-            <button id="newPaper" type="button" data-en="New paper" title="換一張新的濾紙，照目前的設定重新點樣；量測紀錄保留" data-en-title="Start again with a fresh paper spotted with the current settings; the measurements are kept">換一張新濾紙</button>
-            <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、前緣曲線與 Rf 圖；目前的設定不變" data-en-title="Clear the measurements, the front curves and the Rf chart; the settings stay as they are">全部清除</button>
-            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
-            <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
-              <div class="seg3" role="group" aria-labelledby="speedLabel">
-                <button type="button" id="sp0" aria-pressed="false" data-en="×10">×10</button>
-                <button type="button" id="sp1" aria-pressed="true" data-en="×60">×60</button>
-                <button type="button" id="sp2" aria-pressed="false" data-en="×300">×300</button>
+          <div class="playbar bench-toolbar">
+            <div class="playbar">
+              <button id="play" class="primary" type="button" data-en="Put into the tank">放入展開槽</button>
+              <button id="take" type="button" disabled data-en="Take the paper out">取出濾紙</button>
+              <button id="mark" type="button" disabled data-en="Mark the solvent front" title="趁濾紙還沒乾，用鉛筆畫出溶劑前緣" data-en-title="Draw the solvent front in pencil before the paper dries">標記溶劑前緣</button>
+              <button id="newPaper" type="button" data-en="New paper" title="換一張新的濾紙，照目前的設定重新點樣；量測紀錄保留" data-en-title="Start again with a fresh paper spotted with the current settings; the measurements are kept">換一張新濾紙</button>
+            </div>
+            <div class="wetbar" id="wetbar" hidden><span id="wetfill"></span></div>
+            <div data-deck-anchor hidden></div>
+            <div class="playbar">
+              <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、前緣曲線與 Rf 圖；目前的設定不變" data-en-title="Clear the measurements, the front curves and the Rf chart; the settings stay as they are">全部清除</button>
+              <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+              <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+                <div class="seg3" role="group" aria-labelledby="speedLabel">
+                  <button type="button" id="sp0" aria-pressed="false" data-en="×10">×10</button>
+                  <button type="button" id="sp1" aria-pressed="true" data-en="×60">×60</button>
+                  <button type="button" id="sp2" aria-pressed="false" data-en="×300">×300</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="wetbar" id="wetbar" hidden><span id="wetfill"></span></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Before the run you can drag the pencil start line or the solvent surface. After taking the paper out, tap a spot (or use the spot buttons on the right) to measure it with the ruler.">開始前可以拖曳鉛筆畫的起始線或展開液的液面。取出濾紙後，點一下斑點（或用右邊的斑點按鈕）就會用尺量它的位置。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="濾紙與樣品|Paper and samples" data-deck-order="-1">
           <h2 data-en="Paper and samples">濾紙與樣品</h2>
-          <div class="lane-row"><b>A</b><select id="laneA" aria-label="A 道的樣品" data-en-aria-label="Sample in lane A"></select></div>
-          <div class="lane-row"><b>B</b><select id="laneB" aria-label="B 道的樣品" data-en-aria-label="Sample in lane B"></select></div>
-          <div class="lane-row"><b>C</b><select id="laneC" aria-label="C 道的樣品" data-en-aria-label="Sample in lane C"></select></div>
           <div class="slider"><label for="spot" data-en="Spot diameter">點樣直徑</label><output id="spoto"></output>
             <input id="spot" type="range" min="1" max="10" step="0.5" value="3" data-decimals="1"></div>
           <div class="slider"><label for="z0" data-en="Start line (height above the lower edge)">起始線（離濾紙下緣）</label><output id="z0o"></output>
             <input id="z0" type="range" min="0.5" max="4" step="0.1" value="1.5" data-decimals="2"></div>
+          <div class="lane-row"><b>A</b><select id="laneA" aria-label="A 道的樣品" data-en-aria-label="Sample in lane A"></select></div>
+          <div class="lane-row"><b>B</b><select id="laneB" aria-label="B 道的樣品" data-en-aria-label="Sample in lane B"></select></div>
+          <div class="lane-row"><b>C</b><select id="laneC" aria-label="C 道的樣品" data-en-aria-label="Sample in lane C"></select></div>
           <div class="fine-row" id="fineStart" role="group" aria-label="起始線 ±0.05 cm" data-en-aria-label="Start line ±0.05 cm">
             <span data-en="Start line ±0.05 cm">起始線 ±0.05 cm</span>
             <button type="button" data-delta="-1" aria-label="起始線降低 0.05 cm" data-en-aria-label="Lower start line by 0.05 cm">−</button>
@@ -219,7 +228,7 @@
           <div class="checks"><label><input id="pen" type="checkbox"><span data-en="Draw the start line with a ballpoint pen (a common mistake)">起始線用原子筆畫（常見錯誤）</span></label></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="展開液與展開槽|Solvent and tank">
           <h2 data-en="Solvent and tank">展開液與展開槽</h2>
           <div class="seg4" id="solvSeg" role="group" aria-label="展開液" data-en-aria-label="Solvent">
             <button type="button" data-solv="mix" aria-pressed="true" data-en="Water + ethanol">水＋乙醇</button>
@@ -262,13 +271,13 @@
           <h2 data-en="The paper now">現在的濾紙</h2>
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
         </section>
-        <section class="card">
+        <section class="card" data-deck="量 Rf|Measure Rf">
           <h2 data-en-html="Measure R&lt;sub&gt;f&lt;/sub&gt;">量 R<sub>f</sub></h2>
           <p class="hint" id="spotHint" data-en="Take the paper out of the tank first.">先把濾紙從展開槽取出來。</p>
           <div class="spots" id="spotBtns"></div>
           <p class="info" id="measOut" aria-live="polite"></p>
         </section>
-        <section class="card" id="xCard" data-share-skip>
+        <section class="card" id="xCard" data-share-skip data-deck="未知樣品 X|Unknown sample X">
           <h2 data-en="Unknown sample X">未知樣品 X</h2>
           <p class="hint" data-en="X is a mixture of two or three of the four food dyes. Put X and the standards on the same paper, develop it, and tick the dyes you think are in X.">X 是四種食用色素中的兩種或三種混在一起。把 X 和標準品點在同一張濾紙上展開，再勾選你認為 X 含有的色素。</p>
           <div class="xgrid" id="xGrid"></div>
@@ -365,20 +374,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/paper-chromatography-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/paper-chromatography-3d.js?v=202611210931"></script>
-  <script src="js/paper-chromatography.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="paper-chromatography"></script>
-  <script src="js/missions/paper-chromatography.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="paper-chromatography"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/paper-chromatography-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/paper-chromatography-3d.js?v=202611210933"></script>
+  <script src="js/paper-chromatography.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="paper-chromatography"></script>
+  <script src="js/missions/paper-chromatography.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="paper-chromatography"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

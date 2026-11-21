@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Periodic Table and Periodic Trends | Astro Ni Lab">週期表與週期性｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 週期表與週期性頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .pt canvas { aspect-ratio: auto; }
@@ -173,13 +173,14 @@
             </div>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
         <div class="legend" id="legend"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Tap an element to choose it; on a keyboard, select the table and use the arrow keys. Grey cells have no reliable data. In the 3D view, drag to rotate and tap a bar to choose its element.">點元素選取它；用鍵盤時先選取週期表，再用方向鍵移動。灰色格子表示沒有可靠的數據。3D 立體時拖曳可旋轉，點長條可選取元素。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="依什麼著色|Colour by">
           <h2 data-en="Colour by">依什麼著色</h2>
           <div class="seg3" id="propSeg" role="group" aria-label="性質" data-en-aria-label="Property">
             <button type="button" data-prop="r" aria-pressed="false" data-en="Atomic radius">原子半徑</button>
@@ -213,7 +214,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="gameCard" data-share-skip>
+        <section class="card" id="gameCard" data-share-skip data-deck="猜猜看|Guess the value">
           <h2 data-en="Guess the value">猜猜看</h2>
           <p class="hint" data-en="One element's value is hidden (the flashing “?” cell). Predict it from its neighbours in the same period and group. Within 10 % counts as a hit.">藏起一個元素的數值（閃爍的「?」格）。由同週期、同族的鄰居推出它，誤差 10 % 以內算猜中。</p>
           <div class="btns">
@@ -302,20 +303,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/periodic-trends-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/periodic-trends-3d.js?v=202611210931"></script>
-  <script src="js/periodic-trends.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="periodic-trends"></script>
-  <script src="js/missions/periodic-trends.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="periodic-trends"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/periodic-trends-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/periodic-trends-3d.js?v=202611210933"></script>
+  <script src="js/periodic-trends.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="periodic-trends"></script>
+  <script src="js/missions/periodic-trends.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="periodic-trends"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>

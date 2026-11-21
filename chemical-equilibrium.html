@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210931"></script>
+<meta name="lab-updated" content="2026-11-21 09:33">
+  <script src="js/settings.js?v=202611210933"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Chemical Equilibrium and Le Chatelier's Principle | Astro Ni Lab">化學平衡與勒沙特列原理｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210931">
+  <link rel="stylesheet" href="lab.css?v=202611210933">
   <style>
     /* 化學平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq canvas { aspect-ratio: auto; touch-action: auto; }
@@ -160,6 +160,12 @@
       .bench-actions .playbar { gap: 4px; margin: 4px 0 0; }
       .bench-actions button { min-height: 44px; }
     }
+    .bench-reading { display: none; }
+    html.labdeck-stack .bench-reading {
+      display: block; margin: 4px 0 0; padding: 5px 8px; text-align: center;
+      color: var(--text); background: var(--canvas-bg); border-radius: 8px;
+      font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -207,8 +213,7 @@
             </div>
           </div>
         </div>
-        <div class="legend" id="spLegend"></div>
-        <p class="status" id="status" aria-live="polite"></p>
+        <output class="bench-reading" id="qkReading" aria-live="off"></output>
         <div class="pred" id="predBox" hidden>
           <p id="predQ" data-en="Prediction: which way will the equilibrium shift?">預測：平衡會往哪邊移動？</p>
           <div class="seg3" role="group" aria-labelledby="predQ">
@@ -217,11 +222,14 @@
             <button type="button" data-pred="1" data-en="products →">生成物 →</button>
           </div>
         </div>
+        <div data-deck-anchor hidden></div>
+        <div class="legend" id="spLegend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="Drag the piston handle (or focus the drawing and use the arrow keys) to change the volume. Each little cluster is a molecule, drawn to show the proportions in the syringe. The water around the barrel shows the temperature.">拖曳活塞的把手（或選取畫面後按方向鍵）可以改變體積。每一小團是一個分子，數目依注射筒內的比例畫出；筒外的水浴顏色代表溫度。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="反應|Reaction">
           <h2 data-en="Reaction">反應</h2>
           <div class="seg3 rx-seg" id="rxSeg" role="group" aria-label="反應" data-en-aria-label="Reaction">
             <button type="button" data-rx="n2o4" aria-pressed="true" data-en-html="N&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; ⇌ 2NO&lt;sub&gt;2&lt;/sub&gt;">N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub></button>
@@ -231,28 +239,28 @@
           <p class="info" id="rxInfo"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="條件|Conditions" data-deck-order="-1">
           <h2 data-en="Conditions">條件</h2>
           <div class="slider"><label for="temp" data-en="Temperature T (water bath)">溫度 T（水浴）</label><output id="tempo"></output>
             <input id="temp" type="range" min="273" max="373" step="1" value="298" data-decimals="0"></div>
+          <div class="slider" id="vRow"><label for="vol" data-en="Volume V">體積 V</label><output id="volo"></output>
+            <input id="vol" type="range" min="10" max="100" step="1" value="50" data-decimals="1"></div>
+          <div class="slider" id="pRow" hidden><label for="pres" data-en="External pressure P">外界壓力 P</label><output id="preso"></output>
+            <input id="pres" type="range" min="0" max="1000" step="1" value="473" data-decimals="2"></div>
           <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="體積或壓力固定" data-en-aria-label="Fixed volume or fixed pressure">
             <button type="button" data-mode="V" aria-pressed="true" data-en="Fixed volume">定容（固定活塞）</button>
             <button type="button" data-mode="P" aria-pressed="false" data-en="Fixed pressure">定壓（活塞可動）</button>
           </div>
-          <div class="slider" id="vRow"><label for="vol" data-en="Volume V">體積 V</label><output id="volo"></output>
-            <input id="vol" type="range" min="10" max="100" step="1" value="50" data-decimals="1"></div>
           <div class="bench-fine" role="group" aria-label="活塞體積" data-en-aria-label="Piston volume">
             <span data-en="Piston volume">活塞體積</span>
             <button type="button" data-piston-step="-1" aria-label="活塞體積減少" data-en-aria-label="Decrease piston volume">−0.1 mL</button>
             <button type="button" data-piston-step="1" aria-label="活塞體積增加" data-en-aria-label="Increase piston volume">+0.1 mL</button>
           </div>
-          <div class="slider" id="pRow" hidden><label for="pres" data-en="External pressure P">外界壓力 P</label><output id="preso"></output>
-            <input id="pres" type="range" min="0" max="1000" step="1" value="473" data-decimals="2"></div>
           <div class="checks"><label><input id="cat" type="checkbox"><span data-en="Catalyst">加入催化劑</span></label>
             <label><input id="predMode" type="checkbox"><span data-en="Prediction mode (stop and predict after each change)">預測模式（每次改變後先停下來預測）</span></label></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="加入或移出氣體|Add or remove gases">
           <h2 data-en="Add or remove gases">加入或移出氣體</h2>
           <div id="amts"></div>
           <p class="hint" id="amtHint"></p>
@@ -281,7 +289,7 @@
           <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
           <div class="qk" id="qkBox" aria-live="polite">—</div>
         </section>
-        <section class="card" id="mysCard" data-share-skip>
+        <section class="card" id="mysCard" data-share-skip data-deck="未知反應|Unknown reaction">
           <h2 data-en="Unknown reaction">未知反應</h2>
           <p class="hint" data-en-html="A gas A&lt;sub&gt;2&lt;/sub&gt; that splits into 2A, with a hidden ΔH° (between 40 and 80 kJ/mol). Let it reach equilibrium at several temperatures, work out K from the partial pressures in the table, and use the slope of ln K against 1/T to find ΔH°.">一種氣體 A<sub>2</sub> 會分解成 2A，ΔH° 看不到（在 40～80 kJ/mol 之間）。在幾個溫度達到平衡，用紀錄表中的分壓算出 K，再由 ln K 對 1/T 的斜率求出 ΔH°。</p>
           <div class="btns"><button type="button" id="mysOn" data-en="Start an unknown reaction">開始未知反應</button></div>
@@ -389,20 +397,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210931"></script>
-  <script src="js/chemical-equilibrium-core.js?v=202611210931"></script>
-  <script src="js/sound.js?v=202611210931"></script>
-  <script src="js/numinput.js?v=202611210931"></script>
-  <script src="js/labdeck.js?v=202611210931"></script>
-  <script src="js/drawkit.js?v=202611210931"></script>
-  <script src="js/keys.js?v=202611210931"></script>
-  <script src="js/view3d-nav.js?v=202611210931"></script>
-  <script src="js/chemical-equilibrium-3d.js?v=202611210931"></script>
-  <script src="js/chemical-equilibrium.js?v=202611210931"></script>
-  <script src="js/firebase-config.js?v=202611210931"></script>
-  <script src="js/missions.js?v=202611210931" data-module="chemical-equilibrium"></script>
-  <script src="js/missions/chemical-equilibrium.js?v=202611210931"></script>
-  <script src="js/stats.js?v=202611210931" data-module="chemical-equilibrium"></script>
-  <script src="js/comments.js?v=202611210931"></script>
+  <script src="js/math.js?v=202611210933"></script>
+  <script src="js/chemical-equilibrium-core.js?v=202611210933"></script>
+  <script src="js/sound.js?v=202611210933"></script>
+  <script src="js/numinput.js?v=202611210933"></script>
+  <script src="js/labdeck.js?v=202611210933"></script>
+  <script src="js/drawkit.js?v=202611210933"></script>
+  <script src="js/keys.js?v=202611210933"></script>
+  <script src="js/view3d-nav.js?v=202611210933"></script>
+  <script src="js/chemical-equilibrium-3d.js?v=202611210933"></script>
+  <script src="js/chemical-equilibrium.js?v=202611210933"></script>
+  <script src="js/firebase-config.js?v=202611210933"></script>
+  <script src="js/missions.js?v=202611210933" data-module="chemical-equilibrium"></script>
+  <script src="js/missions/chemical-equilibrium.js?v=202611210933"></script>
+  <script src="js/stats.js?v=202611210933" data-module="chemical-equilibrium"></script>
+  <script src="js/comments.js?v=202611210933"></script>
 </body>
 </html>
