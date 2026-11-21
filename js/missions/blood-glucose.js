@@ -36,7 +36,7 @@
       id: 'blood-glucose-3', level: 2,
       title: { zh: '大餐也不怕', en: 'Not afraid of a feast' },
       desc: { zh: '健康的人（β 細胞與敏感度都在 0.9–1.1 倍）不打針，有一餐吃到 150 g 以上，整天血糖仍然都在 70–180 之間。', en: 'A healthy person (β cells and sensitivity both 0.9–1.1 times normal), no injections, eats 150 g or more at one meal and still stays between 70 and 180 all day.' },
-      check: function (ev) { const d = day(ev); return !!d && healthy(d) && noIns(d) && Math.max.apply(null, d.meals) >= 150 && d.tir >= 0.999 && d.min >= 70; }
+      check: function (ev) { const d = day(ev); return !!d && healthy(d) && noIns(d) && Math.max.apply(null, d.meals) >= 150 && d.max <= 180 && d.min >= 70; }
     },
     {
       id: 'blood-glucose-4', level: 3,
@@ -54,7 +54,7 @@
       id: 'blood-glucose-6', level: 4,
       title: { zh: '少吃一點，多動一點', en: 'Eat a little less, move a little more' },
       desc: { zh: '第二型（β 細胞 0.4 倍以下、敏感度 0.35 倍以下），不打胰島素，三餐每餐至少 30 g，靠飲食和運動讓範圍內時間到 90% 以上。', en: 'Type 2 (β cells 0.4 times normal or less, sensitivity 0.35 or less), no insulin, at least 30 g at each of the three meals: use food and exercise alone to reach 90% or more time in range.' },
-      check: function (ev) { const d = day(ev); return !!d && isT2(d) && noIns(d) && allAtLeast(d, 30) && d.tir >= 0.9; }
+      check: function (ev) { const d = day(ev); return !!d && isT2(d) && noIns(d) && allAtLeast(d, 30) && d.exD > 0 && d.exE > 0 && d.tir >= 0.9; }
     },
     {
       id: 'blood-glucose-7', level: 5,

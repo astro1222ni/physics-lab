@@ -144,6 +144,7 @@
         font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
       }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -185,23 +186,31 @@
             <input id="beta" type="range" min="0" max="3" step="0.05" value="1" data-decimals="2"></div>
           <div class="slider"><label for="si" data-en="Insulin sensitivity (× normal)">胰島素敏感度（× 正常）</label><output id="sio"></output>
             <input id="si" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="2"></div>
-          <p class="hint" data-en="A 60 kg adult. β cells make insulin; sensitivity is how strongly the body answers each unit of it.">體重 60 kg 的成人。β 細胞負責製造胰島素；敏感度是身體對同樣的胰島素反應有多強。</p>
+          <details><summary data-en="Body mass and meal times">體重與餐點時間</summary>
+            <label><span data-en="Body mass (kg)">體重（kg）</span> <select class="sample-control" id="bodyMass"><option>45</option><option selected>60</option><option>75</option><option>90</option></select></label>
+            <label><span data-en="Breakfast">早餐</span> <input class="sample-control" id="mealTime0" type="time" value="07:00" required></label>
+            <label><span data-en="Lunch">午餐</span> <input class="sample-control" id="mealTime1" type="time" value="12:00" required></label>
+            <label><span data-en="Dinner">晚餐</span> <input class="sample-control" id="mealTime2" type="time" value="18:00" required></label>
+            <label><span data-en="Snack">宵夜</span> <input class="sample-control" id="mealTime3" type="time" value="22:00" required></label>
+            <p data-en="Daily glucose missions use 60 kg and meal times of 07:00, 12:00, 18:00 and 22:00.">每日血糖任務採用 60 kg，四餐時間為 07:00、12:00、18:00、22:00。</p>
+          </details>
+          <p class="hint" data-en="Default body mass: 60 kg. β cells make insulin; sensitivity is how strongly the body answers each unit of it.">成人預設體重為 60 kg。β 細胞負責製造胰島素；敏感度是身體對同樣的胰島素反應有多強。</p>
         </section>
         <section class="card" data-deck="飲食（醣類公克數）|Food (grams of carbohydrate)" data-deck-order="2" data-section="lab1">
           <h2 data-en="Food (grams of carbohydrate)">飲食（醣類公克數）</h2>
-          <div class="slider"><label for="m1" data-en="Breakfast 07:00 (g)">早餐 07:00（g）</label><output id="m1o"></output>
+          <div class="slider"><label for="m1" data-en="Breakfast (g)">早餐（g）</label><output id="m1o"></output>
             <input id="m1" type="range" min="0" max="200" step="5" value="60" data-decimals="0"></div>
-          <div class="slider"><label for="m2" data-en="Lunch 12:00 (g)">午餐 12:00（g）</label><output id="m2o"></output>
+          <div class="slider"><label for="m2" data-en="Lunch (g)">午餐（g）</label><output id="m2o"></output>
             <input id="m2" type="range" min="0" max="200" step="5" value="80" data-decimals="0"></div>
-          <div class="slider"><label for="m3" data-en="Dinner 18:00 (g)">晚餐 18:00（g）</label><output id="m3o"></output>
+          <div class="slider"><label for="m3" data-en="Dinner (g)">晚餐（g）</label><output id="m3o"></output>
             <input id="m3" type="range" min="0" max="200" step="5" value="80" data-decimals="0"></div>
-          <div class="slider"><label for="m4" data-en="Late snack 22:00 (g)">宵夜 22:00（g）</label><output id="m4o"></output>
+          <div class="slider"><label for="m4" data-en="Late snack (g)">宵夜（g）</label><output id="m4o"></output>
             <input id="m4" type="range" min="0" max="200" step="5" value="0" data-decimals="0"></div>
           <p class="hint" data-en="A bowl of rice is about 55 g, a bubble tea 50–70 g, a slice of toast 15 g.">一碗白飯約 55 g、一杯珍珠奶茶 50–70 g、一片吐司約 15 g。</p>
         </section>
         <section class="card" data-deck="注射胰島素|Insulin injections" data-deck-order="3" data-section="lab1">
           <h2 data-en="Insulin injections">注射胰島素</h2>
-          <div class="slider"><label for="basal" data-en="Long-acting (basal), units per day">長效（基礎）：一天幾單位</label><output id="basalo"></output>
+          <div class="slider"><label for="basal" data-en="Basal (uniform continuous input), units per day">基礎胰島素（全天均勻輸入）：每日單位數</label><output id="basalo"></output>
             <input id="basal" type="range" min="0" max="40" step="0.5" value="0" data-decimals="1"></div>
           <div class="slider"><label for="ratio" data-en="Rapid-acting at each meal: units per 10 g of carbohydrate">速效（每餐）：每 10 g 醣打幾單位</label><output id="ratioo"></output>
             <input id="ratio" type="range" min="0" max="3" step="0.05" value="0" data-decimals="2"></div>

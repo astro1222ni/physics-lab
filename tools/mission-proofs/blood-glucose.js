@@ -53,12 +53,17 @@ e = ogttEv(1, 1); claim(check('1', e), '1 健康的人做試驗 → 正常（' +
 e = ogttEv(0.6, 0.6); claim(check('2', e), '2 β 0.6、敏感度 0.6 → 前期（' + fmt(e) + '）');
 claim(!check('2', ogttEv(1, 1)), '2 對照：健康的人不是前期');
 e = dayEv({ g: [60, 80, 150, 0] }); claim(check('3', e), '3 健康的人晚餐 150 g（' + fmt(e) + '）');
+claim(!all(e).some(id => id.startsWith('h')), '3 整天在範圍內未連帶完成隱藏任務');
+e = dayEv({ g: [60, 80, 152.7, 0] });
+claim(e.data.max > 180 && e.data.tir === 1439 / 1440 && !check('3', e), '3 核心反例：最高 ' + e.data.max.toFixed(4) + '，僅一分鐘超標也不得星');
 e = dayEv({ g: [60, 80, 200, 0] }); claim(!check('3', e), '3 對照：晚餐 200 g 就超過 180（' + fmt(e) + '）');
 e = dayEv({ beta: 0.4, si: 0.5, g: [100, 150, 150, 0] }); claim(check('4', e), '4 β 0.4、敏感度 0.5 的人吃很多（' + fmt(e) + '）');
 e = dayEv(TYPE.t2); claim(!check('4', e), '4 對照：第二型預設空腹已超過 126（' + fmt(e) + '）');
 e = dayEv(Object.assign({}, TYPE.t1, { g: [0, 0, 0, 0], basalU: 13 })); claim(check('5', e), '5 第一型不吃、長效 13 U（' + fmt(e) + '）');
 e = dayEv(Object.assign({}, TYPE.t1, { g: [0, 0, 0, 0], basalU: 15 })); claim(!check('5', e), '5 對照：長效 15 U 太多（' + fmt(e) + '）');
-e = dayEv(Object.assign({}, TYPE.t2, { g: [30, 30, 30, 0] })); claim(check('6', e), '6 第二型三餐各 30 g（' + fmt(e) + '）');
+e = dayEv(Object.assign({}, TYPE.t2, { g: [30, 30, 30, 0], exD: 30, exE: 0.6 })); claim(check('6', e), '6 第二型三餐各 30 g（' + fmt(e) + '）');
+claim(!all(e).some(id => id.startsWith('h')), '6 飲食與運動路線未連帶完成隱藏任務');
+e = dayEv(Object.assign({}, TYPE.t2, { g: [30, 30, 30, 0] })); claim(!check('6', e), '6 無運動的對照');
 e = dayEv(Object.assign({}, TYPE.t2, { g: [60, 80, 80, 0] })); claim(!check('6', e), '6 對照：第二型照常吃（' + fmt(e) + '）');
 e = ogttEv(2.2, 0.3); claim(check('7', e), '7 敏感度 0.3、β 2.2 → 正常（' + fmt(e) + '）');
 e = ogttEv(1, 0.3); claim(!check('7', e), '7 對照：β 1 就補不過來（' + fmt(e) + '）');

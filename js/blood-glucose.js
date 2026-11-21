@@ -20,9 +20,7 @@
   })();
   const FONT = D.FONT;
   const BW = 60;                              // 體重 kg
-  const GH = BW * B.MW / 1000 * 60;           // mmol/kg/min → g/h
-  const UH = BW * 60 / 1000;                  // mU/kg/min → U/h
-  const MEAL_T = [420, 720, 1080, 1320];      // 07:00、12:00、18:00、22:00
+  const DEFAULT_MEAL_TIMES = [420, 720, 1080, 1320];
   const MEAL_N = [['早餐', 'Breakfast'], ['午餐', 'Lunch'], ['晚餐', 'Dinner'], ['宵夜', 'Snack']];
   const MAX_KEEP = 3, MAX_ROWS = 20;
   const PLAY_MS = reducedMotion ? 5000 : 16000;   // 播放一天的時間
@@ -153,23 +151,30 @@
     const beta = val(el.beta), si = val(el.si);
     const g = [val(el.m1), val(el.m2), val(el.m3), val(el.m4)];
     const ratio = val(el.ratio), lead = Math.round(val(el.lead)), basalU = val(el.basal);
-    const meals = MEAL_T.map(function (t, i) { return { t: t, g: g[i] }; });
+    const meals = g.map(function (grams, i) {
+      const time = $('mealTime' + i);
+      const [hour, minute] = time.value.split(':').map(Number);
+      const t = time.value ? hour * 60 + minute : DEFAULT_MEAL_TIMES[i];
+      return { t, g: grams };
+    });
     const bolus = ratio > 0 ? meals.filter(function (m) { return m.g > 0; }).map(function (m) {
       return { t: ((m.t - lead) % 1440 + 1440) % 1440, u: m.g / 10 * ratio };
     }) : [];
     const exT = Math.round(val(el.exT) * 60), exD = Math.round(val(el.exD)), exE = val(el.exE);
     const ex = exD > 0 && exE > 0 ? [{ t: exT, dur: exD, e: exE }] : [];
-    return { beta: beta, si: si, cr: crOf(beta), bw: BW, meals: meals, bolus: bolus, basalU: basalU, ex: ex, flows: true, g: g, ratio: ratio, lead: lead, exT: exT, exD: exD, exE: exE };
+    return { beta: beta, si: si, cr: crOf(beta), bw: Number($('bodyMass').value), meals: meals, bolus: bolus, basalU: basalU, ex: ex, flows: true, g: g, ratio: ratio, lead: lead, exT: exT, exD: exD, exE: exE };
   }
+  ['bodyMass', 'mealTime0', 'mealTime1', 'mealTime2', 'mealTime3'].forEach(id =>
+    $(id).addEventListener('change', compute1));
   let emitTimer = 0;
   function compute1() {
     const p = plan1();
     const r = B.day(p);
     st1.p = p; st1.r = r;
     st1.totalU = p.basalU + p.bolus.reduce(function (a, b) { return a + b.u; }, 0);
-    let self = 0; r.F.forEach(function (f, i) { if (i < 1440) self += f.sr * BW / 1000; });
+    let self = 0; r.F.forEach(function (f, i) { if (i < 1440) self += f.sr * p.bw / 1000; });
     st1.selfU = self;
-    st1.fast = r.G[420];
+    st1.fast = r.G[p.meals[0].t];
     const s = r.stats;
     if (st1.prevMin != null && s.min < 70 && st1.prevMin >= 70) sndWarn();
     else if (st1.prevMin != null && st1.prevMax <= 180 && s.max > 180) sndHigh();
@@ -187,7 +192,9 @@
       urine: st1.r.urine, fast: st1.fast, totalU: st1.totalU, insulin: p.basalU > 0 || p.ratio > 0
     };
   }
-  function emitDay() { emit('glu-day', eventData()); }
+  function emitDay() {
+    if (st1.p.bw === 60 && st1.p.meals.every((meal, i) => meal.t === DEFAULT_MEAL_TIMES[i])) emit('glu-day', eventData());
+  }
   function statusDay() {
     const s = st1.r.stats;
     let msg = T('平均 ' + num(s.mean, 0) + ' mg/dL，一天有 ' + pct(s.tir) + ' 的時間在 70–180 之間。', 'Average ' + num(s.mean, 0) + ' mg/dL; ' + pct(s.tir) + ' of the day between 70 and 180.');
@@ -230,7 +237,7 @@
     const bar = '<div class="tirbar" aria-hidden="true"><i style="width:' + (s.tbr * 100) + '%;background:' + C['gl-lo'] + '"></i><i style="width:' + (s.tir * 100) + '%;background:' + C['gl-in'] + '"></i><i style="width:' + (s.tar * 100) + '%;background:' + C['gl-hi'] + '"></i></div>';
     const rows = [
       [T('游標 ' + hhmm(t), 'Cursor ' + hhmm(t)), num(st1.r.G[t], 0) + ' mg/dL<small>' + T('胰島素 ', 'Insulin ') + num(st1.r.I[t], 1) + ' mU/L</small>', ''],
-      [T('空腹（早餐前）', 'Fasting (before breakfast)'), num(st1.fast, 0) + ' mg/dL<small>' + T('目標 80–130', 'target 80–130') + '</small>', cls(st1.fast >= 80 && st1.fast <= 130, st1.fast >= 70 && st1.fast < 180)],
+      [T('早餐前血糖', 'Pre-breakfast glucose'), num(st1.fast, 0) + ' mg/dL<small>' + T('目標 80–130', 'target 80–130') + '</small>', cls(st1.fast >= 80 && st1.fast <= 130, st1.fast >= 70 && st1.fast < 180)],
       [T('平均／估計 A1C', 'Average / estimated A1C'), num(s.mean, 0) + ' mg/dL ／ ' + num(s.a1c, 1) + '%<small>' + T('A1C 目標 7% 以下；正常約 5–5.6%', 'A1C target below 7%; normal about 5–5.6%') + '</small>', cls(s.a1c < 6.5, s.a1c < 7)],
       [T('最低／最高', 'Lowest / highest'), num(s.min, 0) + ' ／ ' + num(s.max, 0) + ' mg/dL', cls(s.min >= 70 && s.max <= 180, s.min >= 54)],
       [T('範圍內時間 70–180', 'Time in range 70–180'), pct(s.tir) + bar + '<small>' + T('低於 70：', 'Below 70: ') + pct(s.tbr, 1) + T('・高於 180：', ' · above 180: ') + pct(s.tar, 1) + '</small>', cls(s.tir >= 0.7 && s.tbr < 0.04, s.tir >= 0.5)],
@@ -242,7 +249,7 @@
   function describe(p) {
     const ty = typeKey(p.beta, p.si);
     const who = ty ? T(TYPES[ty].zh, TYPES[ty].en) : 'β ' + num(p.beta, 2) + T('・敏感 ', ' · S ') + num(p.si, 2);
-    return who;
+    return who + ' · ' + p.bw + ' kg';
   }
   function keepCurve() {
     if (st1.kept.length >= MAX_KEEP) st1.kept.shift();
@@ -256,7 +263,7 @@
   function addRow() {
     const p = st1.p, s = st1.r.stats;
     st1.rows.push({
-      no: st1.keepNo, who: describe(p), food: p.g.map(function (g) { return num(g, 0); }).join('／'),
+      no: st1.keepNo, who: describe(p), food: p.meals.map(meal => hhmm(meal.t) + ' (' + num(meal.g, 0) + ' g)').join(' / '),
       ins: (p.basalU > 0 || p.ratio > 0) ? num(p.basalU, 1) + ' + ' + num(st1.totalU - p.basalU, 1) + ' U' : '—',
       ex: p.exD > 0 && p.exE > 0 ? hhmm(p.exT) + '・' + p.exD + "'・" + num(p.exE, 2) : '—',
       mean: s.mean, tir: s.tir, min: s.min, a1c: s.a1c, p: p
@@ -354,7 +361,7 @@
     // 腎閾
     g.save(); g.setLineDash([5, 4]); g.strokeStyle = D.alpha(C['gl-renal'], 0.9); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(P.x0, yG(162)); g.lineTo(P.x1, yG(162)); g.stroke(); g.restore();
-    small(g, T('腎閾 162', 'Kidney threshold 162'), P.x1 - 4, yG(162) - 7, C['gl-renal'], 'right', 'middle', 10.5);
+    small(g, T('腎閾 162', 'Kidney threshold 162'), P.x1 - 4, yG(162) - 7, C['gl-renal'], 'right', 'middle', 12);
     D.haloText(g, T('血糖（mg/dL）', 'Blood glucose (mg/dL)'), P.x0, P.y0 - (L.short ? 42 : 18), D.c.text, 'left', 'middle', '600 12.5px ' + FONT);
     // 運動
     st1.p.ex.forEach(function (q) {
@@ -365,7 +372,7 @@
         g.fillStyle = D.alpha(C['gl-ex'], 0.12 + 0.18 * q.e); g.fillRect(xa, P.y0, xb - xa, P.y1 - P.y0);
         g.fillStyle = D.alpha(C['gl-ex'], 0.85); g.fillRect(xa, P.y1 - 5, xb - xa, 5);
       });
-      small(g, T('運動', 'Exercise'), Math.min(P.x1 - 2, xOf(q.t) + 3), P.y1 - 13, C['gl-ex'], 'left', 'middle', 10.5);
+      small(g, T('運動', 'Exercise'), Math.min(P.x1 - 2, xOf(q.t) + 3), P.y1 - 13, C['gl-ex'], 'left', 'middle', 12);
     });
     // 三餐與注射
     st1.p.meals.forEach(function (m, i) {
@@ -374,7 +381,7 @@
       g.strokeStyle = D.alpha(C['gl-meal'], 0.35); g.lineWidth = 1; g.save(); g.setLineDash([2, 3]);
       g.beginPath(); g.moveTo(x, P.y0); g.lineTo(x, P.y1); g.stroke(); g.restore();
       bowl(g, x, P.y0 - 2, 6 + Math.min(5, m.g / 40), C['gl-meal']);
-      small(g, num(m.g, 0) + ' g', x + 10, P.y0 - 4, C['gl-meal'], 'left', 'middle', 10.5);
+      small(g, num(m.g, 0) + ' g', x + 10, P.y0 - 4, C['gl-meal'], 'left', 'middle', 12);
     });
     st1.p.bolus.forEach(function (b) {
       const x = xOf(b.t), y = P.y1 - 8;
@@ -445,7 +452,7 @@
     for (let h = 0; h <= 24; h += 3) {
       const x = xOf(h * 60);
       if (!L.short && !L.wide && h % 6) { g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x, L.ax - 10); g.lineTo(x, L.ax - 6); g.stroke(); continue; }
-      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax - (L.short && h % 6 ? 14 : 0), D.c.muted, h === 24 && (L.short || narrowPortrait.matches) ? 'right' : 'center', 'middle', 10.5);
+      small(g, (h < 10 ? '0' : '') + h + ':00', x, L.ax - (L.short && h % 6 ? 14 : 0), D.c.muted, h === 24 && (L.short || narrowPortrait.matches) ? 'right' : 'center', 'middle', 12);
     }
   }
   function drawCursor(g, L, yG) {
@@ -492,7 +499,7 @@
     g.strokeStyle = D.alpha(col, 0.8); g.lineWidth = 1.2; g.stroke();
     D.haloText(g, title, x, y - (value ? 7 : 0), D.c.text, 'center', 'middle', '600 11.5px ' + FONT);
     if (value) D.haloText(g, value, x, y + 8, col, 'center', 'middle', '600 11px ' + FONT);
-    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', (st1.L.short ? '600 11px ' : '600 10.5px ') + FONT);
+    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', (st1.L.short ? '600 11px ' : '600 12px ') + FONT);
   }
   function wOf(gph) { return gph <= 0.05 ? 0 : Math.min(11, 1.3 + 6.5 * Math.sqrt(gph / 25)); }
   function drawBody(g, x, y, w, h, t) {
@@ -513,6 +520,7 @@
       const a = [p[0] + ux * k, p[1] + uy * k], b = [cx - ux * (r + 4), cy - uy * (r + 4)];
       return toBlood ? [a, b] : [b, a];
     };
+    const GH = st1.p.bw * B.MW / 1000 * 60, UH = st1.p.bw * 60 / 1000;
     const ug = f.ug * GH, egp = f.egp * GH, use = f.use * GH, fr = f.fr * GH, sr = f.sr * UH, ui = f.ui * UH;
     const draw = function (p, toBlood, flow, col, scale) {
       const e = edge(p, toBlood);
@@ -534,9 +542,9 @@
     g.strokeStyle = zc; g.lineWidth = 3; g.stroke();
     D.haloText(g, T('血液', 'Blood'), cx, cy - r * 0.42, D.c.text, 'center', 'middle', '600 11px ' + FONT);
     D.haloText(g, num(Gv, 0), cx, cy + 1, D.c.text, 'center', 'middle', '700 ' + Math.round(Math.max(14, r * 0.45)) + 'px ' + FONT);
-    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', (st1.L.short ? '11px ' : '10.5px ') + FONT);
+    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', (st1.L.short ? '11px ' : '12px ') + FONT);
     // 往肌肉、腎臟的箭頭會從這裡經過：用有底色的膠囊標籤蓋在箭頭上，字不被穿過
-    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, st1.L.short ? y + h * 0.73 : cy + r + 21, C['gl-ins'], 'center', (st1.L.short ? '600 11px ' : '600 10.5px ') + FONT);
+    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, st1.L.short ? y + h * 0.73 : cy + r + 21, C['gl-ins'], 'center', (st1.L.short ? '600 11px ' : '600 12px ') + FONT);
     const gp = function (v) { return num(v, v < 10 ? 1 : 0) + ' g/h'; };
     const up = function (v) { return num(v, v < 1 ? 2 : 1) + ' U/h'; };
     node(g, pos.gut[0], pos.gut[1], nw, nh, T('腸道吸收', 'Gut'), gp(ug), C['gl-meal']);
@@ -570,7 +578,7 @@
   function playEvents(t0, t1) {
     const G = st1.r.G;
     for (let t = t0 + 1; t <= t1; t++) {
-      if (MEAL_T.indexOf(t) >= 0 && st1.p.g[MEAL_T.indexOf(t)] > 0) sndMeal();
+      if (st1.p.meals.some(meal => meal.t === t && meal.g > 0)) sndMeal();
       if (st1.p.bolus.some(function (b) { return b.t === t; })) sndShot();
       if (t > 0 && G[t] < 70 && G[t - 1] >= 70) sndWarn();
       if (t > 0 && G[t] > 180 && G[t - 1] <= 180) sndHigh();
@@ -825,7 +833,7 @@
     g.lineWidth = 1;
     for (let v = 50; v <= top; v += 50) {
       g.strokeStyle = D.alpha(D.c.border, 0.5); g.beginPath(); g.moveTo(P.x0, y(v)); g.lineTo(P.x1, y(v)); g.stroke();
-      small(g, String(v), P.x0 - 5, y(v), D.c.muted, 'right', 'middle', 10.5);
+      small(g, String(v), P.x0 - 5, y(v), D.c.muted, 'right', 'middle', 12);
     }
     // 判讀色條：0 分與 120 分
     const strip = function (t, a, b, w, left) {
@@ -899,8 +907,8 @@
       g.beginPath(); for (let t = 0; t <= shownT; t++) { if (!t) g.moveTo(x(t), yi(r.I[t])); else g.lineTo(x(t), yi(r.I[t])); } g.stroke();
     }
     D.haloText(g, T('血漿胰島素（mU/L）', 'Plasma insulin (mU/L)'), P.x0, I0 - 10, C['gl-ins'], 'left', 'middle', '600 11.5px ' + FONT);
-    for (let t = 0; t <= 180; t += 30) small(g, String(t), x(t), L.ax, D.c.muted, 'center', 'middle', 10.5);
-    small(g, T('分鐘', 'min'), P.x0 - 6, L.ax, D.c.muted, 'right', 'middle', 10.5);
+    for (let t = 0; t <= 180; t += 30) small(g, String(t), x(t), L.ax, D.c.muted, 'center', 'middle', 12);
+    small(g, T('分鐘', 'min'), P.x0 - 6, L.ax, D.c.muted, 'right', 'middle', 12);
   }
   function tube(g, x, y, col) {
     g.save();
