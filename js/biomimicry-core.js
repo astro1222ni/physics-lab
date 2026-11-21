@@ -147,19 +147,23 @@
   }
 
   /** 水珠從 (x, y0) 滾到 (x, y1)（y 往下坡增加）：這段路上、寬 w 範圍內的灰塵沾進水珠（xs、ys 同單位） */
-  function sweepPath(xs, ys, alive, x, y0, y1, w) {
+  function sweepPath(xs, ys, alive, x, y0, y1, w, radii) {
     const lo = Math.min(y0, y1), hi = Math.max(y0, y1), got = [];
     for (let i = 0; i < xs.length; i++) {
-      if (alive[i] === 1 && Math.abs(xs[i] - x) <= w / 2 && ys[i] >= lo && ys[i] <= hi) { alive[i] = 2; got.push(i); }
+      const radius = radii ? radii[i] : 0;
+      const dx = Math.max(0, Math.abs(xs[i] - x) - w / 2);
+      const dy = Math.max(0, lo - ys[i], ys[i] - hi);
+      if (alive[i] === 1 && dx * dx + dy * dy <= radius * radius) { alive[i] = 2; got.push(i); }
     }
     return got;
   }
   /** 水珠落在 (x, y)、接觸半徑 c：被它蓋住的灰塵沾進水珠 */
-  function capture(xs, ys, alive, x, y, c) {
+  function capture(xs, ys, alive, x, y, c, radii) {
     const got = [];
     for (let i = 0; i < xs.length; i++) {
       const dx = xs[i] - x, dy = ys[i] - y;
-      if (alive[i] === 1 && dx * dx + dy * dy <= c * c) { alive[i] = 2; got.push(i); }
+      const reach = c + (radii ? radii[i] : 0);
+      if (alive[i] === 1 && dx * dx + dy * dy <= reach * reach) { alive[i] = 2; got.push(i); }
     }
     return got;
   }
@@ -184,7 +188,7 @@
   const GECKO = {
     Fs: 194e-6,         // 單根剛毛的最大剪力（N）：Autumn 等 2000（194 ± 25 µN）
     alphaStar: 30,      // 剛毛脫離角（度）：Autumn 等 2000 量到 30.6° ± 1.8°；摩擦附著的臨界角 α*（Autumn 等 2006）
-    setae: 6.5e6,       // 大壁虎（Tokay）四腳剛毛總數約 650 萬根：全部同時附著約 1300 N（約 130 kg，理論上限）
+    setae: 6.5e6,       // 大壁虎（Tokay）四腳剛毛總數約 650 萬根：全部同時沿牆剪切約 1261 N；倒吊法向上限再乘 tan(30°)
     density: 14400,     // 每平方毫米約 14 400 根（Autumn 等 2002）
     spatulaR: 0.14e-6,  // 匙突（spatula）半徑約 0.13–0.16 µm（Autumn 等 2002 由 JKR 反推）
     spatulaF: 10e-9     // 單一匙突實測拉脫力約 10 nN（Huber 等 2005，Biol. Lett. 1:2）

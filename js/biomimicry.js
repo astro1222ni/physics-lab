@@ -21,7 +21,7 @@
   const FONT = D.FONT;
   const MAX_ROWS = 12;
   const PLATE = { W: 15, L: 22 };     // 葉面試片（mm）
-  const NDIRT = 140;
+  let dustCount = 140;
   const SLOW = 0.2;                   // 動作放慢 5 倍
   const TAU = 0.05;                   // 滑動水珠的阻尼時間（s，示意）
   const RAIN_RATE = 8;                // 每（畫面）秒幾滴雨
@@ -136,7 +136,11 @@
   function sndPeel() { const S0 = sound(); if (S0) S0.sweep({ from: 900, to: 1500, dur: 0.12, gain: 0.04, type: 'triangle' }); }
   function setStatus(id, s) { $(id).textContent = s; }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  function emit(type, data) {
+    if (type === 'clean' && (dustCount !== 140 || dirt.radii)) return;
+    if (type === 'gecko' && setaeTotal() !== B.GECKO.setae) return;
+    if (window.LabMission) window.LabMission.emit(type, data);
+  }
 
   // =====================================================================
   // 繪圖共用
@@ -154,7 +158,7 @@
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
   function title(g, s, x, y, col, align) { D.haloText(g, s, x, y, col || D.c.text, align || 'left', 'middle', '600 12px ' + FONT); }
-  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
+  function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '12px ' + FONT); }
   function evPos(c, ev) {
     const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
     return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
@@ -200,13 +204,14 @@
   function scatter() {
     const r = rngOf(dirt.seed * 7919 + 13);
     dirt.xs = []; dirt.ys = [];
-    for (let i = 0; i < NDIRT; i++) { dirt.xs.push(0.6 + r() * (PLATE.W - 1.2)); dirt.ys.push(0.6 + r() * (PLATE.L - 1.2)); }
-    dirt.alive = new Uint8Array(NDIRT).fill(1);
+    for (let i = 0; i < dustCount; i++) { dirt.xs.push(0.6 + r() * (PLATE.W - 1.2)); dirt.ys.push(0.6 + r() * (PLATE.L - 1.2)); }
+    dirt.radii = $('grainSize').value === 'mixed' ? Array.from({length: dustCount}, (_, i) => i % 2 ? 0.15 : 0.05) : null;
+    dirt.alive = new Uint8Array(dustCount).fill(1);
     st1.drops = []; st1.maxTilt = val(el.tilt); st1.minV = Infinity; st1.gentle = 0; st1.rained = 0; st1.mixed = false; st1.lastCleanStep = 0;
     st1.rolled = 0;
   }
   /** 灰塵：1 在葉面上、2 沾在水珠裡、0 已經隨水珠滾走 */
-  function cleanFrac() { let n = 0; for (let i = 0; i < NDIRT; i++) if (dirt.alive[i] === 0) n++; return n / NDIRT; }
+  function cleanFrac() { let n = 0; for (let i = 0; i < dustCount; i++) if (dirt.alive[i] === 0) n++; return n / dustCount; }
   /** 水珠不見了（擦掉、蒸發）：沾著的灰塵留回葉面；滾出葉面：灰塵跟著走 */
   function release(d, gone) { (d.held || []).forEach(function (i) { dirt.alive[i] = gone ? 0 : 1; }); d.held = []; }
 
@@ -220,7 +225,7 @@
     const s = dropState(v, false);
     const d = { id: ++st1.nid, x: x, y: y, V: val(el.vol), wet: s.mode !== 'cassie' && s.mode !== 'smooth' && !s.smooth ? true : false, s: s, vy: 0, moving: false, merged: false, rain: !!isRain, age: 0, held: [] };
     if (s.mode === 'smooth') d.wet = false;
-    if (y >= 0) d.held = B.capture(dirt.xs, dirt.ys, dirt.alive, x, y, s.c * 1e3);
+    if (y >= 0) d.held = B.capture(dirt.xs, dirt.ys, dirt.alive, x, y, s.c * 1e3, dirt.radii);
     st1.drops.push(d);
     mergeAround(d);
     if (isRain) { st1.rained++; st1.minV = Math.min(st1.minV, v); } else st1.gentle++;
@@ -301,7 +306,7 @@
       if (d.vy > 0) {
         const y0 = d.y, y1 = d.y + d.vy * real;
         d.y = y1;
-        if (y1 > 0) B.sweepPath(dirt.xs, dirt.ys, dirt.alive, d.x, Math.max(0, y0), y1, d.s.w * 1e3).forEach(function (k) { d.held.push(k); });
+        if (y1 > 0) B.sweepPath(dirt.xs, dirt.ys, dirt.alive, d.x, Math.max(0, y0), y1, d.s.w * 1e3, dirt.radii).forEach(function (k) { d.held.push(k); });
         any = true;
         d = mergeAround(d);
         if (d.y - d.s.c * 1e3 > PLATE.L && st1.drops.indexOf(d) >= 0) {
@@ -470,9 +475,9 @@
     D.roundRect(g, L.px, L.py, L.pw, L.ph, 12); g.clip();
     g.drawImage(leafTexture(L), L.px, L.py, L.pw, L.ph);
     // 灰塵
-    for (let i = 0; i < NDIRT; i++) {
+    for (let i = 0; i < dustCount; i++) {
       if (dirt.alive[i] !== 1) continue;
-      const x = X(dirt.xs[i]), y = Y(dirt.ys[i]), s = 1.6 + ((i * 37) % 5) * 0.35;
+      const x = X(dirt.xs[i]), y = Y(dirt.ys[i]), s = dirt.radii ? Math.max(1, dirt.radii[i] * sc) : 1.6 + ((i * 37) % 5) * 0.35;
       g.fillStyle = D.alpha('#000000', 0.25); g.beginPath(); g.arc(x + 0.7, y + 0.9, s, 0, 2 * Math.PI); g.fill();
       g.fillStyle = C['bm-dirt']; g.beginPath(); g.arc(x, y, s, 0, 2 * Math.PI); g.fill();
     }
@@ -761,9 +766,12 @@
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   let W2 = 300, H2 = 460;
   const gk = { lifted: false, toe: 0, toeTarget: 0, fallen: false, fallT: 0, falling: false, res: null, peeled: false };
+  function setaeTotal() {
+    return B.GECKO.setae * Number($('areaFactor').value) * Number($('setaDensity').value) / B.GECKO.density;
+  }
   function geckoEval() {
     const feet = gk.lifted && gk.toe >= DETACH ? 3 : 4;
-    const r = B.gecko(val(el.wall), val(el.mass) / 1000, fracV() * feet / 4);
+    const r = B.gecko(val(el.wall), val(el.mass) / 1000, fracV() * feet / 4, { setae: setaeTotal() });
     r.feet = feet;
     gk.res = r;
     return r;
@@ -838,14 +846,14 @@
   }
   function renderRo2() {
     const r = gk.res || geckoEval();
-    const mf = B.minFraction(val(el.wall), val(el.mass) / 1000) * 4 / r.feet;
+    const mf = B.minFraction(val(el.wall), val(el.mass) / 1000, { setae: setaeTotal() }) * 4 / r.feet;
     const n = nV(), pad = padEval();
     const rows = [
       [T('體重', 'Weight'), fmtF(val(el.mass) / 1000 * B.G), num(val(el.mass), 0) + ' g'],
       [T('沿牆面的剪力', 'Shear along the wall'), fmtF(r.S), T('上限 ', 'limit ') + fmtF(r.Smax), r.S > r.Smax ? 'bad' : ''],
       [T('拉離牆面的力', 'Pull away from the wall'), fmtF(r.P), T('上限 ', 'limit ') + fmtF(r.Pmax) + T('（剪力上限 × tan 30°）', ' (shear limit × tan 30°)'), r.P > r.Pmax ? 'bad' : ''],
       [T('安全係數', 'Safety factor'), isFinite(r.safety) ? num(r.safety, 2) : '∞', r.hold ? T('撐得住', 'holds') : T('撐不住', 'cannot hold'), r.hold ? 'good' : 'bad'],
-      [T('最少要貼住', 'Setae needed at least'), mf > 1 ? T('全部也不夠', 'more than all of them') : sig(mf * 100, 3) + '%', fmtN(mf * B.GECKO.setae) + T(' 根（全身約 650 萬根）', ' setae (of about 6.5 million)')],
+      [T('最少要貼住', 'Setae needed at least'), mf > 1 ? T('全部也不夠', 'more than all of them') : sig(mf * 100, 3) + '%', fmtN(mf * setaeTotal()) + ' / ' + fmtN(setaeTotal()) + T(' 根', ' setae')],
       [T('著地的腳', 'Feet on the wall'), String(r.feet), gk.lifted ? T('腳趾翻起 ', 'toe raised ') + num(gk.toe, 0) + '°' : ''],
       [T('黏著墊 1 mm² 分成', '1 mm² pad split into'), fmtN(n) + T(' 個尖端', ' tips'), T('每個半徑 ', 'tip radius ') + fmtLen(pad.R)],
       [T('黏著墊的拉脫力', 'Pad pull-off force'), fmtF(pad.F), T('可以吊起 ', 'can hold ') + fmtG(pad.F / B.G * 1000) + T('（一整塊的 ', ' (') + sig(B.splitGain(n), 3) + T(' 倍）', ' × one solid pad)')]
@@ -1036,7 +1044,7 @@
     const W = B.W_VDW, lo = Math.log10(0.05), hi = Math.log10(30);
     const X = function (a) { return p.x0 + (a - 0) / 90 * (p.x1 - p.x0); };
     const Y = function (f) { return p.y1 - (Math.log10(f) - lo) / (hi - lo) * (p.y1 - p.y0); };
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted; g.textAlign = 'right'; g.textBaseline = 'middle';
     [0.1, 1, 10].forEach(function (f) {
       const y = Y(f);
       g.fillText(String(f), p.x0 - 6, y);
@@ -1154,7 +1162,7 @@
     const ylo = Math.log10(F1 * 0.5), yhi = Math.log10(F1 * 1e4 * 2);
     const X = function (n) { return p.x0 + Math.log10(n) / 8 * (p.x1 - p.x0); };
     const Y = function (f) { return p.y1 - (Math.log10(f) - ylo) / (yhi - ylo) * (p.y1 - p.y0); };
-    g.font = '11px ' + FONT; g.fillStyle = D.c.muted;
+    g.font = '12px ' + FONT; g.fillStyle = D.c.muted;
     g.textAlign = 'center'; g.textBaseline = 'top';
     [0, 2, 4, 6, 8].forEach(function (e) { g.fillText(e === 0 ? '1' : '10^' + e, X(Math.pow(10, e)), p.y1 + 6); });
     g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -1334,6 +1342,10 @@
     renderRo1();
     request();
   });
+  ['grainSize', 'dustCount'].forEach(id => $(id).addEventListener('change', function () {
+    dustCount = Number($('dustCount').value); scatter(); st1.focus = null; renderRo1(); request();
+  }));
+  ['areaFactor', 'setaDensity'].forEach(id => $(id).addEventListener('change', () => geckoSettle(false)));
   $('dirtBtn').addEventListener('click', function () {
     dirt.seed++; scatter(); st1.focus = null; renderRo1();
     setStatus('status', T('重新撒上灰塵，水珠擦乾淨了。', 'Fresh dust sprinkled; the drops are wiped away.'));

@@ -92,6 +92,11 @@ const loadAt = p => +Math.pow(10, -3 + p / 100).toFixed(3);
 {
   const e = dropEv({ a: 2, b: 6, h: 6 });
   claim(check('1', e), '1 站起來的水珠：按「細柱」，' + ddesc(e.data));
+  const posts = { a: 2, b: 6, h: 14 };
+  const dry = dropEv(posts), wet = dropEv(posts, 4, true);
+  claim(dry.data.mode === 'cassie' && wet.data.mode === 'wenzel' && check('1', dry) && check('1', wet),
+    '1 同一柱面輕放／4 m/s 撞擊均達標：' + f(dry.data.theta, 2) + '°、' + f(wet.data.theta, 2) + '°');
+  claim([dry, wet].every(ev => !all(ev).some(id => id.startsWith('h'))), '1 兩種達標水滴均不連帶完成隱藏任務');
   claim(!check('1', dropEv({})), '1 對照：預設粗柱 θ ' + f(dropEv({}).data.theta, 1) + '° 不算');
 }
 {

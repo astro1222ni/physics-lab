@@ -21,7 +21,7 @@
       id: 'biomimicry-1', level: 1,
       title: { zh: '站起來的水珠', en: 'A drop that stands up' },
       desc: { zh: '放一顆接觸角至少 150° 的水珠（超疏水）。', en: 'Place a drop with a contact angle of at least 150° (superhydrophobic).' },
-      check: function (ev) { return ev.type === 'drop' && ev.data.theta >= 150 && ev.data.mode === 'cassie'; }
+      check: function (ev) { return ev.type === 'drop' && ev.data.theta >= 150; }
     },
     {
       id: 'biomimicry-2', level: 2,

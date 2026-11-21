@@ -150,6 +150,7 @@
         font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
       }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -224,6 +225,11 @@
           <div class="slider"><label for="rainv" data-en="Speed of the rain drops (m/s)">雨滴落下的速度（m/s）</label><output id="rainvo"></output>
             <input id="rainv" type="range" min="0.5" max="9" step="0.1" value="2" data-decimals="1"></div>
           <p class="hint" data-en="Drops you place yourself are set down gently. Drizzle falls at about 2 m/s; big rain drops reach about 9 m/s.">自己放的水珠是輕輕放上去的。毛毛雨大約 2 m/s，大雨滴可以到 9 m/s 左右。</p>
+          <details><summary data-en="Dust sample">灰塵樣本</summary>
+          <label><span data-en="Dust grain model">灰塵粒徑模型</span> <select class="sample-control" id="grainSize"><option value="point" data-en="Point grains">點粒子</option><option value="mixed" data-en="Mixed radii (0.05 and 0.15 mm)">混合半徑（0.05、0.15 mm）</option></select></label>
+          <label><span data-en="Dust grains (removal scored by count)">灰塵粒數（按顆數計算清除率）</span> <select class="sample-control" id="dustCount"><option>70</option><option selected>140</option><option>280</option></select></label>
+            <p data-en="Cleaning missions use 140 point grains.">清潔任務使用 140 個點粒子。</p>
+          </details>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -261,6 +267,11 @@
           <div class="slider"><label for="frac" data-en="Setae in contact (%)">貼住的剛毛比例（%）</label><output id="fraco"></output>
             <input id="frac" type="range" min="0" max="1000" step="1" value="600" data-decimals="3"></div>
           <p class="hint" data-en-html="A large gecko has about 6.5 million setae. Each can pull about 194 µN along the wall; straight off the wall it holds at most tan 30° of that (“frictional adhesion”).">大壁虎約有 650 萬根剛毛，每根沿牆面最多能拉約 194 µN；垂直拉離牆面最多只有它的 tan 30° 倍（「摩擦附著」）。</p>
+          <details><summary data-en="Toe pad area and setal density">趾墊面積與剛毛密度</summary>
+            <label><span data-en="Total toe pad area (relative to the reference gecko)">四腳趾墊總面積（相對基準壁虎）</span> <select class="sample-control" id="areaFactor"><option>0.5</option><option selected>1</option><option>2</option></select></label>
+            <label><span data-en="Setae per square millimetre">每平方毫米剛毛數</span> <select class="sample-control" id="setaDensity"><option>7200</option><option selected>14400</option><option>28800</option></select></label>
+            <p data-en="Gecko load missions use a reference total of 6.5 million setae on four feet.">壁虎承重任務以四腳合計 650 萬根剛毛為基準。</p>
+          </details>
         </section>
 
         <section class="card">
@@ -319,7 +330,7 @@
       <p data-en-html="A falling rain drop presses with roughly \(\tfrac12\rho v^2\). If that is larger, the water is driven into the gaps and the drop sticks in the Wenzel state. Shrinking the same shape ten times makes it ten times stronger — one reason the lotus covers its micro-bumps with nanometre wax.">落下的雨滴大約用 \(\tfrac12\rho v^2\) 的壓力往下壓。壓力比較大時，水被擠進縫隙，水珠就黏在 Wenzel 狀態。同樣的形狀縮小十倍，就耐壓十倍——這是蓮葉在微米乳突上再長奈米蠟管的原因之一。</p>
 
       <h3 data-en="The gecko’s foot">壁虎的腳</h3>
-      <p data-en-html="A gecko’s toes are lined with ridges (lamellae) carrying about 14 400 hairs, called <strong>setae</strong>, on every square millimetre. Each seta ends in hundreds of flat tips called <strong>spatulae</strong>, about 0.2 µm across. In 2000 Kellar Autumn and colleagues pulled on a single seta and measured up to about 194 µN — so the 6.5 million setae of a large gecko could, in principle, hold about 130 kg. In 2002 they showed that the force is <strong>van der Waals attraction</strong>: it works just as well on water-repelling and water-loving surfaces, and depends on the size and shape of the tips, not their chemistry. A single spatula pulls off at about 10 nN (Huber et al. 2005).">壁虎的腳趾底下有一條條皺褶（趾瓣），每平方毫米長著約 14 400 根細毛，叫<strong>剛毛</strong>。每根剛毛末端分成幾百個扁平的尖端，叫<strong>匙突</strong>，寬約 0.2 µm。2000 年 Autumn 等人拉單一根剛毛，量到最大約 194 µN——所以大壁虎的 650 萬根剛毛，理論上可以撐起約 130 公斤。2002 年他們證明這是<strong>凡得瓦力</strong>：在疏水和親水的表面一樣有效，看的是尖端的大小與形狀，不是化學性質。單一個匙突的拉脫力約 10 nN（Huber 等 2005）。</p>
+      <p data-en-html="A gecko’s toes are lined with ridges (lamellae) carrying about 14 400 hairs, called <strong>setae</strong>, on every square millimetre. Each seta ends in hundreds of flat tips called <strong>spatulae</strong>, about 0.2 µm across. In 2000 Kellar Autumn and colleagues pulled on a single seta and measured up to about 194 µN — so the 6.5 million setae of a large gecko give an ideal full-contact shear capacity of 1,261 N along a wall (about 129 kg equivalent). On a ceiling the model normal limit is 728 N (about 74 kg). In 2002 they showed that the force is <strong>van der Waals attraction</strong>: it works just as well on water-repelling and water-loving surfaces, and depends on the size and shape of the tips, not their chemistry. A single spatula pulls off at about 10 nN (Huber et al. 2005).">壁虎的腳趾底下有一條條皺褶（趾瓣），每平方毫米長著約 14 400 根細毛，叫<strong>剛毛</strong>。每根剛毛末端分成幾百個扁平的尖端，叫<strong>匙突</strong>，寬約 0.2 µm。2000 年 Autumn 等人拉單一根剛毛，量到最大約 194 µN——所以大壁虎的 650 萬根剛毛，若全數理想接觸，沿垂直牆面的剪力上限為 1261 N（約相當於 129 kg 的重量）。倒吊時，本模型的法向拉力上限為 728 N（約相當於 74 kg 的重量）。2002 年他們證明這是<strong>凡得瓦力</strong>：在疏水和親水的表面一樣有效，看的是尖端的大小與形狀，不是化學性質。單一個匙突的拉脫力約 10 nN（Huber 等 2005）。</p>
       <div class="formula">\[ F_{\text{JKR}} = \tfrac32\pi W R ,\qquad W = \frac{A}{12\pi D_0^2} \]</div>
       <p data-en-html="By the JKR theory of elastic contact, the force needed to pull a round tip off a surface grows with its radius \(R\), not its area. Split one pad into \(n\) tips with the same total area and each tip has radius \(R/\sqrt n\), so the total force grows as \(\sqrt n\) (<strong>contact splitting</strong>, Arzt, Gorb and Spolenak 2003). Fine tips also fit into the bumps of a real surface.">依照彈性接觸的 JKR 理論，把圓形尖端拉離表面的力和半徑 \(R\) 成正比，而不是和面積成正比。把一塊墊子分成 \(n\) 個總面積相同的尖端，每個半徑變成 \(R/\sqrt n\)，總力就變成 \(\sqrt n\) 倍（<strong>接觸分岔</strong>，Arzt、Gorb 與 Spolenak 2003）。細小的尖端也比較能貼合真實表面的起伏。</p>
 

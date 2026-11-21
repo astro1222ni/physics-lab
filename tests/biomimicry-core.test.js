@@ -150,4 +150,11 @@ test('壁虎：全部剛毛約可撐 130 kg；天花板靠附著力（tan 30°�
   assert.ok(B.gecko(0, 0.1, 0).hold, '在地板上不用黏');
 });
 
+
+test('粒徑改變灰塵接觸水滴或掃過邊界的條件', () => {
+  const xs = [1.1, 1.1], ys = [0, 0], radii = [0.05, 0.15];
+  assert.deepStrictEqual(B.capture(xs, ys, [1,1], 0, 0, 1, radii), [1]);
+  assert.deepStrictEqual(B.sweepPath(xs, ys, [1,1], 0, -1, 1, 2, radii), [1]);
+});
+
 console.log(passed + ' 項通過');
