@@ -574,7 +574,7 @@
     const token=++viewToken;
     viewLabels(false,T('載入校園中庭…','Loading courtyard…'));
     try {
-      const { createCourtyard }=await import('./sir-epidemic-3d.js');
+      const { createCourtyard }=await import('./sir-epidemic-3d.js'+((document.querySelector('script[src*="js/sir-epidemic.js"]')?.src.match(/\?v=[^&#]+/)||[''])[0]));
       if (token!==viewToken) return;
       viewLabels(true);
       courtFactory=createCourtyard;openCourt();

@@ -687,7 +687,7 @@
     if(world)return;
     const id=++viewToken;$('viewMsg').hidden=false;$('viewMsg').textContent=T('載入體育館…','Loading the gym…');
     try{
-      const {createGym}=await import('./basketball-shot-3d.js');
+      const {createGym}=await import('./basketball-shot-3d.js'+((document.querySelector('script[src*="js/basketball-shot.js"]')?.src.match(/\?v=[^&#]+/)||[''])[0]));
       if(id!==viewToken)return;
       $('view2').hidden=true;$('view3').hidden=$('cameraControls').hidden=false;
       world=createGym($('view3'),T,()=>close3D(T('3D 顯示中斷，已切回側面圖。','3D context lost. Side view restored.')),$('navigation3d'));
