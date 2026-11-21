@@ -180,13 +180,18 @@ let home = read('index.html');
 // 實驗與物理自習室單元混排，照上架日由新到舊；同一天再比 Git 第一次新增的 commit 時間。
 const commitTimes = {};
 const commitTime = c => { if (!c) return 0; if (!(c in commitTimes)) commitTimes[c] = +git(['show', '-s', '--format=%ct', c]) || 0; return commitTimes[c]; };
-const learnUnits = (W.LAB_LEARN_UNITS || []).filter(u => u.href && fs.existsSync(path.join(ROOT, u.href.split(/[?#]/)[0])));
-const learnPages = [...new Set(learnUnits.map(u => u.href.split(/[?#]/)[0].replace(/\.html$/, '')))];
+// 11/21 站長選「合成一張卡」：同一份考卷（同一個 file）的題目在「最新上架」只佔一張卡，連到學習大廳的學測分頁
+const examGroups = {};
+for (const u of W.LAB_LEARN_UNITS || []) if (u.file && fs.existsSync(path.join(ROOT, u.file + '.html'))) (examGroups[u.file] = examGroups[u.file] || []).push(u);
+const learnUnits = (W.LAB_LEARN_UNITS || []).filter(u => !u.file && u.href && fs.existsSync(path.join(ROOT, u.href.split(/[?#]/)[0])))
+  .concat(Object.entries(examGroups).map(([file, g]) => ({ id: file, subject: g[0].subject, chapter: g[0].chapter, chapterEn: g[0].chapterEn, zh: '學測物理 ' + g.length + ' 題詳解', en: 'GSAT physics, ' + g.length + ' worked problems', href: 'learn.html?view=exam', page: file, thumb: g[0].thumb, l: g.map(u => u.l || '').sort().pop() || undefined })));
+const learnPage = u => u.page || u.href.split(/[?#]/)[0].replace(/\.html$/, '');
+const learnPages = [...new Set(learnUnits.map(learnPage))];
 const learnFirst = historyDates(learnPages);
 const slugOrder = list.map(x => x.s).sort();
 const fresh = list.map(x => ({ x, l: x.l, t: firstDates[x.s] && firstDates[x.s].date === x.l ? commitTime(firstDates[x.s].commit) : 0, o: slugOrder.indexOf(x.s) }))
   .concat(learnUnits.map((u, i) => {
-    const page = u.href.split(/[?#]/)[0].replace(/\.html$/, ''), f = learnFirst[page];
+    const page = learnPage(u), f = learnFirst[page];
     const l = u.l || (f && f.date) || (dirty.has(page + '.html') ? today : '');
     return { u, l, t: !u.l && f ? commitTime(f.commit) : 0, o: i };
   }).filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e.l) && e.l <= today))

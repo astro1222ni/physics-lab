@@ -154,7 +154,7 @@
 - 八科頁：physics、chemistry、biology、earth-science、mathematics、information-technology、geography、music（皆在根目錄）。唯一頁名／分類來源是 LAB_SUBJECTS 與 LAB_SUBJECT_GROUPS。
 - 首頁沒有分支、章或完整實驗卡列。原本科目區完整搬到科目頁；實驗 slug、網址、任務、星星、成就、catalog 的 s/d/b/c 與章制霸對照不變。搬遷不變量在 tools/home-v2-invariants.json。
 - 新實驗卡片加入對應科目頁；新科目先建科目頁和目錄，再讓首頁的製作中文字列變成科目按鍵。請勿再跑一次性 tools/split-home.cjs。
-- **11/21 改版**：首頁不再有科目大分類與「從這裡開始」推薦；科目大分類在 labs.html（body `.labs-page`，原本 `.home-page .subject-*` 的樣式改掛 `.labs-page`）。首頁兩張入口卡名稱：「全科模擬實驗室／Simulation Lab」「物理自習室／Physics Study Room」（站長 11/21）。「最新上架」10 張照上架日、同日再照 Git 第一次新增的 commit 時間由新到舊，實驗與 `LAB_LEARN_UNITS`（js/missions/index.js，學習單元要有 `href`、`thumb`、`chapterEn`）混排，自習室卡有「自習室」標記與 `--learn` 色。科目頁麵包屑是「首頁 / 全科模擬實驗室 / 科目」。
+- **11/21 改版**：首頁不再有科目大分類與「從這裡開始」推薦；科目大分類在 labs.html（body `.labs-page`，原本 `.home-page .subject-*` 的樣式改掛 `.labs-page`）。首頁兩張入口卡名稱：「全科模擬實驗室／Simulation Lab」「物理自習室／Physics Study Room」（站長 11/21）。「最新上架」10 張照上架日、同日再照 Git 第一次新增的 commit 時間由新到舊，實驗與 `LAB_LEARN_UNITS`（js/missions/index.js，學習單元要有 `href`、`thumb`、`chapterEn`）混排，自習室卡有「自習室」標記與 `--learn` 色。同一份考卷（`LAB_LEARN_UNITS` 裡 `file` 相同，例如 exam-114 的 14 題）只合成一張「學測物理 N 題詳解」卡，連到 `learn.html?view=exam`（11/21 站長選「合成一張卡」，`tools/build-catalog.cjs`）。科目頁麵包屑是「首頁 / 全科模擬實驗室 / 科目」。
 - npm run seo 先 build-catalog，再 SEO：科目卡數字、規劃數、最新十張、上架日、相似實驗、搜尋索引、同步錨點轉址表、科目分享卡／結構化資料／網站地圖。科目頁為非實驗頁，不得進入任務試玩或縮圖的實驗清單。
 - search-index.js 只在聚焦搜尋或 ?q= 時載入。科目頁以 data-scope 限定本科，另連全科搜尋。home.js 在首次繪製後載入 catalog；LabThumbs.apply(root) 支援新卡與深淺色。
 - stats.js 的 labHist 只存本機，最多 200 筆；推薦純前端，日期固定排序，限制同章／同科數並保留跨科。排行榜將本人全科名次存 labRank:<uid>，首頁只顯示快取，不現算排名。
