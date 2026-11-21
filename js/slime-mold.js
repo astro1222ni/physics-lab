@@ -506,7 +506,7 @@
   const RAIL_OK = S.railEdges(TW);
   const CITY = S.CITIES;
   const DEFAULT_ON = CITY.map(function (c) { return !!c.on; });
-  const net = { on: DEFAULT_ON.slice(), sim: null, playing: false, done: false, stats: null, mst: null, mstStats: null, railStats: null, ev: null, selCity: 0, params: null };
+  const net = { weights: CITY.map(() => 1), on: DEFAULT_ON.slice(), sim: null, playing: false, done: false, stats: null, mst: null, mstStats: null, railStats: null, ev: null, selCity: 0, params: null };
   let rows2 = [], runNo2 = 0;
   const RIGHT = { kee: 1, tpe: 1, ila: 1, hun: 1, ttt: 1, pif: 1, hch: 1 };   // 名稱寫在右邊（東邊）的城市
   const EAST = { hun: 1, ttt: 1 }, WEST = { tpe: 1, tyn: 1, hsz: 1, mia: 1, txg: 1, chw: 1, yun: 1, cyi: 1, tnn: 1, khh: 1, pif: 1 };
@@ -518,7 +518,7 @@
     S.setMountain(TG, val(el.mtn));
     const f = foods2();
     net.params = { I0: val(el.I0), gamma: val(el.gam), M: val(el.mtn) };
-    net.sim = f.length >= 2 ? S.create({ g: TG, foods: f, rule: 'sig', gamma: net.params.gamma, I0: net.params.I0, dt: DT2 }) : null;
+    net.sim = f.length >= 2 ? S.create({ g: TG, foods: f, weights: net.weights.filter((w, i) => net.on[i]), rule: 'sig', gamma: net.params.gamma, I0: net.params.I0, dt: DT2 }) : null;
     net.playing = !!keepPlaying && !!net.sim; net.done = false; net.ev = null;
     if (f.length >= 2) {
       net.mst = S.mstEdges(TG, f);
@@ -551,7 +551,7 @@
     const ids = onIds(), d15 = isDefault15(), rs = net.railStats;
     const beat = !!(d15 && rs && st.connected && st.TL <= rs.TL && st.MD <= rs.MD && st.FT >= 0.95);
     const ev = {
-      cities: f.length, ids: ids, default15: d15, all17: f.length === CITY.length,
+      unitFood: !net.sim.weights, cities: f.length, ids: ids, default15: d15, all17: f.length === CITY.length,
       I0: net.params.I0, gamma: net.params.gamma, M: net.params.M, converged: net.sim.change < TOL, t: net.sim.t,
       connected: st.connected, TL: st.TL, MD: st.MD, FT: st.FT, TLr: r.TL, MDr: r.MD,
       railTL: rs ? rs.TL : null, railMD: rs ? rs.MD : null, railFT: rs ? rs.FT : null, beatRail: beat,
@@ -728,7 +728,7 @@
     CITY.forEach(function (c, i) {
       const n = TW.city[c.id], x = X(TG.x[n]), y = Y(TG.y[n]);
       const right = RIGHT[c.id] === 1;
-      if (net.on[i]) oat(g, x, y, 6.5, (i * 1.7) % 3 - 1.5, sel === i);
+      if (net.on[i]) oat(g, x, y, 6.5 * Math.sqrt(net.weights[i]), (i * 1.7) % 3 - 1.5, sel === i);
       else {
         g.beginPath(); g.arc(x, y, 3.6, 0, 2 * Math.PI);
         g.fillStyle = D.c.surface; g.fill(); g.strokeStyle = D.c.muted; g.lineWidth = 1.4; g.stroke();
@@ -852,8 +852,15 @@
 
   // ---------- 城市按鈕 ----------
   function renderCities() {
+    const select = $('foodSite'), previous = Number(select.value);
+    select.replaceChildren();
+    CITY.forEach(function (c, i) {
+      if (net.on[i]) select.add(new Option(cityName(c), i));
+    });
+    if (net.on[previous]) select.value = previous;
+    $('foodAmount').value = net.weights[Number(select.value)];
     $('cities').innerHTML = CITY.map(function (c, i) {
-      return '<button type="button" data-i="' + i + '" aria-pressed="' + net.on[i] + '">' + cityName(c) + '</button>';
+      return '<button type="button" data-i="' + i + '" aria-pressed="' + net.on[i] + '">' + cityName(c) + (net.on[i] && net.weights[i] !== 1 ? ' · ' + net.weights[i] + '×' : '') + '</button>';
     }).join('');
   }
   function toggleCity(i) {
@@ -867,11 +874,18 @@
     reset2();
     setStatus2(T('城市換了：按「開始生長」讓黏菌重新連線。', 'The cities changed: press “Grow” to let the mould connect them again.'));
   }
+  $('foodSite').addEventListener('change', function () {
+    $('foodAmount').value = net.weights[Number(this.value)];
+  });
+  $('foodAmount').addEventListener('change', function () {
+    net.weights[Number($('foodSite').value)] = Number(this.value);
+    renderCities(); citiesChanged();
+  });
   $('cities').addEventListener('click', function (ev) {
     const b = ev.target.closest('button[data-i]');
     if (b) toggleCity(+b.getAttribute('data-i'));
   });
-  $('cityDefault').addEventListener('click', function () { net.on = DEFAULT_ON.slice(); renderCities(); citiesChanged(); });
+  $('cityDefault').addEventListener('click', function () { net.on = DEFAULT_ON.slice(); net.weights.fill(1); renderCities(); citiesChanged(); });
   $('cityAll').addEventListener('click', function () { net.on = CITY.map(function () { return true; }); renderCities(); citiesChanged(); });
   cv2.addEventListener('click', function (ev) {
     if (!L2 || !L2.cityPts) return;
@@ -1088,6 +1102,7 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  window.addEventListener('lab:langchange', renderCities);
   buildMaze(false);
   reset2();
   setStatus(T('按「開始生長」：黏菌一開始鋪滿整個迷宮，兩片燕麥片之間有原生質流動。', 'Press “Grow”: the mould starts out filling the whole maze, with protoplasm flowing between the two oat flakes.'));

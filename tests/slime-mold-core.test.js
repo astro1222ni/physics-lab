@@ -220,4 +220,23 @@ test('半隱式更新：D 不會變負，步長很大也穩定', () => {
   close(routeD(s, g, lens)[0], 1, 1e-6);
 });
 
+test('等量城市逐步重現舊管徑；異量入口與各出口守恆', () => {
+  const g = S.graph([[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 2]], [1, 1]);
+  const s = S.create({ g, foods: [0, 1, 2], rule: 'sig', weights: [1, 1, 1] });
+  for (const old of [0.8859005125782016, 0.7908176063933696, 0.711581851239343]) {
+    S.step(s); assert.deepStrictEqual(Array.from(s.D), [old, old]);
+  }
+  const weights = [0.5, 1, 2];
+  for (let k = 0; k < 3; k++) {
+    const foods = [0, 1, 2].map(i => (i + k) % 3);
+    const run = S.create({ g, foods, weights: foods.map(i => weights[i]), rule: 'sig' });
+    S.step(run);
+    const inlet = foods[2], inflow = weights[inlet];
+    close(run.b[inlet], inflow, 1e-12);
+    close(run.b.reduce((a, b) => a + b), 0, 1e-12);
+    close(run.b[foods[0]] / run.b[foods[1]], weights[foods[0]] / weights[foods[1]], 1e-12);
+    assert.ok(run.D[1] > run.D[0]);
+  }
+});
+
 console.log(passed + ' 項通過');

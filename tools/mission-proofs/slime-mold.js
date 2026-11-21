@@ -13,7 +13,17 @@ const fakeLM = { register: function (id, list) { list.forEach(m => defs.push(Obj
 new Function('window', 'LabMission', fs.readFileSync(ROOT + 'js/missions/slime-mold.js', 'utf8'))({ LabMission: fakeLM }, fakeLM);
 const byId = {};
 defs.forEach(m => { byId[m.id.replace('slime-mold-', '')] = m; });
-const check = (id, ev) => byId[id].check(ev, byId[id].mem);
+function check(id, ev) {
+  const mission = byId[id];
+  // Replay the same proof operation and history with only the experimental mode changed.
+  if (ev.type === 'net') for (const fields of [{ unitFood: false }]) {
+    const alternate = { type: ev.type, data: Object.assign({}, ev.data, fields) };
+    const memory = structuredClone(mission.mem);
+    require('assert').ok(!mission.check(alternate, memory), id + ' 新模式不能完成任務');
+    require('assert').deepStrictEqual(memory, mission.mem);
+  }
+  return mission.check(ev, mission.mem);
+}
 
 const out = [];
 let fail = 0;

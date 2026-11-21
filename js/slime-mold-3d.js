@@ -234,7 +234,7 @@
       CITY.forEach(function (c, i) {
         const n = TW.city[c.id], x = wx(TG.x[n]), z = wz(TG.y[n]), y = nodeY(n);
         if (net.on[i]) {
-          const o = oatMesh(0.085);
+          const o = oatMesh(0.085 * Math.cbrt(net.weights[i]));
           o.position.set(x, y + 0.05, z); o.rotation.y = i * 1.3;
           cities.add(o);
         } else {

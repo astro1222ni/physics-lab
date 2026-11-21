@@ -98,6 +98,9 @@
     .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
     /* 城市按鈕 */
     .cities { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    @media (min-width: 390px) and (max-width: 480px) {
+      .cities { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+    }
     .cities button { padding: 4px 2px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
     .cities button[aria-pressed="true"] { background: color-mix(in srgb, var(--sm-tube) 22%, var(--surface)); border-color: var(--sm-tube); font-weight: 700; color: var(--text); }
     .city-tools { display: flex; gap: 6px; margin-top: 8px; }
@@ -235,6 +238,10 @@
             <button type="button" id="cityDefault" data-en="The 15 railway cities">鐵路 15 城</button>
             <button type="button" id="cityAll" data-en="All 17">全部 17 城</button>
           </div>
+          <label><span data-en="Food site">食物點</span> <select id="foodSite" style="min-height:44px"></select></label>
+          <label><span data-en="Relative food amount">相對食物量</span>
+            <select id="foodAmount" style="min-height:44px"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+          </label>
           <p class="hint" data-en="Changing the cities starts the growth again.">換城市會重新開始生長。</p>
         </section>
         <section class="card" data-deck="黏菌|The slime mould" data-deck-order="2" data-section="lab2">
@@ -258,6 +265,8 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en="Each selected city takes a turn as the inlet. Its food amount scales inflow, and the other cities share an equal total outflow in proportion to their food. Tube thickness responds to the average across cases. Food amounts are teaching settings (network experiment: Tero et al., 2010).">臺灣模式讓各城市輪流當入口，入口流量乘上該點食物量，其餘城市依食物量比例分攤等量流出。管徑依這些工況的平均反應更新。相對食物量是教學設定（路網實驗參考 Tero 等，2010）。</p>
+      <p data-en="Tubes initially cover all accessible passages. Several equally short routes can survive. Two disjoint 10-cell paths still give a route distance of 10 cells, while the total retained length is 20 (Bonifaci et al., 2012).">迷宮從管網已覆蓋所有可走通道開始。兩個食物點之間若有等長最短路線，可能同時保留多條。例如兩條互不重疊的 10 格路徑，兩點路距仍是 10 格，留存總長則有 20 格（Bonifaci 等，2012）。</p>
       <p data-en-html="<em>Physarum polycephalum</em>, the “many-headed slime mould”, is not a fungus. It is an amoeba-like protist (Amoebozoa). In its feeding stage, the <strong>plasmodium</strong>, it is one enormous cell with millions of nuclei, spread out as a network of tubes that can cover a whole Petri dish. Inside the tubes the protoplasm streams back and forth about once every minute or two (<strong>shuttle streaming</strong>), carrying food and signals across the cell.">多頭絨泡菌（<em>Physarum polycephalum</em>）不是真菌，而是像變形蟲一樣的原生生物（變形蟲類）。它覓食時的型態叫<strong>變形體</strong>：一個有幾百萬個細胞核的巨大單一細胞，攤成一張管子的網，可以鋪滿整個培養皿。管子裡的原生質大約每一、兩分鐘來回流動一次（<strong>穿梭流動</strong>），把養分和訊號送到細胞的各處。</p>
 
       <h3 data-en="Solving a maze">走迷宮</h3>
