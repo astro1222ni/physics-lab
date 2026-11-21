@@ -105,9 +105,9 @@
       g.beginPath();g.moveTo(30,190);g.lineTo(70,120);g.lineTo(98,140);g.lineTo(126,96);g.lineTo(170,190);g.closePath();g.fillStyle='#d9f3ff';g.fill();
       g.beginPath();g.moveTo(98,140);g.lineTo(126,96);g.lineTo(170,190);g.lineTo(120,190);g.closePath();g.fillStyle='#9fd3ea';g.fill();
       g.fillStyle='#1f5d80';g.fillRect(0,190,200,60);
-      label(g,T('比特幣一年的電能','One year of Bitcoin'),206,58,C.gold,17);
-      sci(g,T('1.2×10^{11} 度','1.2×10^{11} kWh'),206,96,C.white,21);sci(g,'≈ 4.3×10^{17} J',206,128,C.white,21);
-      label(g,T('冰的融化熱','Heat of fusion'),206,176,C.faint,15);sci(g,'80 kcal/kg，1 kcal ≈ 4 kJ',206,204,C.teal,16);
+      label(g,T('比特幣一年的電能','One year of Bitcoin'),204,50,C.gold,23);
+      sci(g,T('1.2×10^{11} 度','1.2×10^{11} kWh'),204,94,C.white,29);sci(g,'≈ 4.3×10^{17} J',204,134,C.white,29);
+      label(g,T('冰的融化熱','Heat of fusion'),204,182,C.faint,20);sci(g,'80 kcal/kg，1 kcal ≈ 4 kJ',204,216,C.teal,19);
     },
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,controls,range,btn,complete,output,render}){

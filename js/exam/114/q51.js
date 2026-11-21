@@ -121,7 +121,7 @@
   ExamScene.add(51,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,eg:3.2,lam:500}),
     paint,
-    preview(g){axes(g);curve(g);gap(g,3.2);line(g,X(388),Y(3.2),X(388),214,C.teal,1.5,[4,4]);K.dot(g,X(388),Y(3.2),5,C.teal);sci(g,'λ_{max} = ?',X(388)+8,200,C.teal,16);},
+    preview(g){K.boost(1.45,()=>{axes(g);curve(g);gap(g,3.2);});line(g,X(388),Y(3.2),X(388),214,C.teal,1.5,[4,4]);K.dot(g,X(388),Y(3.2),6,C.teal);sci(g,'λ_{max} = ?',X(388)+10,198,C.teal,24);},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const ok=()=>{const E=eV(s.lam);if(s.lam===400&&s.eg<=E&&E-s.eg<=.1)complete();};

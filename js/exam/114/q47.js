@@ -76,7 +76,7 @@
   ExamScene.add(47,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,pick:-1,found:new Set()}),
     paint,
-    preview(g){formula(g,30,104,26);label(g,T('哪些單位和能量相同？','Which have energy units?'),230,206,C.gold,18,'center');},
+    preview(g){formula(g,88,100,36);label(g,T('哪些單位和能量相同？','Which have energy units?'),230,216,C.gold,26,'center');},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,btn,complete}){
       s.hands=true;const bs=[];

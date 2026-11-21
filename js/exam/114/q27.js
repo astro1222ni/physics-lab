@@ -103,7 +103,7 @@
   ExamScene.add(27,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,ac:true,freq:1,time:0,battery:0,dc:0}),
     paint,
-    preview(g){rig(g,190,200,96,.8,.8);label(g,T('手機','Phone'),330,92,C.white,15);label(g,T('充電器','Charger'),330,206,C.white,15);label(g,T('線圈','coils'),40,150,copper,14);},
+    preview(g){rig(g,204,200,96,.8,.8);label(g,T('手機','Phone'),338,92,C.white,22);label(g,T('充電器','Charger'),338,208,C.white,22);label(g,T('線圈','Coils'),22,154,copper,LabSettings.lang==='en'?17:19);},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,toggle,btn,complete,render,root}){
       s.hands=true;let frame=0,prev;

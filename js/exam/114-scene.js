@@ -141,11 +141,11 @@ window.ExamScene=(()=>{
   const PX=v=>59+(v+100)*376/160,PY=i=>28+(.4-i)*181/1.6;
   function channel(g,s){
     for(let v=-100;v<=60;v+=20){
-      line(g,PX(v),28,PX(v),209,'#4d6978',1,[3,4]);label(g,String(v),v===-100?PX(v)-5:PX(v),231,faint,14,v===-100?'left':'center'); // 試玩 B8：-100 和縱軸的 -1.2 錯開
+      line(g,PX(v),28,PX(v),209,'#4d6978',1,[3,4]);label(g,String(v),v===-100?PX(v)-8:PX(v),233,faint,16,v===-100?'left':'center'); // 試玩 B8：-100 和縱軸的 -1.2 錯開
     }
-    for(let j=-3;j<=1;j++){const i=j*.4;line(g,59,PY(i),435,PY(i),i===0?white:'#4d6978',1,i===0?[]:[3,4]);label(g,i.toFixed(1),52,PY(i)+4,white,14,'right');}
-    label(g,'I',14,18,white,16);label(g,'Na',20,22,white,10);label(g,'(mA)',40,18,white,14);
-    label(g,'V (mV)',435,248,white,15,'right');
+    for(let j=-3;j<=1;j++){const i=j*.4;line(g,59,PY(i),435,PY(i),i===0?white:'#4d6978',1,i===0?[]:[3,4]);label(g,i.toFixed(1),52,PY(i)+5,white,16,'right');}
+    label(g,'I',64,19,white,19);label(g,'Na',70,24,white,12);label(g,'(mA)',88,19,white,17);
+    label(g,'V (mV)',435,249,white,17,'right');
     const end=s.trace??60;line(g,PX(-100),PY(lineFit.current(-100)),PX(end),PY(lineFit.current(end)),teal,2);
     for(const [v,i] of C.samples)dot(g,PX(v),PY(i),4,white);
     if(s.triangle){
@@ -330,18 +330,19 @@ window.ExamScene=(()=>{
     const s=defaults();
     if(q===49)return surface(canvas,g=>channel(g,s));
     return surface(canvas,g=>{
-      stars(g);earth(g,77,125,47);
+      stars(g);earth(g,72,122,54);const en=LabSettings.lang==='en';
       if(q===19){
-        label(g,T('已知的繞行週期','Given orbital periods'),162,57,white,18);
-        label(g,'ISS',162,105,teal,18);label(g,'90 min',307,105,white,23);
-        line(g,162,125,420,125,'#486372');
-        label(g,T('同步衛星','Synchronous'),162,157,gold,17);label(g,'24 h',307,157,white,23);
-        label(g,T('兩條軌道都近似圓形','Both orbits are approximately circular'),162,208,faint,14);
+        label(g,T('已知的繞行週期','Given orbital periods'),150,50,white,24);
+        label(g,'ISS',150,104,teal,26);label(g,'90 min',314,106,white,34);
+        line(g,150,126,440,126,'#486372');
+        label(g,T('同步衛星','Synchronous'),150,166,gold,en?22:26);label(g,'24 h',314,168,white,34);
+        label(g,T('兩條軌道都近似圓形','Both orbits are nearly circular'),150,220,faint,en?18:20);
       }else{
-        spacecraft(g,324,105);line(g,145,126,358,126,gold,2);line(g,358,126,348,120,gold,2);
-        label(g,T('太空船持續遠離地球','The spacecraft keeps receding'),141,61,white,16);
-        label(g,T('地球接收站','Earth receiver'),76,203,teal,15,'center');
-        label(g,T('加速 → 等速 → 減速','Accelerate → Cruise → Slow down'),146,183,gold,16);
+        g.save();g.translate(330,100);g.scale(1.5,1.5);g.translate(-330,-100);spacecraft(g,330,100);g.restore();
+        line(g,140,126,372,126,gold,3);line(g,372,126,360,118,gold,3);
+        label(g,T('太空船持續遠離地球','The spacecraft keeps receding'),140,52,white,en?20:24);
+        label(g,T('地球接收站','Earth receiver'),72,210,teal,en?18:20,'center');
+        label(g,T('加速 → 等速 → 減速','Accelerate → Cruise → Slow down'),140,186,gold,en?19:24);
       }
     });
   }

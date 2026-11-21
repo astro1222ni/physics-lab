@@ -95,8 +95,8 @@
   ExamScene.add(25,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,hits:[],last:null,curve:false,rng:P.random(11)}),
     paint,
-    preview(g){gun(g,40,125);slits(g,130,40,210);arrow(g,52,125,116,125,C.faint,1.5,7);box(g,240,30,190,190,4,'#03080c','#35505f');
-      label(g,'?',335,138,C.gold,48,'center');label(g,T('電子','electrons'),40,160,C.faint,13,'center');label(g,T('雙狹縫','double slit'),130,232,C.faint,13,'center');label(g,T('屏幕','screen'),335,240,C.faint,13,'center');},
+    preview(g){g.save();g.translate(28,125);g.scale(1.5,1.5);g.translate(-28,-125);gun(g,40,125);g.restore();slits(g,140,30,220);arrow(g,62,125,124,125,C.faint,2,9);box(g,236,20,200,200,6,'#03080c','#35505f');
+      label(g,'?',336,150,C.gold,72,'center');label(g,T('電子','electrons'),46,172,C.faint,LabSettings.lang==='en'?18:20,'center');label(g,T('雙狹縫','double slit'),140,244,C.faint,20,'center');label(g,T('屏幕','screen'),336,244,C.faint,20,'center');},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,btn,toggle,complete}){
       s.hands=true;

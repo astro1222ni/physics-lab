@@ -87,7 +87,7 @@
   ExamScene.add(26,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,i:0,right:0,msg:'',ok:false,flash:-1,missed:false}),
     paint,
-    preview(g){FORCES.forEach(([zh,en,c],i)=>{const x=24+(i%2)*218,y=30+Math.floor(i/2)*104;box(g,x,y,196,88,10,c+'1f',c,2);label(g,T(zh,en),x+98,y+52,c,21,'center');});},
+    preview(g){FORCES.forEach(([zh,en,c],i)=>{const x=24+(i%2)*218,y=30+Math.floor(i/2)*104;box(g,x,y,196,88,10,c+'1f',c,2);label(g,T(zh,en),x+98,y+54,c,LabSettings.lang==='en'?21:28,'center');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,btn,complete,render}){
       s.hands=true;

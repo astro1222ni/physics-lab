@@ -95,10 +95,10 @@
     state:()=>({row:'',id:'',part:0,t:0,hands:false,logN:0,wrongUnit:false}),
     paint,
     preview(g){
-      K.stars(g);mountain(g,210,460,206,46);label(g,T('玉山 ≈ 4000 m','Yushan ≈ 4000 m'),335,34,C.white,15,'center');
+      K.stars(g);mountain(g,210,460,206,46);label(g,T('玉山 ≈ 4000 m','Yushan ≈ 4000 m'),335,34,C.white,20,'center');
       box(g,24,170,150,36,6,'#2f8fc8');g.fillStyle='#7fd0f5';g.fillRect(24,170,150,6);
-      label(g,T('烏山頭水庫','Wushantou Reservoir'),24,90,C.gold,17);sci(g,'8.0×10^{7} m^{3}',24,126,C.white,21);
-      arrow(g,180,172,262,70,C.gold,3,12);label(g,'?',214,110,C.gold,24);
+      label(g,T('烏山頭水庫','Wushantou Reservoir'),24,80,C.gold,LabSettings.lang==='en'?19:22);sci(g,'8.0×10^{7} m^{3}',24,128,C.white,28);
+      arrow(g,180,172,262,70,C.gold,3.5,13);label(g,'?',198,112,C.gold,32);
     },
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,toggle,complete}){

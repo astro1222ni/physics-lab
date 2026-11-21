@@ -25,9 +25,9 @@
   });
   // 能帶：導電帶在上、價帶在下
   const YC=80,YV=190;
-  function bands(g,x0,x1,{jumped=0}={}){
+  function bands(g,x0,x1,{jumped=0,below=false}={}){
     box(g,x0,26,x1-x0,YC-26,6,'#7fb6ff22','#7fb6ff');label(g,T('導電帶','conduction band'),x0+8,48,C.blue,14);
-    box(g,x0,YV,x1-x0,226-YV,6,'#ffd17e22','#ffd17e');label(g,T('價帶','valence band'),x0+8,220,C.gold,14);
+    box(g,x0,YV,x1-x0,226-YV,6,'#ffd17e22','#ffd17e');label(g,T('價帶','valence band'),x0+8,below?245:220,C.gold,14);
     for(let i=0;i<10;i++){const x=x0+20+i*(x1-x0-40)/9;K.dot(g,x,YV+12,4,i<jumped?'#ffd17e33':'#cfe4ff');if(i<jumped)K.dot(g,x,YC-14,4,'#cfe4ff');}
     const rx=x0-12;line(g,rx,YC,rx,YV,C.faint,1.2);arrow(g,rx,YC+20,rx,YC,C.faint,1.2,6);arrow(g,rx,YV-20,rx,YV,C.faint,1.2,6);label(g,'3.2',rx-4,(YC+YV)/2-2,C.white,14,'right');label(g,'eV',rx-4,(YC+YV)/2+14,C.white,13,'right');
   }
@@ -82,8 +82,8 @@
   ExamScene.add(50,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,f:600,n:2,ang:0,triedBright:false}),
     paint,
-    preview(g){bands(g,70,330);photon(g,350,40,30,360,Math.PI*.78);photon(g,370,90,30,620,Math.PI*.78);
-      label(g,T('紫外','UV'),400,50,'#a99ad8',13);label(g,T('紅光','red'),420,100,'#ff4a3a',13);},
+    preview(g){K.boost(1.4,()=>bands(g,70,330,{below:true}));photon(g,384,58,54,360,Math.PI*.78);photon(g,400,142,54,620,Math.PI*.78);
+      label(g,T('紫外','UV'),394,62,'#a99ad8',22);label(g,T('紅光','Red'),410,146,'#ff4a3a',22);},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const check=()=>{const E=s.f*EV_PER_THZ;if(E<GAP&&s.n>=8)s.triedBright=true;if(s.triedBright&&E>=GAP)complete();};

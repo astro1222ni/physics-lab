@@ -117,8 +117,8 @@
   ExamScene.add(24,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,n:1,last:null,lines:new Set()}),
     paint,
-    preview(g){levels(g,64,200);electron(g,132,LV(1));jump(g,100,1,3,1,0);jump(g,160,3,1,1,103);
-      label(g,T('氫原子','Hydrogen'),246,46,C.gold,18);sci(g,'E_{n} = −13.6 / n^{2} eV',246,82,C.white,17);strip(g,130,[656,486,122,103]);},
+    preview(g){K.boost(1.45,()=>{levels(g,70,204);electron(g,138,LV(1));jump(g,106,1,3,1,0);jump(g,166,3,1,1,103);});
+      label(g,T('氫原子','Hydrogen'),250,48,C.gold,25);sci(g,'E_{n} = −13.6 / n^{2} eV',250,100,C.white,23);K.boost(1.45,()=>strip(g,160,[656,486,122,103]));},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,btn,complete,render,controls}){
       s.hands=true;

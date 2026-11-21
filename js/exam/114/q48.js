@@ -73,8 +73,8 @@
   ExamScene.add(48,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,t1:37,t2:20}),
     paint,
-    preview(g){thermo(g,80,210,160,.67);thermo(g,170,210,160,.57,'#ff9a6a');label(g,'27 °C',80,34,C.white,17,'center');label(g,'17 °C',170,34,C.white,17,'center');
-      sci(g,'E ∝ T',260,100,C.gold,30);sci(g,'E_{27} / E_{17} = ?',260,150,C.white,20);},
+    preview(g){thermo(g,90,214,164,.67);thermo(g,186,214,164,.57,'#ff9a6a');label(g,'27 °C',90,36,C.white,24,'center');label(g,'17 °C',186,36,C.white,24,'center');
+      sci(g,'E ∝ T',266,104,C.gold,44);sci(g,'E_{27} / E_{17} = ?',266,162,C.white,28);},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const ok=()=>{if(s.t1===27&&s.t2===17)complete();};

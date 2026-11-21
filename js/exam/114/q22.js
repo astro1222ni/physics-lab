@@ -88,10 +88,10 @@
     state:()=>({row:'',id:'',part:0,t:0,hands:false,lm:10,days:200,minutes:false,phase:0,seen:false}),
     paint,
     preview(g){
-      K.stars(g);K.earth(g,58,110,32);mars(g,404,110,20);signal(g,96,380,110,0,C.teal);
-      K.spacecraft(g,190,160);arrow(g,212,160,300,160,C.gold,2,9);
-      label(g,T('電磁波約 10 分鐘','Signal ≈ 10 minutes'),238,84,C.teal,16,'center');label(g,T('太空船約 200 天','Spacecraft ≈ 200 days'),238,200,C.gold,16,'center');
-      sci(g,'c ≈ 3×10^{8} m/s',238,236,C.faint,14,'center');
+      K.stars(g);K.earth(g,60,106,40);mars(g,402,106,26);signal(g,106,372,106,0,C.teal);
+      g.save();g.translate(190,162);g.scale(1.4,1.4);g.translate(-190,-162);K.spacecraft(g,190,162);g.restore();arrow(g,222,162,318,162,C.gold,2.5,11);
+      label(g,T('電磁波約 10 分鐘','Signal ≈ 10 minutes'),238,72,C.teal,21,'center');label(g,T('太空船約 200 天','Spacecraft ≈ 200 days'),238,208,C.gold,21,'center');
+      sci(g,'c ≈ 3×10^{8} m/s',238,240,C.faint,18,'center');
     },
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,toggle,complete,render}){
