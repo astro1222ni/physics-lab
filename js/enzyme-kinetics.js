@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -324,6 +325,11 @@
         prog: { short: true, x: 4, y: 157, w: half - 8, h: H1 - 161 },
         scan: { short: true, x: half + 4, y: 157, w: W1 - half - 8, h: H1 - 161 } };
     }
+    if (narrowPortrait.matches) {
+      return { narrow: true, rack: { compact: true, x: 0, y: 0, w: W1, h: 224 },
+        prog: { x: 8, y: 230, w: W1 - 16, h: 152 },
+        scan: { x: 8, y: 390, w: W1 - 16, h: H1 - 400 } };
+    }
     if (W1 < 640) {
       return { narrow: true, rack: { x: 0, y: 0, w: W1, h: 250 }, prog: { x: 8, y: 256, w: W1 - 16, h: 196 }, scan: { x: 8, y: 460, w: W1 - 16, h: 210 } };
     }
@@ -332,7 +338,7 @@
   }
   function resize1() {
     W1 = drawingWidth(cv) || 300;
-    H1 = shortLandscape.matches && W1 < 700 ? 318 : W1 < 640 ? 680 : 470;
+    H1 = narrowPortrait.matches ? 576 : shortLandscape.matches && W1 < 700 ? 318 : W1 < 640 ? 680 : 470;
     fit(cv, ctx, H1);
     request();
   }
@@ -351,7 +357,7 @@
     const g = ctx;
     const t = run.started ? run.t : 0;
     const n = NT, gap = R.w / n;
-    const tw = Math.min(32, gap * 0.4), th = R.short ? 44 : R.narrow ? 140 : Math.min(R.h * 0.56, 240);
+    const tw = Math.min(32, gap * 0.4), th = R.short ? 44 : R.compact ? 100 : R.narrow ? 140 : Math.min(R.h * 0.56, 240);
     const top = R.y + (R.short ? 53 : R.narrow ? 50 : Math.max(64, R.h * 0.16)), bathTop = top + th * 0.35, bathH = th * 0.65 + 8;
     tubeHit = [];
     title(ctx, T('水浴與試管', 'Water baths and tubes'), R.x + 12, R.y + 16);
