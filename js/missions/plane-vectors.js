@@ -29,7 +29,7 @@
     {
       id: 'plane-vectors-2', level: 3,
       title: { zh: '跑出線段的分點', en: 'Beyond the segment' },
-      desc: { zh: '標出範圍 x + y = 1，把 P 放在直線 AB 上、但在線段 AB 外面 A 的那一側之外（x < 0）。', en: 'Shade x + y = 1 and put P on the line AB but outside the segment, with x < 0.' },
+      desc: { zh: '標出範圍 x + y = 1，把 P 放在直線 AB 上、但跑出線段 AB，越過 B 那一端（x < 0，也就是 y > 1）。', en: 'Shade x + y = 1 and put P on the line AB but outside the segment, beyond B (x < 0, so y > 1).' },
       check: function (ev) { const d = ev.data; return ev.type === 'lin' && d.det !== 0 && d.region === 'line' && d.inside && d.x < 0; }
     },
     {
