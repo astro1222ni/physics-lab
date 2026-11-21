@@ -33,7 +33,7 @@
   ExamScene.add(46,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,mark:null}),
     paint,
-    preview(g){D.fig19(g,{box:FB,upto:6});label(g,T('圖 19（0–6 s）','Figure 19 (0–6 s)'),452,36,C.faint,13,'right');},
+    preview(g){K.boost(1.4,()=>{D.fig19(g,{box:FB,upto:6});label(g,T('圖 19（0–6 s）','Figure 19 (0–6 s)'),452,36,C.faint,13,'right');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,btn,complete}){
       s.hands=true;const r=range(T('時間','Time'),0,120,60,v=>{s.t=v/10;r.val.textContent=s.t.toFixed(1)+' s';});r.val.textContent='6.0 s';s.t=6;

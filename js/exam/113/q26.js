@@ -32,7 +32,7 @@
   ExamScene.add(26,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,p:200}),
     paint,
-    preview(g){D.fig9(g,{box:{...BOX,y:BOX.y-12}});label(g,T('圖 9','Figure 9'),452,40,C.faint,14,'right');},
+    preview(g){K.boost(1.35,()=>D.fig9(g,{box:{...BOX,y:BOX.y-12}}));K.boost(1.45,()=>label(g,T('圖 9','Figure 9'),452,150,C.faint,14,'right'));},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const r=range(T('壓力','Pressure'),10,260,200,v=>{s.p=v;r.val.textContent=v+' kPa';if(v>=125&&v<=137)complete();});r.val.textContent='200 kPa';return {};

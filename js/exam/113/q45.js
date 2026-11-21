@@ -42,7 +42,7 @@
   ExamScene.add(45,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,v:1,n:1,b:1,changed:{}}),
     paint,
-    preview(g){D.fig18(g,{t:0});label(g,T('哪些改變會影響電流？','What changes the current?'),452,36,C.faint,13,'right');},
+    preview(g){g.save();g.translate(230,126);g.scale(1.08,1.08);g.translate(-230,-113);K.boost(1.3,()=>D.fig18(g,{t:0}));g.restore();K.boost(1.6,()=>label(g,T('哪些改變會影響電流？','What changes the current?'),452,34,C.faint,13,'right'));},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const mark2=k=>{s.changed[k]=true;if(s.changed.v&&s.changed.n&&s.changed.b)complete();};

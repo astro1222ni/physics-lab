@@ -61,8 +61,8 @@
   ExamScene.add(23,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,c:5,beam:'x4'}),
     paint,
-    preview(g){const {X}=D.fig8(g,{box:{...BOX,y:BOX.y-12},labels:false});tumor(g,X,10,11);label(g,T('腫瘤在哪一段？','Where is the tumor?'),300,40,'#c76bd6',15);
-      ORDER.forEach((k,j)=>{const [col,dash]=D.BEAM_STYLE[k];g.setLineDash(dash);line(g,300,85+j*30,322,85+j*30,col,2.4);g.setLineDash([]);label(g,T(...NAMES[k]),328,90+j*30,col,13);});},
+    preview(g){let X;K.boost(1.35,()=>{X=D.fig8(g,{box:{...BOX,y:BOX.y-12},labels:false}).X;});K.boost(1.35,()=>{tumor(g,X,10,11);label(g,T('腫瘤在哪一段？','Where is the tumor?'),448,40,'#c76bd6',15,'right');
+      ORDER.forEach((k,j)=>{const [col,dash]=D.BEAM_STYLE[k];g.setLineDash(dash);line(g,300,85+j*30,322,85+j*30,col,2.4);g.setLineDash([]);label(g,T(...NAMES[k]),328,90+j*30,col,13);});});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,btn,complete}){
       s.hands=true;const btns=[];

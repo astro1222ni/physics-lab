@@ -23,7 +23,11 @@ window.ExamScene=(()=>{
     }
     new ResizeObserver(render).observe(canvas);render();return render;
   }
+  // 題目圖專用的字級倍率：kit.boost(1.5,()=>畫圖) 期間 label、sci 的字都乘上倍率（逐句動畫不受影響）
+  let textBoost=1;
+  function boost(k,fn){const o=textBoost;textBoost=k;try{fn();}finally{textBoost=o;}}
   function label(g,s,x,y,color=white,size=16,align='left'){
+    size*=textBoost;
     g.font='600 '+size+'px system-ui,sans-serif';g.textAlign=align;g.fillStyle=color;const scripts={'\u2080':['0',1],'\u2081':['1',1],'\u2082':['2',1],'²':['2',-1]};
     if(!/[\u2080\u2081\u2082²]/.test(s)){g.fillText(s,x,y);return;}
     const parts=String(s).split(/([\u2080\u2081\u2082²])/).filter(Boolean);
@@ -172,6 +176,7 @@ window.ExamScene=(()=>{
   // ── 其餘 11 題共用的畫法（11/21）
   // sci：畫布上的數學字。^{…} 或 ^x 是上標、_{…} 或 _x 是下標（畫布不能用 KaTeX，也不准用 ⁴⁵ 這類字元）。
   function sci(g,s,x,y,color=white,size=16,align='left',weight=600){
+    size*=textBoost;
     const parts=[],re=/([\^_])(\{[^}]*\}|[^\s×·÷/()=,，]+)/g;let last=0,m;
     while((m=re.exec(s))){if(m.index>last)parts.push([s.slice(last,m.index),0]);parts.push([m[2].replace(/^\{|\}$/g,''),m[1]==='^'?-1:1]);last=re.lastIndex;}
     if(last<s.length)parts.push([s.slice(last),0]);
@@ -206,7 +211,7 @@ window.ExamScene=(()=>{
   const sciParts=(x,d=1)=>{if(!x)return ['0',0];let e=Math.floor(Math.log10(Math.abs(x))),m=(x/10**e).toFixed(d);if(Math.abs(+m)>=10){e++;m=(x/10**e).toFixed(d);}return [m,e];};
   const sciText=(x,d=1)=>{const [m,e]=sciParts(x,d);return e===0?m:m+'×10^{'+String(e).replace('-','−')+'}';};
   const sciHTML=(x,d=1)=>{const [m,e]=sciParts(x,d);return e===0?m:m+'×10<sup>'+String(e).replace('-','−')+'</sup>';};
-  const kit={surface,label,line,dot,stars,earth,spacecraft,clamp,T,sci,arrow,box,mark,cube,ease,seg,sciParts,sciText,sciHTML,colors:{teal,gold,white,faint,red:'#ff8a80',green:'#6fe0a8',blue:'#7fb6ff',violet:'#c7a4ff'}};
+  const kit={surface,boost,tb:()=>textBoost,label,line,dot,stars,earth,spacecraft,clamp,T,sci,arrow,box,mark,cube,ease,seg,sciParts,sciText,sciHTML,colors:{teal,gold,white,faint,red:'#ff8a80',green:'#6fe0a8',blue:'#7fb6ff',violet:'#c7a4ff'}};
   function lesson(canvas,q){
     if(extra[q]){const d=extra[q],s=d.state();const redraw=surface(canvas,g=>d.paint(g,s));
       return {colors:{},reset(){},render(p,t,tm){d.lesson(s,p,Math.min(1,t/tm.dur),t);redraw();}};}

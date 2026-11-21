@@ -52,7 +52,7 @@
   ExamScene.add(27,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,dt:15,seen30:false,seen60:false}),
     paint,
-    preview(g){car(g,150,140,{airbag:.8,belt:true});sci(g,'30 → 15 m/s',300,90,C.white,18);label(g,'Δt = 30 ms',300,130,C.gold,18);label(g,T('平均力多大？','Average force?'),300,170,C.white,16);},
+    preview(g){g.save();g.translate(150,140);g.scale(1.35,1.35);g.translate(-150,-140);car(g,150,140,{airbag:.8,belt:true});g.restore();K.boost(1.45,()=>{sci(g,'30 → 15 m/s',292,84,C.white,18);label(g,'Δt = 30 ms',292,128,C.gold,18);label(g,T('平均力多大？','Average force?'),292,172,C.white,16);});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const r=range(T('緩衝時間 Δt','Stopping time Δt'),15,100,15,v=>{s.dt=v;r.val.textContent=v+' ms';if(v===30)s.seen30=true;if(v===60)s.seen60=true;if(s.seen30&&s.seen60)complete();});r.val.textContent='15 ms';return {};

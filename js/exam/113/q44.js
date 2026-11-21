@@ -40,7 +40,7 @@
   ExamScene.add(44,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,anim:0,minT:0,maxT:0,passed:false}),
     paint,
-    preview(g){D.fig18(g,{t:0});label(g,T('S 極朝下，等速往下穿過環圈甲','S pole down, moving steadily through loop A'),452,36,C.faint,13,'right');},
+    preview(g){g.save();g.translate(230,126);g.scale(1.08,1.08);g.translate(-230,-113);K.boost(1.3,()=>D.fig18(g,{t:0}));g.restore();K.boost(1.6,()=>label(g,T('S 極朝下，等速往下穿過環圈甲','S pole down, moving steadily through loop A'),452,34,C.faint,13,'right'));},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete,render}){
       s.hands=true;let raf=0;const tick=now=>{s.anim=now/1000;render();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);addEventListener('pagehide',()=>cancelAnimationFrame(raf));

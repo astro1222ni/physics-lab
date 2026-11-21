@@ -19,9 +19,10 @@ window.Exam113Draw=(()=>{
     const {x,y,w,h,xmax,ymax,xmin=0,ymin=0}=o,X=v=>x+(v-xmin)/(xmax-xmin)*w,Y=v=>y-(v-ymin)/(ymax-ymin)*h;
     if(o.grid){g.strokeStyle='#ffffff14';g.lineWidth=1;for(const v of o.grid.x||[]){g.beginPath();g.moveTo(X(v),y);g.lineTo(X(v),y-h);g.stroke();}for(const v of o.grid.y||[]){g.beginPath();g.moveTo(x,Y(v));g.lineTo(x+w,Y(v));g.stroke();}}
     arrow(g,x,y,x+w+12,y,C.faint,1.5,7);arrow(g,x,y,x,y-h-12,C.faint,1.5,7);
-    for(const [v,t] of o.xt||[]){line(g,X(v),y,X(v),y+4,C.faint,1);label(g,t,X(v),y+16,C.faint,13,'center');}
+    const b=K.tb?K.tb():1; // 題目圖放大字時，刻度和軸名的間距跟著放大（倍率 1 時與原本相同）
+    for(const [v,t] of o.xt||[]){line(g,X(v),y,X(v),y+4,C.faint,1);label(g,t,X(v),y+4+12*b,C.faint,13,'center');}
     for(const [v,t] of o.yt||[]){line(g,x-4,Y(v),x,Y(v),C.faint,1);label(g,t,x-7,Y(v)+4,C.faint,13,'right');}
-    if(o.xl)label(g,o.xl,x+w+10,y+30,C.faint,13,'right');if(o.yl)label(g,o.yl,x+4,y-h-6,C.faint,12);
+    if(o.xl)label(g,o.xl,x+w+10,y+4+26*b,C.faint,13,'right');if(o.yl)label(g,o.yl,x+4,y-h-6,C.faint,12);
     return {X,Y};
   }
   function curve(g,f,a,b,X,Y,color,width=2,dash=[],steps=220){

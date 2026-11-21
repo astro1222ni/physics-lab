@@ -46,7 +46,7 @@
     const ap=(o.aperture??.6)*22;for(const s of [-1,1]){g.fillStyle='#11181e';g.fillRect(x-8+shift,y+s*ap-(s<0?30-ap:0),4,30-ap);}
     box(g,x+w-22,y-34,8,68,2,o.iso?'#ffd17e':'#6a5acd',o.iso?'#ffe9a6':'#8f86e0',1.5);               // 感光元件
     if(o.iso)for(let i=0;i<5;i++)line(g,x+w-12,y-30+i*15,x+w-4,y-32+i*15,'#ffd17e',1.5);
-    if(o.tag){label(g,T('鏡頭','Lens'),x-30+shift,y+50,C.faint,13,'center');label(g,T('光圈','Aperture'),x+4+shift,y-40,C.faint,13,'center');label(g,T('感光元件','Sensor'),x+w-18,y+56,C.faint,13,'center');}
+    if(o.tag){label(g,T('鏡頭','Lens'),x-30+shift,y+50+(K.tb()-1)*30,C.faint,13,'center');label(g,T('光圈','Aperture'),x+4+shift,y-40,C.faint,13,'center');label(g,T('感光元件','Sensor'),x+w-18,y+56+(K.tb()-1)*30,C.faint,13,'center');}
     if(o.focusX!=null){const lx=x-30+shift,sx=x+w-22,fx=o.focusX;g.save();g.globalCompositeOperation='lighter';
       for(const hh of [-18,0,18]){line(g,lx-60,y+hh,lx,y+hh,'#ffe9a6cc',1.6);const ey=y+hh-hh*(sx-lx)/(fx-lx);line(g,lx,y+hh,sx,ey,'#ffe9a6cc',1.6);}
       g.restore();const sp=Math.abs(18-18*(sx-lx)/(fx-lx));g.beginPath();g.arc(sx,y,Math.max(2.5,sp),0,Math.PI*2);g.fillStyle=sp<1.5?'#6fe0a8':'#ff8a80aa';g.fill();}
@@ -121,8 +121,8 @@
   ExamScene.add(21,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,near:false,lens:40,pupil:4,okFar:false,okNear:false}),
     paint,
-    preview(g){eye(g,{x:130,y:122,R:70,power:POW0,pupil:4,tag:true});camera(g,290,122,{tag:true,focusX:418});
-      label(g,T('眼睛','Eye'),130,30,C.gold,16,'center');label(g,T('相機','Camera'),365,30,C.gold,16,'center');},
+    preview(g){K.boost(LabSettings.lang==='en'?1.15:1.35,()=>{eye(g,{x:130,y:126,R:70,power:POW0,pupil:4,tag:true});camera(g,290,126,{tag:true,focusX:418});});
+      K.boost(1.4,()=>{label(g,T('眼睛','Eye'),130,26,C.gold,16,'center');label(g,T('相機','Camera'),365,26,C.gold,16,'center');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,toggle,complete}){
       s.hands=true;

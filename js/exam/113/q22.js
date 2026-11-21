@@ -55,7 +55,7 @@
   ExamScene.add(22,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,x:5}),
     paint,
-    preview(g){D.fig8(g,{box:{...BOX,y:BOX.y-12},labels:false});legend(g,300,52);},
+    preview(g){K.boost(1.35,()=>D.fig8(g,{box:{...BOX,y:BOX.y-12},labels:false}));K.boost(1.35,()=>legend(g,300,52));},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const r=range(T('探針深度','Probe depth'),0,150,50,v=>{s.x=v/10;r.val.textContent=s.x.toFixed(1)+' cm';if(v>=149)complete();});r.val.textContent='5.0 cm';return {};

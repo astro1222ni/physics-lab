@@ -72,7 +72,7 @@
   ExamScene.add(20,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,lr:-15}),
     paint,
-    preview(g){galaxy(g,110,120,90,0);D.nucleus(g,330,110,26,12);label(g,T('星系','Galaxy'),110,226,C.faint,14,'center');label(g,T('原子核','Nucleus'),330,176,C.faint,14,'center');label(g,T('四種基本交互作用','Four fundamental interactions'),440,30,C.gold,16,'right');},
+    preview(g){galaxy(g,118,135,100,0);D.nucleus(g,340,125,40,12);K.boost(1.55,()=>{label(g,T('星系','Galaxy'),118,238,C.faint,14,'center');label(g,T('原子核','Nucleus'),340,212,C.faint,14,'center');label(g,T('四種基本交互作用','Four fundamental interactions'),444,34,C.gold,16,'right');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;range(T('距離 r（10 的次方，公尺）','Distance r (power of 10, m)'),-18,-1,-15,v=>{s.lr=v;if(v>=-2)complete();});
