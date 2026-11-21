@@ -139,6 +139,17 @@
       html.labdeck-panel .lab { margin-right: 28px; }
     }
     .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    @media (max-width: 480px) and (orientation: portrait) {
+      #lab1 > .stage > .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 44px; gap: 4px; }
+      #lab1 > .stage > .playbar #soundLabel {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+      }
+      #lab1 > .stage > .playbar button {
+        min-width: 0; min-height: 44px; padding: 4px 3px;
+        font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
