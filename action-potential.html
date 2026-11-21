@@ -138,6 +138,7 @@
           <button id="clearAll" type="button" data-en="Clear all" title="清除保留的波形與紀錄表，設定不變" data-en-title="Clear the kept traces and the table; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
@@ -145,7 +146,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="cardStim">
+        <section class="card" id="cardStim" data-deck="刺激|Stimulus" data-deck-order="1">
           <h2 data-en="Stimulus">刺激</h2>
           <div class="seg3" role="group" aria-label="刺激方式" data-en-aria-label="Kind of stimulus" id="modeSeg">
             <button type="button" data-mode="single" aria-pressed="true" data-en="Single pulse">單一脈衝</button>
@@ -165,7 +166,7 @@
           <p class="hint" id="stimHint" data-en="Negative values push the inside more negative (hyperpolarise). Tap a number to type an exact value.">負值是把細胞內推得更負（過極化）的電流。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card" id="cardEnv">
+        <section class="card" id="cardEnv" data-deck="溫度、離子與藥物|Temperature, ions and drugs" data-deck-order="2">
           <h2 data-en="Temperature, ions and drugs">溫度、離子與藥物</h2>
           <div class="slider"><label for="temp" data-en="Temperature (°C)">溫度（°C）</label><output id="tempo"></output>
             <input id="temp" type="range" min="0" max="40" step="0.1" value="6.3" data-decimals="1"></div>
@@ -181,7 +182,7 @@
           <p class="hint" data-en="These settings apply to both the membrane patch and the axon below.">這些設定同時用在上面的膜片與下面的軸突。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="3">
           <h2 data-en="Display">顯示</h2>
           <div class="seg3" role="group" aria-label="下方小圖顯示" data-en-aria-label="Lower plot shows" id="plotSeg">
             <button type="button" data-plot="gates" aria-pressed="true" data-en="Gates m h n">閘門 m h n</button>
@@ -226,7 +227,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="軸突|The axon" data-deck-order="4">
           <h2 data-en="The axon">軸突</h2>
           <div class="slider"><label for="diam" data-en="Axon diameter (µm)">軸突直徑（µm）</label><output id="diamo"></output>
             <input id="diam" type="range" min="1.69897" max="3" step="0.002" value="2.67761" data-decimals="0"></div>

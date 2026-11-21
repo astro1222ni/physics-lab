@@ -133,13 +133,16 @@
   }
   // 手機橫放（高 ≤ 600 px）：畫布高度寫死、抽屜模式縮不了，改用壓矮的版面（照實際寬度 1:1 畫，字不縮小），一屏放得下
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function resize1() {
     const w = cv.clientWidth || 300;
     const narrow = w < 560, short = shortLandscape.matches;
-    const memH = short ? 104 : narrow ? 160 : 168;
-    const hV = short ? 96 : narrow ? 178 : 180, hS = short ? 40 : 92, hI = short ? 18 : 38;
+    const portrait = narrowPortrait.matches;
+    const memH = short ? 104 : portrait ? 140 : narrow ? 160 : 168;
+    const hV = short ? 96 : portrait ? 116 : narrow ? 178 : 180;
+    const hS = short ? 40 : portrait ? 72 : 92, hI = short ? 18 : portrait ? 30 : 38;
     const gV = short ? 24 : 30, gS = short ? 22 : 32, gI = short ? 20 : 28;
-    const h = short ? memH + gV + hV + gS + hS + gI + hI + 18 : narrow ? 596 : 590;
+    const h = short || portrait ? memH + gV + hV + gS + hS + gI + hI + (short ? 18 : 24) : narrow ? 596 : 590;
     const s = fit(cv, ctx, h);
     W1 = s.w; H1 = s.h;
     const x0 = narrow ? 42 : 50, x1 = W1 - 12;
@@ -611,9 +614,10 @@
       [[P.ENa, C['ap-na'], 'Na'], [P.EK, C['ap-k'], 'K']].forEach(function (q) {
         if (q[0] < vLo || q[0] > vHi) return;
         const y = yV(q[0]);
-        // 下標會往下伸：整組再往上 3 px，不壓在虛線上（試玩回報）
-        const w = subLabel(ctx, 'E', q[2], pV.x1 - 4 - 46, y - 11, q[1], 'left');
-        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, y - 11, q[1], 'left', 'middle', '600 11px ' + FONT);
+        // 窄直放時把 E_K 放到虛線下方，和上方的復極波形分開。
+        const labelY = y + (narrowPortrait.matches && q[2] === 'K' ? 12 : -11);
+        const w = subLabel(ctx, 'E', q[2], pV.x1 - 4 - 46, labelY, q[1], 'left');
+        D.haloText(ctx, ' ' + signed(q[0], 0), pV.x1 - 4 - 46 + w, labelY, q[1], 'left', 'middle', '600 11px ' + FONT);
       });
     }
     // 保留的波形
