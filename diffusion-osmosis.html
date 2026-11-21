@@ -149,6 +149,17 @@
     @media (min-width: 881px) and (max-width: 1220px) {
       html.labdeck-panel .lab { margin-right: 28px; }
     }
+    @media (max-width: 480px) and (orientation: portrait) {
+      .dos .playbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+      .dos .playbar #soundLabel {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+      }
+      .dos .playbar button {
+        min-width: 0; min-height: 44px; padding: 4px 3px;
+        font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -190,6 +201,7 @@
           <button id="clear" type="button" data-en="Clear all" title="清除下方曲線圖的所有紀錄（含比較用的舊紀錄），滑桿設定不變" data-en-title="Clear every record in the graph below (including the old ones kept for comparison); slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" data-for="diff">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-solute)&quot;></i>Solute particle (size not to scale)"><i class="dot" style="background:var(--do-solute)"></i>溶質粒子（大小未依比例）</span>
@@ -221,7 +233,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="溫度與播放速度|Temperature and speed" data-deck-order="1">
           <h2 data-en="Temperature and speed">溫度與播放速度</h2>
           <div class="slider"><label for="temp" data-en="Temperature T (°C)">溫度 T（°C）</label><output id="tempo"></output>
             <input id="temp" type="range" min="0" max="40" step="0.5" value="25" data-decimals="1"></div>
@@ -230,7 +242,7 @@
           <p class="hint" id="speedHint"></p>
         </section>
 
-        <section class="card" data-for="diff">
+        <section class="card" data-for="diff" data-deck="擴散的粒子|Diffusing particles" data-deck-order="2">
           <h2 data-en="Diffusing particles">擴散的粒子</h2>
           <div class="slider"><label for="rad" data-en="Particle radius r (nm)">粒子半徑 r（nm）</label><output id="rado"></output>
             <input id="rad" type="range" min="-0.699" max="0.699" step="0.001" value="-0.301"></div>
@@ -242,7 +254,7 @@
           <p class="hint" data-en-html="The radius is the molecule’s effective (Stokes) radius in water. Changing the temperature or the radius during a run is allowed: the theory line then uses \(\int D\,dt\), but that run no longer counts for comparing \(D\).">半徑是分子在水中的等效（斯托克斯）半徑。擴散途中也可以改溫度或半徑：理論線會改用 \(\int D\,dt\)，但這一次就不能拿來比較 \(D\)。</p>
         </section>
 
-        <section class="card" data-for="osmo">
+        <section class="card" data-for="osmo" data-deck="半透膜兩側的溶液|The two sides of the membrane" data-deck-order="3">
           <h2 data-en="The two sides of the membrane">半透膜兩側的溶液</h2>
           <p class="side-h" data-en-html="<i style=&quot;background:var(--do-water)&quot;></i>Left arm"><i style="background:var(--do-water)"></i>左管</p>
           <div class="sol-row"><label for="solL" data-en="Solute">溶質</label>
@@ -252,8 +264,6 @@
               <option value="nacl" data-en="Salt, NaCl (i = 2)">食鹽 NaCl（i = 2）</option>
               <option value="cacl2" data-en="Calcium chloride (i = 3)">氯化鈣（i = 3）</option>
             </select></div>
-          <div class="slider"><label for="cL" data-en="Concentration (mmol/L; 0 = pure water)">濃度（mmol/L；0 是純水）</label><output id="cLo"></output>
-            <input id="cL" type="range" min="0" max="2" step="0.01" value="0" data-decimals="3"></div>
           <p class="side-h" data-en-html="<i style=&quot;background:var(--do-solute)&quot;></i>Right arm"><i style="background:var(--do-solute)"></i>右管</p>
           <div class="sol-row"><label for="solR" data-en="Solute">溶質</label>
             <select id="solR">
@@ -262,14 +272,17 @@
               <option value="nacl" data-en="Salt, NaCl (i = 2)">食鹽 NaCl（i = 2）</option>
               <option value="cacl2" data-en="Calcium chloride (i = 3)">氯化鈣（i = 3）</option>
             </select></div>
-          <div class="slider"><label for="cR" data-en="Concentration (mmol/L; 0 = pure water)">濃度（mmol/L；0 是純水）</label><output id="cRo"></output>
+          <div class="slider"><label for="cL" data-en="Left concentration (mmol/L)">左管濃度（mmol/L）</label><output id="cLo"></output>
+            <input id="cL" type="range" min="0" max="2" step="0.01" value="0" data-decimals="3"></div>
+          <div class="slider"><label for="cR" data-en="Right concentration (mmol/L)">右管濃度（mmol/L）</label><output id="cRo"></output>
             <input id="cR" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
           <div class="slider"><label for="pist" data-en="Piston pressure on the right P (kPa)">右管活塞的壓力 P（kPa）</label><output id="pisto"></output>
             <input id="pist" type="range" min="0" max="6" step="0.01" value="0" data-decimals="3"></div>
+          <p class="hint" data-en="0 mmol/L means pure water.">濃度 0 mmol/L 表示純水。</p>
           <p class="hint" data-en-html="Changing a solute or a concentration refills the tube (both levels start equal). Temperature and the piston can be changed while it runs. The solutions are very dilute (a few thousandths of a mole per litre): stronger ones would push the column tens of metres high.">換溶質或濃度會把管子倒掉重裝（兩邊液面從一樣高開始）；溫度與活塞可以在進行中改。這裡的溶液非常稀（每公升千分之幾莫耳）：濃一點的溶液會把液柱推到幾十公尺高。</p>
         </section>
 
-        <section class="card" data-for="cell">
+        <section class="card" data-for="cell" data-deck="細胞外的溶液|The solution around the cells" data-deck-order="4">
           <h2 data-en="The solution around the cells">細胞外的溶液</h2>
           <div class="sol-row"><label for="solC" data-en="Solute">溶質</label>
             <select id="solC">
@@ -303,7 +316,7 @@
           </dl>
         </section>
 
-        <section class="card" data-for="osmo">
+        <section class="card" data-for="osmo" data-deck="測量|Measurements" data-deck-order="5">
           <h2 data-en="Measurements">測量</h2>
           <dl class="readout">
             <dt data-en="Time (sped up)">時間（已加速）</dt><dd id="oT">—</dd>
