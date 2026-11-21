@@ -222,13 +222,6 @@ function fitBone(part,a,b) {
   part.position.copy(a);part.scale.y=length;
   part.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,x.clone().cross(y)));
 }
-function bentJoint(base,end,pole,first,second) {
-  const axis=end.clone().sub(base),length=Math.max(axis.length(),.0001);axis.divideScalar(length);
-  const reach=THREE.MathUtils.clamp(length,Math.abs(first-second)+.0001,first+second-.0001);
-  const along=(reach*reach+first*first-second*second)/(2*reach);
-  const bend=pole.clone().addScaledVector(axis,-pole.dot(axis)).normalize();
-  return base.clone().addScaledVector(axis,along).addScaledVector(bend,Math.sqrt(Math.max(0,first*first-along*along)));
-}
 function uniformMap(p) {
   return texture(768,256,(c,w,h)=>{
     c.fillStyle=p.jersey;c.fillRect(0,0,w,h);
@@ -278,7 +271,7 @@ function upperBody(parent,p,skin,hair,trim) {
   trimLine(torso,trim,edge,.005);
   const neck=form(torso,skin,[[.524,.057,.066],[.565,.068,.066],[.619,.057,.057,.003],[.668,.063,.062,.004]],'neck');
   neck.rotation.z=-.06;
-  const head=new THREE.Group();head.position.set(.022,.609,0);head.scale.setScalar(.951);torso.add(head);
+  const head=new THREE.Group();head.name='head';head.position.set(0,.609,0);head.scale.setScalar(.951);torso.add(head);
   const face=[
     [0,.034,.039,.044],[.014,.065,.055,.026],[.039,.086,.074,.012],
     [.064,.097,.084,.008],[.096,.103,.090,.004],[.133,.104,.089,.002],
@@ -360,26 +353,23 @@ function gripHand(parent,skin,nail,r,shooting) {
     const plate=ell(hand,nail,...tip.toArray(),halfWidth*.12,halfWidth*.68,halfWidth*.43);
     plate.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(frame.n,frame.y,frame.z));plate.castShadow=false;
   }
-  return {wrist,place(centre,shift,turn){
-    // A ground-level release comes off the top of the ball as the player stoops.
-    const low=1-THREE.MathUtils.smoothstep(centre.y,r,r+.22);
-    const grip=new THREE.Quaternion().identity().slerp(new THREE.Quaternion().setFromUnitVectors(
-      normal,v(0,.98,shooting?.20:-.20).normalize()),low);
-    const anchor=wrist.clone().applyQuaternion(grip).add(centre).add(shift);
-    hand.quaternion.setFromAxisAngle(v(0,0,1),turn).multiply(grip);
-    hand.position.copy(anchor).sub(wrist.clone().applyQuaternion(hand.quaternion));
-    return anchor;
-  }};
+  const towardBall=wrist.clone().negate().normalize(),direction=v(),anchor=v(),roll=new THREE.Quaternion(),z=v(0,0,1);
+  return function place(a){
+    hand.quaternion.setFromUnitVectors(towardBall,direction.fromArray(a.hold)).premultiply(roll.setFromAxisAngle(z,a.turn));
+    hand.position.fromArray(a.wrist).sub(anchor.copy(wrist).applyQuaternion(hand.quaternion));
+  };
 }
-function athlete(g,h,p,radius) {
+function athlete(g,p,radius) {
   const skin=material(p.skin,{roughness:.91}),hair=material(mix(p.deep,p.skin,.095),{roughness:1}),
     nails=material(mix(p.skin,p.white,.29),{roughness:.78}),trim=material(p.white,{roughness:.95}),
     cloth=material(shade(p.jersey,-.46),{roughness:.98}),binding=material(mix(p.jersey,p.deep,.19),{roughness:.93}),
     sole=material(mix(p.white,p.timber,.24),{roughness:.90}),shoe=material(shade(p.wall,.65),{roughness:.88});
   const torso=upperBody(g,p,skin,hair,trim);
-  const belt=form(torso,cloth,[[-.10,.121,.166,-.017],[-.05,.132,.169,-.012],[.048,.122,.153,-.008]],'shorts-seat');
+  const pelvis=new THREE.Group();g.add(pelvis);
+  const head=torso.getObjectByName('head');
+  const belt=form(pelvis,cloth,[[-.10,.121,.166,-.017],[-.05,.132,.169,-.012],[.048,.122,.153,-.008]],'shorts-seat');
   belt.castShadow=true;
-  form(torso,binding,[[.036,.125,.157,-.008],[.059,.122,.155,-.008]],'waistband');
+  form(pelvis,binding,[[.036,.125,.157,-.008],[.059,.122,.155,-.008]],'waistband');
   function leg(side) {
     const thigh=form(g,skin,[[0,.084,.081],[.20,.105,.093,.010],[.43,.099,.086,.013],
       [.70,.080,.070,.009],[.91,.064,.060],[1,.062,.057]],'thigh');
@@ -402,17 +392,16 @@ function athlete(g,h,p,radius) {
       const x=.031+i*.022,y=-.007-i*.009;
       trimLine(foot,trim,[v(x-.003,y-.006,-.033),v(x,y,0),v(x+.005,y-.008,.034)],.003);
     }
-    return (hip,ankle,heel)=>{
-      const knee=bentJoint(hip,ankle,v(1,0,side*.15),.444,.434);
+    const hip=v(),knee=v(),ankle=v();
+    return joints=>{
+      hip.fromArray(joints.hip);knee.fromArray(joints.knee);ankle.fromArray(joints.ankle);
       fitBone(thigh,hip,knee);fitBone(legOpening,hip,knee);fitBone(calf,knee,ankle);
       fitBone(sock,knee,ankle);fitBone(welt,knee,ankle);kneecap.position.copy(knee);
-      foot.position.copy(ankle);foot.rotation.set(0,-side*.10,-heel);
+      foot.position.copy(ankle);foot.rotation.set(0,0,0);
     };
   }
   function arm(side,shooting) {
     const prefix=shooting?'shooting-':'guide-';
-    const shoulderAnchor=new THREE.Object3D();shoulderAnchor.position.set(.001,.501,side*.185);
-    shoulderAnchor.name=prefix+'deltoid';torso.add(shoulderAnchor);
     const rows=[[-.17,.033,.041],[-.12,.054,.052],[-.06,.069,.062],[.02,.077,.071],
       [.15,.075,.071],[.26,.069,.064],[.35,.066,.059,.002],[.51,.065,.054,.013],
       [.65,.062,.052,.014],[.82,.049,.043,.008],[.94,.041,.040],[1,.041,.040]];
@@ -446,42 +435,24 @@ function athlete(g,h,p,radius) {
     elbowCap.name=prefix+'elbow';wristCap.name=prefix+'wrist';
     const sleeve=shooting?null:form(g,binding,[[.51,.045,.039,.005],[.57,.042,.037,.005]],'guide-forearm-band');
     const palm=gripHand(g,skin,nails,radius,shooting);
-    return (u,follow,centre,angle)=>{
-      const shoulder=shoulderAnchor.position.clone().applyQuaternion(torso.quaternion).add(torso.position);
-      const release=shooting?0:THREE.MathUtils.smoothstep(u,.79,1);
-      const shift=shooting?v(.018*follow,-.012*follow,0):v(-.070*release-.060*follow,-.017*release-.12*follow,-.072*release-.036*follow);
-      shift.y+=(1-THREE.MathUtils.smoothstep(centre.y,.16,.60))*(shooting?.04*follow:.24*follow+.07*release);
-      const turn=shooting?-(.78+.003*angle)*follow:.22*release+.45*follow;
-      const wrist=palm.place(centre,shift,turn);
-      const pole=v(-.25+.93*u,-1+.39*u,side*(shooting?.13:.39));
-      const elbow=bentJoint(shoulder,wrist,pole,.326,.277);
+    const shoulder=v(),elbow=v(),wrist=v();
+    return a=>{
+      shoulder.fromArray(a.shoulder);elbow.fromArray(a.elbow);wrist.fromArray(a.wrist);
+      palm(a);
       fitBone(upper,shoulder,elbow);joinShoulder();fitBone(lower,elbow,wrist);
       if(sleeve)fitBone(sleeve,elbow,wrist);
       elbowCap.position.copy(elbow);wristCap.position.copy(wrist);
     };
   }
   const frontLeg=leg(1),rearLeg=leg(-1),shoot=arm(1,true),guide=arm(-1,false);
-  const totalJump=Math.max(0,h-(2.025+(radius-.1225)*1.65));
-  return (fraction,follow,angle,flightTime=0)=>{
-    const u=THREE.MathUtils.smoothstep(fraction,0,1),upright=THREE.MathUtils.smoothstep(h,0,1.63);
-    const jump=Math.max(0,totalJump*u-.5*C.g*flightTime*flightTime);
-    const landing=flightTime-Math.sqrt(2*totalJump/C.g);
-    const absorb=totalJump>.02&&landing>0&&landing<.36?.07*Math.sin(Math.PI*landing/.36):0;
-    const hipHeight=.31+.615*upright-.103*(1-u)*upright-absorb;
-    const lean=.08+.12*(1-u)+1.13*(1-upright);
-    const hipX=-.345-.30*(1-upright)-.07*(1-u);
-    torso.rotation.z=-lean;torso.position.set(hipX,hipHeight+jump,0);
-    const heel=.11*u+.30*THREE.MathUtils.smoothstep(h,2.08,2.70)*u;
-    for(const [side,poseLeg] of [[1,frontLeg],[-1,rearLeg]]){
-      const hip=v(-.014,.005,side*.094).applyQuaternion(torso.quaternion).add(torso.position);
-      const ankle=v((side===1?-.265:-.578)-.10*(1-upright),.104+jump+.12*heel,side*.137);
-      poseLeg(hip,ankle,heel);
-    }
-    // The hands and ball share a single gather point. At release the ball centre
-    // is exactly (0,h,0), the origin of the independently solved trajectory.
-    const gather=v(.275,.52,.044).applyQuaternion(torso.quaternion).add(torso.position);
-    const centre=gather.lerp(v(0,h-totalJump+jump-absorb,0),u);
-    shoot(u,follow,centre,angle);guide(u,follow,centre,angle);return centre;
+  return pose=>{
+    torso.position.fromArray(pose.hip);
+    torso.rotation.set(0,pose.yaw,-pose.lean,'YXZ');
+    pelvis.position.copy(torso.position);pelvis.rotation.y=pose.hipYaw;
+    // Express the world-space gaze in the local neck frame.
+    head.quaternion.setFromEuler(new THREE.Euler(0,pose.gazeYaw,pose.gazePitch,'YXZ'))
+      .premultiply(torso.quaternion.clone().invert());
+    rearLeg(pose.legs[0]);frontLeg(pose.legs[1]);guide(pose.arms[0]);shoot(pose.arms[1]);
   };
 }
 // Fit each ball, the player and the basket in the perspective frustum. For a
@@ -522,6 +493,7 @@ export function createGym(host,T,onLoss,navHost=host) {
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.00035;sun.shadow.normalBias=.016;
   Object.assign(sun.shadow.camera,{left:-15,right:15,top:12,bottom:-12,far:50});scene.add(hemi,sun,sun.target);
   let pose=null,data,ball=null,staticKey='',actorKey='',ballKey='',framing='',name='side',raf=0,gone=false,origin=0;
+  let activeTrail=null, trailTimes=[], liveTrail=null;
   let framePoints=[],walls=null,net=null,lastContact=null,netTime=-10;
   const flash=mesh(scene,new THREE.SphereGeometry(.06,12,8),new THREE.MeshBasicMaterial({color:0xffba45,transparent:true}),0,0,0);
   flash.castShadow=false;flash.visible=false;
@@ -631,14 +603,14 @@ export function createGym(host,T,onLoss,navHost=host) {
       hemi.color.set(shade(p.wall,.8));hemi.groundColor.set(shade(p.timber,-.12));hemi.intensity=p.dark?1.48:1.64;
       sun.color.set(shade(p.timber,.74));sun.intensity=p.dark?2.05:2.18;
     }
-    const ak=[s.p.mode,s.p.height,p.dark].join('/');
-    if(ak!==actorKey){actorKey=ak;clear(actor);pose=athlete(actor,s.p.height,p,C.balls[s.p.mode].diameter/2);}
+    const ak=[s.p.mode,p.dark].join('/');
+    if(ak!==actorKey){actorKey=ak;clear(actor);pose=athlete(actor,p,C.balls[s.p.mode].diameter/2);}
 
-    clear(paths);
+    clear(paths);activeTrail=liveTrail=null;trailTimes=[];
     for(const tr of traces){
       const pts=shot?C.displayPath(tr.result,120):tr.result.points,keep=[],step=shot?1:Math.max(1,Math.floor(pts.length/88));
       for(let i=0;i<pts.length;i++)if(i%step===0||i===pts.length-1||Math.abs(pts[i][shot?3:2]-(tr.result.board?.t??-9))<1e-9)
-        keep.push(v(pts[i][0],pts[i][1],shot?pts[i][2]:0));
+        keep.push(v(pts[i][0],shot?window.BasketballShotPose.courtHeight(tr.result.points[0][1],pts[i][1],pts[i][3],tr.result.contacts[0]?.t):pts[i][1],shot?pts[i][2]:0));
       if(tr.dash){
         const dashed=new THREE.LineDashedMaterial({color:tr.ink,dashSize:tr.dash[0]<4?.025:.11,gapSize:.075,transparent:true,opacity:tr.opacity});
         const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(keep),dashed);line.computeLineDistances();line.userData.opacity=tr.opacity;paths.add(line);continue;
@@ -649,6 +621,15 @@ export function createGym(host,T,onLoss,navHost=host) {
       if(curve.getLength()>.001){
         const tube=mesh(paths,new THREE.TubeGeometry(curve,Math.max(64,keep.length*2),tr.dash?.010:.015,6,false),mat,0,0,0);
         tube.castShadow=false;tube.userData.opacity=tr.opacity;
+        if(tr.result===s.result){
+          activeTrail=tube;
+          const points=shot?C.displayPath(tr.result,400):tr.result.points;
+          const verts=points.map(q=>v(q[0],shot?window.BasketballShotPose.courtHeight(s.p.height,q[1],q[3],tr.result.contacts[0]?.t):q[1],shot?q[2]:0));
+          trailTimes=points.map(q=>q[shot?3:2]);
+          liveTrail=new THREE.Line(new THREE.BufferGeometry().setFromPoints(verts),
+            new THREE.LineBasicMaterial({color:tr.ink}));
+          liveTrail.userData.opacity=1;liveTrail.visible=false;paths.add(liveTrail);
+        }
       }else mat.dispose();
     }
     const bk=[s.p.mode,p.dark].join('/');
@@ -668,8 +649,19 @@ export function createGym(host,T,onLoss,navHost=host) {
   document.addEventListener('visibilitychange',request);resize();
   return {refresh,preset,contact(e){lastContact=e;if(e.type==='net')netTime=e.t;},
     frameRelease(){if(name!=='ball')preset(name);},
-    prepare(fraction){if(ball&&pose){const held=pose(fraction,0,data.p.angle);ball.position.copy(actor.localToWorld(held));ball.quaternion.identity();flash.visible=false;lastContact=null;netTime=-10;if(net)net.rotation.set(0,0,0);request();}},
-    move(pos,t=0){if(ball&&pose){pose(1,THREE.MathUtils.smoothstep(t,0,.16),data.p.angle,t);ball.position.set(pos[4]??pos[0],pos[1],pos[5]??0);spinBall(t);
+    move(skeleton,t,playing){if(ball&&pose){
+      pose(skeleton);
+      ball.position.fromArray(skeleton.ball);actor.localToWorld(ball.position);
+      if(activeTrail){
+        activeTrail.visible=!playing;liveTrail.visible=playing&&t>=0;
+        if(playing){
+          let lo=0,hi=trailTimes.length;
+          while(lo<hi){const mid=(lo+hi)>>>1;if(trailTimes[mid]<=t)lo=mid+1;else hi=mid;}
+          liveTrail.geometry.setDrawRange(0,lo);
+        }
+      }
+      if(t<=0){lastContact=null;netTime=-10;}
+      spinBall(Math.max(0,t));
       if(net){const elapsed=t-netTime;net.rotation.z=elapsed>=0?.15*Math.sin(elapsed*21)*Math.exp(-elapsed*5):0;}
       flash.visible=!!lastContact&&t>=lastContact.t&&t-lastContact.t<.18;
       if(flash.visible){flash.position.set(lastContact.x,lastContact.y,lastContact.z);flash.material.opacity=1-(t-lastContact.t)/.18;}
