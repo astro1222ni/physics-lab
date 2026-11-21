@@ -338,7 +338,7 @@
       D.arrow(c, bx, by, ex, ey, C['lp-level'], 2.6);
       const sg = state.sense === 'min' ? T('z 變大（求最小時往反方向）', 'z grows (go the other way for the minimum)') : T('z 變大', 'z grows');
       const directionBox = D.pill(c, '(' + fmt(state.p) + ', ' + fmt(state.q) + ')  ' + sg, ex + (state.p >= 0 ? 6 : -6), ey + (state.q >= 0 ? -4 : 20), C['lp-level'], state.p >= 0 ? 'left' : 'right', fnt(11, 700));
-      if (drawer) boxes.push(directionBox);
+      boxes.push(directionBox); // 限制式標籤（例如 x + 2y ≤ 14）要避開這個方向標籤，手機直放也一樣
     }
     // 頂點的 z 值（標籤彼此避開，也避開點 P 與頂點本身）
     const Ppx = X(state.P.x), Ppy = Y(state.P.y);
