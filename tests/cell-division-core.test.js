@@ -247,4 +247,14 @@ test('時期：stageAt 依序走過每一期，總長 = 各期加總；超過結
   });
 });
 
+
+test('親本變異可重播且保留四分體配子總數', () => {
+  const o = { N: 60, n: 3, d: 0.2, seed: 73, varyParent: true };
+  const a = C.batch(o);
+  assert.deepStrictEqual(a, C.batch(o));
+  assert.strictEqual(a.total, 240);
+  assert.strictEqual(a.tetrads.reduce((s,n) => s+n,0), 60);
+  assert.notDeepStrictEqual(a.patterns, C.batch({ ...o, varyParent: false }).patterns);
+});
+
 console.log(`  ${passed} 項通過`);

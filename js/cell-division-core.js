@@ -178,7 +178,7 @@
 
   /**
    * 第二部分：很多次減數分裂的統計。o = {d（A–B 距離，Morgan）, n（對數）, N（次數）, seed}
-   * 第 0 對的長度取 d + 0.4，著絲點在一端，A 在 0.2 Morgan、B 在 0.2 + d。回傳每種配子的數目、重組數、來源組合（著絲點處）清單。
+   * 第 0 對的長度取 d + 0.4；固定親本時著絲點在一端，A 在 0.2 Morgan、B 在 0.2 + d。回傳每種配子的數目、重組數、來源組合（著絲點處）清單。
    */
   function batch(o) {
     const n = o.n || 1, d = o.d, L0 = d + 0.4;
@@ -191,6 +191,12 @@
     let seed = o.seed || 1;
     const R = rng(seed);
     for (let i = 0; i < o.N; i++) {
+      if (o.varyParent) {
+        for (let p = 0; p < n; p++) {
+          if (p > 0) lengths[p] = 0.5 + R();
+          cens[p] = 0.2 + 0.6 * R();
+        }
+      }
       const rec = make({ mode: 'meiosis', n: n, xo: true, lengths: lengths, cens: cens, seed: Math.floor(R() * 4294967295) + 1 });
       let recombinants = 0;
       rec.gametes.forEach(function (g) {

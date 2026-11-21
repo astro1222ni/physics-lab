@@ -16,7 +16,7 @@
       id: 'cell-division-1', level: 1,
       title: { zh: '一分為二', en: 'One becomes two' },
       desc: { zh: '播放一次完整的有絲分裂，得到兩個子細胞。', en: 'Play a whole mitosis through to two daughter cells.' },
-      check: function (ev) { return done(ev) && ev.data.mode === 'mitosis' && ev.data.ncell === 2; }
+      check: function (ev) { return done(ev) && ev.data.fullPlayback && ev.data.mode === 'mitosis' && ev.data.ncell === 2; }
     },
     {
       id: 'cell-division-2', level: 2,
@@ -28,7 +28,7 @@
       id: 'cell-division-3', level: 2,
       title: { zh: '四個配子', en: 'Four gametes' },
       desc: { zh: '播放一次完整的減數分裂，得到四個配子。', en: 'Play a whole meiosis through to four gametes.' },
-      check: function (ev) { return done(ev) && ev.data.mode === 'meiosis' && ev.data.ncell === 4; }
+      check: function (ev) { return done(ev) && ev.data.fullPlayback && ev.data.mode === 'meiosis' && ev.data.ncell === 4; }
     },
     {
       id: 'cell-division-4', level: 3,

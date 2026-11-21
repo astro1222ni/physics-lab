@@ -45,7 +45,7 @@ function Page(o) {
     });
     const genos = gi.map(q => q.geno);
     return {
-      type: 'cd-done', data: {
+      type: 'cd-done', data: { fullPlayback: true,
         mode: st.mode, n: st.n, xo: st.mode === 'meiosis' && st.xo, nd: st.nd, ncell: gi.length, sizes: gi.map(q => q.size), genos, distinct: new Set(genos).size,
         chiasmata: st.mode === 'meiosis' ? rec.xo.length : 0, aneuploid: gi.filter(q => q.size !== (st.mode === 'mitosis' ? 2 * st.n : st.n)).length,
         mixedDisomic: gi.some(q => q.mixed), sameDisomic: gi.some(q => q.same), diffDisomic: gi.some(q => q.p0diff),
@@ -85,6 +85,7 @@ function rate(trials, gen, id) { let ok = 0; for (let t = 0; t < trials; t++) if
 
 // ---------- 一般任務 ----------
 let p = Page({});
+{ const skipped = p.done(); skipped.data.fullPlayback = false; claim(!check('1', skipped), '1 拖曳至終點不算播放'); }
 claim(check('1', p.done()), '1 有絲分裂播放到底');
 p = Page({ n: 2 });
 let e = p.stage(p.at('ana', 0.5));

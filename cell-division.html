@@ -127,6 +127,7 @@
     @media (min-width: 881px) and (max-width: 1220px) {
       html.labdeck-panel .lab { margin-right: 28px; }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -183,8 +184,9 @@
             <input id="n" type="range" min="1" max="4" step="1" value="2" data-decimals="0"></div>
           <p class="sub-h" data-en="Crossing over">互換</p>
           <div class="chips" id="xos" role="group" aria-label="互換" data-en-aria-label="Crossing over"></div>
-          <p class="sub-h" data-en="Nondisjunction of pair 1">第 1 對不分離</p>
-          <div class="chips c3" id="nds" role="group" aria-label="第 1 對不分離" data-en-aria-label="Nondisjunction of pair 1"></div>
+          <p class="sub-h" data-en="Nondisjunction">染色體不分離</p>
+          <label><span data-en="Affected pair">不分離的染色體對</span> <select class="sample-control" id="ndPair"><option value="0">1</option></select></label>
+          <div class="chips c3" id="nds" role="group" aria-label="不分離" data-en-aria-label="Nondisjunction"></div>
           <p class="hint" data-en="Pair 1 (the longest) carries two genes: A near one end and B near the other. Mother's copy carries A and B, father's carries a and b.">第 1 對（最長的）上有兩個基因：A 靠近一端、B 靠近另一端。母方那條帶 A 和 B，父方那條帶 a 和 b。</p>
         </section>
         <section class="card">
@@ -219,6 +221,7 @@
             <input id="n2" type="range" min="1" max="8" step="1" value="3" data-decimals="0"></div>
           <p class="hint" data-en="1 centimorgan (cM) is the distance over which, on average, 1 gamete in 100 has a crossover. Changing a setting starts a new count.">1 厘摩（cM）是平均每 100 個配子有 1 個在這一段發生交換的距離。改了設定就開始新的一輪統計。</p>
           <div class="checks" id="batchControls">
+            <label><input id="varyParent" type="checkbox"> <span data-en="Sample parental karyotypes for each meiosis (marker distance held fixed)">每次分裂抽取親本核型（標記距離固定）</span></label>
             <label><span data-en="Seed">種子</span> <input id="batchSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
             <label><input type="checkbox" id="batchLock"><span data-en="Reuse seed">沿用種子</span></label>
             <button type="button" id="batchDraw" data-en="Draw new seed">重抽種子</button>

@@ -167,7 +167,11 @@
 
   function build1(keepTau) {
     st1.n = Math.round(val(el.n));
-    st1.rec = K.make({ mode: st1.mode, n: st1.n, xo: st1.xo, nd: st1.mode === 'meiosis' ? st1.nd : 0, ndPair: 0, seed: st1.seed });
+    const target = $('ndPair'), pair = Math.min(Number(target.value), st1.n - 1);
+    target.replaceChildren(...Array.from({ length: st1.n }, (_, i) => new Option(String(i + 1), String(i))));
+    target.value = String(pair); target.disabled = st1.mode !== 'meiosis';
+    st1.fullPlayback = !keepTau || st1.tau === 0;
+    st1.rec = K.make({ mode: st1.mode, n: st1.n, xo: st1.xo, nd: st1.mode === 'meiosis' ? st1.nd : 0, ndPair: pair, seed: st1.seed });
     if (!keepTau) st1.tau = 0;
     st1.tau = Math.min(st1.tau, K.total(st1.mode));
     st1.doneEmitted = false; st1.lastStage = -1;
@@ -235,6 +239,7 @@
     if (st1.doneEmitted) return;
     st1.doneEmitted = true;
     const d = doneData();
+    d.fullPlayback = st1.fullPlayback;
     emit('cd-done', d);
     addRow(d);
     sndDone(d.aneuploid > 0);
@@ -251,7 +256,7 @@
   let rafP = 0;
   function play() {
     if (st1.playing) { pause(); return; }
-    if (isDone()) { st1.tau = 0; st1.doneEmitted = false; st1.lastStage = -1; }
+    if (isDone()) { st1.tau = 0; st1.fullPlayback = true; st1.doneEmitted = false; st1.lastStage = -1; }
     st1.playing = true; st1.last = 0;
     $('playBtn').textContent = T('暫停', 'Pause');
     const loop = function (now) {
@@ -298,6 +303,7 @@
   function seek(t, quiet) {
     if (st1.playing) pause(true);
     st1.tau = Math.max(0, Math.min(K.total(st1.mode), t));
+    st1.fullPlayback = st1.tau === 0;
     if (st1.tau < K.total(st1.mode) - 1e-9) st1.doneEmitted = false;
     tick();
     $('playBtn').textContent = isDone() ? T('從頭播放', 'Play again') : T('播放', 'Play');
@@ -588,7 +594,7 @@
           const lab = o ? L[1].toLowerCase() : L[1];
           // 標在分體外側（離姊妹遠的一邊）
           const showSide = q.lab != null ? q.lab : (q.s ? 1 : -1);
-          if (showSide) small(g, lab, c[0] + px * (wpx + 6) * showSide, c[1] + py * (wpx + 6) * showSide, colOf(o), 'center', 'middle', 10.5, '700');
+          if (showSide) small(g, lab, c[0] + px * (wpx + 6) * showSide, c[1] + py * (wpx + 6) * showSide, colOf(o), 'center', 'middle', 12, '700');
         }
       });
     }
@@ -620,7 +626,7 @@
       const a = xOfT(K.stageStart(st1.mode, i), L), b = xOfT(K.stageStart(st1.mode, i) + s.d, L);
       if (i % 2 === 0) { g.fillStyle = D.alpha(D.c.text, D.dark ? 0.05 : 0.035); g.fillRect(a, L.A[0] - 12, b - a, L.axisY - L.A[0] + 12); }
       const lab = T(STAGE_SHORT[s.k][0], STAGE_SHORT[s.k][1]);
-      if (b - a > 14) small(g, lab, (a + b) / 2, L.axisY + 9, D.c.muted, 'center', 'middle', b - a > 26 ? 10.5 : 9);
+      if (b - a > 23) small(g, lab, (a + b) / 2, L.axisY + 9, D.c.muted, 'center', 'middle', b - a > 30 ? 12 : 10);
     });
     // 減數分裂 I／II 的大括號標示
     if (st1.mode === 'meiosis' && w >= 420) {
@@ -682,8 +688,8 @@
       if (!done) {
         // 格子窄時分兩行（名稱／提示），避免溢出
         const tip = T('分裂完成後出現', 'appears when division ends'), cx = x + bw / 2, cy = (y0 + y1) / 2;
-        if (bw >= 200) small(g, lab + ' ' + (i + 1) + T('：', ': ') + tip, cx, cy, D.c.muted, 'center', 'middle', 10.5);
-        else { small(g, lab + ' ' + (i + 1), cx, cy - 8, D.c.muted, 'center', 'middle', 10.5, '700'); if (bw >= 70) small(g, bw < 120 ? T('完成後出現', 'pending') : tip, cx, cy + 8, D.c.muted, 'center', 'middle', 9.5); }
+        if (bw >= 200) small(g, lab + ' ' + (i + 1) + T('：', ': ') + tip, cx, cy, D.c.muted, 'center', 'middle', 12);
+        else { small(g, lab + ' ' + (i + 1), cx, cy - 8, D.c.muted, 'center', 'middle', 12, '700'); if (bw >= 70) small(g, bw < 120 ? T('完成後出現', 'pending') : tip, cx, cy + 8, D.c.muted, 'center', 'middle', 9.5); }
         if (bw < 150) { /* 窄版字已縮小 */ }
         return;
       }
@@ -766,7 +772,7 @@
     // Replaying a batch starts a fresh pool so duplicate gametes cannot narrow the interval.
     if (pooledSeeds.has(st2.seed >>> 0 || 1)) reset2(true);
     pooledSeeds.add(st2.seed >>> 0 || 1);
-    const b = K.batch({ d: st2.d / 100, n: st2.n, N: N, seed: st2.seed });
+    const b = K.batch({ d: st2.d / 100, n: st2.n, N: N, varyParent: $('varyParent').checked, seed: st2.seed });
     Object.keys(b.counts).forEach(function (k) { st2.cnt[k] = (st2.cnt[k] || 0) + b.counts[k]; });
     b.tetrads.forEach((count, k) => { st2.tetrads[k] += count; });
     b.patterns.forEach(function (p) { st2.pats[p] = (st2.pats[p] || 0) + 1; });
@@ -844,7 +850,7 @@
         D.roundRect(g, x, y1 - hgt, bwi, hgt, Math.min(5, hgt / 2)); g.fillStyle = gr; g.fill();
       }
       small(g, k, x + bwi / 2, y1 + 11, D.c.text, 'center', 'middle', 12, '700');
-      if (s.total) small(g, pct(v / s.total, 1), x + bwi / 2, y1 - hgt - 8, D.c.muted, 'center', 'middle', 10.5);
+      if (s.total) small(g, pct(v / s.total, 1), x + bwi / 2, y1 - hgt - 8, D.c.muted, 'center', 'middle', 12);
     });
     g.strokeStyle = D.alpha(D.c.border, 1); g.lineWidth = 1;
     g.beginPath(); g.moveTo(x0, Math.round(y1) + 0.5); g.lineTo(x1, Math.round(y1) + 0.5); g.stroke();
@@ -867,7 +873,7 @@
       g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
       small(g, Math.round(r * 100) + '%', x0 - 5, y, D.c.muted, 'right', 'middle', 10);
     }
-    small(g, T('距離 d（cM）', 'Distance d (cM)'), x1, y1 + 24, D.c.muted, 'right', 'middle', 10.5);
+    small(g, T('距離 d（cM）', 'Distance d (cM)'), x1, y1 + 24, D.c.muted, 'right', 'middle', 12);
     // 50% 線
     g.setLineDash([6, 5]); g.strokeStyle = D.alpha(D.c.text, 0.5); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(x0, Y(0.5)); g.lineTo(x1, Y(0.5)); g.stroke();
@@ -876,13 +882,13 @@
     g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(RMAX * 100), Y(RMAX)); g.stroke();
     g.setLineDash([]);
     small(g, '50%', x1 - 4, Y(0.5) - 9, D.c.muted, 'right', 'middle', 10);
-    small(g, 'r = d', X(52), Y(0.52) - 2, C['cd-k2'], 'right', 'middle', 10.5, '600');
+    small(g, 'r = d', X(52), Y(0.52) - 2, C['cd-k2'], 'right', 'middle', 12, '600');
     // Haldane 曲線
     g.beginPath();
     for (let d = 0; d <= DMAX; d += 1) { const x = X(d), y = Y(K.haldane(d / 100)); if (!d) g.moveTo(x, y); else g.lineTo(x, y); }
     g.lineWidth = 5; g.strokeStyle = D.alpha(C['cd-k1'], 0.18); g.stroke();
     g.lineWidth = 2.4; g.strokeStyle = C['cd-k1']; g.stroke();
-    small(g, T('Haldane：r = (1 − exp(−d/50)) ÷ 2', 'Haldane: r = (1 − exp(−d/50)) ÷ 2'), X(120), Y(K.haldane(1.2)) - 14, C['cd-k1'], 'center', 'middle', 10.5, '600');
+    small(g, T('Haldane：r = (1 − exp(−d/50)) ÷ 2', 'Haldane: r = (1 − exp(−d/50)) ÷ 2'), X(120), Y(K.haldane(1.2)) - 14, C['cd-k1'], 'center', 'middle', 12, '600');
     // 目前的距離
     const xd = X(st2.d);
     g.strokeStyle = D.alpha(D.c.text, 0.35); g.lineWidth = 1; g.setLineDash([3, 4]);
@@ -1023,6 +1029,7 @@
     $('playBtn').textContent = T('播放', 'Play');
     tick();
   }
+  $('ndPair').addEventListener('change', () => restart(false));
   el.n.addEventListener('input', function () { renderOutputs1(); restart(false); });
   $('modes').addEventListener('click', function (ev) {
     const b = ev.target.closest('button[data-m]'); if (!b) return;
@@ -1049,6 +1056,7 @@
     if (raf2c) return;
     raf2c = requestAnimationFrame(function () { raf2c = 0; reset2(true); renderRo2(); request2(); });
   };
+  $('varyParent').addEventListener('change', onSet2);
   el2.d.addEventListener('input', onSet2);
   el2.n2.addEventListener('input', onSet2);
   $('run100').addEventListener('click', function () { run2(100); });
