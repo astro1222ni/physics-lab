@@ -4,9 +4,9 @@ window.ExamTracks = {
     {
       "id": "Q19_10",
       "row": "wrong",
-      "duration": 3.46,
-      "disp": "選錯的人，最常選 C 和 B，各有 3 成多。",
-      "en": "The most common wrong picks were C and B, each over 30%."
+      "duration": 4.761,
+      "disp": "全體考生裡，34% 勾 C、32% 勾 B，都是 3 成多。",
+      "en": "Of all test-takers, 34% picked C and 32% picked B, each over 30%."
     },
     {
       "id": "Q19_11",
@@ -32,16 +32,16 @@ window.ExamTracks = {
     {
       "id": "Q19_14",
       "row": "flip",
-      "duration": 2.137,
-      "disp": "第一，重力位能是負的。",
-      "en": "First, gravitational potential energy is negative."
+      "duration": 3.925,
+      "disp": "第一，把無窮遠當作零，重力位能是負的。",
+      "en": "First, with infinity taken as zero, gravitational potential energy is negative."
     },
     {
       "id": "Q19_15",
       "row": "flip",
-      "duration": 3.437,
-      "disp": "越靠近地球，負得越多，數值反而越小。",
-      "en": "The closer to Earth, the more negative it gets, so its value is actually smaller."
+      "duration": 4.215,
+      "disp": "質量一樣的話，越靠近地球，負得越多，數值反而越小。",
+      "en": "For the same mass, the closer to Earth, the more negative it gets, so its value is actually smaller."
     },
     {
       "id": "Q19_16",
@@ -62,14 +62,14 @@ window.ExamTracks = {
       "row": "flip2",
       "duration": 6.839,
       "disp": "題目刻意寫「任何質量的同步衛星」，質量不知道，位能、力學能就沒辦法保證誰大誰小。",
-      "en": "The question deliberately says \"a geostationary satellite of any mass.\" Without the mass, nothing is guaranteed about potential or mechanical energy."
+      "en": "The question deliberately says \"a synchronous satellite of any mass.\" Without the mass, nothing is guaranteed about potential or mechanical energy."
     },
     {
       "id": "Q19_19",
       "row": "flip2",
       "duration": 3.042,
       "disp": "題目說「一定」，所以 B、C 都錯。",
-      "en": "The question says \"definitely,\" so B and C are both wrong."
+      "en": "The question says \"must,\" so B and C are both wrong."
     },
     {
       "id": "Q19_20",
@@ -88,9 +88,9 @@ window.ExamTracks = {
     {
       "id": "Q19_22",
       "row": "solve",
-      "duration": 8.743,
-      "disp": "所以速率 v 等於根號 G M 除以 r，加速度 a 等於 G M 除以 r 平方，都只看軌道半徑，不看衛星多重。",
-      "en": "So the speed v = √(GM/r) and the acceleration a = GM/r². Both depend only on orbital radius, not on how heavy the satellite is."
+      "duration": 8.418,
+      "disp": "所以速率 v 等於 G M 除以 r 再開根號，加速度 a 等於 G M 除以 r 平方，都只看軌道半徑，不看衛星的質量。",
+      "en": "So the speed v = √(GM/r) and the acceleration a = GM/r². Both depend only on orbital radius, not on the satellite's mass."
     },
     {
       "id": "Q19_25",
@@ -111,20 +111,20 @@ window.ExamTracks = {
       "row": "radius",
       "duration": 7.406,
       "disp": "太空站離地心大約 6800 公里，同步衛星大約 4 萬 2 千公里，差了 6 倍多，所以 A 錯。",
-      "en": "The space station is about 6,800 km from Earth's center, the geostationary satellite about 42,000 km, over 6 times farther. So A is wrong."
+      "en": "The space station is about 6,800 km from Earth's center, the geosynchronous satellite about 42,000 km, over 6 times farther. So A is wrong."
     },
     {
       "id": "Q19_28",
       "row": "kepler",
       "duration": 11.436,
       "disp": "我上課講克卜勒第三定律的時候說過：只要是繞同一顆星的那些小星星們，T 平方分之 R 立方，都是同一個定值；地球的人造衛星，連月亮在內，全都一樣。",
-      "en": "When I teach Kepler's third law, I say: for all the little bodies orbiting the same star, R³/T² is the same constant. Earth's satellites, the Moon included, all share one."
+      "en": "When I teach Kepler's third law, I say: for all the small bodies orbiting the same central body, R³/T² is the same constant. Earth's satellites, the Moon included, all share one."
     },
     {
       "id": "Q19_29",
       "row": "kepler",
-      "duration": 5.701,
-      "disp": "所以只要知道週期，就知道誰的軌道比較小，不用知道衛星多重。",
+      "duration": 5.643,
+      "disp": "所以只要知道週期，就知道誰的軌道比較小，不用知道衛星的質量。",
       "en": "So knowing the period tells you whose orbit is smaller, with no need for the satellite's mass."
     },
     {
@@ -151,8 +151,8 @@ window.ExamTracks = {
     {
       "id": "Q19_36",
       "row": "alt",
-      "duration": 4.877,
-      "disp": "意思是，就算兩顆一樣重，跑得越快的，力學能反而越負、越小。",
+      "duration": 5.457,
+      "disp": "意思是，就算兩顆質量一樣，跑得越快的，力學能反而越負、越小。",
       "en": "That means even at equal mass, the faster one has more negative, smaller mechanical energy."
     },
     {
@@ -272,16 +272,16 @@ window.ExamTracks = {
     {
       "id": "Q23_26",
       "row": "redshift",
-      "duration": 2.682,
-      "disp": "天文學家看星系，用的也是這一招。",
-      "en": "Astronomers use this very trick on galaxies."
+      "duration": 3.46,
+      "disp": "天文學家看星系，用的是很類似的想法。",
+      "en": "Astronomers apply a similar idea to galaxies."
     },
     {
       "id": "Q23_27",
       "row": "redshift",
-      "duration": 8.549,
-      "disp": "學測複習那一支我講過，大部分星系的光都有紅移，頻率變小，表示它們正在遠離我們，所以我們知道宇宙正在膨脹。",
-      "en": "As I said in the GSAT review video, most galaxies' light is redshifted, lower in frequency, so they're moving away from us, and that's how we know the universe is expanding."
+      "duration": 9.764,
+      "disp": "學測複習那一支我講過，大部分星系的光都有紅移，頻率變小，表示它們正在遠離我們；這是宇宙膨脹，把光的波長拉長了。",
+      "en": "As I said in the GSAT review video, most galaxies' light is redshifted, lower in frequency, meaning they're moving away from us; it's the expanding universe stretching the light's wavelength."
     },
     {
       "id": "Q23_28",
@@ -307,16 +307,16 @@ window.ExamTracks = {
     {
       "id": "Q23_31",
       "row": "trick",
-      "duration": 3.483,
-      "disp": "這個規則最重要，加速還是減速都不用管。",
-      "en": "That rule is what matters; speeding up or slowing down doesn't matter."
+      "duration": 6.316,
+      "disp": "只問比 \\(f_0\\) 高還是低的時候，這個規則最重要，加速還是減速都不用管。",
+      "en": "When the question only asks higher or lower than \\(f_0\\), that rule is what matters; speeding up or slowing down doesn't."
     },
     {
       "id": "Q23_32",
       "row": "trick",
-      "duration": 4.18,
-      "disp": "大考考都卜勒效應，問的幾乎都是頻率變大還是變小。",
-      "en": "When the exam tests the Doppler effect, it almost always asks whether frequency goes up or down."
+      "duration": 3.716,
+      "disp": "這一題問的剛好就是這個：比 \\(f_0\\) 高還是低。",
+      "en": "And this question asks exactly that: higher or lower than \\(f_0\\)."
     }
   ],
   "Q49": [
@@ -365,9 +365,9 @@ window.ExamTracks = {
     {
       "id": "Q49_21",
       "row": "solveB",
-      "duration": 4.285,
-      "disp": "因為電壓和電流是直線關係，斜率的倒數就是電阻。",
-      "en": "Voltage and current are linear, so the reciprocal of the slope is the resistance."
+      "duration": 6.038,
+      "disp": "這題縱軸是電流、橫軸是電壓，兩者是直線關係，斜率的倒數就是電阻。",
+      "en": "Here current is on the vertical axis and voltage on the horizontal; they're linear, so the reciprocal of the slope is the resistance."
     },
     {
       "id": "Q49_22",
@@ -386,23 +386,23 @@ window.ExamTracks = {
     {
       "id": "Q49_27",
       "row": "grade",
-      "duration": 11.901,
-      "disp": "大考中心的評分原則說，讀圖會有誤差，平衡電壓在 45 到 55 毫伏特、電阻在 125 到 175 歐姆，都給分；可是單位一定要寫，沒寫單位就沒分。",
-      "en": "The College Entrance Examination Center's scoring guide allows for reading error: 45 to 55 mV and 125 to 175 Ω all earn credit; but units are a must. No units, no points."
+      "duration": 14.896,
+      "disp": "大考中心的評分原則說，讀圖會有誤差，平衡電壓在 45 到 55 毫伏特、電阻在 125 到 175 歐姆，都給分；不過單位要寫對才有機會拿滿分，過程對但漏了單位，可能只拿部分分數。",
+      "en": "The College Entrance Examination Center's scoring guide allows for reading error: 45 to 55 mV and 125 to 175 Ω all earn credit. But you need correct units for a shot at full marks; sound working with a missing unit may earn only partial credit."
     },
     {
       "id": "Q49_28",
       "row": "alt",
-      "duration": 4.575,
-      "disp": "另一種做法：直接挑兩個資料點，代進式子解聯立。",
-      "en": "Another way: pick two data points and solve the equations simultaneously."
+      "duration": 5.678,
+      "disp": "另一種做法：在趨勢線上挑兩個相隔較遠的點，代進式子解聯立。",
+      "en": "Another way: pick two well-separated points on the trend line and solve the equations simultaneously."
     },
     {
       "id": "Q49_29",
       "row": "alt",
-      "duration": 11.79,
-      "disp": "例如−60 毫伏特、−0.75 毫安培，和 60 毫伏特、0.07 毫安培，兩式相減，電阻大約 146 歐姆；再代回去，平衡電壓大約 50 毫伏特，還是在給分範圍裡。",
-      "en": "Say −60 mV, −0.75 mA and 60 mV, 0.07 mA: subtract the equations and the resistance is about 146 Ω; plug back in, and the equilibrium voltage is about 50 mV, still within range."
+      "duration": 13.34,
+      "disp": "例如趨勢線上的−60 毫伏特、−0.75 毫安培，和 60 毫伏特、0.07 毫安培，兩式相減，電阻大約 146 歐姆；再代回去，平衡電壓大約 50 毫伏特，還是在給分範圍裡。",
+      "en": "Say the trend-line points −60 mV, −0.75 mA and 60 mV, 0.07 mA: subtract the equations and the resistance is about 146 Ω; plug back in, and the equilibrium voltage is about 50 mV, still within range."
     },
     {
       "id": "Q49_30",
@@ -428,9 +428,9 @@ window.ExamTracks = {
     {
       "id": "Q49_33",
       "row": "trick",
-      "duration": 3.82,
-      "disp": "秒殺：V-I 是直線，截距看電池，斜率看電阻。",
-      "en": "The shortcut: a straight V-I line; the intercept gives the battery, the slope gives the resistance."
+      "duration": 5.179,
+      "disp": "秒殺：I-V 圖是直線，電流是 0 時的電壓截距看電池，斜率看電阻。",
+      "en": "The shortcut: the I-V graph is a straight line; the voltage intercept at zero current gives the battery, and the slope gives the resistance."
     },
     {
       "id": "Q49_34",
