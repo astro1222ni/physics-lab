@@ -304,3 +304,17 @@ html.learn-class {--teaching:1.4}
 .ls-qrate[hidden]{display:none}
 .ls-qrate b{color:var(--text);font-variant-numeric:tabular-nums}
 .ls-qrate .ls-qrate-m{display:block}
+/* 11/21 站長：語速與喇叭照龍騰第 2 章——語速六檔彈出小選單；喇叭旁邊寫「聽倪講／倪先安靜」 */
+@media not ((orientation:landscape) and (max-height:600px)){.transport-buttons {flex-wrap:wrap;row-gap:4px}}
+#speed {font-weight:750;font-variant-numeric:tabular-nums;font-size:calc(15px * var(--lesson-fs, 1));min-width:52px}
+#sound {display:inline-flex;align-items:center;gap:5px;padding:2px 10px;white-space:nowrap;color:var(--muted);border-color:var(--border)}
+#sound .snd-i {font-size:20px;line-height:1}
+#sound .snd-t {font-size:14px;font-weight:750}
+#sound.on {color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.learn-rmenu {position:fixed;z-index:60;width:min(300px,calc(100vw - 16px));padding:10px 12px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:0 12px 32px #0006}
+.learn-rmenu .rm-title {font-size:14px;font-weight:700;color:var(--muted);margin:0 2px 8px}
+.learn-rmenu .rm-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.learn-rmenu button {min-height:44px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.learn-rmenu button[aria-pressed="true"] {background:var(--accent);border-color:var(--accent);color:var(--surface)}
+@media(orientation:landscape) and (max-height:600px){.transport {flex-wrap:wrap;row-gap:2px}.seek {flex:1 1 220px}.transport-buttons {flex:1 1 auto;min-width:0;flex-wrap:wrap;row-gap:3px}}
+@media(orientation:landscape) and (max-height:600px){body.exam-page .transport {padding-right:40px}}

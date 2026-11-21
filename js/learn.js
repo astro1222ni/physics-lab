@@ -106,7 +106,9 @@
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const presentation=U.presentation;
     const timing=window.LearnTimings[en?'en':'zh'],scene=LearnScene.create(by('scene')),answers=C?.answers();
-    let index=0,t=0,playing=false,speed=1,auto=read('learn-auto',true),sound=LabSettings.get('sound');
+    // 11/21 站長：語速照龍騰第 2 章做六檔（0.8–1.8），點一下彈出小選單、記住每個人的選擇（learn-rate）；不在六檔的舊值換成最近一檔（一樣近取靠 1.0 的）
+    const RATES=[.8,1,1.2,1.4,1.6,1.8],nearRate=v=>RATES.reduce((a,b)=>{const da=Math.abs(a-v),db=Math.abs(b-v);return db<da-1e-9||(Math.abs(db-da)<1e-9&&Math.abs(b-1)<Math.abs(a-1))?b:a;},1);
+    let index=0,t=0,playing=false,speed=nearRate(+read('learn-rate',1)||1),auto=read('learn-auto',true),sound=LabSettings.get('sound');
     const language=en?'en':'zh', recordings=window.LearnTimings.audio?.[language]||{};
     const estimatedClock=Object.fromEntries(pages.map(p=>[p.id,estimate(p.speech[en?1:0],language)]));
     let heardFromStart=false,failedRecording=false,trackClock=null,audibleUntil=0,tail=0,loadTimer=0,last=0,raf=0,held=false,frameModel=null,coverage=0,voice=null,voiceReady=false,voiceEpoch=0;
@@ -209,8 +211,11 @@
     }
     function controlLabels(){
       by('play').textContent=playing?'❚❚':'▶';by('play').setAttribute('aria-label',playing?T('暫停','Pause'):T('播放','Play'));
-      by('sound').textContent=sound?'🔊':'🔇';by('sound').setAttribute('aria-pressed',String(sound));
-      by('auto').checked=!!auto;by('speed').textContent=speed+'×';by('class-mode').setAttribute('aria-pressed',String(klass));
+      // 喇叭旁邊寫字（照龍騰「聽倪講／倪先安靜」），讓人看得出旁白的開關在這裡
+      const sb=by('sound');sb.classList.toggle('on',!!sound);sb.setAttribute('aria-pressed',String(sound));
+      sb.innerHTML='<span class="snd-i" aria-hidden="true">'+(sound?'🔊':'🔇')+'</span><span class="snd-t">'+(sound?T('聽倪講','Ni speaking'):T('倪先安靜','Ni muted'))+'</span>';
+      sb.setAttribute('aria-label',sound?T('聽倪講：旁白開著（按一下關掉）','Narration on (tap to mute)'):T('倪先安靜：旁白關著（按一下打開）','Narration off (tap to turn on)'));
+      by('auto').checked=!!auto;by('speed').textContent=speed.toFixed(1)+'×';by('speed').setAttribute('aria-expanded',String(!!document.querySelector('.learn-rmenu')));by('class-mode').setAttribute('aria-pressed',String(klass));
       by('previous').disabled=index===0;by('next').disabled=index===n-1;
     }
     function setPlaying(on){if(on&&voice&&t<.005)heardFromStart=sound;playing=on;last=0;if(!on){voice?.pause();setHaptic(false);}else followVoice();controlLabels();schedule();}
@@ -516,7 +521,19 @@
     by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-edgeStart>35)setPanel(sideTab,false);},{passive:true});
     by('previous').onclick=()=>go(index-1);by('next').onclick=()=>go(index+1);
     by('replay').onclick=()=>go(index,0,true);by('play').onclick=()=>{if(t>=clock().dur)go(index,0,true);else setPlaying(!playing);};
-    by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').onclick=()=>{const speeds=[1,1.25,1.5,0.5,0.75];speed=speeds[(speeds.indexOf(speed)+1)%speeds.length];if(voice)voice.playbackRate=speed;controlLabels();};
+    by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').setAttribute('aria-haspopup','true');
+    const closeRate=()=>{document.querySelector('.learn-rmenu')?.remove();controlLabels();};
+    const setRate=v=>{speed=v;write('learn-rate',v);if(voice)voice.playbackRate=speed;closeRate();};
+    by('speed').onclick=e=>{e.stopPropagation();if(document.querySelector('.learn-rmenu'))return closeRate();
+      const m=document.createElement('div');m.className='learn-rmenu';m.setAttribute('role','group');m.setAttribute('aria-label',T('旁白語速','Narration speed'));
+      m.innerHTML='<div class="rm-title">'+T('旁白語速','Narration speed')+'</div><div class="rm-grid">'+RATES.map(r=>'<button type="button" data-rate="'+r+'" aria-pressed="'+(r===speed)+'">'+r.toFixed(1)+'×</button>').join('')+'</div>';
+      m.addEventListener('click',ev=>{const b=ev.target.closest('[data-rate]');if(b)setRate(+b.dataset.rate);});document.body.append(m);
+      const r=by('speed').getBoundingClientRect(),W=m.offsetWidth,H=m.offsetHeight,vw=document.documentElement.clientWidth;
+      const left=Math.min(Math.max(8,r.left+r.width/2-W/2),vw-W-8),below=r.bottom+6+H<=innerHeight-8;
+      m.style.left=left+'px';m.style.top=(below?r.bottom+6:Math.max(8,r.top-6-H))+'px';controlLabels();m.querySelector('[aria-pressed="true"]')?.focus();};
+    document.addEventListener('pointerdown',e=>{if(!e.target.closest('.learn-rmenu,#speed'))document.querySelector('.learn-rmenu')&&closeRate();});
+    addEventListener('resize',()=>document.querySelector('.learn-rmenu')&&closeRate());addEventListener('scroll',()=>document.querySelector('.learn-rmenu')&&closeRate(),{passive:true});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.learn-rmenu')){closeRate();by('speed').focus();}});
     by('auto').onchange=e=>{auto=e.target.checked;write('learn-auto',auto);};
     by('sound').onclick=()=>LabSettings.set('sound',!sound);
     addEventListener('lab:settingschange',e=>{if(e.detail?.name==='sound'){sound=LabSettings.get('sound');if(voice)voice.muted=!sound;if(playing&&!sound)heardFromStart=false;controlLabels();}});
