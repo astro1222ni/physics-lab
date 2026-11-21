@@ -33,6 +33,12 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 <button type="submit">進入</button>
 <div class="err" id="err" role="alert"></div>
 </form></main>
+<script>/* 11/21 晚：主站齒輪選了 English（localStorage lab-settings），密碼頁也用英文 */
+try { if ((JSON.parse(localStorage.getItem('lab-settings') || '{}')).lang === 'en') { window.__LTEN = 1; document.documentElement.lang = 'en'; document.title = 'Chapter 2 Web Handout';
+  var q = function (s) { return document.querySelector(s); };
+  q('h1').textContent = 'Chapter 2 Web Handout'; q('#f p').textContent = 'Enter the password (case-sensitive). Once is enough for all of Chapter 2.';
+  q('#pw').setAttribute('aria-label', 'Password'); q('label.k').lastChild.textContent = 'Remember the password on this device'; q('#f button').textContent = 'Enter'; } } catch (e) {}
+</script>
 <script>
 (function () {
   var UNIT = "ch2", SALT = "io0T+L4fg/IaBL/ZTfTQLg==", ITER = 310000, ENC = "kepler.enc.json";
@@ -64,12 +70,13 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   }
   var err = document.getElementById('err');
   function fail(e) {
-    err.textContent = e && e.message === 'old' ? '這個瀏覽器太舊，請更新後再開。' : e && e.message === 'net' ? '連線失敗，請重新整理。' : '密碼不對，再試一次。';
+    var en = !!window.__LTEN;
+    err.textContent = e && e.message === 'old' ? (en ? 'This browser is too old. Please update it and try again.' : '這個瀏覽器太舊，請更新後再開。') : e && e.message === 'net' ? (en ? 'Connection failed. Please reload.' : '連線失敗，請重新整理。') : (en ? 'Wrong password. Try again.' : '密碼不對，再試一次。');
   }
   var saved = get(KEYNAME);
   if (saved) open(b64(saved)).catch(function () { drop(KEYNAME); });
   document.getElementById('f').addEventListener('submit', function (ev) {
-    ev.preventDefault(); err.textContent = '解鎖中…';
+    ev.preventDefault(); err.textContent = window.__LTEN ? 'Unlocking…' : '解鎖中…';
     var pw = document.getElementById('pw').value, keep = document.getElementById('keep').checked;
     derive(pw).then(function (raw) { return open(raw, keep); }).catch(fail);
   });
