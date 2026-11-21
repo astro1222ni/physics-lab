@@ -484,7 +484,114 @@
     return out;
   }
 
+  // 一階溫度計：預設輸入是階躍；給定起點時，對線性變溫的一步積分。
+  function lagStep(reading, truth, dt, tau, start = truth) {
+    if (!(tau > 0)) return truth;
+    if (!(dt > 0)) return reading;
+    const x = dt / tau, gain = -Math.expm1(-x);
+    const ramp = x < 1e-5 ? x / 2 - x * x / 6 : 1 - gain / x;
+    return reading + (start - reading) * gain + (truth - start) * ramp;
+  }
+
+  function calorimeter(p) {
+    return createMix({
+      A: { s: p.sub, m: p.m1, T: p.T1, phase: 0 },
+      B: { m: p.m2, T: p.T2, phase: 1, Ccup: p.Ccup },
+      k: contactK(p.sub, p.m1, p.stir), ke: p.loss ? KE_CUP : 0
+    });
+  }
+
+  // 若一步之內越過同溫，先停在容許帶的入口，避免漏記兩條曲線的交會。
+  function stepToContact(sim, dt) {
+    const gap = s => temperature(s.A, s.HA) - temperature(s.B, s.HB);
+    const original = { ...sim }, start = gap(original);
+    const points = mixStep(sim, dt), end = gap(sim);
+    if (Math.abs(end) <= 0.05 || start * end >= 0) return points;
+    let lo = 0, hi = dt;
+    for (let i = 0; i < 32; i++) {
+      const mid = (lo + hi) / 2, trial = { ...original };
+      mixStep(trial, mid);
+      if (Math.sign(start) * gap(trial) > 0.05) lo = mid;
+      else hi = mid;
+    }
+    Object.assign(sim, original);
+    return mixStep(sim, hi);
+  }
+
+  function roomEquilibrium(sim) {
+    const s = mixState(sim);
+    return sim.ke > 0 && Math.max(Math.abs(s.dT), Math.abs(s.TA - sim.Tenv),
+      Math.abs(s.TB - sim.Tenv)) < 0.05 && Math.abs(s.P) < 0.1 &&
+      Math.abs(sim.ke * (s.TB - sim.Tenv)) < 0.1;
+  }
+
+  // 正的 Qloss 表示熱流出系統。水、杯、室內吸收的熱之和等於樣品放熱。
+  function inferHeat(p, Tf, Qloss) {
+    const den = p.m1 * (p.T1 - Tf);
+    if (p.sub === 'h2o' || Math.abs(den) < 1e-10 || p.T1 === p.T2) return null;
+    const rise = Tf - p.T2, water = p.m2 * C_WATER * rise;
+    const textbook = water / den, corrected = (water + p.Ccup * rise + Qloss) / den;
+    return { textbook, corrected, difference: corrected ? 100 * Math.abs((textbook - corrected) / corrected) : null };
+  }
+
+  function mixEstimate(sim, p, reading) {
+    const water = stateOf(sim.B, sim.HB);
+    if (water.frac[1] < 1 - 1e-9) return null;
+    return inferHeat(p, reading, sim.Qloss);
+  }
+
+  function repeatedMix(p, count, seed, tau) {
+    let word = seed >>> 0;
+    function jitter(center, width, min = -Infinity, max = Infinity) {
+      word = (Math.imul(1664525, word) + 1013904223) >>> 0;
+      const lo = Math.max(min, center - width), hi = Math.min(max, center + width);
+      return lo + (hi - lo) * (word / 4294967296);
+    }
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      // 滑桿是儀器的名目讀數，各次真值落在其精度區間內。
+      const actual = count === 1 ? p : { ...p, m1: jitter(p.m1, 0.0001), m2: jitter(p.m2, 0.0001),
+        T1: jitter(p.T1, 0.2, -Infinity, p.sub === 'h2o' ? 0 : Infinity), T2: jitter(p.T2, 0.2, 0, 100) };
+      const sim = calorimeter(actual);
+      let reading = actual.T2, lossAt = null;
+      if (p.loss || tau > 0) {
+        let water = reading;
+        // 以熱交換與探針的時間尺度取步長，只積分到取樣時刻①。
+        // 有散熱時照實驗課做法取「溫度計讀數的極值」（水溫最高或最低點），讀數一回頭就停。
+        const dir = Math.sign(actual.T1 - actual.T2);
+        let best = reading, bestQ = sim.Qloss;
+        const dt = Math.min(1, sim.hmax, tau > 0 ? tau / 4 : Infinity);
+        while (Math.abs(temperature(sim.A, sim.HA) - water) > 0.05) {
+          const t0 = sim.t;
+          stepToContact(sim, dt);
+          const next = temperature(sim.B, sim.HB);
+          reading = lagStep(reading, next, sim.t - t0, tau, water);
+          water = next;
+          if (p.loss && dir) {
+            if (dir * (reading - best) > 0) { best = reading; bestQ = sim.Qloss; }
+            else if (dir * (best - reading) > 1e-3) break;
+          }
+        }
+        if (p.loss && dir) { reading = best; lossAt = bestQ; }
+      } else {
+        sim.HA = sim.eq.H[0]; sim.HB = sim.eq.H[1]; reading = sim.eq.T;
+      }
+      const result = mixEstimate(lossAt == null ? sim : { B: sim.B, HB: sim.HB, Qloss: lossAt }, p, reading);
+      rows.push({ actual, reading, c: result ? result.corrected : null });
+    }
+    const values = rows.map(row => row.c);
+    const valid = values.every(Number.isFinite);
+    const mean = valid ? values.reduce((sum, c) => sum + c, 0) / count : null;
+    const sd = valid && count > 1 ? Math.sqrt(values.reduce((sum, c) => sum + (c - mean) ** 2, 0) / (count - 1)) : null;
+    return { rows, mean, sd };
+  }
+
+  function comparisonHeat(item, power, t) {
+    return t >= item.tStop ? item.Hstop : item.H0 + power * t;
+  }
+
   const api = {
+    lagStep, calorimeter, stepToContact, roomEquilibrium, inferHeat, mixEstimate, repeatedMix, comparisonHeat,
     L_FUSION: L_FUSION, L_VAPOR: L_VAPOR, C_WATER: C_WATER, C_ICE: C_ICE, C_STEAM: C_STEAM,
     T_ENV: T_ENV, H_STILL: H_STILL, H_STIR: H_STIR, KE_CUP: KE_CUP, KE_BEAKER: KE_BEAKER,
     SUBSTANCES: SUBSTANCES, MYSTERY_IDS: MYSTERY_IDS,

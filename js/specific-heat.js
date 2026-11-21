@@ -164,7 +164,7 @@
       return { wide: true, H: H, gap: gap, scene: { x: 0, y: 0, w: Sw, h: H }, graph: { x: gx, y: 0, w: cw - gx, h: gh }, info: { x: gx, y: gh + gap, w: cw - gx, h: H - gh - gap } };
     }
     const phone = cw <= 420;
-    const sh = Math.round(cw * (state.mode === 'cmp' ? 0.7 : phone ? 0.72 : 0.86));
+    const sh = Math.round(cw * (state.mode === 'cmp' ? 0.7 : phone ? (state.mode === 'cal' && el.lossC.checked ? 0.58 : 0.68) : 0.86));
     const gh = Math.round(cw * (phone ? 0.47 : 0.68));
     const nRows = state.mode === 'cmp' ? Math.max(1, cmpKeys().length) : 0;
     const ih = state.mode === 'cmp' ? 40 + nRows * 22 : state.mode === 'cal' ? (el.lossC && el.lossC.checked ? 158 : 128) : 128;
@@ -671,7 +671,8 @@
       const s = C.sim ? HC.mixState(C.sim) : null;
       if (C.phase === 'ready' || C.phase === 'drop' || !s) d += p.mys ? T('樣品還沒放入；神秘金屬的預測值不顯示。', 'The sample is not in yet; no prediction is shown for the mystery metal.')
         : T('樣品還沒放入，預測平衡溫度 ' + num(C.pred.Tf, 2) + ' °C。', 'The sample is not in yet; predicted equilibrium temperature ' + num(C.pred.Tf, 2) + ' °C.');
-      else if (C.eqDone) d += T('已達熱平衡：樣品 ' + num(s.TA, 2) + ' °C、水 ' + num(s.TB, 2) + ' °C，經過 ' + num(C.eqT, 1) + ' 秒。', 'Thermal equilibrium reached: sample ' + num(s.TA, 2) + ' °C, water ' + num(s.TB, 2) + ' °C after ' + num(C.eqT, 1) + ' s.');
+      else if (C.room) d += T('已與室內達到熱平衡。', 'In equilibrium with the room. ') + num(C.room.t, 1) + ' s · ' + num(C.room.T, 3) + ' °C';
+      else if (C.eqDone && !p.loss) d += T('已達熱平衡：樣品 ' + num(s.TA, 2) + ' °C、水 ' + num(s.TB, 2) + ' °C，經過 ' + num(C.eqT, 1) + ' 秒。', 'Thermal equilibrium reached: sample ' + num(s.TA, 2) + ' °C, water ' + num(s.TB, 2) + ' °C after ' + num(C.eqT, 1) + ' s.');
       else d += T('實驗進行中：t = ' + num(C.sim.t, 1) + ' 秒，樣品 ' + num(s.TA, 2) + ' °C、水 ' + num(s.TB, 2) + ' °C。', 'Running: t = ' + num(C.sim.t, 1) + ' s, sample ' + num(s.TA, 2) + ' °C, water ' + num(s.TB, 2) + ' °C.');
       d += T('右邊是兩者的溫度–時間圖與熱量長條圖。', ' On the right: the temperature–time graph and the heat bar chart.');
     } else if (m === 'heat') {
@@ -732,11 +733,33 @@
     };
   }
   function makeCalSim(p) {
-    return HC.createMix({
-      A: { s: p.sub, m: p.m1, T: p.T1, phase: 0 },
-      B: { m: p.m2, T: p.T2, phase: 1, Ccup: p.Ccup },
-      k: HC.contactK(p.sub, p.m1, p.stir), ke: p.loss ? HC.KE_CUP : 0
-    });
+    return HC.calorimeter(p);
+  }
+  function probeTau() { return $('lag').checked ? val($('tau')) : 0; }
+  function calSpeed() { return el.lossC.checked && $('fast').checked ? 2000 : state.speed.cal; }
+
+  // 每筆資料保留真溫，再依同一段物理時間推進探針讀數。
+  function appendProbe(samples, row, column, tau) {
+    const last = samples[samples.length - 1];
+    row.push(HC.lagStep(last[last.length - 1], row[column], row[0] - last[0], tau, last[column]));
+    samples.push(row);
+  }
+  function lastReading(series, fallback) {
+    const row = series.samples[series.samples.length - 1];
+    return row ? row[row.length - 1] : fallback;
+  }
+  function renderTrials() {
+    const count = Math.round(val($('repeatN')));
+    $('trialResults').hidden = count <= 1;
+    $('resample').disabled = count <= 1;
+    $('seed').disabled = count <= 1;
+    if (count <= 1 || state.mode !== 'cal') return;
+    const batch = HC.repeatedMix(calParams(), count, Number($('seed').value), probeTau());
+    const display = v => v == null ? '—' : num(v, 2);
+    $('trialRows').innerHTML = batch.rows.map((q, i) => '<tr><td>' + (i + 1) + '</td><td>' +
+      display(q.reading) + '</td><td>' + display(q.c) + '</td></tr>').join('');
+    $('trialStats').textContent = T('平均 ', 'Mean ') + display(batch.mean) + ' · ' +
+      T('樣本標準差 ', 'Sample SD ') + display(batch.sd) + ' J/(kg·K)';
   }
   function iceSteam(sim, HA, HB) {
     const a = HC.phaseMasses(sim.A, HA), b = HC.phaseMasses(sim.B, HB);
@@ -784,6 +807,7 @@
   }
   function calReset() {
     const C = state.cal;
+    C.estimate = null; C.room = null; C.peak = null; C.peakDone = false;
     C.phase = 'ready'; C.sim = null; C.samples = []; C.eqDone = false; C.drop = null; C.idxA = C.idxB = -1;
     stopVoices();
   }
@@ -791,6 +815,7 @@
     const C = state.cal;
     if (C.phase !== 'ready') { calArchive(); calReset(); setStatus(''); }
     calPredict();
+    renderTrials();
     refreshOutputs();
     updateButtons();
     requestDraw();
@@ -816,7 +841,7 @@
     C.drop = null;
     const s = HC.mixState(C.sim);
     C.P0 = Math.abs(s.P);
-    C.samples = [[0, s.TA, s.TB]];
+    C.samples = [[0, s.TA, s.TB, s.TB]];
     C.idxA = s.A.idx; C.idxB = s.B.idx;
     splashSound(p.T1, p.T2, p.ice);
     if (!reducedMotion) splashFx(p);
@@ -835,22 +860,32 @@
     }
     if (C.phase !== 'run') return;
     const sim = C.sim;
-    let dt = dtR * state.speed.cal;
-    if (sim.t + dt > C.pred.tEnd) dt = C.pred.tEnd - sim.t;
-    if (dt > 0) {
-      const pts = HC.mixStep(sim, dt);
-      pts.forEach(function (q) { C.samples.push([q.t, HC.temperature(sim.A, q.HA), HC.temperature(sim.B, q.HB)]); });
+    const loss = C.p.loss, tau = probeTau();
+    let remaining = dtR * calSpeed();
+    if (!loss) remaining = Math.min(remaining, C.pred.tEnd - sim.t);
+    while (remaining > 0 && !(loss && HC.roomEquilibrium(sim))) {
+      const dt = loss ? Math.min(remaining, C.eqDone ? 20 : 1) : remaining;
+      const t0 = sim.t;
+      const pts = loss && !C.eqDone ? HC.stepToContact(sim, dt) : HC.mixStep(sim, dt);
+      pts.forEach(q => appendProbe(C.samples, [q.t, HC.temperature(sim.A, q.HA), HC.temperature(sim.B, q.HB)], 2, tau));
       const s = HC.mixState(sim);
-      C.samples.push([sim.t, s.TA, s.TB]);
+      appendProbe(C.samples, [sim.t, s.TA, s.TB], 2, tau);
+      trackPeak(C, sim);
       calPhaseNews(s);
+      checkEquilibrium();
+      remaining = loss ? remaining - (sim.t - t0) : 0;
+      if (remaining < 1e-9) remaining = 0;
+      if (C.samples.length > 2400 && loss) C.samples = thin(C.samples);
     }
-    checkEquilibrium();
     calVoices();
-    if (sim.t >= C.pred.tEnd - 1e-9) {
+    if (loss ? HC.roomEquilibrium(sim) : sim.t >= C.pred.tEnd - 1e-9) {
       C.phase = 'done';
       stopVoices();
       if (!C.eqDone) setStatus(T('時間到。', 'Time is up.'));
-      else if (C.p.loss) setStatus(T('時間到：有散熱時，混合後的溫度會繼續往室溫 25 °C 靠近。', 'Time is up: with heat loss, the mixture keeps drifting toward room temperature (25 °C).'));
+      else if (loss) {
+        C.room = { t: sim.t, T: HC.temperature(sim.B, sim.HB) };
+        setStatus(T('② 與室內平衡', '② Room equilibrium') + ' · ' + num(C.room.t, 1) + ' s · ' + num(C.room.T, 3) + ' °C');
+      }
     }
     updateButtons();
   }
@@ -873,6 +908,15 @@
     C.idxA = s.A.idx; C.idxB = s.B.idx;
   }
 
+  /** 有散熱時，記下溫度計讀數的極值（熱樣品取水溫最高、冷樣品取最低），實驗課就是讀這一點來算比熱。 */
+  function trackPeak(C, sim) {
+    const p = C.p, dir = Math.sign(p.T1 - p.T2);
+    if (!p.loss || !dir || C.peakDone) return;
+    const r = lastReading(C, p.T2);
+    if (!C.peak || dir * (r - C.peak.T) > 0) C.peak = { t: sim.t, T: r, Q: sim.Qloss };
+    else if (dir * (C.peak.T - r) > 1e-3) C.peakDone = true;
+  }
+
   function checkEquilibrium() {
     const C = state.cal;
     if (C.eqDone || !C.sim) return;
@@ -880,16 +924,21 @@
     if (Math.abs(s.dT) > EQ_TOL) return;
     C.eqDone = true;
     C.eqT = C.sim.t;
+    C.eqTemp = s.TB;
+    const pk = C.p.loss && C.peak;
+    const measurement = pk ? C.peak.T : probeTau() ? lastReading(C, s.TB) : C.p.loss ? s.TB : C.pred.Tf;
+    C.estimate = HC.mixEstimate(pk ? { B: C.sim.B, HB: C.sim.HB, Qloss: C.peak.Q } : C.sim, C.p, measurement);
     chimeSound();
     stopVoices(0.9);
     const p = C.p, eqp = C.pred.ph;
-    let msg = T('達到熱平衡！', 'Thermal equilibrium reached! ') + (p.mys ? '' : T('最後溫度 ', 'Final temperature ') + num(p.loss ? s.TB : C.pred.Tf, 2) + ' °C' + T('。', '.'));
+    let msg = T('達到熱平衡！', 'Thermal equilibrium reached! ') + (p.mys ? '' : T('最後溫度 ', 'Final temperature ') + num(measurement, 2) + ' °C' + T('。', '.'));
     if (!p.loss) {
       if (p.ice && eqp.ice > 1e-7 && eqp.ice < p.m1 - 1e-7) msg += T('冰沒有全部融化，剩下 ', ' Not all the ice melts: ') + grams(eqp.ice) + T('。', ' is left.');
       if (p.ice && eqp.ice <= 1e-7) msg += T('冰全部融化了。', ' All the ice has melted.');
       if (eqp.ice > (p.ice ? p.m1 : 0) + 1e-7) msg += T('有一部分的水結成冰。', ' Some of the water has frozen.');
       if (eqp.steam > 1e-7) msg += T('有 ', ' ') + grams(eqp.steam) + T(' 的水汽化。', ' of water has boiled off.');
     }
+    if (!C.estimate) msg += T('此次相變或溫差無法用來推算比熱。', ' The phase change or temperature difference prevents a specific heat estimate.');
     setStatus(msg);
     if (p.mys) state.mysMeasured = true;
     emit('mix', {
@@ -968,7 +1017,7 @@
     Hh.p = p;
     Hh.body = su.b; Hh.H0 = su.H0; Hh.H = su.H0; Hh.Hstop = su.Hstop; Hh.ke = su.ke;
     Hh.t = 0; Hh.Qin = 0; Hh.Qloss = 0;
-    Hh.samples = [[0, HC.temperature(su.b, su.H0)]];
+    Hh.samples = [[0, p.T0, p.T0]];
     Hh.trans = []; Hh.points = [];
     Hh.idx = HC.stateOf(su.b, su.H0, flowDir(Hh, su.H0)).idx;
     Hh.phase = 'run';
@@ -991,13 +1040,13 @@
     if (dt > 0) {
       const r = HC.heatStep(Hh.body, Hh.H, p.P, Hh.ke, TENV, dt);
       r.pts.forEach(function (q) {
-        Hh.samples.push([Hh.t + q.dt, HC.temperature(Hh.body, q.H)]);
+        appendProbe(Hh.samples, [Hh.t + q.dt, HC.temperature(Hh.body, q.H)], 1, probeTau());
         const st = HC.stateOf(Hh.body, q.H, flowDir(Hh, q.H));
         heatTransition(Hh.idx, st, Hh.t + q.dt);
         Hh.idx = st.idx;
       });
       Hh.H = r.H; Hh.Qin += r.Qin; Hh.Qloss += r.Qloss; Hh.t += dt;
-      Hh.samples.push([Hh.t, HC.temperature(Hh.body, Hh.H)]);
+      appendProbe(Hh.samples, [Hh.t, HC.temperature(Hh.body, Hh.H)], 1, probeTau());
     }
     heatVoice();
     if (Hh.t >= Hh.pred.tEnd - 1e-9) {
@@ -1045,7 +1094,7 @@
     if (!Hh.body || Hh.t <= 0) return;
     state.acted = true;
     const st = HC.stateOf(Hh.body, Hh.H, flowDir(Hh, Hh.H));
-    const pt = { t: Hh.t, T: st.T, kind: st.seg.kind, p: st.seg.p, i: st.seg.i, x: st.x, n: (Hh.points.length ? Hh.points[Hh.points.length - 1].n : 0) + 1 };
+    const pt = { t: Hh.t, T: lastReading(Hh, st.T), kind: st.seg.kind, p: st.seg.p, i: st.seg.i, x: st.x, n: (Hh.points.length ? Hh.points[Hh.points.length - 1].n : 0) + 1 };
     Hh.points.push(pt);
     if (Hh.points.length > 12) Hh.points.shift();
     clickSound();
@@ -1096,12 +1145,17 @@
       const b = HC.makeBody(subOf(k), p.m);
       const H0 = HC.enthalpyAt(b, p.T0, 1);
       const Hstop = k === 'h2o' ? HC.enthalpyAt(b, 100, 2) : HC.enthalpyAt(b, T_SOLID_MAX);
-      return { key: k, b: b, H0: H0, H: H0, tStop: (Hstop - H0) / p.P, lastBand: Math.floor(p.T0 / 50) };
+      return { key: k, b: b, H0: H0, H: H0, Hstop, reading: p.T0, tStop: (Hstop - H0) / p.P, lastBand: Math.floor(p.T0 / 50) };
     });
-    let tEnd = items.length ? Math.min.apply(null, items.map(function (it) { return it.tStop; })) : 10;
-    tEnd = Math.max(1, tEnd);
-    const Tmax = items.length ? Math.max.apply(null, items.map(function (it) { return HC.temperature(it.b, it.H0 + p.P * tEnd); })) : p.T0 + 10;
-    Cm.pred = { p: p, items: items, tEnd: tEnd, Tmax: Tmax };
+    const stops = items.map(it => it.tStop);
+    const firstStop = items.length ? Math.min(...stops) : 10;
+    const tEnd = items.length ? Math.max(...stops) : 10;
+    const corners = [...stops];
+    const water = items.find(it => it.key === 'h2o');
+    if (water) corners.push((HC.enthalpyAt(water.b, 100, 1) - water.H0) / p.P);
+    corners.sort((a, b) => a - b);
+    const Tmax = items.length ? Math.max.apply(null, items.map(function (it) { return HC.temperature(it.b, it.Hstop); })) : p.T0 + 10;
+    Cm.pred = { p: p, items: items, tEnd, Tmax, firstStop, corners };
   }
   function cmpReset() {
     const Cm = state.cmp;
@@ -1124,7 +1178,8 @@
     cmpReset();
     Cm.p = Cm.pred.p;
     Cm.phase = 'run';
-    Cm.samples = [[0].concat(Cm.items.map(function (it) { return HC.temperature(it.b, it.H); }))];
+    const initial = Cm.items.map(it => it.reading);
+    Cm.samples = [[0, ...initial, ...initial]];
     setStatus(T('每個加熱器同時開始加熱，功率都相同。', 'All the heaters start at the same moment with the same power.'));
     updateButtons();
     startLoop();
@@ -1135,17 +1190,27 @@
     let dt = dtR * state.speed.cmp;
     if (Cm.t + dt > Cm.pred.tEnd) dt = Cm.pred.tEnd - Cm.t;
     if (dt > 0) {
-      Cm.items.forEach(function (it) {
-        it.H = HC.heatStep(it.b, it.H, Cm.p.P, 0, TENV, dt).H;
-        const band = Math.floor(HC.temperature(it.b, it.H) / 50 + 1e-9);
-        if (band > it.lastBand) { it.lastBand = band; bandSound(band); }
+      const end = Cm.t + dt, tau = probeTau();
+      const times = Cm.pred.corners.filter(t => Cm.t < t && t < end).concat(end);
+      times.forEach(t => {
+        const row = [t];
+        Cm.items.forEach(it => {
+          const previous = HC.temperature(it.b, it.H);
+          it.H = HC.comparisonHeat(it, Cm.p.P, t);
+          const truth = HC.temperature(it.b, it.H);
+          it.reading = HC.lagStep(it.reading, truth, t - Cm.t, tau, previous);
+          row.push(truth);
+          const band = Math.floor(truth / 50 + 1e-9);
+          if (band > it.lastBand) { it.lastBand = band; bandSound(band); }
+        });
+        Cm.samples.push(row.concat(Cm.items.map(it => it.reading)));
+        Cm.t = t;
       });
-      Cm.t += dt;
-      Cm.samples.push([Cm.t].concat(Cm.items.map(function (it) { return HC.temperature(it.b, it.H); })));
+      if (Cm.samples.length > 2400) Cm.samples = thin(Cm.samples);
     }
     if (Cm.t >= Cm.pred.tEnd - 1e-9) {
       Cm.phase = 'done';
-      const fast = Cm.items.reduce(function (a, b) { return HC.temperature(b.b, b.H) > HC.temperature(a.b, a.H) ? b : a; });
+      const fast = Cm.items.find(it => it.tStop === Cm.pred.firstStop);
       setStatus(T(matName(fast.key) + ' 先到達終點溫度，比較結束。', matName(fast.key) + ' reached the final temperature first; the comparison ends.'));
     }
     updateButtons();
@@ -1432,8 +1497,8 @@
     }
     // 溫度計（在水中）
     const tx = X(g.R - 0.85);
-    const lab = 'T_{2} = ' + num(TB, 2) + ' °C';
-    thermometer(tx, Y(1.0), Y(g.H + 3.2), Math.max(5, 0.45 * k), TB, lab, true);
+    const lab = (probeTau() ? T('讀數 ', 'Reading ') : 'T_{2} = ') + num(lastReading(C, TB), 2) + ' °C';
+    thermometer(tx, Y(1.0), Y(g.H + 3.2), Math.max(5, 0.45 * k), lastReading(C, TB), lab, true);
     // 隔熱套頂環的前緣高光
     ctx.fillStyle = alpha('#ffffff', colors.dark ? 0.12 : 0.45);
     ctx.fillRect(jx0 + 3, jy0, cwx0 - jx0 - 4, 1);
@@ -1454,7 +1519,7 @@
     }
     // 時間與狀態
     const tt = sim ? sim.t : 0;
-    pill('t = ' + num(tt, 1) + ' s' + (state.speed.cal !== 1 ? '  (' + state.speed.cal + '×)' : ''), lx, S.y + S.h - 13, colors.text, f1, 0.8);
+    pill('t = ' + num(tt, 1) + ' s' + (calSpeed() !== 1 ? '  (' + calSpeed() + '×)' : ''), lx, S.y + S.h - 13, colors.text, f1, 0.8);
     if (L.wide) {
       ctx.textAlign = 'right';
       pill(T('剖面圖・依比例', 'Cut-away, to scale'), S.x + S.w - 10, S.y + S.h - 13, colors.muted, font(0, 11), 0.7);
@@ -1633,12 +1698,12 @@
     const R = L.graph, C = state.cal, pr = C.pred;
     const p = C.phase === 'ready' ? calParams() : C.p;
     let lo = Math.min(p.T1, p.T2), hi = Math.max(p.T1, p.T2);
-    let x1 = pr.tEnd;
+    let x1 = Math.max(pr.tEnd, C.sim ? C.sim.t : 0);
     C.ghosts.forEach(function (gh) {
       x1 = Math.max(x1, gh.tEnd);
       gh.a.concat(gh.b).forEach(function (s) { lo = Math.min(lo, s[1]); hi = Math.max(hi, s[1]); });
     });
-    if (p.loss) lo = Math.min(lo, TENV);
+    if (p.loss) { lo = Math.min(lo, TENV); hi = Math.max(hi, TENV); }
     x1 = niceCeil(x1);
     const yr = yRange(lo, hi);
     clipRegion(R);
@@ -1676,13 +1741,14 @@
     // 這次的曲線
     if (C.samples.length > 1) {
       tube(mapPts(G, C.samples, 1), L.wide ? 3 : 2.6, shade(colors['b-mech'], colors.dark ? -0.1 : -0.12), alpha(shade(colors['b-mech'], 0.55), 0.8));
-      tube(mapPts(G, C.samples, 2), L.wide ? 3 : 2.6, shade(colors.neg, colors.dark ? -0.1 : -0.12), alpha(shade(colors.neg, 0.55), 0.8));
+      if (probeTau()) polyline(mapPts(G, C.samples, 2), colors.neg, 1, [3, 3]);
+      tube(mapPts(G, C.samples, 3), L.wide ? 3 : 2.6, shade(colors.neg, colors.dark ? -0.1 : -0.12), alpha(shade(colors.neg, 0.55), 0.8));
     }
     // 目前的點
     const s0 = C.sim ? HC.mixState(C.sim) : null;
     const TA = s0 ? s0.TA : p.T1, TB = s0 ? s0.TB : p.T2;
     sphereSmall(G.gx(tNow), G.gy(TA), colors['b-mech']);
-    sphereSmall(G.gx(tNow), G.gy(TB), colors.neg);
+    sphereSmall(G.gx(tNow), G.gy(lastReading(C, TB)), colors.neg);
     // 熱平衡的時刻
     if (C.eqDone && C.eqT != null) {
       const x = Math.round(G.gx(C.eqT)) + 0.5;
@@ -1705,9 +1771,15 @@
       pill(T('室溫 25 °C', 'Room 25 °C'), G.P.x + 6, G.gy(TENV) + 11, colors.muted, font(600, 11), 0.8);
     }
     if (C.eqDone && C.eqT != null) {
-      ctx.textAlign = 'center';
-      const x = Math.min(G.P.x + G.P.w - 50, Math.max(G.P.x + 50, G.gx(C.eqT)));
-      pill(T('熱平衡', 'Equilibrium') + ' t = ' + num(C.eqT, 1) + ' s', x, G.P.y + 8, colors.probe, font(600, 11), 0.9);
+      ctx.textAlign = 'left';
+      pill(T('① 樣品與水同溫', '① Sample–water equilibrium') + ' · ' + num(C.eqT, 1) + ' s · ' +
+        num(C.eqTemp, 2) + ' °C', G.P.x + 3, G.P.y + 8, colors.probe, font(600, 11), 0.94);
+      if (p.loss && C.peak) diamond(G.gx(C.peak.t), G.gy(C.peak.T), 4, colors.neg);
+      if (C.room) {
+        diamond(G.gx(C.room.t), G.gy(C.room.T), 4, colors.equi);
+        pill(T('② 與室內平衡', '② Room equilibrium') + ' · ' + num(C.room.t, 1) + ' s · ' +
+          num(C.room.T, 3) + ' °C', G.P.x + 3, G.P.y + 28, colors.equi, font(600, 11), 0.94);
+      }
     }
     // 曲線末端的名稱
     ctx.textAlign = 'left';
@@ -2080,7 +2152,8 @@
     }
     // 溫度計
     const thTop = Y(g.H + 7);
-    thermometer(thX, thBulbY, thTop, Math.max(5, 0.5 * k), Tn, 'T = ' + num(Tn, 2) + ' °C');
+    const reading = lastReading(Hh, Tn);
+    thermometer(thX, thBulbY, thTop, Math.max(5, 0.5 * k), reading, (probeTau() ? T('讀數 ', 'Reading ') : 'T = ') + num(reading, 2) + ' °C');
     // 文字
     const lx = S.x + (L.wide ? 10 : 6);
     const f1 = font(700, L.wide ? 12 : 11), f2 = font(600, L.wide ? 12 : 11);
@@ -2186,7 +2259,8 @@
       const fut = pr.curve.filter(function (s) { return s[0] >= Hh.t; });
       polyline(mapPts(G, fut, 1), alpha(colors['b-thermo'], 0.4), 1.3, [4, 5]);
     }
-    if (Hh.samples.length > 1) tube(mapPts(G, Hh.samples, 1), L.wide ? 3 : 2.6, shade(colors['b-thermo'], colors.dark ? -0.1 : -0.12), alpha(shade(colors['b-thermo'], 0.55), 0.8));
+    if (probeTau()) polyline(mapPts(G, Hh.samples, 1), colors['b-thermo'], 1, [3, 3]);
+    if (Hh.samples.length > 1) tube(mapPts(G, Hh.samples, 2), L.wide ? 3 : 2.6, shade(colors['b-thermo'], colors.dark ? -0.1 : -0.12), alpha(shade(colors['b-thermo'], 0.55), 0.8));
     // 紀錄點與最後兩點的連線
     const pts = Hh.points;
     if (pts.length >= 2) {
@@ -2195,7 +2269,7 @@
     }
     pts.forEach(function (q) { diamond(G.gx(q.t), G.gy(q.T), 5, colors.equi); });
     const st = HC.stateOf(Hh.body || pr.su.b, Hh.body ? Hh.H : pr.su.H0);
-    sphereSmall(G.gx(Hh.t), G.gy(st.T), colors['b-thermo']);
+    sphereSmall(G.gx(Hh.t), G.gy(lastReading(Hh, st.T)), colors['b-thermo']);
     ctx.restore();
     // 平台的標籤
     const f = font(600, L.wide ? 11 : 10);
@@ -2324,7 +2398,6 @@
     const vMax = p.m / 1000 * 1e6; // 水的體積（cm³）最大
     const sideMax = 2 * Math.cbrt(vMax / (2 * Math.PI));
     const k = Math.min(colW * 0.8 / sideMax, (rowH * 0.4) / sideMax, 30);
-    const running = Cm.phase === 'run';
     const hot = mix(colors['b-thermo'], colors.equi, 0.35);
     const now = performance.now();
     // 所有溫度計一樣長（柱高才能互相比較）：扣掉最高的物體
@@ -2335,6 +2408,7 @@
     const tPad = L.wide ? 26 : 16;
     const tLen = Math.max(20, rowH - tPad - (L.wide ? 34 : 28) - objH - 10);
     items.forEach(function (it, i) {
+      const running = Cm.phase === 'run' && Cm.t < it.tStop;
       const r = Math.floor(i / nc), cI = i % nc;
       const cx = S.x + 8 + colW * (cI + 0.5);
       const baseY = top0 + rowH * (r + 1) - (L.wide ? 34 : 28);
@@ -2394,7 +2468,7 @@
       }
       // 迷你溫度計（柱高 ∝ 溫度）：玻璃管＋底部的球
       const tTop = cellTop + tPad, tBot = tTop + tLen;
-      const frac = Math.max(0, Math.min(1, (Tn - (p.T0 - 5)) / (pr.Tmax + 5 - (p.T0 - 5))));
+      const frac = Math.max(0, Math.min(1, (it.reading - (p.T0 - 5)) / (pr.Tmax + 5 - (p.T0 - 5))));
       const tw = L.wide ? 7 : 5;
       const lc = lineColor(it.key);
       const yc = tBot - frac * (tBot - tTop);
@@ -2412,7 +2486,7 @@
       ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.25 : 0.75) + ')'; ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(cx - gw / 2 + 1.8, tTop + 2); ctx.lineTo(cx - gw / 2 + 1.8, tBot - 2); ctx.stroke();
       ctx.textAlign = 'center';
-      pill(num(Tn, Tn < 100 ? 1 : 0) + '°', cx, tTop - 11, lc, font(700, L.wide ? 12 : 10), 0.85);
+      pill(num(it.reading, it.reading < 100 ? 1 : 0) + '°', cx, tTop - 11, lc, font(700, L.wide ? 12 : 10), 0.85);
       ctx.font = font(700, L.wide ? 12 : 10); ctx.fillStyle = lc; ctx.textBaseline = 'middle';
       let nm = matName(it.key);
       if (ctx.measureText(nm).width > colW - 6) nm = { h2o: 'H_{2}O', al: 'Al', glass: T('玻璃', 'Glass'), fe: 'Fe', cu: 'Cu', pb: 'Pb' }[it.key];
@@ -2423,40 +2497,42 @@
       pill(T('請在右側選擇要比較的材料', 'Choose materials to compare'), S.x + S.w / 2, S.y + S.h / 2, colors.muted, font(600, 12), 0.85);
     }
     ctx.textAlign = 'left';
-    pill('t = ' + num(Cm.t, 1) + ' s' + (state.speed.cmp !== 1 ? '  (' + state.speed.cmp + '×)' : '') + '   Q = ' + fmtQ(p.P * Cm.t), S.x + 8, S.y + 14, colors.text, font(700, L.wide ? 12 : 11), 0.85);
+    pill('t = ' + num(Cm.t, 1) + ' s' + (state.speed.cmp !== 1 ? '  (' + state.speed.cmp + '×)' : '') + (Cm.t <= pr.firstStop ? '   Q = ' + fmtQ(p.P * Cm.t) : ''), S.x + 8, S.y + 14, colors.text, font(700, L.wide ? 12 : 11), 0.85);
     ctx.restore();
   }
   function drawCmpGraph() {
     const R = L.graph, Cm = state.cmp, pr = Cm.pred;
     const p = Cm.phase === 'ready' ? cmpParams() : Cm.p;
-    const x1 = niceCeil(pr.tEnd);
+    const x1 = niceCeil(Math.max(pr.firstStop, Cm.t));
     const yr = yRange(p.T0, pr.Tmax);
     clipRegion(R);
-    const G = graphFrame(R, x1, yr[0], yr[1], T('溫度–時間圖（同樣的熱量 Q = Pt）', 'Temperature–time (same heat Q = Pt)'), colors.text);
+    const G = graphFrame(R, x1, yr[0], yr[1], T('溫度–時間圖（各自停機）', 'Temperature–time (individual cutoffs)'), colors.text);
     ctx.save();
     ctx.beginPath(); ctx.rect(G.P.x, G.P.y - 6, G.P.w + 6, G.P.h + 8); ctx.clip();
     Cm.items.forEach(function (it, j) {
       const col = lineColor(it.key);
       // 預測（虛線）
-      const b = it.b, H0 = it.H0;
+      const b = it.b;
       const fut = [];
-      for (let i = 0; i <= 60; i++) { const t = Math.max(Cm.t, 0) + (pr.tEnd - Cm.t) * i / 60; fut.push([G.gx(t), G.gy(HC.temperature(b, H0 + p.P * t))]); }
+      for (let i = 0; i <= 60; i++) { const t = Math.max(Cm.t, 0) + (x1 - Cm.t) * i / 60; fut.push([G.gx(t), G.gy(HC.temperature(b, HC.comparisonHeat(it, p.P, t)))]); }
       polyline(fut, alpha(col, 0.35), 1.2, [4, 5]);
-      if (Cm.samples.length > 1) tube(mapPts(G, Cm.samples, j + 1), L.wide ? 2.8 : 2.4, shade(col, colors.dark ? -0.1 : -0.12), alpha(shade(col, 0.55), 0.75));
-      sphereSmall(G.gx(Cm.t), G.gy(HC.temperature(it.b, it.H)), col, L.wide ? 4.5 : 4);
+      if (probeTau()) polyline(mapPts(G, Cm.samples, j + 1), col, 1, [3, 3]);
+      if (Cm.samples.length > 1) tube(mapPts(G, Cm.samples, Cm.items.length + j + 1), L.wide ? 2.8 : 2.4, shade(col, colors.dark ? -0.1 : -0.12), alpha(shade(col, 0.55), 0.75));
+      if (Cm.t >= it.tStop) diamond(G.gx(it.tStop), G.gy(HC.temperature(b, it.Hstop)), it.tStop === pr.firstStop ? 6 : 4, col);
+      sphereSmall(G.gx(Cm.t), G.gy(it.reading), col, L.wide ? 4.5 : 4);
     });
     ctx.restore();
     // 線末的名稱（避免重疊）
     const labs = Cm.items.map(function (it) {
-      const tEndLine = pr.tEnd;
-      return { key: it.key, y: G.gy(HC.temperature(it.b, it.H0 + p.P * tEndLine)) };
+      return { key: it.key, y: G.gy(HC.temperature(it.b, HC.comparisonHeat(it, p.P, x1))),
+        first: Cm.t >= pr.firstStop && it.tStop === pr.firstStop };
     }).sort(function (a, b) { return a.y - b.y; });
     const gapL = L.wide ? 16 : 15, bottomY = G.P.y + G.P.h - 8;
     for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + gapL);
     for (let i = labs.length - 1; i >= 0; i--) labs[i].y = Math.min(labs[i].y, i === labs.length - 1 ? bottomY : labs[i + 1].y - gapL);
     ctx.textAlign = 'right';
     labs.forEach(function (lb) {
-      pill(matName(lb.key), G.P.x + G.P.w - 2, lb.y, lineColor(lb.key), font(700, L.wide ? 11 : 10), 0.8);
+      pill((lb.first ? '① ' : '') + matName(lb.key), G.P.x + G.P.w - 2, lb.y, lineColor(lb.key), font(700, L.wide ? 11 : 10), 0.8);
     });
     ctx.restore();
   }
@@ -2507,7 +2583,7 @@
       ['rTf', T('預測平衡溫度 <span class="f">T<sub>f</sub></span>', 'Predicted equilibrium <span class="f">T<sub>f</sub></span>')],
       ['rt', T('時間 t', 'Time t')],
       ['rT1', T('樣品溫度 T<sub>1</sub>', 'Sample temperature T<sub>1</sub>')],
-      ['rT2', T('水溫 T<sub>2</sub>', 'Water temperature T<sub>2</sub>')],
+      ['rT2', probeTau() ? T('溫度計讀數', 'Thermometer reading') : T('水溫 T<sub>2</sub>', 'Water temperature T<sub>2</sub>')],
       ['rP', T('熱流 <span class="f">P = k(T<sub>1</sub> − T<sub>2</sub>)</span>', 'Heat flow <span class="f">P = k(T<sub>1</sub> − T<sub>2</sub>)</span>')],
       ['rQ1', T('樣品的熱量變化 ΔQ<sub>1</sub>', 'Heat change of sample ΔQ<sub>1</sub>')],
       ['rQ2', T('水＋杯的熱量變化 ΔQ<sub>2</sub>', 'Heat change of water + cup ΔQ<sub>2</sub>')],
@@ -2516,7 +2592,7 @@
     ];
     else if (state.mode === 'heat') rows = [
       ['rt', T('時間 t', 'Time t')],
-      ['rT', T('溫度 T', 'Temperature T')],
+      ['rT', probeTau() ? T('溫度計讀數', 'Thermometer reading') : T('溫度 T', 'Temperature T')],
       ['rQ', T('加熱器供給的熱量 <span class="f">Q = Pt</span>', 'Heat supplied <span class="f">Q = Pt</span>')],
       ['rSt', T('狀態', 'State')],
       ['rSl', T('理論斜率 <span class="f">P/(mc)</span>', 'Expected slope <span class="f">P/(mc)</span>')],
@@ -2550,7 +2626,7 @@
       const s = sim ? HC.mixState(sim) : null;
       setHTML('rt', num(sim ? sim.t : 0, 1) + ' s');
       setHTML('rT1', num(s ? s.TA : p.T1, 2) + ' °C');
-      setHTML('rT2', num(s ? s.TB : p.T2, 2) + ' °C');
+      setHTML('rT2', num(lastReading(C, p.T2), 2) + ' °C');
       setHTML('rP', s ? num(s.P, 1) + ' W<small>k = ' + num(sim.k, 2) + ' W/K</small>' : '—<small>k = ' + num(pr.k, 2) + ' W/K</small>');
       const QA = sim ? sim.HA - sim.HA0 : 0, QB = sim ? sim.HB - sim.HB0 : 0;
       setHTML('rQ1', sim ? fmtQ(QA) + '<small>' + (QA < 0 ? T('放熱', 'given out') : QA > 0 ? T('吸熱', 'taken in') : '') + '</small>' : '—');
@@ -2568,7 +2644,7 @@
       const body = Hh.body || pr.su.b, H = Hh.body ? Hh.H : pr.su.H0;
       const st = HC.stateOf(body, H);
       setHTML('rt', num(Hh.t, 1) + ' s');
-      setHTML('rT', num(st.T, 2) + ' °C');
+      setHTML('rT', num(lastReading(Hh, st.T), 2) + ' °C');
       setHTML('rQ', fmtQ(Hh.Qin));
       setHTML('rSt', phaseText(st, p));
       let sl;
@@ -2581,10 +2657,10 @@
     } else {
       const Cm = state.cmp, p = Cm.phase === 'ready' ? cmpParams() : Cm.p;
       setHTML('rt', num(Cm.t, 1) + ' s');
-      setHTML('rQ', fmtQ(p.P * Cm.t));
+      setHTML('rQ', Cm.t <= Cm.pred.firstStop ? fmtQ(p.P * Cm.t) : T('見各材料', 'See each material'));
       Cm.items.forEach(function (it) {
-        const Tn = HC.temperature(it.b, it.H);
-        setHTML('rc_' + it.key, num(Tn, 2) + ' °C<small>ΔT = ' + num(Tn - p.T0, 2) + ' °C</small>');
+        setHTML('rc_' + it.key, num(it.reading, 2) + ' °C<small>ΔT = ' + num(it.reading - p.T0, 2) +
+          ' °C · Q = ' + fmtQ(p.P * Math.min(Cm.t, it.tStop)) + '</small>');
       });
     }
   }
@@ -2592,6 +2668,10 @@
   // ---------- 輸出（滑桿數字） ----------
   function showOut(e, unit) { $(e.id + 'o').textContent = fmtSlider(val(e), e) + ' ' + unit; }
   function refreshOutputs() {
+    showOut($('tau'), 's'); showOut($('repeatN'), '');
+    $('tau').disabled = !$('lag').checked;
+    $('lagLegend').hidden = !$('lag').checked;
+    $('fast').disabled = !el.lossC.checked;
     showOut(el.m1, 'kg'); showOut(el.T1, '°C'); showOut(el.m2, 'kg'); showOut(el.T2, '°C'); showOut(el.cc, 'J/K');
     showOut(el.hm, 'kg'); showOut(el.hT, '°C'); showOut(el.hP, 'W');
     showOut(el.cm, 'kg'); showOut(el.cP, 'W'); showOut(el.cT, '°C');
@@ -2710,7 +2790,20 @@
   }
 
   // ---------- 按鈕 ----------
+  function updateMixResult() {
+    const C = state.cal, show = state.mode === 'cal' && C.eqDone && C.estimate;
+    $('mixResult').hidden = !show;
+    $('status').hidden = !!show;
+    if (!show) return;
+    const e = C.estimate;
+    const lbl = C.p.loss && C.peak ? T('讀數極值 ', 'At peak ') + num(C.peak.T, 2) + ' °C' : '①';
+    setHTML('mixResult', '<span>' + lbl + ' c<strong>J/(kg·K)</strong></span><span>' +
+      T('課本（不計杯）', 'Textbook (no cup)') + '<strong>' + num(e.textbook, 1) + '</strong></span><span>' +
+      T('扣除杯與散熱後', 'Cup/loss corrected') + '<strong>' + num(e.corrected, 1) + '</strong></span><span>' +
+      T('差', 'Difference') + '<strong>' + (e.difference == null ? '—' : num(e.difference, 1) + '%') + '</strong></span>');
+  }
   function updateButtons() {
+    updateMixResult();
     const m = state.mode;
     let txt;
     if (m === 'cal') {
@@ -2748,7 +2841,7 @@
       else if (Cm.phase === 'run') {
         Cm.phase = 'pause';
         describeCanvas();
-        emit('pause', { mode: 'cmp', t: Cm.t, Q: Cm.p.P * Cm.t, n: Cm.items.length, m: Cm.p.m, P: Cm.p.P, T0: Cm.p.T0, keys: Cm.items.map(function (it) { return it.key; }) });
+        if (Cm.t <= Cm.pred.firstStop) emit('pause', { mode: 'cmp', t: Cm.t, Q: Cm.p.P * Cm.t, n: Cm.items.length, m: Cm.p.m, P: Cm.p.P, T0: Cm.p.T0, keys: Cm.items.map(function (it) { return it.key; }) });
       } else if (Cm.phase === 'pause') { Cm.phase = 'run'; startLoop(); }
       else { cmpReset(); cmpStart(); }
     }
@@ -2894,6 +2987,7 @@
     if (old !== 'cal' && state[old].phase === 'run') state[old].phase = 'pause';
     stopVoices();
     state.mode = m;
+    if (m === 'cal') renderTrials();
     $('modeCal').setAttribute('aria-pressed', String(m === 'cal'));
     $('modeHeat').setAttribute('aria-pressed', String(m === 'heat'));
     $('modeCmp').setAttribute('aria-pressed', String(m === 'cmp'));
@@ -2915,6 +3009,22 @@
   $('modeCmp').addEventListener('click', function () { setMode('cmp'); });
 
   // ---------- 滑桿 ----------
+  $('repeatN').addEventListener('input', function () { refreshOutputs(); renderTrials(); });
+  $('seed').addEventListener('change', function () {
+    this.value = String(Math.max(0, Math.min(4294967295, Math.round(Number(this.value) || 0))));
+    renderTrials();
+  });
+  $('resample').addEventListener('click', function () {
+    $('seed').value = String((Number($('seed').value) + 1) >>> 0);
+    renderTrials();
+  });
+  function changeProbe() {
+    // 三種模式共用一支探針，更換探針後從各模式的初態重新量測。
+    calReset(); heatReset(); cmpReset(); buildReadout();
+    refreshOutputs(); renderTrials(); setStatus(''); updateButtons(); requestDraw();
+  }
+  $('lag').addEventListener('change', changeProbe);
+  $('tau').addEventListener('input', changeProbe);
   let memLock = false;
   [el.m1, el.T1, el.m2, el.T2, el.cc].forEach(function (e) {
     e.addEventListener('input', function () {
@@ -2962,6 +3072,7 @@
   calPredict();
   heatPredict();
   cmpReset();
+  renderTrials();
   refreshOutputs();
   renderPoints();
   $('modeHint').textContent = modeHints.cal();

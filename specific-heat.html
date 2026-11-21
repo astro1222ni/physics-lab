@@ -47,6 +47,8 @@
     .sh .speedbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 2px 0; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
     .sh .speedbar .seg4 { flex: 1 1 220px; }
     .sh .stage .status { margin: 6px 4px 0; }
+    #mixResult { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 8px; padding: 3px 6px; margin-top: 4px; background: var(--accent-soft); border-radius: 6px; font-size: calc(12px * var(--fs, 1)); line-height: 1.25; }
+    #mixResult strong { display: block; color: var(--text); font-variant-numeric: tabular-nums; }
     .sh .slider input[type="range"] { height: 28px; margin: 0; }
     .sh .slider label sub, dl.readout sub { font-size: .75em; }
     .sh [hidden] { display: none !important; }
@@ -117,6 +119,7 @@
           <button id="rec" type="button" hidden data-en="Record (t, T)">記錄 (t, T)</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div id="mixResult" aria-live="polite" hidden></div>
         <div data-deck-anchor hidden></div>
         <div class="playbar deck-secondary">
           <button id="reset" type="button" data-en="Clear all" title="清除所有保留的曲線、紀錄點與這一次的實驗，滑桿設定不變" data-en-title="Clear all kept curves, recorded points and this run; slider settings are kept">全部清除</button>
@@ -144,6 +147,7 @@
           <span data-en-html="<i style=&quot;background:var(--accent-soft);height:10px&quot;></i>Phase-change plateau"><i style="background:var(--accent-soft);height:10px"></i>相變平台</span>
         </div>
         <div class="legend" id="legCmp" hidden></div>
+        <p class="hint" id="lagLegend" hidden data-en="Solid line: thermometer reading. Thin dashed line: true temperature at the probe.">實線為溫度計讀數，細虛線為探針所在處的真實溫度。</p>
         <p class="hint" id="stageHint" data-en-html="Cut-away side view; the cup and the sample are drawn to scale. The glow colour around an object only shows its temperature (red = hot, blue = cold). Faded curves on the graph are earlier runs.">剖面側視圖，杯子與樣品依實際比例繪製；物體周圍光暈的顏色只代表溫度（紅＝熱、藍＝冷）。圖上變淡的曲線是先前幾次的結果。</p>
       </div>
 
@@ -221,7 +225,7 @@
           <div class="slider"><label for="cT" data-en-html="Starting temperature T<sub>0</sub>">起始溫度 T<sub>0</sub></label><output id="cTo"></output>
             <input id="cT" type="range" min="0" max="50" step="1" value="20" data-decimals="1"></div>
           <div class="chips" id="cmpMats" role="group" aria-label="比較的材料（可複選）" data-en-aria-label="Materials compared (choose several)"></div>
-          <p class="hint" data-en="Every object receives the same heat Q = Pt at the same time. Tap a material to add or remove it.">每個物體在同一時間都吸收同樣的熱量 Q = Pt。點一下材料可加入或移除。</p>
+          <p class="hint" data-en="Heaters deliver equal power. Each stops at its own endpoint and holds its final temperature. Tap a material to add or remove it.">各加熱器等功率運作，到達各自終點就停機並保溫。點一下材料可加入或移除。</p>
         </section>
 
         <!-- ===== 神秘金屬 ===== -->
@@ -238,6 +242,24 @@
             <button type="button" id="newMys" data-en="New mystery metal">換一塊神秘金屬</button>
           </div>
           <p class="verdict" id="verdict" aria-live="polite"></p>
+        </section>
+
+        <section class="card" data-deck="真實效應|Real effects" data-deck-order="20">
+          <h2 data-en="Real effects">真實效應</h2>
+          <div class="checks"><label><input id="lag" type="checkbox"><span data-en="Thermometer lag">溫度計延遲</span></label></div>
+          <div class="slider"><label for="tau" data-en="Time constant τ">時間常數 τ</label><output id="tauo"></output>
+            <input id="tau" type="range" min="1" max="10" step="0.1" value="4.3" data-decimals="1"></div>
+          <div data-mode="cal">
+            <div class="slider"><label for="repeatN" data-en="Repeat N times">重複量 N 次</label><output id="repeatNo"></output>
+              <input id="repeatN" type="range" min="1" max="10" step="1" value="1" data-decimals="0"></div>
+            <div class="guess"><label for="seed" data-en="Seed">種子</label><input id="seed" type="number" min="0" max="4294967295" step="1" value="1">
+              <button id="resample" type="button" data-en="Resample">重抽</button></div>
+            <div class="checks"><label><input id="fast" type="checkbox"><span data-en="Fast-forward heat loss (2000×)">散熱快轉（2000×）</span></label></div>
+            <div id="trialResults" hidden>
+              <table class="pts" data-export="no"><thead><tr><th data-en="Trial">次數</th><th data-en="Reading (°C)">讀數（°C）</th><th>c [J/(kg·K)]</th></tr></thead><tbody id="trialRows"></tbody></table>
+              <p id="trialStats" class="hint"></p>
+            </div>
+          </div>
         </section>
 
         <!-- ===== 讀數 ===== -->
@@ -311,11 +333,17 @@
         <li data-en-html="<strong>Comparison</strong>: with the same heat \(Q = Pt\), \(\Delta T = Q/(mc)\). Lead warms about 33 times as fast as water."><strong>比熱比較</strong>：吸收同樣的熱量 \(Q = Pt\) 時，\(\Delta T = Q/(mc)\)；鉛升溫的速度大約是水的 33 倍。</li>
       </ul>
 
+      <h3 data-en="Calorimeter and thermometer">量熱器與溫度計</h3>
+      <p><span data-en="Include the aluminium or copper inner cup, stirrer and immersed thermometer when calibrating a school calorimeter. Two Pierron cup-and-stirrer assemblies are rated at 14.7–23.5 g of water (61.6–98.5 J/K). Calibrate the complete assembly with the thermometer at its working fill level.">學校量熱器的鋁或銅內杯、攪拌棒及溫度計浸入的部分都會吸熱。Pierron 兩款教學杯連攪拌棒的水當量為 14.7～23.5 g（61.6～98.5 J/K）。裝入溫度計後，應依使用水位重新校正整組器材。</span> <a href="https://www.pierron.fr/calorimetre-a-vase-dewar.html">Pierron 02621</a> · <a href="https://www.pierron.fr/fileuploader/download/download/?d=0&amp;file=custom%2Fupload%2FGuide_d_quipement_coll_ge_Physique.pdf">Pierron 00174</a></p>
+      <p data-en="Without heat loss, the final temperature is read at sample–water equilibrium. With heat loss, it is read as in a school lab: at the turning point of the thermometer reading (the highest water temperature for a hot sample, the lowest for a cold one), marked ◆ on the graph — after that the room drains heat faster than the sample supplies it. The textbook estimate counts heat gained by water only. For the corrected estimate, include heat gained by the cup and heat transferred to the room up to that moment (negative if the room supplied heat). The percent difference is relative to the corrected estimate. A phase change or no initial temperature contrast prevents this sensible-heat measurement.">沒有散熱時，以樣品與水同溫時的讀數回算比熱；開散熱時照實驗課的做法，取溫度計讀數回頭的那一點（熱樣品取水溫最高、冷樣品取最低，圖上 ◆），因為過了這一點，散到室內的熱就比樣品給的多。課本算法只計水吸收的熱；校正時再計入杯吸收的熱，以及到取樣為止傳給室內的熱（室內供熱時為負）。百分差以校正值為基準。若有相變或初溫相同，無法用這個顯熱公式測比熱。</p>
+      <p><span data-en="The optional probe follows a first-order response. In stirred water the Vernier TMP-BTA reaches 90% of a temperature step in 10 s, giving τ = 10/ln(10) ≈ 4.3 s. Adjust τ from 1 to 10 s to compare responses.">溫度計延遲採一階反應。Vernier TMP-BTA 在攪拌水中經 10 s 達到溫度階躍的 90%，換算 τ = 10/ln(10) ≈ 4.3 s；可在 1～10 s 間比較反應快慢。</span> <a href="https://www.vernier.com/files/manuals/tmp-bta.pdf">Vernier TMP-BTA</a></p>
+      <p data-en="For repeated trials, slider settings are instrument readings. Each run independently samples true starting masses within ±0.1 g and temperatures within ±0.2 °C, uniformly over the physically allowed interval. Each sample is mixed separately. Use the nominal readings and measured final temperature to infer c. The spread is the sample standard deviation (N − 1).">重複量測時，滑桿代表儀器讀得的初值；各次真實質量在 ±0.1 g、初溫在 ±0.2 °C 的物態允許區間內各自均勻抽樣。每次獨立混合，以名目初值及量得的末溫回算 c，並以 N − 1 為分母計算樣本標準差。</p>
+      <p data-en="The model assumes a fully immersed sample, uniform mixing and a uniform temperature within each body.">本模擬假設樣品完全浸沒、攪拌均勻、物體內部同溫。</p>
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en-html="Each object stores its heat content (enthalpy \(H\)). Its temperature is a piecewise-linear function of \(H\): \(dH = C\,dT\) while warming, and a flat step of height \(mL\) at 0 °C and 100 °C for water.">每個物體記錄它所含的熱能（焓 \(H\)）。溫度是 \(H\) 的分段線性函數：升溫時 \(dH = C\,dT\)，水在 0 °C 與 100 °C 各有一段高度為 \(mL\) 的平台。</li>
         <li data-en-html="The predicted \(T_f\) is found exactly from conservation of the total enthalpy, including melting, freezing and boiling.">預測的 \(T_f\) 由總焓守恆精確求出（包括熔化、結冰與沸騰）。</li>
-        <li data-en-html="Heat flows between the sample and the water by \(P = k\,(T_1 - T_2)\) with \(k = hA\) for a cube-shaped sample (\(h = 250\) or, stirred, \(1000\ \mathrm{W/(m^2\cdot K)}\)). Within each stage the exponential solution is used exactly, so the heat lost by one object is exactly the heat gained by the other, and the run ends at the predicted \(T_f\). Each object is assumed to have a uniform temperature; water that melts from the ice is counted with the sample until the end.">樣品與水之間的熱流為 \(P = k\,(T_1 - T_2)\)，\(k = hA\)（樣品視為正立方體；\(h = 250\)，攪拌時 \(1000\ \mathrm{W/(m^2\cdot K)}\)）。每一段都使用精確的指數解，所以一方放出的熱量正好等於另一方吸收的熱量，最後一定到達預測的 \(T_f\)。每個物體視為溫度均勻；冰融化成的水在計算上仍算在樣品裡，直到最後才與杯中的水同溫。</li>
+        <li data-en-html="Heat flows between the sample and the water by \(P = k\,(T_1 - T_2)\) with \(k = hA\) for a cube-shaped sample (\(h = 250\) or, stirred, \(1000\ \mathrm{W/(m^2\cdot K)}\)). Within each stage the exponential solution is used exactly, so the heat lost by one object is exactly the heat gained by the other, and an insulated run ends at the predicted \(T_f\). Each object is assumed to have a uniform temperature; water that melts from the ice is counted with the sample until the end.">樣品與水之間的熱流為 \(P = k\,(T_1 - T_2)\)，\(k = hA\)（樣品視為正立方體；\(h = 250\)，攪拌時 \(1000\ \mathrm{W/(m^2\cdot K)}\)）。每一段都使用精確的指數解，所以一方放出的熱量正好等於另一方吸收的熱量，絕熱時最後到達預測的 \(T_f\)。每個物體視為溫度均勻；冰融化成的水在計算上仍算在樣品裡，直到最後才與杯中的水同溫。</li>
         <li data-en-html="With heat loss on, the water and cup also lose \(k_e\,(T_2 - 25\ {}^{\circ}\mathrm{C})\) (\(k_e = 1.5\ \mathrm{W/K}\) for the cup, \(3\ \mathrm{W/K}\) for the heater’s container); the heat lost is shown so that the energy still adds up.">打開散熱時，水與杯子還會散失 \(k_e\,(T_2 - 25\ {}^{\circ}\mathrm{C})\) 的熱流（量熱杯 \(k_e = 1.5\ \mathrm{W/K}\)，加熱實驗的容器 \(3\ \mathrm{W/K}\)）；散失的熱量也會顯示，能量的帳目仍然平衡。</li>
         <li data-en-html="Everything happens at a pressure of 1 atm. When water boils in the heating experiment the steam escapes; in the calorimeter the steam is counted as part of the water.">全部在 1 大氣壓下進行。加熱實驗中水沸騰產生的水蒸氣會跑掉；量熱器中產生的水蒸氣仍算在水的部分。</li>
       </ul>
