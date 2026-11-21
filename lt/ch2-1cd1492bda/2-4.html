@@ -39,6 +39,27 @@ try { if ((JSON.parse(localStorage.getItem('lab-settings') || '{}')).lang === 'e
   q('h1').textContent = 'Chapter 2 Web Handout'; q('#f p').textContent = 'Enter the password (case-sensitive). Once is enough for all of Chapter 2.';
   q('#pw').setAttribute('aria-label', 'Password'); q('label.k').lastChild.textContent = 'Remember the password on this device'; q('#f button').textContent = 'Enter'; } } catch (e) {}
 </script>
+<script>function ltGunzip(u){var p=10,flg=u[3],bit=0,bc=0,i;
+if(u[0]!==31||u[1]!==139||u[2]!==8)throw new Error('gz');
+if(flg&4)p+=2+(u[p]|u[p+1]<<8);if(flg&8)while(u[p++]);if(flg&16)while(u[p++]);if(flg&2)p+=2;
+var n4=u.length,out=new Uint8Array((u[n4-4]|u[n4-3]<<8|u[n4-2]<<16|u[n4-1]<<24)>>>0),o=0;
+var LB=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258],LE=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0],
+DB=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577],DE=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13],
+CLO=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+function bits(n){while(bc<n){if(p>=n4)throw new Error('gz');bit|=u[p++]<<bc;bc+=8;}var v=bit&((1<<n)-1);bit>>>=n;bc-=n;return v;}
+function build(L,off,n){var c=new Uint16Array(16),s=new Uint16Array(n),of=new Uint16Array(16),k,sum=0;for(k=0;k<n;k++)c[L[off+k]]++;c[0]=0;for(k=0;k<16;k++){of[k]=sum;sum+=c[k];}for(k=0;k<n;k++)if(L[off+k])s[of[L[off+k]]++]=k;return{c:c,s:s};}
+function dec(t){var sum=0,cur=0,len=0;do{cur=2*cur+bits(1);len++;if(len>15)throw new Error('gz');sum+=t.c[len];cur-=t.c[len];}while(cur>=0);return t.s[sum+cur];}
+var FLL=new Uint8Array(288),FDL=new Uint8Array(30);for(i=0;i<288;i++)FLL[i]=i<144?8:i<256?9:i<280?7:8;for(i=0;i<30;i++)FDL[i]=5;
+var FL=build(FLL,0,288),FD=build(FDL,0,30),fin,type,lt,dt;
+do{fin=bits(1);type=bits(2);
+if(type===0){bit=0;bc=0;var ln=u[p]|u[p+1]<<8;p+=4;out.set(u.subarray(p,p+ln),o);o+=ln;p+=ln;continue;}
+if(type===1){lt=FL;dt=FD;}else if(type===2){var hl=bits(5)+257,hd=bits(5)+1,hc=bits(4)+4,cl=new Uint8Array(19),L=new Uint8Array(hl+hd),m=0,r,s;
+for(i=0;i<hc;i++)cl[CLO[i]]=bits(3);var ct=build(cl,0,19);
+while(m<hl+hd){s=dec(ct);if(s<16)L[m++]=s;else if(s===16){var pv=L[m-1];r=3+bits(2);while(r--)L[m++]=pv;}else if(s===17){r=3+bits(3);while(r--)L[m++]=0;}else{r=11+bits(7);while(r--)L[m++]=0;}}
+lt=build(L,0,hl);dt=build(L,hl,hd);}else throw new Error('gz');
+for(;;){var sy=dec(lt);if(sy<256)out[o++]=sy;else if(sy===256)break;else{sy-=257;var l=LB[sy]+bits(LE[sy]),dd=dec(dt),di=DB[dd]+bits(DE[dd]);if(di>o)throw new Error('gz');for(var k=0;k<l;k++,o++)out[o]=out[o-di];}}
+}while(!fin);
+if(o!==out.length)throw new Error('gz');return out;}</script>
 <script>
 (function () {
   var UNIT = "ch2", SALT = "io0T+L4fg/IaBL/ZTfTQLg==", ITER = 310000, ENC = "2-4.enc.json";
@@ -61,8 +82,8 @@ try { if ((JSON.parse(localStorage.getItem('lab-settings') || '{}')).lang === 'e
         return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(d.iv) }, k, b64(d.ct));
       });
     }).then(function (plain) {
-      if (!('DecompressionStream' in window)) throw new Error('old');
-      return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      if ('DecompressionStream' in window && !window.__LT_NO_DS) return new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      try { return new TextDecoder().decode(ltGunzip(new Uint8Array(plain))); } catch (e) { throw new Error('old'); }   // 舊 iPhone：內嵌的小型解壓
     }).then(function (html) {
       if (keep != null) put(KEYNAME, ub64(raw), keep);   // 解得開＝密碼對：先存金鑰再換頁（頁面裡的旁白解密要讀它）
       document.open(); document.write(html); document.close();
