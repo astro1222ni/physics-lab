@@ -83,8 +83,13 @@
     gun(g,36,125);slits(g,106,40,210);
     const x0=150,w=290;box(g,x0,22,w,206,4,'#03080c','#35505f');
     for(const [u,v] of s.hits)K.dot(g,x0+w/2+u/4.6*w/2,22+v*206,s.hits.length>800?.9:1.6,'#e8f0f2');
-    if(s.curve){g.beginPath();for(let i=0;i<=200;i++){const u=-4.6+9.2*i/200,x=x0+w/2+u/4.6*w/2,y=226-P.slit(u)*80;i?g.lineTo(x,y):g.moveTo(x,y);}g.strokeStyle=C.teal;g.lineWidth=2;g.stroke();}
-    label(g,s.hits.length+T(' 顆',' electrons'),x0+w-6,44,C.gold,15,'right');
+    // 11/21 站長：「疊上理論曲線對比不清楚」→ 疊曲線時先把亮點壓暗，曲線加粗、加黑色外框、拉高到幾乎滿框
+    if(s.curve){g.fillStyle='#03080ca6';g.fillRect(x0+1,23,w-2,204);
+      g.beginPath();for(let i=0;i<=240;i++){const u=-4.6+9.2*i/240,x=x0+w/2+u/4.6*w/2,y=224-P.slit(u)*150;i?g.lineTo(x,y):g.moveTo(x,y);}
+      g.lineJoin='round';g.strokeStyle='#03080c';g.lineWidth=7;g.stroke();g.strokeStyle='#7dffe0';g.lineWidth=3.2;g.stroke();
+      label(g,T('理論：亮紋在這裡','Theory: bright fringes here'),x0+8,44,'#7dffe0',13);}
+    {const txt=s.hits.length+T(' 顆',' electrons');g.font='700 15px system-ui,sans-serif';const tw=g.measureText(txt).width;
+      box(g,x0+w-14-tw,28,tw+12,24,6,'#03080cd9','#03080cd9');label(g,txt,x0+w-8,45,C.gold,15,'right');}
     if(s.last){const [u,v]=s.last;K.dot(g,x0+w/2+u/4.6*w/2,22+v*206,5,'#ffd17e88');}
   }
   ExamScene.add(25,{
