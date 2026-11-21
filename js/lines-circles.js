@@ -114,18 +114,27 @@
     }
     c.strokeStyle = alpha(C.text, 0.42); c.lineWidth = 1.3;
     c.beginPath(); c.moveTo(r.x0, F.Y(0)); c.lineTo(r.x1, F.Y(0)); c.moveTo(F.X(0), r.y0); c.lineTo(F.X(0), r.y1); c.stroke();
-    c.font = fnt(10.5); c.fillStyle = C.muted;
-    for (let x = Math.ceil(F.xr[0]); x <= F.xr[1]; x++) {
-      if (x === 0 || x % lab !== 0) continue;
-      c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(tr(x, 0), F.X(x), F.Y(0) + 4);
-    }
-    for (let y = Math.ceil(F.yr[0]); y <= F.yr[1]; y++) {
-      if (y === 0 || y % lab !== 0) continue;
-      c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText(tr(y, 0), F.X(0) - 5, F.Y(y));
-    }
     c.restore();
     D.haloText(c, 'x', r.x1 - 8, F.Y(0) - 6, C.muted, 'right', 'bottom', fnt(13, 600, true));
     D.haloText(c, 'y', F.X(0) + 8, r.y0 + 6, C.muted, 'left', 'top', fnt(13, 600, true));
+  }
+  /** 刻度數字：畫在圓與直線之後、點與標籤之前，加襯底，粗圓弧、粗直線經過時仍看得清楚 */
+  function drawTicks(c) {
+    const r = F.r, lab = F.narrow ? 5 : 2, f = fnt(10.5);
+    c.save(); clip(c);
+    for (let x = Math.ceil(F.xr[0]); x <= F.xr[1]; x++) {
+      if (x === 0 || x % lab !== 0) continue;
+      const tx = F.X(x), ty = F.Y(0) + 4;
+      if (tx < r.x0 + 8 || tx > r.x1 - 8 || ty > r.y1 - 14) continue;
+      D.haloText(c, tr(x, 0), tx, ty, C.muted, 'center', 'top', f);
+    }
+    for (let y = Math.ceil(F.yr[0]); y <= F.yr[1]; y++) {
+      if (y === 0 || y % lab !== 0) continue;
+      const tx = F.X(0) - 5, ty = F.Y(y);
+      if (ty < r.y0 + 8 || ty > r.y1 - 8 || tx < r.x0 + 14) continue;
+      D.haloText(c, tr(y, 0), tx, ty, C.muted, 'right', 'middle', f);
+    }
+    c.restore();
   }
   /** 畫整條直線 ax + by + c = 0（裁在框內） */
   function fullLine(c, a, b, cc, color, width, dash) {
@@ -208,6 +217,7 @@
     fullLine(c, state.a, state.b, state.c, alpha(C['lc-line'], 0.22), 8);
     fullLine(c, state.a, state.b, state.c, C['lc-line'], 2.6);
     if (q.rel === 'cross') seg(c, q.pts[0], q.pts[1], C['lc-chord'], 3.6);
+    drawTicks(c);
     // 垂線段與距離
     if (state.showDist && q.foot && !hide) {
       seg(c, [state.h, state.k], q.foot, C['lc-dist'], 2, [6, 4]);
@@ -249,13 +259,17 @@
     const q = QT(), P = [state.px, state.py], Cc = [state.h, state.k];
     drawCircle(c);
     seg(c, Cc, P, alpha(C.muted, 0.8), 1.5, [5, 5]);
+    if (!q.on && q.inside) drawTicks(c);
     if (q.on) {
       const l = q.lines[0];
       fullLine(c, l.a, l.b, l.c, alpha(C['lc-line'], 0.22), 8);
       fullLine(c, l.a, l.b, l.c, C['lc-line'], 2.6);
       rightMark(c, P, unit([Cc[0] - P[0], Cc[1] - P[1]]), unit([-l.b, l.a]), C['lc-dist']);
+      drawTicks(c);
     } else if (!q.inside) {
       q.lines.forEach(function (l) { fullLine(c, l.a, l.b, l.c, alpha(C['lc-line'], 0.18), 7); fullLine(c, l.a, l.b, l.c, alpha(C['lc-line'], 0.75), 2); });
+      q.pts.forEach(function (Tp) { seg(c, P, Tp, C['lc-line'], 3.2); });
+      drawTicks(c);
       q.pts.forEach(function (Tp) {
         seg(c, P, Tp, C['lc-line'], 3.2);
         seg(c, Cc, Tp, C['lc-dist'], 1.8, [5, 4]);

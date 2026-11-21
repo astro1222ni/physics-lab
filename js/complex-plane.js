@@ -201,22 +201,25 @@
     // 座標軸
     c.strokeStyle = alpha(C.text, 0.5); c.lineWidth = 1.4;
     c.beginPath(); c.moveTo(b.x, snap(Y(0))); c.lineTo(b.x + b.w, snap(Y(0))); c.moveTo(snap(X(0)), b.y); c.lineTo(snap(X(0)), b.y + b.h); c.stroke();
-    const yAx = clampv(Y(0), b.y + 12, b.y + b.h - 4), xAx = clampv(X(0), b.x + 4, b.x + b.w - 24);
-    for (let g = Math.ceil(vb[0] / st) * st; g <= vb[1]; g += st) {
-      if (Math.abs(g) < 1e-9) continue;
-      const tick = fmt(r6(g));
-      c.font = fnt(10.5);
-      const inset = c.measureText(tick).width / 2 + 3;
-      const x = window.LabDeck?.mode === 'drawer' ? clampv(X(g), b.x + inset, b.x + b.w - inset) : X(g);
-      D.haloText(c, tick, x, Math.min(yAx + 3, b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
-    }
-    for (let g = Math.ceil(vb[2] / st) * st; g <= vb[3]; g += st) {
-      if (Math.abs(g) < 1e-9 || Y(g) < b.y + 26) continue; // 最上面一格留給「虛軸」
-      D.haloText(c, fmt(r6(g)) + 'i', xAx + 4, Y(g), C.muted, 'left', 'middle', fnt(10.5));
-    }
-    D.haloText(c, T('實軸', 'Re'), b.x + b.w - 8, yAx - 8, C.text, 'right', 'bottom', fnt(12, 600));
-    D.haloText(c, T('虛軸', 'Im'), xAx + 8, b.y + 14, C.text, 'left', 'middle', fnt(12, 600));
-    D.haloText(c, '0', X(0) - 4, Y(0) + 4, C.muted, 'right', 'top', fnt(11, 'italic'));
+    // 刻度與軸名：畫在單位圓、向量之後（加襯底），單位圓與藍線經過 ±1、±i 時數字仍看得清楚
+    const drawTicks = function () {
+      const yAx = clampv(Y(0), b.y + 12, b.y + b.h - 4), xAx = clampv(X(0), b.x + 4, b.x + b.w - 24);
+      for (let g = Math.ceil(vb[0] / st) * st; g <= vb[1]; g += st) {
+        if (Math.abs(g) < 1e-9) continue;
+        const tick = fmt(r6(g));
+        c.font = fnt(10.5);
+        const inset = c.measureText(tick).width / 2 + 3;
+        const x = window.LabDeck?.mode === 'drawer' ? clampv(X(g), b.x + inset, b.x + b.w - inset) : X(g);
+        D.haloText(c, tick, x, Math.min(yAx + 5, b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
+      }
+      for (let g = Math.ceil(vb[2] / st) * st; g <= vb[3]; g += st) {
+        if (Math.abs(g) < 1e-9 || Y(g) < b.y + 26) continue; // 最上面一格留給「虛軸」
+        D.haloText(c, fmt(r6(g)) + 'i', xAx + 4, Y(g), C.muted, 'left', 'middle', fnt(10.5));
+      }
+      D.haloText(c, T('實軸', 'Re'), b.x + b.w - 8, yAx - 8, C.text, 'right', 'bottom', fnt(12, 600));
+      D.haloText(c, T('虛軸', 'Im'), xAx + 8, b.y + 14, C.text, 'left', 'middle', fnt(12, 600));
+      D.haloText(c, '0', X(0) - 4, Y(0) + 4, C.muted, 'right', 'top', fnt(11, 'italic'));
+    };
     // 單位圓
     c.strokeStyle = alpha(C['cx-unit'], 0.55); c.lineWidth = 1.4; c.setLineDash([5, 5]);
     c.beginPath(); c.arc(X(0), Y(0), viewCur.s, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
@@ -226,6 +229,7 @@
     else if (state.mode === 'mul') drawMul(c, labels);
     else if (state.mode === 'pow') drawPow(c, labels);
     else drawRoot(c, labels);
+    drawTicks();
     placeLabels(c, labels);
     c.restore();
     // 上方的狀態
