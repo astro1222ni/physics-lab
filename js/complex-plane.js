@@ -94,6 +94,7 @@
   function requestDraw() { if (!rafId) rafId = requestAnimationFrame(function () { rafId = 0; draw(); }); }
 
   // ---------- 視野（等比例、以 0 為中心附近，跟著內容調整，拖曳與播放時固定） ----------
+  let mathPad = null;
   let viewCur = null, viewTween = null;
   const CAP = 60;
   function contentPts() {
@@ -612,6 +613,7 @@
     $('pno').textContent = String(state.pn); $('rno').textContent = String(state.rn);
   }
   function showPanels() {
+    mathPad?.refresh();
     document.querySelectorAll('#modes button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === state.mode)); });
     $('cardW').hidden = !(state.mode === 'add' || state.mode === 'mul') || !!state.chal;
     $('lgW').hidden = !(state.mode === 'add' || state.mode === 'mul');
@@ -774,6 +776,7 @@
     if (h) {
       stopPlay(true);
       state.drag = Object.assign({ moved: false }, h);
+      mathPad?.select(h.kind);
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 無妨 */ }
       ev.preventDefault();
       requestDraw();
@@ -799,6 +802,7 @@
         if (Math.hypot(p.x - down.x, p.y - down.y) < 6 && p.x >= PR.x && p.x <= PR.x + PR.w && p.y >= PR.y && p.y <= PR.y + PR.h) {
           const s = snapZ(invX(p.x), invY(p.y), 12);
           state.z = Cx(clampv(s.re, -4, 4), clampv(s.im, -4, 4)); syncZ(); zTone();
+          mathPad?.select('z');
           edited('tap');
         }
       }
@@ -968,6 +972,23 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  mathPad = window.LabMathPad?.mount({
+    id: 'complex-plane', canvas: cv, steps: [0.01, 0.1, 0.5], step: 0.1,
+    targets: function () {
+      const keys = (state.mode === 'add' || state.mode === 'mul') && !state.chal ? ['z', 'w'] : ['z'];
+      return keys.map(function (k) {
+        return {
+          key: k, label: ['複數 ' + k, 'Complex number ' + k], html: k, sliders: [k + 'a', k + 'b'],
+          point: function () {
+            if (!viewCur) return null;
+            const p = state[k];
+            return { x: X(p.re), y: Y(p.im) };
+          }
+        };
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

@@ -477,6 +477,7 @@
     if (m === state.mode) return;
     if (state.chal) quitChal(true);
     state.mode = m;
+    mathPad?.refresh();
     lab.setAttribute('data-mode', m);
     document.querySelectorAll('.modes button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === m)); });
     state.lastRel = null;
@@ -524,6 +525,7 @@
     if (!what) return;
     ev.preventDefault();
     drag = { id: ev.pointerId, what: what };
+    if (what === 'center' || what === 'P') mathPad?.select(what);
     try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
   });
   cv.addEventListener('pointermove', function (ev) {
@@ -584,7 +586,7 @@
   // =====================================================================
   const chalMsg = $('chalMsg');
   function setChalMsg(msg, ok) { chalMsg.textContent = msg || ''; chalMsg.classList.toggle('ok', !!ok); }
-  function lockSliders(on) { ['h', 'k', 'r', 'a', 'b'].forEach(function (k) { el[k].disabled = on; }); }
+  function lockSliders(on) { ['h', 'k', 'r', 'a', 'b'].forEach(function (k) { el[k].disabled = on; }); mathPad?.refresh(); }
   function startChal(forced) {
     const chg = forced || G.genChallenge(rand, lastChal);
     if (!chg) { setChalMsg(T('出不了題，請再按一次。', 'Could not make a challenge; please try again.')); return; }
@@ -673,6 +675,24 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'lines-circles', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    targets: function () {
+      const targets = [];
+      if (!state.chal) targets.push(['center', ['圓心 (h, k)', 'Center (h, k)'], ['hh', 'kk']]);
+      if (state.mode === 'tan') targets.push(['P', ['點 P', 'Point P'], ['px', 'py']]);
+      return targets.map(function ([key, label, sliders]) {
+        return {
+          key: key, label: label, html: key === 'center' ? '(h,k)' : key, sliders: sliders,
+          point: function () {
+            if (!F) return null;
+            return { x: F.X(val($(sliders[0]))), y: F.Y(val($(sliders[1]))) };
+          }
+        };
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

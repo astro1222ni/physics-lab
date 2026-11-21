@@ -642,6 +642,13 @@
     ['A', 'B', 'C'].forEach(function (k) { const q = state.P[k], d = Math.hypot(p.x - X(q[0]), p.y - Y(q[1])); if (d < bd) { bd = d; best = k; } });
     return best;
   }
+  function placeVertex(k, p) {
+    const next = [clampv(p[0], -20, 30), clampv(p[1], -20, 30)];
+    const old = state.P[k];
+    state.P[k] = next;
+    return next[0] !== old[0] || next[1] !== old[1];
+  }
+  function finishVertexDrag() { blip(494, 'sine', 0.08); edited('drag'); }
   let downAt = null;
   cv.addEventListener('pointerdown', function (ev) {
     if (!viewCur) return;
@@ -649,6 +656,7 @@
     downAt = { x: p.x, y: p.y };
     if (h) {
       state.drag = { k: h, moved: false };
+      mathPad?.select(h);
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 無妨 */ }
       ev.preventDefault(); requestDraw();
     }
@@ -659,7 +667,7 @@
     if (!state.drag.moved && downAt && Math.hypot(p.x - downAt.x, p.y - downAt.y) < 4) return;
     state.drag.moved = true;
     const s = snapPt(invX(p.x), invY(p.y), 10);
-    state.P[state.drag.k] = [clampv(s[0], -20, 30), clampv(s[1], -20, 30)];
+    placeVertex(state.drag.k, s);
     refresh(); soundCheck();
   });
   function endDrag(ev) {
@@ -674,14 +682,15 @@
           let best = 'A', bd = Infinity;
           ['A', 'B', 'C'].forEach(function (k) { const q = state.P[k], d = Math.hypot(q[0] - x, q[1] - y); if (d < bd) { bd = d; best = k; } });
           const s = snapPt(x, y, 12);
-          state.P[best] = [clampv(s[0], -20, 30), clampv(s[1], -20, 30)];
+          mathPad?.select(best);
+          placeVertex(best, s);
           blip(494, 'sine', 0.08);
           edited('tap');
         }
       }
       return;
     }
-    if (dr.moved) { blip(494, 'sine', 0.08); edited('drag'); }
+    if (dr.moved) finishVertexDrag();
     else requestDraw();
   }
   cv.addEventListener('pointerup', endDrag);
@@ -826,6 +835,28 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'law-of-cosines', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    visible: function () { return state.mode === 'free' && !state.chal; },
+    targets: function () {
+      if (state.mode !== 'free' || state.chal) return [];
+      return ['A', 'B', 'C'].map(function (k) {
+        return {
+          key: k, label: ['頂點 ' + k, 'Vertex ' + k], html: k,
+          point: function () {
+            if (!viewCur) return null;
+            const p = state.P[k];
+            return { x: X(p[0]), y: Y(p[1]) };
+          },
+          move: function (dx, dy) {
+            const p = state.P[k];
+            if (placeVertex(k, [r6(p[0] + dx), r6(p[1] + dy)])) finishVertexDrag();
+          }
+        };
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

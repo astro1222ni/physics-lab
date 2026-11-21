@@ -411,7 +411,7 @@
     $('bxo').textContent = fmt(state.b[0]); $('byo').textContent = fmt(state.b[1]);
     $('cxo').textContent = fmt(state.x); $('cyo').textContent = fmt(state.y);
   }
-  function refresh() { refreshOutputs(); updateReadouts(); specialSound(); requestDraw(); }
+  function refresh() { refreshOutputs(); updateReadouts(); specialSound(); requestDraw(); mathPad?.refresh(); }
   Object.keys(el).forEach(function (k) {
     el[k].addEventListener('input', function () { if (applying) return; readOne(k); refresh(); });
     el[k].addEventListener('change', function () { if (applying) return; readOne(k); refresh(); emitMode(); });
@@ -507,6 +507,7 @@
     if (!what) return;
     ev.preventDefault();
     drag = { id: ev.pointerId, what: what };
+    mathPad?.select(what);
     try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
   });
   cv.addEventListener('pointermove', function (ev) {
@@ -655,6 +656,39 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'plane-vectors', canvas: cv, steps: [1, 2, 3], step: 2,
+    visible: function () { return !state.chal; },
+    targets: function () {
+      if (state.chal) return [];
+      const targets = [
+        ['a', ['向量 a', 'Vector a'], ['ax', 'ay']],
+        ['b', ['向量 b', 'Vector b'], ['bx', 'by']]
+      ];
+      if (state.mode === 'lin' && (!M.isZero(state.a) || !M.isZero(state.b))) {
+        targets.push(['p', ['組合點 p（係數步距 ×0.1）', 'Combination point p (coefficient step ×0.1)'], ['cx', 'cy']]);
+      }
+      return targets.map(function ([key, label, sliders]) {
+        const target = {
+          key: key, label: label, html: key === 'p' ? 'p<sub>×0.1</sub>' : key, sliders: sliders,
+          point: function () {
+            if (!F) return null;
+            const p = key === 'p' ? P() : state[key];
+            return { x: X(p[0]), y: Y(p[1]) };
+          }
+        };
+        if (key === 'p') target.move = function (dx, dy) {
+          const x = r3(clampv(state.x + dx / 10, -4, 4));
+          const y = r3(clampv(state.y + dy / 10, -4, 4));
+          if (x === state.x && y === state.y) return;
+          state.x = x; state.y = y;
+          syncCoefSliders(); refresh(); emitMode();
+        };
+        return target;
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

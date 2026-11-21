@@ -561,6 +561,7 @@
 
   // ---------- 控制項 ----------
   const lab = $('lab');
+  let mathPad = null;
   function showPanels() {
     document.querySelectorAll('#modes button').forEach(function (b) { b.setAttribute('aria-pressed', String(!state.chal && b.getAttribute('data-mode') === state.mode)); });
     const m = state.mode;
@@ -570,6 +571,7 @@
     $('l2').hidden = m !== 'pow'; $('lTan').hidden = m !== 'pow';
     lab.setAttribute('data-mode', m);
     modeNote(); legend();
+    mathPad?.refresh();
   }
   function refresh() { cache = null; refreshOutputs(); updateReadouts(); describe(); legend(); requestDraw(); }
   let lastKind = null;
@@ -699,6 +701,7 @@
     if (k === 'Q') { const s = snapPt(x, y, pxTol); return setQ(s); }
     return setAngle(k, snapAngle(Math.atan2(y, x) / M.D2R));
   }
+  function finishPointDrag() { blip(494, 'sine', 0.08); edited('drag'); }
   let downAt = null;
   cv.addEventListener('pointerdown', function (ev) {
     if (!viewCur) return;
@@ -739,7 +742,7 @@
       }
       return;
     }
-    if (dr.moved) { blip(494, 'sine', 0.08); edited('drag'); }
+    if (dr.moved) finishPointDrag();
     else requestDraw();
   }
   cv.addEventListener('pointerup', endDrag);
@@ -928,6 +931,25 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  mathPad = window.LabMathPad?.mount({
+    id: 'inscribed-angle', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    visible: function () { return state.mode === 'pow' && !state.chal; },
+    targets: function () {
+      if (state.mode !== 'pow' || state.chal) return [];
+      return [{
+        key: 'Q', label: ['點 Q', 'Point Q'], html: 'Q',
+        point: function () {
+          if (!viewCur) return null;
+          const p = screenOf('Q');
+          return { x: p[0], y: p[1] };
+        },
+        move: function (dx, dy) {
+          if (setQ([r6(state.Q[0] + dx), r6(state.Q[1] + dy)])) finishPointDrag();
+        }
+      }];
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

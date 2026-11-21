@@ -1057,6 +1057,24 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  window.LabMathPad?.mount({
+    id: 'linear-programming', canvas: cv, steps: [0.01, 0.1, 0.5], step: 0.1,
+    targets: function () {
+      return [{
+        key: 'P', label: ['點 P', 'Point P'], html: 'P',
+        point: function () {
+          if (!viewCur) return null;
+          return { x: X(state.P.x), y: Y(state.P.y) };
+        },
+        move: function (dx, dy) {
+          stopSweep();
+          state.P = { x: r6(state.P.x + dx), y: r6(state.P.y + dy) };
+          movedP('drag');
+        }
+      }];
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

@@ -147,6 +147,7 @@
   // ---------- 繪圖 ----------
   function draw() {
     if (!L) return;
+    if (canFineMove()) mathPad?.select(state.sel < 0 ? state.pts.length - 1 : state.sel);
     const c = ctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
@@ -520,6 +521,7 @@
     cv.classList.toggle('locked', locked);
     cv.classList.toggle('del', !locked && state.tool === 'del');
     $('undo').disabled = locked || !undoStack.length;
+    mathPad?.refresh();
   }
 
   // ---------- 範例資料、清除、復原 ----------
@@ -638,6 +640,13 @@
     else { x = Math.round(x * 100) / 100; y = Math.round(y * 100) / 100; }
     return RC.clampPt([x, y]);
   }
+  function canFineMove() { return !state.chal && !state.show.z && state.tool !== 'del' && state.pts.length > 0; }
+  function placeDataPoint(i, p) { state.pts[i] = p; edited(); refresh(); }
+  function finishPointDrag(r0, fresh) {
+    const s = RC.stats(state.pts);
+    if (!fresh) emit('drag', { n: s.n, r0: r0, r1: s.r, chal: false });
+    emitPts();
+  }
   function inPlot(F, px, py) { const r = F.r; return px >= r.x0 - 8 && px <= r.x1 + 8 && py >= r.y0 - 8 && py <= r.y1 + 8; }
   cv.addEventListener('pointerdown', function (ev) {
     if (!L || state.chal || state.show.z) return;
@@ -683,16 +692,14 @@
     const F = frameNow(), p = posOf(ev);
     const q = toData(F, p.px, p.py), old = state.pts[drag.i];
     if (!old || (old[0] === q[0] && old[1] === q[1])) return;
-    state.pts[drag.i] = q; drag.moved = true;
-    edited(); refresh();
+    drag.moved = true;
+    placeDataPoint(drag.i, q);
   });
   function endDrag(ev) {
     if (!drag || drag.id !== ev.pointerId) return;
     const d = drag; drag = null;
     if (!d.moved) { if (!d.fresh) undoStack.pop(); $('undo').disabled = !undoStack.length; return; }
-    const s = RC.stats(state.pts);
-    if (!d.fresh) emit('drag', { n: s.n, r0: d.r0, r1: s.r, chal: false });
-    emitPts();
+    finishPointDrag(d.r0, d.fresh);
   }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
@@ -835,6 +842,37 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'regression', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    visible: canFineMove,
+    onSelect: function (i) { state.sel = i; requestDraw(); },
+    targets: function () {
+      if (!canFineMove()) return [];
+      const last = state.pts.length - 1;
+      return state.pts.map(function (_, offset) {
+        const i = (last + offset) % state.pts.length;
+        return {
+          key: i, label: ['點 ' + (i + 1), 'Point ' + (i + 1)], html: '#' + (i + 1),
+          point: function () {
+            if (!L) return null;
+            const F = frameNow(), p = state.pts[i];
+            return { x: F.X(p[0]), y: F.Y(p[1]) };
+          },
+          move: function (dx, dy) {
+            const p = state.pts[i];
+            const next = RC.clampPt([RC.round6(p[0] + dx), RC.round6(p[1] + dy)]);
+            if (next[0] === p[0] && next[1] === p[1]) return;
+            const r0 = RC.stats(state.pts).r;
+            pushUndo();
+            state.sel = i;
+            placeDataPoint(i, next);
+            finishPointDrag(r0, false);
+          }
+        };
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

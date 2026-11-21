@@ -566,6 +566,7 @@
     VN.forEach(function (k) { const q = state.P[k], d = Math.hypot(p.x - X(q[0]), p.y - Y(q[1])); if (d < bd) { bd = d; best = k; } });
     return best;
   }
+  function finishVertexDrag() { blip(494, 'sine', 0.08); edited('drag'); }
   let downAt = null;
   cv.addEventListener('pointerdown', function (ev) {
     if (!viewCur) return;
@@ -573,6 +574,7 @@
     downAt = { x: p.x, y: p.y };
     if (h) {
       state.drag = { k: h, moved: false };
+      mathPad?.select(h);
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 無妨 */ }
       ev.preventDefault(); requestDraw();
     }
@@ -598,6 +600,7 @@
           let best = 'A', bd = Infinity;
           VN.forEach(function (k) { const q = state.P[k], d = Math.hypot(q[0] - x, q[1] - y); if (d < bd) { bd = d; best = k; } });
           const s = snapPt(x, y, 12);
+          mathPad?.select(best);
           moveVertex(best, [clampv(s[0], -20, 30), clampv(s[1], -20, 30)]);
           blip(494, 'sine', 0.08);
           edited('tap');
@@ -605,7 +608,7 @@
       }
       return;
     }
-    if (dr.moved) { blip(494, 'sine', 0.08); edited('drag'); }
+    if (dr.moved) finishVertexDrag();
     else requestDraw();
   }
   cv.addEventListener('pointerup', endDrag);
@@ -747,6 +750,31 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'triangle-centers', canvas: cv, steps: [0.05, 0.25, 1], step: 0.25,
+    visible: function () { return !state.chal; },
+    targets: function () {
+      return VN.map(function (k) {
+        return {
+          key: k, label: ['頂點 ' + k, 'Vertex ' + k], html: k,
+          point: function () {
+            if (!viewCur) return null;
+            const p = state.P[k];
+            return { x: X(p[0]), y: Y(p[1]) };
+          },
+          move: function (dx, dy) {
+            if (state.chal) return;
+            const p = state.P[k];
+            const next = [clampv(r6(p[0] + dx), -20, 30), clampv(r6(p[1] + dy), -20, 30)];
+            if (next[0] === p[0] && next[1] === p[1]) return;
+            moveVertex(k, next);
+            finishVertexDrag();
+          }
+        };
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

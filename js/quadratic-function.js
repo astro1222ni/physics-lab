@@ -879,6 +879,15 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  // 八向微調小鍵盤：頂點 (h, k) 一起微調，手指不必蓋住頂點、也不用捲到滑桿
+  if (window.LabMathPad) window.LabMathPad.mount({
+    id: 'quadratic-function', canvas: cv, steps: [0.01, 0.1, 0.5], step: 0.1,
+    visible: function () { return state.mode === 'graph'; },
+    targets: function () {
+      return [{ key: 'v', label: ['頂點', 'Vertex'], sliders: ['qh', 'qk'],
+        point: function () { if (!F) return null; const q = QG(); return { x: X(q.h), y: Y(q.k) }; } }];
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {

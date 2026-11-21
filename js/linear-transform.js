@@ -606,6 +606,7 @@
     stopPlay();
     if (m === 'm2' && view3) setView('2d');
     state.mode = m;
+    mathPad?.refresh();
     lab.setAttribute('data-mode', m);
     document.querySelectorAll('.modes button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === m)); });
     state.lastSign = null; state.lastAlign = false;
@@ -690,6 +691,7 @@
       what = hit2(p.px, p.py, touch ? 22 : 14);
       if (!what) return;
       if (what !== 'x') setT1();
+      mathPad?.select(what);
     }
     ev.preventDefault();
     drag = { id: ev.pointerId, what: what, px: p.px, py: p.py, turned: 0 };
@@ -718,9 +720,11 @@
     if (!drag || drag.id !== ev.pointerId) return;
     const w = drag.what; drag = null;
     cv.style.cursor = state.mode === 'm3' ? 'grab' : 'default';
-    if (w === 'rot') return;
+    if (w !== 'rot') finishDrag(w);
+  }
+  function finishDrag(what) {
     changed(true);
-    emit('drag', { what: w });
+    emit('drag', { what: what });
   }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
@@ -780,6 +784,7 @@
     setT1();
     state.round++;
     state.chal = { M: copy(chg.M), t0: performance.now(), round: state.round };
+    mathPad?.refresh();
     lastChal = chg;
     setChalMsg(T('第 ' + state.round + ' 題：讓單位正方形和小旗子蓋住橘色虛線（放開才判定）。', 'Challenge ' + state.round + ': make the square and the flag cover the dashed orange shape (judged when you let go).'));
     $('quitChal').hidden = false;
@@ -796,6 +801,7 @@
     state.streak.push(time);
     const last3 = state.streak.length >= 3 ? state.streak.slice(-3).reduce(function (s, x) { return s + x; }, 0) : null;
     state.chal = null;
+    mathPad?.refresh();
     $('quitChal').hidden = true;
     $('newChal').textContent = T('出下一題', 'Next challenge');
     setChalMsg(T('對了！A = ', 'Got it! A = ') + matText(chg.M) + T('，用了 ', ', in ') + time.toFixed(1) + T(' 秒。', ' s.'), true);
@@ -811,6 +817,7 @@
     if (!chg) return;
     state.log.push({ round: chg.round, M: null, time: null });
     state.chal = null; state.streak = [];
+    mathPad?.refresh();
     $('quitChal').hidden = true;
     $('newChal').textContent = T('出一題', 'New challenge');
     setChalMsg(silent ? '' : T('這題放棄了。答案是 A = ', 'Given up. The answer was A = ') + matText(chg.M) + T('；連續答對重新計算。', '; the streak starts over.'));
@@ -943,6 +950,40 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+
+  const mathPad = window.LabMathPad?.mount({
+    id: 'linear-transform', canvas: cv, steps: [0.01, 0.1, 0.5], step: 0.1,
+    visible: function () { return state.mode !== 'm3'; },
+    targets: function () {
+      if (state.mode === 'm3') return [];
+      const targets = [
+        ['i', ['基底 i', 'Basis i'], ['ma', 'mc']],
+        ['j', ['基底 j', 'Basis j'], ['mb', 'md']]
+      ];
+      if (!state.chal) targets.push(['x', ['向量 x', 'Vector x'], ['px', 'py']]);
+      return targets.map(function ([key, label, sliders]) {
+        const target = {
+          key: key, label: label, html: key, sliders: sliders,
+          point: function () {
+            if (!F) return null;
+            const matrix = Mt(), col = key === 'i' ? 0 : 1;
+            const p = key === 'x' ? state.x : [matrix[0][col], matrix[1][col]];
+            return { x: F.X(p[0]), y: F.Y(p[1]) };
+          }
+        };
+        if (key !== 'x') target.move = function (dx, dy) {
+          const ex = $(sliders[0]), ey = $(sliders[1]);
+          const x = clampv(Math.round((val(ex) + dx) * 1e6) / 1e6, -3, 3);
+          const y = clampv(Math.round((val(ey) + dy) * 1e6) / 1e6, -3, 3);
+          if (x === val(ex) && y === val(ey)) return;
+          setT1();
+          setSlider(ex, x); setSlider(ey, y);
+          finishDrag(key);
+        };
+        return target;
+      });
+    }
+  });
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(function () {
