@@ -132,6 +132,19 @@
     };
   }
 
+  // 頂階乙群從隔一階尚未被吃掉的生產量中替代取食，不重複使用同一份能量。
+  function compareDiet(p, groupShare, target, massRatio) {
+    const r = compute(p), n = r.N - 1;
+    if (n < 2) return null;
+    const intake = r.In[n] * groupShare;
+    const alternate = Math.min(intake * target, r.U[n - 2]);
+    const fraction = intake > 0 ? alternate / intake : 0;
+    return { alternate, intake, original: r.In[n] - alternate,
+      detritusLower: r.U[n - 2] - alternate, detritusUpper: r.U[n - 1] + alternate,
+      concA: r.conc[n], concB: r.bmf[n] * ((1 - fraction) * r.conc[n - 1] + fraction * r.conc[n - 2]),
+      countA: (1 - groupShare) * r.num[n], countB: groupShare * r.num[n] / massRatio };
+  }
+
   /** 金字塔第 k 種量（'energy'＝同化量 A、'biomass'＝鮮重、'numbers'＝個體數、'poll'＝污染物濃度倍數） */
   function pyramid(r, kind) {
     const src = kind === 'biomass' ? r.mass : kind === 'numbers' ? r.num : kind === 'poll' ? r.conc : r.A;
@@ -163,6 +176,6 @@
     eventData: eventData,
     MAXN: MAXN, ED_PLANT: ED_PLANT, ED_ANIMAL: ED_ANIMAL, KJ_PER_KCAL: KJ_PER_KCAL,
     PRESETS: PRESETS, POLLUTANT: POLLUTANT,
-    params: params, compute: compute, pyramid: pyramid, inverted: inverted, clone: clone
+    params: params, compareDiet: compareDiet, compute: compute, pyramid: pyramid, inverted: inverted, clone: clone
   };
 });

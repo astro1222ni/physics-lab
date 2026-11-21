@@ -67,6 +67,9 @@ out.push(`    比例 ${g(d.NPP / d.GPP)}、${g(d.P[1] / d.P[0])}、${g(d.P[2] / 
 claim(!check('10', ev(make('grass', { rp: 57.6, ce2: 50, ae2: 76, pe2: 44, ce3: 30, ae3: 80, pe3: 19, ce4: 40, ae4: 80, pe4: 20 }))), '任務 10：頂級的比例差太多不算');
 
 // ---------- 隱藏任務 ----------
+{ const p = make('grass', { N: 1, dec: 100 }); const r = K.compute(p);
+  claim(Math.abs(r.heat - r.GPP) < 1e-8 && r.heat < p.I, '完全分解時的熱等於固定能量，仍小於入射能量');
+}
 solve('h1', 'grass', { N: 1, dec: 100 }, 'energy', '只留生產者、分解者分解 100%');
 d = solve('h2', 'grass', { rp: 10, dec: 10 }, 'energy', '植物呼吸 10%、分解者只分解 10%');
 out.push(`    累積 ${g(d.store)}、熱 ${g(d.heat)} kJ/m²/年`);

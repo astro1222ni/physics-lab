@@ -93,7 +93,7 @@
     {
       id: 'energy-flow-h1', level: 3, hidden: true,
       title: { zh: '一張嘴也沒有', en: 'Not a single mouth' },
-      desc: { zh: '沒有一張嘴，太陽給的，仍一分不少地還給了天空。', en: 'Not a single mouth — and still every bit the sun gave is handed back to the sky.' },
+      desc: { zh: '沒有一張嘴，葉片留住的光能，最終全以熱散去。', en: 'Not a single mouth, yet every bit of sunlight captured by the leaves eventually escapes as heat.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N === 1 && d.dec >= 1 - EPS; }
     },
     {

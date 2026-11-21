@@ -235,7 +235,18 @@
   // =====================================================================
   // 讀數、表格
   // =====================================================================
+  function showDiet() {
+    const res = K.compareDiet(st.p, Number($('dietShare').value), Number($('altDiet').value), Number($('dietMass').value));
+    $('dietCompare').textContent = !res ? T('至少需要三個營養階。', 'Choose at least three trophic levels.') :
+      T('頂階攝食（kJ／平方公尺／年）：相鄰階 ', 'Top intake (kJ per square metre per year): adjacent level ') +
+      fmtT(res.original) + T('、跨階 ', ', alternate level ') + fmtT(res.alternate) +
+      T('。甲／乙群個體數（每平方公尺） ', '. Group A/B individuals per square metre ') +
+      fmtT(res.countA) + ' / ' + fmtT(res.countB) + T('，濃度倍數 ', ', concentration factors ') +
+      (res.countA ? fmtT(res.concA) : '—') + ' / ' + (res.countB ? fmtT(res.concB) : '—');
+  }
+  ['dietShare','altDiet','dietMass'].forEach(id => $(id).addEventListener('change', showDiet));
   function renderRo() {
+    showDiet();
     const r = st.r, N = r.N, top = N - 1;
     const row = function (dt, dd) { return '<div><dt>' + dt + '</dt><dd>' + dd + '</dd></div>'; };
     let h = '';
@@ -524,8 +535,8 @@
       const fs = L1.narrow ? 11.5 : 12.5;
       const name = L1.short && /^Level \d|^第 \d/.test(lvName(n)) ? lvName(n) : (n + 1) + '・' + lvName(n);
       D.haloText(g, fitText(g, name, L1.bw - 22, '600 ' + fs + 'px ' + FONT), G.x0 + 15, y - bh * 0.2, D.c.text, 'left', 'middle', '600 ' + fs + 'px ' + FONT);
-      small(g, T('同化 A', 'A'), G.x0 + 15, y + bh * 0.23, D.c.muted, 'left', L1.narrow ? 10 : 11);
-      g.font = (L1.narrow ? 10 : 11) + 'px ' + FONT;
+      small(g, T('同化 A', 'A'), G.x0 + 15, y + bh * 0.23, D.c.muted, 'left', L1.narrow ? 12 : 13);
+      g.font = (L1.narrow ? 12 : 13) + 'px ' + FONT;
       const aw = g.measureText(T('同化 A', 'A')).width;
       drawNum(g, r.A[n], G.x0 + 15 + aw + 5, y + bh * 0.23, D.c.text, 'left', L1.narrow ? 10.5 : 11.5, 600);
     }
@@ -538,8 +549,8 @@
     g.fillStyle = dg; g.fill();
     g.strokeStyle = D.alpha(C['ef-det'], 0.9); g.lineWidth = 1.4; g.stroke();
     D.haloText(g, T('分解者', 'Decomposers'), G.decX0 + 12, dy - 5, D.c.text, 'left', 'middle', '600 ' + (L1.narrow ? 11.5 : 12.5) + 'px ' + FONT);
-    small(g, T('碎屑 D', 'Detritus D'), G.decX0 + 12, dy + 9, D.c.muted, 'left', L1.narrow ? 10 : 11);
-    g.font = (L1.narrow ? 10 : 11) + 'px ' + FONT;
+    small(g, T('碎屑 D', 'Detritus D'), G.decX0 + 12, dy + 9, D.c.muted, 'left', L1.narrow ? 12 : 13);
+    g.font = (L1.narrow ? 12 : 13) + 'px ' + FONT;
     drawNum(g, r.D, G.decX0 + 12 + g.measureText(T('碎屑 D', 'Detritus D')).width + 5, dy + 9, D.c.text, 'left', L1.narrow ? 10.5 : 11, 600);
     // 分解者的熱
     const wdh = wOf(r.Rd, vmax, WM);
@@ -555,11 +566,11 @@
       strokePts(g, ptss, C['ef-store'], ws, 0.85); headAt(g, ptss, C['ef-store'], ws);
       paths.push({ pts: ptss, col: C['ef-store'], w: ws, v: r.store });
       const tx = xs + ws / 2 + 8;
-      const sf = '600 ' + (L1.narrow ? 10 : 11) + 'px ' + FONT;
+      const sf = '600 ' + (L1.narrow ? 12 : 13) + 'px ' + FONT;
       const stxt = g.measureText ? T('累積（土壤有機質、泥炭）', 'Stored (soil organic matter, peat)') : '';
       g.font = sf;
-      small(g, g.measureText(stxt).width <= w - tx - 6 ? stxt : T('累積成有機質', 'Stored'), tx, h - 26, D.c.text, 'left', L1.narrow ? 10 : 11, 600);
-      drawNum(g, r.store, tx, h - 12, D.c.muted, 'left', L1.narrow ? 10 : 11, null);
+      small(g, g.measureText(stxt).width <= w - tx - 6 ? stxt : T('累積成有機質', 'Stored'), tx, h - 26, D.c.text, 'left', L1.narrow ? 12 : 13, 600);
+      drawNum(g, r.store, tx, h - 12, D.c.muted, 'left', L1.narrow ? 12 : 13, null);
     }
     // 粒子路徑的長度與數量
     paths.forEach(function (pa) {
@@ -620,7 +631,7 @@
       const wi = n + 1 < N ? wOf(r.In[n + 1], r.GPP, L1.narrow ? 26 : 34) : 0;
       const xr = L1.short ? G.x0 - 44 : L1.cx - Math.max(8, wi / 2 + 8);
       const y = L1.short ? G.ys[n] + G.slot / 2 : G.ys[n] + L1.bh / 2 + (G.slot - L1.bh) / 2;
-      pillNum(g1, T('還剩 ', 'left: '), left, ' kJ', xr, y, col, L1.narrow ? 10 : 11);
+      pillNum(g1, T('還剩 ', 'left: '), left, ' kJ', xr, y, col, L1.narrow ? 12 : 13);
     }
     if (k > tr.lastLv) {
       for (let n = tr.lastLv + 1; n < k; n++) {
@@ -632,12 +643,15 @@
         }
       }
       tr.lastLv = k;
-      if (k >= N) {
-        const left = 1000 * r.A[N - 1] / st.p.I;
-        const msg = T('1,000 kJ 的陽光，到了第 ' + N + ' 階只剩 ' + fmtT(left) + ' kJ 被同化；其他都在路上變成熱、或成為碎屑。',
-          'Of 1,000 kJ of sunlight, only ' + fmtT(left) + ' kJ is assimilated by level ' + N + '; the rest became heat or detritus on the way.');
-        setStatus(msg); say(msg);
-      }
+    }
+    if (k >= N && !tr.balanced && el2 >= N * STEP + STEP) {
+      tr.balanced = true;
+      const scaled = energy => fmtT(1000 * energy / st.p.I) + ' kJ';
+      const msg = T('入射 1000 kJ，其中未固定 ', 'Of 1000 kJ incident, unfixed: ') + scaled(st.p.I - r.GPP) +
+          T('，光合固定 ', ', fixed by photosynthesis: ') + scaled(r.GPP) +
+          T('。固定能量的最終去向：各營養階呼吸 ', '. The fixed energy ends up in trophic-level respiration: ') + scaled(r.heat - r.Rd) +
+          T('、分解者呼吸 ', ', decomposer respiration: ') + scaled(r.Rd) + T('、碎屑留存 ', ', stored detritus: ') + scaled(r.store) + '.';
+      setStatus(msg); say(msg);
     }
     if (el2 > N * STEP + 6) { st.trace = null; request1(); }
   }

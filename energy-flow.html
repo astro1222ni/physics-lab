@@ -134,6 +134,7 @@
     @media (min-width: 881px) and (max-width: 1220px) {
       html.labdeck-panel .lab { margin-right: 28px; }
     }
+      .sample-control { min-height: 44px; max-width: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -228,6 +229,12 @@
           <div class="slider"><label for="ms" data-en="Mass of one individual (mg)">一個個體的質量（mg）</label><output id="mso"></output>
             <input id="ms" type="range" min="-6" max="9" step="0.01" value="3"></div>
           <p class="hint" data-en="Turnover = how many times over a level replaces its standing biomass in a year. Algae: hundreds; trees: about 0.1.">周轉率 = 一年長出的量是現存量的幾倍。藻類可達數百，樹木約 0.1。</p>
+          <details><summary data-en="Compare two diets at the top level">比較頂階兩群的食性</summary>
+            <label><span data-en="Group B share of top-level intake">頂階攝食量分給乙群的比例</span> <select class="sample-control" id="dietShare"><option>0</option><option selected>0.5</option><option>1</option></select></label>
+            <label><span data-en="Group B target share from two levels below">乙群向下跨兩階取食的目標比例</span> <select class="sample-control" id="altDiet"><option selected>0</option><option>0.5</option><option>1</option></select></label>
+            <label><span data-en="Group B mass relative to group A">乙群體重相對甲群</span> <select class="sample-control" id="dietMass"><option>0.5</option><option selected>1</option><option>2</option></select></label>
+            <p id="dietCompare"></p>
+          </details>
         </section>
         <section class="card" data-deck="分解者|Decomposers" data-deck-order="5">
           <h2 data-en="Decomposers">分解者</h2>
@@ -294,7 +301,8 @@
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en-html="Steady state, one year, per square metre: every number is an annual flow (kJ m<sup>−2</sup> yr<sup>−1</sup>) computed exactly from the formulas above; nothing is random. The energy account (heat + storage = GPP) is checked by the unit tests to 10<sup>−9</sup>.">穩定狀態、以一年、每平方公尺計：每個數字都是用上面的公式直接算出的年流量（kJ/m²・年），沒有隨機。能量帳（熱 + 累積 = GPP）由單元測試檢查到 10<sup>−9</sup> 的精度。</li>
-        <li data-en-html="Standing biomass = production ÷ turnover (P/B), converted to fresh weight with 5 kJ g<sup>−1</sup> for plants and 7 kJ g<sup>−1</sup> for animals (rough averages). Numbers = fresh weight ÷ the mass of one individual.">現存生物量 = 生產量 ÷ 周轉率（P/B），換成鮮重時植物用 5 kJ/g、動物用 7 kJ/g（粗略的平均值）；個體數 = 鮮重 ÷ 一個個體的質量。</li>
+        <li data-en="In the one-level, completely decomposed case, all the energy fixed by producers eventually becomes heat. Sunlight that was never fixed is outside this biological budget.">只有生產者且碎屑完全分解時，生產者固定的能量最終全數轉成熱。未被固定的陽光另計。</li>
+        <li data-en-html="Standing biomass = production ÷ turnover (P/B), converted to fresh weight with 5 kJ g<sup>−1</sup> for plants and 7 kJ g<sup>−1</sup> for animals (illustrative scenario values, as are the body masses used in each ecosystem). Numbers = fresh weight ÷ the mass of one individual.">現存生物量 = 生產量 ÷ 周轉率（P/B），換成鮮重時植物用 5 kJ/g、動物用 7 kJ/g（與各生態系個體體重同為自訂情境值）；個體數 = 鮮重 ÷ 一個個體的質量。</li>
         <li data-en="The flow diagram draws arrow widths in proportion to the cube root of the energy, so that flows a million times smaller are still visible; the numbers on it are exact. The pyramids have a log-width and a true-width view.">能量流動圖的箭頭寬度與能量的立方根成正比（示意，讓小一百萬倍的流量也看得見），圖上的數字是精確值。金字塔可以切換「對數寬度」與「真實比例」。</li>
         <li data-en-html="The 3D pyramid stacks one slab per level; each slab’s footprint is a square whose side is the bar length of the 2D pyramid (log width) or whose area is proportional to the quantity (true width).">3D 金字塔每一階一塊板子；板子的底面是正方形，邊長和 2D 金字塔的長條一樣（對數寬度），或面積和數量成正比（真實比例）。</li>
         <li data-en="Biomagnification uses the steady-state mass balance above with one concentration per level; real animals differ by age, fat content and diet.">生物放大用上面的穩定狀態質量平衡，每一階只算一個濃度；真實的動物會因年齡、脂肪多寡和食性不同而不一樣。</li>

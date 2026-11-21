@@ -157,4 +157,14 @@ test('預設組的參數都在滑桿範圍內，而且能量收支都是正數',
   }
 });
 
+
+test('頂階替代食源收支守恆，等體重、單一食源回到原值', () => {
+  const p = K.params('grass'), r = K.compute(p), n = r.N - 1;
+  const a = K.compareDiet(p, 0.5, 1, 2), b = K.compareDiet(p, 0.5, 0, 1);
+  close(a.original + a.alternate, r.In[n], 1e-9);
+  close(a.detritusLower + a.detritusUpper, r.U[n-2] + r.U[n-1], 1e-9);
+  close(b.countA + b.countB, r.num[n], 1e-9);
+  close(b.concA, b.concB, 1e-9);
+});
+
 console.log(`  ${passed} 項測試通過`);
