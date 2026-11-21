@@ -39,7 +39,7 @@
   ExamScene.add(25,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,kwh:2,cop:2}),
     paint,
-    preview(g){K.boost(1.7,()=>{blocks(g,36,70,1,GOLD,T('付 1 份電','Pay for one'),58);blocks(g,36,168,2.5,COLD,T('搬 2.5 份熱','Move two and a half'),58);});sci(g,'COP = 2.5',340,128,C.white,42,'center');label(g,T('搬的熱 ÷ 付的電','heat moved ÷ energy paid'),340,170,C.faint,19,'center');},
+    preview(g){K.boost(1.7,()=>{blocks(g,36,70,1,GOLD,T('付 1 份電','Pay 1 unit'),58);blocks(g,36,168,2.5,COLD,T('搬 2.5 份熱','Move 2.5 units'),58);});sci(g,'COP = 2.5',340,128,C.white,42,'center');label(g,T('搬的熱 ÷ 付的電','heat moved ÷ energy paid'),340,190,C.faint,19,'center');},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,complete}){
       s.hands=true;const ok=()=>{if(Math.abs(s.kwh-1)<1e-9&&Math.abs(s.cop-2.5)<1e-9)complete();};

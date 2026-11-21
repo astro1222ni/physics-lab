@@ -107,7 +107,7 @@
   ExamScene.add(19,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,chain:[],wrong:false,clean:true,done:false}),
     paint,
-    preview(g){const s={t:1.2};g.save();g.translate(8,-22);g.scale(1.12,1.12);K.boost(1.45,()=>plant(g,s,'all',14,200));g.restore();K.boost(1.45,()=>{label(g,T('核燃料 → 電','Nuclear fuel → electricity'),16,34,C.gold,17);label(g,T('哪些能量轉換？','Which conversions?'),444,34,C.faint,14,'right');});},
+    preview(g){const s={t:1.2};g.save();g.translate(8,-22);g.scale(1.12,1.12);K.boost(LabSettings.lang==='en'?1.2:1.45,()=>plant(g,s,'all',14,200));g.restore();K.boost(1.45,()=>{label(g,T('核燃料 → 電','Fuel → electricity'),16,34,C.gold,17);label(g,T('哪些能量轉換？','Which conversions?'),444,232,C.faint,14,'right');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,controls,btn,complete,render}){
       s.hands=true;let raf=0;const tick=now=>{s.t=now/1000;render();raf=requestAnimationFrame(tick);};

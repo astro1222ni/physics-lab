@@ -74,7 +74,7 @@
   ExamScene.add(24,{
     state:()=>({row:'',id:'',part:0,t:0,hands:false,h:0,on:true}),
     paint,
-    preview(g){K.boost(1.6,()=>{fridge(g,140,18,180,188,0,{tags:true});arrow(g,20,150,128,150,COLD,4,12);label(g,T('裡面的熱','Heat inside'),20,134,COLD,13);arrow(g,362,178,448,178,HOT,4,12);label(g,T('丟到外面','Out the back'),448,162,HOT,13,'right');});},
+    preview(g){K.boost(1.6,()=>{fridge(g,140,18,180,188,0,{tags:true});arrow(g,20,150,128,150,COLD,4,12);label(g,T('裡面的熱','Heat inside'),20,134,COLD,13);arrow(g,362,178,448,178,HOT,4,12);label(g,T('丟到外面','Heat out'),448,162,HOT,13,'right');});},
     lesson(s,p,part,t){s.row=p.row;s.id=p.id;s.part=part;s.t=t;},
     interactive({s,range,toggle,complete,render}){
       s.hands=true;let raf=0;const tick=now=>{s.t=now/1000;render();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);addEventListener('pagehide',()=>cancelAnimationFrame(raf));
