@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     // 手機橫放：第一段用 520 寬的緊湊版面（縮小約 0.83，字約 9.5 px），不再用 720 寬整張縮小到 7 px；
@@ -261,17 +262,18 @@
       tri.xM = (tri.xL + tri.xR) / 2;
       sq = { x: w - 14 - sqS, y: 58, s: sqS };
     } else {
-      const gw = w - 28, gh = Math.round(Math.min(240, gw * 0.62));
+      const portrait = narrowPortrait.matches;
+      const gw = w - 28, gh = Math.round(Math.min(portrait ? 122 : 240, gw * 0.62));
       garden = { x: 14, y: 34, w: gw, h: gh };
-      const side = Math.min(w - 76, 340);
-      const yT = 34 + gh + 58;
+      const side = Math.min(w - (portrait ? 174 : 76), 340);
+      const yT = 34 + gh + (portrait ? 44 : 58);
       tri = { xL: (w - side) / 2, xR: (w + side) / 2, yT: yT, yB: yT + side * 0.866 };
       tri.xM = w / 2;
       const by = tri.yB + 74;
-      const sqS = Math.round(Math.min(132, (w - 28) * 0.36));
+      const sqS = Math.round(Math.min(portrait ? 104 : 132, (w - 28) * 0.36));
       bars = { x0: 22, x1: w - 14 - sqS - 30, y0: by + 24, y1: by + 24 + sqS - 10 };
       sq = { x: w - 14 - sqS, y: by + 4, s: sqS };
-      h = Math.max(bars.y1, sq.y + sqS) + 40;
+      h = Math.max(bars.y1, sq.y + sqS) + (portrait ? 32 : 40);
     }
     const s = fit(cv, ctx, h);
     W1 = s.w; H1 = s.h;
