@@ -228,7 +228,7 @@
       if (axisKey !== ak) { axisKey = ak; buildAxis(); }
       const sk = state.lat + '|' + ak;
       if (siteKey !== sk) { siteKey = sk; buildSite(); }
-      const tk = [state.field, state.G, state.dp, D.ver, parcelsKey()].join('|');
+      const tk = [state.field, state.G, state.dp, state.sigma, D.ver, parcelsKey()].join('|');
       const t = now || performance.now();
       if (texKey !== tk && (t - lastTex > 90 || !state.running)) {
         texKey = tk; lastTex = t;

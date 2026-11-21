@@ -15,9 +15,9 @@ const byId = id => missions.find(m => m.id === 'greenhouse-' + id);
 const SNOW = 0.95, EQ_N = 0.05, DEF_EPS = 0.779;
 /** 模擬頁面：滑桿值（與 readSliders 相同的換算）、溫度、路徑 */
 function page(o) {
-  const s = Object.assign({ sun: 100, co2: 280, eps: DEF_EPS, alb: 0.3, wv: false, ice: false, T: 288 }, o);
+  const s = Object.assign({ sun: 100, co2: 280, eps: DEF_EPS, alb: 0.3, depth: K.MIXED_DEPTH, wv: false, ice: false, T: 288 }, o);
   s.t = 0; s.pathMax = s.pathMin = s.T; s.wasSnow = false;
-  s.P = function () { return { S: s.sun / 100, co2: s.co2, eps0: Math.abs(s.eps - DEF_EPS) < 1e-9 ? K.EPS0 : s.eps, alpha0: s.alb, wv: s.wv, ice: s.ice }; };
+  s.P = function () { return { S: s.sun / 100, co2: s.co2, eps0: Math.abs(s.eps - DEF_EPS) < 1e-9 ? K.EPS0 : s.eps, alpha0: s.alb, depth: s.depth, wv: s.wv, ice: s.ice }; };
   s.track = function () {
     s.pathMax = Math.max(s.pathMax, s.T); s.pathMin = Math.min(s.pathMin, s.T);
     const P = s.P(); if (P.ice && K.iceFraction(P, s.T) >= SNOW) s.wasSnow = true;
@@ -28,7 +28,7 @@ function page(o) {
 function snapshot(s) {
   const P = s.P(), f = K.flows(P, s.T), Teq = K.settle(P, s.T), base = K.baseline(P);
   return {
-    S: s.sun, co2: s.co2, eps0: P.eps0, alpha0: s.alb, wv: s.wv, ice: s.ice, T: s.T, N: f.N, Teq: Teq, base: base,
+    S: s.sun, co2: s.co2, eps0: P.eps0, alpha0: s.alb, depth: s.depth, wv: s.wv, ice: s.ice, T: s.T, N: f.N, Teq: Teq, base: base,
     dT: base != null ? s.T - base : null, dTeq: base != null && Teq != null ? Teq - base : null,
     eq: Math.abs(f.N) < EQ_N && Teq != null && Math.abs(Teq - s.T) < 0.05, eps: f.eps, alpha: f.alpha,
     iceFrac: K.iceFraction(P, s.T), iceLat: K.iceLatitude(P, s.T), snow: P.ice && K.iceFraction(P, s.T) >= SNOW,

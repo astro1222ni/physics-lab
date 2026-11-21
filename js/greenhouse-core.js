@@ -26,7 +26,9 @@
   const CO2_0 = 280;                    // 工業革命前的 CO₂（ppm）
   const F_CO2 = 5.35;                   // CO₂ 強迫係數（W/m²）
   const WV = 1.8;                       // 水氣回饋（W/m²/K）
-  const HEAT = 1025 * 3990 * 50;        // 熱容量：50 m 海洋混合層（J m⁻² K⁻¹）
+  const MIXED_DEPTH = 50;               // 預設海洋混合層深度（m）
+  const VOLUME_HEAT = 1025 * 3990;      // 海水單位體積熱容量（J/(m^3 K)）
+  const HEAT = VOLUME_HEAT * MIXED_DEPTH;
   const YEAR = 365.25 * 86400;
   const ICE = { Tm: 265, w: 10, ai: 0.62 };
   // 冰反照率曲線的係數：α(288) = 0.30、α(冷極限) = 0.62
@@ -40,7 +42,7 @@
   const EPS0 = 2 * (1 - Math.pow(bareTemp(1, ALPHA0) / T0, 4));
 
   function forcing(co2) { return F_CO2 * Math.log(Math.max(1e-6, co2) / CO2_0); }
-  /** P = { S（亮度比例，1 = 現在）, co2（ppm）, eps0, alpha0, wv（水氣回饋）, ice（冰反照率回饋） } */
+  /** P = { S（亮度比例，1 = 現在）, co2（ppm）, eps0, alpha0, wv（水氣回饋）, ice（冰反照率回饋）, depth（混合層深度，m） } */
   function albedo(P, T) { return P.ice ? ICE_A - ICE_B * Math.tanh((T - ICE.Tm) / ICE.w) : P.alpha0; }
   function epsilon(P, T) {
     let e = P.eps0 + 2 * forcing(P.co2) / (SIGMA * Math.pow(T0, 4));
@@ -110,7 +112,8 @@
   }
   /** 四階 Runge–Kutta：dT/dt = N/C */
   function step(P, T, dt) {
-    const f = function (x) { return imbalance(P, x) / HEAT; };
+    const capacity = Number.isFinite(P.depth) && P.depth > 0 ? VOLUME_HEAT * P.depth : HEAT;
+    const f = function (x) { return imbalance(P, x) / capacity; };
     const k1 = f(T), k2 = f(T + k1 * dt / 2), k3 = f(T + k2 * dt / 2), k4 = f(T + k3 * dt);
     return T + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
   }
@@ -131,7 +134,7 @@
   function baseline(P) { return settle(Object.assign({}, P, { co2: CO2_0 }), T0); }
 
   return {
-    SIGMA: SIGMA, S0: S0, T0: T0, ALPHA0: ALPHA0, CO2_0: CO2_0, F_CO2: F_CO2, WV: WV, HEAT: HEAT, YEAR: YEAR,
+    SIGMA: SIGMA, S0: S0, T0: T0, ALPHA0: ALPHA0, CO2_0: CO2_0, F_CO2: F_CO2, WV: WV, HEAT: HEAT, MIXED_DEPTH: MIXED_DEPTH, YEAR: YEAR,
     EPS0: EPS0, ICE: ICE, ALPHA_WARM: ALPHA_WARM,
     bareTemp: bareTemp, forcing: forcing, albedo: albedo, epsilon: epsilon, asr: asr, olr: olr, imbalance: imbalance,
     iceFraction: iceFraction, iceLatitude: iceLatitude, flows: flows, slope: slope, equilibria: equilibria, settle: settle,

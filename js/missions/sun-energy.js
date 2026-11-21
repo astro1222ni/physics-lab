@@ -81,8 +81,8 @@
     {
       id: 'sun-energy-9', level: 5,
       title: { zh: '量得準', en: 'An honest measurement' },
-      desc: { zh: '曬完一次，用水溫算出的照度要達到真正地面照度的 95 % 以上。', en: 'Finish a measurement in which the irradiance worked out from the water temperature is at least 95 % of the true irradiance on the ground.' },
-      check: function (ev) { const d = runOf(ev, 'ground'); return !!d && d.Iest >= 0.95 * d.Ig; }
+      desc: { zh: '曬完一次，用水溫算出的照度要達到盒面實際收到的直射通量的 95 % 以上。', en: 'Finish a measurement in which the irradiance worked out from the water temperature is at least 95 % of the actual direct irradiance on the pan.' },
+      check: function (ev) { const d = runOf(ev, 'ground'); return !!d && d.Ipan > 0 && d.Iest >= 0.95 * d.Ipan; }
     },
     {
       id: 'sun-energy-10', level: 5,

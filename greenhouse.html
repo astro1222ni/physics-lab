@@ -198,9 +198,11 @@
           <h2 data-en="Sun and surface">太陽與地表</h2>
           <div class="slider"><label for="sun" data-en="Brightness of the Sun (% of today)">太陽亮度（今天＝100%）</label><output></output>
             <input id="sun" type="range" min="70" max="140" step="0.5" value="100" data-decimals="2"></div>
-          <p class="hint" id="sunHint">—</p>
           <div class="slider" id="albWrap"><label for="alb" data-en="Albedo α (fraction of sunlight reflected)">反照率 α（反射掉的陽光比例）</label><output></output>
             <input id="alb" type="range" min="0" max="0.9" step="0.01" value="0.3" data-decimals="3"></div>
+          <div class="slider"><label for="mixedDepth" data-en="Mixed-layer depth (m)">混合層深度（m）</label><output></output>
+            <input id="mixedDepth" type="range" min="5" max="200" step="1" value="50" data-decimals="0"></div>
+          <p class="hint" id="sunHint">—</p>
           <p class="hint" id="albHint" hidden>—</p>
         </section>
         <section class="card" data-deck="溫室氣體|Greenhouse gases" data-deck-order="0">
@@ -272,7 +274,7 @@
       <ul>
         <li data-en-html="A zero-dimensional (global-mean) energy-balance model with one atmospheric layer in radiative equilibrium (\(T_a = T_s/2^{1/4}\)); the atmosphere absorbs no sunlight. \(\varepsilon = \varepsilon_0 + 2\Delta F/(\sigma T_0^4)\), so that CO<sub>2</sub> produces exactly the forcing \(\Delta F\) at 288 K.">零維（全球平均）能量平衡模型，大氣是一層處於輻射平衡的氣層（\(T_a = T_s/2^{1/4}\)），不吸收陽光。\(\varepsilon = \varepsilon_0 + 2\Delta F/(\sigma T_0^4)\)，讓 CO<sub>2</sub> 在 288 K 時剛好產生輻射強迫 \(\Delta F\)。</li>
         <li data-en-html="Water-vapour feedback: \(\varepsilon\) grows with temperature so that it adds 1.8 W/m&lt;sup&gt;2&lt;/sup&gt; per kelvin. Ice-albedo feedback: \(\alpha(T)\) changes smoothly from 0.30 (288 K) to 0.62 (fully frozen); the ice edge is the latitude whose polar caps cover that ice fraction.">水氣回饋：\(\varepsilon\) 隨溫度增加，每升高 1 K 多留住 1.8 W/m<sup>2</sup>。冰反照率回饋：\(\alpha(T)\) 從 0.30（288 K）平滑變到 0.62（全部結冰）；冰緣緯度是兩極冰帽面積剛好等於結冰比例的緯度。</li>
-        <li data-en-html="Heat capacity: a 50 m ocean mixed layer, \(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\), integrated by fourth-order Runge–Kutta. The deep ocean, clouds and the uneven distribution of heat over the globe are left out, so real warming is slower and its details differ.">熱容量：50 m 深的海洋混合層，\(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\)，用四階 Runge–Kutta 積分。沒有深海、雲與熱量在地球上的不均勻分布，所以真實的暖化比較慢，細節也不同。</li>
+        <li data-en-html="Heat capacity: by default a 50 m ocean mixed layer, \(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\), integrated by fourth-order Runge–Kutta. A deeper layer warms or cools more slowly for the same imbalance but reaches the same equilibrium. Changing the depth starts a new temperature timeline at the current temperature. This single-layer approximation omits deep-ocean heat exchange, clouds and the uneven distribution of heat, so it cannot capture the slow adjustment of the deep ocean.">熱容量：預設為 50 m 深的海洋混合層，\(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\)，用四階 Runge–Kutta 積分。收支不平衡量相同時，混合層越深，升降溫越慢，最後的平衡溫度則相同。改深度會以當下溫度重啟計時和溫度曲線。這是單層近似，略去與深海的熱交換、雲和熱量分布不均，因此無法呈現深海的緩慢調適。</li>
         <li data-en-html="3D globe: Earth image NASA Blue Marble (public domain); the three.js library (MIT license) is downloaded only when you switch to 3D.">3D 地球：地球影像為 NASA Blue Marble（公有領域）；three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
 

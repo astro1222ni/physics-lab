@@ -13,10 +13,10 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { rad: $('rad'), temp: $('temp'), mass: $('mass'), dist: $('dist'), alt: $('alt'), tau: $('tau'), alpha: $('alpha'), mw: $('mw'), dur: $('dur'), frac: $('frac') };
+  const el = { rad: $('rad'), temp: $('temp'), mass: $('mass'), dist: $('dist'), alt: $('alt'), incidence: $('incidence'), tau: $('tau'), alpha: $('alpha'), mw: $('mw'), dur: $('dur'), frac: $('frac') };
   const state = {
     mode: 'flux', star: 'sun', R: 1, T: 5772, M: 1, d: 1,
-    h: 60, tau: 0.3, alpha: 0.95, mw: 0.2, dur: 600, f: 0.1,
+    h: 60, incidence: 0, tau: 0.3, alpha: 0.95, mw: 0.2, dur: 600, f: 0.1,
     chart: { flux: 'a', ground: 'a', fusion: 'a' },
     run: { flux: null, ground: null, fusion: null },
     recs: [], acted: false, clock: 0
@@ -43,6 +43,7 @@
     state.M = Math.max(0.08, Math.min(50, val(el.mass)));
     state.d = Math.max(0.01, Math.min(50, val(el.dist)));
     state.h = Math.max(2, Math.min(90, val(el.alt)));
+    state.incidence = val(el.incidence);
     state.tau = Math.max(0.05, Math.min(1, val(el.tau)));
     state.alpha = Math.max(0.5, Math.min(1, val(el.alpha)));
     state.mw = Math.max(50, Math.min(1000, val(el.mw))) / 1000;
@@ -57,15 +58,15 @@
   function S() { return inside() ? null : SC.flux(L(), state.d); }
   let panRes = null, panKey = '';
   function P() {
-    const k = [state.h, state.tau, state.alpha, state.mw, state.dur].join('|');
-    if (!panRes || k !== panKey) { panRes = SC.pan({ S: SC.S0, h: state.h, tau: state.tau, alpha: state.alpha, mw: state.mw, dur: state.dur }); panKey = k; }
+    const k = [state.h, state.incidence, state.tau, state.alpha, state.mw, state.dur].join('|');
+    if (!panRes || k !== panKey) { panRes = SC.pan({ S: SC.S0, h: state.h, incidence: state.incidence, tau: state.tau, alpha: state.alpha, mw: state.mw, dur: state.dur }); panKey = k; }
     return panRes;
   }
   /** 目前的混濁程度下的紀錄 → Langley 直線 */
-  function lgRecs() { return state.recs.filter(function (r) { return Math.abs(r.tau - state.tau) < 1e-9; }); }
+  function lgRecs() { return state.recs.filter(function (r) { return r.normalEst > 0 && Math.abs(r.tau - state.tau) < 1e-9; }); }
   function LG() {
     const rs = lgRecs();
-    const f = SC.langley(rs.map(function (r) { return { m: r.m, I: r.Iest }; }));
+    const f = SC.langley(rs.map(function (r) { return { m: r.m, I: r.normalEst }; }));
     if (!f) return null;
     const ms = rs.map(function (r) { return r.m; });
     return { n: rs.length, S0: f.S0, tau: f.tau, r2: f.r2, a: f.a, b: f.b, mMin: Math.min.apply(null, ms), mMax: Math.max.apply(null, ms) };
@@ -441,7 +442,7 @@
     g.beginPath(); g.arc(Lay.O.x, Lay.O.y, 40, Math.PI, Math.PI + rad); g.stroke();
     D.haloText(g, 'h = ' + num(h, 1) + '°', Lay.O.x - 50, Lay.O.y + 16, C.text, 'right', 'middle', '700 11.5px ' + FONT);
     g.restore();
-    // 水盒（對準太陽）
+    // 水盒（從正對太陽轉過指定的入射角）
     drawPan(g, Lay.O.x, Lay.O.y, rad);
     // 標籤
     pillIn(g, T('大氣外 ', 'Above the air ') + sig(SC.S0, 4) + ' W/m²', Math.max(10, Math.min(Lay.sceneW - 10, entry.x + (h > 60 ? 12 : 0))), entry.y - 10, C['se-ray'], h > 60 ? 'left' : 'center', '700 11.5px ' + FONT);
@@ -454,7 +455,7 @@
     g.strokeStyle = D.alpha(C.text, 0.7); g.lineWidth = 2;
     g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 14); g.stroke();
     g.save(); g.translate(x, y - 16);
-    g.rotate(-(Math.PI / 2 - rad)); // 盒面法線指向太陽
+    g.rotate(rad - Math.PI / 2 + state.incidence * Math.PI / 180);
     const w = 34, d = 9;
     D.roundRect(g, -w / 2, -d / 2, w, d, 2);
     g.fillStyle = C['se-pan']; g.fill();
@@ -774,9 +775,9 @@
   }
   /** Langley 圖：ln S 對大氣質量 */
   function chartLangley(g, W, H) {
-    const Fm = frame0(W, H), rs = state.recs, f = LG();
+    const Fm = frame0(W, H), rs = state.recs.filter(function (r) { return r.normalEst > 0; }), f = LG();
     const mMax = Math.max(4, Math.ceil(Math.max.apply(null, rs.map(function (r) { return r.m; }).concat([P().m])) + 0.5));
-    const vals = rs.map(function (r) { return r.Iest; }).concat([SC.S0 * 1.1]);
+    const vals = rs.map(function (r) { return r.normalEst; }).concat([SC.S0 * 1.1]);
     const lmin = Math.log(Math.max(1, Math.min.apply(null, vals) * 0.8)), lmax = Math.log(SC.S0 * 1.25);
     const xx = function (m) { return Fm.x0 + m / mMax * (Fm.x1 - Fm.x0); };
     const yy = function (I) { return Fm.y1 - (Math.log(I) - lmin) / (lmax - lmin) * (Fm.y1 - Fm.y0); };
@@ -798,11 +799,13 @@
     }
     rs.forEach(function (r) {
       const same = Math.abs(r.tau - state.tau) < 1e-9;
-      const x = xx(r.m), y = yy(r.Iest);
+      const x = xx(r.m), y = yy(r.normalEst);
       if (same) D.ball(g, x, y, 4.5, C['se-hot'], { shadow: false });
       else { g.strokeStyle = D.alpha(C.muted, 0.7); g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.stroke(); }
     });
-    if (!rs.length) D.haloText(g, T('還沒有紀錄：按「開始曬」量第一次', 'No measurements yet: press “Start” to measure'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.muted, 'center', 'middle', '12px ' + FONT);
+    if (!rs.length) D.haloText(g, state.recs.length
+      ? T('沒有可外推的直射光紀錄', 'No direct-light readings to extrapolate')
+      : T('還沒有紀錄：按「開始曬」量第一次', 'No measurements yet: press “Start” to measure'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.muted, 'center', 'middle', '12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 壽命：對數時間軸上的長條 */
@@ -872,7 +875,7 @@
     state.run[m] = { u: 0, playing: true, done: false, k: 0 };
     const snd = sound();
     if (m === 'flux') { setStatus(T('一道光從恆星表面出發…', 'A flash of light leaves the star…')); if (snd) snd.sweep({ from: 500, to: 1200, dur: 0.4, gain: 0.05 }); }
-    else if (m === 'ground') setStatus(T('水盒對準太陽開始曬，看水溫怎麼上升。', 'The pan faces the Sun; watch the water warm up.'));
+    else if (m === 'ground') setStatus(T('開始曬水盒，觀察這個入射角下的水溫。', 'Start the measurement and watch the water temperature at this incidence angle.'));
     else setStatus(T('核心裡，兩個質子撞在一起…', 'In the core, two protons collide…'));
     updateButtons(); afterChange(true); requestDraw();
   }
@@ -901,10 +904,10 @@
       setStatus(inside() ? T('這個距離在恆星的裡面。', 'This distance is inside the star.') : T('光走了 ', 'The light took ') + secs(SC.lightTime(state.d)) + T('，到這裡每平方公尺每秒收到 ', ' to get here; each square metre now receives ') + sig(S(), 3) + T(' 焦耳。', ' joules every second.'));
     } else if (m === 'ground') {
       const r = P();
-      state.recs.push({ h: state.h, m: r.m, tau: state.tau, alpha: state.alpha, mw: state.mw, dur: state.dur, Iest: r.Iest, Ig: r.Ig, dT: r.dT });
+      state.recs.push({ h: state.h, incidence: state.incidence, m: r.m, tau: state.tau, alpha: state.alpha, mw: state.mw, dur: state.dur, Iest: r.Iest, normalEst: r.normalEst, dT: r.dT });
       if (state.recs.length > 12) state.recs.shift();
       const f = LG();
-      setStatus(T('水溫上升 ', 'The water warmed by ') + num(r.dT, 2) + T(' °C；算出地面每平方公尺 ', ' °C, giving ') + sig(r.Iest, 3) + T(' W（實際 ', ' W per square metre on the ground (actually ') + sig(r.Ig, 3) + T(' W）。', ' W).') + (f ? T(' Langley 法外推：', ' Langley extrapolation: ') + sig(f.S0, 4) + ' W/m²' : T(' 換一個太陽高度再量一次，就能畫 Langley 圖。', ' Measure again at another sun altitude to start the Langley plot.')));
+      setStatus(T('水溫上升 ', 'The water warmed by ') + num(r.dT, 2) + T(' °C；算出盒面每平方公尺 ', ' °C, giving ') + sig(r.Iest, 3) + T(' W（實際 ', ' W per square metre on the pan (actual: ') + sig(r.Ipan, 3) + T(' W）。', ' W).') + (f ? T(' Langley 法外推：', ' Langley extrapolation: ') + sig(f.S0, 4) + ' W/m²' : T(' 換一個太陽高度再量一次，就能畫 Langley 圖。', ' Measure again at another sun altitude to start the Langley plot.')));
       updateLog();
     } else setStatus(T('4 個氫原子核變成 1 個氦原子核，少掉的 0.7 % 質量變成 26.73 MeV 的能量。太陽每秒要這樣做約 ', 'Four hydrogen nuclei became one helium nucleus; the missing 0.7 % of mass became 26.73 MeV. The Sun does this about ') + sci(SC.fusion(SC.LSUN).rate, 2) + T(' 次。', ' times every second.'));
     updateButtons(); updateReadouts();
@@ -926,7 +929,7 @@
       inside: inside(), S: Sv, Srel: Sv == null ? null : Sv / SC.S0, lam: SC.wien(state.T) * 1e9, tLight: SC.lightTime(state.d),
       nuCm2: inside() ? null : SC.nuFlux(Lw, state.d) * 1e-4,
       h: state.h, tau: state.tau, alpha: state.alpha, mw: state.mw * 1000, dur: state.dur / 60,
-      m: r.m, Ig: r.Ig, Iest: r.Iest, dT: r.dT, P: r.P, eqFrac: r.dT / (r.P / SC.PAN.K),
+      m: r.m, Ig: r.Ig, Iest: r.Iest, Ipan: r.Ipan, normalEst: r.normalEst, incidence: state.incidence, dT: r.dT, P: r.P, eqFrac: r.P > 0 ? r.dT / (r.P / SC.PAN.K) : null,
       lg: f ? { n: f.n, S0: f.S0, tau: f.tau, r2: f.r2, mMin: f.mMin, mMax: f.mMax } : null, nrec: state.recs.length,
       f: state.f, rate: fu.rate, dm: fu.dm, H: fu.H, tChem: t.chem, tGrav: t.grav, tNuc: t.nuc,
       chart: state.chart[state.mode], anim: !!(run && run.playing)
@@ -949,6 +952,7 @@
     setOut(el.mass, outNum(state.M, 0, state.M < 1 ? 3 : 2));
     setOut(el.dist, outNum(state.d, 0, state.d < 0.1 ? 4 : state.d < 10 ? 3 : 2));
     setOut(el.alt, outNum(state.h, 0, 1));
+    setOut(el.incidence, outNum(state.incidence, 0, 1));
     setOut(el.tau, num(state.tau, 2));
     setOut(el.alpha, num(state.alpha, 2));
     setOut(el.mw, String(Math.round(state.mw * 1000)));
@@ -989,14 +993,14 @@
       const r = P(), f = LG();
       setHTML('gEst', sig(r.Iest, 3) + ' <small>W/m²</small>');
       setHTML('gM', num(r.m, 2));
-      setHTML('gIg', sig(r.Ig, 3) + ' W/m²' + T('（', ' (') + num(100 * r.Ig / SC.S0, 0) + ' %' + T('）', ')'));
+      setHTML('gIg', sig(r.Ipan, 3) + ' W/m²' + T('（', ' (') + num(100 * r.Ipan / SC.S0, 0) + ' %' + T('）', ')'));
       setHTML('gDT', num(r.dT, 2) + ' °C');
       setHTML('gLoss', sig(r.Pend, 2) + ' W' + T('（吸收 ', ' (absorbing ') + sig(r.P, 3) + ' W' + T('）', ')'));
-      setHTML('gLg', f ? sig(f.S0, 4) + ' W/m²，τ ≈ ' + num(f.tau, 3) + T('（', ' (') + f.n + T(' 點）', ' points)') : T('同一個 τ 至少要兩種太陽高度', 'Needs two sun altitudes with the same τ'));
-      setHTML('cvHint', T('左邊：陽光從大氣外穿過空氣照到地面（大氣層的厚度誇大了很多）。太陽越低，穿過的空氣越多。黑色水盒一直對準太陽，右邊是盒裡的水溫。拖曳太陽可以改變高度。', 'Left: sunlight crossing the air down to the ground (the atmosphere is drawn far too thick). The lower the Sun, the more air it crosses. The black pan always faces the Sun; the thermometer shows its water. Drag the Sun to change its altitude.').replace('右邊', sideWide() ? '右邊' : '下面').replace('the thermometer', 'the thermometer'));
+      setHTML('gLg', f ? sig(f.S0, 4) + T(' W/m²，τ ≈ ', ' W/m², τ ≈ ') + num(f.tau, 3) + T('（', ' (') + f.n + T(' 點）', ' points)') : T('同一個 τ 至少要兩種太陽高度', 'Needs two sun altitudes with the same τ'));
+      setHTML('cvHint', T('左邊：陽光從大氣外穿過空氣照到地面（大氣層的厚度誇大了很多）。太陽越低，穿過的空氣越多。水盒和陽光的相對方向由入射角決定，右邊是盒裡的水溫。拖曳太陽可以改變高度。', 'Left: sunlight crossing the air down to the ground (the atmosphere is drawn far too thick). The lower the Sun, the more air it crosses. The incidence angle sets the pan’s orientation; the thermometer shows its water temperature. Drag the Sun to change its altitude.').replace('右邊', sideWide() ? '右邊' : '下面').replace('the thermometer', 'the thermometer'));
       setHTML('chartHint', state.chart.ground === 'a'
         ? T('紅線是水溫，虛線是完全不散熱時的水溫。水越熱散熱越多，曲線越來越平，所以量太久會低估太陽常數。', 'Red: the water temperature; dashed: with no heat loss at all. The hotter the water, the more heat it loses, so a long measurement underestimates.')
-        : T('同一個 τ 的紀錄（實心點）排成直線：ln S = ln S<sub>0</sub> − τm。直線延長到 m = 0，就是大氣頂端的陽光。空心點是其他 τ 的紀錄。', 'Measurements with the same τ (filled dots) lie on a line: ln S = ln S<sub>0</sub> − τm. Extend it to m = 0 for the sunlight at the top of the atmosphere. Hollow dots were taken with another τ.'));
+        : T('同一個 τ 的紀錄先換算到正入射（實心點），再擬合直線：ln S = ln S<sub>0</sub> − τm。直線延長到 m = 0，就是大氣頂端的陽光。空心點是其他 τ 的紀錄。', 'Measurements with the same τ (filled dots) are corrected to normal incidence before fitting: ln S = ln S<sub>0</sub> − τm. Extend it to m = 0 for the sunlight at the top of the atmosphere. Hollow dots were taken with another τ.'));
     } else {
       const fu = SC.fusion(Lw), t = lifes();
       setHTML('uRate', big(fu.rate, 3) + T(' 次', ''));
@@ -1016,7 +1020,7 @@
     const rs = state.recs;
     if (!rs.length) { setHTML('runlog', T('每量完一次會記在這裡。同一天（混濁程度不變）在不同的太陽高度多量幾次，就能畫 Langley 圖。', 'Each finished measurement is kept here. Measure at several sun altitudes on the same day (same haze) and draw the Langley plot.')); return; }
     setHTML('runlog', rs.slice().reverse().map(function (r) {
-      return 'h ' + num(r.h, 1) + '°、m ' + num(r.m, 2) + '、τ ' + num(r.tau, 2) + T('：', ': ') + '<b>' + sig(r.Iest, 3) + ' W/m²</b>' + T('（', ' (') + num(r.dur / 60, 1) + T(' 分鐘、', ' min, ') + Math.round(r.mw * 1000) + ' g）';
+      return 'h ' + num(r.h, 1) + '°, i ' + num(r.incidence, 1) + '°, m ' + num(r.m, 2) + ', τ ' + num(r.tau, 2) + T('：', ': ') + '<b>' + sig(r.Iest, 3) + ' W/m²</b>' + T('（', ' (') + num(r.dur / 60, 1) + T(' 分鐘、', ' min, ') + Math.round(r.mw * 1000) + ' g）';
     }).join('<br>'));
   }
   function updateButtons() {
@@ -1064,7 +1068,7 @@
   });
   el.dist.addEventListener('input', function () { acted(); readSliders(); cancelRun('flux'); refreshOutputs(); afterChange(); });
   el.dist.addEventListener('change', function () { afterChange(true); });
-  [el.alt, el.tau, el.alpha, el.mw, el.dur].forEach(function (inp) {
+  [el.alt, el.incidence, el.tau, el.alpha, el.mw, el.dur].forEach(function (inp) {
     inp.addEventListener('input', function () { acted(); readSliders(); cancelRun('ground'); refreshOutputs(); afterChange(); });
     inp.addEventListener('change', function () { afterChange(true); });
   });

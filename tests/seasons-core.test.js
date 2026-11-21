@@ -336,4 +336,17 @@ test('snapshot 讀數彼此一致', () => {
   assert.ok(!n.up && n.ratio === Infinity && n.I === 0);
 });
 
+test('同緯度與日期：往東 15° 約早 1 小時，UTC 偏移加 0.75 小時精確晚 45 分鐘', () => {
+  const site = at(TAIPEI, 172);
+  const base = C.riseSet(site, true);
+  const east = C.riseSet({ ...site, lon: site.lon + 15 }, true);
+  const eastZone = C.riseSet({ ...site, zone: site.zone + 0.75 }, true);
+  for (const key of ['rise', 'noon', 'set']) {
+    near(east[key] - base[key], -1, 0.003);
+    near(eastZone[key] - base[key], 0.75, 1e-9);
+  }
+  near(eastZone.len, base.len, 1e-9);
+  near(eastZone.noonAlt, base.noonAlt, 1e-9);
+});
+
 console.log(`\n${passed} 項通過`);

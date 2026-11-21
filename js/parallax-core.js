@@ -71,7 +71,8 @@
     return { pc: pc, ly: pc * LY_PER_PC, au: pc * AU_PER_PC, km: pc * AU_PER_PC * KM_PER_AU, lightYears: pc * LY_PER_PC };
   }
   /** 拉長基線：兩個觀測者相距 B（AU），恆星距離 d（pc）→ 角位移（″） */
-  function baselineShift(B, dpc) { return B / dpc; }
+  function effectiveBaseline(B, angle = 90) { return B * Math.sin(angle * Math.PI / 180); }
+  function baselineShift(B, dpc, angle) { return effectiveBaseline(B, angle) / dpc; }
 
   // ───── 量測 ─────
   /** 決定性的常態亂數（同一個種子、同一個序號永遠得到同一個值） */
@@ -172,7 +173,7 @@
   return {
     AU_PER_PC: AU_PER_PC, LY_PER_PC: LY_PER_PC, KM_PER_AU: KM_PER_AU, OBL: OBL,
     eqToEcl: eqToEcl, pmToEcl: pmToEcl, sunLon: sunLon, earthPos: earthPos, pfactor: pfactor, shiftAt: shiftAt,
-    apparent: apparent, distOf: distOf, baselineShift: baselineShift, gauss: gauss, photo: photo, solve: solve, fit: fit,
+    apparent: apparent, distOf: distOf, baselineShift: baselineShift, effectiveBaseline: effectiveBaseline, gauss: gauss, photo: photo, solve: solve, fit: fit,
     INSTRUMENTS: INSTRUMENTS, STARS: STARS, dateOf: dateOf
   };
 });

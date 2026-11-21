@@ -118,4 +118,17 @@ test('沒有水氣回饋時，950 ppm 的 CO₂ 就能融化雪球；有水氣�
   assert.ok(K.settle(P({ ice: true, wv: true, co2: 2000 }), 200) < 240);
 });
 
+test('混合層深度的兩端改變時間尺度，平衡溫度與原 50 m 模型相同', () => {
+  const base = P({ co2: 560 });
+  const shallow = { ...base, depth: 5 }, deep = { ...base, depth: 200 };
+  const t0 = 288, eq = K.settle(base, t0);
+  assert.strictEqual(K.step(base, t0, K.YEAR / 20), K.step({ ...base, depth: 50 }, t0, K.YEAR / 20));
+  assert.strictEqual(K.settle(shallow, t0), eq);
+  assert.strictEqual(K.settle(deep, t0), eq);
+  assert.ok(K.run(shallow, t0, 1) > K.run(deep, t0, 1));
+  // 深度乘 40、經過時間與積分步長一併乘 40，會到達同一個溫度。
+  near(K.run(shallow, t0, 0.3, 0.005), K.run(deep, t0, 12, 0.2), 1e-10);
+  near(K.run(deep, t0, 150), eq, 0.001);
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

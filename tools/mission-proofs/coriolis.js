@@ -27,12 +27,12 @@ function shot(o) {
 }
 
 // ---------- 地球上的風（與 stepParcels／milestones 相同；每一幀前進 frame 秒，4 小時／秒、60 fps 約 240 秒） ----------
-const DEF = { lat: 25, field: 'low', G: 1, dp: 20, k: 2, v0: 0, dir: 90, x: -400, y: 300 };
+const DEF = { lat: 25, field: 'low', G: 1, dp: 20, radius: K.SIGMA / 1000, k: 2, v0: 0, dir: 90, x: -400, y: 300 };
 function release(o, hoursMax, frame) {
   o = Object.assign({}, DEF, o);
   frame = frame || 240;
   const b = o.dir * K.DEG;
-  const c = K.parcel({ lat: o.lat, k: o.k * 1e-5, field: { type: o.field, G: o.G, dp: o.dp } }, o.x * 1e3, o.y * 1e3, o.v0 * Math.sin(b), o.v0 * Math.cos(b));
+  const c = K.parcel({ lat: o.lat, k: o.k * 1e-5, field: { type: o.field, G: o.G, dp: o.dp, sigma: o.radius * 1000 } }, o.x * 1e3, o.y * 1e3, o.v0 * Math.sin(b), o.v0 * Math.cos(b));
   const evs = [];
   const snap = () => { const d = K.snapshot(c); d.id = 1; evs.push({ type: 'parcel', data: d }); };
   const MAX_T = Math.min(240, hoursMax || 240) * 3600;

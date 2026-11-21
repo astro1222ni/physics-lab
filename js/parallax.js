@@ -16,7 +16,7 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { dist: $('dist'), beta: $('beta'), date: $('date'), base: $('base') };
+  const el = { dist: $('dist'), beta: $('beta'), date: $('date'), base: $('base'), baseAngle: $('baseAngle') };
   const STAR = {}; PC.STARS.forEach(function (s) { STAR[s.id] = s; });
   const INST = {}; PC.INSTRUMENTS.forEach(function (i) { INST[i.id] = i; });
   const BASES = [
@@ -28,7 +28,7 @@
   ];
   const state = {
     mode: 'orbit', star: 'proxima', d: 1 / STAR.proxima.p, beta: STAR.proxima.beta, lam: STAR.proxima.lam, pm: true,
-    t: 0, inst: 'bessel', fitPM: true, photos: [], k: 0, B: 2, base: 'orbit',
+    t: 0, inst: 'bessel', fitPM: true, photos: [], k: 0, B: 2, base: 'orbit', baseAngle: 90,
     chart: { orbit: 'a', measure: 'a', baseline: 'a' },
     run: { orbit: null, measure: null, baseline: null },
     acted: false
@@ -42,12 +42,14 @@
   function setSlider(inp, v) { quiet++; try { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; } finally { quiet--; } }
   /** 只讀改動的那幾個滑桿（預設恆星的精確值不被滑桿的顯示精度蓋掉） */
   function readSliders(keys) {
-    keys = keys || 'dbtB';
+    keys = keys || 'dbtBa';
     if (keys.indexOf('d') >= 0) state.d = Math.max(1, Math.min(10000, val(el.dist)));
     if (keys.indexOf('b') >= 0) state.beta = Math.max(-90, Math.min(90, val(el.beta)));
     if (keys.indexOf('t') >= 0) state.t = Math.max(0, Math.min(T_MAX, val(el.date)));
+    if (keys.indexOf('a') >= 0) state.baseAngle = val(el.baseAngle);
     if (keys.indexOf('B') >= 0) state.B = Math.max(3e-5, Math.min(200, val(el.base)));
   }
+  function baselineShift(B) { return PC.baselineShift(B, state.d, state.baseAngle); }
   function star() {
     const s = state.star ? STAR[state.star] : null, on = !!(s && state.pm);
     return { lam: state.lam, beta: state.beta, p: 1 / state.d, mux: on ? s.mux : 0, muy: on ? s.muy : 0 };
@@ -308,7 +310,10 @@
     spaceBox(g, b); bgStars(g, b, 30);
     const lb = Math.log10(state.B), frac = 0.08 + 0.82 * (lb + 4.5) / 6.801;
     const L = (b.w - 40) * frac, cx = b.x + b.w / 2, yb = b.y + b.h - 34, S = { x: cx, y: b.y + 58 };
-    const A = { x: cx - L / 2, y: yb }, B2 = { x: cx + L / 2, y: yb };
+    const gamma = state.baseAngle * Math.PI / 180;
+    const dx = L * Math.sin(gamma) / 2;
+    const dy = Math.min(L / 2, Math.max(0, (yb - S.y - 36) / 2)) * Math.cos(gamma);
+    const A = { x: cx - dx, y: yb - 2 * dy }, B2 = { x: cx + dx, y: yb };
     g.strokeStyle = D.alpha(C['px-star'], 0.8); g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(S.x, S.y); g.lineTo(B2.x, B2.y); g.stroke();
     g.strokeStyle = 'rgba(226,232,240,0.6)'; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(B2.x, B2.y); g.stroke(); g.setLineDash([]);
@@ -316,18 +321,18 @@
     D.ball(g, B2.x, B2.y, 5, '#cbd5e1', { shadow: false, glow: 0.3 });
     D.ball(g, S.x, S.y, 6, C['px-star'], { shadow: false, glow: 0.9 });
     sText(g, 'B = ' + sigAU(state.B), cx, yb + 16, '#e2e8f0', 'center', 'middle', '700 11.5px ' + FONT);
-    sText(g, T('觀測者 A', 'Observer A'), A.x, yb - 14, '#93c5fd', L < 140 ? 'right' : 'center', 'middle', '600 10.5px ' + FONT);
-    sText(g, T('觀測者 B', 'Observer B'), B2.x, yb - 14, '#e2e8f0', L < 140 ? 'left' : 'center', 'middle', '600 10.5px ' + FONT);
+    sText(g, T('觀測者 A', 'Observer A'), A.x, A.y - 14, '#93c5fd', dx < 70 ? 'right' : 'center', 'middle', '600 10.5px ' + FONT);
+    sText(g, T('觀測者 B', 'Observer B'), B2.x, B2.y - 14, '#e2e8f0', dx < 70 ? 'left' : 'center', 'middle', '600 10.5px ' + FONT);
     sText(g, starName() + '：' + pcTxt(state.d), S.x, S.y - 16, C['px-star'], 'center', 'middle', '700 11.5px ' + FONT);
     const a1 = Math.atan2(A.y - S.y, A.x - S.x), a2 = Math.atan2(B2.y - S.y, B2.x - S.x);
-    g.strokeStyle = C['px-path']; g.lineWidth = 1.6; g.beginPath(); g.arc(S.x, S.y, 30, a2, a1); g.stroke();
-    sText(g, 'θ = ' + ang(PC.baselineShift(state.B, state.d)), S.x, S.y + 46, C['px-path'], 'center', 'middle', '700 12px ' + FONT);
+    if (state.baseAngle > 0) { g.strokeStyle = C['px-path']; g.lineWidth = 1.6; g.beginPath(); g.arc(S.x, S.y, 30, a2, a1); g.stroke(); }
+    sText(g, 'θ = ' + ang(baselineShift(state.B)), S.x, S.y + 46, C['px-path'], 'center', 'middle', '700 12px ' + FONT);
     sText(g, T('角度與距離都不是真實比例', 'Angles and distances not to scale'), b.x + 8, b.y + 12, '#94a3b8', 'left', 'middle', '10.5px ' + FONT);
   }
   function sigAU(B) { return B >= 0.1 ? sig(B, 3) + ' AU' : sig(B * PC.KM_PER_AU, 3) + ' km'; }
   /** 兩個觀測者看到的視野（固定 2 角分寬） */
   function baseField(g, b, who, title) {
-    const r = Math.min(b.w, b.h) / 2 - 10, cx = b.x + b.w / 2, cy = b.y + b.h / 2 + 6, th = PC.baselineShift(state.B, state.d);
+    const r = Math.min(b.w, b.h) / 2 - 10, cx = b.x + b.w / 2, cy = b.y + b.h / 2 + 6, th = baselineShift(state.B);
     g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2);
     const sg = g.createRadialGradient(cx, cy - r * 0.3, r * 0.1, cx, cy, r);
     sg.addColorStop(0, C['px-space1']); sg.addColorStop(1, C['px-space0']); g.fillStyle = sg; g.fill(); g.clip();
@@ -514,13 +519,26 @@
       g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); g.setLineDash([]);
       D.haloText(g, T(INST[id].zh.replace(/（.*$/, ''), INST[id].en.replace(/ \(.*$/, '')), Fm.x0 + 6, y - 7, INST_COL[id], 'left', 'middle', '600 10px ' + FONT);
     });
+    if (state.baseAngle === 0) {
+      D.haloText(g, T('θ = 0，無法畫在對數軸上', 'θ = 0, outside the log scale'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.text, 'center', 'middle', '700 11px ' + FONT);
+      axisBox(g, Fm);
+      return;
+    }
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); g.clip();
-    g.strokeStyle = C['px-path']; g.lineWidth = 2.4; g.beginPath(); g.moveTo(xx(3e-5), yy(3e-5 / state.d)); g.lineTo(xx(200), yy(200 / state.d)); g.stroke();
+    g.strokeStyle = C['px-path']; g.lineWidth = 2.4; g.beginPath(); g.moveTo(xx(3e-5), yy(baselineShift(3e-5))); g.lineTo(xx(200), yy(baselineShift(200))); g.stroke();
     g.restore();
-    BASES.forEach(function (q) { D.ball(g, xx(q.B), yy(q.B / state.d), 3.5, C['px-path'], { shadow: false }); });
-    const x = xx(state.B), y = yy(PC.baselineShift(state.B, state.d));
+    BASES.forEach(function (q) {
+      const y = yy(baselineShift(q.B));
+      if (y >= Fm.y0 && y <= Fm.y1) D.ball(g, xx(q.B), y, 3.5, C['px-path'], { shadow: false });
+    });
+    const x = xx(state.B), y = yy(baselineShift(state.B));
+    if (y > Fm.y1) {
+      D.haloText(g, T('θ 低於圖表範圍', 'θ below chart range'), (Fm.x0 + Fm.x1) / 2, Fm.y1 - 14, C['px-meas'], 'center', 'middle', '700 11px ' + FONT);
+      axisBox(g, Fm);
+      return;
+    }
     D.ball(g, x, y, 6, C['px-meas'], { shadow: false, ring: '#ffffff' });
-    D.haloText(g, 'θ = ' + ang(PC.baselineShift(state.B, state.d)), x + (x > Fm.x1 - 100 ? -9 : 9), y + 12, C['px-meas'], x > Fm.x1 - 100 ? 'right' : 'left', 'middle', '700 11px ' + FONT);
+    D.haloText(g, 'θ = ' + ang(baselineShift(state.B)), x + (x > Fm.x1 - 100 ? -9 : 9), y + 12, C['px-meas'], x > Fm.x1 - 100 ? 'right' : 'left', 'middle', '700 11px ' + FONT);
     axisBox(g, Fm);
   }
 
@@ -581,7 +599,10 @@
       state.run.measure = null;
       measureStatus();
     } else {
-      setStatus(T('兩張照片裡，背景的星都在原地，只有 ', 'In the two photos the background stars stay put; only ') + starName() + T(' 跳了 ', ' jumps by ') + ang(PC.baselineShift(state.B, state.d)) + T('。', '.'));
+      const shift = baselineShift(state.B);
+      setStatus(shift === 0
+        ? T('基線平行視線，兩張照片裡的恆星位置相同。', 'The baseline is parallel to the line of sight, so the star appears in the same spot in both photos.')
+        : T('兩張照片裡，背景的星都在原地，只有 ', 'In the two photos the background stars stay put; only ') + starName() + T(' 跳了 ', ' jumps by ') + ang(shift) + T('。', '.'));
       state.run.baseline = null;
     }
     updateButtons(); updateReadouts();
@@ -629,7 +650,7 @@
       t: state.t, opp: opp, ellA: s.p, ellB: s.p * Math.abs(Math.sin(state.beta * Math.PI / 180)), nowX: s.p * pf.x, nowY: s.p * pf.y,
       inst: state.inst, sigma: sigma(), n: state.photos.length, span: ts.length ? Math.max.apply(null, ts) - Math.min.apply(null, ts) : 0, gap: ts.length === 2 ? Math.abs(ts[1] - ts[0]) : null, fitPM: state.fitPM,
       fp: f ? f.p : null, fsp: f ? f.sp : null, rel: f && f.p > 0 ? f.sp / f.p : null, err: f ? Math.abs(f.p / s.p - 1) : null,
-      B: state.B, base: state.base || '', theta: PC.baselineShift(state.B, state.d), ratio: PC.baselineShift(state.B, state.d) / (2 * s.p),
+      B: state.B, base: state.base || '', baseAngle: state.baseAngle, effectiveB: PC.effectiveBaseline(state.B, state.baseAngle), theta: baselineShift(state.B), ratio: baselineShift(state.B) / (2 * s.p),
       chart: state.chart[state.mode], anim: !!(run && run.playing)
     };
   }
@@ -648,6 +669,7 @@
     setOut(el.dist, outNum(state.d, 0, state.d < 10 ? 3 : state.d < 100 ? 2 : 1));
     setOut(el.beta, num(state.beta, 1));
     setOut(el.date, num(state.t, 3));
+    setOut(el.baseAngle, outNum(state.baseAngle, 0, 1));
     setOut(el.base, state.B < 0.001 ? sig(state.B, 3) : outNum(state.B, 0, state.B < 0.1 ? 5 : state.B < 10 ? 3 : 1));
     const pr = function (sel, attr, v) { document.querySelectorAll(sel).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute(attr) === String(v))); }); };
     pr('#modeSeg button', 'data-mode', state.mode);
@@ -703,15 +725,16 @@
         ? T('每個點是一張照片（直線是誤差 σ），實線是用最小平方法解出來的視差＋自行。', 'Each dot is a photo (bars: the error σ); solid lines are the least-squares fit of parallax and proper motion.')
         : T('青色是你量到的視差與誤差；綠線上的粉紅點是真正的值。', 'Cyan: your measured parallax with its error; the pink dot on the green line is the true value.'));
     } else {
-      const th = PC.baselineShift(state.B, state.d);
+      const th = baselineShift(state.B);
       setHTML('bTheta', 'θ = ' + ang(th));
       setHTML('bB', sigAU(state.B) + (state.B < 0.1 ? '（' + sig(state.B, 3) + ' AU）' : ''));
+      setHTML('bEffective', sig(PC.effectiveBaseline(state.B, state.baseAngle), 3) + ' AU');
       setHTML('bD', pcTxt(state.d));
       setHTML('bRatio', sig(th / (2 * s.p), 3) + T(' 倍', '×'));
       setHTML('bEye', th >= 60 ? T('看得出來（≥ 1 角分）', 'Yes (≥ 1 arcmin)') : T('看不出來（肉眼約 1 角分）', 'No (eye: about 1 arcmin)'));
-      setHTML('baseHint', T('兩個觀測者同時拍照，基線和恆星方向垂直。θ（″）= B（AU）÷ d（pc）。', 'Both observers photograph at the same moment, with the baseline perpendicular to the star. θ (″) = B (AU) ÷ d (pc).'));
+      setHTML('baseHint', T('夾角由視線量起。只有垂直視線的有效基線會造成角位移。', 'Measure the angle from the line of sight. Only the perpendicular baseline component produces a shift.'));
       setHTML('cvHint', T('兩個相距 B 的觀測者同時看同一顆恆星：它在背景前的位置差了 θ。按「閃爍比對」，在同一個視野輪流放兩張照片，會動的就是近的恆星。', 'Two observers a distance B apart look at the same star at the same time: against the background it appears shifted by θ. Press “Blink” to flick between the two photos in one field; the star that jumps is the nearby one.'));
-      setHTML('chartHint', T('θ 和 B 成正比（斜率 1）。虛線是肉眼、貝索與 Gaia 的精度；新視野號的 47 AU 基線讓比鄰星跳了半角分以上。', 'θ is proportional to B (slope 1). Dashed: the precision of the eye, Bessel and Gaia; New Horizons’ 47 AU baseline made Proxima jump by more than half an arcminute.'));
+      setHTML('chartHint', T('固定夾角時，非零的 θ 和 B 成正比。虛線是肉眼、貝索與 Gaia 的精度。', 'At a fixed angle, a nonzero θ is proportional to B. Dashed lines mark the precision of the eye, Bessel and Gaia.'));
     }
     cv.setAttribute('aria-label', starName() + '，' + pcTxt(state.d) + '，p = ' + ang(s.p));
   }
@@ -773,7 +796,8 @@
   });
   el.date.addEventListener('input', function () { if (quiet) return; acted(); readSliders('t'); const r = state.run[state.mode]; if (r && state.mode === 'orbit') state.run.orbit = null; updateButtons(); refreshOutputs(); afterChange(); });
   el.base.addEventListener('input', function () { if (quiet) return; acted(); readSliders('B'); state.base = ''; cancelRuns(); refreshOutputs(); afterChange(); });
-  [el.dist, el.beta, el.date, el.base].forEach(function (inp) { inp.addEventListener('change', function () { if (!quiet) afterChange(true); }); });
+  el.baseAngle.addEventListener('input', function () { if (quiet) return; acted(); readSliders('a'); cancelRuns(); refreshOutputs(); afterChange(); });
+  [el.dist, el.beta, el.date, el.base, el.baseAngle].forEach(function (inp) { inp.addEventListener('change', function () { if (!quiet) afterChange(true); }); });
   document.querySelectorAll('#pmSeg button').forEach(function (b) { b.addEventListener('click', function () { acted(); state.pm = b.getAttribute('data-pm') === 'on'; clearPhotos(); cancelRuns(); refreshOutputs(); afterChange(true); }); });
   document.querySelectorAll('#fitSeg button').forEach(function (b) { b.addEventListener('click', function () { acted(); state.fitPM = b.getAttribute('data-fit') === 'pm'; refreshOutputs(); if (state.photos.length) measureStatus(); afterChange(true); }); });
   document.querySelectorAll('#modeSeg button').forEach(function (b) {
@@ -822,7 +846,7 @@
           readSliders(dx && state.mode !== 'baseline' ? (dy ? 'tdB' : 't') : 'dB'); cancelRuns(); refreshOutputs(); afterChange();
           return true;
         },
-        describe: function () { return state.mode === 'baseline' ? 'B ' + sigAU(state.B) + '，θ ' + ang(PC.baselineShift(state.B, state.d)) : dateTxt(state.t) + '，' + pcTxt(state.d); }
+        describe: function () { return state.mode === 'baseline' ? 'B ' + sigAU(state.B) + '，θ ' + ang(baselineShift(state.B)) : dateTxt(state.t) + '，' + pcTxt(state.d); }
       }],
       onChange: function () { requestDraw(); }
     });

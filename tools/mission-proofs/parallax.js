@@ -16,7 +16,7 @@ const INST = {}; PC.INSTRUMENTS.forEach(i => { INST[i.id] = i; });
 const SEED = 1838;
 
 const rd = (v, n) => Math.round(v * Math.pow(10, n)) / Math.pow(10, n);
-const DEF = { mode: 'orbit', star: 'proxima', pm: true, t: 0, inst: 'bessel', fitPM: true, shots: [], B: 2, base: 'orbit', chart: 'a', anim: false };
+const DEF = { mode: 'orbit', star: 'proxima', pm: true, t: 0, inst: 'bessel', fitPM: true, shots: [], B: 2, baseAngle: 90, base: 'orbit', chart: 'a', anim: false };
 /** 連拍的日期 */
 const burst = (t, times) => { const out = []; const t0 = Math.min(t, 1); for (let r = 0; r < (times || 1); r++) for (let j = 0; j < 12; j++) out.push(t0 + 2 * j / 11); return out; };
 /** 頁面的狀態 → 事件。o.star 給代號就是預設恆星（精確值）；給 d、beta 就是自訂（照滑桿精度）。o.shots 是照片的日期（依序拍）。 */
@@ -29,13 +29,13 @@ function ev(o, type) {
   const sig = INST[o.inst].sigma, photos = o.shots.map((t, k) => PC.photo(st, t, sig, SEED, k));
   const f = photos.length ? PC.fit(photos, lam, beta, o.fitPM) : null, pf = PC.pfactor(lam, beta, o.t);
   let opp = PC.sunLon(o.t) - (lam + 180); opp = ((opp % 360) + 540) % 360 - 180;
-  const ts = o.shots, th = PC.baselineShift(o.B, d);
+  const ts = o.shots, th = PC.baselineShift(o.B, d, o.baseAngle);
   return { type: type || 'state', data: {
     mode: o.mode, star: o.star || '', d: d, p: st.p, beta: beta, lam: lam, pm: !!(st.mux || st.muy), mu: Math.hypot(st.mux, st.muy),
     t: o.t, opp: opp, ellA: st.p, ellB: st.p * Math.abs(Math.sin(beta * Math.PI / 180)), nowX: st.p * pf.x, nowY: st.p * pf.y,
     inst: o.inst, sigma: sig, n: photos.length, span: ts.length ? Math.max.apply(null, ts) - Math.min.apply(null, ts) : 0, gap: ts.length === 2 ? Math.abs(ts[1] - ts[0]) : null, fitPM: o.fitPM,
     fp: f ? f.p : null, fsp: f ? f.sp : null, rel: f && f.p > 0 ? f.sp / f.p : null, err: f ? Math.abs(f.p / st.p - 1) : null,
-    B: o.B, base: o.base || '', theta: th, ratio: th / (2 * st.p), chart: o.chart, anim: !!o.anim
+    B: o.B, baseAngle: o.baseAngle, effectiveB: PC.effectiveBaseline(o.B, o.baseAngle), base: o.base || '', theta: th, ratio: th / (2 * st.p), chart: o.chart, anim: !!o.anim
   } };
 }
 const hits = (id, e) => !!e && byId(id).check(e);
@@ -205,6 +205,16 @@ no('3', ev({ mode: 'orbit' }, 'run'), '播放一年不算');
   ex('h10', r && r.e, '火星軌道按鈕');
   no('h10', ev({ mode: 'baseline', B: 2 }), '地球軌道');
   no('h10', ev({ mode: 'orbit', B: 3.05 }), '不在拉長基線');
+}
+
+// 維持原達成例，再把同一條基線轉到與視線平行。
+for (const id of ['3', 'h1']) {
+  const e = examples[id];
+  if (e) {
+    const effectiveB = PC.effectiveBaseline(e.data.B, 0);
+    const theta = PC.baselineShift(e.data.B, e.data.d, 0);
+    no(id, { ...e, data: { ...e.data, baseAngle: 0, effectiveB, theta } }, '基線與視線平行');
+  }
 }
 
 // 動畫中不算

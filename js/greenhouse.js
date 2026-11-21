@@ -22,9 +22,9 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { sun: $('sun'), alb: $('alb'), co2: $('co2'), eps: $('eps') };
+  const el = { sun: $('sun'), alb: $('alb'), co2: $('co2'), eps: $('eps'), depth: $('mixedDepth') };
   const state = {
-    S: 1, co2: 280, eps0: K.EPS0, alpha0: 0.3, wv: false, ice: false,
+    S: 1, co2: 280, eps0: K.EPS0, alpha0: 0.3, depth: K.MIXED_DEPTH, wv: false, ice: false,
     T: 288, t: 0,                     // 地表溫度（K）、經過時間（年）
     running: false, speed: 5,         // 每秒幾年
     hist: [{ t: 0, T: 288 }],         // 溫度紀錄
@@ -32,13 +32,20 @@
     pathMax: 288, pathMin: 288, wasSnow: false,
     chart: 'time', acted: false
   };
-  function params() { return { S: state.S, co2: state.co2, eps0: state.eps0, alpha0: state.alpha0, wv: state.wv, ice: state.ice }; }
+  function params() { return { S: state.S, co2: state.co2, eps0: state.eps0, alpha0: state.alpha0, depth: state.depth, wv: state.wv, ice: state.ice }; }
   function readSliders() {
     state.S = val(el.sun) / 100;
     state.co2 = Math.max(1, val(el.co2));
     const e = val(el.eps);
     state.eps0 = Math.abs(e - DEF_EPS) < 1e-9 ? K.EPS0 : e;
     state.alpha0 = val(el.alb);
+    const depth = val(el.depth);
+    if (depth !== state.depth) {
+      state.depth = depth;
+      // 新熱容量從當下溫度另起一條時間曲線；輻射收支和遲滯路徑仍連續。
+      state.t = lastHist = eqTime = 0;
+      state.hist = [{ t: 0, T: state.T }];
+    }
   }
   function isSnow(P, Tk) { return P.ice && K.iceFraction(P, Tk) >= SNOW; }
   /** 目前狀態的完整數值（讀數、畫圖、任務事件共用） */
@@ -51,7 +58,7 @@
       roots = K.equilibria(P);
       baseline = K.baseline(P);
     }
-    const key = settings + '|' + state.T;
+    const key = settings + '|' + state.T + '|' + P.depth;
     if (cache && cacheKey === key) return cache;
     const f = K.flows(P, state.T);
     const Teq = K.settle(P, state.T, roots);
@@ -64,7 +71,7 @@
   function snapshot() {
     const c = now();
     return {
-      S: state.S * 100, co2: state.co2, eps0: state.eps0, alpha0: state.alpha0, wv: state.wv, ice: state.ice,
+      S: state.S * 100, co2: state.co2, eps0: state.eps0, alpha0: state.alpha0, depth: state.depth, wv: state.wv, ice: state.ice,
       T: state.T, N: c.f.N, Teq: c.Teq, base: c.base,
       dT: c.base != null ? state.T - c.base : null, dTeq: c.base != null && c.Teq != null ? c.Teq - c.base : null,
       eq: c.eq, eps: c.f.eps, alpha: c.f.alpha, iceFrac: c.iceFrac, iceLat: c.iceLat, snow: isSnow(c.P, state.T),
@@ -591,6 +598,7 @@
   // =====================================================================
   function refreshOutputs() {
     setOut(el.sun, outNum(state.S * 100, 1, 2));
+    setOut(el.depth, String(state.depth));
     setOut(el.co2, outNum(state.co2, 0, 1));
     setOut(el.eps, outNum(val(el.eps), 3, 3));
     setOut(el.alb, outNum(state.alpha0, 2, 3));

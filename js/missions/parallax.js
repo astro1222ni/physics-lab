@@ -43,7 +43,7 @@
       id: 'parallax-3', level: 2,
       title: { zh: '哪一顆在動', en: 'Which one moved' },
       desc: { zh: '在「拉長基線」按「閃爍比對」，看兩個觀測者拍到的恆星位置不一樣。', en: 'In “A longer baseline”, press “Blink” and see the star sit in a different place for the two observers.' },
-      check: function (ev) { return !!runOf(ev, 'baseline'); }
+      check: function (ev) { const d = runOf(ev, 'baseline'); return !!d && d.theta > 0; }
     },
     {
       id: 'parallax-4', level: 3,
@@ -105,8 +105,8 @@
       id: 'parallax-h1', level: 3, hidden: true,
       title: { zh: '一秒差距', en: 'One parsec' },
       riddle: { zh: '從那裡回頭看，地球和太陽只隔一秒。', en: 'Look back from there, and the Earth and the Sun are one second apart.' },
-      desc: { zh: '在「拉長基線」自訂一顆剛好在 1 pc 的恆星，基線剛好 1 AU（都在 0.2 % 內）：地球到太陽的距離從那裡看是 1″，這就是秒差距的定義。', en: 'In “A longer baseline”, make a custom star exactly 1 pc away and set the baseline to exactly 1 AU (both within 0.2 %): from there the Earth–Sun distance spans 1″, the definition of the parsec.' },
-      check: function (ev) { const d = mode(ev, 'baseline'); return !!d && d.star === '' && Math.abs(d.d - 1) <= 0.002 && Math.abs(d.B - 1) <= 0.002; }
+      desc: { zh: '在「拉長基線」自訂一顆剛好在 1 pc 的恆星，基線和有效基線都剛好是 1 AU（以上皆在 0.2 % 內）：地球到太陽的距離從那裡看是 1″，這就是秒差距的定義。', en: 'In “A longer baseline”, make a custom star exactly 1 pc away and set both the baseline and its perpendicular component to exactly 1 AU (all within 0.2 %): from there the Earth–Sun distance spans 1″, the definition of the parsec.' },
+      check: function (ev) { const d = mode(ev, 'baseline'); return !!d && d.star === '' && Math.abs(d.d - 1) <= 0.002 && Math.abs(d.B - 1) <= 0.002 && Math.abs(d.effectiveB - 1) <= 0.002; }
     },
     {
       id: 'parallax-h2', level: 4, hidden: true,

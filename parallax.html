@@ -214,6 +214,8 @@
             <h2 data-en="The baseline">基線</h2>
             <div class="slider"><label for="base" data-en="Distance between the observers B (AU)">兩個觀測者的距離 B（AU）</label><output></output>
               <input id="base" type="range" min="-4.5" max="2.301" step="0.001" value="0.301"></div>
+            <div class="slider"><label for="baseAngle" data-en="Baseline angle (°)">基線夾角（°）</label><output></output>
+              <input id="baseAngle" type="range" min="0" max="90" step="1" value="90" data-decimals="1"></div>
             <div class="presets" role="group" aria-label="常見的基線" data-en-aria-label="Common baselines" id="baseSeg"></div>
             <p class="hint" id="baseHint">—</p>
           </section>
@@ -222,6 +224,7 @@
             <p class="big-num" id="bTheta">—</p>
             <dl class="readout">
               <dt data-en="Baseline">基線</dt><dd id="bB">—</dd>
+              <dt data-en="Effective baseline">有效基線</dt><dd id="bEffective">—</dd>
               <dt data-en="Star distance">恆星的距離</dt><dd id="bD">—</dd>
               <dt data-en="Compared with a year on Earth (2p)">和地球半年比（2p）</dt><dd id="bRatio" class="big">—</dd>
               <dt data-en="Can the naked eye see it?">肉眼看得出來嗎</dt><dd id="bEye">—</dd>
@@ -234,13 +237,14 @@
     <section class="notes">
       <h2 data-en="The physics behind it">背後的物理</h2>
       <h3 data-en="Parallax and the parsec">視差與秒差距</h3>
-      <p data-en-html="Hold up a finger and look at it with one eye, then the other: it jumps against the background. The Earth’s orbit does the same for nearby stars. The <strong>parallax</strong> \(p\) is the angle that 1 AU (the Earth–Sun distance) makes as seen from the star; half a year apart the star is seen from two points 2 AU apart and shifts by \(2p\). For small angles">伸出一根手指，先用一隻眼睛看，再換另一隻：手指在背景前跳了一下。地球繞太陽轉，近的恆星也會這樣跳。<strong>視差</strong> \(p\) 是從恆星看過來，1 AU（日地距離）張開的角度；相隔半年，我們從相距 2 AU 的兩個地方看恆星，它移動了 \(2p\)。角度很小時：</p>
+      <p data-en-html="Hold up a finger and look at it with one eye, then the other: it jumps against the background. The Earth’s orbit does the same for nearby stars. The <strong>parallax</strong> \(p\) is the angle that 1 AU (the Earth–Sun distance) makes as seen from the star; half a year apart the star is seen from two points 2 AU apart and shifts by up to \(2p\). For small angles">伸出一根手指，先用一隻眼睛看，再換另一隻：手指在背景前跳了一下。地球繞太陽轉，近的恆星也會這樣跳。<strong>視差</strong> \(p\) 是從恆星看過來，1 AU（日地距離）張開的角度；相隔半年，我們從相距 2 AU 的兩個地方看恆星，它最多移動 \(2p\)。角度很小時：</p>
       <div class="formula">\[ d = \frac{1\ \mathrm{AU}}{\tan p} \approx \frac{1}{p\,[\mathrm{rad}]}\ \mathrm{AU}, \qquad d\,[\mathrm{pc}] = \frac{1}{p\,[\mathrm{arcsec}]} \]</div>
       <p data-en-html="One <strong>parsec</strong> (parallax of one arcsecond) is 206 265 AU, 3.26 light years or \(3.09\times10^{13}\) km. Even the nearest star, Proxima Centauri, has \(p = 0.768''\): the width of a coin seen from 5 km away.">1 <strong>秒差距</strong>（視差 1 角秒的距離）是 206 265 AU、3.26 光年，或 \(3.09\times10^{13}\) km。就連最近的恆星比鄰星，視差也只有 \(p = 0.768''\)：相當於從 5 公里外看一枚硬幣的寬度。</p>
       <h3 data-en="Why an ellipse">為什麼是橢圓</h3>
       <p data-en-html="The shift is the Earth’s position projected onto the sky, divided by the distance. In ecliptic coordinates (\(\lambda\), \(\beta\)) with the Sun at longitude \(\lambda_\odot\):">位移就是地球的位置投影到天空上、再除以距離。用黃道座標（黃經 \(\lambda\)、黃緯 \(\beta\)），太陽在黃經 \(\lambda_\odot\)：</p>
       <div class="formula">\[ \Delta\lambda\cos\beta = p\,\sin(\lambda_\odot - \lambda), \qquad \Delta\beta = -p\,\sin\beta\,\cos(\lambda_\odot - \lambda) \]</div>
       <p data-en-html="Over a year this is an ellipse with semi-major axis \(p\) and semi-minor axis \(p\,|\sin\beta|\): a circle at the ecliptic pole, a straight line on the ecliptic. Stars also drift across the sky (<strong>proper motion</strong>), so the real path is a wavy line; to separate the two you need photos spread over more than a year.">一年下來就是一個橢圓，半長軸 \(p\)、半短軸 \(p\,|\sin\beta|\)：在黃極是圓，在黃道上壓成一條直線段。恆星本身也在天空中慢慢移動（<strong>自行</strong>），所以真正的路徑是一條波浪線；要把兩者分開，照片得跨一年以上。</p>
+      <p data-en-html="In the two-observer view, only the component perpendicular to the line of sight contributes: \(B_\perp=B\sin\gamma\) for baseline angle \(\gamma\). In the small-angle approximation (\(B\ll d\)), \(\theta[\mathrm{arcsec}]\approx B_\perp[\mathrm{AU}]/d[\mathrm{pc}]\). Try \(0^\circ\) and \(90^\circ\) at the same distance.">雙站觀測時，只有垂直視線的基線分量 \(B_\perp=B\sin\gamma\) 造成視差，\(\gamma\) 是基線與視線的夾角。基線遠小於星距時，可用小角近似 \(\theta[\mathrm{arcsec}]\approx B_\perp[\mathrm{AU}]/d[\mathrm{pc}]\)。固定星距，試比 \(0^\circ\) 與 \(90^\circ\)。</p>
       <h3 data-en="Measuring it">量測</h3>
       <p data-en-html="Each photo gives the star’s position with an error \(\sigma\). With several photos we fit the five numbers \(x_0, y_0, \mu_x, \mu_y, p\) by least squares; the uncertainty of \(p\) shrinks like \(\sigma/\sqrt{N}\), and photos taken when the shift is largest count most. The relative error of the distance equals that of the parallax.">每一張照片給出恆星的位置，誤差 \(\sigma\)。有好幾張照片，就用最小平方法解出五個數 \(x_0, y_0, \mu_x, \mu_y, p\)；\(p\) 的誤差隨 \(\sigma/\sqrt{N}\) 變小，位移最大的時候拍的照片最有用。距離的相對誤差和視差的相對誤差一樣。</p>
       <h3 data-en="A short history">簡史</h3>

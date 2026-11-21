@@ -132,4 +132,18 @@ test('Langley 法：理想量測（全吸收、極短時間）外推回大氣外
   near(f.tau, 0.3, 0.03);
 });
 
+test('水盒 0°、60°、90°：正入射相容、投影減半、平行盒面無直射升溫', () => {
+  const opts = { S: S.S0, h: 30, tau: 0.3, alpha: 0.95, mw: 0.2, dur: 600 };
+  const normal = S.pan(opts);
+  const flat = S.pan({ ...opts, incidence: 90 - opts.h });
+  const edge = S.pan({ ...opts, incidence: 90 });
+  assert.strictEqual(S.pan({ ...opts, incidence: 0 }).Iest, normal.Iest);
+  near(flat.Ipan, normal.Ig / 2, 1e-9);
+  near(flat.dT, normal.dT / 2, 1e-12);
+  near(flat.normalEst, normal.Iest, 1e-9);
+  assert.strictEqual(edge.Ipan, 0);
+  assert.strictEqual(edge.dT, 0);
+  assert.strictEqual(edge.normalEst, null);
+});
+
 console.log(`sun-energy-core：${passed} 項通過`);

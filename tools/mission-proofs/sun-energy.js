@@ -15,9 +15,9 @@ const STAR = {};
 SC.STARS.forEach(s => { STAR[s.id] = s; });
 
 const rd = (v, n) => Math.round(v * Math.pow(10, n)) / Math.pow(10, n);
-const DEF = { mode: 'flux', star: 'sun', d: 1, h: 60, tau: 0.3, alpha: 0.95, mw: 200, dur: 10, f: 10, recs: [], anim: false, chart: 'a' };
+const DEF = { mode: 'flux', star: 'sun', d: 1, h: 60, incidence: 0, tau: 0.3, alpha: 0.95, mw: 200, dur: 10, f: 10, recs: [], anim: false, chart: 'a' };
 /** 一筆 Langley 紀錄（照頁面：曬完一次就記下 m、τ 與算出的照度） */
-function rec(o) { o = Object.assign({}, DEF, o); const r = SC.pan({ S: SC.S0, h: rd(o.h, 1), tau: rd(o.tau, 2), alpha: rd(o.alpha, 2), mw: Math.round(o.mw) / 1000, dur: rd(o.dur, 1) * 60 }); return { m: r.m, tau: rd(o.tau, 2), Iest: r.Iest }; }
+function rec(o) { o = Object.assign({}, DEF, o); const r = SC.pan({ S: SC.S0, h: rd(o.h, 1), incidence: rd(o.incidence, 1), tau: rd(o.tau, 2), alpha: rd(o.alpha, 2), mw: Math.round(o.mw) / 1000, dur: rd(o.dur, 1) * 60 }); return { m: r.m, tau: rd(o.tau, 2), Iest: r.Iest, normalEst: r.normalEst }; }
 /** 頁面的狀態 → 事件。o.star 給代號就套用預設恆星；自己調 R、T、M 時 star 是 ''。o.recs 是之前曬完的紀錄（recs 的設定）。 */
 function ev(o, type) {
   o = Object.assign({}, DEF, o);
@@ -25,13 +25,13 @@ function ev(o, type) {
   if (o.star) { const s = STAR[o.star]; R = s.R; T = s.T; M = s.M; }
   else { R = rd(o.R, 3); T = Math.round(o.T); M = rd(o.M == null ? 1 : o.M, 3); }
   const d = rd(o.d, 4), Lw = SC.lum(R, T), inside = d * SC.AU <= R * SC.RSUN, S = inside ? null : SC.flux(Lw, d);
-  const g = { h: rd(o.h, 1), tau: rd(o.tau, 2), alpha: rd(o.alpha, 2), mw: Math.round(o.mw), dur: rd(o.dur, 1) };
-  const r = SC.pan({ S: SC.S0, h: g.h, tau: g.tau, alpha: g.alpha, mw: g.mw / 1000, dur: g.dur * 60 });
+  const g = { h: rd(o.h, 1), incidence: rd(o.incidence, 1), tau: rd(o.tau, 2), alpha: rd(o.alpha, 2), mw: Math.round(o.mw), dur: rd(o.dur, 1) };
+  const r = SC.pan({ S: SC.S0, h: g.h, incidence: g.incidence, tau: g.tau, alpha: g.alpha, mw: g.mw / 1000, dur: g.dur * 60 });
   let recs = o.recs.map(x => rec(x));
-  if (type === 'run' && o.mode === 'ground') recs = recs.concat([{ m: r.m, tau: g.tau, Iest: r.Iest }]);
+  if (type === 'run' && o.mode === 'ground') recs = recs.concat([{ m: r.m, tau: g.tau, Iest: r.Iest, normalEst: r.normalEst }]);
   recs = recs.slice(-12);
-  const same = recs.filter(x => Math.abs(x.tau - g.tau) < 1e-9);
-  const f = SC.langley(same.map(x => ({ m: x.m, I: x.Iest })));
+  const same = recs.filter(x => x.normalEst > 0 && Math.abs(x.tau - g.tau) < 1e-9);
+  const f = SC.langley(same.map(x => ({ m: x.m, I: x.normalEst })));
   const ms = same.map(x => x.m);
   const fr = rd(o.f, 1) / 100, t = SC.lifetimes(Lw, M, R, fr), fu = SC.fusion(Lw);
   return { type: type || 'state', data: {
@@ -39,7 +39,7 @@ function ev(o, type) {
     inside: inside, S: S, Srel: S == null ? null : S / SC.S0, lam: SC.wien(T) * 1e9, tLight: SC.lightTime(d),
     nuCm2: inside ? null : SC.nuFlux(Lw, d) * 1e-4,
     h: g.h, tau: g.tau, alpha: g.alpha, mw: g.mw, dur: g.dur,
-    m: r.m, Ig: r.Ig, Iest: r.Iest, dT: r.dT, P: r.P, eqFrac: r.dT / (r.P / SC.PAN.K),
+    m: r.m, Ig: r.Ig, Iest: r.Iest, Ipan: r.Ipan, normalEst: r.normalEst, incidence: g.incidence, dT: r.dT, P: r.P, eqFrac: r.P > 0 ? r.dT / (r.P / SC.PAN.K) : null,
     lg: f ? { n: same.length, S0: f.S0, tau: f.tau, r2: f.r2, mMin: Math.min.apply(null, ms), mMax: Math.max.apply(null, ms) } : null, nrec: recs.length,
     f: fr, rate: fu.rate, dm: fu.dm, H: fu.H, tChem: t.chem, tGrav: t.grav, tNuc: t.nuc,
     chart: o.chart, anim: !!o.anim
@@ -235,6 +235,17 @@ hidIds.forEach(function (id) {
   e.type = 'state'; e.data.anim = true;
   const f = fired(e).filter(id => ['11', '12', 'h4', 'h7', 'h8'].indexOf(id) >= 0);
   expect('地面動畫播放中，Langley 與 h4 都不算', f.length === 0, f.join(','));
+}
+// 用同一筆達成例比較盒面投影，零通量不構成量測成功。
+{
+  const e = examples['9'];
+  if (e) {
+    for (const incidence of [60, 90]) {
+      const projection = incidence === 90 ? 0 : Math.cos(incidence * Math.PI / 180);
+      const next = { ...e, data: { ...e.data, incidence, Ipan: e.data.Ig * projection, Iest: e.data.Iest * projection } };
+      expect('9 入射角 ' + incidence + '° 的判定正確', hits('9', next) === (incidence === 60));
+    }
+  }
 }
 // 等級分布
 {

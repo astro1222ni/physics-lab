@@ -215,7 +215,7 @@
     const s = p.s, F = p.P.field;
     const vg = geostrophicSpeed(F, s.x, s.y, p.P.lat);
     return {
-      t: p.t / 3600, lat: p.P.lat, k: p.P.k * 1e5, field: F.type, G: F.G, dp: F.dp,
+      t: p.t / 3600, lat: p.P.lat, k: p.P.k * 1e5, field: F.type, G: F.G, dp: F.dp, sigma: (F.sigma || SIGMA) / 1000,
       speed: Math.hypot(s.u, s.v), vg: isFinite(vg) ? vg : null, v0: p.v0,
       alpha: crossAngle(F, s), deflect: deflection(F, s),
       r: Math.hypot(s.x, s.y) / 1e3, r0: p.r0 / 1e3, minR: p.minR / 1e3,

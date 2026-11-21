@@ -86,14 +86,19 @@
   function ground(S, tau, h) { return S * Math.exp(-tau * airMass(h)); }
   /**
    * 黑色水盒的實驗。opt：{ S（大氣外，W/m^2）, h（度）, tau, alpha（吸收率）, mw（水 kg）, dur（s）}
-   * 傳回 { m, Ig（地面照度）, P（吸收功率 W）, Cth（J/K）, dT（°C）, Iest（學生算的 CΔT/(A·t)）, Tend, Pend（結束時的散熱 W）, Tat(t) }
+   * 傳回 { m, Ig（地面直射光的法向通量）, Ipan（盒面收到的直射通量）, projection（投影比例）, normalEst（換算至法向的估計）, P（吸收功率 W）, Cth（J/K）, dT（°C）, Iest（學生算的 CΔT/(A·t)）, Tend, Pend（結束時的散熱 W）, Tat(t) }
    */
   function pan(opt) {
     const m = airMass(opt.h), Ig = opt.S * Math.exp(-opt.tau * m);
-    const P = opt.alpha * Ig * PAN.A, Cth = opt.mw * PAN.CW + PAN.CPAN;
+    const incidence = opt.incidence ?? 0;
+    const projection = incidence >= 90 ? 0 : Math.cos(incidence * Math.PI / 180);
+    const Ipan = Ig * projection;
+    const P = opt.alpha * Ig * PAN.A * projection, Cth = opt.mw * PAN.CW + PAN.CPAN;
     const Tat = function (t) { return PAN.TAIR + P / PAN.K * (1 - Math.exp(-PAN.K * t / Cth)); };
     const dT = Tat(opt.dur) - PAN.TAIR;
-    return { m: m, Ig: Ig, P: P, Cth: Cth, dT: dT, Iest: Cth * dT / (PAN.A * opt.dur), Tend: PAN.TAIR + dT, Pend: PAN.K * dT, Tat: Tat };
+    const Iest = Cth * dT / (PAN.A * opt.dur);
+    return { m: m, Ig: Ig, Ipan: Ipan, projection: projection, P: P, Cth: Cth, dT: dT, Iest: Iest,
+      normalEst: projection > 0 ? Iest / projection : null, Tend: PAN.TAIR + dT, Pend: PAN.K * dT, Tat: Tat };
   }
   /** Langley 法：pts = [{ m, I }]，ln I = a − τm 的最小平方直線 → { S0（m = 0 的外推值）, tau, r2 }；少於兩個不同的 m 時傳回 null */
   function langley(pts) {

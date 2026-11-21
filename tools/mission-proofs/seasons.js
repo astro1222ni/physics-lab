@@ -32,7 +32,7 @@ function data(p) {
   };
   const s = C.snapshot(o);
   return Object.assign({}, s, {
-    loc: L && (p.lat == null || p.lat === L[0]) ? p.loc : 'custom', season: seasonOf(o.day, o.zone), realTilt: Math.abs(o.eps - REAL) < 0.005,
+    loc: L && o.lat === L[0] && o.lon === L[1] && o.zone === L[2] ? p.loc : 'custom', season: seasonOf(o.day, o.zone), realTilt: Math.abs(o.eps - REAL) < 0.005,
     mode: p.mode || 'day', playing: !!p.playing
   }, p.extra || {});
 }

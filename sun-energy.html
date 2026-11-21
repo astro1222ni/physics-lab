@@ -185,13 +185,14 @@
         </div>
 
         <div id="groundPanel" hidden>
-          <section class="card" data-deck="太陽與天空|Sun and sky" data-deck-order="2">
-            <h2 data-en="Sun and sky">太陽與天空</h2>
+          <section class="card" data-deck="日照與水盒|Sunlight and pan" data-deck-order="2">
+            <h2 data-en="Sunlight and the 10 cm × 10 cm pan">日照與 10 cm × 10 cm 水盒</h2>
             <div class="slider"><label for="alt" data-en="Sun’s altitude h (°)">太陽高度角 h（°）</label><output></output>
               <input id="alt" type="range" min="2" max="90" step="0.5" value="60" data-decimals="1"></div>
             <div class="slider"><label for="tau" data-en="Haze: optical depth τ">空氣的混濁程度：光學厚度 τ</label><output></output>
               <input id="tau" type="range" min="0.05" max="1" step="0.01" value="0.3" data-decimals="2"></div>
-            <h2 data-en="Black water pan (10 cm × 10 cm, facing the Sun)" style="margin-top:10px">黑色水盒（10 cm × 10 cm，對準太陽）</h2>
+            <div class="slider"><label for="incidence" data-en="Incidence angle (°)">入射角（°）</label><output></output>
+              <input id="incidence" type="range" min="0" max="90" step="1" value="0" data-decimals="1"></div>
             <div class="slider"><label for="alpha" data-en="Absorptivity of the black paint α">黑漆的吸收率 α</label><output></output>
               <input id="alpha" type="range" min="0.5" max="1" step="0.01" value="0.95" data-decimals="2"></div>
             <div class="slider"><label for="mw" data-en="Water (g)">水（g）</label><output></output>
@@ -204,7 +205,7 @@
             <p class="big-num" id="gEst">—</p>
             <dl class="readout">
               <dt data-en="Air mass m">大氣質量 m</dt><dd id="gM">—</dd>
-              <dt data-en="Actual sunlight on the ground">地面上實際的陽光</dt><dd id="gIg" class="big">—</dd>
+              <dt data-en="Direct irradiance on the pan">盒面上的直射通量</dt><dd id="gIg" class="big">—</dd>
               <dt data-en="Water warmed by">水溫上升</dt><dd id="gDT">—</dd>
               <dt data-en="Heat lost at the end">結束時的散熱</dt><dd id="gLoss">—</dd>
               <dt data-en="Langley extrapolation">Langley 法外推</dt><dd id="gLg" class="big">—</dd>
@@ -253,12 +254,13 @@
       <div class="formula">\[ S = \frac{L}{4\pi d^2} \]</div>
       <p data-en-html="At \(d = 1\ \mathrm{AU}\) this is the <strong>solar constant</strong>, about \(1361\ \mathrm{W/m^2}\) (measured from satellites, Kopp &amp; Lean 2011). Twice as far, the same light covers four times the area. The brightest wavelength follows Wien’s law \(\lambda_{\max} = b/T\), \(b = 2.898\times10^{-3}\ \mathrm{m\cdot K}\): about 500 nm for the Sun.">\(d = 1\ \mathrm{AU}\) 時就是<strong>太陽常數</strong>，約 \(1361\ \mathrm{W/m^2}\)（人造衛星量的值，Kopp 與 Lean，2011）。距離 2 倍，同樣的光攤在 4 倍的面積上。輻射最強的波長照維恩位移定律 \(\lambda_{\max} = b/T\)，\(b = 2.898\times10^{-3}\ \mathrm{m\cdot K}\)：太陽約 500 nm。</p>
       <h3 data-en="Measuring it from the ground">在地面量太陽常數</h3>
-      <p data-en-html="Before satellites, the solar constant had to be measured through the air. A blackened pan of water facing the Sun absorbs \(\alpha S_g A\); with heat capacity \(C\) and heat loss \(k(T - T_{\mathrm{air}})\)">人造衛星出現以前，太陽常數只能隔著大氣量。對準太陽的黑色水盒吸收 \(\alpha S_g A\)；熱容是 \(C\)，向四周散熱 \(k(T - T_{\mathrm{air}})\)：</p>
-      <div class="formula">\[ C\frac{dT}{dt} = \alpha S_g A - k\,(T - T_{\mathrm{air}}) \]</div>
+      <p data-en-html="Before satellites, the solar constant had to be measured through the air. A blackened pan of water absorbs \(\alpha S_g A\cos i\); with heat capacity \(C\) and heat loss \(k(T - T_{\mathrm{air}})\)">人造衛星出現以前，太陽常數只能隔著大氣量。黑色水盒吸收 \(\alpha S_g A\cos i\)；熱容是 \(C\)，向四周散熱 \(k(T - T_{\mathrm{air}})\)：</p>
+      <div class="formula">\[ C\frac{dT}{dt} = \alpha S_g A\cos i - k\,(T - T_{\mathrm{air}}) \]</div>
       <p data-en-html="The simple estimate \(S \approx C\Delta T/(A\,t)\) is always a little low: the paint does not absorb everything, and the warm water loses heat. Short measurements and a very black pan help. Here \(A = 0.01\ \mathrm{m^2}\), the pan adds \(40\ \mathrm{J/K}\) and \(k = 0.25\ \mathrm{W/K}\).">簡單的估計 \(S \approx C\Delta T/(A\,t)\) 一定偏小一點：黑漆不會全部吸收，變熱的水也會散熱。量的時間短一點、盒子塗得越黑越好。這裡 \(A = 0.01\ \mathrm{m^2}\)，盒子本身的熱容 \(40\ \mathrm{J/K}\)，\(k = 0.25\ \mathrm{W/K}\)。</p>
       <p data-en-html="The air dims the beam too. Along a path through \(m\) times the air above your head (the <em>air mass</em>, about \(1/\sin h\) for a sun at altitude \(h\)), the beam is reduced by the Beer–Lambert law:">大氣也會讓陽光變弱。陽光穿過的空氣是頭頂正上方的 \(m\) 倍（<em>大氣質量</em>，太陽高度 \(h\) 時約 \(1/\sin h\)；這裡用 Kasten 與 Young 1989 的公式，接近地平線時更準），照比爾–朗伯定律變弱：</p>
       <div class="formula">\[ S_g = S\,e^{-\tau m} \quad\Longrightarrow\quad \ln S_g = \ln S - \tau\,m \]</div>
       <p data-en-html="Samuel Langley (1880s) used exactly this: measure at several sun altitudes on one clear day, plot \(\ln S_g\) against \(m\), and extend the straight line to \(m = 0\) — the top of the atmosphere. The slope gives the haze \(\tau\). Errors that multiply every point by the same factor (the paint, roughly the heat loss) shift the line but not its slope.">朗利（Samuel Langley，1880 年代）用的就是這個方法：同一個晴天、在不同的太陽高度量幾次，把 \(\ln S_g\) 對 \(m\) 畫成圖，直線延長到 \(m = 0\)——大氣的頂端。斜率就是混濁程度 \(\tau\)。讓每一點都乘上同一個比例的誤差（黑漆、大致上還有散熱），只會讓直線上下平移，不會改變斜率。</p>
+      <p data-en-html="The incidence angle \(i\) is measured from the normal to the pan. A pan facing the Sun has \(i=0^\circ\); a horizontal pan has \(i=90^\circ-h\). The pan receives direct irradiance \(S_g\cos i\). For the Langley plot, divide the measurement by \(\cos i\); a record at \(90^\circ\) cannot be used. The model uses direct sunlight with a constant heat-loss coefficient and omits diffuse skylight, reflections and changes in cooling due to tilt or wind.">入射角 \(i\) 由盒面法線量起。盒面正對太陽時 \(i=0^\circ\)，水平放置時 \(i=90^\circ-h\)，盒面接收的直射通量為 \(S_g\cos i\)。畫 Langley 圖前先把量測值除以 \(\cos i\)；\(90^\circ\) 的紀錄無法用來外推。此模型只計直射光，並用固定散熱係數近似，略去天空散射光、反射光及傾斜或風速造成的散熱差異。</p>
       <h3 data-en="Where the energy comes from">能量從哪裡來</h3>
       <p data-en-html="In the core of the Sun (about 15 million K), hydrogen nuclei fuse into helium through the proton–proton chain. Four hydrogen atoms are heavier than one helium atom:">太陽的核心（約 1500 萬 K）裡，氫原子核經過質子–質子鏈融合成氦。4 個氫原子比 1 個氦原子重：</p>
       <div class="formula">\[ \Delta m = 4m(^1\mathrm{H}) - m(^4\mathrm{He}) = 4(1.007825) - 4.002603 = 0.028697\ \mathrm{u} \]</div>

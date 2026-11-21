@@ -25,7 +25,7 @@
   // =====================================================================
   const el = {
     rpm: $('rpm'), v0t: $('v0t'), aim: $('aim'), r0: $('r0'),
-    lat: $('lat'), grad: $('grad'), dp: $('dp'), fric: $('fric'), v0: $('v0'), dir0: $('dir0')
+    lat: $('lat'), grad: $('grad'), dp: $('dp'), radius: $('systemRadius'), fric: $('fric'), v0: $('v0'), dir0: $('dir0')
   };
   const state = {
     mode: 'turn',
@@ -34,17 +34,17 @@
     disk: 0,                          // 盤目前轉過的角度（慣性座標，rad）
     shots: [],                        // 發射紀錄（最新的在最後）
     // 地球上的風
-    lat: 25, field: 'low', G: 1, dp: 20, k: 2e-5, v0: 0, dir0: 90,
+    lat: 25, field: 'low', G: 1, dp: 20, sigma: K.SIGMA, k: 2e-5, v0: 0, dir0: 90,
     cur: { x: -400e3, y: 300e3 },     // 十字游標（m）
     parcels: [], nextId: 1, speed: 4, running: true,
     acted: false
   };
   function omega() { return state.spin * state.rpm * 2 * Math.PI / 60; }
-  function fieldNow() { return { type: state.field, G: state.G, dp: state.dp }; }
-  function fieldKey(F) { return F.type === 'uniform' ? 'u' + F.G : F.type === 'low' || F.type === 'high' ? F.type + F.dp : 'n'; }
+  function fieldNow() { return { type: state.field, G: state.G, dp: state.dp, sigma: state.sigma }; }
+  function fieldKey(F) { return F.type === 'uniform' ? 'u' + F.G : F.type === 'low' || F.type === 'high' ? [F.type, F.dp, F.sigma].join('|') : 'n'; }
   function readSliders() {
     state.rpm = val(el.rpm); state.v0t = val(el.v0t); state.aim = val(el.aim); state.r0 = val(el.r0);
-    state.lat = val(el.lat); state.G = val(el.grad); state.dp = val(el.dp); state.k = val(el.fric) * 1e-5;
+    state.lat = val(el.lat); state.G = val(el.grad); state.dp = val(el.dp); state.sigma = val(el.radius) * 1000; state.k = val(el.fric) * 1e-5;
     state.v0 = val(el.v0); state.dir0 = val(el.dir0);
   }
 
@@ -641,11 +641,12 @@
     setOut(el.lat, outNum(state.lat, 1, 2));
     setOut(el.grad, outNum(state.G, 1, 2));
     setOut(el.dp, outNum(state.dp, 0, 1));
+    setOut(el.radius, String(state.sigma / 1000));
     setOut(el.fric, outNum(state.k * 1e5, 1, 2));
     setOut(el.v0, outNum(state.v0, 1, 2));
     setOut(el.dir0, outNum(state.dir0, 0, 1));
     $('gWrap').hidden = state.field !== 'uniform';
-    $('dpWrap').hidden = !(state.field === 'low' || state.field === 'high');
+    $('radiusWrap').hidden = $('dpWrap').hidden = !(state.field === 'low' || state.field === 'high');
   }
   function geoAt(F, x, y, lat) {
     const g = K.gradP(F, x, y), f = K.coriolisParam(lat);

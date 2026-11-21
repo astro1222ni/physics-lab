@@ -146,7 +146,7 @@
   const SPEED_DAY = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];       // 小時／秒
   const SPEED_YEAR = [3, 5, 8, 12, 18, 24, 32, 45, 60, 90];         // 天／秒
 
-  const elLat = $('lat'), elDay = $('day'), elClock = $('clock'), elEps = $('eps'), elSpeed = $('speed');
+  const elLat = $('lat'), elLon = $('lon'), elZone = $('zone'), elDay = $('day'), elClock = $('clock'), elEps = $('eps'), elSpeed = $('speed');
   const loc = function () { return { lat: st.lat, lon: st.lon, zone: st.zone, eps: st.eps, day: st.day, clock: st.clock }; };
   let snapKey = '', snapVal = null;
   function snap() {
@@ -165,10 +165,9 @@
   // 文字格式
   // =====================================================================
   function hm(h) {
-    let x = Math.round(h * 60);
-    let tag = '';
-    if (x < 0) { x += 1440; tag = T('（前一天）', ' (day before)'); }
-    if (x >= 1440) { x -= 1440; tag = T('（隔天）', ' (next day)'); }
+    const minutes = Math.round(h * 60), offset = Math.floor(minutes / 1440), x = minutes - offset * 1440;
+    const tag = offset === 0 ? '' : offset === -1 ? T('（前一天）', ' (day before)')
+      : offset === 1 ? T('（隔天）', ' (next day)') : offset < 0 ? T('（前 ', ' (') + Math.abs(offset) + T(' 天）', ' days before)') : T('（後 ', ' (') + offset + T(' 天）', ' days later)');
     return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') + tag;
   }
   function selectedClock() {
@@ -197,7 +196,10 @@
     if (+a === 0) return '0.00°';
     return isEn() ? a + '° ' + (lon > 0 ? 'E' : 'W') : (lon > 0 ? '東經 ' : '西經 ') + a + '°';
   }
-  function zoneText(z) { return 'UTC' + (z >= 0 ? '+' : '−') + Math.abs(z); }
+  function zoneText(z) {
+    const minutes = Math.round(Math.abs(z) * 60), remainder = minutes % 60;
+    return 'UTC' + (z >= 0 ? '+' : '−') + Math.floor(minutes / 60) + (remainder ? ':' + String(remainder).padStart(2, '0') : '');
+  }
   /** 方位角 → 「東偏北 5.7°」 */
   function dirText(az) {
     az = C.norm360(az);
@@ -209,7 +211,7 @@
   }
   function locName() {
     if (st.loc) return T(st.loc.full[0], st.loc.full[1]);
-    return T('自訂緯度', 'Custom latitude');
+    return T('自訂地點', 'Custom place');
   }
 
   // =====================================================================
@@ -1333,10 +1335,12 @@
     else if (Math.abs(st.clock - s.noon) < 1 / 60) txt += T('正午：太陽正在子午線上。', ' Noon: the Sun is on the meridian.');
     if (st.clockPaused && !st.playing) txt += T('（改了時刻，動畫先暫停；按「播放」繼續。）', ' (Paused because you changed the time; press “Play” to continue.)');
     $('status').textContent = txt;
-    $('locInfo').textContent = (st.loc ? locName() : T('自訂緯度', 'Custom latitude')) + T('：', ': ') + latText(st.lat) + T('、', ', ') + lonText(st.lon) + T('，', ', ') + zoneText(st.zone) + (st.loc ? '' : T('（經度、時區沿用上一個地點）', ' (longitude and time zone kept from the last place)'));
+    $('locInfo').textContent = (st.loc ? locName() : T('自訂地點', 'Custom place')) + T('：', ': ') + latText(st.lat) + T('、', ', ') + lonText(st.lon) + T('，', ', ') + zoneText(st.zone);
   }
   function outs() {
     $('lato').textContent = latShort(st.lat);
+    $('lono').textContent = lonText(st.lon);
+    $('zoneo').textContent = zoneText(st.zone);
     $('dayo').textContent = dateText(st.day);
     $('clocko').textContent = selectedClock();
     $('epso').textContent = st.eps.toFixed(2) + '°';
@@ -1500,6 +1504,7 @@
         st.clock = c;
         if (window.LabNum) LabNum.clear(elClock);
         elClock.value = String(c);
+        $('clocko').textContent = selectedClock();
         const s = snap();
         const h0 = st.refract ? C.H0_REFRACT : 0;
         if (prevAlt != null && prevAlt <= h0 && s.alt > h0 && Math.abs(s.alt - prevAlt) < 5) onSunrise(s);
@@ -1516,6 +1521,8 @@
           st.day = d;
           if (window.LabNum) LabNum.clear(elDay);
           elDay.value = String(d);
+          // 滑桿與日期文字在同一幀更新，完整讀數仍按原頻率重算。
+          $('dayo').textContent = dateText(d);
           recordAna();
         }
       }
@@ -1564,6 +1571,12 @@
     st.loc = l; st.lat = l.lat; st.lon = l.lon; st.zone = l.zone;
     if (window.LabNum) LabNum.set(elLat, l.lat); else elLat.value = l.lat;
     st.lat = l.lat;
+    syncSiteControls();
+  }
+  function syncSiteControls() {
+    if (window.LabNum) { LabNum.clear(elLon); LabNum.clear(elZone); }
+    elLon.value = st.lon;
+    elZone.value = st.zone;
   }
   function setDay(d, quiet) {
     d = clamp(Math.round(d), 1, 365);
@@ -1582,6 +1595,14 @@
     if (!st.loc || Math.abs(v - st.loc.lat) > 1e-9) st.loc = null;
     st.lat = v;
     userChanged();
+  });
+  [[elLon, 'lon'], [elZone, 'zone']].forEach(function ([input, key]) {
+    input.addEventListener('input', function () {
+      const v = key === 'zone' ? Math.round(val(input) * 4) / 4 : val(input);
+      if (st.loc && v !== st.loc[key]) st.loc = null;
+      st[key] = v;
+      userChanged();
+    });
   });
   elDay.addEventListener('input', function () { st.day = clamp(Math.round(val(elDay)), 1, 365); st.dayF = st.day; userChanged(); });
   elClock.addEventListener('input', function () {
@@ -1613,9 +1634,17 @@
   }
   $('today').addEventListener('click', function () { setDay(nowAt(st.zone).day); userChanged(); });
   $('jNow').addEventListener('click', function () { const n = nowAt(st.zone); setDay(n.day); setClock(n.clock); setPlaying(false, true); userChanged(); });
-  $('jNoon').addEventListener('click', function () { setClock(snap().noon); setPlaying(false, true); userChanged(); });
-  $('jRise').addEventListener('click', function () { const s = snap(); if (s.polar) { flash(s.polar); return; } setClock(s.rise); setPlaying(false, true); userChanged(); });
-  $('jSet').addEventListener('click', function () { const s = snap(); if (s.polar) { flash(s.polar); return; } setClock(s.set); setPlaying(false, true); userChanged(); });
+  [['jNoon', 'noon'], ['jRise', 'rise'], ['jSet', 'set']].forEach(function ([id, key]) {
+    $(id).addEventListener('click', function () {
+      const s = snap();
+      if (key !== 'noon' && s.polar) { flash(s.polar); return; }
+      const clock = s[key], offset = Math.floor(clock / 24);
+      if (offset) setDay(wrapDay(st.day + offset));
+      setClock(clock);
+      setPlaying(false, true);
+      userChanged();
+    });
+  });
   function flash(polar) {
     $('status').textContent = polar === 'day' ? T('今天永晝：太陽整天不落下，沒有日出日落。', 'Midnight sun today: the Sun never sets, so there is no sunrise or sunset.')
       : T('今天永夜：太陽整天不升起，沒有日出日落。', 'Polar night today: the Sun never rises, so there is no sunrise or sunset.');
@@ -1752,7 +1781,7 @@
     });
   }
 
-  // ---------- 分享連結：地點的經度與時區、圖表內容（緯度、日期、時刻等滑桿由 classroom.js 自動記錄） ----------
+  // ---------- 分享連結：地點的經度與時區、圖表內容（經度與時區額外保留舊分享連結的格式） ----------
   // classroom.js 由 settings.js 動態載入，可能比本程式晚執行：先放進 LAB_SHARE_EXTRAS，它載入後會自動登記
   function setChart(k) {
     const b = document.querySelector('#chartBtns button[data-chart="' + k + '"]');
@@ -1769,10 +1798,11 @@
       if (l && Math.abs(st.lat - l.lat) < 1e-6) { st.loc = l; st.lon = l.lon; st.zone = l.zone; }
       else {
         st.loc = null;
-        const lon = +o.lon, z = Math.round(+o.zone);
+        const lon = o.lon == null ? NaN : +o.lon, z = o.zone == null ? NaN : Math.round(+o.zone * 4) / 4;
         if (isFinite(lon)) st.lon = clamp(lon, -180, 180);
         if (isFinite(z)) st.zone = clamp(z, -12, 14);
       }
+      syncSiteControls();
       if (typeof o.chart === 'string') setChart(o.chart);
       earthCache.clear();
       refresh();

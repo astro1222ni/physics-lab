@@ -122,4 +122,11 @@ test('日期：1 月 1 日、7 月 2 日左右', () => {
   const d2 = P.dateOf(1.999); assert.ok(d2.year === 1 && d2.month === 12 && d2.day === 31, JSON.stringify(d2));
 });
 
+test('雙站視差只取垂直視線的基線分量：0° 為零、30° 減半、90° 等於舊版', () => {
+  assert.strictEqual(P.baselineShift(2, 1.3, 0), 0);
+  near(P.effectiveBaseline(2, 30), 1, 1e-12);
+  near(P.baselineShift(2, 1.3, 30), P.baselineShift(2, 1.3) / 2, 1e-12);
+  assert.strictEqual(P.baselineShift(2, 1.3, 90), P.baselineShift(2, 1.3));
+});
+
 console.log(`parallax-core：${passed} 項通過`);

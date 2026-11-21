@@ -222,6 +222,10 @@
           <div class="chips" id="locs" role="group" aria-label="地點" data-en-aria-label="Place"></div>
           <div class="slider"><label for="lat" data-en="Latitude φ (north +, south −)">緯度 φ（北緯為正、南緯為負）</label><output id="lato"></output>
             <input id="lat" type="range" min="-90" max="90" step="0.01" value="25.03" data-decimals="2"></div>
+          <div class="slider"><label for="lon" data-en="Longitude (°E)">經度（東經為正）</label><output id="lono"></output>
+            <input id="lon" type="range" min="-180" max="180" step="0.01" value="121.56" data-decimals="2"></div>
+          <div class="slider"><label for="zone" data-en="UTC offset (h)">時區（與 UTC 差幾小時）</label><output id="zoneo"></output>
+            <input id="zone" type="range" min="-12" max="14" step="0.25" value="8" data-decimals="2"></div>
           <p class="hint locinfo" id="locInfo"></p>
         </section>
 
@@ -349,6 +353,7 @@
         <li data-en-html="<strong>The beam spreads out</strong>: the lower the Sun, the more ground the same beam has to cover. At \(h = 30^\circ\) each square metre gets only half as much as with the Sun overhead — the main reason winter is cold, together with the shorter day."><strong>光束被攤開</strong>：太陽越低，同一束光要照的地面越大。\(h = 30^\circ\) 時每平方公尺只有太陽在天頂時的一半——這和白天變短，正是冬天冷的主要原因。</li>
       </ul>
 
+      <p data-en="Keep the latitude and date fixed. Farther east, sunrise, solar noon and sunset occur earlier on the clock at the same UTC offset. Increasing the offset alone moves all three readings later. This comparison uses a fixed UTC offset without daylight saving time.">固定緯度和日期，在同一時區往東移，日出、太陽正午與日落的鐘錶時間會提早。只增加時區偏移，三個讀數都往後移。本比較用固定的 UTC 時差，未納入夏令時間。</p>
       <h3 data-en="How the simulation works">模擬方法與數值來源</h3>
       <ul>
         <li data-en-html="Dates are for 2026 (not a leap year); in other years the equinoxes and solstices shift by less than a day. Times are local standard time of each place (no daylight saving). The Earth's position comes from the low-precision solar coordinates of J. Meeus, <i>Astronomical Algorithms</i> (2nd ed., ch. 25), with Kepler's equation solved exactly instead of a series; nutation and the pull of the planets are ignored (they move the Sun by about \(0.005^\circ\)). The Kepler ellipse describes the centre of mass of the Earth and the Moon; the Earth's centre is 4671 km from it, which changes the distance by up to \(0.00003\ \mathrm{AU}\) and moves perihelion and aphelion by about a day, so this term is included. The 2026 perihelion (3 January 17:47 UT) and aphelion (6 July 18:29 UT) come out within an hour of the U.S. Naval Observatory values.">日期以 2026 年（平年）計算，其他年份的二分二至相差不到 1 天；時刻是各地的標準時間（不含日光節約時間）。地球位置用 J. Meeus《Astronomical Algorithms》第 2 版第 25 章的低精度太陽座標，但中心差改成直接解克卜勒方程式；忽略章動與行星的攝動（使太陽位置偏差約 \(0.005^\circ\)）。克卜勒橢圓描述的是地球與月球的質心，地球中心離質心 4671 km，使日地距離最多差 \(0.00003\ \mathrm{AU}\)、近日點與遠日點的日期移動約 1 天，所以這一項有計入：2026 年近日點 1 月 3 日 17:47、遠日點 7 月 6 日 18:29（世界時），與美國海軍天文臺的數值相差 1 小時以內。</li>

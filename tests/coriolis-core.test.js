@@ -208,4 +208,17 @@ test('追蹤器：以地轉風當初速，24 小時內方向與速度都不變',
   near(s.deflect, 90, 1e-6, '在氣壓梯度力右邊 90°');
 });
 
+test('圓形低壓的中心壓差固定，半徑改變指定位置的梯度與氣塊軌跡', () => {
+  const narrow = { type: 'low', dp: 20, sigma: 100e3 };
+  const wide = { ...narrow, sigma: 600e3 };
+  assert.strictEqual(K.pressure(narrow, 0, 0), K.pressure(wide, 0, 0));
+  for (const field of [narrow, wide]) {
+    const r = field.sigma;
+    near(K.pressure(field, r, 0), K.P0 - 20 * K.HPA * Math.exp(-0.5), 1e-9);
+    near(K.gradP(field, r, 0)[0], 20 * K.HPA * Math.exp(-0.5) / r, 1e-12);
+  }
+  const parcel = field => K.advance(K.parcel({ lat: 25, k: 2e-5, field }, -400e3, 300e3, 0, 0), 3 * H, 60);
+  assert.ok(Math.hypot(parcel(wide).s.u, parcel(wide).s.v) > Math.hypot(parcel(narrow).s.u, parcel(narrow).s.v));
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);
