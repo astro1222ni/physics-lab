@@ -97,6 +97,23 @@
   function sndBatch() { const S0 = sound(); if (S0) S0.sweep({ from: 500, to: 900, dur: 0.18, gain: 0.025, type: 'triangle' }); }
   function setStatus(id, s) { $(id).textContent = s; }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
+  function seedControl(key, draw) {
+    const field = $(key + 'Seed'), lock = $(key + 'Lock');
+    let prepared = false;
+    field.addEventListener('input', function () { lock.checked = true; });
+    $(key + 'Draw').addEventListener('click', function () {
+      field.value = draw();
+      prepared = true;
+    });
+    return function () {
+      if (!prepared && !lock.checked) field.value = draw();
+      const seed = Math.max(0, Math.min(4294967295, Math.trunc(Number(field.value)) || 0));
+      field.value = seed;
+      prepared = false;
+      return seed;
+    };
+  }
+  const batchSeed = seedControl('batch', function () { return (st2.seed * 48271 + 11 + Math.floor(Math.random() * 1e6)) % 2147483647 || 3; });
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -726,10 +743,12 @@
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   const el2 = { d: $('d'), n2: $('n2') };
   const st2 = { d: 20, n: 3, cnt: null, total: 0, rec: 0, meioses: 0, pats: {}, runs: [], cur: null, no: 0, W: 0, H: 0, seed: 1 };
+  const pooledSeeds = new Set();
   function reset2(push) {
     if (push && st2.cur && st2.cur.total) { /* 舊的一輪已在 runs 裡 */ }
     st2.d = val(el2.d); st2.n = Math.round(val(el2.n2));
     st2.cnt = { AB: 0, Ab: 0, aB: 0, ab: 0 }; st2.total = 0; st2.rec = 0; st2.meioses = 0; st2.pats = {};
+    pooledSeeds.clear();
     st2.cur = null;
   }
   function stats2() {
@@ -738,7 +757,10 @@
     return { d: st2.d, n: st2.n, meioses: st2.meioses, total: st2.total, rec: st2.rec, r: r, lo: ci[0], hi: ci[1], half: (ci[1] - ci[0]) / 2, haldane: K.haldane(st2.d / 100), distinct: distinct, possible: possible, counts: Object.assign({}, st2.cnt) };
   }
   function run2(N) {
-    st2.seed = (st2.seed * 48271 + 11 + Math.floor(Math.random() * 1e6)) % 2147483647 || 3;
+    st2.seed = batchSeed();
+    // Replaying a batch starts a fresh pool so duplicate gametes cannot narrow the interval.
+    if (pooledSeeds.has(st2.seed >>> 0 || 1)) reset2(true);
+    pooledSeeds.add(st2.seed >>> 0 || 1);
     const b = K.batch({ d: st2.d / 100, n: st2.n, N: N, seed: st2.seed });
     Object.keys(b.counts).forEach(function (k) { st2.cnt[k] = (st2.cnt[k] || 0) + b.counts[k]; });
     st2.total += b.total; st2.rec += b.rec; st2.meioses += N;

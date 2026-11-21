@@ -218,6 +218,11 @@
           <div class="slider"><label for="n2" data-en="Pairs of chromosomes n">染色體對數 n</label><output id="n2o"></output>
             <input id="n2" type="range" min="1" max="8" step="1" value="3" data-decimals="0"></div>
           <p class="hint" data-en="1 centimorgan (cM) is the distance over which, on average, 1 gamete in 100 has a crossover. Changing a setting starts a new count.">1 厘摩（cM）是平均每 100 個配子有 1 個在這一段發生交換的距離。改了設定就開始新的一輪統計。</p>
+          <div class="checks" id="batchControls">
+            <label><span data-en="Seed">種子</span> <input id="batchSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
+            <label><input type="checkbox" id="batchLock"><span data-en="Reuse seed">沿用種子</span></label>
+            <button type="button" id="batchDraw" data-en="Draw new seed">重抽種子</button>
+          </div>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -228,6 +233,7 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="Replaying a seed already in the pool starts a new pool to avoid counting the same gametes twice. The Wilson interval treats the four gametes from each meiosis as independent. At short distances most meioses have zero or one crossover, and one crossover produces two recombinant gametes. Under this model the standard error is about \(\sqrt{2}\) times the independent estimate, so the interval is too narrow (Haldane, 1919; Wilson, 1927).">重播已計入的種子會另起一組，避免把同一批配子重複計數。重組率區間用 Wilson 法，把同次減數分裂的四枚配子當成獨立觀測。短距離時，多數分裂有零或一次互換，一次互換產生兩枚重組配子。依此模型推得，實際標準誤約為獨立估算的\(\sqrt{2}\) 倍，因此畫面上的區間偏窄（Haldane，1919；Wilson，1927）。</p>
 
       <h3 data-en="The cell cycle and mitosis">細胞週期與有絲分裂</h3>
       <p data-en-html="In interphase the cell grows (G<sub>1</sub>), copies its DNA (S) and gets ready to divide (G<sub>2</sub>). After S each chromosome consists of two identical <strong>sister chromatids</strong> held together at the centromere, so the DNA has doubled from 2C to 4C while the number of chromosomes — counted by centromeres — is still 2n. In prophase the chromosomes coil up and the two centrosomes move apart; in prometaphase the nuclear envelope breaks down and spindle fibres attach to the kinetochores; in metaphase the chromosomes line up on the equator; in anaphase the centromeres split and the sisters are pulled to opposite poles, so for a moment the cell holds 4n chromosomes; in telophase two nuclei form and the cytoplasm divides. Each daughter cell is 2n and 2C, identical to the parent.">間期裡，細胞先長大（G<sub>1</sub> 期）、複製 DNA（S 期）、準備分裂（G<sub>2</sub> 期）。S 期之後，每條染色體由兩條一模一樣、在著絲點相連的<strong>姊妹染色分體</strong>組成：DNA 由 2C 加倍成 4C，但以著絲點來數，染色體還是 2n 條。前期染色體捲曲變粗、兩個中心體往兩極移動；前中期核膜消失，紡錘絲接上著絲點；中期染色體排在赤道板上；後期著絲點分開，姊妹分體被拉往兩極——這時細胞裡暫時有 4n 條染色體；末期形成兩個細胞核，細胞質分開。每個子細胞都是 2n、2C，和親代一樣。</p>
