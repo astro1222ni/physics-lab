@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -411,12 +412,13 @@
     const ek = { sub: 0, ins: 0, del: 0 };
     f.edits.forEach(function (e) { ek[e.kind] += e.kind === 'sub' ? 1 : e.len; });
     const bad = ['missense', 'nonsense', 'frameshift', 'lost-start', 'inframe', 'readthrough', 'complex'].indexOf(f.kind) >= 0;
+    const stopKey = '<small>' + T('＊ 代表終止密碼子', '* denotes a stop codon') + '</small>';
     dl('ro1', [
       [T('長度', 'Length'), f.len + T(' 個鹼基', ' bases') + '<small>GC ' + num(f.gc * 100, 0) + '%</small>'],
       [T('讀碼框', 'Reading frame'), o ? T('第 ' + (o.start + 1) + '–' + o.end + ' 個鹼基', 'bases ' + (o.start + 1) + '–' + o.end) + '<small>' + o.codons.length + T(' 個密碼子', ' codons') + '</small>' : T('沒有 ATG', 'No ATG')],
       [T('蛋白質', 'Protein'), f.pMut.length + T(' 個胺基酸', ' amino acids') + (o && !f.stopped ? '<small>' + T('沒有終止密碼子', 'No stop codon') + '</small>' : '')],
       [T('改了', 'Changes'), f.edits.length ? T('替換 ' + ek.sub + '、插入 ' + ek.ins + '、刪除 ' + ek.del, ek.sub + ' substituted, ' + ek.ins + ' inserted, ' + ek.del + ' deleted') : T('沒有', 'None')],
-      [T('結果', 'Effect'), L && L.short ? verdictText() + '<small>' + T('＊ 代表終止密碼子', '* denotes a stop codon') + '</small>' : kindName(f.kind), f.kind === 'none' ? '' : bad ? 'bad' : 'good'],
+      [T('結果', 'Effect'), L && L.short ? verdictText() + stopKey : kindName(f.kind) + (narrowPortrait.matches ? stopKey : ''), f.kind === 'none' ? '' : bad ? 'bad' : 'good'],
       [T('另一股', 'Other strand'), f.both.rev ? '<code>' + f.both.rev + '</code><small>' + T('反過來讀也是一個基因', 'Read backwards, it is a gene too') + '</small>' : '—']
     ]);
   }
@@ -492,18 +494,21 @@
   }
   function bead(g, x, y, d, a, opt) {
     const col = aaColor(a);
+    const short = g === ctx && L.short;
+    const portrait = g === ctx && narrowPortrait.matches;
     if (a === '*') {
       g.beginPath();
       for (let k = 0; k < 8; k++) { const t = Math.PI / 8 + k * Math.PI / 4; g.lineTo(x + Math.cos(t) * d / 2, y + Math.sin(t) * d / 2); }
       g.closePath(); g.fillStyle = col; g.fill();
-      const short = g === ctx && L.short;
-      g.font = '700 ' + (short ? 14 : Math.round(d * 0.34)) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-      g.fillText(short ? '*' : 'STOP', x, y + (short ? 2 : 0.5));
+      const symbol = short || portrait;
+      g.font = '700 ' + (symbol ? 14 : Math.round(d * 0.34)) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+      g.fillText(symbol ? '*' : 'STOP', x, y + (symbol ? 2 : 0.5));
       return;
     }
     D.ball(g, x, y, d / 2, col);
     if (opt && opt.ring) { g.beginPath(); g.arc(x, y, d / 2 + 2.5, 0, Math.PI * 2); g.strokeStyle = opt.ring; g.lineWidth = 2.2; g.stroke(); }
-    g.font = '700 ' + (g === ctx && L.short ? Math.max(11, Math.round(d * 0.52)) : Math.round(d * 0.52)) + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const fontSize = Math.max(short ? 11 : portrait ? 10 : 0, Math.round(d * 0.52));
+    g.font = '700 ' + fontSize + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
     // 淺色珠（疏水的黃色等）配白字對比太低（試玩回報）：底色亮就改深色字
     const light = lum(col) > 0.3;
     g.fillStyle = light ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.3)'; g.fillText(a, x + 0.5, y + 1.3);
