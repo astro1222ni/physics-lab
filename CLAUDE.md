@@ -53,6 +53,7 @@
 | `tools/run-tests.cjs`、`tools/check-pages.cjs` | `npm test`（全部單元測試）、`npm run check`／`npm run shots`（Playwright 版面與語言檢查，自帶伺服器） |
 | `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言、每日任務與寶物、各科排名，並模擬資料庫規則），Playwright `addInitScript` 載入；`localStorage.mockoffset` 可假造伺服器時間測換日 |
 | `tools/make-qr.cjs` | 首頁 QR code（`img/qr-site.svg`），網址改了才重做 |
+| `tools/make-redirect.cjs`、`tests/url-permanence.test.js` | 網址不改：要搬頁就在舊網址留轉址頁；測試擋下 git 歷史上發布過、現在卻不見的 .html |
 | `tools/mission-proofs/` | 各實驗「任務做得到」的證明腳本；改物理核心或任務條件後重跑 |
 | `docs/briefs/` | 製作新模組、任務、替舊模組補任務的說明（交給背景助手時使用） |
 | `js/drawkit.js` | 共用繪圖工具 `LabDraw`（立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動）；新畫面一律用它 |
@@ -131,6 +132,10 @@
 - **Google Search Console**（11/13 站長驗證通過，網址前置字元 https://lab.astroni.org/、HTML 標記）：`index.html` 的 `<meta name="google-site-verification" …>` **不可刪除**，刪了驗證會失效；它在 SEO 自動區塊外面，`npm run seo` 不會動到。
 
 - **實驗代號（slug）與網址不改**：統計、任務、成就、留言都用它當鍵，站長的 YouTube 影片也可能連到這些網址。
+- **網址三條規矩（11/21 站長：「將這個原則套用到整個 Astro Ni Lab 網站。」）**：
+  1. 分享用的 QR code、分享卡、講義上的連結，一律直接連現在的網址，不另加短網址或轉址服務（目前 `js/classroom.js`、`js/sharecard.js`、`img/qr-site.svg`、自習室卡片都是直接網址）。
+  2. 網址不改：發布過的 .html（含 `lt/`、自習室、學測頁）不刪、不改名。`tests/url-permanence.test.js` 會列出 git 歷史上所有發布過的 .html，少一個 `npm test` 就失敗。
+  3. 真的要搬，就在舊網址留轉址頁：`node tools/make-redirect.cjs <舊.html> <新網址>`（帶著原本的 ?參數 與 #錨點 轉過去，canonical 指新頁、noindex）。舊檔還在時要先確認內容已搬走再加 `--force`。錨點改名也一樣，在新頁留舊錨點的轉向（例如首頁 `#subjects` 轉到 labs.html）。
 - **已上線任務的代號與等級不改**：已完成的紀錄與總分都依賴它們。要調整難度，就改判定條件或容許值；真的要改等級或刪除任務，先和站長討論對已完成者的影響。成就系列的代號（`<系列>-<級>`）也一樣。
 - **同一時間只讓一個工作串修改網站**：換工作串前，舊的先 `git push`，新的先 `git pull`，避免互相覆蓋。
 
