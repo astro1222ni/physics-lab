@@ -189,9 +189,9 @@
     "reverb-room": "d00a0ef5",
     "adsr-envelope": "7de08115",
     "supply-demand": "9a5c81fc",
-    "perspective-drawing": "b63c5f0c",
     "sir-epidemic": "49062e4c",
-    "basketball-shot": "e00b4ed3"
+    "basketball-shot": "583fecc1",
+    "perspective-drawing": "b63c5f0c"
   };
   /* VERSIONS-END */
 
