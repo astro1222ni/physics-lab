@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 02:43">
+<meta name="lab-updated" content="2026-11-21 08:08">
   <script src="js/settings.js?v=202611210805"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Basketball Shots and Throwing for Distance | Astro Ni Lab">投籃與擲遠｜讓倪動手⚡高中全科模擬實驗室</title>
@@ -154,6 +154,8 @@
         <button type="button" id="compare" disabled data-en="Compare">比較兩球</button>
       </div>
       <div id="navigation3d" class="shot-navigation"></div>
+      <!-- 11/21 站長：「動畫的位置跟可操作的這些拉桿距離太遠，要捲到下一頁」：手機操作台緊接在出手鈕下方，籃框特寫與說明排到操作台之後 -->
+      <div data-deck-anchor hidden></div>
       <div id="instruments" class="shot-instruments">
         <figure><figcaption data-en="Rim close-up">籃框特寫</figcaption><canvas id="closeCam" role="img" aria-label="籃框與球的側面放大圖" data-en-aria-label="Side close-up of rim and ball"></canvas></figure>
         <figure><figcaption data-en="Along the descent">沿下降方向看</figcaption><canvas id="projection" role="img" aria-label="球心與框心的投影偏移" data-en-aria-label="Ball-centre offset on the projected rim"></canvas></figure>
@@ -167,7 +169,6 @@
       <div id="legend" class="shot-legend"></div>
       <p class="hint" id="stageHint"></p>
       <p class="status" id="feedback" role="status"></p>
-      <div data-deck-anchor hidden></div>
     </div>
     <aside class="panel">
       <section class="card" data-deck="出手|Release" data-deck-order="0">
