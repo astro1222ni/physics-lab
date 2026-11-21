@@ -23,8 +23,8 @@ for (const f of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
   if (lab) {
     const s = subjects.find(s => s.dom === lab.d);
     const a = (url, t) => '<a href="' + url + '">' + formulaHTML(t) + '</a>';
-    const zh = [a('index.html', '首頁'), a(s.page + '.html', s.zh), a(s.page + '.html#' + lab.b, lab.bzh), a(s.page + '.html#' + lab.c, lab.czh)].join(' / ');
-    const en = [a('index.html', 'Home'), a(s.page + '.html', s.en), a(s.page + '.html#' + lab.b, lab.ben), a(s.page + '.html#' + lab.c, lab.cen)].join(' / ');
+    const zh = [a('index.html', '首頁'), a('labs.html', '全科模擬實驗室'), a(s.page + '.html', s.zh), a(s.page + '.html#' + lab.b, lab.bzh), a(s.page + '.html#' + lab.c, lab.czh)].join(' / ');
+    const en = [a('index.html', 'Home'), a('labs.html', 'Simulation Lab'), a(s.page + '.html', s.en), a(s.page + '.html#' + lab.b, lab.ben), a(s.page + '.html#' + lab.c, lab.cen)].join(' / ');
     next = next.replace(/<nav class="crumbs"[\s\S]*?<\/nav>/, () => '<nav class="crumbs" data-en-html="' + esc(en) + '">' + zh + '</nav>');
   }
   next = next.replace(/index\.html#([a-z0-9-]+)/g, (m, id) => anchors[id] ? anchors[id].page + '.html' + (anchors[id].root ? '' : '#' + id) : m);

@@ -64,7 +64,7 @@
 
 ## 新增或修改模組的慣例
 
-- 頁面結構照現有模組：`.crumbs` 導覽（首頁／科目／分支／章）、`.lab`（畫布＋控制面板）、`.notes`（KaTeX 公式與觀察重點）、頁尾。
+- 頁面結構照現有模組：`.crumbs` 導覽（首頁／全科模擬實驗室／科目／分支／章；11/21 站長選 A 加中間這層，`node tools/fix-crumbs.cjs` 產生）、`.lab`（畫布＋控制面板）、`.notes`（KaTeX 公式與觀察重點）、頁尾。
 - 頁尾前依序載入：KaTeX、`js/math.js`、物理核心、（有音效時）`js/sound.js`、`js/numinput.js`、`js/labdeck.js`、頁面程式、`js/firebase-config.js`、`js/stats.js data-module="<模組>"`、`js/comments.js`。
 - **滑桿數字可直接輸入**（站長要求）：每個滑桿的數字放在同一個 `.slider` 的 `<output>`，由 `js/numinput.js` 自動變成可點擊輸入；讀值一律用 `LabNum.value(el)`，依實驗需要設定 `data-decimals`（打字精度可比滑桿細），`<output>` 顯示到該精度；非線性滑桿用 `LabNum.register`，程式改滑桿用 `LabNum.set` 或先 `LabNum.clear`。
 - **任務模式與倪的星星**（站長要求）：每個實驗設計約 8–12 個任務，難度 1–10 級（一般任務星星數 = 等級；隱藏任務 = 等級 × 2，算法統一用 `LabMission.starsOf`），另加 **10 個隱藏任務**（只給隱晦的提示句，完成時只說「隱藏任務完成」不說原因；站長 11/12 深夜：「每一個實驗的隱藏任務增加到十個」。已上線的隱藏任務代號、等級、判定都不改，新增的接著編號 `<代號>-h4`…`h10`；10 個分散在 3–10 級、至少 3 個在 7 級以上；每個都要有科學意義，不可以是「亂按 N 次」這種條件；任務證明要證明預設不觸發、彼此不連帶完成，試玩不可誤觸）。任務面板分「一般任務」「隱藏任務」兩區，各有展開／收合按鈕；橫式寬螢幕（≥ 1240 px）任務模式開啟時，面板變成貼在右側的一欄（`html.ms-docked`），收起時只留右邊緣的小標籤。任務必須靠操作實驗達成特定標準（例如兩發射程相等），並先用物理核心確認每個任務都做得到。寫在 `js/missions/<模組>.js`（`LabMission.register`），模組程式在關鍵時刻 `LabMission.emit('事件', {物理量})`；頁面載入 `js/missions.js data-module="<模組>"` 與任務檔（在 firebase-config.js 之後）；把模組加入 `js/missions/index.js`。新增任務後不必請站長手動同步：站長用管理員帳號登入並打開排行榜頁或該實驗頁時，`missions.js` 會自動比對 `missionDefs` 並補上新任務（排行榜頁的「同步任務清單」按鈕保留作手動備用）。

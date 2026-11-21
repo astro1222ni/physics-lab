@@ -111,7 +111,7 @@ function block(pg) {
   if (ld) L.push('<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script>');
   if (pg.kind === 'lab' || pg.kind === 'subject') {
     const s = pg.kind === 'lab' ? pg.lab.subject : pg.subject;
-    const crumbs = [{ name: '首頁', item: SITE }].concat(pg.kind === 'subject' ? [{ name: '全科模擬實驗室', item: SITE + 'labs.html' }] : [], [{ name: s.zh, item: SITE + s.page + '.html' }]);
+    const crumbs = [{ name: '首頁', item: SITE }].concat(pg.kind === 'subject' || pg.kind === 'lab' ? [{ name: '全科模擬實驗室', item: SITE + 'labs.html' }] : [], [{ name: s.zh, item: SITE + s.page + '.html' }]);
     if (pg.kind === 'lab') crumbs.push({ name: pg.lab.branch.zh, item: SITE + s.page + '.html#' + pg.lab.branch.id }, { name: pg.lab.chapter.zh, item: SITE + s.page + '.html#' + pg.lab.chapter.id }, { name: pg.lab.zh, item: pg.url });
     L.push('<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => Object.assign({ '@type': 'ListItem', position: i + 1 }, c)) }).replace(/</g, '\\u003c') + '</script>');
   }

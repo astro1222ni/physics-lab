@@ -103,7 +103,7 @@
     const crumbs = document.querySelectorAll('header .crumbs a');
     const back = el('a', 'mg-back');
     if (mode === 'learn') { back.href = url(); back.textContent = T('← 選擇模式', '← Choose a mode'); }
-    else { const c = crumbs[crumbs.length > 1 ? 1 : 0]; back.href = c ? c.getAttribute('href') : 'index.html'; back.textContent = '← ' + (c ? c.textContent.trim() : T('首頁', 'Home')); }
+    else { const sub = [...crumbs].filter(a => !/^(index|labs)\.html$/.test(a.getAttribute('href') || '')); const c = sub[0] || crumbs[crumbs.length > 1 ? 1 : 0]; /* 回科目頁，不回首頁或全科模擬實驗室 */ back.href = c ? c.getAttribute('href') : 'index.html'; back.textContent = '← ' + (c ? c.textContent.trim() : T('首頁', 'Home')); }
     top.appendChild(back);
     inner.appendChild(top);
     inner.appendChild(el('p', 'mg-kicker', mode === 'learn' ? T('學習模式', 'Learning mode') : T('選擇模式', 'Choose a mode')));

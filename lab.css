@@ -61,6 +61,7 @@ body {
   line-height: 1.65;
   font-size: calc(16px * var(--fs, 1));
 }
+p, li, dd, figcaption { text-wrap: pretty; } /* 11/21：段落最後一個字不單獨折到下一行（試玩報告 B5、B6、B9、B10、B11） */
 a { color: var(--accent); text-underline-offset: 3px; }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
 
