@@ -1,7 +1,7 @@
 /* missions/regression.js — 散布圖、相關係數與迴歸直線的任務（一般任務星星 = 等級；隱藏任務 = 等級 × 2）
  * 事件（js/regression.js 發出，都在使用者操作之後）：
  *   'pts'：點或設定改變（加點、拖曳放開、刪點、換資料、我的直線）。
- *          { n, r, m, c（迴歸直線 y = m x + c；不能算時 null）, mx, my, sse（最小的殘差平方和）, set（'default' | 'pos' | 'neg' | 'none' | 'I'–'IV' | 'empty' | 'edited'）,
+ *          { n, r, m, c（迴歸直線 y = m x + c；不能算時 null）, mx, my, sse（最小的殘差平方和）, set（'default' | 'pos' | 'neg' | 'none' | 'I'–'IV' | 'empty' | 'edited' | 'sample'（抽樣本按鈕，一般任務不算））,
  *            mine（我的直線開著時 { m, c, sse }，否則 null）, quad（二次擬合 { a, R2 } 或 null）, zview（標準化）, chal（挑戰中） }
  *   'add'：在圖上加了一個點。{ n（加之後）, before: { n, r, m, c }, after: { r, m, c } }
  *   'drag'：拖曳一個點放開。{ n, r0（開始拖之前的 r）, r1（放開後的 r） }
@@ -13,7 +13,8 @@
   'use strict';
   if (!window.LabMission) return;
   const near = function (v, want, tol) { return v != null && isFinite(v) && Math.abs(v - want) <= tol; };
-  const pts = function (ev) { return ev.type === 'pts' && !ev.data.chal; };
+  // 抽樣本按鈕產生的點不算（要自己擺或自己改過）；抽完再拖曳就算自己的資料
+  const pts = function (ev) { return ev.type === 'pts' && !ev.data.chal && ev.data.set !== 'sample'; };
 
   LabMission.register('regression', [
     {

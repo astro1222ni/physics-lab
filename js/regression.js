@@ -534,6 +534,24 @@
     emitPts();
   }
   document.querySelectorAll('[data-set]').forEach(function (b) { b.addEventListener('click', function () { loadSet(b.getAttribute('data-set')); }); });
+  // 從母體抽樣本（11/21 站長：建模不可太理想化）：範例資料的 r 是硬湊出來的，這裡的 r 會隨抽樣變動
+  const elPR = $('popR'), elPN = $('popN');
+  function popOut() { $('popRo').textContent = tr(val(elPR), 2); $('popNo').textContent = String(Math.round(val(elPN))); }
+  [elPR, elPN].forEach(function (el) { el.addEventListener('input', popOut); el.addEventListener('change', popOut); });
+  popOut();
+  $('popDraw').addEventListener('click', function () {
+    if (state.chal) quitChal(true);
+    pushUndo();
+    const rho = val(elPR), n = Math.round(val(elPN));
+    state.pts = RC.sampleCloud(rand, rho, { n: n });
+    state.set = 'sample'; state.sel = -1;
+    refreshSets(); refresh();
+    const r = RC.stats(state.pts).r;
+    $('popMsg').textContent = T('母體 ρ = ' + tr(rho, 2) + '，這組 ' + n + ' 個點的樣本 r = ' + tr(r, 3) + '。再抽一次看看 r 會怎麼變。',
+      'Population ρ = ' + tr(rho, 2) + '; this sample of ' + n + ' points has r = ' + tr(r, 3) + '. Draw again and watch r change.');
+    ping(523.25, 0.1, 'triangle');
+    emitPts();
+  });
   $('clear').addEventListener('click', function () {
     if (state.chal) quitChal(true);
     if (state.pts.length) pushUndo();

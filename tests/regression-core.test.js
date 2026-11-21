@@ -136,6 +136,27 @@ test('挑戰：2000 題的 r 都在 [−0.95, 0.95]、和上一題差 ≥ 0.25�
   }
 });
 
+test('母體抽樣：點數對、都在範圍內；樣本 r 平均接近 ρ，n 越大散得越小', function () {
+  const rand = R.rng(1121);
+  function spread(rho, n) {
+    const rs = [];
+    for (let k = 0; k < 800; k++) {
+      const pts = R.sampleCloud(rand, rho, { n: n });
+      ok(pts.length === n, '點數 ' + pts.length);
+      ok(pts.every(function (p) { return p[0] > 0 && p[0] < 20 && p[1] > 0 && p[1] < 20; }), '在範圍內');
+      rs.push(R.stats(pts).r);
+    }
+    const m = rs.reduce(function (a, b) { return a + b; }, 0) / rs.length;
+    const sd = Math.sqrt(rs.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / rs.length);
+    return { m: m, sd: sd };
+  }
+  const a = spread(0.6, 10), b = spread(0.6, 80);
+  ok(Math.abs(a.m - 0.6) < 0.06 && Math.abs(b.m - 0.6) < 0.02, '平均 ' + a.m + ' ' + b.m);
+  ok(a.sd > 2 * b.sd, 'n=10 散得比 n=80 大：' + a.sd + ' vs ' + b.sd);
+  near(b.sd, (1 - 0.36) / Math.sqrt(79), 0.02);
+  const z = spread(0, 20); ok(z.sd > 0.15, 'ρ = 0 時樣本 r 也會離 0 不少：' + z.sd);
+});
+
 test('文字與工具：trim、snap、clampPt', function () {
   ok(R.trim(2.50, 2) === '2.5' && R.trim(-0.0001, 2) === '0' && R.trim(3, 2) === '3');
   ok(R.snap(3.26) === 3.5 && R.snap(3.24) === 3 && R.snap(-0.2) === -0);

@@ -146,6 +146,15 @@
           </div>
           <p class="hint" data-en="Tap an empty spot to add a point and drag a point to move it. On a keyboard: Enter picks what to move, the arrow keys move it.">點空白處加點，拖曳點可以移動。鍵盤：Enter 選要移動的東西，方向鍵移動。</p>
         </section>
+        <section class="card" data-deck="抽樣本|Sample" data-deck-order="15">
+          <h2 data-en="Draw a sample from a population">從母體抽一組樣本</h2>
+          <div class="slider"><label for="popR" data-en="Population correlation ρ">母體的相關係數 ρ</label><output id="popRo"></output>
+            <input id="popR" type="range" min="-1" max="1" step="0.05" value="0.6" data-decimals="2"></div>
+          <div class="slider"><label for="popN" data-en="Sample size n">樣本數 n</label><output id="popNo"></output>
+            <input id="popN" type="range" min="5" max="60" step="1" value="20" data-decimals="0"></div>
+          <button type="button" id="popDraw" style="width:100%" data-en="Draw a sample">抽一組樣本</button>
+          <p class="hint" id="popMsg" data-en="Real data are a sample, not the whole population: every draw from the same population gives a different r, and the fewer the points, the further r can stray from ρ.">真實資料只是一組樣本：同一個母體每次抽到的 r 都不一樣，點越少，r 離 ρ 可能越遠。</p>
+        </section>
 
         <section class="card" data-deck="顯示|Show" data-deck-order="20">
           <h2 data-en="Show">顯示</h2>

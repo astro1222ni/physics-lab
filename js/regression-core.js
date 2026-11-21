@@ -147,6 +147,24 @@
     }
     return null;
   }
+  /**
+   * 從母體抽一組樣本（11/21 站長：建模不可太理想化）：母體是二元常態、相關係數 rho，
+   * 每個點獨立抽，所以樣本 r 會在 rho 附近隨機變動，n 越小變動越大（標準誤約 (1 − rho²)/√(n − 1)）。
+   * 標準差取 3（畫面半寬約 3.2 個標準差），落在畫面外的點重抽（約 0.3%，對 r 的影響遠小於抽樣誤差）。opt：{ n, cx, cy, sx, sy }
+   */
+  function sampleCloud(rand, rho, opt) {
+    opt = opt || {};
+    const n = opt.n || 20, cx = opt.cx == null ? 10 : opt.cx, cy = opt.cy == null ? 10 : opt.cy;
+    const sx = opt.sx || 3, sy = opt.sy || 3, k = Math.sqrt(Math.max(0, 1 - rho * rho));
+    const pts = [];
+    for (let i = 0, tries = 0; i < n && tries < n * 200; tries++) {
+      const z1 = gauss(rand), z2 = gauss(rand);
+      const p = [cx + sx * z1, cy + sy * (rho * z1 + k * z2)];
+      if (p[0] < XR[0] + 0.3 || p[0] > XR[1] - 0.3 || p[1] < YR[0] + 0.3 || p[1] > YR[1] - 0.3) continue;
+      pts.push([round6(p[0]), round6(p[1])]); i++;
+    }
+    return pts;
+  }
   function standardize(a) {
     const n = a.length;
     let m = 0;
@@ -202,7 +220,7 @@
     XR: XR, YR: YR, N_MAX: N_MAX, SNAP: SNAP, ANSCOMBE: ANSCOMBE, DEFAULT: DEFAULT, PRESETS: PRESETS, CHAL_TOL: CHAL_TOL,
     round6: round6, trim: trim, clampPt: clampPt, snap: snap,
     stats: stats, sse: sse, residuals: residuals, zscores: zscores, quadFit: quadFit, solve3: solve3,
-    rng: rng, gauss: gauss, makeCloud: makeCloud, preset: preset, genChallenge: genChallenge, chalHit: chalHit
+    rng: rng, gauss: gauss, makeCloud: makeCloud, sampleCloud: sampleCloud, preset: preset, genChallenge: genChallenge, chalHit: chalHit
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RegressionCore = api;
