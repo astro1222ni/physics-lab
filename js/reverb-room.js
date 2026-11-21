@@ -806,10 +806,11 @@
       const wet = !state.dry && Tp > 0.02;
       const r = wet ? reverbFor(Tp) : null;
       const base = { gain: 0.75, filter: 1800, q: 0.7, dur: 0.045, type: 'bandpass' };
-      MA.hit(Object.assign({ at: t0, reverb: r }, base));
+      // 按下就是拍手的瞬間：直達聲晚 r/c 才到耳朵，反射照各自的路程延遲（11/21 全面檢查：時間零點和提示一致）
+      MA.hit(Object.assign({ at: t0 + a.t0, reverb: r }, base));
       if (!state.dry) {
         a.images.filter(function (m) { return m.level != null && m.level > -30; }).sort(function (p, q) { return q.level - p.level; }).slice(0, 12).forEach(function (m) {
-          MA.hit(Object.assign({}, base, { at: t0 + (m.delay - a.t0), gain: base.gain * Math.pow(10, m.level / 20) }));
+          MA.hit(Object.assign({}, base, { at: t0 + m.delay, gain: base.gain * Math.pow(10, m.level / 20) }));
         });
       }
     } else off = soundOffHint();

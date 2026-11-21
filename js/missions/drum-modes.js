@@ -73,7 +73,7 @@
     {
       id: 'drum-modes-7', level: 5,
       title: { zh: '把定音鼓調到 A2', en: 'Tune the timpani to A2' },
-      desc: { zh: '調鼓皮張力或鼓的大小，讓定音鼓的基準頻率落在 A2 = 110 Hz（誤差 5 音分以內），敲一下確認。', en: 'Adjust the tension or the size so the timpani’s reference frequency is A2 = 110 Hz (within 5 cents), then strike to check.' },
+      desc: { zh: '調鼓皮張力或鼓的大小，讓定音鼓的基準頻率（這一頁用理想膜估計，沒有扣掉空氣負載）落在 A2 = 110 Hz（誤差 5 音分以內），敲一下確認。', en: 'Adjust the tension or the size so the timpani’s reference frequency (estimated here from an ideal membrane, without the air loading) is A2 = 110 Hz (within 5 cents), then strike to check.' },
       check: function (ev) { const d = ev.data; return isStrike(ev) && d.drum === 'timpani' && sounding(d) && Math.abs(cents(d.fBase / 110)) <= 5; }
     },
     {

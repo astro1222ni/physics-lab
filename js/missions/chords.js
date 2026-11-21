@@ -42,7 +42,7 @@
     {
       id: 'chords-3', level: 3,
       title: { zh: '第一轉位的最低音', en: 'The bass of the first inversion' },
-      desc: { zh: '選一個三和弦和「第一轉位」，三個音都開，按「▶ 播放和弦」，看鍵盤上最低的音換成了哪一個和弦音。', en: 'Pick a triad and “1st inversion” with all three notes on, press “▶ Play chord”, and see which chord note is now the lowest on the keyboard.' },
+      desc: { zh: '選一個三度疊成的三和弦（大、小、增、減三和弦）和「第一轉位」，三個音都開，按「▶ 播放和弦」，看鍵盤上最低的音換成了哪一個和弦音。', en: 'Pick a triad built from thirds (major, minor, augmented or diminished) and “1st inversion” with all three notes on, press “▶ Play chord”, and see which chord note is now the lowest on the keyboard.' },
       check: function (ev) { const d = ev.data; return isPlay(ev) && d.n === 3 && d.full && d.inv === 1 && d.bassRole === '3'; }
     },
     {

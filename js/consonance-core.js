@@ -80,16 +80,18 @@
    * 不協和曲線：音分 0 到 C_MAX（每 step 音分一點）的 D。
    * 拆成「下方音內部 + 上方音內部 + 兩者之間」計算（和 dyad 完全相等，只是快一點）。
    */
-  function curve(f1, t, step) {
+  function curve(f1, t, step, fCut) {
     t = normTimbre(t);
     step = step || STEP;
-    const P = partials(t), A = spectrum(f1, P), I1 = MT.dissonance(A);
+    // fCut：只算頻率低於 fCut 的成分（頁面用它畫「實際播出」的曲線；拉伸泛音的聲音不放 4 kHz 以上）
+    const cut = function (S) { return fCut ? S.filter(function (x) { return x.f < fCut; }) : S; };
+    const P = partials(t), A = cut(spectrum(f1, P)), I1 = MT.dissonance(A);
     const N = Math.floor(C_MAX / step + 1e-9);
     const c = new Float64Array(N + 1), d = new Float64Array(N + 1);
     let max = -Infinity, min = Infinity, imax = 0;
     for (let i = 0; i <= N; i++) {
       c[i] = i * step;
-      const B = spectrum(f1 * fromCents(c[i]), P);
+      const B = cut(spectrum(f1 * fromCents(c[i]), P));
       d[i] = I1 + MT.dissonance(B) + cross(A, B);
       if (d[i] > max) { max = d[i]; imax = i; }
       if (d[i] < min) min = d[i];

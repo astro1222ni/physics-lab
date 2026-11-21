@@ -99,7 +99,7 @@
     {
       id: 'loudness-11', level: 8,
       title: { zh: '離喇叭多遠才安全', en: 'How far from the speaker' },
-      desc: { zh: '讓 1 公尺處的合計到 105 dB 以上（像演唱會的喇叭），再調「距離 r（m）」，讓那裡剛好降到 85 dB（±0.2）：站在那裡每天可以聽 8 小時。', en: 'Make the total at 1 m 105 dB or more (like a concert speaker), then adjust “Distance r (m)” until the level there is exactly 85 dB (±0.2): there you could listen for 8 hours a day.' },
+      desc: { zh: '讓 1 公尺處的合計到 105 dB 以上（像演唱會的喇叭），再調「距離 r（m）」，讓那裡剛好降到 85 dB（±0.2）。如果這些是 A 加權聲級（dBA，噪音計量的就是它），站在那裡每天最多可以聽 8 小時。', en: 'Make the total at 1 m 105 dB or more (like a concert speaker), then adjust “Distance r (m)” until the level there is exactly 85 dB (±0.2). If these are A-weighted levels (dBA, what a sound level meter reads), you could listen there for up to 8 hours a day.' },
       check: function (ev) { const d = ev.data; return isSum(ev) && d.total1 >= 105 && near(d.totalR, 85, 0.2); }
     },
     {

@@ -45,7 +45,7 @@
     {
       id: 'intervals-5', level: 3,
       title: { zh: '大十度', en: 'A major tenth' },
-      desc: { zh: '把「度數」選「十度」做出大十度，按「▶ 播放」：它是大三度再加一個八度，純律比值 5/4 × 2 = 5/2。', en: 'Set “Number” to “10th” to make a major tenth and press “▶ Play”: it is a major third plus an octave, just ratio 5/4 × 2 = 5/2.' },
+      desc: { zh: '把「度數」選「十度」做出大十度，按「▶ 播放」：它是大三度再加一個八度：純律比值 5/4 × 2 = 5/2，平均律是 2 的 16/12 次方，約 2.52。', en: 'Set “Number” to “10th” to make a major tenth and press “▶ Play”: it is a major third plus an octave: just ratio 5/4 × 2 = 5/2, equal-tempered 2 to the power 16/12, about 2.52.' },
       check: function (ev) { const d = ev.data; return ev.type === 'play' && d.what === 'main' && d.short === 'M10'; }
     },
     {

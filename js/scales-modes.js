@@ -467,7 +467,8 @@
     const dt = 60 / state.tempo;
     const f0 = SM.tonicFreq(A.tonic), tuning = state.tuning;
     const fr = list.map(function (s) { return f0 * SM.ratio(tuning, s).value; });
-    const total = list.length * dt + 0.35;
+    // 最後一音的排程：起音 (n−1)dt、長 max(0.6, 1.6dt)、釋音 0.4 s；時鐘等到它完全結束（60 BPM 也不截尾）
+    const total = (list.length - 1) * dt + Math.max(0.6, dt * 1.6) + 0.4 + 0.05;
     // 音效關閉：不建立聲音，只用畫面的時鐘讓鐘面與鍵盤照樣跟著走
     seq = !on ? silentClock(0.06) : AU.sequencer({
       tick: function (t0, t1, start) {

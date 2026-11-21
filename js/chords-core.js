@@ -168,6 +168,8 @@
     a.intsJ = pJ.ints; a.TJ = pJ.T; a.fvJ = pJ.fv; a.perRootJ = pJ.T * f0;
     a.fullJ = { ints: pFull.ints, T: pFull.T, fv: pFull.fv };
     if (tuning === 'just') { a.ints = pJ.ints; a.T = pJ.T; a.fv = pJ.fv; a.perRoot = a.perRootJ; }
+    // 只剩一個音：不論哪種律制，週期都是 1/f（11/21 全面檢查：畫布與紀錄表共用這個結果）
+    else if (act.length === 1) { a.ints = [1]; a.T = 1 / act[0].f; a.fv = act[0].f; a.perRoot = a.T * f0; }
     // 相鄰音的距離、到八度的缺口
     for (let i = 1; i < act.length; i++) a.gaps.push(cents(act[i].f / act[i - 1].f));
     if (act.length >= 2) a.wrap = 1200 - cents(act[act.length - 1].f / act[0].f);

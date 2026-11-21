@@ -34,7 +34,9 @@
   function fFromPos(p) { return F_MIN * Math.pow(2, p / 1200); }
   /** 頻率 → 滑桿位置 */
   function posFromF(f) { return 1200 * LOG2(f / F_MIN); }
-  function clampF(f) { return Math.max(F_MIN, Math.min(F_MAX, f)); }
+  /** 鋼琴 88 鍵在標準音 a4 下的兩端頻率（11/21 全面檢查：範圍跟著標準音移動，A4 = 415 時 A0 = 25.94 Hz） */
+  function rangeOf(a4) { a4 = a4 || A4_DEFAULT; return { lo: F_MIN * a4 / A4_DEFAULT, hi: F_MAX * a4 / A4_DEFAULT }; }
+  function clampF(f, a4) { const r = rangeOf(a4); return Math.max(r.lo, Math.min(r.hi, f)); }
   function clampA4(a) { return Math.max(A4_MIN, Math.min(A4_MAX, a)); }
 
   // ---------- 音名 ----------
@@ -170,14 +172,14 @@
   }
 
   /** 「加 100 Hz」：新的頻率（超過上限傳回 null）與跨了幾音分 */
-  function add100(f) {
+  function add100(f, a4) {
     const g = f + 100;
-    return g > F_MAX + 1e-9 ? null : { f: g, cents: cents(f, g) };
+    return g > rangeOf(a4).hi * (1 + 1e-12) + 1e-9 ? null : { f: g, cents: cents(f, g) };
   }
   /** 「＋／−1 半音」「＋／−1 八度」：f · 2^(k/12)（超出範圍傳回 null） */
-  function step(f, semis) {
-    const g = f * Math.pow(2, semis / 12);
-    return g < F_MIN - 1e-9 || g > F_MAX + 1e-9 ? null : g;
+  function step(f, semis, a4) {
+    const g = f * Math.pow(2, semis / 12), r = rangeOf(a4);
+    return g < r.lo * (1 - 1e-12) - 1e-9 || g > r.hi * (1 + 1e-12) + 1e-9 ? null : g;
   }
   /** 「加 100 Hz」剛好跨過 c 音分時的起點：f + 100 = f · 2^(c/1200) ⇒ f = 100 / (2^(c/1200) − 1) */
   function add100Start(c) { return 100 / (Math.pow(2, c / 1200) - 1); }
@@ -185,7 +187,7 @@
   return {
     F_MIN: F_MIN, F_MAX: F_MAX, POS_MAX: POS_MAX, A4_DEFAULT: A4_DEFAULT, A4_MIN: A4_MIN, A4_MAX: A4_MAX, A4_PRESETS: A4_PRESETS,
     SPEED: SPEED, KEY_LO: KEY_LO, KEY_HI: KEY_HI, WHITE_COUNT: WHITE_COUNT, INSTRUMENTS: INSTRUMENTS,
-    fFromPos: fFromPos, posFromF: posFromF, clampF: clampF, clampA4: clampA4,
+    fFromPos: fFromPos, posFromF: posFromF, rangeOf: rangeOf, clampF: clampF, clampA4: clampA4,
     cents: cents, etFreq: etFreq, midiFloat: midiFloat, isBlack: isBlack, label: label, analyze: analyze,
     instsAt: instsAt, instById: instById, keyCenter: keyCenter, xOfMidi: xOfMidi, midiOfX: midiOfX, keyAt: keyAt,
     octaveEdges: octaveEdges, linPos: linPos, logPos: logPos, ladderHeight: ladderHeight,

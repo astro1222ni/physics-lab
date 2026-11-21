@@ -44,9 +44,9 @@
     },
     {
       id: 'missing-fundamental-3', level: 2,
-      title: { zh: '手機彈貝斯', en: 'A bass on a phone' },
-      desc: { zh: '選「手機小喇叭」，把基頻調到 110 Hz（貝斯的 A2 空弦）：喇叭放不出 110 Hz，耳朵卻仍然聽到 110 Hz。',
-        en: 'Choose “Phone speaker” and set the fundamental to 110 Hz (a bass guitar’s open A2): the speaker cannot play 110 Hz, yet the ear still hears 110 Hz.' },
+      title: { zh: '手機彈低音', en: 'A low note on a phone' },
+      desc: { zh: '選「手機小喇叭」，把基頻調到 110 Hz（吉他第五弦的 A2 空弦）：喇叭放不出 110 Hz，耳朵卻仍然聽到 110 Hz。',
+        en: 'Choose “Phone speaker” and set the fundamental to 110 Hz (a guitar’s open fifth string, A2): the speaker cannot play 110 Hz, yet the ear still hears 110 Hz.' },
       check: function (ev) { const d = ev.data; return st(ev) && d.filter === 'speaker' && d.f0 === 110 && !d.hasFund && atF0(d, 2); }
     },
     {

@@ -590,7 +590,7 @@
   function drawEnv(now) {
     const r = L.env, a = an;
     const Tw = a.win;
-    panel(r, T('拍：響度的起伏', 'Beats: the swelling loudness'), T('時間窗 ', 'window ') + niceTime(Tw));
+    panel(r, T('拍：振幅的起伏', 'Beats: the swelling amplitude'), T('時間窗 ', 'window ') + niceTime(Tw));
     const x0 = r.x + 12, x1 = r.x + r.w - 12;
     const head = r.y + 26 * fs + 10;
     if (!a.hasPair) {
@@ -661,7 +661,7 @@
         pillAt(T('1 拍 = ', '1 beat = ') + niceTime(P), (xa + xb) / 2, C['bt-beat']);
       }
     } else {
-      pillAt(T('不拍：響度不變', 'No beats: the loudness stays the same'), (x0 + x1) / 2, C['bt-ok']);
+      pillAt(T('不拍：振幅不變', 'No beats: the amplitude stays the same'), (x0 + x1) / 2, C['bt-ok']);
     }
     // 播放的游標
     if (live) {

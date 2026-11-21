@@ -98,11 +98,16 @@
   // ======================= 迴響時間 =======================
   /** 賽賓公式（A ≤ 0 時傳回 Infinity：沒有吸音，聲音永遠不會消失） */
   function sabine(V, A) { return A > 0 ? K_SABINE * V / A : Infinity; }
-  /** 艾林公式（ᾱ ≥ 1 時 T60 = 0：每次碰到牆就全部被吸收） */
-  function eyring(V, S, abar) {
-    if (!(abar > 0)) return Infinity;
+  /**
+   * 艾林公式（ᾱ ≥ 1 時 T60 = 0：每次碰到牆就全部被吸收）。
+   * ᾱ 只取六個面的平均吸音係數；人、家具這類不屬於牆面的吸音量 Aextra 直接加在分母（Kuttruff 的做法）。
+   * 11/21 全面檢查：以前把人的吸音量也除以牆面積算進 ᾱ，人一多 ᾱ 就超過 1、變成「零迴響」。
+   */
+  function eyring(V, S, abar, Aextra) {
+    const Ax = Aextra > 0 ? Aextra : 0;
+    if (!(abar > 0) && !(Ax > 0)) return Infinity;
     if (abar >= 1) return 0;
-    return K_SABINE * V / (-S * Math.log(1 - abar));
+    return K_SABINE * V / (-S * Math.log(1 - Math.max(0, abar)) + Ax);
   }
   /** 衰減曲線：第 t 秒的位準（dB，相對開始時） */
   function decayDb(t, T60) { return T60 > 0 ? -60 * t / T60 : (t > 0 ? -Infinity : 0); }
@@ -193,8 +198,8 @@
     cfg = normalize(cfg);
     const V = volume(cfg.L, cfg.W, cfg.H), S = surfaceArea(cfg.L, cfg.W, cfg.H);
     const ab = absorption(cfg);
-    const abar = ab.A / S;
-    const ts = sabine(V, ab.A), te = eyring(V, S, abar);
+    const abar = ab.Asurf / S;   // 六個面的平均吸音係數（人的吸音另計）
+    const ts = sabine(V, ab.A), te = eyring(V, S, abar, ab.Apeople);
     const P = positions(cfg);
     const r0 = dist(P.src, P.lis);
     const imgs = images(cfg, cfg.order);

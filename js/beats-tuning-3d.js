@@ -46,8 +46,8 @@
       if (hudLast[k] !== key) { hudLast[k] = key; hudEl[k].innerHTML = h; hudEl[k].className = cls || ''; }
     }
     function updateAria() {
-      canvas.setAttribute('aria-label', T('拍的 3D 螺旋：時間從左往右，打拍那一對泛音的相量相加，尖端畫出螺旋，離中心軸的距離就是響度；逆時針轉代表待調音偏高，順時針代表偏低。拖曳旋轉，滾輪或雙指縮放，方向鍵也可以轉動。',
-        '3D beat spiral: time runs from left to right; the phasors of the beating pair of overtones are added and the tip traces a spiral whose distance from the axis is the loudness; anticlockwise means the tuned note is sharp, clockwise flat. Drag to rotate, scroll or pinch to zoom, or use the arrow keys.'));
+      canvas.setAttribute('aria-label', T('拍的 3D 螺旋：時間從左往右，打拍那一對泛音的相量相加，尖端畫出螺旋，離中心軸的距離就是振幅；逆時針轉代表待調音偏高，順時針代表偏低。拖曳旋轉，滾輪或雙指縮放，方向鍵也可以轉動。',
+        '3D beat spiral: time runs from left to right; the phasors of the beating pair of overtones are added and the tip traces a spiral whose distance from the axis is the amplitude; anticlockwise means the tuned note is sharp, clockwise flat. Drag to rotate, scroll or pinch to zoom, or use the arrow keys.'));
     }
     updateAria();
 
@@ -290,7 +290,7 @@
         return new THREE.Line(new THREE.BufferGeometry().setFromPoints(p), new THREE.LineBasicMaterial({ color: col('bt-sum') }));
       };
       gHelix.add(edge(1), edge(-1));
-      const lf = label(T('地板：響度包絡 ±|z|', 'floor: envelope ±|z|'), C['bt-sum'], 0.15, 700);
+      const lf = label(T('地板：振幅包絡 ±|z|', 'floor: envelope ±|z|'), C['bt-sum'], 0.15, 700);
       lf.position.set(X(0) + 0.9, FLOOR + 0.06, -RAD - 0.35);
       gLabels.add(lf);
       buildCursor();
@@ -311,7 +311,7 @@
         ballMat: mat(C['bt-lamp'], { emissive: col('bt-lamp'), ei: 0.4, metal: 0.2, rough: 0.25 }),
         la: label(an.m > 1 ? an.m + 'f' : 'f', C['bt-ref'], 0.16, 700, '1'),
         lb: label(an.n > 1 ? an.n + 'f' : 'f', C['bt-tun'], 0.16, 700, '2'),
-        lr: label(T('|z| = 響度', '|z| = loudness'), C.accent, 0.15, 700)
+        lr: label(T('|z| = 振幅', '|z| = amplitude'), C.accent, 0.15, 700)
       };
       cur.ring.rotation.y = PI / 2; cur.disk.rotation.y = PI / 2;
       cur.ball = new THREE.Mesh(new THREE.SphereGeometry(0.06, 20, 14), cur.ballMat);
@@ -351,7 +351,7 @@
           (d.s > 0 ? T('逆時針 → 偏高（寬）', 'anticlockwise → sharp (wide)') : T('順時針 → 偏低（窄）', 'clockwise → flat (narrow)')), d.s > 0 ? 'w' : '');
         setHud('win', T('時間窗 ', 'Window ') + B.fx(d.win, d.win < 1 ? 2 : 0) + T(' 秒（順著時間往右看轉向）', ' s (look along time to see the turning)'), 'm');
       }
-      setHud('tip', d && d.playing ? T('播放中：切片跟著時間走，小球離軸的距離就是此刻的響度。', 'Playing: the slice moves with time; the ball’s distance from the axis is the loudness now.')
+      setHud('tip', d && d.playing ? T('播放中：切片跟著時間走，小球離軸的距離就是此刻的振幅。', 'Playing: the slice moves with time; the ball’s distance from the axis is the amplitude now.')
         : T('按「▶ 播放」切片會跟著時間走。調音旋鈕改變螺旋的轉速與轉向。', 'Press “▶ Play” and the slice moves with time. The tuning knob changes how fast and which way the spiral turns.'), 'm');
     }
 

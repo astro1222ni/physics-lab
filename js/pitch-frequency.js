@@ -89,12 +89,20 @@
   // =====================================================================
   const elF = $('freq'), elFo = $('freqo'), elA = $('a4'), elAo = $('a4o');
   const freqPosition = function (f) { return Math.round(PC.posFromF(f)); };
+  // 頻率滑桿與輸入框的範圍跟著標準音移動（鋼琴 A0–C8；A4 = 415 時 A0 = 25.94 Hz）
+  const fNum = {
+    toValue: function (pos) { return pos === freqPosition(state.f) ? state.f : PC.fFromPos(pos); },
+    toPos: PC.posFromF, min: PC.F_MIN, max: PC.F_MAX, decimals: 2
+  };
+  function syncRange() {
+    const r = PC.rangeOf(state.a4);
+    fNum.min = r.lo; fNum.max = r.hi;
+    elF.min = String(Math.floor(PC.posFromF(r.lo))); elF.max = String(Math.ceil(PC.posFromF(r.hi)));
+    state.f = PC.clampF(state.f, state.a4);
+  }
   if (window.LabNum) {
     // 讀數重新開啟輸入框時，沿用目前位置所對應的精確設定。
-    window.LabNum.register(elF, {
-      toValue: function (pos) { return pos === freqPosition(state.f) ? state.f : PC.fFromPos(pos); },
-      toPos: PC.posFromF, min: PC.F_MIN, max: PC.F_MAX, decimals: 2
-    });
+    window.LabNum.register(elF, fNum);
     window.LabNum.register(elA, {
       toValue: function (pos) { return pos === Math.round(state.a4) ? state.a4 : pos; },
       min: +elA.min, max: +elA.max
@@ -102,6 +110,7 @@
   }
   /** 讓滑桿的位置跟上 state（不送事件；打字的精確值以 state 為準） */
   function syncSliders() {
+    syncRange();
     if (window.LabNum) { window.LabNum.clear(elF); window.LabNum.clear(elA); }
     elF.value = String(freqPosition(state.f));
     elA.value = String(Math.round(state.a4));
@@ -110,7 +119,7 @@
   }
   /** 改頻率（鍵盤、按鈕、鍵盤方向鍵）：via 是任務事件的來源 */
   function setF(g, via, extra, quiet) {
-    g = PC.clampF(g);
+    g = PC.clampF(g, state.a4);
     if (Math.abs(g - state.f) < 1e-12) return false;
     const prev = lite();
     state.f = g;
@@ -128,14 +137,14 @@
 
   // 頻率滑桿：拖曳時即時更新（播放中的音跟著變），放開或打字輸入時送出事件
   elF.addEventListener('input', function () {
-    const g = PC.clampF(val(elF));
+    const g = PC.clampF(val(elF), state.a4);
     if (Math.abs(g - state.f) < 1e-12) return;
     state.f = g;
     elFo.textContent = fx(state.f, 2);
     freqChanged(true);
   });
   elF.addEventListener('change', function () {
-    state.f = PC.clampF(val(elF));
+    state.f = PC.clampF(val(elF), state.a4);
     elFo.textContent = fx(state.f, 2);
     const prev = state.committed || lite();
     if (Math.abs(prev.f - state.f) < 1e-12 && prev.a4 === state.a4) return;
@@ -147,14 +156,14 @@
   // 半音、八度、加 100 Hz
   document.querySelectorAll('[data-step]').forEach(function (b) {
     b.addEventListener('click', function () {
-      const k = +b.dataset.step, g = PC.step(state.f, k);
+      const k = +b.dataset.step, g = PC.step(state.f, k, state.a4);
       if (g == null) return;
       setF(g, Math.abs(k) === 12 ? 'oct' : 'semi', { dir: k > 0 ? 1 : -1 });
       say(describe(cur()) + T('（頻率 ×', ' (frequency ×') + fx(Math.pow(2, k / 12), 4) + T('）', ')'));
     });
   });
   $('add100').addEventListener('click', function () {
-    const r = PC.add100(state.f);
+    const r = PC.add100(state.f, state.a4);
     if (!r) return;
     const f0 = state.f;
     setF(r.f, 'add100');
@@ -162,8 +171,8 @@
       'Add 100 Hz: ' + fx(f0, 2) + ' → ' + fx(r.f, 2) + ' Hz, up ' + fx(r.cents, 1) + ' cents (' + fx(r.cents / 1200, 2) + ' octaves). Now ') + nameOf(cur().midi) + ' ' + centsTxt(cur().cents) + T('。', '.'));
   });
   function renderButtons() {
-    document.querySelectorAll('[data-step]').forEach(function (b) { b.disabled = PC.step(state.f, +b.dataset.step) == null; });
-    $('add100').disabled = !PC.add100(state.f);
+    document.querySelectorAll('[data-step]').forEach(function (b) { b.disabled = PC.step(state.f, +b.dataset.step, state.a4) == null; });
+    $('add100').disabled = !PC.add100(state.f, state.a4);
     document.querySelectorAll('[data-a4]').forEach(function (b) { b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.a4 - state.a4) < 1e-9)); });
     document.querySelectorAll('[data-spell]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.spell === 'flat') === state.flat)); });
     $('solfege').setAttribute('aria-pressed', String(state.solfege));
@@ -187,6 +196,8 @@
     if (Math.abs(v - state.a4) < 1e-9) return;
     state.a4 = v;
     elAo.textContent = fx(v, Math.abs(v - Math.round(v)) > 1e-9 ? 2 : 0);
+    const f0 = state.f; syncRange();
+    if (state.f !== f0) { elF.value = String(freqPosition(state.f)); elFo.textContent = fx(state.f, 2); }
     renderA4Hint(); freqChanged(false);
   });
   elA.addEventListener('change', function () {
@@ -741,16 +752,16 @@
     c.font = fnt(11, 700);
     const labelWidth = Math.max(c.measureText(rows[0].title).width, c.measureText(rows[1].title).width);
     const lx0 = Math.ceil(Math.max(14 + 78 * fs, 18 + labelWidth)), lx1 = AW - 16;
-    const fTop = PC.F_MAX, edges = PC.octaveEdges(27.5, fTop).concat([fTop]);
+    const rg = PC.rangeOf(state.a4), fLo = rg.lo, fTop = rg.hi, edges = PC.octaveEdges(fLo, fTop).concat([fTop]);
     c.font = fnt(12, 700); c.fillStyle = C.text; c.textAlign = 'left'; c.textBaseline = 'top';
     c.fillText(T('同樣的八度，畫在兩把尺上', 'The same octaves on two rulers'), 10, 6);
-    // 小結：A0 到 A4（四個八度）在線性尺上只佔多少
-    const share = PC.linPos(PC.etFreq(69, state.a4), fTop) * 100;
+    // 小結：A0 到 A4（四個八度）在線性尺（從 0 起算）上只佔多少：(f_A4 − f_A0) / f_C8，和標準音無關
+    const share = (PC.linPos(PC.etFreq(69, state.a4), fTop) - PC.linPos(fLo, fTop)) * 100;
     c.font = fnt(11); c.fillStyle = C.muted; c.textBaseline = 'top';
     const sum = T('A0–A4（四個八度）只佔線性尺的 ' + fx(share, 1) + '%', 'A0–A4 (four octaves): ' + fx(share, 1) + '% of the linear ruler');
     if (AW < 560) { c.textAlign = 'left'; c.fillText(sum, 10, 8 + 16 * fs); } else { c.textAlign = 'right'; c.fillText(sum, AW - 12, 8); }
     rows.forEach(function (r) {
-      const P = function (f) { return lx0 + (lx1 - lx0) * (r.kind === 'lin' ? PC.linPos(f, fTop) : PC.logPos(f, 27.5, fTop)); };
+      const P = function (f) { return lx0 + (lx1 - lx0) * (r.kind === 'lin' ? PC.linPos(f, fTop) : PC.logPos(f, fLo, fTop)); };
       c.font = fnt(11, 700); c.fillStyle = r.col; c.textAlign = 'left'; c.textBaseline = 'middle';
       c.fillText(r.title, 10, r.y + 5);
       for (let i = 0; i + 1 < edges.length; i++) {
@@ -815,7 +826,7 @@
         name: function () { return T('目前的頻率', 'Current frequency'); },
         move: function (dx, dy, big) {
           let g = null, extra = null, via = 'kbd';
-          if (dx) { g = PC.step(state.f, dx * (big ? 12 : 1)); via = big ? 'oct' : 'semi'; extra = { dir: dx }; }
+          if (dx) { g = PC.step(state.f, dx * (big ? 12 : 1), state.a4); via = big ? 'oct' : 'semi'; extra = { dir: dx }; }
           else if (dy) g = state.f * Math.pow(2, -dy * (big ? 10 : 1) / 1200);
           if (g == null) return false;
           return setF(g, via, extra);
@@ -837,8 +848,8 @@
     const a = cur();
     cv.setAttribute('aria-label', T('波形：' + fx(a.f, 2) + ' Hz，10 ms 裡有 ' + fx(a.f / 100, 2) + ' 個週期，週期 ' + fx(a.T, 3) + ' ms。最接近的音 ' + nameOf(a.midi) + '，' + centsTxt(a.cents) + '。',
       'Waveform: ' + fx(a.f, 2) + ' Hz, ' + fx(a.f / 100, 2) + ' periods in 10 ms, period ' + fx(a.T, 3) + ' ms. Nearest note ' + nameOf(a.midi) + ', ' + centsTxt(a.cents) + '.'));
-    cvA.setAttribute('aria-label', T('線性軸與對數軸：同樣的八度在線性軸上越來越寬，在對數軸上一樣寬。目前的頻率在線性軸的 ' + fx(PC.linPos(a.f, PC.F_MAX) * 100, 1) + '%、對數軸的 ' + fx(PC.logPos(a.f, 27.5, PC.F_MAX) * 100, 1) + '%。',
-      'Linear and logarithmic rulers: the same octaves get wider and wider on the linear ruler but are equal on the log ruler. The frequency now is at ' + fx(PC.linPos(a.f, PC.F_MAX) * 100, 1) + '% of the linear ruler and ' + fx(PC.logPos(a.f, 27.5, PC.F_MAX) * 100, 1) + '% of the log ruler.'));
+    cvA.setAttribute('aria-label', T('線性軸與對數軸：同樣的八度在線性軸上越來越寬，在對數軸上一樣寬。目前的頻率在線性軸的 ' + fx(PC.linPos(a.f, PC.rangeOf(state.a4).hi) * 100, 1) + '%、對數軸的 ' + fx(PC.logPos(a.f, PC.rangeOf(state.a4).lo, PC.rangeOf(state.a4).hi) * 100, 1) + '%。',
+      'Linear and logarithmic rulers: the same octaves get wider and wider on the linear ruler but are equal on the log ruler. The frequency now is at ' + fx(PC.linPos(a.f, PC.rangeOf(state.a4).hi) * 100, 1) + '% of the linear ruler and ' + fx(PC.logPos(a.f, PC.rangeOf(state.a4).lo, PC.rangeOf(state.a4).hi) * 100, 1) + '% of the log ruler.'));
   }
 
   // =====================================================================
@@ -992,11 +1003,11 @@
   function pitchSettings() { return { f: state.f, a: state.a4, A: state.A, B: state.B }; }
   function restoreNote(x) {
     if (!x || !Number.isFinite(x.f) || !Number.isFinite(x.a4)) return null;
-    return note(PC.clampF(x.f), PC.clampA4(x.a4));
+    return note(PC.clampF(x.f, PC.clampA4(x.a4)), PC.clampA4(x.a4));
   }
   function applyPitchSettings(o) {
     if (Number.isFinite(o.a)) state.a4 = PC.clampA4(o.a);
-    if (Number.isFinite(o.f)) state.f = PC.clampF(o.f);
+    if (Number.isFinite(o.f)) state.f = PC.clampF(o.f, state.a4);
     state.A = restoreNote(o.A);
     state.B = restoreNote(o.B);
   }
@@ -1062,8 +1073,8 @@
   // 啟動（不發聲、不送任務事件）
   // =====================================================================
   readColors();
-  state.f = PC.clampF(val(elF));
   state.a4 = PC.clampA4(val(elA));
+  state.f = PC.clampF(val(elF), state.a4);
   const saved = readSession();
   if (saved) {
     applyPitchSettings(saved);

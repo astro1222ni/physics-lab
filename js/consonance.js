@@ -95,10 +95,17 @@
   }
 
   // ---------- 計算（快取：音色或下方音改變才重算曲線） ----------
-  let CV = null, VS = null, curveKey = '', AN = null, anDirty = true, AC = null, acDirty = true;
+  let CV = null, VS = null, CVP = null, curveKey = '', AN = null, anDirty = true, AC = null, acDirty = true;
+  /** 拉伸泛音的聲音不放 4 kHz 以上的成分：有成分會被濾掉時，另算一條「實際播出」的曲線（11/21 全面檢查） */
+  function playedCurve() {
+    const t = Core.normTimbre(state.timbre);
+    if (t.mode !== 'stretched') return null;
+    const P = Core.partials(t), top = state.f1 * Math.pow(2, Core.C_MAX / 1200) * P[P.length - 1].rho;
+    return top >= HF_SKIP ? Core.curve(state.f1, t, undefined, HF_SKIP) : null;
+  }
   function ensureCurve() {
     const k = Core.timbreKey(state.timbre) + '@' + state.f1;
-    if (k !== curveKey) { CV = Core.curve(state.f1, state.timbre); VS = Core.valleys(CV); curveKey = k; anDirty = true; acDirty = true; }
+    if (k !== curveKey) { CV = Core.curve(state.f1, state.timbre); VS = Core.valleys(CV); CVP = playedCurve(); curveKey = k; anDirty = true; acDirty = true; }
   }
   function analysis() {
     ensureCurve();
@@ -642,6 +649,13 @@
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     curvePath(g, CV.c, CV.d); ctx.strokeStyle = shade(C['cs-curve'], D.dark ? -0.35 : -0.2); ctx.lineWidth = 3.4; ctx.stroke();
     curvePath(g, CV.c, CV.d); ctx.strokeStyle = C['cs-curve']; ctx.lineWidth = 2; ctx.stroke();
+    // 實際播出的分音（4 kHz 以上不放）算出的曲線：點線，讓耳朵聽到的和圖對得上
+    if (CVP) {
+      ctx.save(); ctx.setLineDash([2, 3]); curvePath(g, CVP.c, CVP.d);
+      ctx.strokeStyle = alpha(C['cs-rough'], 0.9); ctx.lineWidth = 1.8; ctx.stroke(); ctx.restore();
+      const yE = g.Y(CVP.d[CVP.d.length - 1]);
+      D.haloText(ctx, T('點線：實際播出的分音（< 4 kHz）', 'dotted: partials actually played (< 4 kHz)'), g.px1 - 4, Math.min(g.py1 - 6, yE + 14 * fs), C['cs-rough'], 'right', 'alphabetic', fnt(12, 600));
+    }
     // 純音：山頂與一個臨界頻帶
     if (state.timbre.mode === 'pure') {
       const cp = Core.cents(a.rPeak), xp = g.X(cp), yp = g.Y(a.Dpeak);

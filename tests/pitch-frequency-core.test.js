@@ -54,6 +54,13 @@ test('高八度 = 頻率加倍：每個 A 都是 27.5 × 2^k；「＋1 八度」
   });
   ok(P.step(3000, 12) === null, '超過 C8 不能再升八度');
   ok(P.step(40, -12) === null, '低於 A0 不能再降八度');
+  // 11/21 全面檢查：範圍跟著標準音移動
+  near(P.rangeOf(415).lo, 25.9375, 1e-9); near(P.rangeOf(466).hi, P.F_MAX * 466 / 440, 1e-9);
+  near(P.clampF(P.etFreq(21, 415), 415), 25.9375, 1e-9);
+  near(P.clampF(P.etFreq(108, 466), 466), P.etFreq(108, 466), 1e-9);
+  near(P.clampF(20, 440), 27.5, 1e-12);
+  ok(P.step(P.etFreq(33, 415), -12, 415) !== null, 'A4 = 415 時 A1 可以降到 A0');
+  ok(P.step(P.etFreq(33, 415), -12) === null, '沒給標準音時照 440 的範圍');
 });
 
 test('週期 T = 1/f、波長 λ = v/f（v = 343 m/s）：440 Hz 的 λ ≈ 0.78 m；1000 Hz 的 T = 1 ms、λ = 0.343 m', function () {

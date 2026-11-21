@@ -311,8 +311,11 @@
    */
   function sequence(semis, dir) {
     const s = normSemis(semis).concat([12]), n = s.length;
-    if (dir === 'down') return s.slice().reverse();
-    if (dir === 'updown') return s.concat(s.slice(0, n - 1).reverse());
+    // 旋律小調（上行形）：傳統下行改回自然小調（升高的第 6、7 級還原，11/21 全面檢查）
+    const melodic = s.join() === '0,2,3,5,7,9,11,12';
+    const down = melodic ? [12, 10, 8, 7, 5, 3, 2, 0] : s.slice().reverse();
+    if (dir === 'down') return down;
+    if (dir === 'updown') return s.concat(down.slice(1));
     if (dir === 'arp') {
       const k = s.length - 1;   // 音階有幾個音
       const third = k >= 3 ? s[2] : s[Math.min(1, k)], fifth = k >= 5 ? s[4] : s[Math.min(2, k)];

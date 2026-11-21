@@ -167,5 +167,17 @@ test('normalize：缺欄位補預設、超出範圍限制在範圍內', function
   ok(o.L === 80 && o.W === 1.5 && o.mats.floor === C.DEFAULTS.mats.floor && o.src.u === 0.97 && o.lis.u === C.DEFAULTS.lis.u);
 });
 
+test('艾林：人的吸音另計，六面吸音板加滿人也不會變成零迴響（11/21 全面檢查）', function () {
+  const mats = {}; C.SURFACES.forEach(function (k) { mats[k] = 'panel'; });
+  const base = { L: 10, W: 8, H: 3, mats: mats, formula: 'eyring' };
+  const a0 = C.analyze(Object.assign({}, base, { people: 0 }));
+  const a1 = C.analyze(Object.assign({}, base, { people: 160 }));
+  ok(a1.people > 100, '人數有放進去');
+  near(a1.abar, a0.abar, 1e-12, 'ᾱ 只看牆面');
+  ok(a1.te > 0 && a1.te < a0.te, '人多 T60 變短但不是 0');
+  const V = 240, S = 2 * (80 + 30 + 24);
+  near(a1.te, 0.161 * V / (-S * Math.log(1 - a0.abar) + a1.Apeople), 1e-9);
+});
+
 console.log('\n' + pass + ' 項通過' + (fail ? '，' + fail + ' 項失敗' : ''));
 process.exit(fail ? 1 : 0);

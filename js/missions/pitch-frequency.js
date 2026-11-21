@@ -27,7 +27,7 @@
     {
       id: 'pitch-frequency-1', level: 1,
       title: { zh: '中央 C', en: 'Middle C' },
-      desc: { zh: '點鋼琴鍵或拖曳「頻率 f」，找到中央 C（C4，約 261.6 Hz）。', en: 'Tap a piano key or drag “Frequency f” to find middle C (C4, about 261.6 Hz).' },
+      desc: { zh: '點鋼琴鍵或拖曳「頻率 f」，找到中央 C（C4；標準音 440 時約 261.6 Hz）。', en: 'Tap a piano key or drag “Frequency f” to find middle C (C4; about 261.6 Hz when A4 = 440).' },
       check: function (ev) { const d = ev.data; return isP(ev) && d.name === 'C4' && Math.abs(d.cents) <= 5; }
     },
     {

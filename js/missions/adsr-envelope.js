@@ -28,8 +28,8 @@
     {
       id: 'adsr-envelope-1', level: 1,
       title: { zh: '按住不放', en: 'Hold it down' },
-      desc: { zh: '按住任何一個「琴鍵」（或電腦鍵盤的 A–K），等游標走過起音、衰減、進入延持段 S 再放開：釋音從延持的高度落下來（延持 S 至少 0.05）。',
-        en: 'Hold down any of the “Keys” (or A–K on a computer keyboard) until the cursor passes the attack and the decay and enters the sustain stage, then let go: the release falls from the sustain level (sustain S at least 0.05).' },
+      desc: { zh: '按住任何一個「琴鍵」（或電腦鍵盤的 A–K），等游標走過起音、衰減、進入延持段 S，再多按住約 0.2 秒才放開：釋音從延持的高度落下來（延持 S 至少 0.05）。',
+        en: 'Hold down any of the “Keys” (or A–K on a computer keyboard) until the cursor passes the attack and the decay and enters the sustain stage, keep holding about 0.2 s more, then let go: the release falls from the sustain level (sustain S at least 0.05).' },
       check: function (ev) { const d = ev.data; return rel(ev) && d.source === 'key' && d.phase === 'S' && d.S >= 0.05 - 1e-9 && d.held >= d.A + d.D + 0.2; }
     },
     {
@@ -49,8 +49,8 @@
     {
       id: 'adsr-envelope-4', level: 2,
       title: { zh: '分貝刻度上的直線', en: 'Straight lines in decibels' },
-      desc: { zh: '形狀選「指數」，延持 S 拉到 0，再切到「分貝刻度」：衰減和釋音都變成筆直往下的斜線——指數衰減每過一樣長的時間，就掉一樣多的分貝。',
-        en: 'Choose “Exponential”, pull sustain S down to 0 and switch to the “Decibel scale”: the decay and the release become straight downhill lines — an exponential decay loses the same number of decibels in every equal stretch of time.' },
+      desc: { zh: '形狀選「指數」，延持 S 拉到 0，再切到「分貝刻度」：衰減變成一路筆直往下的斜線（S = 0 時，放開以前聲音就已經衰減完了）——指數衰減每過一樣長的時間，就掉一樣多的分貝。',
+        en: 'Choose “Exponential”, pull sustain S down to 0 and switch to the “Decibel scale”: the decay becomes one straight downhill line (with S = 0 the sound has died away before you let go) — an exponential decay loses the same number of decibels in every equal stretch of time.' },
       check: function (ev) { const d = ev.data; return ev.type === 'env' && d.touched && d.scale === 'db' && d.shape === 'exp' && d.S <= 0.001; }
     },
     {
