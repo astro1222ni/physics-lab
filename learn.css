@@ -334,3 +334,13 @@ html.learn-class {--teaching:1.4}
 .learn-crumbs a,.learn-crumbs span,.learn-lobby-page .crumbs a,.learn-lobby-page .crumbs span {white-space:nowrap}
 .learn-crumbs a {padding:6px 5px;min-width:0}
 .learn-class .learn-crumbs {display:none}
+
+/* 頁首右邊替「登入＋齒輪」留的寬度改用 comments.js 實際量出的 --head-reserve（隨語言、字級、登入狀態改變）。
+   11/21 站長要修：英文版手機上 Sign in 蓋住 Class mode；寫死 152 px 時中文字級 1.3、英文 800 寬也會蓋到 */
+.learn-mast {padding-right:var(--head-reserve,158px);min-width:0} /* min-width:0：不讓課程名稱撐寬 grid 欄位 */
+.course-name {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:600px){
+  .learn-mast {padding-right:var(--head-reserve,152px)}
+  /* 手機上品牌只留 Ni 圖示：下一行的層級導覽列已有「物理自習室」，文字只留給螢幕閱讀器 */
+  .learn-brand span {position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
