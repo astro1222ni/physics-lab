@@ -25,7 +25,7 @@ const examples={
   h3: [[[1.5,0,0,0,36], [1.5,0,0,0,29]], [[1.3,0,0,0,41], [1.3,0,0,0,34]]],
   h4: [[[1.4,0,0,0,78], [1.4,0,0,0,77]], [[2.2,0,0,0,21], [2.2,0,0,0,20]]],
   h5: [[[2.5,0,0,0,80], [2.5,0,0,0,4]], [[3,0,0,0,72], [3,0,0,0,3]]],
-  h6: [[[3,0,0,0,10], [4,0,25,0,10]], [[2,0,0,0,10], [2.5,0,20,0,10]]],
+  h6: [[[2.5,0,30,0,10], [2.5,0,0,30,10]], [[2,0,0,0,10], [2.5,0,20,0,10]]],
   h7: [[[2,0,0,0,25], [3,33,0,0,25]], [[3,33,0,0,23], [2,0,0,0,23]]],
   h8: [[[2.5,0,0,0,18], [1.5,0,0,0,18]], [[3,0,0,0,15], [2,0,0,0,15]]],
   h9: [[[2,0,40,40,1], [2,0,0,0,1]], [[2,0,30,40,1], [2,0,0,0,1]]],
@@ -49,7 +49,9 @@ function measure(row) {
     if(runs.size>=128) runs.delete(runs.keys().next().value);
     runs.set(key,C.simulate(params));
   }
-  return C.measurement(params,runs.get(key),day);
+  const d=C.measurement(params,runs.get(key),day);
+  // A positive whole-school headcount guarantees a class can be inspected.
+  return {...d,inspectedClass:d.counts.i>0,comparing:true};
 }
 const earned=(payload,type='recorded')=>missions.filter(m=>m.check({type,data:payload},{})).map(m=>m.id);
 assert.equal(missions.length,20);assert.equal(new Set(missions.map(m=>m.id)).size,20);
@@ -65,6 +67,25 @@ assert.deepEqual(capture([2.5,0,50,0,41],[2.5,0,50,0,40]),[slug+'-h2']);
 assert.deepEqual(capture([2.5,0,0,50,41],[2.5,0,50,0,40]),[]);
 assert.deepEqual(capture([1.02,0,0,0,5],[1.02,0,0,0,4]),[slug+'-h2']);
 assert.deepEqual(capture([2,50,0,0,1]),[]);
+// A date and a record click alone never solve the three reviewed tasks.
+for(let day=0;day<=180;day++) {
+  const d={...measure([...defaults.slice(0,4),day]),inspectedClass:false,comparing:false};
+  assert.deepEqual(earned({...d,prior:null}),[]);
+  for(const id of ['5','8','h5']) assert.ok(!earned({...d,prior:initial}).includes(slug+'-'+id));
+  assert.deepEqual(earned({...d,prior:null},'observed'),[]);
+}
+assert.deepEqual(capture([2.5,0,0,0,58],[2.5,0,0,0,57]),[slug+'-h1']);
+assert.deepEqual(earned({...measure([2.5,0,0,0,58]),prior:measure([2.5,0,0,0,57])},'observed'),[]);
+assert.deepEqual(capture([2.5,0,80,80,0]),[]);
+assert.deepEqual(capture([2.5,0,80,20,3],[2.5,0,20,80,3]),[slug+'-h6']);
+for(const day of [0,1,90,180]) {
+  assert.deepEqual(capture([2.5,0,80,50,day],[2.5,0,50,80,day]),[slug+'-h6']);
+}
+for(const school of [{classes:4,size:20},{classes:16,size:45,varied:true,seed:876}]) {
+  const cfg={...initial,school},run=C.simulate(cfg),d=C.measurement(cfg,run,0);
+  assert.deepEqual(earned({...d,prior:null}),[]);
+  for(const p of run.points) assert.deepEqual(earned(C.measurement(cfg,run,p.day),'observed'),[]);
+}
 // A rapidly suppressed outbreak has a few uniforms left on day three, but never grew.
 assert.deepEqual(capture([2.5,0,80,80,3]),[]);
 const awards=(id,now,ref)=>earned({...measure(now),prior:ref?measure(ref):null}).includes(slug+'-'+id);
@@ -213,9 +234,29 @@ for(let n=0;n<pairs;n++) {
 }
 assert.ok(boundaries.every((bound,i)=>bound.has(ranges[i].min)&&bound.has(ranges[i].max)));
 assert.ok(offStep.slice(0,4).every(n=>n>0));
-const scan={seed,pairs,nativePairs:pairs/2,manualPairs:pairs/2,offStep,eventPairs,competingPairs,caseReport,singleRecords:pairs,checksPerRecord:missions.length,boundaries:boundaries.map(a=>[...a].sort((a,b)=>a-b))};
+// Exercise school identity at the same resolution as the UI: use real simulations
+// for whole days, class-local starts, no mixing, equal and uneven enrolment.
+const schoolRuns=[];
+for(const cfg of [{classes:4,size:20},{classes:11,size:34,varied:true,seed:5},{classes:16,size:45,varied:true,seed:739}]) {
+  for(const mixing of [0,.078,.5]) for(const origin of [-1,1]) {
+    for(const [basic,immune,mask,air] of [[2.5,0,0,0],[2,.16,.20,.22],[1.5,0,.1,.15]]) {
+      const settings={basic,immune,mask,air,school:cfg,mixing,origin};
+      const run=C.simulate(settings);
+      schoolRuns.push(day=>C.measurement(settings,run,day));
+    }
+  }
+}
+for(let k=0;k<20000;k++) {
+  const now=schoolRuns[integer(schoolRuns.length-1)], other=schoolRuns[integer(schoolRuns.length-1)];
+  const day=integer(180), prior=k%3===0?null:(k%3===1?now:other)(integer(1)?day:Math.max(day-1,0));
+  const d={...now(day),prior,comparing:!!integer(1)};
+  assert.ok(earned(d).length<=1,JSON.stringify({k,day,hits:earned(d)}));
+  assert.deepEqual(earned(d,'observed'),[]);
+}
+const scan={schoolChecks:20000,schoolRuns:schoolRuns.length,seed,pairs,nativePairs:pairs/2,manualPairs:pairs/2,offStep,eventPairs,competingPairs,caseReport,singleRecords:pairs,checksPerRecord:missions.length,boundaries:boundaries.map(a=>[...a].sort((a,b)=>a-b))};
 if(process.argv.includes('--json')) console.log(JSON.stringify({results,crosschecks,scan},null,2));
 else {
   for(const m of missions)console.log(m.id+'　等級 '+m.level+'　兩組手機滑桿解各自單獨完成');
+  console.log('另通過 '+schoolRuns.length+' 組非標準校況的 20,000 筆掃描、預設 181 天選日、只播放、交換兩項防治和第 57→58 天點名。');
   console.log('通過 20 題、40 組單獨解、預設與非記錄事件零觸發。全題互斥：固定種子 '+seed+'，'+pairs+' 組基準配對、'+pairs+' 筆單獨記錄、'+crosschecks+' 組見證交叉比較，另驗 '+eventPairs+' 組連續記錄（其中 '+competingPairs+' 組第二次原本符合不同題）。');
 }

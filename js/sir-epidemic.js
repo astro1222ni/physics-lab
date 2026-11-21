@@ -2,6 +2,12 @@
   'use strict';
   const C = window.SirEpidemicCore, D = window.LabDraw, N = window.LabNum;
   const T = window.LabSettings.t, $ = id => document.getElementById(id);
+  // In Simplified Chinese the page may still be hidden for conversion when
+  // the shared gate reads the rendered heading. Its text is already available.
+  document.addEventListener('DOMContentLoaded',()=>{
+    const title=$('mg-title');
+    if(title && !title.textContent.trim()) title.textContent=document.querySelector('.top h1').textContent;
+  });
   const cv = $('cv'), roll = $('roll'), layer = document.createElement('canvas');
   const percent = (n, digits = 1) => (100 * n).toFixed(digits) + '%';
   const dayText = n => T('第 ' + n + ' 天', 'Day ' + n);
@@ -29,6 +35,8 @@
   let span = 60, plot, staticDirty = true, grabbed = null, hover = false;
   let running = false, advancing = false, animation = 0, lastTime = null, playDay = 0, taps = 0;
   let room = null, viewToken = 0, rollKey = '';
+  let varied=false, schoolSeed=C.DEFAULT_SEED, courtFactory=null, previousLayout='', courtLayout='';
+  const schoolStorage='sir-epidemic/school-v1';
 
   function surface(canvas, bounds) {
     const w = Math.round(bounds.width), h = Math.round(bounds.height);
@@ -99,19 +107,27 @@
     g.fillStyle = fill; g.fill();
     stroke(g,[[l,yr(1)],[r,yr(1)]],D.alpha(col.re,.72),1.4,[6,5]);
     if (reference) stroke(g,curve(reference.result.points.slice(0,span+1),'i'),D.c.muted,2.4,[2,5]);
+    if($('showClasses').checked) {
+      const days=result.points.slice(0,span+1);
+      g.save();g.globalAlpha=.45;
+      result.campus.sizes.forEach((_,j)=>stroke(g,days.map(p=>[x(p.day),y((p.groups?.[j]||p).i)]),
+        'hsl('+((j*137+16)%360)+' 58% '+(D.dark?'69':'42')+'%)',1.2));
+      g.restore();
+    }
     stroke(g,curve(visible,'s'),col.s,2.4);
     stroke(g,curve(visible,'r'),col.r,2.4,[10,4]);
     stroke(g,infected,col.i,2.8,[4,3]);
     stroke(g,curve(visible,'re'),col.re,2.5,[2,4]);
 
     const cx = x(result.peakDay), cy = y(result.peak);
-    if (result.peakDay <= span) {
-      const cross = result.crossing;
-      if (cross) {
+    const cross=result.crossing;
+    if (cross && cross.day <= span) {
+        const cx=x(cross.day);
         stroke(g,[[cx,t],[cx,Math.max(yr(1),cy)]],D.alpha(D.c.field,.45),1.2,[3,4]);
         g.save(); g.translate(cx,yr(1)); g.rotate(Math.PI/4); g.fillStyle = col.re;
         g.strokeStyle = D.c['canvas-bg']; g.lineWidth = 1.6; g.fillRect(-4,-4,8,8); g.strokeRect(-4,-4,8,8); g.restore();
-      }
+    }
+    if (result.peakDay <= span) {
       D.ball(g,cx,cy,4.5,col.i,{shadow:false});
       const caption = T('高峰 ','Peak ') + result.peakDay.toFixed(1) + T(' 天',' d');
       g.font = label;
@@ -158,8 +174,22 @@
   }
 
   const classPick=$('rollClass');
-  classPick.add(new Option(T('全校 · 20 × 20','Whole school · 20 × 20'),'all'));
-  for(let cls=1;cls<=10;cls++) classPick.add(new Option(T('第 '+cls+' 班 · 40 人','Class '+cls+' · 40 students'),String(cls-1)));
+  function updateMenus(campus) {
+    const layout=campus.sizes.join(',');
+    if(layout===previousLayout) return;
+    previousLayout=layout;
+    const pick=classPick.value, origin=$('origin'), saved=origin.value;
+    classPick.replaceChildren(new Option(T('全校 · '+campus.total+' 人','Whole school · '+campus.total+' students'),'all'));
+    origin.replaceChildren(new Option(T('各班平均（每班 1%）','Evenly distributed (1% per class)'),'-1'));
+    campus.sizes.forEach((n,j)=>{
+      classPick.add(new Option(T('第 '+(j+1)+' 班 · '+n+' 人','Class '+(j+1)+' · '+n+' students'),String(j)));
+      origin.add(new Option(T('從第 '+(j+1)+' 班開始','Start in class '+(j+1)),String(j)));
+    });
+    classPick.value=pick!=='' && Number(pick)<campus.classes?pick:'all';
+    origin.value=saved!=='' && Number(saved)<campus.classes?saved:'-1';
+    roll.classList.toggle('class-detail',classPick.value!=='all');
+    rollKey='';
+  }
   const roster=roll.closest('details');
   const rollLayout=()=>{
     roster.open=!compact.matches;
@@ -168,47 +198,69 @@
   };
   rollLayout(); compact.addEventListener('change',rollLayout);
   roster.addEventListener('toggle',()=>{rollKey='';drawRoll();});
-  classPick.addEventListener('change',()=>{roll.classList.toggle('class-detail',classPick.value!=='all');rollKey='';drawRoll();});
+  classPick.addEventListener('change',()=>{roll.classList.toggle('class-detail',classPick.value!=='all');rollKey='';drawRoll();changed();});
 
   // One seat per student; the close-up uses exactly the same seats as its class in the overview.
   function drawRoll() {
     if(!roster.open || !data) return;
+    const campus=data.campus, overview=classPick.value==='all', selected=Number(classPick.value);
+    const rows=overview?campus.rows:Math.ceil(campus.sizes[selected]/10), blocks=overview?Math.ceil(campus.classes/2):1;
+    // 11/21：每班一塊淡底，上方一列班號，塊與塊之間留明顯走道，大校時也分得出各班。
+    const LABEL=.95, VGAP=.45, HGAP=.8;
+    roll.style.aspectRatio=overview?(20+HGAP)+' / '+(rows+blocks*LABEL+(blocks-1)*VGAP+.3):'';
     const surface2d=surface(roll,roll.getBoundingClientRect());
     if(!surface2d) return;
-    const {ctx:g,w,h}=surface2d,n=data.counts,overview=classPick.value==='all';
-    const key=[roll.width,roll.height,D.ver,n.s,n.i,n.r,classPick.value].join('/');
+    const {ctx:g,w,h}=surface2d;
+    const key=[roll.width,roll.height,D.ver,data.day,C.scenarioKey(data),classPick.value].join('/');
     if(key===rollKey) return;
     rollKey=key;
-    const cols=overview?20:10,rows=overview?20:4;
-    const gutter=overview?Math.min(4,w*.009):0, pad=overview?2:6;
-    const cell=Math.min((w-2*pad-gutter)/cols,(h-2*pad-4*gutter)/rows);
-    const mark=cell*(overview?.89:.79);
-    const left=(w-cols*cell-gutter)/2, top=(h-rows*cell-(overview?4*gutter:0))/2;
+    const cols=overview?20:10;
+    const pad=overview?2:6;
+    const units=overview?rows+blocks*LABEL+(blocks-1)*VGAP:rows;
+    const cell=Math.min((w-2*pad)/(cols+(overview?HGAP:0)),(h-2*pad)/units);
+    const gutter=overview?cell*HGAP:0, mark=cell*(overview?.86:.79);
+    const left=(w-cols*cell-gutter)/2, top=(h-units*cell)/2;
+    const blockTop=b=>top+(campus.rowStarts[b]+(b+1)*LABEL+b*VGAP)*cell;
     const col=colors();
     g.clearRect(0,0,w,h);g.fillStyle=D.c['canvas-bg'];g.fillRect(0,0,w,h);
-    const selected=Number(classPick.value),classCounts={s:0,i:0,r:0};
-    for(let row=0;row<rows;row++) for(let c=0;c<cols;c++) {
-      const seat=overview?row*20+c:(Math.floor(selected/2)*4+row)*20+(selected%2)*10+c;
-      const kind=C.groupAt(seat,n);
-      classCounts[kind]++;
-      const x=left+(c+.5)*cell+(overview&&c>=10?gutter:0);
-      const y=top+(row+.5)*cell+(overview?Math.floor(row/4)*gutter:0);
-      const r=mark/2;
-      g.fillStyle=col[kind];g.beginPath();
-      if(kind==='s') g.arc(x,y,r,0,Math.PI*2);
-      else if(kind==='i') {g.moveTo(x,y-r);g.lineTo(x+r,y+r);g.lineTo(x-r,y+r);g.closePath();}
-      else g.roundRect(x-r,y-r,mark,mark,Math.max(1,r*.13));
-      g.fill();
-      // A head and shoulders cut into each coloured attendance stamp.
-      const ink=D.c['canvas-bg'], shift=kind==='i'?r*.19:0;
-      g.fillStyle=ink;g.beginPath();g.arc(x,y-r*.26+shift,r*.22,0,2*Math.PI);g.fill();
-      g.beginPath();g.moveTo(x-r*.43,y+r*.43+shift);g.quadraticCurveTo(x-r*.37,y-r*.08+shift,x,y+shift);
-      g.quadraticCurveTo(x+r*.37,y-r*.08+shift,x+r*.43,y+r*.43+shift);g.closePath();g.fill();
+    const classCounts={s:0,i:0,r:0};
+    if(overview) for(let j=0;j<campus.classes;j++) {
+      const b=Math.floor(j/2), x0=left+(j%2)*(10*cell+gutter), y0=blockTop(b), lines=Math.ceil(campus.sizes[j]/10);
+      g.fillStyle=D.c.border;g.globalAlpha=.28;g.beginPath();
+      g.roundRect(x0-cell*.12,y0-cell*(LABEL-.05),10*cell+cell*.24,(lines+LABEL-.05)*cell+cell*.12,Math.min(8,cell*.4));g.fill();g.globalAlpha=1;
+      g.font=chartFont(Math.max(11,Math.min(14,cell*.62)),'700');g.textBaseline='middle';
+      g.fillStyle=D.c.text;g.textAlign='left';
+      g.fillText(T((j+1)+' 班','Class '+(j+1)),x0+cell*.1,y0-cell*LABEL/2);
+      g.fillStyle=D.c.muted;g.textAlign='right';
+      g.fillText(T(campus.sizes[j]+' 人',campus.sizes[j]+''),x0+10*cell-cell*.1,y0-cell*LABEL/2);
+    }
+    for(let j=0;j<campus.classes;j++) {
+      if(!overview && j!==selected) continue;
+      for(let index=0;index<campus.sizes[j];index++) {
+        const position=C.seatAt(campus,j,index);
+        const row=overview?position.row:Math.floor(index/10), c=overview?position.col:index%10;
+        const kind=C.seatGroup(data,j,index);
+        classCounts[kind]++;
+        const x=left+(c+.5)*cell+(overview&&c>=10?gutter:0);
+        const y=overview?blockTop(Math.floor(j/2))+(row-campus.rowStarts[Math.floor(j/2)]+.5)*cell:top+(row+.5)*cell;
+        const r=mark/2;
+        g.fillStyle=col[kind];g.beginPath();
+        if(kind==='s') g.arc(x,y,r,0,Math.PI*2);
+        else if(kind==='i') {g.moveTo(x,y-r);g.lineTo(x+r,y+r);g.lineTo(x-r,y+r);g.closePath();}
+        else g.roundRect(x-r,y-r,mark,mark,Math.max(1,r*.13));
+        g.fill();
+        // A head and shoulders cut into each coloured attendance stamp.
+        const ink=D.c['canvas-bg'], shift=kind==='i'?r*.19:0;
+        g.fillStyle=ink;g.beginPath();g.arc(x,y-r*.26+shift,r*.22,0,2*Math.PI);g.fill();
+        g.beginPath();g.moveTo(x-r*.43,y+r*.43+shift);g.quadraticCurveTo(x-r*.37,y-r*.08+shift,x,y+shift);
+        g.quadraticCurveTo(x+r*.37,y-r*.08+shift,x+r*.43,y+r*.43+shift);g.closePath();g.fill();
+      }
     }
     const desc=Object.keys(classCounts).map(k=>T(...groupNames[k])+' '+classCounts[k]).join(' · ');
     roll.setAttribute('aria-label',classPick.selectedOptions[0].text+' · '+desc);
     $('classCount').hidden=overview;
-    if(!overview) $('classCount').textContent=T('本班','This class')+' · S '+classCounts.s+' · I '+classCounts.i+' · R '+classCounts.r;
+    if(!overview) $('classCount').textContent=T('本班','This class')+' · S '+classCounts.s+' · I '+classCounts.i+' · R '+classCounts.r+
+      T(' · 每人每天約 ',' · About ')+result.contacts[selected].toFixed(1)+T(' 次接觸',' contacts per person per day');
   }
 
   const readingNodes = new Map();
@@ -222,7 +274,22 @@
     pair.forEach(el=>{el.hidden = value === null;});
     if (value !== null) pair[1].textContent=value;
   }
+  function updateComparison() {
+    if(!$('compareReadings').open || !data) return;
+    const columns=[data.day?data.yesterday:null,data,reference?.data];
+    const rows=[['i','具傳染力','Infectious'],['dailyIncidence','新增速率／天','New per day'],
+      ['r','已免疫或移出','Immune or removed'],['cumulativeInfected','累計新增','New since start']];
+    $('comparison').replaceChildren(...rows.map(([key,zh,en])=>{
+      const tr=document.createElement('tr'), th=document.createElement('th');
+      th.scope='row';th.textContent=T(zh,en);tr.append(th);
+      for(const p of columns) tr.insertCell().textContent=p?percent(p[key],key==='dailyIncidence'?7:3):'—';
+      return tr;
+    }));
+  }
   function updateReadings() {
+    $('schoolTotal').textContent=T('全校 '+data.campus.total+' 人','School · '+data.campus.total+' students');
+    $('schoolR0').textContent=data.schoolR0.toFixed(3);
+    updateComparison();
     $('dayStamp').textContent=dayText(data.day);
     $('dayo').textContent=String(data.day);
     cv.setAttribute('aria-valuenow',String(data.day)); cv.setAttribute('aria-valuetext',dayText(data.day));
@@ -279,7 +346,12 @@
     }
     return null;
   }
-  function measurement() { return {...data,prior:reference?.data || null,caseMission:caseOwner(data)}; }
+  function measurement() {
+    const j=Number(classPick.value);
+    const inspectedClass=roster.open && Number.isInteger(j) && data.campus.sizes[j]>0 &&
+      Array.from({length:data.campus.sizes[j]},(_,k)=>C.seatGroup(data,j,k)).includes('i');
+    return {...data,inspectedClass,comparing:$('compareReadings').open,prior:reference?.data || null,caseMission:caseOwner(data)};
+  }
   function recordObservation() {
     const d=measurement(), lm=window.LabMission;
     d.previousCase=!!d.caseMission;
@@ -324,11 +396,26 @@
     if (day > span) setSpan(C.DAYS);
     data=C.measurement(settings,result,day);
     updateReadings(); syncPlay(); drawGraph(); drawRoll();
-    room?.update(data);
+    if(room && courtLayout!==previousLayout) {
+      room.dispose();room=null;openCourt();
+    } else room?.update(data);
   }
   function scenario() {
     settings = { basic:N.value($('basic')), immune:N.value($('immune'))/100,
       mask:N.value($('mask'))/100, air:N.value($('air'))/100 };
+    settings.school={classes:N.value($('classes')),size:N.value($('size')),varied,seed:schoolSeed};
+    settings.mixing=N.value($('mixing'))/100;
+    updateMenus(C.school(settings.school));
+    settings.origin=Number($('origin').value);
+    $('classeso').textContent=settings.school.classes;
+    $('sizeo').textContent=settings.school.size;
+    $('mixingo').textContent=N.value($('mixing'))+'%';
+    const label=document.querySelector('label[for="size"]');
+    label.dataset.en=varied?'Mean students per class':'Students per class';
+    label.textContent=T(varied?'平均每班人數':'每班人數',label.dataset.en);
+    $('reroll').hidden=!varied;
+    $('equalSize').setAttribute('aria-pressed',String(!varied));
+    $('variedSize').setAttribute('aria-pressed',String(varied));
     result=C.simulate(settings); staticDirty=true;
     ids.forEach(id=>{ $(id+'o').textContent=N.value($(id))+(id==='basic'?'':'%'); });
     refreshDay();
@@ -382,7 +469,7 @@
       const crossing=result.reCrossDay;
       if (crossing !== null && old<crossing && playDay>=crossing) chime();
       // One tap represents four expected new cases. Carry fractional taps forward.
-      const amount=C.integrateIncidence(result.points,old,playDay)*C.PEOPLE/4;
+      const amount=C.integrateIncidence(result.points,old,playDay)*result.campus.total/4;
       const count=Math.floor(taps+amount);
       for(let j=1;j<=count;j++) {
         LabSound.tone({freq:610,type:'triangle',dur:.035,gain:.095,delay:dt*(j-taps)/amount});
@@ -417,6 +504,35 @@
     if(id==='basic' && N.value($(id))!==data.basic) basicMoved=true;
     stop();scenario();changed();
   }));
+  function savedSchool() {return {...settings.school,mixing:settings.mixing,origin:settings.origin};}
+  let restoringSchool=false;
+  function schoolChanged() {
+    if(restoringSchool) return;
+    stop();scenario();changed();
+    if(!window.LabShare?.restoring) try {localStorage.setItem(schoolStorage,JSON.stringify(savedSchool()));} catch {}
+  }
+  function restoreSchool(cfg) {
+    if(!cfg || !Number.isFinite(cfg.classes) || !Number.isFinite(cfg.size)) return;
+    const layout=C.school(cfg);
+    restoringSchool=true;
+    try {
+      varied=layout.varied;schoolSeed=layout.seed;
+      N.set($('classes'),layout.classes);N.set($('size'),layout.size);
+      N.set($('mixing'),(cfg.mixing??C.MIXING)*100);updateMenus(layout);
+      $('origin').value=Number.isInteger(cfg.origin) && cfg.origin>=0 && cfg.origin<layout.classes?String(cfg.origin):'-1';
+    } finally {restoringSchool=false;}
+    scenario();changed();
+  }
+  (window.LAB_SHARE_EXTRAS=window.LAB_SHARE_EXTRAS||[]).push({get:savedSchool,set:restoreSchool});
+  for(const id of ['classes','size','mixing']) $(id).addEventListener('input',schoolChanged);
+  $('origin').addEventListener('change',schoolChanged);
+  $('equalSize').addEventListener('click',()=>{varied=false;schoolChanged();});
+  $('variedSize').addEventListener('click',()=>{varied=true;schoolChanged();});
+  $('reroll').addEventListener('click',()=>{
+    schoolSeed=(schoolSeed+1+Math.floor(Math.random()*4294967295))>>>0;schoolChanged();
+  });
+  $('showClasses').addEventListener('input',()=>{staticDirty=true;drawGraph();});
+  $('compareReadings').addEventListener('toggle',()=>{updateComparison();changed();});
   function soundLabel() {
     const on=LabSound.enabled(); $('soundBtn').setAttribute('aria-pressed',String(on));
     $('soundLabel').textContent=on?T('音效開','Sound on'):T('音效關','Sound off');
@@ -447,6 +563,11 @@
     viewToken++; if(room) {room.dispose();room=null;}
     viewLabels(false,message);drawGraph();
   }
+  function openCourt() {
+    courtLayout=previousLayout;
+    room=courtFactory($('view3'),()=>flat(T('立體畫面已中斷，已回到曲線。','3D was interrupted. The curves are active.')),data.campus);
+    room.update(data);room.preset('overview');
+  }
   $('view2d').addEventListener('click',()=>flat());
   $('view3d').addEventListener('click',async()=>{
     if(room) return;
@@ -456,8 +577,7 @@
       const { createCourtyard }=await import('./sir-epidemic-3d.js');
       if (token!==viewToken) return;
       viewLabels(true);
-      room=createCourtyard($('view3'),()=>flat(T('立體畫面已中斷，已回到曲線。','3D was interrupted. The curves are active.')));
-      room.update(data); room.preset('overview');
+      courtFactory=createCourtyard;openCourt();
     } catch (error) {
       if (token===viewToken) flat(T('這個裝置無法顯示中庭，已回到曲線。','The courtyard is unavailable on this device. The curves are active.'));
     }
@@ -520,13 +640,46 @@
   }
   LabStepGuide.define(steps.map(([id,,,zh,en])=>({target:'#'+id,hint:[zh,en],action:id==='basic'||id==='day'?'drag':'tap'})),{key:guideKey});
   setSpan(60); scenario(); soundLabel(); changed();
+  if(!window.LAB_SHARE_HASH) try {restoreSchool(JSON.parse(localStorage.getItem(schoolStorage)));} catch {}
+  if(window.LabModeGate?.studying) {
+    const help=document.createElement('script');
+    help.src=new URL('labpanel.js',document.currentScript.src).href;
+    help.onload=mountLearningExamples;
+    document.head.append(help);
+  }
+  function mountLearningExamples() {
+    const panel=window.LabPanel, bar=$('studyExamples');
+    const examples=[
+      {day:16,title:['範例一：找高峰','Example 1 · Find the peak'],
+        q:['把日期從第 16 天移到第 17 天。標準學校的金線在哪一天穿過 1？','Move from day 16 to day 17. When does the gold curve cross one in the reference school?'],
+        sol:[['在「觀察紀錄」讀出穿越時刻，再和高峰時刻比較。各班同步時，紅線在金線向下穿過 1 時達到最高。','Compare the crossing time and the peak time in Observations. With synchronised classes, the red curve peaks as the gold curve crosses one.']]},
+      {day:57,title:['範例二：最後一件紅制服','Example 2 · The last red uniform'],
+        q:['第 57 天還有一件紅制服。日期往後一天，全校點名和曲線會各自顯示什麼？','One red uniform remains on day 57. Advance one day. What do the register and the curve show?'],
+        sol:[['第 58 天點名為零。到「觀察紀錄」讀具傳染力比例，仍可看到小於一人所占比例的正值。','The register shows zero on day 58. In Observations, the infectious share remains positive and smaller than one person’s share.']]}
+    ];
+    panel.mount({tabs:['concept','examples']});
+    panel.setContent('concept',panel.element('p',T('選一個範例，先預測隔天的點名或曲線，再用日期滑桿檢查。','Choose an example, predict the next day’s roll or curve, and check with the day slider.')));
+    panel.setStrip(T('先預測，再移動日期核對','Predict, then move the day to check'),'concept');
+    function apply(i) {
+      stop();flat();reference=null;recorded=null;
+      restoreSchool(C.school());
+      for(const id of ids) N.set($(id),Number($(id).defaultValue));
+      N.set($('day'),examples[i].day);
+      panel.showExample({...examples[i],n:i+1});panel.open('examples');
+    }
+    bar.className='ex-bar';
+    examples.forEach((ex,i)=>bar.append(panel.button(T(...ex.title),()=>apply(i))));
+    bar.hidden=false;
+    panel.showExample({...examples[0],n:1});
+    const requested=Number(new URLSearchParams(location.search).get('ex'));
+    if(Number.isInteger(requested) && requested>=1 && requested<=examples.length) apply(requested-1);
+  }
   LabSide.mount({module:guideKey,steps:stepRows,
     focus(){
       const panel=$('labside-panel').getBoundingClientRect(),meter=document.querySelector('.meter').getBoundingClientRect();
       if(meter.bottom>panel.top-10||meter.top<0) window.scrollBy({top:meter.bottom-panel.top+10,behavior:'instant'});
     },
-    guide(){
-      const index=nextControl();
+    guide(index=nextControl()){
       if(index<0) {LabStepGuide.hide();return;}
       const el=$(steps[index][0]);LabDeck.reveal(el);el.focus({preventScroll:true});
       LabStepGuide.show(index,{key:guideKey});

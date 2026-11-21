@@ -77,13 +77,13 @@ function texture(kind) {
   return map;
 }
 
-export function createCourtyard(host,onLoss) {
+export function createCourtyard(host,onLoss,campus) {
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;
   const canvas=renderer.domElement; canvas.setAttribute('role','img');
-  canvas.setAttribute('aria-label',T('校舍與四百人的班級隊形','School buildings and four hundred students in class formations'));
+  canvas.setAttribute('aria-label',T('校舍與 '+campus.total+' 人的班級隊形','School buildings and '+campus.total+' students in class formations'));
   host.appendChild(canvas);
   const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(34,1,.1,170);
   const controls=new OrbitControls(camera,canvas);
@@ -238,12 +238,21 @@ export function createCourtyard(host,onLoss) {
   const hairColors=[0x302724,0x4a342c,0x292a2e,0x694a3c,0x443430];
   const pantsColors=[0x3c4b58,0x64605f,0x44495c,0x485a5c,0x38465c];
   const students=[],caps=Array.from({length:5},(_,n)=>scalp(n));
-  for(let i=0;i<C.PEOPLE;i++) {
-    let seed=Math.imul(i+1,2654435761)>>>0;
+  const assembly=[];
+  const oldGrid=campus.classes===10 && campus.sizes.every(v=>v===40);
+  const blockRows=Math.ceil(campus.classes/2);
+  // All classes fit between the two boundary lines; use the original spacing at 20 rows.
+  const depthScale=Math.min(1,(19*.525+4*.33)/((campus.rows-1)*.525+(blockRows-1)*.33));
+  for(let j=0;j<campus.classes;j++) for(let index=0;index<campus.sizes[j];index++) {
+    const seat=C.seatAt(campus,j,index);
+    assembly.push({j,index,...seat});
+    const id=oldGrid?seat.oldSeat:seat.seat;
+    let seed=Math.imul(id+1,2654435761)>>>0;
     const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
     const pick=list=>list[Math.floor(random()*list.length)];
-    const row=Math.floor(i/20), col=i%20;
-    const x=(col-9.5)*.74+(col<10?-.37:.37), z=(row-9.5)*.525+(Math.floor(row/4)-2)*.33+.34;
+    const {row,col}=seat;
+    const x=(col-9.5)*.74+(col<10?-.37:.37);
+    const z=((row-(campus.rows-1)/2)*.525+(Math.floor(j/2)-(blockRows-1)/2)*.33)*depthScale+.34;
     const height=.86+.29*random(), width=.84+.37*random();
     const pose=transform(x,.082,z,width,height,.89+.19*random(),(random()-.5)*.79,(random()-.5)*.065);
     const local=(x,y,z,w,h,d,ry=0,rz=0,rx=0)=>pose.clone().multiply(transform(x,y,z,w,h,d,ry,rz,rx));
@@ -368,12 +377,12 @@ export function createCourtyard(host,onLoss) {
     data=next;
     if(lastAir!==data.air) {openWindows(data.air);ripple(0,0);lastAir=data.air;renderer.shadowMap.needsUpdate=true;}
     if(masks[0].visible!==(data.mask>0)) {masks.forEach(mesh=>{mesh.visible=data.mask>0;});renderer.shadowMap.needsUpdate=true;}
-    const n=data.counts,key=[n.s,n.i,n.r].join('/');
+    const key=[data.schoolKey,data.day,data.counts.s,data.counts.i,...(data.classCounts||[]).flatMap(c=>[c.s,c.i])].join('/');
     if(key!==lastCount) {
       const tones={s:new THREE.Color(D.c.neg),i:new THREE.Color(D.c.pos),r:new THREE.Color(D.c.probe)};
       const used={s:0,i:0,r:0}, dye=new THREE.Color(), light=new THREE.Color(0xfff2df), dark=new THREE.Color(0x23343d);
-      for(let i=0;i<C.PEOPLE;i++) {
-        const group=C.groupAt(i,n), tint=tones[group];
+      for(let i=0;i<assembly.length;i++) {
+        const seat=assembly[i], group=C.seatGroup(data,seat.j,seat.index), tint=tones[group];
         badges[group].setMatrixAt(used[group]++,parts.badges[i]);
         const shade=students[i].shade;
         dye.copy(tint).lerp(shade>0?light:dark,Math.abs(shade));

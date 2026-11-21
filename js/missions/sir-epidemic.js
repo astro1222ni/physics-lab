@@ -1,7 +1,8 @@
 (function () {
   'use strict';
   const slug='sir-epidemic', near=(a,b,tol=1e-9)=>Math.abs(a-b)<=tol;
-  const sameStart=(d,p)=>near(d.start.s,p.start.s);
+  const sameSchool=(d,p)=>d.schoolKey===p.schoolKey;
+  const sameStart=(d,p)=>sameSchool(d,p) && near(d.start.s,p.start.s);
   const sameCurve=(d,p)=>sameStart(d,p) && near(d.effective,p.effective);
   const sameDay=(d,p)=>d.day===p.day && d.cumulativeInfected>0;
   const sameRun=(d,p)=>sameStart(d,p) && near(d.basic,p.basic) && near(d.mask,p.mask) && near(d.air,p.air) && d.day>p.day;
@@ -83,7 +84,8 @@
     };
   }
   window.LabMission.register(slug,[
-    normal(1,1,'最後幾件紅制服','The last red uniforms','從第二天起，在曾經成長的疫情過峰後，找到只剩一到三位具傳染力者的那一天，記錄讀數。','From day two onward, after a growing wave has peaked, find a day with just one to three infectious students in the roll call. Record it.',[
+    normal(1,1,'最後幾件紅制服','The last red uniforms','從第二天起，在曾經成長的疫情過峰後，找到全校只剩一到三位具傳染力者的日子。切到一個仍有紅制服的班級核對，再記錄讀數。','From day two onward, after a growing wave has peaked, find a day with just one to three infectious students in the school. Select a class that still has a red uniform in its register, then record.',[
+      item('在點名簿選一個仍有紅制服的班級。','Select a class that still has a red uniform in the register.',d=>d.inspectedClass),
       item('尚未觀察到疫情先成長、過峰後下降。','The observation has not yet captured a growing wave after its peak.',d=>d.day>1 && wave(d) && d.day>d.peakDay && d.i<d.yesterday.i),
       item('點名簿中具傳染力人數尚不符合。','The infectious headcount does not yet match.',d=>d.counts.i>=1 && d.counts.i<=3)
     ]),
@@ -91,9 +93,9 @@
       dayZero,item('起初沒有形成成長波。','The wave is not growing initially.',d=>d.initialRe>1 && wave(d)),
       item('高峰仍太高。','The peak is still too high.',d=>d.peak<.1)
     ]),
-    normal(3,3,'兩道防線','Two layers of protection','全校起初都沒有免疫力。讓原本會擴大的疫情在兩種防治下從一開始就不擴大，回第零天記錄。','Start without immunity. Use both controls to keep an otherwise growing outbreak from growing at the start. Record day zero.',[
-      dayZero,item('起始族群或原本的傳播走勢不符。','Check the starting population and its uncontrolled trend.',d=>near(d.start.r,0) && d.basic*d.start.s>1),
-      item('兩項防治都對傳播有作用。','Have both controls reduce transmission.',d=>d.initialRe<d.maskOnlyRe && d.initialRe<d.airOnlyRe),
+    normal(3,3,'兩道防線','Two layers of protection','全校起初都沒有免疫力。讓單用口罩或單靠通風時疫情都仍會成長，兩者合用才壓住它，回第零天記錄。','Start without immunity. Keep the wave growing with either control alone, then stop initial growth by combining them. Record day zero.',[
+      dayZero,item('起始族群或原本的傳播走勢不符。','Check the starting population and its uncontrolled trend.',d=>near(d.start.r,0) && d.basic*d.initialFactor>1),
+      item('單用口罩或單靠通風時，起初有效再生數都要高於 1。','Keep initial reproduction above one with either measure alone.',d=>d.maskOnlyRe>1 && d.airOnlyRe>1),
       item('目前防治下，起初仍在成長。','The infection still grows initially with these controls.',d=>d.initialRe<=1)
     ]),
     normal(4,4,'姍姍來遲的高峰','A late peak','把高峰延到第 30 天以後，同時讓高峰超過 5%。在最接近高峰的整天記錄。','Delay the peak until after day 30 while keeping it above 5%. Record the nearest whole day to the peak.',[
@@ -101,9 +103,9 @@
       item('高峰還太低。','The peak is still too low.',d=>d.peak>.05),
       item('游標對準最接近高峰的整天。','Move the cursor to the nearest whole day.',atPeak)
     ]),
-    normal(5,5,'越過門檻還在傳','Beyond the threshold','讓疫情先成長。找出連續兩天都已過峰、今天點名仍有至少四位具傳染力者，且還有新增感染的一天。比較最終非易感比例與防治後有效門檻，確認前者較高，再按「記錄讀數」。','Start with a growing wave. Find two consecutive days after its peak. On the second day, at least four students must still be infectious and new infections must still occur. Compare the final non-susceptible share with the threshold under the current controls. If the final share is higher, press “Record readings”.',[
-      item('起初有效再生數須高於 1，讓疫情先成長。','Start with effective reproduction above one so the wave grows.',d=>d.initialRe>1 && wave(d)),
-      item('昨天和今天都要過峰，今天仍有新增感染。','Find two post-peak dates with new infections still occurring today.',d=>d.reCrossDay!==null && d.yesterday.day>d.reCrossDay && d.i<d.yesterday.i && d.dailyIncidence>0),
+    normal(5,5,'越過門檻還在傳','Beyond the threshold','採用口罩或通風措施後，讓疫情仍先成長。找出連續兩天都已過峰、今天點名仍有至少四位具傳染力者，且還有新增感染的一天。比較最終非易感比例與防治後有效門檻，確認前者較高，再按「記錄讀數」。','Apply masks or ventilation while keeping the wave initially growing. Find two consecutive days after its peak. On the second day, at least four students must still be infectious and new infections must still occur. Compare the final non-susceptible share with the threshold under the current controls. If the final share is higher, press “Record readings”.',[
+      item('採用口罩或通風措施後，起初有效再生數仍須高於 1。','Apply a control and keep initial effective reproduction above one.',d=>(d.mask>0 || d.air>0) && d.initialRe>1 && wave(d)),
+      item('昨天和今天都要過峰，今天仍有新增感染。','Find two post-peak dates with new infections still occurring today.',d=>d.yesterday.day>d.peakDay && d.i<d.yesterday.i && d.dailyIncidence>0),
       item('點名時還有至少四位具傳染力者。','Look for at least four infectious students in the register.',d=>d.counts.i>=4),
       item('最終非易感比例（含初始免疫）須高於防治後的有效門檻。','Find a final non-susceptible share above the threshold under the current controls.',d=>d.finalNonSusceptible>d.effectiveThreshold)
     ]),
@@ -115,7 +117,8 @@
       keep,atSameDate,lowerBasic,item('比較當日的具傳染力比例。','Compare infectious shares on the saved day.',d=>d.prior && d.i<d.prior.i),item('相對基準的峰高降幅還不夠。','The peak has not fallen enough relative to the reference.',d=>d.prior && d.prior.peak-d.peak>=.1),
       item('高峰相對基準延後得不夠。','The peak has not been delayed enough.',d=>d.prior && d.peakDay-d.prior.peakDay>=4)
     ]),
-    normal(8,8,'新增先轉彎','New infections turn first','在距離具傳染力比例高峰還超過一天時，找出新增感染速率已低於昨天、具傳染力比例卻仍在上升的一天，按「記錄讀數」。','More than a day before the infectious peak, find a date when the infection rate is lower than yesterday while the infectious share is still rising. Press “Record readings”.',[
+    normal(8,8,'新增先轉彎','New infections turn first','在距離具傳染力比例高峰還超過一天時，找出新增感染速率已低於昨天、具傳染力比例卻仍在上升的一天，展開觀察紀錄裡的「對照讀數」核對兩天，再記錄。','More than a day before the infectious peak, find a date when the infection rate is lower than yesterday while the infectious share is still rising. Open “Compare readings” in Observations to check both days, then record.',[
+      item('展開觀察紀錄的「對照讀數」，核對兩天的走勢。','Open “Compare readings” in Observations to check both days.',d=>d.comparing),
       item('當下新增感染速率已比昨天同一時刻低。','Find an infection rate lower than at the same time yesterday.',d=>d.day>0 && d.dailyIncidence<d.yesterday.dailyIncidence),
       item('具傳染力比例仍在增加，距離高峰還超過一天。','Keep the infectious share rising with more than a day to go until its peak.',d=>d.i>d.yesterday.i && d.day+1<d.peakDay)
     ]),
@@ -129,7 +132,7 @@
       item('同日具傳染力比例的反差還不夠。','The same-day infectious shares are still too similar.',d=>d.prior && d.i-d.prior.i>=.02)
     ]),
     hidden(1,3,'紅制服已從點名簿消失，紙上的細線仍未貼地。','The red uniforms vanish from the register while a fine line still hovers above the page.',
-      (d,p)=>sameRun(d,p) && d.day===p.day+1 && d.initialRe<.8 && p.counts.i>0 && d.counts.i===0 && d.i<p.i && d.dailyIncidence>0),
+      (d,p)=>sameRun(d,p) && d.day===p.day+1 && p.counts.i>0 && d.counts.i===0 && d.i<p.i && d.dailyIncidence>0),
     hidden(2,4,'相鄰兩頁點名簿，夾著金線落下的那一刻。','Two facing pages of the register hold the instant the gold thread dips.',
       (d,p)=>sameRun(d,p) && d.day===p.day+1 && d.reCrossDay!==null &&
         p.day<d.reCrossDay && d.reCrossDay<=d.day),
@@ -137,13 +140,13 @@
       (d,p)=>sameRun(d,p) && p.re>1 && d.re<1 && d.day-p.day>=7 && p.i>.035 && near(d.i,p.i,.001)),
     hidden(4,5,'點名簿的兩端，悄悄交換了厚薄。','The two ends of the register trade places.',
       (d,p)=>sameRun(d,p) && wave(d) && d.day===p.day+1 && p.day>d.peakDay && p.s>p.r && d.r>=d.s && d.r-d.s<.025),
-    hidden(5,6,'散隊時剩下的紅制服，補齊了點名簿最後一欄。','The red uniforms left in formation complete the last column of the register.',
-      (d,p)=>sameRun(d,p) && p.re>1 && d.re<1 && d.s>.03 && d.cumulativeInfected-p.cumulativeInfected>.30 &&
+    hidden(5,6,'第一批紅制服散隊後夾進書籤。待最後一欄幾乎填完，展開「對照讀數」，找回剩下的紅制服。','Bookmark the register after the first red uniforms have left. When the last column is nearly full, open “Compare readings” to account for those that remained.',
+      (d,p)=>d.comparing && p.day>0 && p.r>p.start.r && sameRun(d,p) && p.re>1 && d.re<1 && d.s>.03 && d.cumulativeInfected-p.cumulativeInfected>.30 &&
         d.i<.0001 && near(p.i+d.cumulativeInfected-p.cumulativeInfected,(d.r-p.r)+d.i)),
     hidden(6,7,'兩張條件不同的記錄紙，疊在窗上只透出一條曲線。','Two sheets with different settings show a single curve when held to the window.',
-      (d,p)=>sameDay(d,p) && !near(d.basic,p.basic) && sameCurve(d,p) && d.i>d.start.i+.01 && near(d.i,p.i) && near(d.s,p.s)),
+      (d,p)=>d.day===p.day && ['basic','immune','mask','air'].some(key=>!near(d[key],p[key])) && sameCurve(d,p) && near(d.i,p.i) && near(d.s,p.s)),
     hidden(7,7,'兩班開始時的金線重疊，後來的紅制服卻排出不同隊形。','The gold threads start together, but the red uniforms form different lines later.',
-      (d,p)=>sameDay(d,p) && !sameStart(d,p) && near(d.initialRe,p.initialRe,.0001) && Math.abs(d.i-p.i)>.025),
+      (d,p)=>sameDay(d,p) && sameSchool(d,p) && !sameStart(d,p) && near(d.initialRe,p.initialRe,.0001) && Math.abs(d.i-p.i)>.025),
     hidden(8,8,'早到的鐘聲越過了舊屋脊。','An early bell rings above the old roofline.',
       (d,p)=>sameDay(d,p) && sameStart(d,p) && d.basic>p.basic && near(d.effective/d.basic,p.effective/p.basic) &&
         p.peakDay-d.peakDay>6 && d.peak-p.peak>.08 && d.i<d.yesterday.i && p.i>p.yesterday.i),
