@@ -142,4 +142,111 @@ assert.equal(book.record(onset,['8']),'8');
 assert.equal(book.record({...onset,day:5,prior:onset},['h2']),'8');
 assert.equal(book.owner({...onset,basic:1.021}),null);
 assert.equal(C.casebook(book.entries()).owner(onset),'8');
-console.log('SIR 核心通過，含守恆、連續峰時與交點、門檻、即時速率、第 1 天反例、過衝及情境記錄。');
+// Frozen digest of all eight continuous fields on all 181 published dates.
+const continuous=over.points.map(({counts,...p})=>p);
+assert.equal(require('node:crypto').createHash('sha256').update(JSON.stringify(continuous)).digest('hex'),
+  '196ba26869ecd868f050fa41ae8c5aa4b3a83c7f68430c6f72dd65c5a29443b7');
+assert.deepEqual(C.school().sizes,Array(10).fill(40));
+for(const classes of [4,9,16]) for(const size of [20,32,45]) {
+  assert.equal(C.school({classes,size}).total,classes*size);
+  for(const seed of [0,1,1121,4294967295]) {
+    const cfg={classes,size,varied:true,seed}, layout=C.school(cfg);
+    assert.deepEqual(C.school(cfg),layout);
+    assert.ok(layout.sizes.every(n=>n>=Math.max(15,Math.round(size*.75)) && n<=Math.min(50,Math.round(size*1.25))));
+    assert.equal(layout.total,layout.sizes.reduce((a,b)=>a+b));
+    const seats=layout.sizes.flatMap((n,j)=>Array.from({length:n},(_,k)=>C.seatAt(layout,j,k)));
+    assert.equal(new Set(seats.map(v=>v.row*20+v.col)).size,layout.total);
+    assert.deepEqual(seats.map(v=>v.seat),seats.map((_,i)=>i));
+  }
+}
+assert.notDeepEqual(C.school({varied:true,seed:1}).sizes,C.school({varied:true,seed:2}).sizes);
+for(const n of [15,30,137,274,400,548,800]) {
+  for(let r=0;r<=n;r++) {
+    const count={s:n-r,i:0,r};
+    assert.equal(Array.from({length:n},(_,k)=>C.groupAt(k,count,n)).filter(v=>v==='r').length,r);
+  }
+}
+
+const variedCfg={...base,school:{classes:12,size:38,varied:true,seed:1121}};
+const varied=C.simulate(variedCfg), {sizes,total}=varied.campus;
+const small=C.simulate({...base,school:{classes:4,size:40}}), big=C.simulate({...base,school:{classes:16,size:40}});
+const eighty=C.simulate({...base,school:{classes:4,size:20}});
+assert.equal(eighty.points[0].counts.i,1); // 0.8 students rounds once for the whole school.
+assert.equal(eighty.points[0].classCounts.reduce((sum,c)=>sum+c.i,0),1);
+assert.ok(big.schoolR0>small.schoolR0 && big.points[10].i>small.points[10].i);
+near(big.schoolR0,base.basic*((1-C.MIXING)+C.MIXING*Math.sqrt(640/400)));
+const largeClass=sizes.indexOf(Math.max(...sizes)), smallClass=sizes.indexOf(Math.min(...sizes));
+const top=j=>varied.points.reduce((best,p)=>p.groups[j].i>best.groups[j].i?p:best);
+assert.ok(top(largeClass).groups[largeClass].i>top(smallClass).groups[smallClass].i && top(largeClass).day<top(smallClass).day);
+assert.ok(Math.abs(varied.peakDay-varied.reCrossDay)>.1);near(varied.crossing.re,1,1e-10);
+
+const singleSeed={...variedCfg,origin:2}, isolated=C.simulate({...singleSeed,mixing:0}), mixed=C.simulate(singleSeed);
+near(isolated.points[0].i,.01);
+for(const p of isolated.points) for(const [j,g] of p.groups.entries()) if(j!==2) {
+  assert.equal(g.i,0); assert.equal(g.s,1); assert.equal(isolated.finalByClass[j],0);
+}
+assert.ok(mixed.points[10].groups.every(g=>g.i>0));
+for(const immune of [.03,.25,.9]) {
+  const closed=C.simulate({...base,immune,school:{classes:16,size:35,varied:true,seed:2},origin:0,mixing:0});
+  for(const p of closed.points) assert.deepEqual(p.classCounts.slice(1),closed.points[0].classCounts.slice(1));
+  assert.ok(closed.points[0].classCounts.slice(1).every(c=>c.i===0));
+}
+for(const cfg of [variedCfg,singleSeed,{...singleSeed,immune:.9,seed:1}]) {
+  const run=C.simulate(cfg), start=run.points[0], z=run.finalInfected, w=n=>n/total;
+  near(z,run.finalByClass.reduce((sum,a,j)=>sum+w(sizes[j])*a,0));
+  for(let j=0;j<sizes.length;j++) {
+    const f=run.finalByClass[j], g=start.groups[j];
+    const hazard=base.basic*((1-C.MIXING)*Math.sqrt(sizes[j]/40)*f+C.MIXING*Math.sqrt(total/400)*z);
+    near(g.s+g.i-f,g.s*Math.exp(-hazard),2e-12);
+  }
+  // Independent dense-matrix power iteration at several dates.
+  for(const day of [0,10,43,180]) {
+    const p=run.points[day], matrix=p.groups.map((g,j)=>sizes.map((n,k)=>base.basic*g.s*
+      ((j===k?(1-C.MIXING)*Math.sqrt(n/40):0)+C.MIXING*Math.sqrt(total/400)*w(n))));
+    let vector=sizes.map(()=>1), eig=0;
+    for(let k=0;k<1600;k++) {
+      const next=matrix.map(row=>row.reduce((sum,t,j)=>sum+t*vector[j],0));
+      eig=Math.max(...next);if(!eig) break; vector=next.map(v=>v/eig);
+    }
+    near(p.re,eig,1e-9);
+  }
+}
+// Published per-seat colours are an independent golden fixture, including the
+// two dates where independently rounded rolls conflict with monotonicity.
+// 11/21 起點名一律單調取整：舊版獨立取整的座位仍逐座比對舊指紋，新版只在第 56、57 天各差兩席。
+const seatRows=counts=>over.points.map(p=>over.campus.sizes.flatMap((n,j)=>
+  Array.from({length:n},(_,k)=>C.seatGroup({...p,counts:counts(p),campus:over.campus,legacy:true},j,k))).join(''));
+const publishedSeats=seatRows(p=>C.population({s:p.s,i:p.i,r:p.r}));
+assert.equal(require('node:crypto').createHash('sha256').update(publishedSeats.join('\n')).digest('hex'),
+  '67d140b2ef972aea8e9d1357377768b153d718d98df72b7b41b967f8a06e5023');
+seatRows(p=>p.counts).forEach((row,d)=>{
+  const diff=[...row].filter((c,k)=>c!==publishedSeats[d][k]).length;
+  assert.equal(diff,d===56||d===57?2:0,'第 '+d+' 天點名差異');
+});
+for(const run of [over,small,big,varied,isolated,mixed]) {
+  const cam=run.campus;
+  let last=null;
+  for(const p of run.points) {
+    let s=0,i=0,r=0;
+    const d=C.measurement(base,run,p.day);
+    const actual=cam.sizes.map((n,j)=>{
+      const g=p.groups?.[j]||p;near(g.s+g.i+g.r,1);
+      if(p.day) assert.ok(g.s<=(run.points[p.day-1].groups?.[j]||run.points[p.day-1]).s+1e-14);
+      s+=n*g.s/cam.total;i+=n*g.i/cam.total;r+=n*g.r/cam.total;
+      const counts={s:0,i:0,r:0};
+      for(let k=0;k<n;k++) counts[C.seatGroup(d,j,k)]++;
+      if(last) {assert.ok(counts.s<=last[j].s);assert.ok(counts.r>=last[j].r);}
+      return counts;
+    });
+    near(p.s,s);near(p.i,i);near(p.r,r);
+    for(const key of ['s','i','r']) assert.ok(Math.abs(p.counts[key]-p[key]*cam.total)<=1.5);
+    for(const name of ['s','i','r']) assert.equal(p.counts[name],actual.reduce((sum,c)=>sum+c[name],0));
+    last=actual;
+  }
+}
+assert.deepEqual(over.points.slice(57,59).map(p=>p.counts.i),[1,0]);
+for(const cfg of [{school:{classes:6}},{school:{size:39}},{school:{varied:true}},{school:{seed:9}},{mixing:0},{origin:0}]) {
+  assert.notEqual(C.scenarioKey({...base,...cfg}),C.scenarioKey(base));
+  assert.equal(book.owner({...onset,...cfg}),null);
+}
+console.log('SIR 核心通過：181 天逐點舊曲線、逐班守恆與點名單調、座位排列、密度與跨班接觸、譜半徑、最終規模及情境記錄。');

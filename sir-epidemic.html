@@ -2,8 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:21">
-  <script src="js/settings.js?v=202611210959"></script>
+<meta name="lab-updated" content="2026-11-21 09:08">
+  <script src="js/settings.js?v=202611210908"></script>
+  <script src="js/modegate.js?v=202611210908" data-lab="調整學校規模與防治條件｜比較各班曲線與點名簿｜到中庭看同一天的隊形" data-lab-en="Set school size and controls|Compare class curves and attendance|See the same day in the courtyard" data-learn="循步驟找出高峰｜用基準記錄比較兩個情境｜核對昨日和今日的讀數" data-learn-en="Follow the steps to find the peak|Save a reference and compare scenarios|Check yesterday’s and today’s readings"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="How Infections Spread | Astro Ni Lab">傳染病的傳播｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +31,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210959">
+  <link rel="stylesheet" href="lab.css?v=202611210908">
   <style>
     .sir .stage { min-width: 0; padding: clamp(8px,1.25vw,16px); container-type: inline-size; }
     .sir .instruments { display: grid; gap: 8px; }
@@ -181,7 +182,11 @@
     html.labside-docked:not(.labside-railed) .sir .panel :is(.slider,.readout) { padding-inline-end: 42px; }
     @media (orientation: landscape) and (max-height: 600px) {
       .sir .wrap { display: flex; flex-direction: column; padding: 0; }
+      .sir .wrap > .top { order: -2; margin: 0; padding-block: 0; }
       .sir .wrap > .lab { order: -1; width: 100%; margin: 0; }
+      .sir .top h1 { margin: 0; font-size: calc(22px * var(--fs,1)); line-height: 1.2; }
+      .sir .top > p { margin: 0; font-size: calc(14px * var(--fs,1)); line-height: 1.25; }
+      .sir .top .crumbs { margin: 0; line-height: 1.15; }
       .sir .stage { padding: 3px 6px; }
       .sir .instruments { gap: 1px; }
       .sir .view-bar, .sir .runbar { margin: 0; gap: 4px; }
@@ -211,6 +216,13 @@
       .sir .labdeck .slider { margin-block: 0; }
       .sir .labdeck .card > p { margin: 0; }
     }
+    .sir .school-setting { margin-block: 6px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+    .sir .school-setting select, .sir .school-setting label { min-height: 44px; display: inline-flex; align-items: center; }
+    .sir .school-setting select { max-width: 100%; font: inherit; color: var(--text); background: var(--canvas-bg); }
+    .sir .labdeck .slider output { min-height: 0; }
+    .sir #compareReadings summary { min-height: 44px; padding-block: 9px; cursor: pointer; }
+    .sir #compareReadings table { width: 100%; font-variant-numeric: tabular-nums; font-size: .88em; }
+    .sir #compareReadings td { text-align: end; }
   </style>
 </head>
 <body class="sir" data-en-ready>
@@ -218,10 +230,11 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;health.html&quot;&gt;Health and Nursing&lt;/a&gt; / &lt;a href=&quot;health.html#prevention&quot;&gt;Health Promotion and Disease Prevention&lt;/a&gt; / &lt;a href=&quot;health.html#ch-communicable-disease&quot;&gt;Preventing Infectious Diseases&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="health.html">健康與護理</a> / <a href="health.html#prevention">健康促進與疾病預防</a> / <a href="health.html#ch-communicable-disease">傳染病防治</a></nav>
       <h1 data-en="How Infections Spread">傳染病的傳播</h1>
-      <p data-en="In a school of 400, new infections are still happening. So why does the number of infectious students start to fall? Drag the day cursor to find the turning point.">400 人的校園裡還有人剛被感染，為什麼具有傳染力的人數卻開始下降？拖動日期，找出轉折的那一天。</p>
+      <p data-en="In the school, new infections are still happening. So why does the number of infectious students start to fall? Drag the day cursor to find the turning point.">校園裡還有人剛被感染，為什麼具有傳染力的人數卻開始下降？拖動日期，找出轉折的那一天。</p>
     </header>
     <main class="lab">
       <section class="stage">
+        <div id="studyExamples" hidden></div>
         <div class="btns view-bar">
           <div class="lab-seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" data-en="2D curves" aria-pressed="true">2D 曲線</button>
@@ -246,7 +259,7 @@
               <span id="refKey" hidden><b class="refk"></b><span data-en="Reference I">基準 I</span></span>
             </div>
             <canvas id="cv" role="slider" tabindex="0" aria-label="拖曳日期游標" data-en-aria-label="Drag the day cursor" aria-describedby="reDef" aria-valuemin="0" aria-valuemax="180" aria-valuenow="0"></canvas>
-            <p class="sheet-caption" id="reDef" data-en-html="Gold line, right axis. R<sub>e</sub> is how many others one infectious person would infect on average under today’s conditions.">金線讀右軸。有效再生數 R<sub>e</sub> 是在當天條件下，一位具傳染力者平均會再傳給幾人。</p>
+            <p class="sheet-caption" id="reDef" data-en-html="Gold line, right axis. R<sub>e</sub> is the generation-to-generation multiplier if today’s susceptibility and contact patterns stay fixed.">金線讀右軸。有效再生數 R<sub>e</sub> 表示各班易感比例與接觸方式維持當天條件時，感染人數逐代的成長倍數。</p>
           </div>
           <div id="view3" hidden>
             <ul class="court-key" aria-label="中庭人物圖例" data-en-aria-label="Courtyard student key">
@@ -266,7 +279,7 @@
         <div id="recordBar"><div class="btns capture-actions"><button type="button" id="record" class="primary" data-en="Record readings">記錄讀數</button><button type="button" id="reference" data-en="Keep as reference">保留為基準</button><button type="button" id="clearReference" data-en="Clear all">全部清除</button></div><p class="status" id="feedback" role="status"></p></div>
         <div data-deck-anchor></div>
         <details class="roster" open>
-          <summary><span data-en="School roll call">校園點名簿</span><span class="roster-size" data-en="School · 400 students">全校 400 人</span></summary>
+          <summary><span data-en="School roll call">校園點名簿</span><span class="roster-size" id="schoolTotal">全校 400 人</span></summary>
           <div class="roll-data">
             <dl class="totals">
               <div><dt><b class="s-color">● S</b> <span data-en="Susceptible">易感</span></dt><dd id="countS"></dd></div>
@@ -287,28 +300,45 @@
           <div class="slider" id="immuneRow"><label for="immune" data-en="Initially immune">初始免疫比例</label><output id="immuneo" for="immune"></output><input type="range" id="immune" min="0" max="90" step="1" value="0" data-decimals="1"></div>
           <div class="slider" id="maskRow"><label for="mask" data-en="Reduction from masks">口罩減幅</label><output id="masko" for="mask"></output><input type="range" id="mask" min="0" max="80" step="1" value="0" data-decimals="1"></div>
           <div class="slider" id="airRow"><label for="air" data-en="Reduction from ventilation">通風減幅</label><output id="airo" for="air"></output><input type="range" id="air" min="0" max="80" step="1" value="0" data-decimals="1"></div>
-          <p data-en-html="R<sub>0</sub>: in a fully susceptible school with no controls, this is how many others one infectious person would infect on average.">R<sub>0</sub>：全校都易感且沒有防治時，一位具傳染力者平均會再傳給這麼多人。</p>
+          <p data-en-html="The slider sets R<sub>0</sub> in the reference school of ten classes of forty, with all students susceptible and no controls.">滑桿設定的是標準學校（10 班、每班 40 人）全校都易感且沒有防治時，一位具傳染力者平均再傳染的人數。</p>
+          <p><span data-en-html="This school’s R<sub>0</sub>">這所學校的 R<sub>0</sub></span> <strong id="schoolR0"></strong></p>
+        </section>
+        <section class="card" data-deck="學校|School"><h2 data-en="School">學校</h2>
+          <div class="slider"><label for="classes" data-en="Classes">班級數</label><output id="classeso" for="classes"></output><input id="classes" type="range" min="4" max="16" step="1" value="10" data-decimals="0"></div>
+          <div class="slider"><label for="size" data-en="Students per class">每班人數</label><output id="sizeo" for="size"></output><input id="size" type="range" min="20" max="45" step="1" value="40" data-decimals="0"></div>
+          <div class="slider"><label for="mixing" data-en="Between-class mixing (%)">跨班接觸比例</label><output id="mixingo" for="mixing"></output><input id="mixing" type="range" min="0" max="50" step="0.1" value="7.8" data-decimals="1"></div>
+          <div class="school-setting"><span data-en="Class sizes">各班人數</span><div class="lab-seg" role="group" aria-label="各班人數" data-en-aria-label="Class sizes"><button id="equalSize" type="button" aria-pressed="true" data-en="Equal">一樣</button><button id="variedSize" type="button" aria-pressed="false" data-en="Varied">不一樣</button></div><button type="button" id="reroll" hidden data-en="Draw again">重抽</button></div>
+          <div class="school-setting"><label for="origin" data-en="Initial cases">起始病例</label><select id="origin"></select></div>
+          <div class="school-setting"><label><input type="checkbox" id="showClasses"><span data-en="Show each class’s infectious curve">顯示各班具傳染力曲線</span></label></div>
         </section>
         <section class="card" data-deck="觀察紀錄|Observations"><h2 data-en="Observations">觀察紀錄</h2>
           <p data-en="Keep a reference to save that day’s readings and its entire infectious curve. Compare it with another date or scenario. Each setup counts toward one mission. To investigate another, change a scenario control.">保留基準會留下該日讀數與整條 I 曲線。換一天或換一組設定，就能和它比較。每組設定可以完成一題任務。要觀察另一題，請改變一項情境設定。</p>
           <dl class="readout" id="readout"></dl>
-          <p data-en="The long-term projection can include infections after day 180. The four initial cases count as ever infected and are excluded from cumulative new infections.">模型的長期預測可涵蓋第 180 天以後的感染。起初的 4 人計入「曾感染」，累計新增只計算起點之後的新感染。</p>
+          <details id="compareReadings"><summary data-en="Compare readings">對照讀數</summary><table><thead><tr><th scope="col" data-en="Reading">讀數</th><th scope="col" data-en="Yesterday">昨天</th><th scope="col" data-en="Today">今天</th><th scope="col" data-en="Reference">基準日</th></tr></thead><tbody id="comparison"></tbody></table></details>
+          <p data-en="The long-term projection can extend beyond day 180. Initial cases are included in ever infected and excluded from cumulative new infections.">模型的長期預測可涵蓋第 180 天以後的感染。起始病例計入曾感染人數，累計新增只計算起點之後的新感染。</p>
         </section>
       </aside>
     </main>
     <section class="notes">
       <h2 data-en="Find the turning point">找一找轉折點</h2>
-      <p data-en="If the wave grows at first, the gold diamond marks the instant new infections and removals balance. The infectious share peaks then. If the gold line starts at or below one, the peak is on day zero and there is no downward crossing.">疫情若從起點擴大，金色菱形標示新增感染速率等於移出速率的時刻，具傳染力比例也在此達峰。若金線起點已在 1 或以下，高峰就在第零天，沒有向下穿越的交點。</p>
+        <p data-en="The gold diamond marks effective reproduction crossing below one. The red dot marks peak infectious share. They coincide in a growing symmetric school. Classes that differ in size or timing can put the two events on different days.">金色菱形是有效再生數向下穿過 1 的時刻，紅點是具傳染力比例的高峰。在標準學校各班同步成長時，兩者重合。不同大小或不同步的班級合計後，兩者可能出現在不同日。</p>
       <p id="stageHint" data-en="Drag the day cursor or use the arrow keys. Playback advances five model days per second. With sound on, faster transmission makes the taps closer together. A falling tone marks the downward crossing of one.">拖動日期游標或按方向鍵可逐日觀察。播放每秒前進五個模型天。開啟音效後，當下新增感染的速率愈高，敲擊愈密。金線往下穿過 1 時會響一聲降調。</p>
       <details><summary data-en="Model and assumptions">模型與假設</summary>
-        <p data-en="This fictional school has a fixed population. Four of its 400 students are initially infectious. Mixing is uniform, and immunity lasts for the simulation. The class formations show proportions; they do not represent chains of infection.">虛構校園人數固定，400 人中起初有 4 人具傳染力。每個人接觸其他人的機會相同，免疫力持續整場模擬。班級隊形只顯示人口組成，看不出誰傳給誰。</p>
-        <div class="formula">\[R_{\mathrm{eff}}=R_0(1-m)(1-v)\]\[R_e(t)=R_{\mathrm{eff}}S(t),\quad \beta=\gamma R_{\mathrm{eff}}\]\[\dot S=-\beta SI,\quad \dot R=\gamma I\]\[\dot I=\gamma I(R_e-1)\]</div>
-        <p data-en="S, I and R are population fractions. The model assumes a mean infectious period of five days (a fictional choice), so γ = 1/5 per day. Mask and ventilation reductions multiply the remaining transmission.">S、I、R 都是全校人口的比例。平均具傳染力 5 天（虛構設定），因此每日移出率 γ = 1/5。口罩與通風分別作用在剩下的傳播機會上，兩項效果以乘法合併。</p>
-        <p data-en-html="R<sub>eff</sub> is the reproduction number with the chosen controls if everyone is susceptible. The baseline immunity threshold uses R<sub>0</sub>. The threshold with controls uses R<sub>eff</sub>. At or below one, no additional immunity is needed to prevent growth.">防治後再生數 R<sub>eff</sub> 指採取目前措施、全校仍易感時，一位具傳染力者平均會再傳給幾人。基準門檻使用 R<sub>0</sub>，有效門檻使用 R<sub>eff</sub>。各自的再生數小於或等於 1 時，阻止疫情成長所需的免疫比例為零。</p>
+        <p data-en="Each classroom has 90 square metres and shared space stays fixed. Larger classes raise classroom density. A larger school raises density in shared areas. Encounters increase with density. Separating classes can slow spread between them. Identical, synchronised classes in the reference school follow the same curve at any mixing setting.">學校大小會改變什麼？每間教室固定 90 平方公尺，公共空間也固定。班級越大，教室越擁擠。全校人數越多，公共空間越擁擠。模型讓每人的接觸次數隨密度增加。分流可減少班際傳播；若各班完全相同且同步，單改跨班比例，曲線會重合。</p>
+        <p data-en="Initially 1% of the school is infectious, spread evenly or placed in one class up to its available nonimmune population. Each class has its own S, I and R. School curves weight the classes by enrolment. Small groups can fluctuate randomly in practice; the model shows their average behaviour.">起初具傳染力的比例為全校的 1%。可平均分布，也可集中在一班，最多到該班尚未免疫的人數。每班分別計算 S、I、R，再依班級人數加權。模型呈現平均情況，小班實際可能有隨機起伏。</p>
+        <div class="formula">\[\lambda_j=\beta\left[(1-\varepsilon)(n_j/40)^\alpha i_j+\varepsilon(N/400)^\alpha\bar i\right]\]\[\dot s_j=-s_j\lambda_j,\quad \dot i_j=s_j\lambda_j-\gamma i_j,\quad \dot r_j=\gamma i_j\]</div>
+        <p data-en="Each class combines within-class exposure with exposure in shared space, which uses the school-wide infectious share. With fixed areas, density ratios reduce to enrolment ratios. The assumed mean infectious period is five days. Masks and ventilation multiply the remaining transmission.">每班感染速率由班內接觸與公共空間接觸相加；後者用全校具傳染力比例。公共空間面積固定後，計算密度相對於標準學校的倍數只需要人數比。平均具傳染力 5 天是虛構設定，口罩與通風減幅相乘。</p>
+        <p data-en="The next-generation matrix distributes secondary cases among receiving classes. Its long-run multiplier gives this school’s reproduction number. Controls and the remaining susceptible share in each class give the daily effective value. Immunity thresholds assume uniform protection across classes.">下一代矩陣把各班可能產生的下一代病例分到接收班級；反覆傳一代後的成長倍數，就是這所學校的基本再生數。加入防治與各班當日剩餘的易感比例，就得到當天有效再生數。門檻假設各班免疫比例一致。</p>
         <div class="formula">\[H(q)=\begin{cases}0,&amp;0\le q\le1,\\1-1/q,&amp;q&gt;1.\end{cases}\]\[H_0=H(R_0),\quad H_{\mathrm{eff}}=H(R_{\mathrm{eff}})\]</div>
-        <p data-en="In a growing wave, people can still be infected after the peak. Overshoot is the amount by which the final non-susceptible share, 1 − S(∞), exceeds the threshold with controls. It includes those immune at the start and everyone infected during the wave, including the four initial cases.">成長中的疫情過峰後，仍會有易感者被感染。最終非易感比例 1 − S(∞) 超出有效門檻的部分稱為「過衝」。這個比例包含起初已有免疫力的人，以及這波曾感染的人（含最初的 4 人）。</p>
-        <p data-en="The current infection rate βSI is the fraction newly infected per model day at this instant. The past 24-hour total is the fall in S since yesterday. Cumulative new infections equal the fall in S since day zero and exclude the four initial cases.">當下新增感染速率 βSI，是這一刻每個模型天新增感染占全校的比例。過去 24 小時的新增量是昨天到今天的 S 減量。自起點累計新增量是第零天至今的 S 減量，最初具傳染力的 4 人另計。</p>
-        <p data-en="The curves use fourth-order Runge–Kutta steps of 0.1 day. Within a step we locate the infectious peak and the downward crossing of one separately. Both times are continuous. Sampling only whole days can put the two events on different dates. The final-size equation gives the end of the wave. Both views allocate whole people by largest remainder, with ties in S, I, R order.">曲線以四階 Runge–Kutta 法每次前進 0.1 天，在步長內分別求出具傳染力比例達峰和金線向下穿過 1 的連續時刻。若只取整天，讀出的兩個日期可能差一天。最終比例由最終規模方程求得。兩個畫面均以最大餘數法分配整數人數，同餘數依 S、I、R 排序。</p>
+        <p data-en="The final non-susceptible share includes initial immunity and everyone ever infected. Its excess over the uniform-immunity threshold is the overshoot.">最終非易感比例包括起初免疫者及所有曾感染者。若它超過均勻免疫門檻，差值稱為過衝。</p>
+        <p data-en="The current infection rate is the enrolment-weighted mean of class rates. New infections in 24 hours equal the fall in S since yesterday. Cumulative new infections use the fall since day zero.">當下新增感染速率是各班當下感染速率的加權平均。過去 24 小時的新增量是昨天到今天的 S 減量，自起點累計新增則從第零天算起。</p>
+        <p data-en="Fourth-order Runge–Kutta integration advances by 0.1 day. The peak and crossing are located independently. Coupled final-size equations give the long-term totals. In the standard school, the original register rounds each day independently: near a rounding boundary, a seat can change back even while the susceptible share keeps falling. Select monotone rounding in the register to follow the same seats across days. Other schools use this rule within each class.">以四階 Runge–Kutta 法每步前進 0.1 天，分別求高峰和交點，再由各班最終規模的聯立方程求長期人數。標準學校沿用原點名簿，每天各自取整。當比例接近取整分界，即使易感比例持續下降，座位也可能短暫變回易感。在點名簿勾選「取整時維持易感人數不增、移出人數不減」即可逐日追蹤。其他學校都採逐班單調取整，班級越小，一人的變動就越明顯。</p>
+        <h3 data-en="Data sources">資料來源</h3>
+        <ul>
+          <li><a href="https://gazette.nat.gov.tw/EG_FileManager/eguploadpub/eg025153/ch05/type2/gov40/num20/images/BB.pdf" data-en="Ministry of Education, senior high school facilities standard (August 2019 edition)">教育部《普通型高級中等學校設備基準》（2019 年 8 月版）</a><span data-en=" gives a 9 × 10 m ordinary classroom, excluding the corridor. The model uses that historical reference size for every classroom.">列出的普通教室室內尺寸為 9 × 10 公尺，不含走廊。本模型以該版尺寸作為固定教室面積。</span></li>
+          <li><a href="https://doi.org/10.1371/journal.pone.0136497" data-en="Mastrandrea and colleagues, PLOS ONE (2015)">Mastrandrea 等，PLOS ONE（2015）</a><span data-en=" found 92.2% of contact events within classes among adult preparatory students at a French high school. They recorded 67,613 encounters in 327 participants over five school days, about 82.7 encounters per person per day counting both participants and repeated encounters. The complementary 7.8% guides the reference shared-mixing weight. The shared pool can also include classmates.">研究法國高中預備班的成年學生，量得 92.2% 的接觸事件發生在班內，其餘 7.8% 作為模型的跨班混合參考值。公共空間也可能遇到同班同學。327 人在 5 個上課日共記錄 67,613 次接觸，每次計入雙方，平均每人每天約 82.7 次，含重複相遇。</span></li>
+          <li><a href="https://doi.org/10.1016/j.mbs.2013.04.013" data-en="The scaling of contact rates with population density (Mathematical Biosciences, 2013)">《接觸率隨人口密度的變化》，Mathematical Biosciences（2013）</a><span data-en=" discusses saturation at high densities. The classroom exponent α = 0.5 is a teaching estimate between constant and proportional contact rates.">討論接觸率在高密度下趨於飽和。教室指數 α = 0.5 為估計值，介於固定接觸數和正比成長之間。</span></li>
+        </ul>
         <p><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10698490/" target="_blank" rel="noopener" data-en="Further reading on the SIR immunity threshold">延伸閱讀：SIR 模型的群體免疫門檻</a></p>
       </details>
     </section>
@@ -316,20 +346,20 @@
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210959"></script>
-  <script src="js/sir-epidemic-core.js?v=202611210959"></script>
-  <script src="js/sound.js?v=202611210959"></script>
-  <script src="js/numinput.js?v=202611210959"></script>
-  <script src="js/labdeck.js?v=202611210959"></script>
-  <script src="js/drawkit.js?v=202611210959"></script>
-  <script src="js/view3d-nav.js?v=202611210959"></script>
-  <script src="js/stepguide.js?v=202611210959"></script>
-  <script src="js/labside.js?v=202611210959"></script>
-  <script src="js/firebase-config.js?v=202611210959"></script>
-  <script src="js/missions.js?v=202611210959" data-module="sir-epidemic"></script>
-  <script src="js/missions/sir-epidemic.js?v=202611210959"></script>
-  <script src="js/stats.js?v=202611210959" data-module="sir-epidemic"></script>
-  <script src="js/comments.js?v=202611210959"></script>
-  <script src="js/sir-epidemic.js?v=202611210959"></script>
+  <script src="js/math.js?v=202611210908"></script>
+  <script src="js/sir-epidemic-core.js?v=202611210908"></script>
+  <script src="js/sound.js?v=202611210908"></script>
+  <script src="js/numinput.js?v=202611210908"></script>
+  <script src="js/labdeck.js?v=202611210908"></script>
+  <script src="js/drawkit.js?v=202611210908"></script>
+  <script src="js/view3d-nav.js?v=202611210908"></script>
+  <script src="js/stepguide.js?v=202611210908"></script>
+  <script src="js/labside.js?v=202611210908"></script>
+  <script src="js/firebase-config.js?v=202611210908"></script>
+  <script src="js/missions.js?v=202611210908" data-module="sir-epidemic"></script>
+  <script src="js/missions/sir-epidemic.js?v=202611210908"></script>
+  <script src="js/stats.js?v=202611210908" data-module="sir-epidemic"></script>
+  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/sir-epidemic.js?v=202611210908"></script>
 </body>
 </html>
