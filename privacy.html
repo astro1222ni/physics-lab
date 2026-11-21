@@ -20,7 +20,7 @@
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 data-en="Privacy">隱私說明</h1>
-      <p data-en="Last updated: 15 November 2026">更新日期：2026 年 11 月 15 日</p>
+      <p data-en="Last updated: 21 November 2026">更新日期：2026 年 11 月 21 日</p>
     </header>
 
     <div class="doc">
@@ -32,7 +32,10 @@
       <p data-en="To show how many people are online now, each page that is open in the foreground adds 1 to a counter for the current minute, together with which page it is — nothing else, not even a random code. The counters are deleted after about 10 minutes. The number counts open pages, so one person with two tabs open counts twice.">為了顯示「目前在線」人數，每個在前景開著的頁面每分鐘在「這一分鐘」的計數器加 1，並記下是哪一頁，沒有其他資料，連隨機代號也沒有；計數器約 10 分鐘後刪除。這個數字算的是開著的頁面，同一個人開兩個分頁會算兩次。</p>
       <p data-en="If the new counter cannot be written (for example while the database rules are being updated), the page falls back to the older method: once a minute it sends a heartbeat with a random code made fresh for each browser tab and which page it is on. That code is deleted when you leave or switch away from the page.">如果新的計數器暫時無法寫入（例如資料庫規則更新中），頁面會退回舊做法：每分鐘送出一次「心跳」，內容是每個瀏覽器分頁各自隨機產生的代號與所在頁面；離開或切換到其他頁面時，這個代號就會刪除。</p>
 
-      <h2 data-en="Settings">設定</h2>
+      <h2 data-en="Anonymous answer statistics">匿名作答統計</h2>
+      <p data-en="For the questions in the study room and in lessons, the site adds anonymous numbers for each question: how many people answered, how many got it right, and how many times each wrong idea was chosen. No account, time or device information is recorded. Each device counts only its first attempt at a question.">自習室與講義裡的題目，網站會替每一題累加匿名的數字：有幾個人作答、幾人答對、每一種錯誤想法被選了幾次。不記帳號、時間或裝置資料；同一台裝置每題只算第一次作答。</p>
+
+      
       <p data-en="Your recently played labs stay in this browser. They help you pick up where you left off and find your next lab; this history is not uploaded.">最近玩過的實驗只存在你的瀏覽器，用來接著玩和推薦下一個實驗，不會上傳。</p>
       <p data-en="Your language, text size and appearance choices, and whether you have already seen the sign-in welcome, are stored only in your own browser (localStorage) and are never uploaded.">你選擇的語言、字體大小與外觀，以及是否已看過登入提示，只存在你自己的瀏覽器（localStorage），不會上傳。</p>
 
@@ -45,8 +48,8 @@
         <li data-en="Please do not include personal details such as phone numbers, addresses or school names in comments.">請不要在留言中寫下電話、地址、學校等個人資料。</li>
       </ul>
 
-      <h2 data-en="Missions and the Ni Stars leaderboard">任務與倪的星星排行榜</h2>
-      <ul>
+      
+        <li data-en="Signed in, the study room saves how far you have read in each unit (page number and when it was updated), so you can carry on from another device. Only you can read it. Your GSAT attempts stay in this browser.">登入後，自習室會記下每個單元你讀到第幾頁（以及更新時間），換裝置也能接著學；這份進度只有你自己看得到。學測題的作答次數只存在你的瀏覽器。</li>
         <li data-en="Mission mode needs a Google sign-in. Which missions you have completed, your total stars and your stars in each subject are stored with your random user ID.">任務模式需要登入 Google 帳號。你完成了哪些任務、累計多少顆星星（包括各科的星星數），會和你的隨機使用者代號一起保存。</li>
         <li data-en="The leaderboards publicly show your nickname, your total stars and your stars in each subject. If you choose not to show your name, only the first and last characters of your nickname are displayed.">全科與各科排行榜會公開顯示你的暱稱、星星總數與各科星星數；若選擇不公開，只會顯示暱稱的第一個與最後一個字。</li>
         <li data-en="Daily missions store today's ten missions, how many of them you have finished and which ones, plus the treasures you have collected (copper, silver and gold coins, diamonds and rare keys — how many you have won in all, and how many you have left). Only you and the site administrator can see them; they are never made public.">每日任務會保存今天抽到的十個任務、今天完成了幾個與哪幾個，以及你收集到的寶物（銅幣、銀幣、金幣、鑽石與稀有鑰匙；累計獲得與現在剩下的數量）。這些只有你自己和網站管理者看得到，不會公開。</li>

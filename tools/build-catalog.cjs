@@ -229,6 +229,15 @@ hall = marker(hall, 'SUBJECTS', '<div class="subject-groups">' + groups + '</div
   hall = marker(hall, 'HALLCOUNT', text(nSub + ' 科・' + list.length + ' 個實驗', nSub + ' subjects · ' + list.length + ' labs', 'p', 'class="hall-count"'));
 }
 fs.writeFileSync(path.join(ROOT, 'labs.html'), hall);
+// 11/21 站長同意網站介紹改版：「關於本站」開頭與首頁說明裡的科目數、實驗數由這裡自動填，上新實驗不用手改
+{
+  const nSub = subjects.filter(s => list.some(x => x.d === s.dom)).length, N = list.length;
+  const fill = t => t.replace(/\d+ 科、\d+ 個實驗/g, nSub + ' 科、' + N + ' 個實驗').replace(/\d+ subjects and \d+ labs/g, nSub + ' subjects and ' + N + ' labs');
+  const about = read('about.html');
+  if (!/\d+ 科、\d+ 個實驗/.test(about)) throw new Error('about.html 開頭缺少「N 科、N 個實驗」');
+  fs.writeFileSync(path.join(ROOT, 'about.html'), fill(about));
+  home = home.replace(/(<meta (?:name|property)="(?:og:)?description" content=")([^"]*)"/g, (m, a, b) => a + fill(b) + '"');
+}
 const daily = require('../js/daily-core.js');
 home = marker(home, 'TREASURE', daily.ITEMS.map(it => '<span data-treasure="' + it.id + '">' + daily.icon(it.id) + '</span>').join(''));
 home = marker(home, 'REDIRECT', '<script>/* 舊錨點保留：由科目清單與完整目錄產生 */\n(function(){var m=' + JSON.stringify(Object.assign({ subjects: 'labs' }, redirects)) + ';var h;try{h=decodeURIComponent(location.hash.slice(1));}catch(e){return;}if(Object.prototype.hasOwnProperty.call(m,h))location.replace(m[h]+".html"+location.search+(' + JSON.stringify(subjects.map(s => s.dom)) + '.indexOf(h)>=0?"":"#"+encodeURIComponent(h)));})();\n</script>');
