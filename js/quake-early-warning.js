@@ -325,7 +325,10 @@
   /** 城市標籤的文字 */
   function cityTag(e, run, t) {
     if (run && t < S().Ta) return '';
-    if (run && t >= e.tS) return T('搖晃中・', 'shaking · ') + intTextShort(e.I) + T(' 級', '');
+    if (run && t >= e.tS) {
+      const phase = t < E.traceEnd(e) ? T('搖晃中・', 'shaking · ') : '';
+      return phase + intTextShort(e.I) + T(' 級', '');
+    }
     if (e.best == null) return T('沒有警報・', 'no alert · ') + intTextShort(e.I) + T(' 級', '');
     if (e.best <= 0) return T('盲區', 'blind');
     if (run) return (M.W < 560 ? '' : T('還有 ', '')) + num(Math.max(0, e.tS - t), 0) + (M.W < 560 ? ' s' : T(' 秒', ' s left'));
@@ -399,11 +402,11 @@
     const env = function (t0, k, dur) { const u = tt - t0; return u < 0 ? 0 : (1 - Math.exp(-u * 4)) * Math.exp(-u / dur) * k; };
     const n = Math.sin(tt * 37.1) * 0.5 + Math.sin(tt * 53.7 + 1.3) * 0.3 + Math.sin(tt * 91.3 + 0.4) * 0.2;
     const a = Math.min(1, Math.max(0.12, Math.log10(Math.max(1, e.pga)) / 2.8));
-    return 0.03 * Math.sin(tt * 61.7) + n * (env(e.tP, 0.22 * a, 4) + env(e.tS, a, 7 + e.d / 40));
+    return 0.03 * Math.sin(tt * 61.7) + n * (env(e.tP, 0.22 * a, E.P_DECAY) + env(e.tS, a, E.sDecay(e.d)));
   }
   function drawTimeline(g, W, H) {
     const s = S(), e = siteInfo(), run = state.run;
-    const tMax = Math.max(20, Math.ceil((Math.max(e.tS, s.Ta) + 12) / 10) * 10);
+    const tMax = Math.max(20, Math.ceil((run ? run.tEnd : tEndOf()) / 10) * 10);
     const L = { x0: 46, x1: W - 14, y0: 44, y1: H - 34 };
     const X = function (t) { return L.x0 + (L.x1 - L.x0) * t / tMax; };
     const ym = (L.y0 + L.y1) / 2, amp = (L.y1 - L.y0) / 2 - 6;
@@ -513,9 +516,9 @@
   }
   function tEndOf() {
     const s = S();
-    let m = siteInfo().tS;
-    CITIES.forEach(function (c) { m = Math.max(m, s.site(c.x, c.y).tS); });
-    return Math.min(150, Math.max(m, s.Ta) + 4);
+    let end = Math.max(E.traceEnd(siteInfo()), s.Ta + 4);
+    CITIES.forEach(function (c) { end = Math.max(end, E.traceEnd(s.site(c.x, c.y))); });
+    return end;
   }
   function stepRun(dt) {
     const run = state.run, s = S(), e = siteInfo();
@@ -562,7 +565,18 @@
     });
     if (state.log.length > 6) state.log.shift();
     updateLog(); updateButtons();
+    setStatus(T('尾波已衰減，地震紀錄完成。', 'The wave coda has faded. The record is complete.'));
     emit('run', snapshot());
+  }
+  /** 改看另一個接收點時保留時鐘，尾段則以新接收點重新計算。 */
+  function siteChanged() {
+    const run = state.run;
+    if (!run) return;
+    if (run.done) { cancelRun(); return; }
+    const e = siteInfo();
+    run.tEnd = Math.max(run.t, tEndOf());
+    run.pDone = run.t >= e.tP;
+    run.sDone = run.t >= e.tS;
   }
   /** 參數改了：正在播放的動畫作廢 */
   function cancelRun() { if (state.run) { state.run = null; updateButtons(); } }
@@ -698,7 +712,7 @@
   document.querySelectorAll('#chartSeg button').forEach(function (b) {
     b.addEventListener('click', function () { acted(); state.chart = b.getAttribute('data-chart'); refreshOutputs(); updateChartHint(); afterChange(true); });
   });
-  $('site').addEventListener('change', function () { acted(); state.site = $('site').value; if (state.run && state.run.done) state.run = null; updateButtons(); afterChange(true); });
+  $('site').addEventListener('change', function () { acted(); state.site = $('site').value; siteChanged(); updateButtons(); afterChange(true); });
   $('go').addEventListener('click', startRun);
   $('pause').addEventListener('click', function () { acted(); pauseRun(); });
   $('clear').addEventListener('click', function () {
@@ -740,7 +754,7 @@
     if (best) state.site = best.id;
     else { state.custom = { x: M.kx(p[0]), y: M.ky(p[1]) }; state.site = 'custom'; }
     fillSites();
-    if (state.run && state.run.done) state.run = null;
+    siteChanged();
     updateButtons();
     afterChange(true);
   });
@@ -768,7 +782,7 @@
           if (!dx && !dy) return false;
           acted();
           const p = sitePos(), k = big ? 10 : 2;
-          state.custom = { x: p.x + dx * k, y: p.y - dy * k }; state.site = 'custom'; fillSites(); afterChange();
+          state.custom = { x: p.x + dx * k, y: p.y - dy * k }; state.site = 'custom'; fillSites(); siteChanged(); afterChange();
           return true;
         },
         describe: function () { const e = siteInfo(); return siteName() + T('，震央距離 ', ', ') + kmT(e.d) + T('，', ', ') + (e.best == null ? T('沒有警報', 'no alert') : e.best > 0 ? T('預警時間 ', 'warning ') + sec(e.best) : T('在盲區裡', 'inside the blind zone')); }
@@ -811,7 +825,7 @@
   window.__ew = {
     state: state, E: E, S: S, snapshot: snapshot, siteInfo: siteInfo,
     moveEpi: function (lon, lat) { acted(); const p = QC.toXY(lon, lat); moveEpi(p.x, p.y); afterChange(true); },
-    setSite: function (id) { acted(); state.site = id; fillSites(); afterChange(true); },
+    setSite: function (id) { acted(); state.site = id; fillSites(); siteChanged(); afterChange(true); },
     finish: function () { if (!state.run) startRun(); stepRun(1e6); requestDraw(); },
     step: function (sec) { if (state.run) { stepRun(sec); requestDraw(); } }
   };

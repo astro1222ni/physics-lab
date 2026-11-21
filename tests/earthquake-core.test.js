@@ -323,6 +323,13 @@ test('沿路徑累加的走時（段長 ÷ 段速）等於解析走時', () => {
   }
 });
 
+test('14° 的地函 S 波走時超過 22 分鐘，最後一幀抵達地表', () => {
+  const ray = Q.annotate(Q.traceRay(SH, Q.pFromTakeoff(SH, 14, 'S'), 'S'));
+  assert.ok(!ray.blocked && ray.total > 1320);
+  const end = Q.positionAt(ray, ray.total);
+  close(Math.hypot(...end), Q.RE, 1e-9, '終點在地表');
+});
+
 const Z = Q.shadowZonesExact(SH);
 test('陰影區與文獻相符：S 波約 103° 以外收不到；P 波陰影區約 103°–143°（容許 ±5°／±3°）', () => {
   // 文獻：教科書常寫 S 波陰影區始於約 103°–105°、P 波陰影區約 103°–142°（或 104°–140°）；

@@ -1345,7 +1345,7 @@
       const lbSz = label('', C.S, { prio: 1, gap: 6, size: narrow ? 10.5 : 11.5 });
       G.add(lbPz, lbSz);
       // ---- 波前（射線束上同一時刻的位置） ----
-      const nDots = 2 * (E.fanP.length + E.fanS.length);
+      const nDots = 2 * (E.fanP.length + E.fanS.length + 2);
       const dotGeo = new THREE.BufferGeometry();
       dotGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nDots * 3), 3));
       dotGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(nDots * 3), 3));
@@ -1448,9 +1448,9 @@
         let k = 0;
         if (w.t > 0) {
           const pa = dotGeo.attributes.position.array, ca = dotGeo.attributes.color.array;
-          const put = function (ray, c) {
+          const put = function (ray, c, selected) {
             if (!w.inner && ray.phase === 'PKIKP') return;
-            const p = Q.positionAt(ray, w.t);
+            const p = Q.positionAt(ray, selected ? Math.min(w.t, ray.total) : w.t);
             if (!p) return;
             [1, -1].forEach(function (sg) {
               pa.set([sg * p[0] * K3, -0.5, p[1] * K3], k * 3);
@@ -1460,6 +1460,8 @@
           };
           if (w.wave !== 'P') E.fanS.forEach(function (r) { put(r, cSc); });
           if (w.wave !== 'S') E.fanP.forEach(function (r) { put(r, cPc); });
+          if (w.wave !== 'P') put(E.hiS, cSc, true);
+          if (w.wave !== 'S') put(E.hiP, cPc, true);
           dotGeo.attributes.position.needsUpdate = true;
           dotGeo.attributes.color.needsUpdate = true;
         }

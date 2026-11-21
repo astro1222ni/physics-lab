@@ -131,6 +131,9 @@
     }
 
     /* 直放時，主操作列與分頁接在畫布下方，次要按鍵排在分頁下方。 */
+    @media (max-width: 560px) and (orientation: portrait) {
+      .eq .stage-playback .labdeck { margin-top: 4px; }
+    }
     .stage-playback > .playbar-primary:not(:has(> button:not([hidden]))) { display: none; }
     @media (min-width: 881px), (orientation: landscape) and (max-height: 600px) {
       .stage-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }

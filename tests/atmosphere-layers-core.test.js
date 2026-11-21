@@ -133,4 +133,24 @@ test('探空氣球：浮力不夠就升不起來；熱天放的同一顆氣球�
   assert.ok(K.burstAltitude('b600', 1.5, 15) > K.burstAltitude('b600', 1.5, -15) + 3000);
 });
 
+test('探空儀在稀薄大氣降得較快，下降積分在地面停止', () => {
+  const { b } = K.fly('b600', 1.5, 0, 4);
+  const burstTime = b.t, burstZ = b.z;
+  const v0 = K.descentSpeed(0, 0), v30 = K.descentSpeed(b.z, 0);
+  assert.ok(b.burst && v30 > v0);
+  near(K.descentSpeed(0, 0, K.PAYLOAD * 4), 2 * v0, 1e-12);
+  const P = K.at(b.z).P;
+  K.stepDescent(b, 4);
+  assert.ok(b.z < burstZ && K.at(b.z).P > P && b.v < 0);
+  let steps = 1;
+  while (b.z > 0 && steps++ < 3000) K.stepDescent(b, 4);
+  assert.strictEqual(b.z, 0);
+  assert.strictEqual(b.v, 0);
+  assert.strictEqual(b.zMax, burstZ);
+  assert.ok(b.t > burstTime && b.t - burstTime <= steps * 4);
+  const landed = b.t;
+  K.stepDescent(b, 4);
+  assert.strictEqual(b.t, landed);
+});
+
 console.log(passed + ' 個測試通過');

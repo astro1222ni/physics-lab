@@ -51,18 +51,21 @@ test('抬升與降雨：w = V·tan α；降水率 = ρ·w·(雲底的混合比 �
   near(f.rain(10), 7.1, 0.3);                                // 冷鋒：每小時 7 mm 左右
 });
 
-test('雲：鋒面面比凝結高度高以後，雲底跟著鋒面面升高、雨變小；雲底超過 2 km 地面就沒雨；暖鋒由遠而近是卷層雲、高層雲、雨層雲', () => {
+test('雲：鋒面面比凝結高度高以後，雲底跟著鋒面面升高、雨變小；地面雨率在 2 km 連續，受雲下溼度影響；暖鋒由遠而近是卷層雲、高層雲、雨層雲', () => {
   const f = mk(WARM);
   const s1 = f.zl / (1000 * f.tan) + 20, s2 = s1 + 100;
   near(f.cloud(s1).base, s1 * 1000 * f.tan, 1e-6);
   assert.ok(f.cloud(s2).rate < f.cloud(s1).rate);
-  near(f.sRain, 2000 / (1000 / 150), 1e-9);
   assert.ok(f.rain(f.sRain - 1) > 0 && f.rain(f.sRain + 1) === 0);
   assert.strictEqual(f.cloud(f.sRain + 50).kind, 'as'); assert.strictEqual(f.cloud(1000).kind, 'cs'); assert.strictEqual(f.cloud(100).kind, 'ns');
   assert.strictEqual(f.cloud(f.sCloud + 1), null);
   assert.strictEqual(mk(COLD).cloud(10).kind, 'cb');          // 強烈抬升：積雨雲
-  // 很乾的暖空氣：凝結高度超過 2 km，雲下的雨下不到地面
-  const d = mk(WARM, { Tdw: -2 }); assert.ok(d.zl > 2000 && d.sRain === null && d.rain(50) === 0 && d.cloud(400));
+  const cold = mk(COLD);
+  assert.ok(cold.rain(160.01) > 0);                         // 雲底高於 2 km，潮溼時仍有地面降水
+  near(cold.rain(159.99), cold.rain(160.01), 0.01);
+  const dry = mk(COLD, { Tdc: -5 });
+  assert.ok(dry.cloud(120).base < 2000 && dry.cloud(120).rate > 0 && dry.rain(120) === 0);
+  assert.ok(cold.rain(120) > dry.rain(120));
 });
 
 test('地面氣壓：頭上冷空氣越厚氣壓越高（靜力平衡），冷空氣最多算 2.5 km', () => {

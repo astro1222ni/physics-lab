@@ -242,7 +242,7 @@
     for (let i = 0; i <= 40; i++) if (cdf[i] >= r) return a + (1 - a) * i / 40;
     return a;
   }
-  function stepBed(dt, W) {
+  function stepBed(dt, movingBatch) {
     const b = bed(), Lay = bedLay(cvSize.w, cvSize.h), span = Lay.x1 - Lay.x0;
     streaks.forEach(function (st) { st.x += dt * vVis(state.U * uRatio(st.s)) / span; if (st.x > 1) { st.x -= 1; st.s = 0.05 + 0.9 * Math.random(); } });
     if (b.bed === 'bedload' || b.bed === 'suspend') {
@@ -254,22 +254,23 @@
         if (m.x > 1) { m.x -= 1; if (b.bed === 'suspend') m.s = rouseS(Math.random()); }
       });
     }
-    // 上游放下來的顆粒
+    // 只有播放中的這批投料會前進，背景的河床與流線可獨立運動。
+    if (!movingBatch) return;
     incs.forEach(function (p) {
       if (p.done) return;
       if (b.inc === 'deposit') {
         p.vy = Math.min(1, p.vy + dt * 0.6);
         p.s -= dt * (0.06 + 0.16 * p.vy);
         p.x += dt * vVis(state.U * uRatio(Math.max(0.02, p.s))) * 0.8 / span;
-        if (p.s <= p.rest) { p.s = p.rest; p.done = true; p.landed = true; }
+        if (p.s <= p.rest && p.x <= 1.03) { p.s = p.rest; p.done = true; p.landed = true; }
       } else {
         const s = b.inc === 'suspend' ? p.s : 0.02 + 0.08 * Math.abs(Math.sin(p.ph));
         if (b.inc === 'suspend') { p.s += (Math.random() - 0.5) * dt * 0.3; p.s = Math.max(0.04, Math.min(0.96, p.s)); }
         else p.s = s;
         p.ph += dt * 4;
         p.x += dt * vVis(state.U * uRatio(Math.max(0.02, s))) * (b.inc === 'suspend' ? 1 : 0.45) / span;
-        if (p.x > 1.03) p.done = true;
       }
+      if (p.x > 1.03) p.done = true;
     });
   }
   function drawBed(g, W, H) {
@@ -626,8 +627,8 @@
     const dt = lastFrame ? Math.min(0.1, (ts - lastFrame) / 1000) : 0;
     lastFrame = ts; clock += dt;
     const run = state.run[state.mode];
+    if (state.mode === 'bed' && (continuous() || (run && run.playing))) stepBed(dt, run && run.playing);
     if (run && run.playing) stepRun(dt);
-    if (state.mode === 'bed' && (continuous() || (run && run.playing))) stepBed(dt);
     drawMain(); drawChart();
     if ((run && run.playing) || continuous()) requestDraw(); else lastFrame = 0;
   }
@@ -663,9 +664,8 @@
       settleList().forEach(function (p, i) { if (!run.seen[p.id] && p.w * t >= 1) { run.seen[p.id] = true; if (snd) snd.tone({ freq: 1400 - i * 120, dur: 0.07, type: 'triangle', gain: 0.04 }); } });
     }
     if (m === 'bed') {
-      const left = incs.filter(function (p) { return !p.done; }).length;
-      // 時間到了還有顆粒在走：最多再等 4 秒（很慢的水流裡顆粒要走很久）
-      if (run.u >= 1 && left > 0) { run.wait = (run.wait || 0) + dt; run.u = run.wait > 4 ? 1 : 0.999; }
+      if (incs.every(function (p) { return p.done; })) finishRun();
+      return;
     }
     if (run.u >= 1) finishRun();
   }
@@ -675,10 +675,11 @@
     const snd = sound();
     if (snd) { snd.tone({ freq: 1046, dur: 0.12, type: 'triangle', gain: 0.05 }); snd.tone({ freq: 1568, dur: 0.16, type: 'triangle', gain: 0.04, delay: 0.1 }); }
     if (m === 'bed') {
-      const b = bed();
-      setStatus(b.inc === 'deposit' ? T('流速太慢，上游來的顆粒停下來沉積在河床上。', 'Too slow: the grains from upstream settle on the bed.')
+      const b = bed(), landed = incs.filter(function (p) { return p.landed; }).length;
+      const count = landed + T(' 顆沉積、', ' settled, ') + (incs.length - landed) + T(' 顆離開畫面。', ' left the scene. ');
+      setStatus(count + (b.inc === 'deposit' ? T('流速低於維持搬運的門檻，顆粒逐漸下沉。', 'Below the transport threshold, grains gradually sink.')
         : b.zone === 'transport' ? T('上游來的顆粒繼續被帶走，河床上的卻沒被挖起：這就是「搬運」區。', 'The grains from upstream keep going, but the bed is not eroded: the transport zone.')
-          : T('上游來的顆粒被帶走，河床也一直被侵蝕。', 'The grains from upstream are carried away and the bed is being eroded.'));
+          : T('上游來的顆粒被帶走，河床也一直被侵蝕。', 'The grains from upstream are carried away and the bed is being eroded.')));
     } else if (m === 'settle') {
       const s = settle();
       setStatus(T('全部到底了。你的顆粒沉 1 m 花了 ', 'All landed. Your grain took ') + dur(s.me.t) + T('；大顆的先到、細的後到，底下排成下粗上細的級層。', ' to fall 1 m; the big ones land first and the fine ones last, building a graded bed.'));
@@ -942,7 +943,16 @@
       if (o.chart) state.chart[state.mode] = o.chart;
       refreshOutputs(); updateButtons(); afterChange(true);
     },
-    play: function (u) { if (!state.run[state.mode]) startRun(); const r = state.run[state.mode]; r.playing = false; r.u = u; if (state.mode === 'bed') { for (let i = 0; i < 60; i++) stepBed(0.05); } updateButtons(); requestDraw(); },
-    finish: function () { if (!state.run[state.mode]) startRun(); if (state.mode === 'bed') incs.forEach(function (p) { p.done = true; }); stepRun(1e6); requestDraw(); }
+    play: function (u) { if (!state.run[state.mode]) startRun(); const r = state.run[state.mode]; r.playing = false; r.u = u; if (state.mode === 'bed') { for (let i = 0; i < 60; i++) stepBed(0.05, true); } updateButtons(); requestDraw(); },
+    batch: function () { return { moving: incs.filter(p => !p.done).length, landed: incs.filter(p => p.landed).length }; },
+    finish: function () {
+      if (!state.run[state.mode]) startRun();
+      const r = state.run[state.mode];
+      if (!r.done && state.mode === 'bed') {
+        for (let i = 0; i < 10000 && incs.some(p => !p.done); i++) stepBed(0.05, true);
+      }
+      if (!r.done) stepRun(1e6);
+      requestDraw();
+    }
   };
 })();

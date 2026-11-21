@@ -154,7 +154,16 @@
     return res;
   }
 
+  const P_DECAY = 4, TAIL_FRACTION = 0.01;
+  function sDecay(d) { return 7 + d / 40; }
+  /** P、S 波指數包絡的上界都降到各自振幅的 1% 以下。 */
+  function traceEnd(site) {
+    const factor = -Math.log(TAIL_FRACTION);
+    return Math.max(site.tP + P_DECAY * factor, site.tS + sDecay(site.d) * factor);
+  }
+
   const api = {
+    P_DECAY: P_DECAY, sDecay: sDecay, traceEnd: traceEnd,
     VP: VP, VS: VS, T_ON: T_ON, DE_MIN: DE_MIN, DEEP: DEEP, PGA_STEPS: PGA_STEPS, ALERT_I: ALERT_I, ALERT_M: ALERT_M,
     QUAKES: QUAKES, SEA_ST: SEA_ST, QC: QC,
     hypo: hypo, tP: tP, tS: tS, stations: stations, alertTime: alertTime, blindRadius: blindRadius,

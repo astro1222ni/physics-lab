@@ -502,11 +502,14 @@
     if (run.t >= end - 1e-9) finishRun();
     updateReadouts();
   }
+  function rainPeriod(ps) {
+    return ps.capped ? T('72 小時累積', '72 h accumulation') : T('整次通過累積', 'Full passage accumulation');
+  }
   function finishRun() {
     const run = state.run, m = model(), ps = m.ps;
     run.playing = false; run.done = true; run.t = ps.tEndRun;
     const ev = snapshot(); ev.anim = false;
-    setStatus(T('紀錄完成：', 'Record complete: ') + hrs(ps.tEndRun) + T('內下了 ', ', total rain ') + num(ps.total, 1) + ' mm' + T('（下雨 ', ' (rain for ') + hrs(ps.hours) + T('，最大 ', ', peak ') + num(ps.peak, 1) + ' mm/h' + T('）；氣溫變化 ', '); temperature change ') + degC(ps.dT) + T('、氣壓變化 ', ', pressure change ') + num(ps.dP, 1) + ' hPa' + T('。', '.') + (ps.capped ? T('（72 小時還沒走完）', ' (still not through after 72 h)') : ''));
+    setStatus(T('紀錄完成：', 'Record complete: ') + hrs(ps.tEndRun) + T('內下了 ', ', total rain ') + num(ps.total, 1) + ' mm · ' + rainPeriod(ps) + T('（下雨 ', ' (rain for ') + hrs(ps.hours) + T('，最大 ', ', peak ') + num(ps.peak, 1) + ' mm/h' + T('）；氣溫變化 ', '); temperature change ') + degC(ps.dT) + T('、氣壓變化 ', ', pressure change ') + num(ps.dP, 1) + ' hPa' + T('。', '.') + (ps.capped ? T('（72 小時還沒走完）', ' (still not through after 72 h)') : ''));
     const snd = sound(); if (snd) { snd.tone({ freq: 784, dur: 0.12, type: 'triangle', gain: 0.05 }); snd.tone({ freq: 1175, dur: 0.18, type: 'triangle', gain: 0.04, delay: 0.1 }); }
     updateButtons(); updateReadouts();
     emit('run', ev);
@@ -563,12 +566,13 @@
     setHTML('rT', degC(st.T)); setHTML('rTd', degC(st.Td)); setHTML('rP', num(st.p, 1) + ' hPa'); setHTML('rWind', windName(st.wind));
     if (run) {
       const sn = snowAt(t), m1 = winMax(t, 1), m3 = winMax(t, 3), m24 = winMax(t, 24);
-      setHTML('rTot', num(cumAt(t), 1) + ' mm' + (sn >= 0.05 ? T('（其中雪 ', ' (snow ') + num(sn, 1) + ' mm' + T('）', ')') : ''));
+      setHTML('rTot', num(cumAt(t), 1) + ' mm <small>· ' +
+        (run.done ? rainPeriod(m.ps) : T('目前累積', 'Accumulation so far')) + '</small>' + (sn >= 0.05 ? T('（其中雪 ', ' (snow ') + num(sn, 1) + ' mm' + T('）', ')') : ''));
       setHTML('rClass', '<b>' + rainClass(m1, m3, m24) + '</b>' + T('：最大 1 小時 ', ': max 1 h ') + num(m1, 1) + T('、3 小時 ', ', 3 h ') + num(m3, 1) + T('、24 小時 ', ', 24 h ') + num(m24, 1) + ' mm');
     } else { setHTML('rTot', '—'); setHTML('rClass', '—'); }
     setHTML('rW', num(f.w * 100, 1) + ' cm/s');
     setHTML('rLCL', num(f.zl, 0) + ' m');
-    setHTML('rBand', f.sRain != null ? num(f.sRain, 0) + ' km' + (p.U > 0 ? T('，大約下 ', ', about ') + hrs(f.sRain / p.U) : T('，鋒面不動：一直下', ', front not moving: rain without end')) : T('沒有（雲底高於 2 km，雨下不到地面）', 'None (cloud base above 2 km, the rain never reaches the ground)'));
+    setHTML('rBand', f.sRain != null ? num(f.sRain, 0) + ' km' + (p.U > 0 ? T('，大約下 ', ', about ') + hrs(f.sRain / p.U) : T('，鋒面不動：一直下', ', front not moving: rain without end')) : T('沒有地面降水', 'No precipitation at the ground'));
     setHTML('rShear', num(FC.margulesShear(LAT, (p.Tw + p.Tc) / 2, f.tan, p.Tw - p.Tc), 1) + ' m/s');
     setHTML('airHint', T('暖空氣的凝結高度 ', 'Warm air condenses at ') + '<b>' + num(f.zl, 0) + ' m</b>' + T('（氣溫和露點差 ', ' (temperature minus dew point ') + num(p.Tw - p.Tdw, 1) + T(' °C × 約 125 m）；兩個氣團溫差 ', ' °C × about 125 m); the air masses differ by ') + '<b>' + num(p.Tw - p.Tc, 1) + ' °C</b>' + T('。', '.'));
     setHTML('frontHint', T('上升速度 w = V × 坡度 = ', 'Uplift w = V × slope = ') + num(p.V, 1) + ' × 1/' + p.N + ' = <b>' + num(f.w * 100, 1) + ' cm/s</b>' + T('；鋒面前緣的降雨率 ', '; rain rate at the front edge ') + '<b>' + num(f.rain(0.5), 1) + ' mm/h</b>' + T('。', '.'));

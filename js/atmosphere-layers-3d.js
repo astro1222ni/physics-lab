@@ -273,7 +273,19 @@
     const balloonMat = new THREE.MeshStandardMaterial({ color: 0xfb7185, roughness: 0.35, metalness: 0, emissive: 0x3a0a14 });
     const balloon = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), balloonMat);
     balloon.renderOrder = 21;
-    scene.add(balloon);
+    const parachute = new THREE.Group();
+    const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.012, 20, 10, 0, 2 * Math.PI, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: balloonMat.color, roughness: 0.8, side: THREE.DoubleSide }));
+    canopy.position.y = 0.025;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.008, 0.008), new THREE.MeshStandardMaterial({ color: refDot.material.color }));
+    box.position.y = 0.004;
+    const cords = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([
+      V(-0.012, 0.025, 0), V(0, 0.008, 0), V(0.012, 0.025, 0), V(0, 0.008, 0),
+      V(0, 0.025, -0.012), V(0, 0.008, 0), V(0, 0.025, 0.012), V(0, 0.008, 0)
+    ]), new THREE.LineBasicMaterial({ color: 0xf1f5f9 }));
+    parachute.add(canopy, box, cords);
+    parachute.quaternion.setFromUnitVectors(V(0, 1, 0), N0);
+    scene.add(balloon, parachute);
     const probeLabel = new THREE.Group();
     scene.add(probeLabel);
 
@@ -301,17 +313,24 @@
       }
       // 氣球：照直徑放大（示意，放大很多倍），放在柱子北邊一點
       const b = state.balloon;
-      if (b && state.bstate !== 'burst') {
+      if (b && !b.burst) {
         const st = K.balloonAt(b, b.z);
         balloon.visible = true;
         const r = 0.006 + st.D * 0.0016;
         balloon.scale.setScalar(r);
         balloon.position.copy(at(b.z / 1000 + 0.3)).add(NORTH.clone().multiplyScalar(0.018 + r));
       } else balloon.visible = false;
+      parachute.visible = !!(b && b.burst);
+      if (parachute.visible) {
+        parachute.position.copy(at(b.z / 1000)).addScaledVector(NORTH, 0.025);
+        canopy.visible = cords.visible = state.bstate !== 'landed';
+      }
       setHud('probe', B.zLabel(state.z) + '・' + B.cel(s.T) + '・' + B.pText(s.P));
       setHud('probe2', T('頭上還有 ', 'Air above: ') + (s.above >= 0.001 ? B.num(s.above * 100, s.above >= 0.1 ? 1 : 3) + '%' : T('不到 0.1%', 'under 0.1%')) + T(' 的空氣', ''));
       setHud('layer', B.layerName(s.layer));
-      setHud('balloon', b ? (state.bstate === 'burst' ? T('氣球在 ', 'Balloon burst at ') + B.zLabel(b.z / 1000) + T(' 爆破', '') : T('氣球 ', 'Balloon ') + B.zLabel(b.z / 1000)) : '');
+      const flightLabel = state.bstate === 'landed' ? T('探空儀已落地 ', 'Radiosonde landed ')
+        : b && b.burst ? T('探空儀下降 ', 'Radiosonde descending ') : T('氣球 ', 'Balloon ');
+      setHud('balloon', b ? flightLabel + B.zLabel(b.z / 1000) : '');
       setHud('note', narrow ? T('大氣厚度放大 20 倍', 'Atmosphere ×20 thicker') : T('大氣的厚度放大 20 倍，氣球也畫大了', 'Atmosphere drawn 20 times thicker; balloon enlarged'));
     }
 

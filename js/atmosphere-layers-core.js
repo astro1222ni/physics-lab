@@ -249,6 +249,24 @@
     return b;
   }
 
+  const PARACHUTE_CD_AREA = 0.16;  // 降落傘的示意有效阻力面積（平方公尺）
+  /** 向下的終端速率（m/s）：重量等於二次阻力。 */
+  function descentSpeed(z, dT, mass = PAYLOAD) {
+    const s = at(z, dT);
+    return Math.sqrt(2 * mass * s.g / (s.rho * PARACHUTE_CD_AREA));
+  }
+  /** 爆破後用中點法積分；跨越地面時只累計實際用到的這段時間。 */
+  function stepDescent(b, dt) {
+    if (!b.burst || b.z <= 0 || dt <= 0) return b;
+    const mid = Math.max(0, b.z - descentSpeed(b.z, b.dT) * dt / 2);
+    const speed = descentSpeed(mid, b.dT);
+    const used = Math.min(dt, b.z / speed);
+    b.z = used < dt ? 0 : Math.max(0, b.z - speed * dt);
+    b.t += used;
+    b.v = b.z > 0 ? -descentSpeed(b.z, b.dT) : 0;
+    return b;
+  }
+
   /** 解析的爆破高度：(Db/D0)³ = (P0/P)(T/T0') —— 找 P/T 的高度（不必積分時間） */
   function burstAltitude(type, D0, dT) {
     const B = BALLOONS[type] || BALLOONS.b600;
@@ -280,6 +298,6 @@
     HB: HB, LB: LB, LAYER_TOP: LAYER_TOP, BALLOONS: BALLOONS, PAYLOAD: PAYLOAD, CD: CD,
     geopot: geopot, geomet: geomet, gAt: gAt, at: at, lapse: lapse, layerOf: layerOf, molMass: molMass, thermoT: thermoT,
     boilingPoint: boilingPoint, vaporPressure: vaporPressure, heightOfPressure: heightOfPressure, thickness: thickness, coldest: coldest,
-    launch: launch, balloonAt: balloonAt, stepBalloon: stepBalloon, burstAltitude: burstAltitude, fly: fly
+    launch: launch, balloonAt: balloonAt, stepBalloon: stepBalloon, descentSpeed: descentSpeed, stepDescent: stepDescent, burstAltitude: burstAltitude, fly: fly
   };
 });

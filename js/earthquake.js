@@ -177,7 +177,7 @@
     // est：電腦的最小平方解（學生按「確認我的震央」之後才顯示；stale = 量測改過了，先藏起來）
     w2: { n: 3, quake: null, stations: [], rec: { t: 0, done: false }, est: null, history: [], vpc: 6, vsc: 3.5, chords: true, drag: null, active: null, seed: 1, ws: 0, we: 60,
       marks: [], nMarks: 1, mkActive: 0 },
-    w3: { ready: false, wave: 'PS', takeoff: 20, deg: 60, fan: true, shadow: true, inner: true, t: 0, tEnd: 1320, user: false, done: false, logged: {} }
+    w3: { ready: false, wave: 'PS', takeoff: 20, deg: 60, fan: true, shadow: true, inner: true, t: 0, tEnd: 0, user: false, done: false, logged: {} }
   };
   const SPEED1 = 4, SPEED2 = 8, SPEED3 = 60; // 畫面倍速（慢動作時再除以 4）
   let view3 = null; // 3D 檢視（js/earthquake-3d.js 建立；切回 2D 時釋放）
@@ -1336,6 +1336,7 @@
     } else $('e3cmb').textContent = T('沒有到達', 'not reached');
     // 測站
     const arr = arrivals3();
+    updateEnd3(arr);
     const pA = arr.filter(function (a) { return a.phase === 'P' || a.phase === 'PKP'; });
     const ik = arr.filter(function (a) { return a.phase === 'PKIKP'; });
     const sA = arr.filter(function (a) { return a.phase === 'S'; });
@@ -1344,6 +1345,13 @@
     $('e3sa').innerHTML = sA.length ? minsec(sA[0].T) : '<b style="color:var(--pos)">' + T('收不到', 'none') + '</b>';
     $('e3sz').textContent = T('', '> ') + num(E.zones.sMax, 1) + '°' + T(' 以外', '');
     $('e3pz').textContent = num(E.zones.pMax, 1) + '°–' + num(E.zones.pkpMin, 1) + '°';
+  }
+  function updateEnd3(arrivals) {
+    const rays = [E.hiP, E.hiS, ...E.fanP, ...E.fanS];
+    const w = S.w3;
+    w.tEnd = Math.max(...rays.map(function (ray) { return ray.total; }),
+      ...arrivals.map(function (a) { return a.T; }));
+    if (w.done) w.t = w.tEnd;
   }
   function arrivals3() { return Q.arrivalsAt(E.br, S.w3.deg, ['P', 'PKP', 'PKIKP', 'S']); }
   /** 測站收到哪些波（給螢幕閱讀器與狀態列） */
@@ -1595,9 +1603,10 @@
     tag(c, lab, clamp(lp[0], L.disc.x + hw + 2, L.disc.x + L.disc.w - hw - 2), clamp(lp[1], 12, L.disc.h - 12), C.accent, 'center', fLab);
     // 波前動畫
     if (w.t > 0) {
-      const dots = function (ray, col) {
+      const dots = function (ray, col, selected) {
         if (!w.inner && ray.phase === 'PKIKP') return;
-        const p = Q.positionAt(ray, w.t);
+        // 選取的波前在到達後保留在終點，方便讀最後一幀。
+        const p = Q.positionAt(ray, selected ? Math.min(w.t, ray.total) : w.t);
         if (!p) return;
         [1, -1].forEach(function (sg) {
           const x = g.cx + sg * p[0] * g.k, y = g.cy - p[1] * g.k;
@@ -1607,6 +1616,8 @@
       };
       if (w.wave !== 'P') E.fanS.forEach(function (r) { dots(r, C.S); });
       if (w.wave !== 'S') E.fanP.forEach(function (r) { dots(r, C.P); });
+      if (w.wave !== 'P') dots(E.hiS, C.S, true);
+      if (w.wave !== 'S') dots(E.hiP, C.P, true);
       tag(c, 't = ' + minsec(w.t) + (S.running && S.mode === 'earth' ? '  (' + (S.slow ? SPEED3 / 4 : SPEED3) + '×)' : ''), 8, 14, C.text, 'left', fnt(L.narrow ? 11 : 12, 600));
     }
   }

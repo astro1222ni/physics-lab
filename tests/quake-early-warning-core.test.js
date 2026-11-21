@@ -11,6 +11,17 @@ function test(name, fn) {
 }
 function near(a, b, abs, msg) { assert.ok(Math.abs(a - b) <= abs, (msg || '') + ` 期望 ${b} ± ${abs}，得到 ${a}`); }
 
+test('地震紀錄各波的衰減包絡上界低於 1% 才結束', () => {
+  for (const d of [0, 100, 450]) {
+    const site = { d, tP: 4 + d / 6, tS: 7 + d / 3.5 };
+    const end = E.traceEnd(site);
+    const p = Math.exp(-(end - site.tP) / E.P_DECAY);
+    const s = Math.exp(-(end - site.tS) / E.sDecay(d));
+    near(Math.max(p, s), 0.01, 1e-12);
+    assert.ok(E.traceEnd(site) > site.tS + 4);
+  }
+});
+
 console.log('quake-early-warning-core');
 
 test('到時：震央正上方 P 波 h/VP、S 波 h/VS；S−P 時差 = R(1/VS − 1/VP)', () => {

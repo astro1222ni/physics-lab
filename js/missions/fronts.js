@@ -4,7 +4,7 @@
  *   'state'：任何設定改變時；'run'：鋒面通過的紀錄播完時送一次，data.done = true。
  *   共同欄位：mode（'cold'、'warm'、'stat'）, chart, anim, preset（'def'、'surge'、'dry'、'humid'、'jet'、'south'；自己調過是 ''）,
  *     Tw, Tdw, Tc, Tdc（暖、冷氣團的氣溫與露點 °C）, N（坡度 1 : N）, U（鋒面移動 km/h）, V（暖空氣爬坡 m/s）,
- *     w（上升速度 m/s）, zl（凝結高度 m）, band（地面雨帶寬 km；雲底超過 2 km 是 null）, bandHours, rain0, shear（Margules 風切 m/s）, t。
+ *     w（上升速度 m/s）, zl（凝結高度 m）, band（地面雨帶寬 km；雨全蒸發時是 null）, bandHours, rain0, shear（Margules 風切 m/s）, t。
  *   紀錄播完（done）再加：total（雨量 mm）, hours（下雨時數）, peak（最大降水率 mm/h）, dT, dTd（結束 − 開始）, dP（hPa）, pMin, pMax,
  *     wind0, wind1（風從哪裡吹來的度數）, clouds（依序看到的雲：'cs' 卷層雲、'as' 高層雲、'ns' 雨層雲、'cb' 積雨雲，用逗號接起來）,
  *     passed（鋒面線通過測站）, capped（72 小時還沒走完）, tFront, tStart, tEnd, max1、max3、max24（任意連續 1、3、24 小時的最大雨量）,
@@ -98,7 +98,7 @@
       id: 'fronts-h1', level: 3, hidden: true,
       title: { zh: '雨幡', en: 'Virga' },
       riddle: { zh: '天上在下，地上是乾的。', en: 'It falls up there; down here it stays dry.' },
-      desc: { zh: '暖鋒的高層雲下了雨，但雲底在 2–2.2 km，雨在半空蒸發，地面一滴也沒有。', en: 'Warm-front altostratus rains, but with the cloud base at 2–2.2 km the rain evaporates on the way down and none reaches the ground.' },
+      desc: { zh: '暖鋒的高層雲底在 2–2.2 km，降水穿過偏乾的雲下空氣時全蒸發了，地面一滴也沒有。', en: 'With a warm-front altostratus base at 2–2.2 km, make all the precipitation evaporate in the dry air beneath the cloud before it reaches the ground.' },
       check: function (ev) { const d = done(ev, 'warm'); return !!d && d.total === 0 && has(d, 'as') && d.zl >= 2000 && d.zl <= 2200; }
     },
     {
@@ -120,7 +120,7 @@
       title: { zh: '一天前的預告', en: 'A day’s notice' },
       riddle: { zh: '白色的羽毛，明天的雨。', en: 'White feathers today, rain tomorrow.' },
       desc: { zh: '暖鋒從看到卷層雲到開始下雨，剛好隔 24 小時（23.8–24.2 小時）。', en: 'Make the warm-front rain start 24 hours (23.8–24.2 h) after the cirrostratus first appears.' },
-      check: function (ev) { const d = done(ev, 'warm'); const l = d && lead(d); return !!d && d.total > 0 && l != null && l >= 23.8 && l <= 24.2; }
+      check: function (ev) { const d = done(ev, 'warm'); const l = d && lead(d); return !!d && d.clouds.indexOf('cs') === 0 && d.total > 0 && l != null && l >= 23.8 && l <= 24.2; }
     },
     {
       id: 'fronts-h5', level: 6, hidden: true,

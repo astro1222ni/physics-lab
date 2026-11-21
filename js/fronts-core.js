@@ -12,8 +12,8 @@
  *    檢查：沿著溼絕熱，Bolton 的相當位溫守恆到 0.3 K 以內（單元測試）。飽和水氣壓用 Bolton 公式，混合比 r = ε e/(p − e)。
  * 3. 雲底 z_b = max(z_LCL, h(s))（雲長在鋒面面之上、凝結高度之上）；z_b < Z_TOP 就有雲。
  *    整根氣柱以 w 上升，凝結率對高度積分：降水率 R = ρ(z_b)·w·[r(z_b) − r_s(Z_TOP)]（kg m⁻² s⁻¹ = mm/s）。
- *    雲底 ≤ Z_RAIN = 2 km 雨才落得到地面（再高的雲下的雨在冷空氣裡蒸發掉，成為雨幡）。
- *    雲的種類依雲底高度：≤ 2 km 是會下雨的雲（w ≥ 0.1 m/s 的強烈抬升是積雨雲，否則雨層雲）、2–6 km 高層雲、6 km 以上卷層雲與卷雲。
+ *    用冷氣團地面相對溼度近似整層雲下溼度，按落距乘溼度虧缺估計蒸發，讓地面降水率連續減少。
+ *    雲的種類仍依示意分層：2 km 以下依抬升速度畫積雨雲或雨層雲、2–6 km 高層雲、6 km 以上卷層雲與卷雲。
  *    （真正的大氣還要看穩定度；這裡用抬升速度簡化。）
  * 4. 地面氣壓：頭上的冷空氣比同高度的暖空氣重，靜力平衡多出 Δp = g·h·(ρc − ρw)，ρ = p/(Rd T)；冷氣團的厚度通常只有 1–3 km（再往上兩邊的溫差就小了），所以冷空氣深度最多算到 H_CAP = 2.5 km。
  *    所以冷鋒過境氣壓上升、暖鋒接近時氣壓下降。
@@ -32,7 +32,8 @@
   'use strict';
   const TK = 273.15, G = 9.80665, RD = 287.04, RV = 461.5, CP = 1005.7, CPV = 1870, LV = 2.501e6, EPS = RD / RV;
   const GAMMA_D = G / CP;                  // 9.75 K/km
-  const Z_TOP = 10000, Z_RAIN = 2000, Z_AS = 6000, H_CAP = 2500, DZ = 25, P0 = 1013.25, W_CB = 0.1, MIX = 8;
+  const Z_TOP = 10000, Z_LOW = 2000, Z_AS = 6000, H_CAP = 2500, DZ = 25, P0 = 1013.25, W_CB = 0.1, MIX = 8;
+  const EVAP_LENGTH = 685;                // 示意尺度（m）：全乾空氣下的最大落距
   const OMEGA = 7.2921e-5;
 
   // ---------- 水氣 ----------
@@ -91,6 +92,8 @@
   function make(o) {
     const pc = parcel(o.Tw, o.Tdw), tan = o.slope, w = o.V * tan;
     const top = at(pc, Z_TOP);
+    const deficit = Math.max(0.28, 1 - esw(o.Tdc) / esw(o.Tc));
+    const rainTop = Math.min(Z_TOP - 1, EVAP_LENGTH / deficit);
     const f = {
       o: o, pc: pc, tan: tan, w: w, zl: pc.zl,
       /** 鋒面面的高度（m），s（km） */
@@ -102,12 +105,14 @@
         if (base >= Z_TOP - 1) return null;
         const b = at(pc, base), rate = b.rho * w * Math.max(0, b.r - top.r) * 3600;
         if (rate <= 0) return null;
-        const kind = base <= Z_RAIN ? (w >= W_CB ? 'cb' : 'ns') : base <= Z_AS ? 'as' : 'cs';
-        return { base: base, top: Z_TOP, kind: kind, rate: rate, rain: base <= Z_RAIN ? rate : 0 };
+        const kind = base <= Z_LOW ? (w >= W_CB ? 'cb' : 'ns') : base <= Z_AS ? 'as' : 'cs';
+        const dryPath = base * deficit / EVAP_LENGTH;
+        const rain = rate * Math.max(0, 1 - dryPath ** 12);
+        return { base: base, top: Z_TOP, kind: kind, rate: rate, rain: rain };
       },
       rain: function (s) { const c = f.cloud(s); return c ? c.rain : 0; },
-      /** 地面下雨的範圍 s ∈ [0, sRain]（km）；雲底比 2 km 高就不下雨（null） */
-      sRain: pc.zl <= Z_RAIN && w > 0 ? Z_RAIN / (1000 * tan) : null,
+      /** 地面降水率仍為正的最遠距離（km）；雨全蒸發時回傳 null。 */
+      sRain: pc.zl < rainTop && w > 0 ? rainTop / (1000 * tan) : null,
       /** 頭上有雲的最遠處（km） */
       sCloud: w > 0 && pc.zl < Z_TOP ? Z_TOP / (1000 * tan) : null,
       /** 頭上冷空氣造成的地面氣壓增加（hPa） */
@@ -176,7 +181,7 @@
   function margulesShear(lat, Tmean, tan, dT) { return G * dT * tan / (coriolis(lat) * (Tmean + TK)); }
 
   return {
-    TK: TK, G: G, RD: RD, CP: CP, CPV: CPV, LV: LV, EPS: EPS, GAMMA_D: GAMMA_D, Z_TOP: Z_TOP, Z_RAIN: Z_RAIN, Z_AS: Z_AS, H_CAP: H_CAP, P0: P0, W_CB: W_CB, T_MAX: T_MAX, TYPES: TYPES,
+    TK: TK, G: G, RD: RD, CP: CP, CPV: CPV, LV: LV, EPS: EPS, GAMMA_D: GAMMA_D, Z_TOP: Z_TOP, Z_LOW: Z_LOW, Z_AS: Z_AS, H_CAP: H_CAP, P0: P0, W_CB: W_CB, T_MAX: T_MAX, TYPES: TYPES,
     esw: esw, mixR: mixR, dewPoint: dewPoint, tLCL: tLCL, zLCL: zLCL, gammaM: gammaM, parcel: parcel, at: at,
     make: make, course: course, pass: pass, coriolis: coriolis, margulesSlope: margulesSlope, margulesShear: margulesShear
   };

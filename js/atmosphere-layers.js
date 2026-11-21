@@ -38,7 +38,7 @@
     ref: null,                   // 參考點 {z（km）}
     btype: 'b600', D0: 1.5,
     balloon: null,               // 飛行中的氣球（core.launch 的物件）
-    bstate: 'ground',            // ground／flying／paused／burst
+    bstate: 'ground',            // ground／flying／paused／landed；爆破後由 balloon.burst 辨識下降
     burstAt: 0,                  // 爆破動畫開始時間（performance.now）
     sonde: [],                   // 這次飛行一路量到的 {z, T}
     track: [],                   // 這次飛行的 [t s, z m, D m]
@@ -616,17 +616,25 @@
     }
     const zkm = b.z / 1000;
     if (zkm > state.range) {
-      D.pill(g, '↑ ' + T('氣球 ', 'balloon ') + kmText(zkm), L.s1 - 4, L.yTop + 18, C['al-balloon'], 'right', font('600', -1));
+      const label = b.burst ? T('↓ 探空儀 ', '↓ radiosonde ') : T('↑ 氣球 ', '↑ balloon ');
+      D.pill(g, label + kmText(zkm), L.s1 - 4, L.yTop + 18, C['al-balloon'], 'right', font('600', -1));
       return;
     }
-    const st = K.balloonAt(b, b.z);
-    const r = balloonPx(st.D);
-    const yb = yOf(L, zkm) - r - 21;      // 探空儀（盒子）在 zkm 的位置
-    if (state.bstate === 'burst') {
+    if (b.burst) {
+      const y = yOf(L, zkm);
+      const landed = state.bstate === 'landed';
+      if (!landed) {
+        g.beginPath(); g.arc(x, y - 18, 12, Math.PI, 2 * Math.PI); g.closePath();
+        g.fillStyle = C['al-balloon']; g.fill();
+        g.beginPath(); g.moveTo(x - 12, y - 18); g.lineTo(x, y - 4); g.lineTo(x + 12, y - 18);
+        g.strokeStyle = C.text; g.lineWidth = 1; g.stroke();
+      }
+      g.fillStyle = C.text; g.fillRect(x - 4, y - 8, 8, 8);
       const u = Math.min(1, (tnow - state.burstAt) / 900);
-      balloonDraw(g, x, yb, r, C['al-balloon'], true);
-      if (u < 1) {
-        // 碎片往外飛
+      const r = balloonPx(b.burstD);
+      const yb = yOf(L, b.zMax / 1000) - r - 21;
+      if (u < 1 && !D.reducedMotion()) {
+        // 碎片從爆破高度散開，探空儀持續下降。
         for (let i = 0; i < 9; i++) {
           const a = i / 9 * Math.PI * 2 + 0.3, d = r * (0.6 + u * 1.6);
           g.fillStyle = D.alpha(C['al-balloon'], 1 - u);
@@ -635,9 +643,13 @@
         g.strokeStyle = D.alpha('#fde68a', 1 - u); g.lineWidth = 1.4;
         for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; g.beginPath(); g.moveTo(x + Math.cos(a) * r * 0.5, yb + Math.sin(a) * r * 0.5); g.lineTo(x + Math.cos(a) * r * (0.9 + u), yb + Math.sin(a) * r * (0.9 + u)); g.stroke(); }
       }
-      D.pill(g, T('爆破 ', 'Burst at ') + kmText(zkm), x, yb - 6, C['al-balloon'], 'center', font('700', -0.5));
+      const label = landed ? T('已落地', 'Landed') : T('探空儀下降 ', 'Radiosonde descending ') + kmText(zkm);
+      D.pill(g, label, x + 16, y - 15, C['al-balloon'], 'left', font('700', -0.5));
       return;
     }
+    const st = K.balloonAt(b, b.z);
+    const r = balloonPx(st.D);
+    const yb = yOf(L, zkm) - r - 21;
     balloonDraw(g, x, yb, r, C['al-balloon']);
     // 爆破直徑的虛線圈（比例相同）
     const rb = balloonPx(b.burstD);
@@ -716,6 +728,10 @@
         D.haloText(g, T('按「放飛」開始一次飛行', 'Press “Launch” to start a flight'), W / 2, H / 2, C.muted, 'center', 'middle', '600 ' + F.fs + 'px ' + FONT);
       }
     } else {
+      const diameterPoints = function (track) {
+        return track.filter(function (p) { return p[2] != null; })
+          .map(function (p) { return [p[1] / 1000, p[2]]; });
+      };
       let zMax = 10, dMax = 4;
       old.concat([{ track: cur }]).forEach(function (f) { f.track.forEach(function (p) { zMax = Math.max(zMax, p[1] / 1000); dMax = Math.max(dMax, p[2]); }); });
       const bD = K.BALLOONS[state.btype].burst;
@@ -731,10 +747,10 @@
       line(g, th, F.X, F.Y, D.alpha(C.muted, 0.7), 1.2, [2, 3]);
       old.forEach(function (f, i) {
         const col = FLIGHT_COLORS[(state.flights.length - old.length + i) % FLIGHT_COLORS.length];
-        line(g, f.track.map(function (p) { return [p[1] / 1000, p[2]]; }), F.X, F.Y, D.alpha(col, 0.85), 1.8);
+        line(g, diameterPoints(f.track), F.X, F.Y, D.alpha(col, 0.85), 1.8);
       });
       if (cur.length) {
-        const pts = cur.map(function (p) { return [p[1] / 1000, p[2]]; });
+        const pts = diameterPoints(cur);
         line(g, pts, F.X, F.Y, C['al-balloon'], 2.4);
         const q = pts[pts.length - 1];
         D.ball(g, F.X(q[0]), F.Y(q[1]), 5, C['al-balloon']);
@@ -742,7 +758,7 @@
     }
   }
   function chartAria() {
-    return state.chart === 'time' ? T('探空氣球的高度隨時間的變化', 'Height of the weather balloon against time')
+    return state.chart === 'time' ? T('氣球上升與探空儀下降的高度紀錄', 'Height of the rising balloon and descending radiosonde over time')
       : T('探空氣球的直徑隨高度的變化，虛線是爆破直徑', 'Diameter of the weather balloon against height; the dashed line is the bursting diameter');
   }
 
@@ -832,18 +848,22 @@
       ? T('淨浮力 <b>', 'Net lift <b>') + num(st0.freeLift, 2) + T('</b> kg（', '</b> kg (') + num(st0.lift, 1) + T(' N），出發時每秒上升 <b>', ' N); it leaves the ground at <b>') + num(st0.v, 2) + T('</b> m。', '</b> m/s.')
       : T('<b>浮力不夠</b>：氣球加探空儀比它排開的空氣還重（差 ', '<b>Not enough lift</b>: balloon and radiosonde weigh more than the air they push aside (short by ') + num(-st0.freeLift, 2) + T(' kg），飛不起來。', ' kg), so it cannot take off.'));
     if (b) {
-      const st = K.balloonAt(b, b.z);
+      const st = !b.burst ? K.balloonAt(b, b.z) : null;
+      const air = st ? st.s : K.at(b.z, b.dT);
       setHTML('bZ', zLabel(b.z / 1000));
-      setHTML('bV', state.bstate === 'burst' ? T('—（已爆破）', '— (burst)') : num(st.v, 2) + ' m/s');
-      setHTML('bD', num(st.D, 2) + ' m ／ ' + num(b.burstD, 2) + ' m');
-      setHTML('bVol', num(st.V, st.V < 100 ? 2 : 0) + ' m³');
-      setHTML('bL', liftText(st.freeLift));
+      setHTML('bAir', cel(air.T) + ' ／ ' + pText(air.P));
+      setHTML('bV', state.bstate === 'landed' ? T('0 m/s（已落地）', '0 m/s (landed)')
+        : b.burst ? '↓ ' + num(K.descentSpeed(b.z, b.dT), 2) + ' m/s' : num(st.v, 2) + ' m/s');
+      setHTML('bD', st ? num(st.D, 2) + ' m ／ ' + num(b.burstD, 2) + ' m' : T('已爆破', 'Burst'));
+      setHTML('bVol', st ? num(st.V, st.V < 100 ? 2 : 0) + ' m<sup>3</sup>' : '—');
+      setHTML('bL', st ? liftText(st.freeLift) : '—');
       setHTML('bT', timeText(b.t));
     } else {
       setHTML('bZ', T('在地面', 'on the ground'));
+      setHTML('bAir', cel(st0.s.T) + ' ／ ' + pText(st0.s.P));
       setHTML('bV', '—');
       setHTML('bD', num(state.D0, 2) + ' m ／ ' + num(K.BALLOONS[state.btype].burst, 2) + ' m');
-      setHTML('bVol', num(Math.PI * Math.pow(state.D0, 3) / 6, 2) + ' m³');
+      setHTML('bVol', num(Math.PI * Math.pow(state.D0, 3) / 6, 2) + ' m<sup>3</sup>');
       setHTML('bL', liftText(st0.freeLift));
       setHTML('bT', '—');
     }
@@ -873,7 +893,7 @@
   function launch() {
     acted();
     if (state.bstate === 'flying') { state.bstate = 'paused'; updateLaunchButton(); setStatus(T('暫停。', 'Paused.')); requestDraw(); return; }
-    if (state.bstate === 'paused') { state.bstate = 'flying'; updateLaunchButton(); setStatus(T('繼續上升。', 'Rising again.')); requestDraw(); return; }
+    if (state.bstate === 'paused') { state.bstate = 'flying'; updateLaunchButton(); setStatus(state.balloon.burst ? T('繼續下降。', 'Descending again.') : T('繼續上升。', 'Rising again.')); requestDraw(); return; }
     const b = K.launch(state.btype, state.D0, state.dT), st = K.balloonAt(b, 0);
     if (st.lift <= 0) {
       setStatus(T('浮力不夠，氣球飛不起來：多充一點氦氣，或換小一點的氣球。', 'Not enough lift — the balloon will not rise. Fill it with more helium or use a smaller balloon.'));
@@ -892,24 +912,42 @@
   function flyStep(simSec) {
     const b = state.balloon;
     let left = simSec;
-    while (left > 1e-9 && !b.burst) {
+    while (left > 1e-9 && state.bstate === 'flying') {
       const h = Math.min(4, left);
-      K.stepBalloon(b, h);
       left -= h;
+      if (b.burst) {
+        K.stepDescent(b, h);
+        const last = state.track[state.track.length - 1];
+        // 爆破後只記時間與高度，直徑圖保留爆破前的量測。
+        if (b.z === 0 || b.t - last[0] >= 20) state.track.push([b.t, b.z, null]);
+        if (b.z === 0) {
+          b.tLand = b.t;
+          if (state.flights.includes(b.flight)) {
+            b.flight.tLand = b.tLand;
+            b.flight.track = state.track.slice();
+          }
+          state.bstate = 'landed';
+          setStatus(T('探空儀已落回地面。總飛行時間 ', 'The radiosonde landed. Total flight time: ') + timeText(b.tLand) + T('。', '.'));
+          updateLaunchButton();
+        }
+        continue;
+      }
+      K.stepBalloon(b, h);
       const zkm = b.z / 1000;
       const lastS = state.sonde[state.sonde.length - 1];
       if (!lastS || b.z - lastS.z >= (state.range <= 20 ? 120 : 300)) state.sonde.push({ z: b.z, T: K.at(b.z, b.dT).T });
       const lastT = state.track[state.track.length - 1];
       if (!lastT || b.t - lastT[0] >= 20 || b.burst) state.track.push([b.t, b.z, K.balloonAt(b, b.z).D]);
       layerCheck(zkm, 'balloon');
-      if (b.z >= K.ZMAX - 1) break;
+      if (b.burst) onBurst();
+      else if (b.z >= K.ZMAX - 1) break;
     }
-    if (b.burst) onBurst();
   }
   function onBurst() {
     const b = state.balloon, s = K.at(b.z, b.dT);
-    state.bstate = 'burst'; state.burstAt = performance.now();
+    state.burstAt = performance.now();
     const f = { type: b.type, D0: b.D0, dT: b.dT, v0: b.v0, zBurst: b.z, Pburst: s.P, Tburst: s.T, t: b.t, track: state.track.slice() };
+    b.flight = f;
     state.flights.push(f);
     if (state.flights.length > 12) state.flights.shift();
     const S = sound();
@@ -1015,7 +1053,7 @@
   $('recall').addEventListener('click', function () { acted(); resetBalloon(T('氣球收回地面了。', 'The balloon is back on the ground.')); afterChange(true); });
   $('clear').addEventListener('click', function () {
     state.flights = []; state.ref = null;
-    if (state.bstate === 'burst') resetBalloon();
+    if (state.bstate === 'landed') resetBalloon();
     state.sonde = state.balloon ? state.sonde : [];
     setStatus(T('已清除飛行紀錄與參考點。', 'Flight log and reference point cleared.'));
     refreshOutputs(); afterChange(true);
@@ -1028,7 +1066,7 @@
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
   function updateChartHint() {
     setHTML('chartHint', state.chart === 'time'
-      ? T('紅線是這一次飛行，灰、紫、綠、黃是之前的飛行。直線上升代表速率幾乎不變：淨浮力不變，氣球越大、空氣越稀，阻力剛好差不多。', 'Red: this flight; grey, purple, green and yellow: earlier ones. The nearly straight lines mean an almost steady climb: the lift does not change, and a bigger balloon in thinner air feels about the same drag.')
+      ? T('紅線是這一次的高度紀錄，包含氣球上升與探空儀下降。灰、紫、綠、黃線是之前的飛行。', 'Red shows this flight\'s altitude, including the balloon\'s ascent and the radiosonde\'s descent. Grey, purple, green and yellow show past flights.')
       : T('灰色點線是目前設定的理論曲線 D = D<sub>0</sub>[(P<sub>0</sub>/P)(T/T<sub>0</sub>)]<sup>1/3</sup>；碰到紅色虛線（爆破直徑）就破。', 'The grey dotted line is the theory for the current settings, D = D<sub>0</sub>[(P<sub>0</sub>/P)(T/T<sub>0</sub>)]<sup>1/3</sup>; the balloon bursts when it reaches the red dashed line (bursting diameter).'));
   }
 
@@ -1112,7 +1150,6 @@
       }
       busy = state.bstate === 'flying';
     }
-    if (state.bstate === 'burst' && tnow - state.burstAt < 950) busy = true;
     if (view3 && view3.active) { view3.frame(tnow); busy = busy || view3.busy(); }
     else drawProfile(tnow);
     drawChart();
