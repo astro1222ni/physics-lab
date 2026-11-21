@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 08:41">
-  <script src="js/settings.js?v=202611210841"></script>
+<meta name="lab-updated" content="2026-11-21 09:05">
+  <script src="js/settings.js?v=202611210905"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="How Infections Spread | Astro Ni Lab">傳染病的傳播｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,7 +30,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210841">
+  <link rel="stylesheet" href="lab.css?v=202611210905">
   <style>
     .sir .stage { min-width: 0; padding: clamp(8px,1.25vw,16px); container-type: inline-size; }
     .sir .instruments { display: grid; gap: 8px; }
@@ -143,6 +143,29 @@
     @container (min-width: 635px) {
       .sir .instruments:has(#view3[hidden]) { grid-template-columns: minmax(0,1fr) minmax(198px,29%); grid-template-areas: "sheet roll" "message roll" "time roll" "capture roll" "deck roll"; }
     }
+    /* 11/21 站長：「動畫的位置跟可操作的這些拉桿距離太遠，要捲到下一頁」。手機直放（操作台在畫布下）時：
+       畫布 → 播放與日期 → 分頁操作台；記錄鈕、當天讀數、金線說明、點名簿排到操作台之後。曲線卡拆開排，外框照舊接成一張。 */
+    html.labdeck-stack .sir .instruments:has(#cv) { grid-template-columns: minmax(0,1fr); gap: 0; grid-template-areas: "head" "legend" "canvas" "meter" "message" "time" "deck" "capture" "caption" "roll"; }
+    html.labdeck-stack .sir .instruments > .sheet, html.labdeck-stack .sir #view2 { display: contents; }
+    html.labdeck-stack .sir .sheet-head { grid-area: head; background: var(--canvas-bg); border: 1px solid var(--border); border-bottom: 0; border-radius: 14px 14px 0 0; }
+    html.labdeck-stack .sir .key { grid-area: legend; background: var(--canvas-bg); border-inline: 1px solid var(--border); }
+    html.labdeck-stack .sir #cv, html.labdeck-stack .sir #view3 { grid-area: canvas; min-width: 0; border: 1px solid var(--border); border-block: 0; border-radius: 0; }
+    html.labdeck-stack .sir #view3 { overflow: hidden; }
+    html.labdeck-stack .sir #viewMsg { margin-top: 6px; }
+    html.labdeck-stack .sir #actions { margin-top: 3px; }
+    html.labdeck-stack .sir .runbar .slider input { margin-top: -16px; }
+    html.labdeck-stack .sir .instruments > .labdeck { margin-top: 0; }
+    html.labdeck-stack .sir #recordBar { margin-top: 8px; }
+    /* 調滑桿時要盯著看的讀數（當天 Re、高峰）留在畫布正下方，壓成約 40 px 接在曲線卡底部（11/21 主串轉站長準則） */
+    html.labdeck-stack .sir .meter { grid-area: meter; background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 0 0 14px 14px; }
+    html.labdeck-stack .sir .meter div { padding: 3px 10px; line-height: 1.25; }
+    html.labdeck-stack .sir .meter small { font-size: calc(12px * var(--fs,1)); }
+    html.labdeck-stack .sir .meter strong, html.labdeck-stack .sir #todayRe { font-size: calc(15px * var(--fs,1)); }
+    html.labdeck-stack .sir .sheet-caption { grid-area: caption; padding: 6px 4px 0; }
+    html.labdeck-stack .sir .roster { margin-top: 8px; }
+    /* 11/21 站長：「那個 scale bar 上下之間的距離、間距，其實可以不需要那麼大。」操作台的滑桿照共用 .labdeck .slider 緊排 */
+    .sir .labdeck .slider { margin: 0 0 2px; }
+    .sir .labdeck .slider input { min-height: 0; margin: 0; }
     @media (max-width: 470px) {
       .sir .roster { width: calc(100vw - 12px); margin-inline-start: calc((100% - 100vw + 12px) / 2); }
       .sir .view-bar #soundBtn { margin-inline-start: 0; }
@@ -261,10 +284,10 @@
       <aside class="panel">
         <section class="card" data-deck="情境設定|Scenario"><h2 data-en="Scenario">情境設定</h2>
           <div class="slider" id="basicRow"><label for="basic" data-en-html="Basic reproduction number R<sub>0</sub>">基本再生數 R<sub>0</sub></label><output id="basico" for="basic"></output><input type="range" id="basic" min="0.5" max="5" step="0.01" value="2.5" data-decimals="3"></div>
-          <p data-en="In a fully susceptible school with no controls, this is how many others one infectious person would infect on average.">全校都易感且沒有防治時，一位具傳染力者平均會再傳給這麼多人。</p>
           <div class="slider" id="immuneRow"><label for="immune" data-en="Initially immune">初始免疫比例</label><output id="immuneo" for="immune"></output><input type="range" id="immune" min="0" max="90" step="1" value="0" data-decimals="1"></div>
           <div class="slider" id="maskRow"><label for="mask" data-en="Reduction from masks">口罩減幅</label><output id="masko" for="mask"></output><input type="range" id="mask" min="0" max="80" step="1" value="0" data-decimals="1"></div>
           <div class="slider" id="airRow"><label for="air" data-en="Reduction from ventilation">通風減幅</label><output id="airo" for="air"></output><input type="range" id="air" min="0" max="80" step="1" value="0" data-decimals="1"></div>
+          <p data-en-html="R<sub>0</sub>: in a fully susceptible school with no controls, this is how many others one infectious person would infect on average.">R<sub>0</sub>：全校都易感且沒有防治時，一位具傳染力者平均會再傳給這麼多人。</p>
         </section>
         <section class="card" data-deck="觀察紀錄|Observations"><h2 data-en="Observations">觀察紀錄</h2>
           <p data-en="Keep a reference to save that day’s readings and its entire infectious curve. Compare it with another date or scenario. Each setup counts toward one mission. To investigate another, change a scenario control.">保留基準會留下該日讀數與整條 I 曲線。換一天或換一組設定，就能和它比較。每組設定可以完成一題任務。要觀察另一題，請改變一項情境設定。</p>
@@ -293,20 +316,20 @@
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210841"></script>
-  <script src="js/sir-epidemic-core.js?v=202611210841"></script>
-  <script src="js/sound.js?v=202611210841"></script>
-  <script src="js/numinput.js?v=202611210841"></script>
-  <script src="js/labdeck.js?v=202611210841"></script>
-  <script src="js/drawkit.js?v=202611210841"></script>
-  <script src="js/view3d-nav.js?v=202611210841"></script>
-  <script src="js/stepguide.js?v=202611210841"></script>
-  <script src="js/labside.js?v=202611210841"></script>
-  <script src="js/firebase-config.js?v=202611210841"></script>
-  <script src="js/missions.js?v=202611210841" data-module="sir-epidemic"></script>
-  <script src="js/missions/sir-epidemic.js?v=202611210841"></script>
-  <script src="js/stats.js?v=202611210841" data-module="sir-epidemic"></script>
-  <script src="js/comments.js?v=202611210841"></script>
-  <script src="js/sir-epidemic.js?v=202611210841"></script>
+  <script src="js/math.js?v=202611210905"></script>
+  <script src="js/sir-epidemic-core.js?v=202611210905"></script>
+  <script src="js/sound.js?v=202611210905"></script>
+  <script src="js/numinput.js?v=202611210905"></script>
+  <script src="js/labdeck.js?v=202611210905"></script>
+  <script src="js/drawkit.js?v=202611210905"></script>
+  <script src="js/view3d-nav.js?v=202611210905"></script>
+  <script src="js/stepguide.js?v=202611210905"></script>
+  <script src="js/labside.js?v=202611210905"></script>
+  <script src="js/firebase-config.js?v=202611210905"></script>
+  <script src="js/missions.js?v=202611210905" data-module="sir-epidemic"></script>
+  <script src="js/missions/sir-epidemic.js?v=202611210905"></script>
+  <script src="js/stats.js?v=202611210905" data-module="sir-epidemic"></script>
+  <script src="js/comments.js?v=202611210905"></script>
+  <script src="js/sir-epidemic.js?v=202611210905"></script>
 </body>
 </html>

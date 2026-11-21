@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 08:41">
-  <script src="js/settings.js?v=202611210841"></script>
+<meta name="lab-updated" content="2026-11-21 09:05">
+  <script src="js/settings.js?v=202611210905"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="ADSR Envelopes | Astro Ni Lab">合成器的 ADSR 包絡｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"音樂","item":"https://lab.astroni.org/music.html"},{"@type":"ListItem","position":3,"name":"空間、錄音與數位音樂","item":"https://lab.astroni.org/music.html#audio"},{"@type":"ListItem","position":4,"name":"合成器與效果器","item":"https://lab.astroni.org/music.html#ch-synthesis"},{"@type":"ListItem","position":5,"name":"合成器的 ADSR 包絡","item":"https://lab.astroni.org/adsr-envelope.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210841">
+  <link rel="stylesheet" href="lab.css?v=202611210905">
   <style>
     /* ADSR 包絡頁面專用的顏色代號（淺色＋兩組深色；由 js/adsr-envelope.js 與 js/adsr-envelope-3d.js 讀取）
        --ad-a 起音、--ad-d 衰減、--ad-s 延持、--ad-r 釋音、--ad-wave 波形、--ad-ghost「如果一直按著」的虛線 */
@@ -147,7 +147,13 @@
       .stage-main .chart-note { line-height: 1.35; }
       html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
     }
-  </style>
+      /* 11/21 站長：「動畫的位置跟可操作的這些拉桿距離太遠，要捲到下一頁」。手機直放：播放列一列排完，音效鈕只留喇叭圖示（開關看圖示顏色），操作台緊接畫布 */
+    html.labdeck-stack .playbar { gap: 6px; margin-top: 6px; }
+    html.labdeck-stack .playbar button { flex: 1 1 auto; padding-inline: 6px; white-space: nowrap; }
+    html.labdeck-stack .playbar .sound-btn { flex: 0 0 44px; padding: 0; }
+    html.labdeck-stack .playbar #soundLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    html.labdeck-stack .lab .status:empty { display: none; }
+</style>
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -178,11 +184,11 @@
             <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
-          <p class="chart-note l2" data-en="Drag the peak for A, the decay end for D and S, the release point for hold time, or the last dot for R. Tap the graph to inspect the waveform.">拖曳頂點調 A、衰減終點調 D 和 S、放開點調按住時間、末點調 R。點圖上其他位置，可在示波器檢視那一刻的波形。</p>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
         <div data-deck-anchor hidden></div>
+        <p class="chart-note l2" data-en="Drag the peak for A, the decay end for D and S, the release point for hold time, or the last dot for R. Tap the graph to inspect the waveform.">拖曳頂點調 A、衰減終點調 D 和 S、放開點調按住時間、末點調 R。點圖上其他位置，可在示波器檢視那一刻的波形。</p>
         <div class="kbd-wrap">
           <div class="kbd-title"><h3 data-en="Keys">琴鍵</h3><span data-en="Hold to play, let go to release · computer keys A–K">按住才響，放開進入釋音・電腦鍵盤 A–K</span></div>
           <div class="kbd" id="kbd" role="group" aria-label="琴鍵：C4 到 C5。按住發聲，放開進入釋音。" data-en-aria-label="Keys: C4 to C5. Hold to sound, let go to release."></div>
@@ -336,19 +342,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210841"></script>
-  <script src="js/music-theory.js?v=202611210841"></script>
-  <script src="js/adsr-envelope-core.js?v=202611210841"></script>
-  <script src="js/music-audio.js?v=202611210841"></script>
-  <script src="js/numinput.js?v=202611210841"></script>
-  <script src="js/labdeck.js?v=202611210841"></script>
-  <script src="js/drawkit.js?v=202611210841"></script>
-  <script src="js/keys.js?v=202611210841"></script>
-  <script src="js/adsr-envelope.js?v=202611210841"></script>
-  <script src="js/firebase-config.js?v=202611210841"></script>
-  <script src="js/missions.js?v=202611210841" data-module="adsr-envelope"></script>
-  <script src="js/missions/adsr-envelope.js?v=202611210841"></script>
-  <script src="js/stats.js?v=202611210841" data-module="adsr-envelope"></script>
-  <script src="js/comments.js?v=202611210841"></script>
+  <script src="js/math.js?v=202611210905"></script>
+  <script src="js/music-theory.js?v=202611210905"></script>
+  <script src="js/adsr-envelope-core.js?v=202611210905"></script>
+  <script src="js/music-audio.js?v=202611210905"></script>
+  <script src="js/numinput.js?v=202611210905"></script>
+  <script src="js/labdeck.js?v=202611210905"></script>
+  <script src="js/drawkit.js?v=202611210905"></script>
+  <script src="js/keys.js?v=202611210905"></script>
+  <script src="js/adsr-envelope.js?v=202611210905"></script>
+  <script src="js/firebase-config.js?v=202611210905"></script>
+  <script src="js/missions.js?v=202611210905" data-module="adsr-envelope"></script>
+  <script src="js/missions/adsr-envelope.js?v=202611210905"></script>
+  <script src="js/stats.js?v=202611210905" data-module="adsr-envelope"></script>
+  <script src="js/comments.js?v=202611210905"></script>
 </body>
 </html>

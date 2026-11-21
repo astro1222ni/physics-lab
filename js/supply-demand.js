@@ -474,7 +474,7 @@
     const actions = $('actions'), home = $('actionsHome');
     function placeActions() {
       const drawer = document.querySelector('.labdeck');
-      if (LabDeck.mode==='drawer' && drawer) {
+      if ((LabDeck.mode==='drawer' || LabDeck.mode==='stack') && drawer) {
         if (actions.parentElement!==drawer) drawer.prepend(actions);
       } else if (actions.previousElementSibling!==home) home.after(actions);
     }

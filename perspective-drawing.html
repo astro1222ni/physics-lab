@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 08:41">
-  <script src="js/settings.js?v=202611210841"></script>
+<meta name="lab-updated" content="2026-11-21 09:05">
+  <script src="js/settings.js?v=202611210905"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="One-, Two- and Three-Point Perspective | Astro Ni Lab">一點、兩點與三點透視｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"美術","item":"https://lab.astroni.org/visual-arts.html"},{"@type":"ListItem","position":3,"name":"造形與視覺表現","item":"https://lab.astroni.org/visual-arts.html#visual-expression"},{"@type":"ListItem","position":4,"name":"空間與透視","item":"https://lab.astroni.org/visual-arts.html#ch-spatial-perspective"},{"@type":"ListItem","position":5,"name":"一點、兩點與三點透視","item":"https://lab.astroni.org/perspective-drawing.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210841">
+  <link rel="stylesheet" href="lab.css?v=202611210905">
   <style>
     .persp { --ink: var(--accent); --rule: color-mix(in srgb,var(--equi) 26%,var(--border)); }
     .persp [hidden] { display:none !important }
@@ -69,9 +69,11 @@
     .persp .slider output,.persp .lab-num,.persp .readout dd { font-size:calc(15px * var(--fs,1)); font-variant-numeric:tabular-nums }
     .persp .slider output,.persp .lab-num { min-height:44px; display:inline-flex; align-items:center }
     .persp input[type=range] { height:44px; margin:-6px 0 0 }
-    .persp .labdeck .slider input[type=range],.persp .labdeck .slider .lab-num { min-height:44px !important; height:44px !important }
+    /* 11/21 站長：「那個 scale bar 上下之間的距離、間距，其實可以不需要那麼大。」操作台的滑桿照共用 .labdeck .slider 緊排：滑桿 30 px、數字框 28 px，看不見的 ::after 保持 44 px 觸控區 */
+    .persp .labdeck .slider .lab-num { min-height:24px !important; height:24px !important }
     .persp .slider .lab-num { min-width:44px; justify-content:flex-end }
     .persp .slider .lab-num::after { inset:0; width:auto; transform:none }
+    .persp .labdeck .slider .lab-num::after { inset:auto; top:-17px; bottom:-8px; right:0; width:max(calc(100% + 20px),44px) }
     html.labdeck-drawer .persp .labdeck-tabs button { min-height:44px }
     .persp .slider label { line-height:1.3 }
     .persp .actions { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 }
@@ -106,6 +108,15 @@
       html.labdeck-on .persp .stage:has(#view3:not([hidden])) #stageHint { order:1 }
       html.labdeck-on .persp .stage:has(#view3:not([hidden])) #meters { order:2 }
     }
+    /* 11/21 站長：「動畫的位置跟可操作的這些拉桿距離太遠，要捲到下一頁」。手機直放：操作台緊接畫布，記錄鈕、說明排到操作台之後 */
+    html.labdeck-stack .persp .stage { display:flex; flex-direction:column }
+    html.labdeck-stack .persp .stage > .desk-actions { order:1; margin-top:8px }
+    html.labdeck-stack .persp .stage > #stageHint { order:3 }
+    /* 調拉桿時要盯著看的三格讀數留在操作台正上方，壓扁（11/21 主串轉站長準則） */
+    html.labdeck-stack .persp #meters { margin:4px 0 }
+    html.labdeck-stack .persp .strip > div { padding:3px 8px; line-height:1.25 }
+    html.labdeck-stack .persp .strip dt { font-size:calc(12px * var(--fs,1)) }
+    html.labdeck-stack .persp .strip dd { margin:0; font-size:calc(15px * var(--fs,1)) }
     @media (orientation:landscape) and (max-height:600px) {
       .persp #paper { height:min(60vh,300px); width:min(100%,96vh); margin-inline:auto; aspect-ratio:auto }
       .persp .stage-bar { margin-bottom:4px }
@@ -283,20 +294,20 @@
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210841"></script>
-  <script src="js/perspective-drawing-core.js?v=202611210841"></script>
-  <script src="js/sound.js?v=202611210841"></script>
-  <script src="js/numinput.js?v=202611210841"></script>
-  <script src="js/labdeck.js?v=202611210841"></script>
-  <script src="js/drawkit.js?v=202611210841"></script>
-  <script src="js/view3d-nav.js?v=202611210841"></script>
-  <script src="js/stepguide.js?v=202611210841"></script>
-  <script src="js/labside.js?v=202611210841"></script>
-  <script src="js/perspective-drawing.js?v=202611210841"></script>
-  <script src="js/firebase-config.js?v=202611210841"></script>
-  <script src="js/missions.js?v=202611210841" data-module="perspective-drawing"></script>
-  <script src="js/missions/perspective-drawing.js?v=202611210841"></script>
-  <script src="js/stats.js?v=202611210841" data-module="perspective-drawing"></script>
-  <script src="js/comments.js?v=202611210841"></script>
+  <script src="js/math.js?v=202611210905"></script>
+  <script src="js/perspective-drawing-core.js?v=202611210905"></script>
+  <script src="js/sound.js?v=202611210905"></script>
+  <script src="js/numinput.js?v=202611210905"></script>
+  <script src="js/labdeck.js?v=202611210905"></script>
+  <script src="js/drawkit.js?v=202611210905"></script>
+  <script src="js/view3d-nav.js?v=202611210905"></script>
+  <script src="js/stepguide.js?v=202611210905"></script>
+  <script src="js/labside.js?v=202611210905"></script>
+  <script src="js/perspective-drawing.js?v=202611210905"></script>
+  <script src="js/firebase-config.js?v=202611210905"></script>
+  <script src="js/missions.js?v=202611210905" data-module="perspective-drawing"></script>
+  <script src="js/missions/perspective-drawing.js?v=202611210905"></script>
+  <script src="js/stats.js?v=202611210905" data-module="perspective-drawing"></script>
+  <script src="js/comments.js?v=202611210905"></script>
 </body>
 </html>
