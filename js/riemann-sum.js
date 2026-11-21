@@ -91,7 +91,7 @@
   function layout() {
     const narrow = cw < 600;
     const left = narrow ? 46 : 58, right = cw - (narrow ? 12 : 18);
-    const t1 = 16, h1 = narrow ? 270 : 340, h2 = narrow ? 170 : 190;
+    const t1 = 16, h1 = narrow ? 225 : 340, h2 = narrow ? 150 : 190;
     const drawer = window.LabDeck?.mode === 'drawer';
     const gap = drawer ? 40 : 52, footer = drawer ? 26 : 34;
     const H = drawer ? cv.clientHeight : t1 + h1 + (state.showErr ? gap + h2 + footer : 30);

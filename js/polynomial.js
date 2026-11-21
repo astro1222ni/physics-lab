@@ -106,7 +106,7 @@
     cw = w;
     const narrow = cw < 600;
     ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
-      : narrow ? Math.round(Math.max(380, Math.min(cw * 1.15, 470))) : 500;
+      : narrow ? Math.round(Math.max(340, Math.min(cw * 1.05, 430))) : 500;
     layout();
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);

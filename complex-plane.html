@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Complex Plane: Multiplication Is Rotation and Scaling | Astro Ni Lab">複數平面：乘法是旋轉與伸縮｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":5,"name":"複數","item":"https://lab.astroni.org/mathematics.html#ch-complex"},{"@type":"ListItem","position":6,"name":"複數平面：乘法是旋轉與伸縮","item":"https://lab.astroni.org/complex-plane.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 複數平面頁面專用的顏色代號（淺色＋深色；由 js/complex-plane.js 讀取） */
     :root { --cx-z: #2563eb; --cx-w: #db2777; --cx-r: #ea580c; --cx-grid: #0d9488; --cx-unit: #7c3aed; --cx-tgt: #64748b; --cx-ok: #0d9488; --cx-bad: #dc2626; }
@@ -44,6 +44,12 @@
     .cx .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .cx .playbar button { flex: 1 1 auto; }
     .cx .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    @media (max-width: 480px) { /* 手機直放：四顆鍵排一列，操作台緊貼畫布 */
+      .cx .playbar { flex-wrap: nowrap; gap: 6px; }
+      .cx .playbar button { flex: 1 1 0; min-width: 0; padding-inline: 6px; white-space: nowrap; }
+      .cx .playbar .sound-btn { flex: 0 0 44px; }
+      .cx .playbar .sound-btn #soundLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
@@ -113,6 +119,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cx-z)&quot;></i>z"><i class="dot" style="background:var(--cx-z)"></i>z</span>
@@ -123,7 +130,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="運算|Operation" data-deck-order="10">
           <h2 data-en="Operation">運算</h2>
           <div class="modes" id="modes" role="group" aria-label="運算" data-en-aria-label="Operation">
             <button type="button" data-mode="add" aria-pressed="false" data-en-html="Add<small>z + w</small>">加法<small>z + w</small></button>
@@ -134,7 +141,7 @@
           <p class="hint" id="modeNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="複數 z|The number z" data-deck-order="20">
           <h2 data-en="The number z">複數 z</h2>
           <div class="slider"><label for="za" data-en="Real part a">實部 a</label><output id="zao"></output>
             <input id="za" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="4"></div>
@@ -147,7 +154,7 @@
             <input id="zt" type="range" min="-180" max="180" step="1" value="45" data-decimals="4"></div>
         </section>
 
-        <section class="card" id="cardW">
+        <section class="card" id="cardW" data-deck="複數 w|The number w" data-deck-order="30">
           <h2 data-en="The number w">複數 w</h2>
           <div class="slider"><label for="wa" data-en="Real part">實部</label><output id="wao"></output>
             <input id="wa" type="range" min="-4" max="4" step="0.1" value="2" data-decimals="4"></div>
@@ -155,7 +162,7 @@
             <input id="wb" type="range" min="-4" max="4" step="0.1" value="0.5" data-decimals="4"></div>
         </section>
 
-        <section class="card" id="cardN" hidden>
+        <section class="card" id="cardN" hidden data-deck="次方 n|Exponent n" data-deck-order="40">
           <h2 id="nTitle" data-en="Exponent n">次方 n</h2>
           <div class="slider" id="pnBox"><label for="pn" data-en="Power n">次方 n</label><output id="pno"></output>
             <input id="pn" type="range" min="1" max="100" step="1" value="6"></div>
@@ -163,7 +170,7 @@
             <input id="rn" type="range" min="2" max="24" step="1" value="5"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Show" data-deck-order="50">
           <h2 data-en="Show">顯示</h2>
           <div class="checks">
             <label><input id="showGrid" type="checkbox" checked><span data-en="The grid moves with the multiplication">方格紙跟著乘</span></label>
@@ -187,7 +194,7 @@
           <p class="log-empty" id="logEmpty" data-en="Press “Record” to keep a list of what you have tried.">按「記下這一組」可以把試過的結果列成一張表。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰：找出 z|Challenge: find z" data-deck-order="60">
           <h2 data-en="Challenge: find z">挑戰：找出 z</h2>
           <p class="hint" data-en="A hidden number z has turned and stretched the grey square. Set z so that your blue square lands exactly on it, then press “This z”.">一個藏起來的 z 已經把灰色的正方形轉過、伸縮過。調整 z，讓你的藍色正方形剛好疊上去，再按「就是這個 z」。</p>
           <div class="row2">
@@ -238,18 +245,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/complex-plane-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/complex-plane.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="complex-plane"></script>
-  <script src="js/missions/complex-plane.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="complex-plane"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/complex-plane-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/complex-plane.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="complex-plane"></script>
+  <script src="js/missions/complex-plane.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="complex-plane"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

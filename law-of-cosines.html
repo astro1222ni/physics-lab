@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Laws of Sines and Cosines: Solving Triangles | Astro Ni Lab">正弦定理、餘弦定理與解三角形｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"三角與幾何","item":"https://lab.astroni.org/mathematics.html#geometry"},{"@type":"ListItem","position":5,"name":"三角形的邊角關係","item":"https://lab.astroni.org/mathematics.html#ch-triangle"},{"@type":"ListItem","position":6,"name":"正弦定理、餘弦定理與解三角形","item":"https://lab.astroni.org/law-of-cosines.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 解三角形頁面專用的顏色代號（淺色＋深色；由 js/law-of-cosines.js 讀取）：三個頂點各一色，對邊同色 */
     :root { --lc-a: #2563eb; --lc-b: #db2777; --lc-c: #0d9488; --lc-tri: #f59e0b; --lc-circ: #7c3aed; --lc-h: #64748b; --lc-ok: #0d9488; --lc-bad: #dc2626; }
@@ -114,6 +114,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lc-a)&quot;></i>A and side a"><i class="dot" style="background:var(--lc-a)"></i>A 與對邊 a</span>
@@ -124,7 +125,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="已知什麼|What is given" data-deck-order="10">
           <h2 data-en="What is given">已知什麼</h2>
           <div class="modes" id="modes" role="group" aria-label="已知條件" data-en-aria-label="What is given">
             <button type="button" data-mode="free" aria-pressed="true" data-en-html="Drag<small>corners</small>">拖曳<small>三個頂點</small></button>
@@ -136,7 +137,7 @@
           <p class="hint" id="modeNote"></p>
         </section>
 
-        <section class="card" id="cardGiven" hidden>
+        <section class="card" id="cardGiven" hidden data-deck="已知條件|Given" data-deck-order="20">
           <h2 data-en="Given">已知條件</h2>
           <div class="slider" id="boxA"><label for="ga" data-en="Angle A (degrees)">角 A（度）</label><output id="gao"></output>
             <input id="ga" type="range" min="1" max="179" step="1" value="70" data-decimals="3"></div>
@@ -153,7 +154,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Show" data-deck-order="30">
           <h2 data-en="Show">顯示</h2>
           <div class="checks">
             <label><input id="showSq" type="checkbox" checked><span data-en="Squares on the sides">三邊上的正方形</span></label>
@@ -179,7 +180,7 @@
           <p class="log-empty" id="logEmpty" data-en="Press “Record” to keep a list of the triangles you have made.">按「記下這一組」可以把做過的三角形列成一張表。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰：解三角形|Challenge: solve the triangle" data-deck-order="40">
           <h2 data-en="Challenge: solve the triangle">挑戰：解三角形</h2>
           <p class="hint" data-en="Three facts are marked on a triangle; work out the one with a question mark (a calculator is fine) and type it in. Sides to within 1%, angles to within 0.5°.">三角形上標了三個已知條件，算出標著問號的那一個（可以用計算機），打進答案。邊長誤差 1% 以內、角度 0.5° 以內算對。</p>
           <div class="row2">
@@ -236,18 +237,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/law-of-cosines-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/law-of-cosines.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="law-of-cosines"></script>
-  <script src="js/missions/law-of-cosines.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="law-of-cosines"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/law-of-cosines-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/law-of-cosines.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="law-of-cosines"></script>
+  <script src="js/missions/law-of-cosines.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="law-of-cosines"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

@@ -131,7 +131,7 @@
     cw = w;
     const drawer = window.LabDeck?.mode === 'drawer';
     if (cw < 640 && !drawer) {
-      const S = cw - 12, Tn = Math.round(Math.max(150, S * 0.52));
+      const S = cw - 12, Tn = Math.round(Math.max(130, S * 0.44));
       ch = S + Tn + 22;
       L = { narrow: true, A: { x: 6, y: 6, w: S, h: S }, B: { x: 6, y: S + 16, w: S, h: Tn } };
     } else {

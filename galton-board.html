@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Galton Board and the Binomial Distribution | Astro Ni Lab">高爾頓板與二項分布｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"機率與統計","item":"https://lab.astroni.org/mathematics.html#probability"},{"@type":"ListItem","position":5,"name":"機率","item":"https://lab.astroni.org/mathematics.html#ch-probability"},{"@type":"ListItem","position":6,"name":"高爾頓板與二項分布","item":"https://lab.astroni.org/galton-board.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 高爾頓板頁面專用的顏色代號（淺色＋兩組深色；由 js/galton-board.js 與 js/galton-board-3d.js 讀取） */
     :root { --gb-ball: #d97706; --gb-peg: #64748b; --gb-theory: #1d4ed8; --gb-normal: #be185d; --gb-mean: #0f766e; --gb-sel: #7c3aed; --gb-wood: #b08354; }
@@ -155,6 +155,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--gb-ball)&quot;></i>Experiment (relative frequency)"><i style="background:var(--gb-ball)"></i>實驗（相對次數）</span>
@@ -169,7 +170,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="釘板|The board" data-deck-order="10">
           <h2 data-en="The board">釘板</h2>
           <div class="slider"><label for="nn" data-en="Rows of pegs n">釘子的層數 n</label><output id="nno"></output>
             <input id="nn" type="range" min="1" max="16" step="1" value="10" data-decimals="0"></div>
@@ -178,7 +179,7 @@
           <p class="hint" data-en="At every peg a ball goes right with probability p and left with probability 1 − p. Changing n or p starts a new count. Tap the number to type p to 0.01.">每碰到一根釘子，球往右的機率是 p、往左是 1 − p。改 n 或 p 會重新開始統計。點一下數字可以把 p 打到 0.01。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="落球|Drop balls" data-deck-order="20">
           <h2 data-en="Drop balls">落球</h2>
           <div class="drops">
             <button id="drop1" type="button" data-en="Drop 1">放 1 顆</button>
@@ -197,7 +198,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰：神祕的 p|Challenge: the mystery p" data-deck-order="30">
           <h2 data-en="Challenge: the mystery p">挑戰：神祕的 p</h2>
           <p class="hint" data-en="The board gets a secret p. Drop as many balls as you like, then guess p to 0.01. One guess per round.">釘板換上一個祕密的 p。想放幾顆球都可以，再猜 p（到 0.01）。每一回只能猜一次。</p>
           <div class="chal">
@@ -288,19 +289,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/galton-board-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/view3d-nav.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/galton-board.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="galton-board"></script>
-  <script src="js/missions/galton-board.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="galton-board"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/galton-board-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/view3d-nav.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/galton-board.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="galton-board"></script>
+  <script src="js/missions/galton-board.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="galton-board"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

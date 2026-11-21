@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Lines and Circles: Distance, Intersections and Tangents | Astro Ni Lab">直線與圓：距離、交點與切線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"三角與幾何","item":"https://lab.astroni.org/mathematics.html#geometry"},{"@type":"ListItem","position":5,"name":"直線與圓","item":"https://lab.astroni.org/mathematics.html#ch-lines"},{"@type":"ListItem","position":6,"name":"直線與圓：距離、交點與切線","item":"https://lab.astroni.org/lines-circles.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 直線與圓頁面專用的顏色代號（淺色＋深色；由 js/lines-circles.js 讀取） */
     :root { --lc-circle: #7c3aed; --lc-line: #1d4ed8; --lc-dist: #c2410c; --lc-chord: #db2777; --lc-pt: #0f766e; --lc-p: #b45309; }
@@ -106,6 +106,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--lc-circle)&quot;></i>Circle"><i style="background:var(--lc-circle)"></i>圓</span>
@@ -118,7 +119,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="10">
           <h2 data-en="Mode">模式</h2>
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="line" aria-pressed="true" data-en-html="Line and circle<small>miss, touch or cut</small>">直線與圓<small>相離、相切、相交</small></button>
@@ -126,7 +127,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="圓|Circle" data-deck-order="20">
           <h2 data-en="Circle">圓</h2>
           <div class="slider"><label for="hh" data-en="Centre: h">圓心 h</label><output id="hho"></output>
             <input id="hh" type="range" min="-8" max="8" step="0.5" value="0" data-decimals="2"></div>
@@ -136,7 +137,7 @@
             <input id="rr" type="range" min="0.5" max="8" step="0.5" value="4" data-decimals="2"></div>
         </section>
 
-        <section class="card ml">
+        <section class="card ml" data-deck="直線 ax + by + c = 0|Line ax + by + c = 0" data-deck-order="30">
           <h2 data-en="Line ax + by + c = 0">直線 ax + by + c = 0</h2>
           <div class="slider"><label for="la" data-en="a">a</label><output id="lao"></output>
             <input id="la" type="range" min="-10" max="10" step="1" value="1" data-decimals="2"></div>
@@ -150,7 +151,7 @@
           <p class="hint" data-en="Drag the line to slide it parallel to itself (this changes c). Tap a number to type it to 2 decimal places.">拖曳直線可以平行移動（改變 c）；點一下數字可以打到小數第 2 位。</p>
         </section>
 
-        <section class="card mt">
+        <section class="card mt" data-deck="點 P|Point P" data-deck-order="40">
           <h2 data-en="Point P">點 P</h2>
           <div class="slider"><label for="px" data-en="P: x">P 的 x</label><output id="pxo"></output>
             <input id="px" type="range" min="-10" max="10" step="0.5" value="7" data-decimals="2"></div>
@@ -180,7 +181,7 @@
           <p class="hint ml" data-en="Second line: substitute the line into the circle. The discriminant has the same sign as r − d.">第二行：把直線代入圓的方程式。判別式的正負號和 r − d 相同。</p>
         </section>
 
-        <section class="card ml">
+        <section class="card ml" data-deck="挑戰|Challenge" data-deck-order="50">
           <h2 data-en="Challenge">挑戰</h2>
           <p class="hint" data-en="You get a circle and the direction of a line. Adjust only c (or drag the line) until the line touches the circle; the distance is hidden while you play.">出一個圓和直線的方向，只能調 c（或拖曳直線），讓直線和圓相切；挑戰時距離的數字會藏起來。</p>
           <div class="chal">
@@ -233,18 +234,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/lines-circles-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/lines-circles.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="lines-circles"></script>
-  <script src="js/missions/lines-circles.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="lines-circles"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/lines-circles-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/lines-circles.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="lines-circles"></script>
+  <script src="js/missions/lines-circles.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="lines-circles"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

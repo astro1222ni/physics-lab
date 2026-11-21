@@ -96,7 +96,7 @@
     const narrow = cw < 600 && !landscape;
     const gap = narrow ? 8 : 10;
     if (narrow) {
-      const h1 = Math.round(cw * 0.9), h2 = Math.round(cw * 0.86);
+      const h1 = Math.round(cw * 0.8), h2 = Math.round(cw * 0.76); // 手機直放：畫布矮一點，第一根拉桿和動畫同一屏
       return { narrow: narrow, gap: gap, side: { x: 0, y: 0, w: cw, h: h1 }, shape: { x: 0, y: h1 + gap, w: cw, h: h2 }, H: h1 + gap + h2 };
     }
     const pw = Math.floor((cw - gap) / 2);

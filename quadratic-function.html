@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Quadratic Functions: Vertex, Discriminant and Completing the Square | Astro Ni Lab">二次函數：頂點、判別式與配方｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":5,"name":"二次函數","item":"https://lab.astroni.org/mathematics.html#ch-quadratic"},{"@type":"ListItem","position":6,"name":"二次函數：頂點、判別式與配方","item":"https://lab.astroni.org/quadratic-function.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 二次函數頁面專用的顏色代號（淺色＋深色；由 js/quadratic-function.js 讀取） */
     :root { --qf-curve: #2563eb; --qf-vtx: #7c3aed; --qf-root: #db2777; --qf-axis: #0d9488; --qf-line: #ea580c; --qf-max: #dc2626; --qf-min: #0284c7; --qf-sq: #2563eb; --qf-rect: #ea580c; --qf-corner: #16a34a; --qf-target: #475569; --qf-bad: #dc2626; --qf-ok: #0d9488; }
@@ -119,6 +119,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span class="mgl" data-en-html="<i style=&quot;background:var(--qf-curve)&quot;></i>y = f(x)"><i style="background:var(--qf-curve)"></i>y = f(x)</span>
@@ -138,7 +139,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="10">
           <h2 data-en="Mode">模式</h2>
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="graph" aria-pressed="true" data-en-html="The graph<small>vertex, roots, max and min</small>">圖形<small>頂點、根、最大最小</small></button>
@@ -147,7 +148,7 @@
           </div>
         </section>
 
-        <section class="card mgl">
+        <section class="card mgl" data-deck="函數 f(x)|The function f(x)" data-deck-order="20">
           <h2 data-en="The function f(x)">函數 f(x)</h2>
           <div class="seg" id="formPick" role="group" aria-label="用哪一種式子調整" data-en-aria-label="Adjust with which form">
             <span data-en="Adjust">調整</span>
@@ -167,7 +168,7 @@
           <p class="hint" data-en-html="Drag the purple vertex on the picture (it snaps to multiples of 0.5). a cannot be 0: typing 0 turns it into ±0.1. When one form makes the other go beyond its slider, that slider widens to fit.">在圖上拖曳紫色的頂點（靠近 0.5 的倍數會吸過去）。a 不能是 0：打 0 會變成 ±0.1。一種式子換算出來的值超出另一種的滑桿時，那個滑桿的範圍會自動放寬。</p>
         </section>
 
-        <section class="card mg">
+        <section class="card mg" data-deck="定義域|Domain" data-deck-order="30">
           <h2 data-en="Domain">定義域</h2>
           <div class="checks">
             <label><input id="domC" type="checkbox"><span data-en="Only look at p ≤ x ≤ q">只看 p ≤ x ≤ q 的部分</span></label>
@@ -179,7 +180,7 @@
           <p class="hint dom" data-en="The largest and smallest values on a closed interval are found among the two ends and the vertex — but the vertex only counts when it lies inside.">閉區間上的最大值和最小值，只可能出現在兩端或頂點——而頂點要在區間裡面才算。</p>
         </section>
 
-        <section class="card ml">
+        <section class="card ml" data-deck="直線 y = mx + n|The line y = mx + n" data-deck-order="40">
           <h2 data-en="The line y = mx + n">直線 y = mx + n</h2>
           <div class="slider"><label for="lm" data-en="Slope m">斜率 m</label><output id="lmo"></output>
             <input id="lm" type="range" min="-6" max="6" step="0.1" value="1" data-decimals="2"></div>
@@ -188,7 +189,7 @@
           <p class="hint" data-en="Drag the orange point where the line meets the y-axis up and down. Setting the two equal gives a quadratic equation; its discriminant counts the intersections.">在圖上上下拖曳直線和 y 軸交點的橘色點。讓兩個式子相等會得到一個一元二次方程式，它的判別式就是交點的個數。</p>
         </section>
 
-        <section class="card ms">
+        <section class="card ms" data-deck="配方|Completing the square" data-deck-order="50">
           <h2 data-en="Completing the square">配方</h2>
           <p class="hint" data-en-html="Solve x<sup>2</sup> + px = q.">解 x<sup>2</sup> + px = q。</p>
           <div class="slider"><label for="sp" data-en="p">p</label><output id="spo"></output>
@@ -237,7 +238,7 @@
           <div class="eq" id="rEq2" aria-live="off"></div>
         </section>
 
-        <section class="card mg">
+        <section class="card mg" data-deck="挑戰：看圖寫二次函數|Challenge: read the function off its graph" data-deck-order="60">
           <h2 data-en="Challenge: read the function off its graph">挑戰：看圖寫二次函數</h2>
           <p class="hint" data-en="A dashed parabola appears with its vertex and one more point marked, and your function starts again from y = x^2. Make your graph lie exactly on the dashed one, then submit.">出現一條虛線拋物線，標出頂點和另一個點，你的函數從 y = x^2 重新開始。讓你的圖形和虛線完全重合，再送出。</p>
           <div class="chal">
@@ -293,18 +294,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/quadratic-function-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/quadratic-function.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="quadratic-function"></script>
-  <script src="js/missions/quadratic-function.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="quadratic-function"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/quadratic-function-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/quadratic-function.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="quadratic-function"></script>
+  <script src="js/missions/quadratic-function.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="quadratic-function"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

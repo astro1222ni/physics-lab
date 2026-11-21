@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Linear Programming: Feasible Regions and Objective Functions | Astro Ni Lab">線性規劃：可行域與目標函數｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":5,"name":"線性規劃","item":"https://lab.astroni.org/mathematics.html#ch-lp"},{"@type":"ListItem","position":6,"name":"線性規劃：可行域與目標函數","item":"https://lab.astroni.org/linear-programming.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 線性規劃頁面專用的顏色代號（淺色＋深色；由 js/linear-programming.js 讀取） */
     :root { --lp-c1: #2563eb; --lp-c2: #db2777; --lp-c3: #0d9488; --lp-c4: #9333ea; --lp-region: #0ea5e9; --lp-level: #ea580c; --lp-best: #e11d48; --lp-int: #b45309; --lp-ok: #0d9488; --lp-bad: #dc2626; }
@@ -117,6 +117,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--lp-region)&quot;></i>Feasible region"><i style="background:var(--lp-region)"></i>可行域</span>
@@ -128,7 +129,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="例題|Example problems" data-deck-order="10">
           <h2 data-en="Example problems">例題</h2>
           <div class="presets" id="presets" role="group" aria-label="例題" data-en-aria-label="Example problems">
             <button type="button" data-preset="factory" data-en="Factory">工廠生產</button>
@@ -139,7 +140,7 @@
           <p class="hint" id="presetNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="限制式|Constraints" data-deck-order="20">
           <h2 data-en="Constraints">限制式</h2>
           <div class="cons" id="cons"></div>
           <div class="seg" role="group" aria-label="不等號" data-en-aria-label="Inequality sign">
@@ -158,7 +159,7 @@
           <p class="hint" data-en="Pick a constraint above to edit it; the box on its left switches it on and off. On the canvas you can drag a constraint line to slide it.">點上面的式子來修改，左邊的方框可以開關這一條。也可以在畫布上直接拖曳限制線來平移。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="目標函數 z = px + qy|Objective z = px + qy" data-deck-order="30">
           <h2 data-en="Objective z = px + qy">目標函數 z = px + qy</h2>
           <div class="seg" role="group" aria-label="求最大或最小" data-en-aria-label="Maximise or minimise">
             <button type="button" id="tMax" aria-pressed="true" data-en="Maximum">求最大值</button>
@@ -194,7 +195,7 @@
           <p class="log-empty" id="logEmpty" data-en="Press “Record P” to keep a list of points you have tried.">按「記下 P」可以把試過的點列成一張表。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰：找出最佳頂點|Challenge: find the best corner" data-deck-order="40">
           <h2 data-en="Challenge: find the best corner">挑戰：找出最佳頂點</h2>
           <p class="hint" data-en="A new problem appears with the vertex values hidden. Move P onto the corner you think is best (tap near it), then press “This one”.">出一題新的題目，頂點的 z 值會先藏起來。把 P 移到你認為最好的頂點（在頂點附近點一下），再按「就是這裡」。</p>
           <div class="row2">
@@ -243,18 +244,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/linear-programming-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/linear-programming.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="linear-programming"></script>
-  <script src="js/missions/linear-programming.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="linear-programming"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/linear-programming-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/linear-programming.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="linear-programming"></script>
+  <script src="js/missions/linear-programming.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="linear-programming"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

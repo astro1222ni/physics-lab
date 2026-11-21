@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Scatter Plots, Correlation and the Regression Line | Astro Ni Lab">散布圖、相關係數與迴歸直線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"機率與統計","item":"https://lab.astroni.org/mathematics.html#probability"},{"@type":"ListItem","position":5,"name":"數據分析","item":"https://lab.astroni.org/mathematics.html#ch-data"},{"@type":"ListItem","position":6,"name":"散布圖、相關係數與迴歸直線","item":"https://lab.astroni.org/regression.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 迴歸頁面專用的顏色代號（淺色＋深色；由 js/regression.js 讀取） */
     :root { --rg-data: #0f766e; --rg-line: #1d4ed8; --rg-mine: #c2410c; --rg-sq: #db2777; --rg-pos: #2563eb; --rg-neg: #dc2626; --rg-mean: #7c3aed; }
@@ -111,6 +111,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--rg-data)&quot;></i>Data"><i class="dot" style="background:var(--rg-data)"></i>資料點</span>
@@ -122,7 +123,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="點|Points" data-deck-order="10">
           <h2 data-en="Points">點</h2>
           <div class="tools" role="group" aria-label="點的工具" data-en-aria-label="Point tool">
             <button type="button" data-tool="add" aria-pressed="true" data-en="Add and drag">加點與拖曳</button>
@@ -146,7 +147,7 @@
           <p class="hint" data-en="Tap an empty spot to add a point and drag a point to move it. On a keyboard: Enter picks what to move, the arrow keys move it.">點空白處加點，拖曳點可以移動。鍵盤：Enter 選要移動的東西，方向鍵移動。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Show" data-deck-order="20">
           <h2 data-en="Show">顯示</h2>
           <div class="checks">
             <label><input id="lineC" type="checkbox" checked><span data-en="Regression line">迴歸直線</span></label>
@@ -179,7 +180,7 @@
           <div class="eq" id="rEq" aria-live="off"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰：猜 r|Challenge: guess r" data-deck-order="30">
           <h2 data-en="Challenge: guess r">挑戰：猜 r</h2>
           <p class="hint" data-en="You get a new cloud of points with the numbers hidden. Guess its correlation coefficient; within 0.05 counts as a hit.">出一團新的點，數字都藏起來；猜它的相關係數，誤差 0.05 以內算猜中。</p>
           <div class="slider"><label for="rg" data-en="My guess for r">我猜 r</label><output id="rgo"></output>
@@ -235,18 +236,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/regression-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/regression.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="regression"></script>
-  <script src="js/missions/regression.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="regression"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/regression-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/regression.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="regression"></script>
+  <script src="js/missions/regression.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="regression"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

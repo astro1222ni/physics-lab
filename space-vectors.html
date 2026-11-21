@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Space Vectors: Dot Product, Cross Product and Planes | Astro Ni Lab">空間向量：內積、外積與平面｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"向量與空間","item":"https://lab.astroni.org/mathematics.html#vectors"},{"@type":"ListItem","position":5,"name":"空間向量","item":"https://lab.astroni.org/mathematics.html#ch-space-vectors"},{"@type":"ListItem","position":6,"name":"空間向量：內積、外積與平面","item":"https://lab.astroni.org/space-vectors.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 空間向量頁面專用的顏色代號（淺色＋兩組深色；由 js/space-vectors.js 與 js/space-vectors-3d.js 讀取） */
     :root { --sv-a: #c2410c; --sv-b: #1d4ed8; --sv-c: #0f766e; --sv-x: #be185d; --sv-n: #7c3aed; --sv-plane: #0e7490; --sv-proj: #a16207; }
@@ -166,6 +166,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span class="mabc" data-en-html="<i style=&quot;background:var(--sv-a)&quot;></i>Vector a"><i style="background:var(--sv-a)"></i>向量 a</span>
@@ -184,7 +185,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="10">
           <h2 data-en="Mode">模式</h2>
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="inner" aria-pressed="true" data-en-html="Dot product<small>angle, projection</small>">內積與投影<small>夾角、投影</small></button>
@@ -194,7 +195,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="向量|Vectors" data-deck-order="20">
           <h2 data-en="Vectors">向量</h2>
           <div class="seg tabs" role="group" aria-label="要調整哪一個" data-en-aria-label="Which one to adjust">
             <button type="button" class="tab mabc" data-v="a" aria-pressed="true">a</button>
@@ -258,7 +259,7 @@
           <div class="eq" id="rEq" aria-live="off"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="挑戰|Challenge" data-deck-order="30">
           <h2 data-en="Challenge">挑戰</h2>
           <p class="hint" data-en="You get a target for the current mode (an angle, an area, a volume or a distance). Adjust the vectors until you hit it.">依目前的模式出一個目標（夾角、面積、體積或距離），調整向量直到剛好達成。</p>
           <div class="chal">
@@ -327,19 +328,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/space-vectors-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/view3d-nav.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/space-vectors.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="space-vectors"></script>
-  <script src="js/missions/space-vectors.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="space-vectors"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/space-vectors-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/view3d-nav.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/space-vectors.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="space-vectors"></script>
+  <script src="js/missions/space-vectors.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="space-vectors"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

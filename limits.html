@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Limits of Sequences and Functions | Astro Ni Lab">數列與函數的極限｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"微積分","item":"https://lab.astroni.org/mathematics.html#calculus"},{"@type":"ListItem","position":5,"name":"極限與連續","item":"https://lab.astroni.org/mathematics.html#ch-limit"},{"@type":"ListItem","position":6,"name":"數列與函數的極限","item":"https://lab.astroni.org/limits.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 極限頁面專用的顏色代號（淺色＋深色；由 js/limits.js 讀取） */
     :root { --lm-band: #0d9488; --lm-in: #2563eb; --lm-out: #ea580c; --lm-bad: #dc2626; --lm-n: #7c3aed; --lm-curve: #4338ca; --lm-sq: #b45309; --lm-sum: #db2777; }
@@ -110,6 +110,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span class="ms" data-en-html="<i style=&quot;background:var(--lm-band)&quot;></i>ε band"><i style="background:var(--lm-band)"></i>ε 帶子</span>
@@ -125,7 +126,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="模式|Mode" data-deck-order="10">
           <h2 data-en="Mode">模式</h2>
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="seq" aria-pressed="true" data-en-html="Sequences<small>ε and N</small>">數列<small>ε 與 N</small></button>
@@ -134,7 +135,7 @@
           </div>
         </section>
 
-        <section class="card ms">
+        <section class="card ms" data-deck="數列 a_n|Sequence a_n" data-deck-order="20">
           <h2 data-en-html="Sequence a<sub>n</sub>">數列 a<sub>n</sub></h2>
           <div class="pick" id="seqPick" role="group" aria-label="選數列" data-en-aria-label="Choose a sequence">
             <button type="button" data-seq="recip" aria-pressed="true">1 / n</button>
@@ -160,7 +161,7 @@
           <p class="hint" data-en="ε and N use a logarithmic slider; tap the number to type an exact value. Drag the band edge or the N line on the picture.">ε 和 N 的滑桿是對數刻度；點數字可以直接打入精確的值。也可以在圖上拖曳帶子的邊或 N 的直線。</p>
         </section>
 
-        <section class="card mf">
+        <section class="card mf" data-deck="函數 f(x)|Function f(x)" data-deck-order="30">
           <h2 data-en="Function f(x)">函數 f(x)</h2>
           <div class="pick" id="fnPick" role="group" aria-label="選函數" data-en-aria-label="Choose a function">
             <button type="button" data-fn="hole" aria-pressed="true">(x² − 1) / (x − 1)</button>
@@ -187,7 +188,7 @@
           <p class="hint" data-en="The hollow circle marks a point where f is not defined: the limit only cares about x near a, never x = a itself.">空心圓是 f 沒有定義的點：極限只看 x 靠近 a 時，不看 x = a 本身。</p>
         </section>
 
-        <section class="card mz">
+        <section class="card mz" data-deck="等比級數|Geometric series" data-deck-order="40">
           <h2 data-en-html="a + a r + a r<sup>2</sup> + …">a + a r + a r<sup>2</sup> + …</h2>
           <div class="slider"><label for="sa" data-en="First term a">首項 a</label><output id="sao"></output>
             <input id="sa" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
@@ -221,7 +222,7 @@
           <div class="eq" id="rEq2" aria-live="off"></div>
         </section>
 
-        <section class="card ms">
+        <section class="card ms" data-deck="挑戰：找 N|Challenge: find N" data-deck-order="50">
           <h2 data-en="Challenge: find N">挑戰：找 N</h2>
           <p class="hint" data-en="A sequence and an ε appear. Move N to the smallest term from which every term stays inside the band, then submit.">出一個數列和 ε。把 N 移到最小的那一項，使得從它開始每一項都在帶子裡，再送出。</p>
           <div class="chal">
@@ -278,18 +279,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/limits-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/limits.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="limits"></script>
-  <script src="js/missions/limits.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="limits"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/limits-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/limits.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="limits"></script>
+  <script src="js/missions/limits.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="limits"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

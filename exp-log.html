@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Exponents and Logarithms: Compound Interest, e and Log Scales | Astro Ni Lab">指數與對數：複利、e 與對數尺度｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":5,"name":"指數與對數","item":"https://lab.astroni.org/mathematics.html#ch-explog"},{"@type":"ListItem","position":6,"name":"指數與對數：複利、e 與對數尺度","item":"https://lab.astroni.org/exp-log.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 指數與對數頁面專用的顏色代號（淺色＋深色；由 js/exp-log.js 讀取） */
     :root { --el-exp: #c2410c; --el-log: #1d4ed8; --el-cont: #7c3aed; --el-simple: #64748b; --el-coin: #b7791f; --el-data: #0f766e; --el-res: #be185d; }
@@ -114,6 +114,7 @@
             <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span class="mc" data-en-html="<i style=&quot;background:var(--el-exp)&quot;></i>Compounded n times a year"><i style="background:var(--el-exp)"></i>一年複利 n 次</span>
@@ -138,7 +139,7 @@
           </div>
         </div>
 
-        <section class="card mc" data-controls-for="compound">
+        <section class="card mc" data-controls-for="compound" data-deck="複利|Compound interest" data-deck-order="10">
           <h2 data-en="Compound interest">複利</h2>
           <div class="slider"><label for="rr" data-en="Annual interest rate r (%)">年利率 r（%）</label><output id="rro"></output>
             <input id="rr" type="range" min="0" max="100" step="1" value="10" data-decimals="2"></div>
@@ -158,7 +159,7 @@
           <p class="hint" data-en="Tap a number to type it; the rate can be typed to 0.01 %.">點一下數字可以直接輸入；利率可以打到 0.01%。</p>
         </section>
 
-        <section class="card mi" data-controls-for="inverse">
+        <section class="card mi" data-controls-for="inverse" data-deck="底數與點|Base and point" data-deck-order="20">
           <h2 data-en="Base and point">底數與點</h2>
           <div class="slider"><label for="aa" data-en="Base a">底數 a</label><output id="aao"></output>
             <input id="aa" type="range" min="0.05" max="5" step="0.01" value="2" data-decimals="4"></div>
@@ -177,7 +178,7 @@
           <p class="hint" data-en="Drag on the picture to move P along the curve. The base can be typed to 4 decimal places.">在圖上拖曳可以讓 P 沿著曲線移動；底數可以打到小數第 4 位。</p>
         </section>
 
-        <section class="card ms" data-controls-for="semilog">
+        <section class="card ms" data-controls-for="semilog" data-deck="資料與模型|Data and model" data-deck-order="30">
           <h2 data-en="Data and model">資料與模型</h2>
           <div class="quick" role="group" aria-label="資料" data-en-aria-label="Data">
             <button type="button" data-set="bacteria" data-en="Bacteria">細菌培養</button>
@@ -216,7 +217,7 @@
           <div class="eq" id="rEq" aria-live="off"></div>
         </section>
 
-        <section class="card ms">
+        <section class="card ms" data-deck="挑戰|Challenge" data-deck-order="40">
           <h2 data-en="Challenge">挑戰</h2>
           <p class="hint" data-en="You get a new set of exponential data. Adjust C and b until the model fits (misfit 0.012 or less); the misfit number is hidden while you play.">出一組新的指數資料，調整 C 和 b，讓模型對準資料（擬合誤差 0.012 以內）；挑戰時誤差的數字會藏起來。</p>
           <div class="chal">
@@ -276,18 +277,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/exp-log-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/exp-log.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="exp-log"></script>
-  <script src="js/missions/exp-log.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="exp-log"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/exp-log-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/exp-log.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="exp-log"></script>
+  <script src="js/missions/exp-log.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="exp-log"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

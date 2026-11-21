@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 09:08">
-  <script src="js/settings.js?v=202611210908"></script>
+<meta name="lab-updated" content="2026-11-21 09:17">
+  <script src="js/settings.js?v=202611210917"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Conic Sections: Slicing a Cone | Astro Ni Lab">圓錐曲線：用平面切圓錐｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":4,"name":"三角與幾何","item":"https://lab.astroni.org/mathematics.html#geometry"},{"@type":"ListItem","position":5,"name":"圓錐曲線","item":"https://lab.astroni.org/mathematics.html#ch-conics"},{"@type":"ListItem","position":6,"name":"圓錐曲線：用平面切圓錐","item":"https://lab.astroni.org/conic-sections.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611210908">
+  <link rel="stylesheet" href="lab.css?v=202611210917">
   <style>
     /* 圓錐曲線頁面專用的顏色代號（淺色＋兩組深色；由 js/conic-sections.js 與 js/conic-sections-3d.js 讀取） */
     :root { --cs-cone: #56699a; --cs-plane: #b5770f; --cs-curve: #c0246a; --cs-sphere: #15806f; --cs-dir: #7c3aed; }
@@ -141,6 +141,7 @@
           <button id="clear" type="button" data-en="Clear all" title="清除記下的點，切法與 P 的位置不變" data-en-title="Clear the recorded points; the cut and the position of P are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend">
@@ -158,7 +159,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="圓錐與切平面|Cone and cutting plane" data-deck-order="10">
           <h2 data-en="Cone and cutting plane">圓錐與切平面</h2>
           <div class="slider"><label for="alpha" data-en="Half-angle of the cone α">圓錐的半頂角 α</label><output id="alphao"></output>
             <input id="alpha" type="range" min="10" max="70" step="1" value="30" data-decimals="1"></div>
@@ -176,7 +177,7 @@
           <p class="hint" data-en="Tap a number to type an exact value. On the canvas, drag the plane to slide it and its round handle to tilt it.">點一下數字可直接輸入精確數值。在畫布上拖曳切平面可平移，拖曳圓形把手可轉動。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Show" data-deck-order="20">
           <h2 data-en="Show">顯示</h2>
           <div class="checks">
             <label><input id="showSpheres" type="checkbox" checked><span data-en="Dandelin spheres">丹德林球</span></label>
@@ -291,19 +292,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611210908"></script>
-  <script src="js/conic-sections-core.js?v=202611210908"></script>
-  <script src="js/sound.js?v=202611210908"></script>
-  <script src="js/numinput.js?v=202611210908"></script>
-  <script src="js/labdeck.js?v=202611210908"></script>
-  <script src="js/view3d-nav.js?v=202611210908"></script>
-  <script src="js/drawkit.js?v=202611210908"></script>
-  <script src="js/keys.js?v=202611210908"></script>
-  <script src="js/conic-sections.js?v=202611210908"></script>
-  <script src="js/firebase-config.js?v=202611210908"></script>
-  <script src="js/missions.js?v=202611210908" data-module="conic-sections"></script>
-  <script src="js/missions/conic-sections.js?v=202611210908"></script>
-  <script src="js/stats.js?v=202611210908" data-module="conic-sections"></script>
-  <script src="js/comments.js?v=202611210908"></script>
+  <script src="js/math.js?v=202611210917"></script>
+  <script src="js/conic-sections-core.js?v=202611210917"></script>
+  <script src="js/sound.js?v=202611210917"></script>
+  <script src="js/numinput.js?v=202611210917"></script>
+  <script src="js/labdeck.js?v=202611210917"></script>
+  <script src="js/view3d-nav.js?v=202611210917"></script>
+  <script src="js/drawkit.js?v=202611210917"></script>
+  <script src="js/keys.js?v=202611210917"></script>
+  <script src="js/conic-sections.js?v=202611210917"></script>
+  <script src="js/firebase-config.js?v=202611210917"></script>
+  <script src="js/missions.js?v=202611210917" data-module="conic-sections"></script>
+  <script src="js/missions/conic-sections.js?v=202611210917"></script>
+  <script src="js/stats.js?v=202611210917" data-module="conic-sections"></script>
+  <script src="js/comments.js?v=202611210917"></script>
 </body>
 </html>

@@ -88,14 +88,14 @@
     const drawer = window.LabDeck?.mode === 'drawer';
     const left = narrow ? 44 : 56, right = cw - (narrow ? 12 : 18);
     if (state.mode === 'compound') {
-      const h1 = narrow ? 230 : 290, h2 = narrow ? 150 : 170, gap = narrow ? 44 : 48;
+      const h1 = narrow ? 205 : 290, h2 = narrow ? 135 : 170, gap = narrow ? 44 : 48;
       const t1 = 22, H = drawer ? cv.clientHeight : t1 + h1 + gap + h2 + 34;
       const b1 = t1 + Math.round((H - t1 - gap - 34) * h1 / (h1 + h2));
       return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: b1 + gap, b2: H - 34, H: H };
     }
     if (state.mode === 'inverse') {
       const H = drawer ? cv.clientHeight
-        : narrow ? Math.round(Math.max(330, Math.min(cw * 1.05, 440))) : Math.round(Math.max(420, Math.min(cw * 0.66, 540)));
+        : narrow ? Math.round(Math.max(320, Math.min(cw * 0.95, 400))) : Math.round(Math.max(420, Math.min(cw * 0.66, 540)));
       return { narrow: narrow, left: 10, right: cw - 10, top: 10, bottom: H - 10, H: H };
     }
     // semilog：寬畫面左右並排，窄畫面上下疊
