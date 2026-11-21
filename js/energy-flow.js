@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -334,7 +335,8 @@
   let L1 = null, layer1 = null, dirty1 = true, paths = [];
   function height1(w) {
     const N = st.p.N, narrow = w < 560;
-    return Math.max(330, Math.round(170 + N * (narrow ? 66 : 62)));
+    const levelPitch = narrow && !narrowPortrait.matches ? 66 : 62;
+    return Math.max(330, Math.round(170 + N * levelPitch));
   }
   function layout1() {
     const w = drawingWidth(cv) || 300;
@@ -905,6 +907,14 @@
   // =====================================================================
   function resize1() { layout1(); request1(); }
   function resize2() { layout2(); request2(); if (view3 && view3.active) view3.resize(); }
+  // 直放時先放營養階層滑桿，增加到六階後仍能就近調整。
+  const presets = $('presets'), levelSlider = el.nLv.closest('.slider');
+  function placeLevelSlider() {
+    if (narrowPortrait.matches) presets.before(levelSlider);
+    else presets.after(levelSlider);
+  }
+  narrowPortrait.addEventListener('change', placeLevelSlider);
+  placeLevelSlider();
   readColors();
   renderPresets(); renderLvChips(); syncSliders(); renderOutputs(); renderKinds();
   st.r = K.compute(st.p);
