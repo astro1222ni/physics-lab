@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   const C = window.BasketballShotCore, D = window.LabDraw, N = window.LabNum, T = window.LabSettings.t;
+  const Pose = window.BasketballShotPose;
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), layer = document.createElement('canvas');
   const brush = layer.getContext('2d'), keys = ['speed', 'angle', 'height', 'distance', 'bearing'];
@@ -308,37 +309,56 @@
     const hoop=Array.from({length:45},(_,i)=>loop(i*Math.PI/22,C.rimHeight,C.rimRadius));
     line(c,hoop,p.deep,Math.max(3,s*.06));line(c,hoop,p.orange,Math.max(2,s*.045));
   }
-  function player(c,f) {
-    const h=state.p.height,s=f.scale,p=palette,at=f.at;
-    const hip=Math.min(.88,.39+h*.27), shoulder=Math.min(1.52,.68+h*.36), head=shoulder+.20;
-    const limb=(pts,ink,metres)=>line(c,pts.map(v=>at(...v)),ink,Math.max(1.4,s*metres));
-    const poly=(pts,ink,edge)=>shape(c,pts.map(v=>at(...v)),ink,edge,1);
-    const foot=at(-.48,0);D.contactShadow(c,...foot,.48*s,0);
-    limb([[-.55,hip],[-.76,hip*.45],[-.84,.105]],shade(p.skin,-.22),.115);
-    limb([[-.37,hip],[-.21,hip*.48],[-.32,.09]],p.skin,.14);
-    for(const x of [-.84,-.32]){
-      poly([[x-.10,.03],[x+.19,.03],[x+.19,.071],[x+.04,.13],[x-.07,.115]],p.white,p.deep);
-      limb([[x-.05,.12],[x-.045,.22]],p.white,.088);
-    }
-    poly([[-.61,hip+.13],[-.30,hip+.13],[-.22,hip-.14],[-.39,hip-.20],[-.48,hip-.06],[-.56,hip-.21],[-.72,hip-.13]],p.deep,p.deep);
-    limb([[-.69,hip-.13],[-.58,hip-.18]],p.white,.024);
-    limb([[-.55,shoulder-.04],[-.77,shoulder-.31],[-.45,shoulder-.43]],shade(p.skin,-.24),.103);
-    const torso=[[-.63,hip+.03],[-.64,shoulder-.09],[-.55,shoulder+.035],[-.44,shoulder+.015],[-.34,shoulder-.08],[-.33,hip+.035]];
-    poly(torso,p.jersey,p.deep);
-    poly([[-.63,hip+.04],[-.62,shoulder-.14],[-.54,shoulder-.24],[-.50,hip+.04]],shade(p.jersey,-.17));
-    limb([[-.58,hip+.06],[-.58,shoulder-.17]],shade(p.jersey,.40),.038);
-    limb([[-.52,shoulder+.025],[-.44,shoulder-.07],[-.39,shoulder-.025]],p.white,.030);
-    const neck=at(-.48,shoulder+.07);ellipse(c,...neck,.073*s,.11*s,p.skin);
-    const face=at(-.48,head);
-    ellipse(c,...face,.115*s,.144*s,p.skin,p.deep,.8);
-    poly([[-.60,head-.01],[-.61,head+.085],[-.55,head+.15],[-.44,head+.15],[-.36,head+.08],[-.40,head+.041],[-.50,head+.06],[-.56,head-.045]],p.deep);
-    poly([[-.385,head+.034],[-.34,head-.008],[-.39,head-.021]],p.skin);
-    ellipse(c,...at(-.52,head-.015),s*.028,s*.038,shade(p.skin,-.15));
-    ellipse(c,...at(-.39,head+.021),Math.max(.48,s*.009),Math.max(.45,s*.008),p.deep);
-    const elbow=[-.19,shoulder+(h-shoulder)*.36-.09], hand=[-.025,Math.max(.025,h-.09)];
-    limb([[-.39,shoulder-.075],elbow,hand],p.deep,.13);limb([[-.39,shoulder-.075],elbow,hand],p.skin,.101);
-    limb([[-.095,hand[1]-.12],[-.058,hand[1]-.055]],p.white,.105);
-    limb([hand,[.02,h-.047]],p.skin,.064);
+  function currentPose() {
+    const aiming=!!grab, reduced=completed===state && D.reducedMotion();
+    const t=aiming||reduced?0:flight||ball?clock:-Pose.duration(state.p);
+    const target=t>0 && ball?[ball[0],ball[1],ball[3]||0]:null;
+    return Pose.sample(t,state.p,target,aiming);
+  }
+  function player(c,f,pose) {
+    const p=palette,s=f.scale;
+    const xy=q=>f.at(...q), between=(a,b,u)=>a.map((x,i)=>x+(b[i]-x)*u);
+    const stroke=(a,b,ink,width)=>line(c,[xy(a),xy(b)],ink,Math.max(.65,s*width));
+    const fill=(points,ink)=>shape(c,points.map(xy),ink);
+    const dot=(q,rx,ry,ink)=>ellipse(c,...xy(q),s*rx,s*ry,ink);
+    const shadow=(1-.42*Math.min(1,pose.air));
+    ellipse(c,...f.at(pose.hip[0],0),.42*s*shadow,.052*s*shadow,alpha(p.deep,.28*shadow));
+    const leg=(l,far)=>{
+      const skin=far?shade(p.skin,-.24):p.skin, shorts=far?p.deep:shade(p.jersey,-.43);
+      stroke(l.hip,l.knee,skin,.145);stroke(l.hip,between(l.hip,l.knee,.63),shorts,.188);
+      stroke(between(l.hip,l.knee,.50),between(l.hip,l.knee,.63),shade(shorts,.28),.177);
+      stroke(l.knee,l.ankle,skin,.105);stroke(between(l.knee,l.ankle,.72),l.ankle,p.white,.085);
+      const heel=l.heel,toe=l.toe;
+      fill([heel,toe,[toe[0]-.018,toe[1]+.064,toe[2]],l.ankle,[heel[0],heel[1]+.08,heel[2]]],far?shade(p.white,-.25):p.white);
+      stroke(heel,toe,p.deep,.027);
+    };
+    const arm=(a,far)=>{
+      const skin=far?shade(p.skin,-.25):p.skin;
+      stroke(a.shoulder,a.elbow,skin,.115);stroke(a.elbow,a.wrist,skin,.083);
+      stroke(a.wrist,a.palm,skin,.065);stroke(a.palm,a.finger,skin,.036);
+      if(!far)stroke(between(a.elbow,a.wrist,.77),between(a.elbow,a.wrist,.88),p.white,.082);
+    };
+    leg(pose.legs[0],true);arm(pose.arms[0],true);leg(pose.legs[1],false);
+    const torso=(dx,dy)=>{
+      const front=dx*Math.cos(pose.lean)+dy*Math.sin(pose.lean);
+      return [pose.hip[0]+front*Math.cos(pose.yaw),pose.hip[1]-dx*Math.sin(pose.lean)+dy*Math.cos(pose.lean),-front*Math.sin(pose.yaw)];
+    };
+    const shirt=[[-.13,-.017],[.13,-.017],[.16,.38],[.105,.49],[.037,.53],[-.085,.51],[-.14,.43]];
+    const shoulderY=f.at(...pose.trunk)[1], hipY=f.at(...pose.hip)[1];
+    fill(shirt.map(q=>torso(...q)),gradient(c,shoulderY,hipY,shade(p.jersey,.21),p.jersey));
+    fill([[-.14,-.085],[.13,-.085],[.135,.025],[-.124,.025]].map(q=>torso(...q)),shade(p.jersey,-.43));
+    fill([[-.13,0],[-.055,0],[-.08,.46],[-.14,.43]].map(q=>torso(...q)),shade(p.jersey,-.27));
+    stroke(torso(-.10,.044),torso(-.11,.39),shade(p.jersey,.50),.022);
+    stroke(torso(.03,.51),torso(.105,.46),p.white,.027);
+    stroke(torso(.012,.49),pose.neck,p.skin,.095);
+    const face=xy(pose.head);
+    c.save();c.translate(...face);c.rotate(-pose.gazePitch);
+    ellipse(c,0,0,.104*s,.129*s,p.skin,p.deep,.65);
+    shape(c,[[-.10,0],[-.098,-.068],[-.065,-.123],[.024,-.133],[.088,-.095],[.099,-.057],[.025,-.062],[-.025,-.035],[-.068,.025]].map(q=>q.map(n=>n*s)),p.deep);
+    shape(c,[[.082,-.036],[.13,.008],[.085,.025]].map(q=>q.map(n=>n*s)),p.skin);
+    ellipse(c,-.047*s,.008*s,.020*s,.031*s,shade(p.skin,-.13));
+    ellipse(c,.076*s,-.033*s,Math.max(.5,.012*s),Math.max(.5,.010*s),p.deep);
+    c.restore();arm(pose.arms[1],false);
   }
   function ballArt(c,x,y,r,angle=0) {
     const p=palette,soft=mode==='throw', ink=p.deep;
@@ -407,11 +427,11 @@
       if(closeResult!==state.result){
         closeResult=state.result;closeTrace=C.displayPath(closeResult,320).map(q=>projected(closeResult,q));
       }
-      const pts=closeTrace.filter(q=>Math.abs(X(q[0])-mid)<w*.70&&Math.abs(Y(q[1])-ry)<h*.9);
+      const pts=closeTrace.filter(q=>(!flight||q[2]<=clock)&&Math.abs(X(q[0])-mid)<w*.70&&Math.abs(Y(q[1])-ry)<h*.9);
       line(c,pts.map(q=>[X(q[0]),Y(q[1])]),alpha(p.path,.85),1.5);
       line(c,[[x0,ry],[x1,ry]],p.orange,3);
       const sample=d.rimHit||d.crossing||{x:d.R,y:0};
-      const pos=flight&&clock>=0?ball:[sample.x,sample.y];
+      const pos=flight?ball:[sample.x,sample.y];
       if(pos)ballArt(c,X(pos[0]),Y(pos[1]),C.ballRadius*scale,.24);
       for(const x of [x0,x1])ellipse(c,x,ry,2.5,2.5,p.orange,p.deep,1);
       if(d.rimHit&&(!flight||clock>=d.rimHit.t)){
@@ -426,7 +446,7 @@
       let linePoints=[],outside=false;
       function stroke(){if(linePoints.length>1)line(c,linePoints,alpha(track.ink,track.opacity*(outside?.50:1)),outside?1.8:2.3,outside?[5,4]:track.dash||[]);}
       for(let i=0;i<pts.length;i++){
-        const q=projected(state.result,pts[i]),xy=f.at(q[0],q[1]),away=Math.abs(q[3])>.02;
+        const q=projected(state.result,pts[i]),xy=f.at(q[0],Pose.courtHeight(r.points[0][1],q[1],q[2],r.contacts[0]?.t)),away=Math.abs(q[3])>.02;
         if(away!==outside){linePoints.push(xy);stroke();linePoints=[xy];outside=away;}else linePoints.push(xy);
       }
       stroke();return;
@@ -466,8 +486,8 @@
   function drawStatic(f) {
     const c=brush,{w,h}=f,p=palette;
     room(c,f);if(mode==='shot')courtRig(c,f);
-    player(c,f);scaleMarks(c,f);
-    for(const tr of tracks())outlineTrack(c,f,tr);
+    scaleMarks(c,f);
+    for(const tr of tracks())if(!flight||tr.result!==state.result)outlineTrack(c,f,tr);
     const d=state.data, hit=d.rimHit||d.board;
     if(mode==='shot'){
       const left=7,interval=f.scale>=31?1:f.scale>=16?2:5;
@@ -516,16 +536,22 @@
       layout=frozen||frameFor(w,h);brush.setTransform(dpr,0,0,dpr,0,0);drawStatic(layout);bgValid=true;
     }
     ctx.drawImage(layer,0,0,w,h);
-    const f=layout, a=arrowXY(f);
+    const f=layout, a=arrowXY(f), pose=currentPose();
+    player(ctx,f,pose);
+    if(flight && clock>=0 && ball){
+      const trail=[];
+      for(const q of flight.trail){if(q[2]>clock)break;trail.push(f.at(q[0],q[1]));}
+      trail.push(f.at(ball[0],ball[1]));line(ctx,trail,palette.path,2.3);
+    }
     D.arrow(ctx,a.x,a.y,a.tx,a.ty,palette.orange,hover||grab?3.2:2.6);
     ellipse(ctx,a.tx,a.ty,hover||grab?10:8,hover||grab?10:8,alpha(palette.bg,.85),palette.orange,2);
     ellipse(ctx,a.tx,a.ty,2.8,2.8,palette.orange);
     $('aim').style.left=a.tx+'px';$('aim').style.top=a.ty+'px';
-    const pos=ball||[0,state.p.height],xy=f.at(pos[0],pos[1]);
+    const pos=pose.ball,xy=f.at(pos[0],pos[1],flight&&clock<0||!ball?pos[2]:0);
     const radius=C.balls[mode].diameter*f.scale/2;
-    const lateral=pos[3]||0;
-    ballArt(ctx,...xy,radius*Math.max(.83,Math.min(1.17,1+.055*lateral)),clock*5*Math.PI);
-    if(Math.abs(lateral)>.02)D.pill(ctx,T('離開投籃平面','Out of shot plane'),w-5,h-5,palette.ink,'right',font(11,600));
+    const lateral=pos[2]||0;
+    ballArt(ctx,...xy,radius*Math.max(.83,Math.min(1.17,1+.055*lateral)),Math.max(0,clock)*5*Math.PI);
+    if(ball&&Math.abs(lateral)>.02)D.pill(ctx,T('離開投籃平面','Out of shot plane'),w-5,h-5,palette.ink,'right',font(11,600));
     if(impactMark && !D.reducedMotion()){
       const u=(performance.now()-impactMark.start)/260;
       D.ripple(ctx,...f.at(impactMark.x,impactMark.y),Math.max(7,radius),u,palette.orange);
@@ -534,8 +560,11 @@
   }
   function redraw(geometry=true) {
     bgValid=false;drawMap();
-    if(world){if(geometry)world.refresh(state,tracks(),palette);if(flight&&clock<0)world.prepare(1+clock/.32);else if(ball)world.move(ball,clock);else world.prepare(0);instruments();}
+    if(world){if(geometry)world.refresh(state,tracks(),palette);drawWorld();}
     else draw();
+  }
+  function drawWorld() {
+    world.move(currentPose(),clock,!!flight);instruments();
   }
   function stop() {
     cancelAnimationFrame(frame);frame=0;flight=null;ball=null;impactMark=null;clock=stamp=eventIndex=0;replaying=false;
@@ -556,8 +585,10 @@
   }
   function animate(now) {
     if(!flight||document.hidden)return;
-    clock=Math.min(flight.T,clock+(stamp?Math.min((now-stamp)/1000,1/30):0)*.60);stamp=now;
-    if(clock<0){world?.prepare(1+clock/.32);frame=requestAnimationFrame(animate);return;}
+    const dtFrame=stamp?Math.min((now-stamp)/1000,1/30):0;stamp=now;
+    clock=clock<0?Math.min(0,clock+dtFrame):Math.min(flight.T,clock+dtFrame*.60);
+    if(clock<0){if(world)drawWorld();else draw();frame=requestAnimationFrame(animate);return;}
+    if(clock===0)$('feedback').textContent=T('球已出手。','Ball in flight.');
     while(eventIndex<flight.events.length && flight.events[eventIndex].t<=clock+.000001){
       const e=flight.events[eventIndex++],type=e.type;
       cue(type,e.speedIn);
@@ -567,16 +598,23 @@
     }
     const pts=flight.points;
     while(flight.i<pts.length-1 && pts[flight.i][2]<clock)flight.i++;
-    const b=pts[flight.i],a=pts[Math.max(0,flight.i-1)],dt=b[2]-a[2],u=dt?Math.max(0,Math.min(1,(clock-a[2])/dt)):0;
-    ball=a.map((v,i)=>v+(b[i]-v)*u);
-    if(world){world.move(ball,clock);instruments();}else draw();
+    const b=pts[flight.i],a=pts[Math.max(0,flight.i-1)];
+    ball=Pose.flightPoint(state.p,a,b,clock,flight.events[0]?.t);
+    if(world)drawWorld();else draw();
     if(clock>=flight.T){
       finish();
+      if(clock<1.02)frame=requestAnimationFrame(recover);
       if(impactMark)frame=requestAnimationFrame(function fade(){
         if(document.hidden||world||D.reducedMotion()){impactMark=null;return;}
         draw();if(impactMark)frame=requestAnimationFrame(fade);
       });
     } else frame=requestAnimationFrame(animate);
+  }
+  function recover(now) {
+    if(document.hidden||flight||completed!==state||D.reducedMotion())return;
+    clock=Math.min(1.02,clock+(stamp?Math.min((now-stamp)/1000,1/30):0)*.60);stamp=now;
+    if(world)drawWorld();else draw();
+    if(clock<1.02)frame=requestAnimationFrame(recover);
   }
   function finish(){
     flight=null;completed=state;
@@ -612,16 +650,21 @@
       compared=null;
     }
     world?.frameRelease();
-    if(!replay && D.reducedMotion()){
+    if(D.reducedMotion()){
       skipFlight();return;
     }
     const r=state.result;
-    flight={station:r.station,distance:r.distance,T:r.final?.tEnd??r.T,events:r.contacts??r.events,points:playback(r),i:0};clock=world?-.32:0;world?.prepare(0);updateDisplay();
-    $('feedback').textContent=T('球已出手。','Ball in flight.');frame=requestAnimationFrame(animate);
+    const points=playback(r), stride=Math.max(1,Math.floor(points.length/400));
+    flight={station:r.station,distance:r.distance,T:r.final?.tEnd??r.T,events:r.contacts??r.events,
+      points,trail:points.filter((_,i)=>i%stride===0).map(q=>mode==='shot'?[q[0],Pose.courtHeight(state.p.height,q[1],q[2],r.contacts[0]?.t),q[2]]:q),i:0};
+    clock=-Pose.duration(state.p);updateDisplay();
+    // The previous setup already contains the 3D meshes and flight samples.
+    if(world)drawWorld();else {bgValid=false;draw();}
+    $('feedback').textContent=T('準備出手。','Preparing to release.');frame=requestAnimationFrame(animate);
   }
   function skipFlight(){
     cancelAnimationFrame(frame);const r=state.result;
-    ball=r.path?projected(r,r.path.at(-1)):r.points.at(-1);clock=r.final?.tEnd??r.T;finish();
+    ball=r.path?projected(r,r.path.at(-1)):r.points.at(-1);clock=Math.max(1.02,r.final?.tEnd??r.T);finish();
   }
   function record(pair) {
     if(completed!==state || (pair?!canCompare():state.data.trialRole!=='single'))return;
@@ -725,6 +768,7 @@
   }
   $('aim').addEventListener('pointerdown',e=>{
     if(grab||e.button!==0||!layout)return;
+    if(flight)update();
     const a=arrowXY(layout),r=cv.getBoundingClientRect();
     grab={id:e.pointerId,dx:e.clientX-r.left-a.tx,dy:e.clientY-r.top-a.ty};frozen=layout;
     $('aim').setPointerCapture(e.pointerId);draw();e.preventDefault();
@@ -891,7 +935,7 @@
     if(motion.matches&&flight&&!replaying){skipFlight();}
     else{updateDisplay();redraw();}
   });
-  document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(frame);stamp=0;if(!document.hidden){if(flight)frame=requestAnimationFrame(animate);else draw();}});
+  document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(frame);stamp=0;if(!document.hidden){if(flight)frame=requestAnimationFrame(animate);else if(completed===state&&clock<1.02)frame=requestAnimationFrame(recover);else draw();}});
   const resize=new ResizeObserver(()=>{bgValid=false;draw();});resize.observe(cv);resize.observe($('instruments'));
   try{
     const saved=JSON.parse(localStorage.getItem(prefsKey));if(saved?.settings&&!window.LAB_SHARE_HASH){Object.assign(settings,saved.settings);applyRelease(settings[saved.mode]);}
