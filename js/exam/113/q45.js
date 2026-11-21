@@ -83,7 +83,7 @@ ExamTracks.Q45=[
  {
   "id": "Q45_04",
   "row": "solve",
-  "duration": 6.92,
+  "duration": 6.88,
   "disp": "法拉第定律：感應電動勢等於圈數乘以磁通量的變化率；感應電動勢再除以電阻 R，就是電流。",
   "en": "Faraday’s law: the emf equals the number of turns times the rate of change of flux. Divide the emf by R to get the current."
  },
@@ -97,7 +97,7 @@ ExamTracks.Q45=[
  {
   "id": "Q45_06",
   "row": "solve",
-  "duration": 8.4,
+  "duration": 8.38,
   "disp": "B：題目說磁力線只穿過環圈甲，乙裡面根本沒有磁通量；乙再大，磁通量的變化還是零，電阻也還是 R，電流不變。對。",
   "en": "B: the field lines pass only through loop A, so loop B has no flux at all. Make B bigger and its flux change is still zero, the resistance is still R, and the current is unchanged. Right."
  },
