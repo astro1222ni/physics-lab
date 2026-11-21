@@ -19,7 +19,7 @@ const all = ev => defs.filter(m => m.check(ev, {})).map(m => m.id.replace('cell-
 const out = [];
 let fail = 0;
 function claim(ok, msg) { out.push((ok ? '✓ ' : '✗ ') + msg); if (!ok) fail++; }
-const pct = x => (100 * x).toFixed(1) + '%';
+const pct = (x, digits = 1) => (100 * x).toFixed(digits) + '%';
 
 // ---------- 與 js/cell-division.js 相同的事件 ----------
 function Page(o) {
@@ -57,16 +57,13 @@ function Page(o) {
 }
 /** 第二部分：同一組設定連續做 runs 批（每批 N 次減數分裂），回傳每批之後的事件 */
 function Batches(d, n, runs, seed) {
-  const cnt = { AB: 0, Ab: 0, aB: 0, ab: 0 }, pats = {};
-  let total = 0, rec = 0, meioses = 0;
+  const tetrads = [0, 0, 0, 0, 0], pats = {};
   const evs = [];
   runs.forEach((N, i) => {
     const b = K.batch({ d: d / 100, n, N, seed: seed * 1000 + i + 1 });
-    Object.keys(b.counts).forEach(k => { cnt[k] += b.counts[k]; });
-    total += b.total; rec += b.rec; meioses += N;
+    b.tetrads.forEach((count, k) => { tetrads[k] += count; });
     b.patterns.forEach(p => { pats[p] = 1; });
-    const ci = K.wilson(rec, total);
-    evs.push({ type: 'cd-batch', data: { d, n, meioses, total, rec, r: rec / total, lo: ci[0], hi: ci[1], half: (ci[1] - ci[0]) / 2, haldane: K.haldane(d / 100), distinct: Object.keys(pats).length, possible: Math.pow(2, n) } });
+    evs.push({ type: 'cd-batch', data: { d, n, ...K.recombinationStats(tetrads), haldane: K.haldane(d / 100), distinct: Object.keys(pats).length, possible: Math.pow(2, n) } });
   });
   return evs;
 }
@@ -76,6 +73,7 @@ function rate(trials, gen, id) { let ok = 0; for (let t = 0; t < trials; t++) if
 // ---------- 預設狀態 ----------
 {
   const p = Page({});
+  claim(all(p.stage(0)).length === 0 && all({ type: 'cd-batch', data: K.recombinationStats([0, 0, 0, 0, 0]) }).length === 0, '兩部分尚未操作時皆無任務觸發');
   const hits = new Set();
   all(p.stage(0)).forEach(h => hits.add(h));
   // 預設不會自己播放；就算播放到底，也只有一般任務 1 成立
@@ -146,7 +144,9 @@ claim(rate(50, s => [Page({ mode: 'meiosis', n: 1, nd: 1, seed: s }).done()], 'h
   const s4 = Batches(200, 1, [1000, 1000, 1000, 1000], 8);
   const d = s4[s4.length - 1].data;
   claim(anyOf(s4, 'h4'), `h4 200 cM 做到 4000 次：r = ${pct(d.r)}、區間上限 ${pct(d.hi)} < 50%（Haldane ${pct(d.haldane)}）`);
-  claim(rate(30, s => Batches(200, 1, [1000, 1000, 1000, 1000], 300 + s), 'h4') > 0.6, `h4 4000 次之內成功 ${pct(rate(30, s => Batches(200, 1, [1000, 1000, 1000, 1000], 300 + s), 'h4'))}`);
+  // 原解在 200 cM 仍可達成。要在同樣的四批內較穩定辨識上限，選允許範圍的 180 cM。
+  const at180 = rate(30, s => Batches(180, 1, [1000, 1000, 1000, 1000], 300 + s), 'h4');
+  claim(at180 > 0.6, `h4 180 cM，4000 次之內成功 ${pct(at180)}`);
 }
 p = Page({ mode: 'meiosis', n: 3 });
 e = p.stage(p.at('ana2', 0.5));

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211108"></script>
+<meta name="lab-updated" content="2026-11-21 11:10">
+  <script src="js/settings.js?v=202611211110"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Cell Division | Astro Ni Lab">細胞分裂｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":4,"name":"細胞與分子","item":"https://lab.astroni.org/biology.html#cell"},{"@type":"ListItem","position":5,"name":"細胞分裂與週期","item":"https://lab.astroni.org/biology.html#ch-division"},{"@type":"ListItem","position":6,"name":"細胞分裂","item":"https://lab.astroni.org/cell-division.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211108">
+  <link rel="stylesheet" href="lab.css?v=202611211110">
   <style>
     /* 細胞分裂頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -218,6 +218,11 @@
           <div class="slider"><label for="n2" data-en="Pairs of chromosomes n">染色體對數 n</label><output id="n2o"></output>
             <input id="n2" type="range" min="1" max="8" step="1" value="3" data-decimals="0"></div>
           <p class="hint" data-en="1 centimorgan (cM) is the distance over which, on average, 1 gamete in 100 has a crossover. Changing a setting starts a new count.">1 厘摩（cM）是平均每 100 個配子有 1 個在這一段發生交換的距離。改了設定就開始新的一輪統計。</p>
+          <div class="checks" id="batchControls">
+            <label><span data-en="Seed">種子</span> <input id="batchSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
+            <label><input type="checkbox" id="batchLock"><span data-en="Reuse seed">沿用種子</span></label>
+            <button type="button" id="batchDraw" data-en="Draw new seed">重抽種子</button>
+          </div>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -228,6 +233,7 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="The four gametes from one meiosis are correlated. A single crossover between the genes produces two recombinant gametes. The 95% interval therefore uses each meiosis as one observation and measures how its recombinant fraction varies from one meiosis to the next. At short distances most meioses have zero or one crossover. Treating the gametes as independent would make the interval about \(\sqrt{2}\) times too narrow. Replaying a seed starts a fresh pool.">同一次減數分裂的四枚配子彼此相關。兩個基因之間若發生一次互換，會同時產生兩枚重組型配子。因此，95% 信賴區間以每次分裂為一筆觀測，依各次分裂的重組配子比例有多大差異來估計。短距離時，多數分裂只有零或一次互換；若把配子當成獨立樣本，區間寬度約只剩正確估計的 \(1/\sqrt{2}\)。重播已計入的種子會另起一組，避免重複計數。</p>
 
       <h3 data-en="The cell cycle and mitosis">細胞週期與有絲分裂</h3>
       <p data-en-html="In interphase the cell grows (G<sub>1</sub>), copies its DNA (S) and gets ready to divide (G<sub>2</sub>). After S each chromosome consists of two identical <strong>sister chromatids</strong> held together at the centromere, so the DNA has doubled from 2C to 4C while the number of chromosomes — counted by centromeres — is still 2n. In prophase the chromosomes coil up and the two centrosomes move apart; in prometaphase the nuclear envelope breaks down and spindle fibres attach to the kinetochores; in metaphase the chromosomes line up on the equator; in anaphase the centromeres split and the sisters are pulled to opposite poles, so for a moment the cell holds 4n chromosomes; in telophase two nuclei form and the cytoplasm divides. Each daughter cell is 2n and 2C, identical to the parent.">間期裡，細胞先長大（G<sub>1</sub> 期）、複製 DNA（S 期）、準備分裂（G<sub>2</sub> 期）。S 期之後，每條染色體由兩條一模一樣、在著絲點相連的<strong>姊妹染色分體</strong>組成：DNA 由 2C 加倍成 4C，但以著絲點來數，染色體還是 2n 條。前期染色體捲曲變粗、兩個中心體往兩極移動；前中期核膜消失，紡錘絲接上著絲點；中期染色體排在赤道板上；後期著絲點分開，姊妹分體被拉往兩極——這時細胞裡暫時有 4n 條染色體；末期形成兩個細胞核，細胞質分開。每個子細胞都是 2n、2C，和親代一樣。</p>
@@ -260,7 +266,7 @@
       <ul>
         <li data-en-html="Each chromatid is stored as a list of segments labelled maternal or paternal. In meiosis the number of chiasmata on a bivalent of genetic length L (in Morgans) is Poisson with mean 2L, at uniform random positions (Haldane's no-interference model); each chiasma joins one chromatid that is maternal at that point with one that is paternal, chosen at random, and they exchange the segment away from the centromere. Every bivalent orients at random in metaphase I, and every pair of sisters at random in metaphase II.">每條染色分體記成一串標明「母方／父方」的片段。減數分裂時，遺傳長度 L（Morgan）的二價體上，交叉的數目是平均 2L 的卜瓦松分布、位置均勻隨機（Haldane 的無干擾模型）；每個交叉隨機挑一條在那個位置是母方、一條是父方的分體，交換遠離著絲點的那一段。中期 I 每一對二價體的方向、中期 II 每一對姊妹分體的方向都隨機。</li>
         <li data-en-html="Illustrative parts: the relative lengths of the chromosomes (pair 1 is 1.6 Morgans long, with A at 18% and B at 72% of its length), the shapes, the timing of the stages and the positions in the cell are drawn for clarity, not to scale. Real cells have at least one crossover per bivalent and crossovers that keep their distance (interference), so real map distances are fitted with other mapping functions, such as Kosambi's; Haldane's is the simplest.">示意的部分：各對染色體的相對長度（第 1 對長 1.6 Morgan，A 在全長的 18%、B 在 72%）、形狀、各期的時間長短與在細胞中的位置是為了看清楚而畫的，沒有依比例。真實細胞每對二價體至少有一個交叉，交叉之間也會互相保持距離（干擾），所以實際的遺傳圖距常用 Kosambi 等其他作圖函數；Haldane 的是最簡單的一個。</li>
-        <li data-en-html="DNA per cell is counted in units of C, the DNA of one haploid set, weighting each pair by its length. In part 2 the 95% confidence interval of r is Wilson's score interval.">每個細胞的 DNA 量以 C（一套單倍體的 DNA 量）為單位，各對依長度加權。第二部分 r 的 95% 信賴區間用 Wilson 區間。</li>
+        <li data-en-html="DNA per cell is counted in units of C, the DNA of one haploid set, weighting each pair by its length. Part 2 uses a cluster-adjusted Wilson interval. If every meiosis gives the same fraction, the interval uses the number of meioses as its effective sample size.">每個細胞的 DNA 量以 C（一套單倍體的 DNA 量）為單位，各對依長度加權。第二部分採用群集校正的 Wilson 區間。若每次分裂得到的重組比例都相同，有效樣本數取分裂次數。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>
@@ -279,19 +285,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211108"></script>
-  <script src="js/cell-division-core.js?v=202611211108"></script>
-  <script src="js/sound.js?v=202611211108"></script>
-  <script src="js/numinput.js?v=202611211108"></script>
-  <script src="js/labdeck.js?v=202611211108"></script>
-  <script src="js/view3d-nav.js?v=202611211108"></script>
-  <script src="js/drawkit.js?v=202611211108"></script>
-  <script src="js/keys.js?v=202611211108"></script>
-  <script src="js/cell-division.js?v=202611211108"></script>
-  <script src="js/firebase-config.js?v=202611211108"></script>
-  <script src="js/missions.js?v=202611211108" data-module="cell-division"></script>
-  <script src="js/missions/cell-division.js?v=202611211108"></script>
-  <script src="js/stats.js?v=202611211108" data-module="cell-division"></script>
-  <script src="js/comments.js?v=202611211108"></script>
+  <script src="js/math.js?v=202611211110"></script>
+  <script src="js/cell-division-core.js?v=202611211110"></script>
+  <script src="js/sound.js?v=202611211110"></script>
+  <script src="js/numinput.js?v=202611211110"></script>
+  <script src="js/labdeck.js?v=202611211110"></script>
+  <script src="js/view3d-nav.js?v=202611211110"></script>
+  <script src="js/drawkit.js?v=202611211110"></script>
+  <script src="js/keys.js?v=202611211110"></script>
+  <script src="js/cell-division.js?v=202611211110"></script>
+  <script src="js/firebase-config.js?v=202611211110"></script>
+  <script src="js/missions.js?v=202611211110" data-module="cell-division"></script>
+  <script src="js/missions/cell-division.js?v=202611211110"></script>
+  <script src="js/stats.js?v=202611211110" data-module="cell-division"></script>
+  <script src="js/comments.js?v=202611211110"></script>
 </body>
 </html>

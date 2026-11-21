@@ -161,5 +161,12 @@
           Math.abs(d.slope / d.slope0 - 1) <= 0.1 && d.icpt / d.icpt0 >= 1.5;
       }
     }
-  ]);
+  ].map(function (mission) {
+    const check = mission.check;
+    mission.check = function (ev, mem) {
+      if (ev.data && ev.data.amount != null && ev.data.amount !== 1) return false;
+      return check(ev, mem);
+    };
+    return mission;
+  }));
 })();

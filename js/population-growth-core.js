@@ -55,25 +55,46 @@
    * 隨機的出生死亡過程（Gillespie）。o：{ N0, r, K（Infinity = 指數）, tEnd, rand, cap（族群上限，超過就停，預設 1e6）}
    * 傳回 { t: [], N: [], extinct, tExtinct }：每一次事件後的時刻與數量（數量多時每 every 天記一筆）
    */
+  // A calendar year is 365 model days. The input sets normal spread before truncation.
+  function environmentalYears(env, seed, days) {
+    const rand = rng((seed >>> 0) ^ 0x597a08bf), factors = [];
+    for (let year = 0; year <= Math.floor(days / 365); year++) {
+      let z;
+      do {
+        z = Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+      } while (Math.abs(z) > 1.65);
+      factors.push(1 + env / 100 * z);
+    }
+    return factors;
+  }
   function gillespie(o) {
     const r = o.r, K = o.K, lam = r / (1 - M_FRAC), mu = M_FRAC * lam, rand = o.rand || Math.random;
     const cap = o.cap || 1e6, every = o.every || 0.01;
     let N = Math.round(o.N0), t = 0;
     const T = [0], NN = [N];
+    const years = o.env > 0 ? environmentalYears(o.env, o.seed, o.tEnd) : null;
     let lastRec = 0;
     while (t < o.tEnd && N > 0 && N < cap) {
-      const b = lam * N;
-      const dper = isFinite(K) ? mu + (lam - mu) * N / K : mu;
+      const year = Math.floor(t / 365), factor = years ? years[year] : 1;
+      // With no K, hold background mortality fixed: births respond to annual net r.
+      const b = (years && !isFinite(K) ? mu + r * factor : lam) * N;
+      const dper = isFinite(K) ? mu + (lam - mu) * N / (K * factor) : mu;
       const d = Math.max(0, dper) * N;
       const tot = b + d;
       if (tot <= 0) break;
-      t += -Math.log(1 - rand()) / tot;
+      const next = t - Math.log(1 - rand()) / tot;
+      const boundary = (year + 1) * 365;
+      if (years && next >= boundary && boundary < o.tEnd) {
+        t = boundary;
+        continue; // hazard changes here; sample a new waiting time
+      }
+      t = next;
       if (t > o.tEnd) { t = o.tEnd; break; }
       N += rand() * tot < b ? 1 : -1;
       if (N < 200 || t - lastRec >= every) { T.push(t); NN.push(N); lastRec = t; }
     }
     if (T[T.length - 1] < t) { T.push(t); NN.push(N); }
-    return { t: T, N: NN, extinct: N === 0, tExtinct: N === 0 ? t : NaN, lam: lam, mu: mu };
+    return { ...(years ? { years } : {}), t: T, N: NN, extinct: N === 0, tExtinct: N === 0 ? t : NaN, lam: lam, mu: mu };
   }
   /** 從 N0 個體開始、指數成長的隨機模型最後滅絕的機率 (μ/λ)^N0 */
   function extinctionProb(N0) { return Math.pow(M_FRAC, N0); }

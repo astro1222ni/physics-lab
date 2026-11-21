@@ -110,6 +110,24 @@
   function setStatus(s) { $('status').textContent = s; }
   function setStatus2(s) { $('status2').textContent = s; }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
+  function seedControl(key, draw) {
+    const field = $(key + 'Seed'), lock = $(key + 'Lock');
+    let prepared = false;
+    field.addEventListener('input', function () { lock.checked = true; });
+    $(key + 'Draw').addEventListener('click', function () {
+      field.value = draw();
+      prepared = true;
+    });
+    return function () {
+      if (!prepared && !lock.checked) field.value = draw();
+      const seed = Math.max(0, Math.min(4294967295, Math.trunc(Number(field.value)) || 0));
+      field.value = seed;
+      prepared = false;
+      return seed;
+    };
+  }
+  const gardenSeed = seedControl('garden', function () { return (Math.random() * 4294967296) >>> 0; });
+  const driftSeed = seedControl('drift', function () { return (Math.random() * 4294967296) >>> 0; });
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
 
   // =====================================================================
@@ -493,19 +511,27 @@
     updateReadouts1();
     request();
   }
+  function testLabel(r) {
+    if (r.method === 'none') return T('無法檢定（單一等位基因）', 'Untestable (one allele)');
+    return r.method === 'exact' ? T('精確檢定', 'Exact test') : 'χ² = ' + num(r.chi2, 2);
+  }
+  function testReading(r) {
+    if (r.displayP === null) return testLabel(r);
+    return testLabel(r) + (r.displayP < 0.001 ? T('，P < 0.001', ', P < 0.001') : T('，P = ', ', P = ') + num(r.displayP, 3));
+  }
   function test1() {
     const n = Math.round(val(el.nS)), g = cur();
-    const rnd = H.rng((Math.random() * 4294967296) >>> 0);
+    const rnd = H.rng(gardenSeed());
     const obs = H.sample(n, g, rnd);
     const r = H.hwTest(obs);
-    const reject = r.pval < 0.05;
+    const reject = r.displayP !== null && r.displayP < 0.05;
     s1.lastTest = { n: n, obs: obs, r: r, reject: reject, gen: gen(), sigma: val(el.sig) };
     tests.push(s1.lastTest);
     if (tests.length > 40) tests.shift();
     renderTests();
-    if (reject) sndReject(); else sndAccept();
-    emit('test', { gen: gen(), sigma: val(el.sig), n: n, obs: obs, chi2: r.chi2, pval: r.pval, reject: reject, F: H.inbreedingF(g), dev: H.hwDev(g), p: H.alleleP(g), Fhat: r.Fhat });
-    const msg = (reject ? T('拒絕哈溫平衡：', 'Hardy–Weinberg rejected: ') : T('與哈溫平衡相符：', 'Consistent with Hardy–Weinberg: ')) + 'χ² = ' + num(r.chi2, 2) + (r.pval < 0.001 ? T('，P < 0.001', ', P < 0.001') : T('，P = ', ', P = ') + num(r.pval, 3)) + '.';
+    if (reject) sndReject(); else if (r.displayP !== null) sndAccept();
+    emit('test', { gen: gen(), sigma: val(el.sig), n: n, obs: obs, chi2: r.chi2, pval: r.pval, reject: r.pval < 0.05, method: r.method, displayP: r.displayP, F: H.inbreedingF(g), dev: H.hwDev(g), p: H.alleleP(g), Fhat: r.Fhat });
+    const msg = (r.displayP === null ? '' : reject ? T('拒絕哈溫平衡：', 'Hardy–Weinberg rejected: ') : T('與哈溫平衡相符：', 'Consistent with Hardy–Weinberg: ')) + testReading(r) + '.';
     setStatus(msg.replace(/\.$/, T('。', '.')));
     say(msg);
     updateReadouts1();
@@ -513,10 +539,10 @@
   function renderTests() {
     const tb = $('tests');
     if (!tests.length) { tb.innerHTML = ''; return; }
-    let h = '<thead><tr><th>' + T('世代', 'Gen.') + '</th><th>σ</th><th>n</th><th>' + T('觀察 AA, Aa, aa', 'Observed AA, Aa, aa') + '</th><th>' + T('期望', 'Expected') + '</th><th>χ²</th><th>P</th><th>' + T('結論', 'Verdict') + '</th></tr></thead><tbody>';
+    let h = '<thead><tr><th>' + T('世代', 'Gen.') + '</th><th>σ</th><th>n</th><th>' + T('觀察 AA, Aa, aa', 'Observed AA, Aa, aa') + '</th><th>' + T('期望', 'Expected') + '</th><th>' + T('檢定', 'Test') + '</th><th>P</th><th>' + T('結論', 'Verdict') + '</th></tr></thead><tbody>';
     tests.slice(-MAX_ROWS).reverse().forEach(function (x) {
-      h += '<tr><td>' + x.gen + '</td><td>' + pct(x.sigma, 0) + '</td><td>' + x.n + '</td><td>' + x.obs.join(', ') + '</td><td>' + x.r.exp.map(function (e) { return num(e, 1); }).join(', ') + '</td><td>' + num(x.r.chi2, 2) + '</td><td>' +
-        (x.r.pval < 0.001 ? '&lt; 0.001' : num(x.r.pval, 3)) + '</td><td' + (x.reject ? ' class="yes"' : '') + '>' + (x.reject ? T('拒絕', 'reject') : T('相符', 'consistent')) + '</td></tr>';
+      h += '<tr><td>' + x.gen + '</td><td>' + pct(x.sigma, 0) + '</td><td>' + x.n + '</td><td>' + x.obs.join(', ') + '</td><td>' + x.r.exp.map(function (e) { return num(e, 1); }).join(', ') + '</td><td>' + testLabel(x.r) + '</td><td>' +
+        (x.r.displayP === null ? '—' : x.r.displayP < 0.001 ? '&lt; 0.001' : num(x.r.displayP, 3)) + '</td><td' + (x.reject ? ' class="yes"' : '') + '>' + (x.r.displayP === null ? '—' : x.reject ? T('拒絕', 'reject') : T('相符', 'consistent')) + '</td></tr>';
     });
     tb.innerHTML = h + '</tbody>';
   }
@@ -529,8 +555,8 @@
     h += '<dt>' + T('近親交配係數', 'Inbreeding coefficient') + '<small>F = 1 − H/(2pq)</small></dt><dd>' + (p > 0 && p < 1 ? num(F, 3) : '—') + (sig > 0 ? '<small>' + T('自花授粉的平衡值 σ/(2 − σ) = ', 'selfing equilibrium σ/(2 − σ) = ') + num(H.selfingF(sig), 3) + '</small>' : '') + '</dd>';
     const L = s1.lastTest;
     if (L) {
-      h += '<dt>' + T('上一次檢定', 'Last test') + '<small>' + T('第 ', 'generation ') + L.gen + T(' 代，n = ', ', n = ') + L.n + '</small></dt><dd>χ² = ' + num(L.r.chi2, 2) + (L.r.pval < 0.001 ? T('，P &lt; 0.001', ', P &lt; 0.001') : T('，P = ', ', P = ') + num(L.r.pval, 3)) +
-        '<small>' + (L.reject ? T('P < 0.05：拒絕哈溫平衡', 'P < 0.05: reject Hardy–Weinberg') : T('P ≥ 0.05：沒有證據說不平衡', 'P ≥ 0.05: no evidence against equilibrium')) + '</small></dd>';
+      h += '<dt>' + T('上一次檢定', 'Last test') + '<small>' + T('第 ', 'generation ') + L.gen + T(' 代，n = ', ', n = ') + L.n + '</small></dt><dd>' + testReading(L.r) +
+        '<small>' + (L.r.displayP === null ? '' : L.reject ? T('P < 0.05：拒絕哈溫平衡', 'P < 0.05: reject Hardy–Weinberg') : T('P ≥ 0.05：沒有證據說不平衡', 'P ≥ 0.05: no evidence against equilibrium')) + '</small></dd>';
     }
     $('ro1').innerHTML = h;
   }
@@ -762,7 +788,7 @@
   }
   function start2() {
     const o = params2();
-    o.seed = (Math.random() * 4294967296) >>> 0;
+    o.seed = driftSeed();
     const sim = H.simulate(o);
     runId++;
     run2 = { id: runId, o: o, sim: sim, head: 0, playing: true, done: false, t0: 0, sum0: H.summarize(sim), dur: Math.min(7, Math.max(2.5, o.gens * 0.035)) };

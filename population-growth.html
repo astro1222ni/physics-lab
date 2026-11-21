@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-21 11:02">
-  <script src="js/settings.js?v=202611211108"></script>
+<meta name="lab-updated" content="2026-11-21 11:10">
+  <script src="js/settings.js?v=202611211110"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Population Growth: Exponential, Logistic, Predator and Prey | Astro Ni Lab">族群成長：指數、邏輯斯與掠食者–獵物｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":4,"name":"生態","item":"https://lab.astroni.org/biology.html#ecology"},{"@type":"ListItem","position":5,"name":"族群與群集","item":"https://lab.astroni.org/biology.html#ch-population"},{"@type":"ListItem","position":6,"name":"族群成長：指數、邏輯斯與掠食者–獵物","item":"https://lab.astroni.org/population-growth.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611211108">
+  <link rel="stylesheet" href="lab.css?v=202611211110">
   <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 族群成長頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
@@ -183,6 +183,11 @@
           <div class="checks">
             <label><input id="stoch" type="checkbox"><span data-en="Count individuals (random births and deaths)">一隻一隻數（出生死亡有隨機性）</span></label>
           </div>
+          <div class="checks" id="cultureControls" hidden>
+            <label><span data-en="Seed">種子</span> <input id="cultureSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
+            <label><input type="checkbox" id="cultureLock"><span data-en="Reuse seed">沿用種子</span></label>
+            <button type="button" id="cultureDraw" data-en="Draw new seed">重抽種子</button>
+          </div>
         </section>
         <section class="card" data-deck="成長條件|Growth conditions" data-deck-order="2" data-section="lab1">
           <h2 data-en="Growth conditions">成長條件</h2>
@@ -190,6 +195,8 @@
             <input id="r" type="range" min="0.05" max="2" step="0.005" value="0.5" data-decimals="3"></div>
           <div class="slider" id="rowK"><label for="K" data-en="Carrying capacity K (individuals)">負荷量 K（個體）</label><output id="Ko"></output>
             <input id="K" type="range" min="10" max="1000" step="10" value="500" data-decimals="0"></div>
+          <div class="slider" id="rowEnv" hidden><label for="env" data-en="Annual environmental variation (%)">每年環境波動（%）</label><output id="envo">0</output>
+            <input id="env" type="range" min="0" max="40" step="1" value="0" data-decimals="0"></div>
         </section>
         <section class="card" data-deck="起始數量與天數|Initial size and duration" data-deck-order="3" data-section="lab1">
           <h2 data-en="Initial size and duration">起始數量與天數</h2>
@@ -300,6 +307,7 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en="In random mode a shared multiplier is drawn every 365 days for carrying capacity K, or for net growth rate r without a carrying capacity. The slider sets the normal standard deviation before truncation at ±1.65 standard deviations. A bad year affects the whole population and can raise average extinction risk in small populations. Logistic cultures with variation can run for two years. Drake and Griffen (2010) studied environmental deterioration in water fleas. The amplitudes here are teaching settings.">在隨機模式中，每 365 天抽一次全群共用的倍率。有負荷量時改變 K，無負荷量時改變淨成長率 r。滑桿是截斷前的常態標準差（保留正負 1.65 個標準差）。同一個壞年會讓全群同時承壓，小族群的平均滅絕風險可能上升。邏輯斯模式開啟波動後可觀察兩年。Drake 與 Griffen（2010）的水蚤實驗研究環境惡化，這裡的波動幅度是教學設定。</p>
       <p data-en-html="A population is all the individuals of one species living in one place. It grows when births outnumber deaths. In 1798 Thomas Malthus pointed out that a population left alone grows by multiplication, while its food supply does not; in 1838 Pierre-François Verhulst wrote down the equation that makes growth slow down as the population fills up the space it has. In the 1920s Alfred Lotka and Vito Volterra, independently, extended the idea to two species that eat, or compete with, each other.">族群是同一個地方、同一種生物所有個體的集合。出生多於死亡，族群就成長。1798 年馬爾薩斯（Thomas Malthus）指出：不受限制的族群會「倍數」成長，糧食卻不會；1838 年費爾哈斯（Pierre-François Verhulst）寫出一條方程式，讓族群越接近環境能容納的上限，成長就越慢。1920 年代，洛特卡（Alfred Lotka）與沃爾泰拉（Vito Volterra）各自把這個想法推廣到兩個會互相捕食或互相競爭的物種。</p>
 
       <h3 data-en="Exponential growth: the J curve">指數成長：J 型曲線</h3>
@@ -353,7 +361,7 @@
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en="The smooth curves of part 1 use the exact solutions above. Time is in days and all parameters are illustrative: real paramecia in a rich medium divide about once or twice a day.">第一部分的平滑曲線直接用上面的解析解。時間單位是天，所有參數都是示意；真實的草履蟲在營養充足的培養液中，大約一天分裂一到兩次。</li>
-        <li data-en="“Count individuals” uses the Gillespie algorithm, which draws the exact random time to the next birth or death. Births happen at 2r per individual and deaths at r, plus r·N/K in the logistic case. Above 3000 individuals with unlimited food the page stops counting one by one and follows the average.">「一隻一隻數」用 Gillespie 演算法，精確地抽出下一次出生或死亡的隨機時刻。每個個體的出生率 2r、死亡率 r，邏輯斯時再加 r·N/K。資源無限、超過 3000 個個體時，本頁不再逐一計算，改用平均值。</li>
+        <li data-en="“Count individuals” uses the Gillespie algorithm, which draws the exact random time to the next birth or death. In a fixed environment births happen at 2r per individual and deaths at r, plus r·N/K in the logistic case. Above 3000 individuals with unlimited food the page stops counting one by one and follows the average.">「一隻一隻數」用 Gillespie 演算法，精確地抽出下一次出生或死亡的隨機時刻。固定環境中，每個個體的出生率 2r、死亡率 r，邏輯斯時再加 r·N/K。資源無限、超過 3000 個個體時，本頁不再逐一計算，改用平均值。</li>
         <li data-en="Part 2 is integrated with the fourth-order Runge–Kutta method in steps of 0.005 days. Without a carrying capacity the conserved quantity of the Lotka–Volterra model changes by less than one part in ten million over 60 days, so the loops really close.">第二部分用四階 Runge–Kutta 法積分，步長 0.005 天。沒有負荷量時，Lotka–Volterra 模型的守恆量在 60 天內的變化小於千萬分之一，所以圈真的是封閉的。</li>
         <li data-en="The period is measured from the first to the last prey peak; the averages are taken over those whole cycles. The delay is the mean time from each prey peak to the next predator peak.">週期由第一個到最後一個獵物高峰量出；平均值只取這些完整循環內的時間。延遲是每個獵物高峰到下一個掠食者高峰的平均時間。</li>
         <li data-en="Populations here are continuous numbers. Real cycles, such as the snowshoe hare and lynx records of the Hudson’s Bay Company, are noisier and are shaped by more than one predator and one prey.">本頁的族群數量是連續的數字。真實的循環，例如哈德遜灣公司毛皮紀錄中的雪鞋兔與山貓，雜亂得多，也不只受一種掠食者、一種獵物影響。</li>
@@ -374,20 +382,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611211108"></script>
-  <script src="js/population-growth-core.js?v=202611211108"></script>
-  <script src="js/sound.js?v=202611211108"></script>
-  <script src="js/numinput.js?v=202611211108"></script>
-  <script src="js/labdeck.js?v=202611211108"></script>
-  <script src="js/view3d-nav.js?v=202611211108"></script>
-  <script src="js/vpad.js?v=202611211108"></script>
-  <script src="js/drawkit.js?v=202611211108"></script>
-  <script src="js/keys.js?v=202611211108"></script>
-  <script src="js/population-growth.js?v=202611211108"></script>
-  <script src="js/firebase-config.js?v=202611211108"></script>
-  <script src="js/missions.js?v=202611211108" data-module="population-growth"></script>
-  <script src="js/missions/population-growth.js?v=202611211108"></script>
-  <script src="js/stats.js?v=202611211108" data-module="population-growth"></script>
-  <script src="js/comments.js?v=202611211108"></script>
+  <script src="js/math.js?v=202611211110"></script>
+  <script src="js/population-growth-core.js?v=202611211110"></script>
+  <script src="js/sound.js?v=202611211110"></script>
+  <script src="js/numinput.js?v=202611211110"></script>
+  <script src="js/labdeck.js?v=202611211110"></script>
+  <script src="js/view3d-nav.js?v=202611211110"></script>
+  <script src="js/vpad.js?v=202611211110"></script>
+  <script src="js/drawkit.js?v=202611211110"></script>
+  <script src="js/keys.js?v=202611211110"></script>
+  <script src="js/population-growth.js?v=202611211110"></script>
+  <script src="js/firebase-config.js?v=202611211110"></script>
+  <script src="js/missions.js?v=202611211110" data-module="population-growth"></script>
+  <script src="js/missions/population-growth.js?v=202611211110"></script>
+  <script src="js/stats.js?v=202611211110" data-module="population-growth"></script>
+  <script src="js/comments.js?v=202611211110"></script>
 </body>
 </html>

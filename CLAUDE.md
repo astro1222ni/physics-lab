@@ -140,7 +140,8 @@
 1. `npm run verify` 全過（含 `npm test`、任務證明、頁面檢查；提醒清單列進 `docs/WORLD-CLASS.md`）。
 2. `npm run check`（Playwright）實際開頁，並用 `npm run shots -- <代號>` 存截圖親自看：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
 2.5 **網頁測試全機最多三組**（11/20 站長同意小幫手建議：記憶體降到 64 GB，同時 11 組無頭瀏覽器擋住 4070 影片工作兩小時）：`tools/browser.cjs` 的 `launch()` 會自動向全機三個位子排隊（和 `G:/physics-lab-wt/規劃/音樂-工具/browser-lock.cjs` 共用、先來先用）。不經過 browser.cjs 的腳本（Codex 的 browser-qa、驗收批次、臨時 .cjs）一律用 `node G:/physics-lab-wt/規劃/音樂-工具/browser-lock.cjs run -- <指令>` 包起來；交給 Codex 的交辦單也要寫。不可設 `LAB_BROWSER_NOQUEUE` 繞過。
-3. `python3 tools/stamp.py`，再 commit、push（推送一律用 `git -c credential.interactive=never -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push origin main`：要登入時不會跳出看不到的視窗乾等，卡住 60 秒就停；失敗就開核可卡請站長登入，不可讓它掛整晚）。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
+3. `python3 tools/stamp.py`，再 commit、push（推送一律用 `git -c credential.interactive=never -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push origin main`：要登入時不會跳出看不到的視窗乾等，卡住 60 秒就停；失敗就開核可卡請站長登入，不可讓它掛整晚）。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線；11/21 主串用 `-A` 誤把 6 個子任務工作樹連結推上 main，`.claude/worktrees/` 已加進 .gitignore）。
+   - **pull、stamp、commit、push 一律用 `&&` 串接，不可用 `;`**（11/21 數學串：rebase 版本號衝突後用 `;` 沒停下，把含衝突標記的 10 頁推上線約 10 分鐘）。rebase 只在版本號衝突時：`git rebase --skip` 或 reset 掉自己的蓋章 commit，再重新 pull、stamp。推送前跑 `git grep -nE "^(<<<<<<<|>>>>>>>) " -- '*.html' '*.js' '*.css'`，有輸出就不准推。
 
 ## Firebase（專案 astro-ni-physics-lab）
 

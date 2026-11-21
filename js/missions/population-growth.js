@@ -26,19 +26,19 @@
       id: 'population-growth-1', level: 1,
       title: { zh: 'J 型曲線', en: 'The J curve' },
       desc: { zh: '用指數成長培養一個族群，讓它在觀察期間至少變成原來的 10 倍。', en: 'Grow a population exponentially until it is at least 10 times what you started with.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'grow' && d.model === 'expo' && !d.extinct && d.Nend >= 10 * d.N0; }
+      check: function (ev) { const d = ev.data; return !d.env && ev.type === 'grow' && d.model === 'expo' && !d.extinct && d.Nend >= 10 * d.N0; }
     },
     {
       id: 'population-growth-2', level: 2,
       title: { zh: 'S 型曲線', en: 'The S curve' },
       desc: { zh: '用邏輯斯成長，從不到負荷量十分之一的族群開始，培養到至少負荷量的 95%。', en: 'With logistic growth, start below a tenth of the carrying capacity and grow to at least 95% of it.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'grow' && d.model === 'logi' && d.N0 <= 0.1 * d.K && d.Nend >= 0.95 * d.K; }
+      check: function (ev) { const d = ev.data; return !d.env && ev.type === 'grow' && d.model === 'logi' && d.N0 <= 0.1 * d.K && d.Nend >= 0.95 * d.K; }
     },
     {
       id: 'population-growth-3', level: 3,
       title: { zh: '五天翻一倍', en: 'Double in five days' },
       desc: { zh: '選一個內在成長率 r，讓指數成長的族群剛好每 5 天變成兩倍（誤差 0.1 天以內），並培養一次。', en: 'Pick an intrinsic growth rate r so that an exponentially growing population doubles every 5 days (within 0.1 day), and grow it once.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'grow' && d.model === 'expo' && Math.abs(d.td - 5) <= 0.1; }
+      check: function (ev) { const d = ev.data; return !d.env && ev.type === 'grow' && d.model === 'expo' && Math.abs(d.td - 5) <= 0.1; }
     },
     {
       id: 'population-growth-4', level: 3,
@@ -50,13 +50,13 @@
       id: 'population-growth-5', level: 4,
       title: { zh: '成長最快的時刻', en: 'The steepest moment' },
       desc: { zh: '邏輯斯成長、從不超過負荷量四分之一的族群開始，在族群數量圖上找出族群成長最快的那一刻（N/K 與答案相差不到 0.03）。', en: 'With logistic growth from at most a quarter of the carrying capacity, find on the population graph the moment the population grows fastest (N/K within 0.03 of the answer).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'inspect' && d.model === 'logi' && d.N0 <= 0.25 * d.K && Math.abs(d.frac - 0.5) < 0.03; }
+      check: function (ev) { const d = ev.data; return !d.env && ev.type === 'inspect' && d.model === 'logi' && d.N0 <= 0.25 * d.K && Math.abs(d.frac - 0.5) < 0.03; }
     },
     {
       id: 'population-growth-6', level: 4,
       title: { zh: '小族群的厄運', en: 'Small and unlucky' },
       desc: { zh: '一隻一隻數，從至少 3 隻開始、r 大於 0：族群照平均應該成長，卻因為運氣不好而滅絕。', en: 'Counting individuals, start with at least 3 and r above 0: on average it should grow, yet by bad luck it dies out.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'grow' && d.stoch && d.r > 0 && d.N0 >= 3 && d.extinct; }
+      check: function (ev) { const d = ev.data; return !d.env && ev.type === 'grow' && d.stoch && d.r > 0 && d.N0 >= 3 && d.extinct; }
     },
     {
       id: 'population-growth-7', level: 5,
@@ -146,7 +146,7 @@
       riddle: { zh: '數著數著，就比所有的你我還多。', en: 'Keep counting, until there are more than all of us.' },
       check: function (ev, mem) {
         if (ev.type === 'reset-grow') { delete mem.near; return false; }
-        if (ev.type !== 'grow') return false;
+        if (ev.type !== 'grow' || ev.data.env) return false;
         const d = ev.data;
         if (d.model !== 'expo' || d.stoch || d.Nmax < 1e9) return false;
         if (d.Nmax < 8e9) {

@@ -12,7 +12,7 @@
   if (!window.LabMission) return;
 
   const maze = function (ev) { return ev.type === 'maze' && ev.data.converged; };
-  const net = function (ev) { return ev.type === 'net' && ev.data.converged && ev.data.connected; };
+  const net = function (ev) { return ev.type === 'net' && ev.data.unitFood !== false && ev.data.converged && ev.data.connected; };
   const mu1 = function (d) { return Math.abs(d.mu - 1) < 0.005; };
 
   LabMission.register('slime-mold', [

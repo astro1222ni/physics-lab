@@ -37,7 +37,7 @@ const last = a => a[a.length - 1];
 function testEv(g, n, seed, gen, sigma) {
   const obs = H.sample(n, g, H.rng(seed));
   const r = H.hwTest(obs);
-  return { type: 'test', data: { gen: gen || 0, sigma: sigma || 0, n: n, obs: obs, chi2: r.chi2, pval: r.pval, reject: r.pval < 0.05, F: H.inbreedingF(g), dev: H.hwDev(g), p: H.alleleP(g), Fhat: r.Fhat } };
+  return { type: 'test', data: { gen: gen || 0, sigma: sigma || 0, n: n, obs: obs, chi2: r.chi2, pval: r.pval, reject: r.pval < 0.05, method: r.method, displayP: r.displayP, F: H.inbreedingF(g), dev: H.hwDev(g), p: H.alleleP(g), Fhat: r.Fhat } };
 }
 const DEF2 = { N: 50, pops: 30, p0: 0.5, gens: 100, w: [1, 1, 1], u: 0, v: 0, m: 0, pm: 0.5 };
 function driftEv(o, seed) {
@@ -212,6 +212,13 @@ const START = [0.5, 0, 0.5];   // 頁面預設：紅白各半
   claim(1 - 0.9 / 1.0 < 0.1 && byId['11'].check({ type: 'drift', data: Object.assign({ w: [1, 1, 0.9] }, base11) }, {}), '任務 11：w_aa 剛好低 10%（1 − 0.9/1 = ' + (1 - 0.9 / 1.0) + '）算完成');
   claim(!byId['11'].check({ type: 'drift', data: Object.assign({ w: [1, 1, 0.91] }, base11) }, {}), '任務 11：只低 9% 不算');
   function H0Below(x) { return x < 0.2; }
+}
+
+// One rare AA flower among 20: Pearson rejects but the two-sided exact test does not.
+{
+  const event = testEv(H.genotypes(0.03, 0.2), 20, 1);
+  claim(event.data.method === 'exact' && event.data.displayP > 0.05 && event.data.pval < 0.05 &&
+    check('6', event), '任務 6：真抽到 [1, 1, 18]，精確檢定 P = 1/13，舊卡方 P 約 0.00423，沿用原判定');
 }
 
 const starsOf = m => m.hidden ? 2 * m.level : m.level;

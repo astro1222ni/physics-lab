@@ -153,6 +153,13 @@
       fsum: new Float64Array(m), b: new Float64Array(g.n), p: new Float64Array(g.n), F: null,
       t: 0, steps: 0, change: Infinity, pruned: 0
     };
+    if (o.weights && o.weights.some(w => w !== 1)) {
+      if (o.weights.length !== s.foods.length || !o.weights.every(w => Number.isFinite(w) && w > 0)) {
+        throw new RangeError('Each food site needs a positive finite weight');
+      }
+      s.weights = o.weights.slice();
+      s.weightSum = s.weights.reduce((a, b) => a + b, 0);
+    }
     const r0 = rng((o.seed || 1) * 7919 + 13), noise = o.noise || 0, D0 = o.D0 || 1;
     for (let e = 0; e < m; e++) s.D[e] = D0 * (1 + noise * (2 * r0() - 1));
     return s;
@@ -172,12 +179,17 @@
     const g = s.g, m = g.m, D = s.D, cond = s.cond, b = s.b, p = s.p, Fd = s.foods, fs = s.fsum;
     for (let e = 0; e < m; e++) cond[e] = D[e] / g.cost[e];
     s.F = factor(g, cond, s.F);
-    const qmin = 1e-9 * s.I0, cases = Fd.length <= 2 ? 1 : Fd.length;
+    const qmin = 1e-9 * s.I0, cases = Fd.length <= 2 && !s.weights ? 1 : Fd.length;
     fs.fill(0);
     for (let e = 0; e < m; e++) s.Qabs[e] = 0;
     for (let k = 0; k < cases; k++) {
       b.fill(0);
-      if (cases === 1) { b[Fd[0]] += s.I0; b[Fd[1]] -= s.I0; }
+      if (s.weights) {
+        const inflow = s.I0 * s.weights[k], sinkTotal = s.weightSum - s.weights[k];
+        for (let j = 0; j < Fd.length; j++) {
+          b[Fd[j]] = j === k ? inflow : -inflow * s.weights[j] / sinkTotal;
+        }
+      } else if (cases === 1) { b[Fd[0]] += s.I0; b[Fd[1]] -= s.I0; }
       else { const out = s.I0 / (Fd.length - 1); for (let j = 0; j < Fd.length; j++) b[Fd[j]] += (j === k ? s.I0 : -out); }
       backsolve(s.F, b, p);
       for (let e = 0; e < m; e++) {

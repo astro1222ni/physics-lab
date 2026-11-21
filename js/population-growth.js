@@ -125,6 +125,23 @@
   function sndFull() { const S = sound(); if (S) { S.tone({ freq: 784, dur: 0.18, gain: 0.06 }); S.tone({ freq: 1046, dur: 0.25, gain: 0.05, delay: 0.12 }); } }
   function sndPeak(pred) { const S = sound(); if (S) S.tone({ freq: pred ? 440 : 880, dur: 0.09, gain: 0.07, type: pred ? 'triangle' : 'sine' }); }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
+  function seedControl(key, draw) {
+    const field = $(key + 'Seed'), lock = $(key + 'Lock');
+    let prepared = false;
+    field.addEventListener('input', function () { lock.checked = true; });
+    $(key + 'Draw').addEventListener('click', function () {
+      field.value = draw();
+      prepared = true;
+    });
+    return function () {
+      if (!prepared && !lock.checked) field.value = draw();
+      const seed = Math.max(0, Math.min(4294967295, Math.trunc(Number(field.value)) || 0));
+      field.value = seed;
+      prepared = false;
+      return seed;
+    };
+  }
+  const cultureSeed = seedControl('culture', function () { return (Math.random() * 4294967296) >>> 0; });
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function setStatus(s) { $('status').textContent = s; }
 
@@ -217,16 +234,18 @@
   function simulate1(det) {
     const p = params1();
     if (det) p.stoch = false;
+    p.env = p.stoch ? Number($('env').value) : 0;
     const Kx = p.model === 'expo' ? Infinity : p.K;
     const o = Object.assign({}, p, { Kx: Kx, head: 0, playing: false, emitted: false, id: ++runSeq, capT: NaN, extinct: false, tExt: NaN, nDouble: 0, full: false });
     if (p.stoch) {
-      o.seed = (Math.random() * 4294967296) >>> 0;
-      const g = P.gillespie({ N0: p.N0, r: p.r, K: Kx, tEnd: p.tEnd, rand: P.rng(o.seed), cap: isFinite(Kx) ? 1e7 : STOCH_CAP, every: p.tEnd / 1500 });
+      o.seed = cultureSeed();
+      const g = P.gillespie({ N0: p.N0, r: p.r, K: Kx, tEnd: p.tEnd, rand: P.rng(o.seed), seed: o.seed, env: o.env, cap: isFinite(Kx) ? 1e7 : STOCH_CAP, every: p.tEnd / 1500 });
+      o.years = g.years;
       o.t = g.t; o.N = g.N; o.extinct = g.extinct; o.tExt = g.tExtinct;
       const tl = g.t[g.t.length - 1], Nl = g.N[g.N.length - 1];
       if (!g.extinct && Nl >= STOCH_CAP && tl < p.tEnd - 1e-9) {
         o.capT = tl;
-        for (let i = 1; i <= 400; i++) { const tt = tl + (p.tEnd - tl) * i / 400; o.t.push(tt); o.N.push(Nl * Math.exp(p.r * (tt - tl))); }
+        for (let i = 1; i <= 400; i++) { const tt = tl + (p.tEnd - tl) * i / 400; o.t.push(tt); o.N.push(Nl * Math.exp(p.r * (g.years ? g.years[0] : 1) * (tt - tl))); }
       }
     } else {
       const n = 800;
@@ -249,6 +268,11 @@
     while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= t) lo = m; else hi = m; }
     if (isFinite(o.capT) && t > o.capT) return o.N[lo] + (o.N[hi] - o.N[lo]) * (t - ts[lo]) / (ts[hi] - ts[lo]);
     return o.N[lo];
+  }
+  function annualParams(o, t) {
+    if (!o.years) return o;
+    const factor = o.years[Math.floor(t / 365)];
+    return Object.assign({}, o, o.model === 'logi' ? { K: o.K * factor } : { r: o.r * factor });
   }
   function rateAt(o, N) { return o.model === 'expo' ? P.rateExpo(N, o.r) : P.rateLogistic(N, o.r, o.K); }
 
@@ -340,6 +364,7 @@
     const p = L1.pN;
     const tMax = o.tEnd;
     let top = Math.max(o.Nmax, o.N0, o.model === 'logi' ? o.K : 0);
+    if (o.years && o.model === 'logi') top = Math.max(top, ...o.years.map(factor => o.K * factor));
     const xOf = function (t) { return p.x0 + (p.x1 - p.x0) * t / tMax; };
     let yOf, lo, hi;
     if (s1.logY) {
@@ -441,11 +466,22 @@
     // 負荷量 K 與 K/2
     if (o.model === 'logi') {
       g.setLineDash([6, 4]); g.strokeStyle = C['pg-k']; g.lineWidth = 1.5;
-      const yK = S.yOf(o.K);
-      g.beginPath(); g.moveTo(p.x0, yK); g.lineTo(p.x1, yK); g.stroke();
+      function capacityLine(fraction) {
+        const years = o.years || [1];
+        g.beginPath();
+        let lastY;
+        for (let i = 0; i < years.length && i * 365 < o.tEnd; i++) {
+          lastY = S.yOf(o.K * years[i] * fraction);
+          if (i === 0) g.moveTo(p.x0, lastY);
+          else g.lineTo(S.xOf(i * 365), lastY);
+          g.lineTo(S.xOf(Math.min((i + 1) * 365, o.tEnd)), lastY);
+        }
+        g.stroke();
+        return lastY;
+      }
+      const yK = capacityLine(1);
       g.setLineDash([2, 4]); g.strokeStyle = D.alpha(C['pg-k'], 0.6); g.lineWidth = 1;
-      const yH = S.yOf(o.K / 2);
-      g.beginPath(); g.moveTo(p.x0, yH); g.lineTo(p.x1, yH); g.stroke();
+      const yH = capacityLine(0.5);
       g.setLineDash([]);
       D.haloText(g, 'K', p.x1 - 4, yK - 8, C['pg-k'], 'right', 'middle', 'italic 700 12px ' + FONT);
       D.haloText(g, 'K/2', p.x1 - 4, yH - 8, D.alpha(C['pg-k'], 0.85), 'right', 'middle', 'italic 600 11px ' + FONT);
@@ -490,7 +526,7 @@
   }
 
   function drawRateGraph(g) {
-    const o = run, p = L1.pR;
+    const o = annualParams(run, inspectT == null ? run.head : Math.min(inspectT, run.head)), p = L1.pR;
     plotFrame(g, p);
     const Nmax = o.model === 'logi' ? Math.max(o.K * 1.1, o.N0 * 1.05) : Math.max(o.Nmax, o.N0) * 1.05;
     const xM = niceCeil(Nmax);
@@ -558,7 +594,7 @@
     run.emitted = true;
     const o = run;
     const data = {
-      model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, tEnd: o.tEnd,
+      env: o.env, model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, tEnd: o.tEnd,
       Nend: o.Nend, Nmax: o.Nmax, extinct: o.extinct, tExt: o.extinct ? o.tExt : null, td: P.doublingTime(o.r)
     };
     addRow(o);
@@ -569,13 +605,19 @@
     request();
   }
   function status1For(o) {
+    if (o.env && !o.extinct) {
+      const end = annualParams(o, o.tEnd);
+      const setting = o.model === 'logi' ? 'K = ' + fmtN(end.K) : 'r = ' + num(end.r, 3);
+      return T('第 ' + num(o.tEnd, 0) + ' 天剩 ' + fmtN(o.Nend) + ' 隻，當年環境為 ' + setting + '。',
+        'Day ' + num(o.tEnd, 0) + ': ' + fmtN(o.Nend) + ' individuals, with ' + setting + ' this year.');
+    }
     if (o.extinct) return T('族群在第 ' + num(o.tExt, 1) + ' 天滅絕了。小族群的出生與死亡全靠運氣，碰到 0 就回不來。', 'The population died out on day ' + num(o.tExt, 1) + '. In a small population births and deaths are down to chance, and zero is a one-way door.');
     if (o.model === 'expo') return T(num(o.tEnd, 0) + ' 天後，族群從 ' + fmtN(o.N0) + ' 隻變成 ' + fmtN(o.Nend) + ' 隻，每 ' + num(P.doublingTime(o.r), 2) + ' 天翻一倍。', 'After ' + num(o.tEnd, 0) + ' days the population went from ' + fmtN(o.N0) + ' to ' + fmtN(o.Nend) + ', doubling every ' + num(P.doublingTime(o.r), 2) + ' days.');
     const f = o.Nend / o.K;
     return T(num(o.tEnd, 0) + ' 天後族群有 ' + fmtN(o.Nend) + ' 隻，是負荷量的 ' + num(f * 100, 1) + '%。', 'After ' + num(o.tEnd, 0) + ' days the population is ' + fmtN(o.Nend) + ', ' + num(f * 100, 1) + '% of the carrying capacity.');
   }
   function addRow(o) {
-    rows.push({ id: o.id, color: o.color, model: o.model, stoch: o.stoch, r: o.r, K: o.K, N0: o.N0, tEnd: o.tEnd, Nend: o.Nend, extinct: o.extinct, tExt: o.tExt });
+    rows.push({ id: o.id, color: o.color, env: o.env, seed: o.seed, model: o.model, stoch: o.stoch, r: o.r, K: o.K, N0: o.N0, tEnd: o.tEnd, Nend: o.Nend, extinct: o.extinct, tExt: o.tExt });
     if (rows.length > MAX_ROWS) rows.shift();
     renderRows();
   }
@@ -585,27 +627,31 @@
     let h = '<thead><tr><th>' + T('模型', 'Model') + '</th><th>r</th><th>K</th><th>N<sub>0</sub></th><th>' + T('天數', 'Days') + '</th><th>' + T('最後的 N', 'Final N') + '</th></tr></thead><tbody>';
     rows.slice().reverse().forEach(function (x) {
       const sw = run && x.id === run.id ? C['pg-n'] : x.color;
-      h += '<tr><td><i style="background:' + sw + '"></i>' + (x.model === 'expo' ? T('指數', 'Exp.') : T('邏輯斯', 'Logistic')) + (x.stoch ? T('・隨機', ' · random') : '') + '</td><td>' + num(x.r, 3) + '</td><td>' + (x.model === 'logi' ? num(x.K, 0) : '—') + '</td><td>' + x.N0 + '</td><td>' + num(x.tEnd, 0) + '</td><td>' +
+      h += '<tr><td><i style="background:' + sw + '"></i>' + (x.model === 'expo' ? T('指數', 'Exp.') : T('邏輯斯', 'Logistic')) + (x.stoch ? T('・隨機', ' · random') + ' #' + x.seed : '') + (x.env ? ' · ' + x.env + '%' : '') + '</td><td>' + num(x.r, 3) + '</td><td>' + (x.model === 'logi' ? num(x.K, 0) : '—') + '</td><td>' + x.N0 + '</td><td>' + num(x.tEnd, 0) + '</td><td>' +
         (x.extinct ? T('滅絕（第 ' + num(x.tExt, 1) + ' 天）', 'extinct (day ' + num(x.tExt, 1) + ')') : fmtN(x.Nend, true)) + '</td></tr>';
     });
     tb.innerHTML = h + '</tbody>';
   }
   function updateReadouts1() {
     if (!run) return;
-    const o = run;
+    const o = annualParams(run, run.head);
     const Nh = nAt(o, o.head);
     let h = '<dt>' + T('模型', 'Model') + '</dt><dd>' + (o.model === 'expo' ? T('指數成長', 'Exponential') : T('邏輯斯成長', 'Logistic')) + (o.stoch ? '<small>' + T('一隻一隻數', 'counting individuals') + '</small>' : '') + '</dd>';
     h += '<dt>' + T('倍增時間', 'Doubling time') + ' ln2/r</dt><dd>' + days(P.doublingTime(o.r), 2) + (o.model === 'logi' ? '<small>' + T('族群遠小於 K 時', 'while N is far below K') + '</small>' : '') + '</dd>';
     if (o.model === 'logi') h += '<dt>' + T('最快的成長速率', 'Fastest growth') + ' rK/4</dt><dd>' + fmtN(o.r * o.K / 4) + T(' 隻／天', ' per day') + '</dd>';
     h += '<dt>' + T('此刻', 'Now') + '<small>' + T('第 ', 'day ') + num(o.head, 1) + T(' 天', '') + '</small></dt><dd>N = ' + fmtN(Nh, true) + '<small>dN/dt = ' + fmtN(rateAt(o, Nh), true) + T(' 隻／天', ' per day') + '</small></dd>';
     if (inspectT != null) {
-      const ti = Math.min(inspectT, o.head), Ni = nAt(o, ti);
-      h += '<dt>' + T('檢視點', 'Inspected') + '<small>t = ' + days(ti, 2) + '</small></dt><dd>N = ' + fmtN(Ni, true) + (o.model === 'logi' ? '<small>N/K = ' + num(Ni / o.K, 3) + '</small>' : '') + '<small>dN/dt = ' + fmtN(rateAt(o, Ni), true) + T(' 隻／天', ' per day') + '</small></dd>';
+      const ti = Math.min(inspectT, o.head), Ni = nAt(o, ti), at = annualParams(run, ti);
+      h += '<dt>' + T('檢視點', 'Inspected') + '<small>t = ' + days(ti, 2) + '</small></dt><dd>N = ' + fmtN(Ni, true) + (o.model === 'logi' ? '<small>N/K = ' + num(Ni / at.K, 3) + '</small>' : '') + '<small>dN/dt = ' + fmtN(rateAt(at, Ni), true) + T(' 隻／天', ' per day') + '</small></dd>';
     }
     if (o.stoch) {
-      h += '<dt>' + T('出生率', 'Birth rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>λ = ' + num(2 * o.r, 3) + '</dd>';
-      h += '<dt>' + T('死亡率', 'Death rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>μ = ' + num(o.r, 3) + (o.model === 'logi' ? '<small>+ ' + num(o.r, 3) + '·N/K</small>' : '') + '</dd>';
-      if (o.model === 'expo') h += '<dt>' + T('最後滅絕的機率', 'Chance of dying out') + '</dt><dd>(μ/λ)<sup>N<sub>0</sub></sup> = ' + num(100 * P.extinctionProb(o.N0), o.N0 > 6 ? 3 : 1) + '%</dd>';
+      if (o.env) {
+        const effective = o.model === 'logi' ? 'K = ' + fmtN(o.K) : 'r = ' + num(o.r, 3);
+        h += '<dt>' + T('當年環境', 'This year') + '</dt><dd>' + effective + '</dd>';
+      }
+      h += '<dt>' + T('出生率', 'Birth rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>λ = ' + num(run.r + o.r, 3) + '</dd>';
+      h += '<dt>' + T('死亡率', 'Death rate') + '<small>' + T('每隻每天', 'each, per day') + '</small></dt><dd>μ = ' + num(run.r, 3) + (o.model === 'logi' ? '<small>+ ' + num(o.r, 3) + '·N/K</small>' : '') + '</dd>';
+      if (o.model === 'expo' && !o.env) h += '<dt>' + T('最後滅絕的機率', 'Chance of dying out') + '</dt><dd>(μ/λ)<sup>N<sub>0</sub></sup> = ' + num(100 * P.extinctionProb(o.N0), o.N0 > 6 ? 3 : 1) + '%</dd>';
     }
     $('ro1').innerHTML = h;
   }
@@ -621,8 +667,8 @@
   }
   function emitInspect() {
     if (!run || inspectT == null || run.initial) return;
-    const o = run, t = Math.min(inspectT, o.head), N = nAt(o, t);
-    emit('inspect', { model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, t: t, N: N, frac: o.model === 'logi' ? N / o.K : null, rate: rateAt(o, N), rmax: o.model === 'logi' ? o.r * o.K / 4 : null });
+    const t = Math.min(inspectT, run.head), o = annualParams(run, t), N = nAt(o, t);
+    emit('inspect', { env: o.env, model: o.model, stoch: o.stoch, r: o.r, K: o.model === 'logi' ? o.K : null, N0: o.N0, t: t, N: N, frac: o.model === 'logi' ? N / o.K : null, rate: rateAt(o, N), rmax: o.model === 'logi' ? o.r * o.K / 4 : null });
   }
   let drag1 = false;
   function tFromX(x) { const p = L1.pN; return (x - p.x0) / (p.x1 - p.x0) * run.tEnd; }
@@ -1125,6 +1171,10 @@
   }
   /** 參數一改：停止播放，顯示新設定的完整理論結果（不回報任務） */
   function reset1() {
+    $('cultureControls').hidden = $('rowEnv').hidden = !s1.stoch;
+    el.tEnd.max = s1.stoch && s1.model === 'logi' && Number($('env').value) > 0 ? 730 : 200;
+    $('envo').textContent = $('env').value;
+    $('tEndo').textContent = num(val(el.tEnd), 0);
     // 隨機模型不預先擲骰：先顯示平均的理論曲線
     run = simulate1(true);
     run.color = keptColor(run.id - 1);
@@ -1143,8 +1193,8 @@
     legend1();
   }
   document.querySelectorAll('#modelSeg button').forEach(function (b) { b.addEventListener('click', function () { setModel(b.getAttribute('data-model')); }); });
-  [el.r, el.K, el.N0, el.tEnd].forEach(function (r) { r.addEventListener('input', function () { refreshOutputs(); reset1(); }); });
-  $('stoch').addEventListener('change', function () { s1.stoch = this.checked; reset1(); legend1(); setStatus(s1.stoch ? T('一隻一隻數：每次培養的結果都不一樣。按「開始培養」。', 'Counting individuals: every culture turns out differently. Press “Grow”.') : ''); });
+  [el.r, el.K, el.N0, el.tEnd, $('env')].forEach(function (r) { r.addEventListener('input', function () { refreshOutputs(); reset1(); }); });
+  $('stoch').addEventListener('change', function () { s1.stoch = this.checked; reset1(); legend1(); setStatus(s1.stoch ? T('選擇種子後按「開始培養」。', 'Choose a seed and press “Grow”.') : ''); });
   $('logY').addEventListener('change', function () { s1.logY = this.checked; request(); });
   $('keep').addEventListener('change', function () { s1.keep = this.checked; if (!s1.keep) kept = []; request(); });
   $('grow').addEventListener('click', grow);

@@ -137,4 +137,18 @@ test('亂數：同一個種子結果相同；神秘酵素與抑制劑的範圍',
   close(Math.sqrt(ss / n), 1, 0.05);
 });
 
+test('用量縮放：舊版褪色曲線、Vmax、初速與 Km', () => {
+  const times = [0, 20, 200, 1200], baseline = [1, 0.7706976043915482, 0.074783194086009, 2.541840068279084e-7];
+  assert.deepStrictEqual(times.map(t => E.remaining('amylase', 37, 6.8, t, 1)), baseline);
+  const base = E.sample(37);
+  for (const amount of [0.5, 1, 2]) {
+    const sample = E.sample(37, amount);
+    assert.strictEqual(sample.Km, base.Km);
+    assert.strictEqual(sample.Vmax, base.Vmax * amount);
+    assert.strictEqual(E.rate(2, sample), E.rate(2, base) * amount);
+    const end = E.endTime('amylase', 37, 6.8, amount);
+    assert.ok(Math.abs(E.remaining('amylase', 37, 6.8, end, amount) - 0.1) < 1e-12);
+  }
+});
+
 console.log(passed + ' 項通過');

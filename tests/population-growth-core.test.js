@@ -163,4 +163,35 @@ test('RK4 的收斂：步長減半，誤差約小 16 倍', () => {
   close(e1 / e2, 16, 3);
 });
 
+test('環境關閉逐點等於舊軌跡；年度波動可重播且會增加小族群滅絕', () => {
+  function run(seed, env, K, tEnd) {
+    return P.gillespie({ N0: 3, K, r: 0.2, tEnd, seed, env, rand: P.rng(seed), cap: 80 });
+  }
+  const old = run(91, 0, 15, 4);
+  assert.deepStrictEqual(old.N, [3, 4, 5, 4, 5, 6, 7, 7]);
+  assert.deepStrictEqual(old.t, [0, 0.5700068595106244, 1.9663464063908869, 2.0690462577016366, 2.3114883491159777, 2.467617108214513, 3.8766860797158307, 4]);
+  for (const K of [15, Infinity]) {
+    const a = run(91, 40, K, 730);
+    assert.deepStrictEqual(a, run(91, 40, K, 730));
+    assert.strictEqual(a.years.length, 3);
+    assert.notStrictEqual(a.years[0], a.years[1]);
+  }
+  // The first waiting time crosses New Year. The next event must use year two's hazard.
+  for (const K of [10, Infinity]) {
+    const draws = [0.99, 0.001, 0, 0.99];
+    const a = P.gillespie({ N0: 1, r: 0.001, K, tEnd: 367, seed: 91, env: 40, rand: () => draws.shift() });
+    const f = a.years[1];
+    const hazard = Number.isFinite(K) ? 0.003 + 0.001 / (K * f) : 0.002 + 0.001 * f;
+    assert.ok(Math.abs(a.t[1] - (365 - Math.log(0.999) / hazard)) < 1e-12);
+    assert.deepStrictEqual(a.N, [1, 2, 2]);
+  }
+  const counts = [0, 40].map(env => {
+    let extinct = 0;
+    for (let seed = 1; seed <= 4000; seed++) if (run(seed, env, 25, 60).extinct) extinct++;
+    return extinct;
+  });
+  console.log('  4000 組固定種子，滅絕次數（0%、40%）', counts);
+  assert.ok(counts[1] > counts[0] + 60);
+});
+
 console.log(passed + ' 項通過');
