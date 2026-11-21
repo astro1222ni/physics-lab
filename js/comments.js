@@ -505,7 +505,7 @@
     head.appendChild(el('h2', null, t('留言與 bug 回報', 'Comments & bug reports')));
     head.appendChild(button(t('關閉', 'Close'), 'fb-close', function () { toggle(false); }));
     const intro = el('p', 'fb-intro', t('想分享觀察、問問題，或發現畫面怪怪的、數字不對、按了沒反應，都可以在這個實驗的留言區告訴倪老師。',
-      'Share an observation, ask a question, or tell Mr. Ni if something looks wrong, a number seems off or a button does nothing, right in this lab’s comments.'));
+      'Share an observation, ask a question, or tell Dr. Ni if something looks wrong, a number seems off or a button does nothing, right in this lab’s comments.'));
     const count = el('p', 'fb-count');
     const goC = button(t('💬 到本實驗的留言區留言', '💬 Go to this lab’s comments'), 'primary fb-big', function () {
       toggle(false); if (window.LabComments) LabComments.compose();

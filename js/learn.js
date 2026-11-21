@@ -267,7 +267,7 @@
       const goal=by('step-goal');goal.hidden=!step();
       if(step())goal.textContent=[T('目標 4:3','Target 4:3'),T('目標 10 m','Target 10 m'),T('冰面 90°','Ice 90°'),T('去回各 5 m','5 m each way')][step()-1];
       const notes=by('notes');notes.replaceChildren();if(p.note){const f=el('span');rich(f,tr(p.note));notes.append(f);}
-      if(p.video){const [v,sec]=p.video;const a=link('▶ 看倪老師上課講這段（〔'+v+'〕'+fmtTime(sec)+'）','▶ Watch Mr. Ni teach this part (['+v+'] '+fmtTime(sec)+')','https://youtu.be/'+U.videos[v]+'?t='+sec);a.target='_blank';a.rel='noopener noreferrer';notes.append(a);}
+      if(p.video){const [v,sec]=p.video;const a=link('▶ 看倪老師上課講這段（〔'+v+'〕'+fmtTime(sec)+'）','▶ Watch Dr. Ni teach this part (['+v+'] '+fmtTime(sec)+')','https://youtu.be/'+U.videos[v]+'?t='+sec);a.target='_blank';a.rel='noopener noreferrer';notes.append(a);}
       if(step()){showLabs(notes,1);if(p.id==='5-1')notes.append(el('small','',T('斜向上拉會減輕箱子壓地面的力，摩擦力跟著變小。','An upward pull reduces the force on the floor, reducing friction.')));}notes.hidden=!notes.childElementCount;
       by('edge').style.top='clamp(143px, 25dvh, 250px)';by('interactive').hidden=!frameModel;by('angle-handle').hidden=!frameModel;by('lab-buttons').hidden=!step();by('readings').hidden=!step();
       by('scorecard').hidden=p.id!=='8-2';by('score-links').replaceChildren();if(p.id==='8-2')showLabs(by('score-links'));
