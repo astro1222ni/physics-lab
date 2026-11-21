@@ -113,10 +113,15 @@ test('缺級：d = 3a 時第 ±3、±6 級亮紋消失', () => {
   for (const o of orders) assert.strictEqual(o.missing, o.m !== 0 && o.m % 3 === 0, `m = ${o.m}`);
   assert.ok(orders.find((o) => o.m === 3).I < 1e-20);
   assert.ok(orders.find((o) => o.m === 2).I > 0.1);
-  // d/a 不是整數：沒有缺級，第 3 級亮紋仍看得到（雖然較暗）
+  // d/a 不是整數（130/40 = 13/4）：第 3 級不缺、仍看得到（雖然較暗）；
+  // 只有 m·a/d 是非零整數的級數才缺，也就是 m 為 13 的倍數（11/21 物理串 0b83e32c 改正判定後同步改測試）
   const p = Object.assign({}, P2, { d: 130 * um });
-  assert.ok(SC.brightOrders(p).every((o) => !o.missing));
+  for (const o of SC.brightOrders(p)) assert.strictEqual(o.missing, o.m !== 0 && o.m % 13 === 0, `d = 130 µm，m = ${o.m}`);
   assert.ok(SC.intensitySin(p, 3 * p.lambda / p.d) > 1e-3);
+  // d/a = 3/2：第 ±3、±6 級落在單狹縫第 ±2、±4 暗紋上而缺級，其他級不缺
+  const q = Object.assign({}, P2, { d: 60 * um });
+  for (const o of SC.brightOrders(q)) assert.strictEqual(o.missing, o.m !== 0 && o.m % 3 === 0, `d = 60 µm，m = ${o.m}`);
+  near0(SC.intensitySin(q, 3 * q.lambda / q.d), 1e-20, 'd = 60 µm，m = 3');
 });
 
 test('中央亮帶內的亮紋數：d/a = k 為 2k − 1，否則 2⌊d/a⌋ + 1', () => {
