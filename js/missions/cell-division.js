@@ -75,20 +75,20 @@
     {
       id: 'cell-division-10', level: 7,
       title: { zh: '靠得很近的兩個基因', en: 'Two genes close together' },
-      desc: { zh: '兩個基因相距 1–5 cM，量到的重組率 95% 信賴區間半寬小於 0.5 個百分點，而且包含 Haldane 的預測值。', en: 'With the genes 1–5 cM apart, measure the recombination frequency to a 95% half-width under 0.5 percentage points, with Haldane’s prediction inside the interval.' },
-      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 1 && d.d <= 5 && d.half < 0.005 && holds(d); }
+      desc: { zh: '兩個基因相距 1–5 cM，量到的重組率 95% 信賴區間半寬小於 0.7 個百分點，而且包含 Haldane 的預測值。', en: 'With the genes 1–5 cM apart, measure the recombination frequency to a 95% half-width under 0.7 percentage points, with Haldane’s prediction inside the interval.' },
+      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 1 && d.d <= 5 && d.half < 0.007 && holds(d); }
     },
     {
       id: 'cell-division-11', level: 8,
       title: { zh: '同一條，卻像兩條', en: 'One chromosome, behaving like two' },
-      desc: { zh: '把兩個基因拉開到 100–150 cM，量到的重組率 95% 區間下限超過 40%、半寬小於 1.5 個百分點，而且包含 Haldane 的預測。', en: 'Move the genes 100–150 cM apart and measure a recombination frequency whose 95% interval starts above 40%, has a half-width under 1.5 percentage points and contains Haldane’s prediction.' },
-      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 100 && d.d <= 150 && d.half < 0.015 && d.lo > 0.4 && holds(d); }
+      desc: { zh: '把兩個基因拉開到 100–150 cM，量到的重組率 95% 區間下限超過 40%、半寬小於 1.75 個百分點，而且包含 Haldane 的預測。', en: 'Move the genes 100–150 cM apart and measure a recombination frequency whose 95% interval starts above 40%, has a half-width under 1.75 percentage points and contains Haldane’s prediction.' },
+      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 100 && d.d <= 150 && d.half < 0.0175 && d.lo > 0.4 && holds(d); }
     },
     {
       id: 'cell-division-12', level: 10,
       title: { zh: '正好四分之一', en: 'Exactly a quarter' },
-      desc: { zh: '調整兩個基因的距離，讓量到的重組率 95% 信賴區間完全落在 24%–26% 之間。距離該設多少？（r 不等於 d。）', en: 'Choose the distance between the genes so that the 95% interval of the measured recombination frequency lies entirely between 24% and 26%. What distance does it take? (r is not d.)' },
-      check: function (ev) { const d = ev.data; return batch(ev) && d.lo >= 0.24 && d.hi <= 0.26; }
+      desc: { zh: '調整兩個基因的距離，讓量到的重組率 95% 信賴區間完全落在 23.7%–26.3% 之間。距離該設多少？（r 不等於 d。）', en: 'Choose the distance between the genes so that the 95% interval of the measured recombination frequency lies entirely between 23.7% and 26.3%. What distance does it take? (r is not d.)' },
+      check: function (ev) { const d = ev.data; return batch(ev) && d.lo >= 0.237 && d.hi <= 0.263; }
     },
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {

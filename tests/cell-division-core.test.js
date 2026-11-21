@@ -118,14 +118,67 @@ test('獨立分配：n 對、沒有互換時，配子在著絲點處的來源組
 test('互換：交叉的數目平均每 Morgan 2 個（卜瓦松），重組率符合 Haldane 作圖函數 r = (1 − e^(−2d))/2', () => {
   [0.05, 0.2, 0.5, 1.5].forEach(d => {
     const b = C.batch({ d, n: 1, N: 6000, seed: 21 });
-    const r = b.rec / b.total, ci = C.wilson(b.rec, b.total);
+    const { r, lo, hi } = C.recombinationStats(b.tetrads);
     const h = C.haldane(d);
-    assert.ok(h >= ci[0] - 0.005 && h <= ci[1] + 0.005, `d = ${d}：模擬 ${r.toFixed(4)}（${ci[0].toFixed(3)}–${ci[1].toFixed(3)}），Haldane ${h.toFixed(4)}`);
+    assert.ok(h >= lo - 0.005 && h <= hi + 0.005, `d = ${d}：模擬 ${r.toFixed(4)}（${lo.toFixed(3)}–${hi.toFixed(3)}），Haldane ${h.toFixed(4)}`);
     close(b.counts.Ab, b.counts.aB, 0.04 * b.total, '兩種重組型一樣多');
     close(b.counts.AB, b.counts.ab, 0.04 * b.total, '兩種親代型一樣多');
   });
   let s = 0; const R = C.rng(3); for (let i = 0; i < 50000; i++) s += C.poisson(1.6, R);
   close(s / 50000, 1.6, 0.03, '卜瓦松平均');
+});
+
+test('以分裂為單位：點估計、樣本標準誤、同平均但分散程度不同、全同與空樣本', () => {
+  const wide = C.recombinationStats([2, 0, 0, 0, 2]);
+  const narrow = C.recombinationStats([0, 2, 0, 2, 0]);
+  assert.strictEqual(wide.r, narrow.r);
+  close(wide.se, Math.sqrt(1 / 12), 1e-14);
+  close(narrow.se, Math.sqrt(1 / 48), 1e-14);
+  assert.ok(wide.half > narrow.half);
+  const empty = C.recombinationStats([0, 0, 0, 0, 0]);
+  assert.ok(Number.isNaN(empty.r) && Number.isNaN(empty.se));
+  assert.deepStrictEqual([empty.lo, empty.hi], [0, 1]);
+  for (const count of [1, 25, 1000]) {
+    for (let k = 0; k <= 4; k++) {
+      const bins = [0, 0, 0, 0, 0];
+      bins[k] = count;
+      const s = C.recombinationStats(bins);
+      assert.strictEqual(s.r, k / 4);
+      assert.ok(s.lo >= 0 && s.lo <= s.r && s.hi >= s.r && s.hi <= 1 && s.half > 0);
+    }
+  }
+  const a = C.batch({ d: 0.35, n: 2, N: 100, seed: 1112 });
+  const b = C.batch({ d: 0.35, n: 2, N: 1000, seed: 7 });
+  const s = C.recombinationStats(a.tetrads.map((count, k) => count + b.tetrads[k]));
+  assert.strictEqual(s.meioses, 1100);
+  assert.strictEqual(s.r, (a.rec + b.rec) / (a.total + b.total));
+});
+
+test('固定種子分裂模擬：新舊 95% 區間涵蓋率與短距離半寬比', () => {
+  const repeats = 4000, nextSeed = C.rng(1112);
+  console.log('    真實 r | 分裂次數 | 新涵蓋率 | 舊涵蓋率 | 平均半寬比（新／舊）');
+  for (const truth of [0.05, 0.10, 0.20, 0.30]) {
+    const d = C.haldaneInv(truth);
+    for (const N of [25, 50, 100]) {
+      let hits = 0, oldHits = 0, width = 0, oldWidth = 0;
+      for (let i = 0; i < repeats; i++) {
+        const b = C.batch({ d, n: 1, N, seed: Math.floor(nextSeed() * 4294967295) + 1 });
+        const s = C.recombinationStats(b.tetrads);
+        const [lo, hi] = C.wilson(b.rec, b.total);
+        if (s.lo <= truth && truth <= s.hi) hits++;
+        if (lo <= truth && truth <= hi) oldHits++;
+        width += s.half;
+        oldWidth += (hi - lo) / 2;
+      }
+      const coverage = hits / repeats, legacy = oldHits / repeats, ratio = width / oldWidth;
+      console.log(`    ${truth.toFixed(2)} | ${N} | ${(100 * coverage).toFixed(2)}% | ${(100 * legacy).toFixed(2)}% | ${ratio.toFixed(3)}`);
+      // 稀有重組且期望僅約 5 次以下分裂出現重組時，離散的涵蓋率可略高。
+      const sparse = N * 2 * truth <= 5;
+      assert.ok(coverage >= 0.93 && coverage <= (sparse ? 0.985 : 0.97), `r=${truth}, N=${N}, 涵蓋率 ${coverage}`);
+      assert.ok(legacy < coverage - 0.04, '舊算法同一批樣本至少少涵蓋四個百分點');
+      if (truth === 0.05 && N === 100) close(ratio, Math.SQRT2, 0.07, '短距離平均半寬比');
+    }
+  }
 });
 
 test('Haldane 函數：d 很小時 r ≈ d；r 永遠 < 50%；反函數互逆', () => {

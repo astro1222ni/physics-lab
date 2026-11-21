@@ -742,19 +742,24 @@
   // =====================================================================
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   const el2 = { d: $('d'), n2: $('n2') };
-  const st2 = { d: 20, n: 3, cnt: null, total: 0, rec: 0, meioses: 0, pats: {}, runs: [], cur: null, no: 0, W: 0, H: 0, seed: 1 };
+  const st2 = { d: 20, n: 3, cnt: null, tetrads: null, pats: {}, runs: [], cur: null, no: 0, W: 0, H: 0, seed: 1 };
   const pooledSeeds = new Set();
   function reset2(push) {
     if (push && st2.cur && st2.cur.total) { /* 舊的一輪已在 runs 裡 */ }
     st2.d = val(el2.d); st2.n = Math.round(val(el2.n2));
-    st2.cnt = { AB: 0, Ab: 0, aB: 0, ab: 0 }; st2.total = 0; st2.rec = 0; st2.meioses = 0; st2.pats = {};
+    st2.cnt = { AB: 0, Ab: 0, aB: 0, ab: 0 }; st2.tetrads = [0, 0, 0, 0, 0]; st2.pats = {};
     pooledSeeds.clear();
     st2.cur = null;
   }
   function stats2() {
-    const r = st2.total ? st2.rec / st2.total : NaN, ci = K.wilson(st2.rec, st2.total);
     const distinct = Object.keys(st2.pats).length, possible = Math.pow(2, st2.n);
-    return { d: st2.d, n: st2.n, meioses: st2.meioses, total: st2.total, rec: st2.rec, r: r, lo: ci[0], hi: ci[1], half: (ci[1] - ci[0]) / 2, haldane: K.haldane(st2.d / 100), distinct: distinct, possible: possible, counts: Object.assign({}, st2.cnt) };
+    return { d: st2.d, n: st2.n, ...K.recombinationStats(st2.tetrads), haldane: K.haldane(st2.d / 100), distinct: distinct, possible: possible, counts: Object.assign({}, st2.cnt) };
+  }
+  function intervalText(s) {
+    // 零重組的大批樣本也要看得出正的上限。
+    const digits = Math.max(1, -Math.floor(Math.log10((s.hi - s.lo) * 100)));
+    const range = pct(s.lo, digits) + '–' + pct(s.hi, digits);
+    return range + T('（以 ' + s.meioses + ' 次分裂為單位）', ' (based on ' + s.meioses + ' meioses)');
   }
   function run2(N) {
     st2.seed = batchSeed();
@@ -763,16 +768,16 @@
     pooledSeeds.add(st2.seed >>> 0 || 1);
     const b = K.batch({ d: st2.d / 100, n: st2.n, N: N, seed: st2.seed });
     Object.keys(b.counts).forEach(function (k) { st2.cnt[k] = (st2.cnt[k] || 0) + b.counts[k]; });
-    st2.total += b.total; st2.rec += b.rec; st2.meioses += N;
+    b.tetrads.forEach((count, k) => { st2.tetrads[k] += count; });
     b.patterns.forEach(function (p) { st2.pats[p] = (st2.pats[p] || 0) + 1; });
     const s = stats2();
     if (!st2.cur) { st2.no++; st2.cur = { no: st2.no }; st2.runs.unshift(st2.cur); if (st2.runs.length > MAX_RUNS) st2.runs.pop(); }
-    Object.assign(st2.cur, { d: s.d, n: s.n, total: s.total, rec: s.rec, r: s.r, lo: s.lo, hi: s.hi, h: s.haldane, distinct: s.distinct, possible: s.possible });
+    Object.assign(st2.cur, { d: s.d, n: s.n, meioses: s.meioses, total: s.total, rec: s.rec, r: s.r, lo: s.lo, hi: s.hi, h: s.haldane, distinct: s.distinct, possible: s.possible });
     emit('cd-batch', { d: s.d, n: s.n, meioses: s.meioses, total: s.total, rec: s.rec, r: s.r, lo: s.lo, hi: s.hi, half: s.half, haldane: s.haldane, distinct: s.distinct, possible: s.possible });
     sndBatch();
     renderRo2(); renderRows2(); request2();
-    const msg = T('已做 ' + s.meioses + ' 次減數分裂、' + s.total + ' 個配子：重組率 ' + pct(s.r) + '（95% 信賴區間 ' + pct(s.lo) + '–' + pct(s.hi) + '），Haldane 預測 ' + pct(s.haldane) + '；來源組合看過 ' + s.distinct + ' / ' + s.possible + ' 種。',
-      s.meioses + ' meioses, ' + s.total + ' gametes: recombination ' + pct(s.r) + ' (95% CI ' + pct(s.lo) + '–' + pct(s.hi) + '), Haldane predicts ' + pct(s.haldane) + '; ' + s.distinct + ' of ' + s.possible + ' origin patterns seen.');
+    const msg = T('已做 ' + s.meioses + ' 次減數分裂、' + s.total + ' 個配子：重組率 ' + pct(s.r) + '（95% 信賴區間 ' + intervalText(s) + '），Haldane 預測 ' + pct(s.haldane) + '；來源組合看過 ' + s.distinct + ' / ' + s.possible + ' 種。',
+      s.meioses + ' meioses, ' + s.total + ' gametes: recombination ' + pct(s.r) + ' (95% CI ' + intervalText(s) + '), Haldane predicts ' + pct(s.haldane) + '; ' + s.distinct + ' of ' + s.possible + ' origin patterns seen.');
     setStatus('status2', msg); say(msg);
   }
   function renderOutputs2() {
@@ -786,7 +791,7 @@
     rows.push([T('減數分裂次數', 'Meioses'), String(s.meioses) + '<small>' + T('配子 ', 'gametes: ') + s.total + '</small>']);
     rows.push([T('親代型 AB／ab', 'Parental AB / ab'), s.counts.AB + '／' + s.counts.ab]);
     rows.push([T('重組型 Ab／aB', 'Recombinant Ab / aB'), s.counts.Ab + '／' + s.counts.aB]);
-    rows.push([T('重組率 r', 'Recombination r'), s.total ? pct(s.r) + '<small>' + T('95% 信賴區間 ', '95% CI ') + pct(s.lo) + '–' + pct(s.hi) + '</small>' : '—']);
+    rows.push([T('重組率 r', 'Recombination r'), s.total ? pct(s.r) + '<small>' + T('95% 信賴區間 ', '95% CI ') + intervalText(s) + '</small>' : '—']);
     rows.push([T('Haldane 預測', 'Haldane predicts'), pct(s.haldane, 2) + '<small>' + T('d = ', 'd = ') + num(s.d, 0) + ' cM' + (s.d <= 100 ? T('；若 r = d 會是 ', '; r = d would give ') + pct(s.d / 100, 1) : T('；若 r = d 會超過 100%，不可能', '; r = d would exceed 100%, which is impossible')) + '</small>']);
     const exp = K.expectDistinct(s.n, s.total);
     rows.push([T('來源組合', 'Origin patterns'), s.distinct + ' / ' + s.possible + T(' 種', '') + '<small>' + T('期望看到 ', 'expected ') + num(exp, exp < 10 ? 1 : 0) + T(' 種（2', ' (2') + '<sup>' + s.n + '</sup> = ' + s.possible + '）' + '</small>', s.total && s.distinct === s.possible ? 'good' : '']);
@@ -797,7 +802,7 @@
     if (!st2.runs.length) { t.innerHTML = ''; return; }
     let h = '<thead><tr><th>#</th><th>' + T('距離', 'Distance') + '</th><th>n</th><th>' + T('配子', 'Gametes') + '</th><th>' + T('重組率', 'r') + '</th><th>' + T('95% 區間', '95% CI') + '</th><th>Haldane</th><th>' + T('組合', 'Patterns') + '</th></tr></thead><tbody>';
     st2.runs.forEach(function (r) {
-      h += '<tr><td>' + r.no + '</td><td>' + num(r.d, 0) + ' cM</td><td>' + r.n + '</td><td>' + r.total + '</td><td class="rec">' + pct(r.r) + '</td><td>' + pct(r.lo) + '–' + pct(r.hi) + '</td><td>' + pct(r.h) + '</td><td>' + r.distinct + ' / ' + r.possible + '</td></tr>';
+      h += '<tr><td>' + r.no + '</td><td>' + num(r.d, 0) + ' cM</td><td>' + r.n + '</td><td>' + r.total + '</td><td class="rec">' + pct(r.r) + '</td><td>' + intervalText(r) + '</td><td>' + pct(r.h) + '</td><td>' + r.distinct + ' / ' + r.possible + '</td></tr>';
     });
     t.innerHTML = h + '</tbody>';
   }

@@ -185,27 +185,48 @@
     const lengths = [], cens = []; for (let p = 0; p < n; p++) { lengths.push(p === 0 ? L0 : 1); cens.push(0); }
     const posA = 0.2 / L0, posB = (0.2 + d) / L0;
     const cnt = { AB: 0, Ab: 0, aB: 0, ab: 0 };
+    // 第 k 格記錄恰有 k 枚重組配子的分裂次數；各批直接逐格相加即可合併。
+    const tetrads = [0, 0, 0, 0, 0];
     const pats = [];
     let seed = o.seed || 1;
     const R = rng(seed);
     for (let i = 0; i < o.N; i++) {
       const rec = make({ mode: 'meiosis', n: n, xo: true, lengths: lengths, cens: cens, seed: Math.floor(R() * 4294967295) + 1 });
+      let recombinants = 0;
       rec.gametes.forEach(function (g) {
         const ge = genotype(g, posA, posB);
+        if (isRecombinant(ge)) recombinants++;
         cnt[ge] = (cnt[ge] || 0) + 1;
         let s = '';
         for (let p = 0; p < n; p++) { const c = g.filter(function (q) { return q.p === p; })[0]; s += c.h ? 'P' : 'M'; }
         pats.push(s);
       });
+      tetrads[recombinants]++;
     }
-    return { counts: cnt, rec: cnt.Ab + cnt.aB, total: 4 * o.N, patterns: pats };
+    return { counts: cnt, rec: cnt.Ab + cnt.aB, total: 4 * o.N, patterns: pats, tetrads: tetrads };
   }
-  /** 比例的 95% 信賴區間（Wilson） */
-  function wilson(k, N) {
+  function wilsonScore(p, N) {
     if (!N) return [0, 1];
-    const z = 1.96, p = k / N, den = 1 + z * z / N;
+    const z = 1.96, den = 1 + z * z / N;
     const c = (p + z * z / (2 * N)) / den, h = z * Math.sqrt(p * (1 - p) / N + z * z / (4 * N * N)) / den;
-    return [Math.max(0, c - h), Math.min(1, c + h)];
+    return [p === 0 ? 0 : Math.max(0, c - h), p === 1 ? 1 : Math.min(1, c + h)];
+  }
+  /** 舊版把每枚配子視為獨立的二項觀測，僅供測試對照。 */
+  function wilson(k, N) { return wilsonScore(k / N, N); }
+
+  function recombinationStats(tetrads) {
+    const meioses = tetrads.reduce((sum, count) => sum + count, 0);
+    const rec = tetrads.reduce((sum, count, k) => sum + count * k, 0);
+    const total = 4 * meioses;
+    const r = total ? rec / total : NaN;
+    const ss = tetrads.reduce((sum, count, k) => sum + count * (k / 4 - r) ** 2, 0);
+    const se = meioses > 1 ? Math.sqrt(ss / (meioses - 1) / meioses) : NaN;
+    // 以分裂間變異估計 SE，再用產生相同 SE 的有效樣本數反推 Wilson 區間。
+    // 小樣本時保留分數區間的不對稱性與比例邊界。單次或全同時無法估有效樣本數，
+    // 改用獨立分裂數：對 [0,1] 比例，Bernoulli 變異 r(1-r) 是同平均下的上界。
+    const effectiveN = se > 0 ? r * (1 - r) / (se * se) : meioses;
+    const [lo, hi] = wilsonScore(r, effectiveN);
+    return { meioses, total, rec, r, se, lo, hi, half: (hi - lo) / 2 };
   }
 
   // =====================================================================
@@ -545,6 +566,6 @@
   return {
     rng: rng, poisson: poisson, haldane: haldane, haldaneInv: haldaneInv, expectDistinct: expectDistinct, wilson: wilson,
     PAIRS: PAIRS, LOCI: LOCI, make: make, genotype: genotype, isRecombinant: isRecombinant, originAt: originAt, originPattern: originPattern,
-    batch: batch, STAGES: STAGES, total: total, stageAt: stageAt, stageStart: stageStart, counts: counts, frame: frame, cut: cut, merge: merge
+    batch: batch, recombinationStats: recombinationStats, STAGES: STAGES, total: total, stageAt: stageAt, stageStart: stageStart, counts: counts, frame: frame, cut: cut, merge: merge
   };
 });
