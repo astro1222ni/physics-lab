@@ -266,12 +266,21 @@ html.learn-class {--teaching:1.4}
 .door-what{color:var(--text)}.door-how,.door-now{color:var(--muted)}
 .door-new{display:flex;gap:8px;align-items:baseline;color:var(--text)}.door-new b{flex:none;padding:1px 7px;border-radius:6px;background:var(--star,#de9a31);color:#1d1406;font-size:calc(12px * var(--fs,1));letter-spacing:.06em}
 .door-me{color:var(--accent);font-weight:750}.door-me:empty{display:none}
+/* 第三張：上鎖卡（11/21 深夜）。不能點，封面是鎖上的大鎖，寫「不開放」 */
+.lobby-door.locked{grid-column:1/-1;min-height:0;align-items:center;cursor:not-allowed;border-left-color:var(--muted);background:linear-gradient(var(--surface),var(--surface)) padding-box;opacity:.92}
+.lobby-door.locked:hover{transform:none;box-shadow:0 6px 26px #0b1f2a14}
+.door-tile.lock{background:linear-gradient(145deg,#6b7280,#3b3f45);color:#e8c766}
+.door-tile.lock{width:120px;height:120px;border-radius:20px}.door-tile.lock svg{width:76px;height:86px}
+.door-shut{align-self:flex-start;margin-top:4px;padding:4px 12px;border-radius:999px;border:2px solid var(--muted);color:var(--muted);font-weight:800;letter-spacing:.12em}
 .lobby-back{display:inline-flex;align-items:center;min-height:44px;margin:14px 0 0;color:var(--accent);font-weight:750;text-decoration:none}
 @media(max-width:760px){
   .lobby-doors{grid-template-columns:1fr;gap:12px;margin:12px 0 4px}
   .lobby-door{min-height:0;padding:13px 34px 13px 13px;gap:12px;border-radius:14px}
   .lobby-door>i{right:10px;font-size:22px}
   .door-tile{width:58px;height:58px;border-radius:12px}.door-tile b{font-size:17px}.door-tile small{font-size:12px;margin-top:2px}
+  .door-tile.lock{width:58px;height:58px;border-radius:12px}.door-tile.lock svg{width:36px;height:41px}
+  .lobby-door.locked{padding:10px 13px}.lobby-door.locked .door-body{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 12px}
+  .lobby-door.locked .door-what{display:none}.door-shut{margin-top:0;padding:2px 10px}
   .door-body{gap:4px}.door-body strong{font-size:calc(22px * var(--fs,1))}
   .door-body>span{font-size:calc(14px * var(--fs,1));line-height:1.42}
   #learn-lobby .lobby-header{padding:0 0 4px}#learn-lobby .lobby-header h1{margin:6px 0 0;font-size:calc(28px * var(--fs,1))}
