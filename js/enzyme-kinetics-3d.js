@@ -105,7 +105,7 @@
 
     let world = null, builtKey = '', maxA = 1;
     function keyOf() {
-      return [BR.enzyme(), Math.round(BR.ta()), D.dark, BR.tubes().map(function (t) { return t.T + ',' + t.pH; }).join(';'), BR.sel()].join('|');
+      return [BR.enzyme(), BR.amount(), Math.round(BR.ta()), D.dark, BR.tubes().map(function (t) { return t.T + ',' + t.pH; }).join(';'), BR.sel()].join('|');
     }
     function build() {
       const k = keyOf();
@@ -122,7 +122,7 @@
         const pH = P0 + (P1 - P0) * j / (NPp - 1);
         for (let i = 0; i < NTp; i++) {
           const Tc = T0 + (T1 - T0) * i / (NTp - 1);
-          const a = E.assay(enz, Tc, pH, ta);
+          const a = E.assay(enz, Tc, pH, ta, BR.amount());
           A[j * NTp + i] = a; if (a > maxA) maxA = a;
         }
       }
@@ -172,7 +172,7 @@
       const tubes = BR.tubes(), sel = BR.sel();
       tubes.forEach(function (tb, i) {
         const Tc = Math.max(T0, Math.min(T1, tb.T)), pH = Math.max(P0, Math.min(P1, tb.pH));
-        const h = E.assay(enz, Tc, pH, ta) / maxA * HZ;
+        const h = E.assay(enz, Tc, pH, ta, BR.amount()) / maxA * HZ;
         const r = i === sel ? 0.36 : 0.26;
         const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), new THREE.MeshStandardMaterial({ color: col(BR.seriesColor(i)), roughness: 0.3, emissive: col(BR.seriesColor(i)), emissiveIntensity: 0.25 }));
         m.position.set(X(Tc), h + r * 0.9, Z(pH));
@@ -187,7 +187,7 @@
       let bi = 0; for (let n = 1; n < A.length; n++) if (A[n] > A[bi]) bi = n;
       const bT = T0 + (T1 - T0) * (bi % NTp) / (NTp - 1), bP = P0 + (P1 - P0) * Math.floor(bi / NTp) / (NPp - 1);
       setHud('t', BR.E.ENZYMES[enz] ? T(BR.E.ENZYMES[enz].zh, BR.E.ENZYMES[enz].en) + T('：每點測量 ', ': ') + BR.num(ta / 60, 0) + T(' 分鐘', ' min per point') : '');
-      setHud('v', T('最高點約 ', 'Peak near ') + BR.num(bT, 0) + ' °C、pH ' + BR.num(bP, 1));
+      setHud('v', T('最高點約 ', 'Peak near ') + BR.num(bT, 0) + ' °C、pH ' + BR.num(bP, 1) + (BR.amount() === 1 ? '' : T('，用量 ', ', amount ') + BR.amount() + '×'));
       setHud('note', T('高度是測量時間內的平均速率（最高點 = 100%）', 'Height is the average rate over the measuring time (peak = 100%)'));
     }
 

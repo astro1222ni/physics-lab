@@ -194,6 +194,9 @@
           <h2 data-en="Enzyme">酵素</h2>
           <div class="chips" id="enzs" role="group" aria-label="酵素" data-en-aria-label="Enzyme"></div>
           <p class="hint" id="enzHint"></p>
+          <label><span data-en="Enzyme amount">酵素用量</span>
+            <select id="dose1" style="min-height:44px"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+          </label>
         </section>
         <section class="card" data-deck="試管|Test tube" data-deck-order="2" data-section="lab1">
           <h2 id="tubeTitle">第 1 支試管</h2>
@@ -250,7 +253,10 @@
             <input id="cS" type="range" min="0" max="600" step="1" value="300" data-decimals="3"></div>
           <div class="slider"><label for="noise" data-en="Measurement error (%)">測量誤差（%）</label><output id="noiseo"></output>
             <input id="noise" type="range" min="0" max="10" step="0.5" value="3" data-decimals="1"></div>
-          <p class="hint" data-en="The enzyme concentration is the same in every measurement. Each measurement is the rate at the very start, before much substrate is used.">每次測量的酵素濃度都一樣。初速度是剛開始、受質還沒用掉多少時的速率。</p>
+          <p class="hint" data-en="At the same substrate concentration, doubling the enzyme doubles the initial rate. Changing the amount starts a fresh measurement series. Each measurement is the rate at the very start, before much substrate is used.">同一受質濃度下，酵素加倍，初速也加倍。更換用量會開始新的一組測量。初速度是剛開始、受質還沒用掉多少時的速率。</p>
+          <label><span data-en="Enzyme amount">酵素用量</span>
+            <select id="dose2" style="min-height:44px"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+          </label>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -261,6 +267,7 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="Tube clearing uses a first-order approximation. At constant enzyme activity and an initial substrate concentration equal to \(K_m\), Michaelis–Menten kinetics predicts about 39% more time to reach 10% remaining than the low-concentration extrapolation. Thermal inactivation parameters are illustrative. Species and preparation affect the measured optimum (Peterson et al., 2007).">試管褪色採有效一階近似。若初始受質濃度等於 \(K_m\)、酵素活性固定，Michaelis–Menten 模型預測降到原濃度 10% 的時間，比低濃度一階外推長約 39%。熱失活參數取示意值，物種與製備方式會影響量得的最適溫度（Peterson 等，2007）。</p>
 
       <h3 data-en="The iodine test and the egg-white test">碘液與蛋白液</h3>
       <p data-en="Starch turns iodine solution blue-black. As amylase cuts starch into maltose, the blue fades to the amber colour of iodine itself. Proteases are tested with a cloudy suspension of cooked egg white: as pepsin or trypsin cuts the protein into soluble pieces, the liquid clears. Here a tube counts as finished when 90% of the substrate is gone.">澱粉遇碘液變藍黑色。唾液澱粉酶把澱粉切成麥芽糖，藍色就漸漸退成碘液本身的琥珀色。蛋白酶用煮熟蛋白的混濁液檢驗：胃蛋白酶或胰蛋白酶把蛋白質切成能溶解的小片段，液體就變清。這裡當受質用掉 90% 時，就算這支試管完成反應。</p>

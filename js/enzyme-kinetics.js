@@ -101,7 +101,8 @@
   }
   function setStatus(id, s) { $(id).textContent = s; }
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  let amount = 1;
+  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, Object.assign({ amount }, data)); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = drawingWidth(c) || 300;
@@ -184,8 +185,8 @@
   let runs = [];           // 紀錄表：最近幾次
   let runNo = 0;
 
-  function recompute() { tubes.forEach(function (tb) { tb.end = E.endTime(enzKey, tb.T, tb.pH); }); }
-  function remainingOf(tb, t) { return E.remaining(enzKey, tb.T, tb.pH, t); }
+  function recompute() { tubes.forEach(function (tb) { tb.end = E.endTime(enzKey, tb.T, tb.pH, amount); }); }
+  function remainingOf(tb, t) { return E.remaining(enzKey, tb.T, tb.pH, t, amount); }
 
   function renderEnzChips() {
     $('enzs').innerHTML = Object.keys(E.ENZYMES).map(function (k) {
@@ -245,7 +246,7 @@
     const fin = data.tubes.filter(function (x) { return x.end != null; });
     sndEnd(fin.length > 0);
     runNo++;
-    runs.unshift({ n: runNo, enz: enzKey, tubes: data.tubes });
+    runs.unshift({ n: runNo, amount, enz: enzKey, tubes: data.tubes });
     if (runs.length > MAX_RUNS) runs.length = MAX_RUNS;
     renderRows1();
     let best = -1;
@@ -259,7 +260,7 @@
   }
   function doScan() {
     const ta = val(el.ta) * 60, pH = tubes[sel].pH;
-    const s = E.scanT(enzKey, pH, ta, TSCAN[0], TSCAN[1], 1);
+    const s = E.scanT(enzKey, pH, ta, TSCAN[0], TSCAN[1], 1, amount);
     const prev = scans.map(function (q) { return { enzyme: q.enz, pH: q.pH, ta: q.ta, Topt: q.Topt }; });
     scans.push({ enz: enzKey, pH: pH, ta: ta, pts: s.pts, Topt: s.Topt, max: s.max });
     if (scans.length > 4) scans.shift();
@@ -279,7 +280,7 @@
     for (let i = 0; i < NT; i++) h += '<th>' + T('第 ' + (i + 1) + ' 支', 'Tube ' + (i + 1)) + '</th>';
     h += '</tr></thead><tbody>';
     runs.forEach(function (r) {
-      h += '<tr><td>' + r.n + '</td><td>' + enzName(r.enz) + '</td>';
+      h += '<tr><td>' + r.n + '</td><td>' + enzName(r.enz) + (r.amount === 1 ? '' : ' · ' + r.amount + '×') + '</td>';
       r.tubes.forEach(function (x) {
         h += '<td' + (x.end != null ? ' class="yes"' : ' class="no"') + '>' + num(x.T, 0) + ' °C・pH ' + num(x.pH, 1) + '：' + (x.end != null ? mmss(x.end) : T('沒完成', 'not done')) + '</td>';
       });
@@ -297,11 +298,11 @@
   function renderRo1() {
     const tb = tubes[sel], e = E.ENZYMES[enzKey];
     const fA = E.activeFrac(enzKey, tb.T), L = E.lambda(enzKey, tb.T);
-    const r0 = E.rate0(enzKey, tb.T, tb.pH) / e.k37;
+    const r0 = E.rate0(enzKey, tb.T, tb.pH, amount) / e.k37;
     const half = L > 1e-12 ? Math.LN2 / L : Infinity;
     const rows = [
       [T('選取的試管', 'Selected tube'), T('第 ' + (sel + 1) + ' 支：', 'Tube ' + (sel + 1) + ': ') + num(tb.T, 0) + ' °C、pH ' + num(tb.pH, 1), ''],
-      [T('剛開始的速率', 'Starting rate'), num(r0 * 100, r0 < 0.1 ? 1 : 0) + '%', T('相對於 37 °C、最適 pH', 'relative to 37 °C at the best pH')],
+      [T('剛開始的速率', 'Starting rate'), num(r0 * 100, r0 < 0.1 ? 1 : 0) + '%', (amount === 1 ? T('相對於 37 °C、最適 pH', 'relative to 37 °C at the best pH') : T('相對於 1× 用量、37 °C、最適 pH', 'relative to 1× enzyme at 37 °C and optimal pH'))],
       [T('溫度的影響', 'Effect of temperature'), '× ' + sig(E.arrhenius(enzKey, tb.T), 3), T('Arrhenius：分子動得快', 'Arrhenius: molecules move faster')],
       [T('摺好的比例', 'Folded fraction'), num(fA * 100, fA > 0.995 ? 1 : 0) + '%', T('其餘暫時散開（可逆）', 'the rest is temporarily unfolded (reversible)'), fA < 0.5 ? 'bad' : ''],
       [T('pH 的影響', 'Effect of pH'), '× ' + sig(E.phFactor(enzKey, tb.pH), 3), T('最適 pH ', 'best pH ') + num(E.optPH(enzKey), 1)],
@@ -595,7 +596,7 @@
   }
   function newEnzyme() {
     st2.seed++;
-    sample = E.sample(st2.seed); myst = E.mystery(st2.seed);
+    sample = E.sample(st2.seed, amount); myst = E.mystery(st2.seed);
     st2.pts = []; st2.nMeas = 0; st2.revealed = false; st2.guessed = false;
     $('revealBtn').setAttribute('aria-pressed', 'false');
     $('revealBtn').textContent = T('揭曉答案', 'Show the answer');
@@ -758,6 +759,7 @@
     E: E, T: T, D: D, num: num,
     colors: function () { return C; },
     enzyme: function () { return enzKey; },
+    amount: function () { return amount; },
     ta: function () { return val(el.ta) * 60; },
     tubes: function () { return tubes; },
     sel: function () { return sel; },
@@ -891,6 +893,20 @@
     }
     renderRo2(); request();
   });
+  function changeAmount(ev) {
+    amount = Number(ev.target.value);
+    $('dose1').value = $('dose2').value = String(amount);
+    scans = [];
+    restartRun(false); recompute();
+    sample = E.sample(st2.seed, amount);
+    st2.pts = []; st2.nMeas = 0; st2.streak = 0; st2.lastGuess = null;
+    // A revealed/guessed mystery stays revealed/guessed when only its dose changes.
+    renderRows1(); renderRo1(); renderInhChips(); renderRows2(); renderRo2(); request();
+    const msg = T('已更換酵素用量，開始新的一組測量。', 'Enzyme amount changed. A new measurement series is ready.');
+    setStatus('status', msg); setStatus('status2', msg);
+  }
+  $('dose1').addEventListener('change', changeAmount);
+  $('dose2').addEventListener('change', changeAmount);
   $('clear2').addEventListener('click', function () {
     st2.pts = []; renderRows2(); renderRo2(); request();
     setStatus('status2', T('已清掉所有的點；酵素與設定沒有改變。', 'All points cleared; the enzyme and settings are unchanged.'));
@@ -908,7 +924,7 @@
         if (isFinite(Tc)) tubes[i].T = Math.max(0, Math.min(90, Tc));
         if (isFinite(pH)) tubes[i].pH = Math.max(1, Math.min(12, pH));
       });
-      if (o.s) { st2.seed = Math.max(1, Math.round(+o.s) || 1); sample = E.sample(st2.seed); myst = E.mystery(st2.seed); }
+      if (o.s) { st2.seed = Math.max(1, Math.round(+o.s) || 1); sample = E.sample(st2.seed, amount); myst = E.mystery(st2.seed); }
       recompute(); renderEnzChips(); selectTube(sel); renderInhChips(); renderRo2();
     }
   });

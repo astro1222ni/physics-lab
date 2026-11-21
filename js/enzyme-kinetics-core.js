@@ -67,18 +67,18 @@
     return kin * K / (1 + K);
   }
   /** 剛開始的速率常數（1/s） */
-  function rate0(e, Tc, pH) { e = enz(e); return e.k37 * arrhenius(e, Tc) * activeFrac(e, Tc) * phFactor(e, pH); }
+  function rate0(e, Tc, pH, amount = 1) { e = enz(e); return e.k37 * arrhenius(e, Tc) * activeFrac(e, Tc) * phFactor(e, pH) * amount; }
   /** 0 到 t 秒的累積 ∫k·a dt */
-  function integ(e, Tc, pH, t) {
-    const r = rate0(e, Tc, pH), L = lambda(e, Tc);
+  function integ(e, Tc, pH, t, amount = 1) {
+    const r = rate0(e, Tc, pH, amount), L = lambda(e, Tc);
     if (L * t < 1e-9) return r * t;
     return r * (1 - Math.exp(-L * t)) / L;
   }
   /** 受質剩下的比例 */
-  function remaining(e, Tc, pH, t) { return Math.exp(-integ(e, Tc, pH, t)); }
+  function remaining(e, Tc, pH, t, amount = 1) { return Math.exp(-integ(e, Tc, pH, t, amount)); }
   /** 剩下 10% 的時間（秒）；永遠到不了就是 Infinity */
-  function endTime(e, Tc, pH) {
-    const r = rate0(e, Tc, pH), L = lambda(e, Tc);
+  function endTime(e, Tc, pH, amount = 1) {
+    const r = rate0(e, Tc, pH, amount), L = lambda(e, Tc);
     if (!(r > 0)) return Infinity;
     if (L < 1e-15) return NEED / r;
     const q = L * NEED / r;
@@ -86,13 +86,13 @@
     return -Math.log(1 - q) / L;
   }
   /** 測量 ta 秒得到的平均活性（相對於 37 °C、最適 pH 的新鮮酵素） */
-  function assay(e, Tc, pH, ta) { e = enz(e); return integ(e, Tc, pH, ta) / ta / e.k37; }
+  function assay(e, Tc, pH, ta, amount = 1) { e = enz(e); return integ(e, Tc, pH, ta, amount) / ta / e.k37; }
   /** 在固定 pH、測量時間 ta 下，掃描 T0–T1 °C 找最適溫度 */
-  function scanT(e, pH, ta, T0, T1, step) {
+  function scanT(e, pH, ta, T0, T1, step, amount = 1) {
     T0 = T0 == null ? 0 : T0; T1 = T1 == null ? 90 : T1; step = step || 0.5;
     const pts = []; let best = -1, Topt = T0;
     for (let T = T0; T <= T1 + 1e-9; T += step) {
-      const a = assay(e, T, pH, ta);
+      const a = assay(e, T, pH, ta, amount);
       pts.push([T, a]);
       if (a > best) { best = a; Topt = T; }
     }
@@ -100,10 +100,10 @@
     let lo = Math.max(T0, Topt - step), hi = Math.min(T1, Topt + step);
     for (let k = 0; k < 40; k++) {
       const m1 = lo + (hi - lo) * 0.382, m2 = lo + (hi - lo) * 0.618;
-      if (assay(e, m1, pH, ta) < assay(e, m2, pH, ta)) lo = m1; else hi = m2;
+      if (assay(e, m1, pH, ta, amount) < assay(e, m2, pH, ta, amount)) lo = m1; else hi = m2;
     }
     Topt = (lo + hi) / 2;
-    return { pts: pts, Topt: Topt, max: assay(e, Topt, pH, ta) };
+    return { pts: pts, Topt: Topt, max: assay(e, Topt, pH, ta, amount) };
   }
   /** 低溫時 Q10（只看 Arrhenius 那一項） */
   function q10(e, Tc) { return arrhenius(e, Tc + 10) / arrhenius(e, Tc); }
@@ -163,9 +163,9 @@
   }
   function gauss(r) { let u = 0; while (u === 0) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); }
   /** 神秘酵素：Km 0.5–5 mM、Vmax 20–100 µM/min（對數均勻） */
-  function sample(seed) {
+  function sample(seed, amount = 1) {
     const r = rng(seed * 7919 + 13);
-    return { Km: 0.5 * Math.pow(10, r()), Vmax: 20 * Math.pow(5, r()) };
+    return { Km: 0.5 * Math.pow(10, r()), Vmax: 20 * Math.pow(5, r()) * amount };
   }
   /** 神秘抑制劑：三種之一、Ki 0.3–3 mM */
   function mystery(seed) {
