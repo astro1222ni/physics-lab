@@ -299,3 +299,8 @@ html.learn-class {--teaching:1.4}
 .ls-here b{font-variant-numeric:tabular-nums}
 .ls-here .online-dot,.ls-line .online-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;vertical-align:.05em;background:var(--probe);animation:online-pulse 2.4s ease-out infinite}
 @media(prefers-reduced-motion:reduce){.ls-here .online-dot,.ls-line .online-dot{animation:none}}
+/* 第二階段：本站第一次作答率（學測全國資料下面、5-1 回饋下面） */
+.ls-qrate{margin:10px 0 0;padding:6px 10px;border-left:3px solid var(--probe);color:var(--muted);font-size:calc(13.5px * var(--fs,1));line-height:1.55}
+.ls-qrate[hidden]{display:none}
+.ls-qrate b{color:var(--text);font-variant-numeric:tabular-nums}
+.ls-qrate .ls-qrate-m{display:block}

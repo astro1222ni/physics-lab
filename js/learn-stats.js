@@ -13,6 +13,7 @@
   'use strict';
   var DB = String(window.LAB_STATS_DB || (window.LAB_FIREBASE && window.LAB_FIREBASE.databaseURL) || '').replace(/\/+$/, '');
   if (!DB || !window.fetch) return;
+  var api = window.LearnStats = {};
   var IDLE = 30, REFRESH_EVERY = 120, KEEP_MINUTES = 10, MOD_RE = /^[a-z0-9-]{1,40}$/;
   var en = function () { return !!(window.LabSettings && LabSettings.lang === 'en'); };
   var T = function (z, e) { return en() ? e : z; };
@@ -154,8 +155,65 @@
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
     window.addEventListener('pagehide', flush);
     extraParts = parts;
-    window.LearnStats = { _pending: function () { return { ops: tot.ops, seconds: tot.seconds, left: { views: pending.views, ops: pending.ops, seconds: pending.seconds } }; } };   // 測試用
+    api._pending = function () { return { ops: tot.ops, seconds: tot.seconds, left: { views: pending.views, ops: pending.ops, seconds: pending.seconds } }; };   // 測試用
   }
+
+  // ---------- 第二階段：每題第一次作答、完成人次（/qstats，規則 7558fc3b，做法同龍騰 lt-stats.js） ----------
+  // - 學測頁：q/<題號>（例 q/19）；選錯時 m/<勾的選項組合>（例 m/CD）。done＝聽完全部解題。
+  // - 5-1：q/7-1、q/7-2、q/7-3；選錯時 m/<選項字母或 m0／m1>。done＝每一頁都看過。
+  // - 只算這個瀏覽器的第一次作答；老師上課模式（?class=1）不算。單獨一包 PATCH，不併進在線心跳；失敗就丟掉，不重送。
+  // - 學生看得到：學測「全國資料」下面、5-1 回饋下面一行「本站第一次作答 N 人次，第一次就答對 X%」（滿 5 人次才出現）。
+  var QK_RE = /^[a-z0-9_-]{1,40}$/, MYTH_RE = /^[A-Za-z0-9-]{1,32}$/, MIN_N = +window.LAB_QS_MIN || 5;
+  var NOCOUNT = /[?&]class=1(&|$)/.test(location.search);
+  function unitMod() {
+    var me = document.querySelector('script[src*="learn-stats.js"]');
+    var m = window.Exam114 ? 'exam-114-' + Exam114.number : (me && me.dataset.module) || '';
+    return MOD_RE.test(m) ? m : '';
+  }
+  function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+  function startAnswers(mod) {
+    var KEY = 'ls-qs-' + mod, st = {};
+    try { st = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { st = {}; }
+    st.sent = st.sent || {};
+    function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* 略 */ } }
+    function send(paths) {
+      var body = {}; paths.forEach(function (x) { body['qstats/' + mod + '/' + x] = inc(1); });
+      fetch(DB + '/.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true })
+        .then(function (r) { if (r.ok) qCache = null; }).catch(function () { /* 丟掉 */ });
+    }
+    document.addEventListener('learn:answer', function (e) {
+      var d = e.detail || {}, k = String(d.item == null ? '' : d.item).toLowerCase();
+      if (NOCOUNT || !QK_RE.test(k) || st.sent[k]) return;
+      st.sent[k] = 1; save();
+      var paths = ['q/' + k + '/n'];
+      if (d.ok) paths.push('q/' + k + '/ok'); else if (d.myth && MYTH_RE.test(d.myth)) paths.push('q/' + k + '/m/' + d.myth);
+      send(paths);
+    });
+    document.addEventListener('learn:done', function () { if (NOCOUNT || st.done) return; st.done = 1; save(); send(['done']); });
+    api._qs = function () { return { sent: Object.keys(st.sent), done: !!st.done }; };   // 測試用
+  }
+  var qCache = null, qAt = 0;
+  function qData(mod) {
+    if (qCache && Date.now() - qAt < 60000) return qCache;
+    qAt = Date.now(); qCache = getJSON('/qstats/' + mod + '/q').then(function (v) { return v || {}; });
+    qCache.catch(function () { qCache = null; });
+    return qCache;
+  }
+  api.fillRates = function (root) {
+    var mod = unitMod(); if (!mod) return;
+    var els = [].slice.call((root || document).querySelectorAll('.ls-qrate[data-q]')); if (!els.length) return;
+    qData(mod).then(function (Q) {
+      els.forEach(function (x) {
+        var d = Q[String(x.getAttribute('data-q')).toLowerCase()] || {}, n = +d.n || 0;
+        if (n < MIN_N) { x.hidden = true; return; }   // 人數太少，百分比沒意義
+        var my = x.getAttribute('data-myth'), c = my && d.m ? +d.m[my] || 0 : 0;
+        x.innerHTML = '<span class="ls-seg">' + T('本站第一次作答 ', 'On this site, ') + fmtInt(n) + T(' 人次，', ' first attempts: ') + '</span><span class="ls-seg">' +
+          T('第一次就答對 <b>' + pct(+d.ok || 0, n) + '%</b>', '<b>' + pct(+d.ok || 0, n) + '%</b> right the first time') + '</span>' +
+          (c ? '<span class="ls-qrate-m">' + T('第一次就和你選一樣的：<b>' + pct(c, n) + '%</b>', 'Picked the same as you first time: <b>' + pct(c, n) + '%</b>') + '</span>' : '');
+        x.hidden = false;
+      });
+    }, function () { els.forEach(function (x) { x.hidden = true; }); });
+  };
 
   // ---------- 兩種頁面 ----------
   function start() {
@@ -193,9 +251,8 @@
       return;
     }
     // 單元頁：學測頁照題號，5-1 照 script 的 data-module
-    var me = document.querySelector('script[src*="learn-stats.js"]');
-    var mod = window.Exam114 ? 'exam-114-' + Exam114.number : (me && me.dataset.module) || '';
-    if (!mod || !MOD_RE.test(mod)) return;
+    var mod = unitMod();
+    if (!mod) return;
     here = mod; showKeys = [here];
     var head = document.getElementById('side-header'), p = el('p', 'ls-here'); p.hidden = true;
     if (head) head.insertAdjacentElement('afterend', p);
@@ -205,6 +262,8 @@
       p.hidden = false;
     };
     startCounting(here);
+    startAnswers(here);
+    api.fillRates(document);
     startOnline();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(start, 0); });

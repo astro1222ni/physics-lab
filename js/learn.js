@@ -132,7 +132,7 @@
       flags[25]=activity.balancedPull===true;flags[23]=activity.shared;
       flags[24]=Array.from({length:23},(_,i)=>!!LabMission._state.done[U.id+'-'+(i+1)]).every(Boolean);return flags;
     };
-    function changed(){saveActivity();if(presentation)presentation.viewed(pages.every(p=>activity.viewed[p.id]));else LabMission.emit('learn-progress',{earned:earned()});updateScore();if(sideOpen&&sideTab==='missions')panel();}
+    function changed(){saveActivity();if(presentation)presentation.viewed(pages.every(p=>activity.viewed[p.id]));else{LabMission.emit('learn-progress',{earned:earned()});if(pages.every(p=>activity.viewed[p.id]))document.dispatchEvent(new CustomEvent('learn:done'));} /* 11/21 教室統計第二階段：每頁都看過＝完成 */updateScore();if(sideOpen&&sideTab==='missions')panel();}
     let mayResume=!['seg','p','t','line'].some(k=>params.has(k));
     for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>{mayResume=false;},{once:true,capture:true});
     const pr=progress(U.id,n,(p,source)=>{if(source==='remote'&&mayResume&&p>index+1){mayResume=false;go(p-1);}});
@@ -346,12 +346,16 @@
       if(id.startsWith('2-')){if(activity.first[id]===undefined)activity.first[id]=value;question();changed();return;}
       if(id==='7-2'&&!String(value).trim())return;lockedAnswer=true;
       let ok=id==='7-1'?Math.abs(value-answers.angle)<=3:id==='7-3'?value===answers.bike:await gradeNumber(value,answers.cart,{unit:'J',relative:0});
-      if(epoch!==attemptEpoch)return;lockedAnswer=false;if(activity.first[id]===undefined)activity.first[id]=ok;
+      if(epoch!==attemptEpoch)return;lockedAnswer=false;const firstTry=activity.first[id]===undefined;if(firstTry)activity.first[id]=ok;
       if(ok)activity.correct[id]=true;
       let msg=T('答對了！','Correct!');
       if(!ok){const item=id==='7-1'?(value<5?0:1):id==='7-2'?(numeric(value)?.value===Math.abs(answers.cart)?0:1):value;
         msg=tr(U.feedback[id][item]);solutionButton();}
+      // 11/21 教室統計第二階段：只記第一次作答；迷思代號＝選錯的選項（7-3 用字母、7-1／7-2 用 m0／m1）
+      const myth=ok?'':id==='7-3'?'ABCD'[value]||'':'m'+(id==='7-1'?(value<5?0:1):(numeric(value)?.value===Math.abs(answers.cart)?0:1));
+      if(firstTry)document.dispatchEvent(new CustomEvent('learn:answer',{detail:{item:id,ok,myth}}));
       soundFx(ok?'right':'wrong');feedback(msg);changed();
+      const out=by('feedback'),site=el('p','ls-qrate');site.hidden=true;site.dataset.q=id;if(!ok&&myth)site.dataset.myth=myth;out.append(site);if(window.LearnStats&&LearnStats.fillRates)LearnStats.fillRates(out);
     }
     function updateScore(){if(!by('scorecard'))return;
       by('points').textContent=quizIDs.filter(k=>activity.correct[k]).length+' / 3';by('star-score').textContent='★ '+stars()+' / 54';

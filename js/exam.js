@@ -45,7 +45,7 @@
     LabMission.emit('exam-progress',{unit,first:state.first===true||!!state.recovered,correct:!!state.correct,viewed:!!state.viewed,experiment:!!state.experiment,relearn:!!state.relearn,later:!!state.later,national:!!state.national});
   }
   function save(){try{localStorage.setItem(storageKey(),JSON.stringify(state));}catch{}emit();refreshSide();}
-  function milestone(key){if(!state[key]){state[key]=true;save();}}
+  function milestone(key){if(!state[key]){state[key]=true;save();}if(key==='viewed')document.dispatchEvent(new CustomEvent('learn:done'));} // 11/21 教室統計第二階段：聽完全部解題＝完成
   const twDay=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
   function circuit(){
     const host=by('circuit');
@@ -122,6 +122,8 @@
       if(state.last.selected?.includes(l))tags.push(T('全國 '+v+'% 也選了這個',v+'% also chose this'));
       row.append(make('b',l),bar,make('b',v+'%'),make('small',tags.filter(Boolean).join(' · ')));body.append(row);
     });
+    const site=make('p');site.className='ls-qrate';site.hidden=true;site.dataset.q=String(q);if(state.last.selected&&state.last.score!==points)site.dataset.myth=state.last.selected;body.append(site);
+    if(window.LearnStats&&LearnStats.fillRates)LearnStats.fillRates(body);
   }
   function feedback(restore=false){
     const rec=state.last;by('result').hidden=!rec;by('national').hidden=!rec;
@@ -146,7 +148,9 @@
         if(fields.every(f=>!f.value.trim())){by('value-0').focus();return;}
         rec={fields,...await (Q.grade?Q.grade(fields,LearnEngine):ExamPhysics.gradeChannel(fields,LearnEngine))};
       }
-      const ok=rec.score===points,day=twDay();if(!state.attempts){state.first=ok;state.firstDay=day;}
+      const ok=rec.score===points,day=twDay();if(!state.attempts){state.first=ok;state.firstDay=day;
+        // 11/21 教室統計第二階段：只記第一次作答；選錯時把勾的選項組合當迷思代號（例 CD）
+        document.dispatchEvent(new CustomEvent('learn:answer',{detail:{item:String(q),ok,myth:!ok&&rec.selected?rec.selected:''}}));}
       // 11/21 站長：「萬一第一次沒有通過的，他要怎麼補救」→ 聽完解題後再答對、隔天（臺灣日期）再答對，各有任務
       if(ok){if(state.viewed)state.relearn=true;if(state.okDay&&state.okDay!==day)state.later=true;if(!state.okDay)state.okDay=day;}
       // 11/21 站長：「補救的方式是這七顆，不是額外再七顆」→ 第一次沒拿滿分：聽完全部解題，換一天，當天第一次送出就拿滿分，「第一次就答對」照樣給
