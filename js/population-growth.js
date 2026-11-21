@@ -3,6 +3,7 @@
   'use strict';
 
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const narrowPortrait = matchMedia('(max-width: 480px) and (orientation: portrait)');
   function drawingWidth(canvas) {
     const width = canvas.parentElement.clientWidth;
     return shortLandscape.matches ? Math.max(canvas.id === 'cv' ? 500 : 720, width) : width;
@@ -319,10 +320,13 @@
       pN = { x0: gx0, x1: gx1, y0: 28, y1: 238 };
       pR = { x0: gx0, x1: gx1, y0: 290, y1: h - 34 };
     } else {
-      const dh = 214;
+      const portrait = narrowPortrait.matches;
+      const dh = portrait ? 176 : 214;
       dish = { cx: w / 2, cy: 36 + (dh - 36) / 2 + 4, R: Math.min(w * 0.36, (dh - 40) / 2) };
-      pN = { x0: 58, x1: w - 14, y0: dh + 52, y1: dh + 52 + 190 };
-      pR = { x0: 58, x1: w - 14, y0: pN.y1 + 56, y1: pN.y1 + 56 + 120 };
+      const yN = dh + 52, hN = portrait ? 152 : 190;
+      pN = { x0: 58, x1: w - 14, y0: yN, y1: yN + hN };
+      const yR = pN.y1 + 56, hR = portrait ? 102 : 120;
+      pR = { x0: 58, x1: w - 14, y0: yR, y1: yR + hR };
       h = pR.y1 + 32;
     }
     const s = fit(cv, ctx, h);

@@ -68,7 +68,7 @@
     .pg .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
     .pg .slider input[type="range"] { height: 28px; margin: 0; }
     .pg .slider label sub, .pg .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
-    .pg [hidden] { display: none !important; }
+    .pg [hidden], #rowPK[hidden] { display: none !important; }
     .pg .panel { grid-template-columns: minmax(0, 1fr); }
     .pg .panel > .card { min-width: 0; }
     .seg2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -129,6 +129,17 @@
       html.labdeck-panel .lab { margin-right: 28px; }
     }
     .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    @media (max-width: 480px) and (orientation: portrait) {
+      #lab1 > .stage > .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 44px 44px; gap: 4px; }
+      #lab1 > .stage > .playbar #soundLabel {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+      }
+      #lab1 > .stage > .playbar button {
+        min-width: 0; min-height: 44px; padding: 4px 3px;
+        font-size: max(13px, calc(13px * var(--fs, 1))); line-height: 1.15;
+      }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -239,7 +250,7 @@
               <input id="pa" type="range" min="0.2" max="2" step="0.01" value="1" data-decimals="3"></div>
             <div class="slider"><label for="pb" data-en="Predation rate b (per predator per day)">被捕食率 b（每隻掠食者每天）</label><output id="pbo"></output>
               <input id="pb" type="range" min="0.005" max="0.05" step="0.0005" value="0.02" data-decimals="4"></div>
-            <div class="slider"><label for="pc" data-en="Conversion c (predator births per prey per day)">轉換率 c（每隻獵物帶來的掠食者出生）</label><output id="pco"></output>
+            <div class="slider"><label for="pc" data-en="Conversion rate c">轉換率 c</label><output id="pco"></output>
               <input id="pc" type="range" min="0.002" max="0.03" step="0.0005" value="0.01" data-decimals="4"></div>
             <div class="slider"><label for="pd" data-en="Predator death rate d (per day)">掠食者的死亡率 d（每天）</label><output id="pdo"></output>
               <input id="pd" type="range" min="0.2" max="2" step="0.01" value="0.8" data-decimals="3"></div>
@@ -250,6 +261,7 @@
               <input id="pK" type="range" min="20" max="1000" step="10" value="400" data-decimals="0"></div>
             <div class="slider"><label for="pE" data-en="Fishing effort E (both species, per day)">捕撈強度 E（兩種一起，每天）</label><output id="pEo"></output>
               <input id="pE" type="range" min="0" max="0.6" step="0.01" value="0" data-decimals="3"></div>
+            <p class="hint" data-en="c gives predator births per prey per day.">c 表示每隻獵物每天帶來的掠食者出生數。</p>
           </div>
           <div id="compBox" hidden>
             <div class="slider"><label for="r1" data-en-html="Growth rate r<sub>1</sub> (per day)">成長率 r<sub>1</sub>（每天）</label><output id="r1o"></output>
