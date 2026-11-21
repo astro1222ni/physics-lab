@@ -29,8 +29,8 @@
     // 收起／拉出側標籤（站長 11/16：箭頭提醒可以收起；收起後像三星手機一樣從側面拉出來）
     const fold=B('›',()=>setRail(false,true),'labside-fold');fold.setAttribute('aria-label',T('收起側邊標籤','Hide side tabs'));fold.title=T('收起側邊標籤（從右邊緣可以再拉出來）','Hide side tabs (pull them back from the right edge)');rail.prepend(fold);
     const edge=B('',()=>{if(!edgeSwiped)setRail(true,true);},'labside-edge');edge.setAttribute('aria-label',T('拉出側邊標籤：步驟、任務、留言','Show side tabs: steps, missions, comments'));doc.body.append(edge);
-    // 11/20 站長選 A：平板橫放、電腦、手機橫放時側標籤會蓋住操作台的讀數，所以預設收成右緣細把手；手機直放照舊展開。學生自己拉出或收起後記住他的選擇。
-    const foldByDefault=matchMedia('(min-width: 881px), (orientation: landscape) and (max-height: 600px)').matches;
+    // 11/20 站長選 A：平板橫放、電腦、手機橫放時側標籤會蓋住操作台的讀數，所以預設收成右緣細把手。11/21 站長選 A：手機直放也一樣預設收起。學生自己拉出或收起後記住他的選擇。
+    const foldByDefault=true;
     let railOn=!foldByDefault,edgeSwiped=false;try{const v=localStorage.getItem('labside-rail-choice');if(v==='1'||v==='0')railOn=v==='1';else if(localStorage.getItem('labside-rail')==='0')railOn=false;}catch(e){}
     function setRail(on,remember){railOn=!!on;doc.documentElement.classList.toggle('labside-railed',!railOn);doc.documentElement.classList.remove('labside-pulling');rail.style.transform='';edge.setAttribute('aria-expanded',String(railOn));if(remember){try{localStorage.setItem('labside-rail-choice',railOn?'1':'0');}catch(e){}}if(railOn&&doc.activeElement===edge)(tabs.steps||fold).focus();if(!railOn&&rail.contains(doc.activeElement))edge.focus();}
     setRail(railOn);

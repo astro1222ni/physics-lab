@@ -534,8 +534,9 @@
       } else if (last && last.focus && document.contains(last)) last.focus({ preventScroll: true });
     }
     // 11/20 站長選 A：平板橫放、電腦、手機橫放時，留言浮籤會蓋住操作台的讀數，所以平常只露出右緣細把手（閃三下提示）。
-    // 點一下先展開成原本的標籤，再點一下才打開留言側板；4 秒沒動作就縮回。手機直放照舊。收進側標籤列（labside）時不受影響。
-    const slimMq = window.matchMedia ? matchMedia('(min-width: 881px), (orientation: landscape) and (max-height: 600px)') : null;
+    // 點一下先展開成原本的標籤，再點一下才打開留言側板；4 秒沒動作就縮回。收進側標籤列（labside）時不受影響。
+    // 11/21 站長選 A：手機直放也一樣收成細把手（直放時浮籤會壓到畫布右緣和按鈕，例如放射衰變的「新的一輪」、投籃的籃架）。
+    const slimMq = { matches: true };
     let peekTimer = 0;
     function setPeek(on) {
       clearTimeout(peekTimer);
