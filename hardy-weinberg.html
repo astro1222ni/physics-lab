@@ -192,7 +192,12 @@
           <h2 data-en="Sample and test">抽樣檢定</h2>
           <div class="slider"><label for="nS" data-en="Plants in the sample n">抽樣的株數 n</label><output id="nSo"></output>
             <input id="nS" type="range" min="20" max="2000" step="10" value="100" data-decimals="0"></div>
-          <p class="hint" data-en="A χ² test with 1 degree of freedom at the 5% level: is the sample consistent with Hardy–Weinberg proportions?">自由度 1、顯著水準 5% 的卡方檢定：樣本和哈溫比例相符嗎？</p>
+          <div class="checks" style="gap:0 6px" id="gardenControls">
+            <label><span data-en="Seed">種子</span> <input id="gardenSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
+            <label><input type="checkbox" id="gardenLock"><span data-en="Reuse seed">沿用種子</span></label>
+            <button type="button" id="gardenDraw" data-en="Redraw">重抽</button>
+          </div>
+          <p class="hint" data-en="Test at the 5% level. Use the exact test if any expected count is below 5 and the chi-square test otherwise.">顯著水準為 5%。任一期望數小於 5 時採精確檢定，其餘採卡方檢定。</p>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
@@ -240,6 +245,11 @@
             <input id="p0" type="range" min="0" max="1" step="0.005" value="0.5" data-decimals="4"></div>
           <div class="slider"><label for="gens" data-en="Generations">世代數</label><output id="genso"></output>
             <input id="gens" type="range" min="10" max="1000" step="1" value="100" data-decimals="0"></div>
+          <div class="checks" style="gap:0 6px" id="driftControls">
+            <label><span data-en="Seed">種子</span> <input id="driftSeed" type="number" min="0" max="4294967295" step="1" value="1" style="width:9em;min-height:44px"></label>
+            <label><input type="checkbox" id="driftLock"><span data-en="Reuse seed">沿用種子</span></label>
+            <button type="button" id="driftDraw" data-en="Redraw">重抽</button>
+          </div>
           <p class="hint" data-en="Each population has 2N copies of the gene, so the frequency moves in steps of 1/(2N). Tap a number to type an exact value.">每個族群有 2N 個基因，所以頻率一次變 1/(2N)。點一下數字可直接輸入精確數值。</p>
         </section>
         <section class="card" data-deck="天擇（相對適應度）|Natural selection (relative fitness)" data-deck-order="2" data-section="lab2">
@@ -283,6 +293,7 @@
 
     <section class="notes">
       <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en="Expected counts use the sample allele frequency. If any expected count is below 5, the two-sided exact test conditions on the allele counts and sums the probabilities of configurations no more probable than the observed one. A monomorphic sample is untestable (Wigginton et al., 2005).">檢定由樣本的等位基因頻率估算期望數。任一基因型期望數小於 5 時，固定樣本的等位基因總數，對所有同等或更罕見的基因型組合加總機率，得到雙側精確檢定的 P 值。只有一種等位基因時無法檢定（Wigginton 等，2005）。</p>
       <p data-en-html="A gene can come in different versions, called <strong>alleles</strong>. Every population carries a <strong>gene pool</strong>, and evolution, at its simplest, is a change in the share of each allele in that pool from one generation to the next. In 1908 the mathematician G. H. Hardy and the physician Wilhelm Weinberg, independently, showed what happens when nothing at all is pushing those shares around.">同一個基因可以有不同的版本，叫做<strong>對偶基因</strong>。每個族群都帶著一個<strong>基因庫</strong>；最簡單地說，演化就是基因庫裡每種對偶基因所占的比例，一代一代地改變。1908 年，數學家哈代（G. H. Hardy）和醫師溫伯格（Wilhelm Weinberg）各自證明了：如果完全沒有力量去推動這些比例，會發生什麼事。</p>
 
       <h3 data-en="The Hardy–Weinberg law">哈溫定律</h3>
@@ -299,7 +310,7 @@
       <h3 data-en="Testing a sample">檢定一個樣本</h3>
       <p data-en-html="In the field we only see a sample. Count the three genotypes, estimate \(\hat p = (2n_{AA}+n_{Aa})/2n\), compute the numbers expected under Hardy–Weinberg, and add up (<em>O</em> is the observed count of each genotype, <em>E</em> the expected count)">在野外，我們只看得到一個樣本。數出三種基因型的株數，估計 \(\hat p = (2n_{AA}+n_{Aa})/2n\)，算出哈溫比例下期望的株數，再加總（<em>O</em> 是每種基因型觀察到的株數，<em>E</em> 是期望的株數）</p>
       <div class="formula">\[ \chi^2 = \sum \frac{(O-E)^2}{E} \]</div>
-      <p data-en-html="There are 3 classes, minus 1 because they add up to <em>n</em>, minus 1 more because <em>p</em> was estimated from the same data: 1 degree of freedom. If χ² is larger than 3.84, a sample this lopsided would turn up by chance less than 5% of the time, and we reject the equilibrium. Even a perfectly balanced population fails the test about one time in twenty — try it.">三個類別，減 1（總數固定是 <em>n</em>），再減 1（<em>p</em> 是從同一批資料估計的），所以自由度是 1。χ² 大於 3.84 時，純粹因為運氣而抽到這麼偏的樣本，機率不到 5%，我們就拒絕「處於平衡」。就算族群完全平衡，大約每 20 次也會有 1 次檢定不通過——自己試試看。</p>
+      <p data-en-html="For the chi-square approximation there are 3 classes, minus 1 because they add up to <em>n</em>, minus 1 more because <em>p</em> was estimated from the same data: 1 degree of freedom. If χ² is larger than 3.84, a sample this lopsided would turn up by chance less than 5% of the time, and we reject the equilibrium. Even a perfectly balanced population fails the test about one time in twenty — try it.">使用卡方近似時，三個類別減 1（總數固定是 <em>n</em>），再減 1（<em>p</em> 是從同一批資料估計的），所以自由度是 1。χ² 大於 3.84 時，純粹因為運氣而抽到這麼偏的樣本，機率不到 5%，我們就拒絕「處於平衡」。就算族群完全平衡，大約每 20 次也會有 1 次檢定不通過——自己試試看。</p>
 
       <h3 data-en="Genetic drift">遺傳漂變</h3>
       <p data-en-html="A real population is finite. Each generation, its 2<em>N</em> gene copies are a random draw from the parents’ gene pool, so <em>p</em> wanders up and down by chance. Sooner or later every allele is either <strong>fixed</strong> (<em>p</em> = 1) or <strong>lost</strong> (<em>p</em> = 0). Averaged over many populations, nothing changes: a neutral allele is fixed in a share <em>p</em><sub>0</sub> of them. But inside each population, variation drains away; the expected heterozygosity falls by a factor 1 − 1/(2<em>N</em>) each generation,">真實的族群是有限的。每一代的 2<em>N</em> 個基因，都是從親代基因庫中隨機抽出來的，所以 <em>p</em> 會因為運氣上下漂動。或早或晚，每個對偶基因不是<strong>固定</strong>（<em>p</em> = 1）就是<strong>消失</strong>（<em>p</em> = 0）。把很多族群平均起來，什麼都沒變：中性的對偶基因會在 <em>p</em><sub>0</sub> 比例的族群中固定。但在每個族群內部，變異一直流失：期望的異型合子度每代乘上 1 − 1/(2<em>N</em>)，</p>
@@ -333,7 +344,7 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="Part 1 follows an infinitely large population exactly: the genotype shares are computed, not sampled. The 100 flowers are those shares rounded to whole plants; the sample for the χ² test is drawn at random from the shares.">第一部分是無限大族群的精確計算：基因型比例是算出來的，不是抽出來的。畫面上的 100 株花只是把比例四捨五入成整數株；卡方檢定的樣本則是從這些比例中隨機抽出。</li>
+        <li data-en="Part 1 follows an infinitely large population exactly: the genotype shares are computed, not sampled. The 100 flowers are those shares rounded to whole plants; the sample for the equilibrium test is drawn at random from the shares.">第一部分是無限大族群的精確計算：基因型比例是算出來的，不是抽出來的。畫面上的 100 株花只是把比例四捨五入成整數株；平衡檢定的樣本則是從這些比例中隨機抽出。</li>
         <li data-en="Part 2 uses the Wright–Fisher model: each generation, migration, then selection (zygotes in Hardy–Weinberg proportions), then mutation change the expected frequency, and the 2N gene copies of the next generation are drawn from it by an exact binomial draw. Generations do not overlap and the sexes are not distinguished.">第二部分用 Wright–Fisher 模型：每一代先遷移、再天擇（合子照哈溫比例形成）、再突變，算出期望的頻率；下一代的 2N 個基因再從這個頻率用精確的二項分布抽出。世代不重疊，也不分雌雄。</li>
         <li data-en="The fixation probability is computed from Kimura’s diffusion formula for the chosen fitnesses (without mutation and migration). The dashed theory lines are the infinitely large population (for selection) and the drift formula above (for heterozygosity).">固定機率用木村的擴散公式，照你選的適應度算（不含突變與遷移）。理論虛線：天擇時是無限大族群的軌跡，異型合子度是上面的漂變公式。</li>
         <li data-en="Fitness values, population sizes and the sickle-cell preset are illustrative. Real genes also sit next to other genes, and real populations change size.">適應度、族群大小與鐮刀型貧血的預設值都是示意。真實的基因旁邊還有其他基因，真實族群的大小也會改變。</li>

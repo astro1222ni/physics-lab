@@ -136,10 +136,30 @@
     const b = rest > 1e-15 ? binom(n - a, Math.min(1, Math.max(0, g[1] / rest)), rnd) : 0;
     return [a, b, n - a - b];
   }
-  /**
-   * 哈溫平衡的卡方檢定（自由度 1：3 個類別 − 1 − 估計 1 個參數 p）。
-   * 回傳 { n, p（樣本的 A 頻率）, exp: [期望個數], chi2, pval, Fhat }。只有一種對偶基因時無法檢定（chi2 = 0、pval = 1）。
-   */
+  function exactHWE(n, rare, observedHets) {
+    // Wigginton et al. (2005): condition on allele counts and walk out from the mode.
+    let mid = Math.floor(rare * (2 * n - rare) / (2 * n));
+    if ((mid % 2) !== (rare % 2)) mid++;
+    const mass = new Float64Array(rare + 1);
+    mass[mid] = 1;
+    for (let h = mid; h >= 2; h -= 2) {
+      const a = (rare - h) / 2, b = n - h - a;
+      mass[h - 2] = mass[h] * h * (h - 1) / (4 * (a + 1) * (b + 1));
+    }
+    for (let h = mid; h < rare; h += 2) {
+      const a = (rare - h) / 2, b = n - h - a;
+      mass[h + 2] = mass[h] * 4 * a * b / ((h + 2) * (h + 1));
+    }
+    let total = 0, tail = 0;
+    for (const w of mass) {
+      total += w;
+      if (w <= mass[observedHets] * (1 + 1e-12)) tail += w;
+    }
+    return tail / total;
+  }
+
+  // pval keeps the published missions' Pearson statistic. displayP is the selected
+  // two-sided test for the observed sample, or null when there is only one allele.
   function hwTest(obs) {
     const n = obs[0] + obs[1] + obs[2];
     const p = n > 0 ? (2 * obs[0] + obs[1]) / (2 * n) : 0;
@@ -147,7 +167,10 @@
     let chi2 = 0;
     for (let i = 0; i < 3; i++) if (exp[i] > 0) chi2 += (obs[i] - exp[i]) * (obs[i] - exp[i]) / exp[i];
     const e2 = 2 * p * (1 - p);
-    return { n: n, p: p, exp: exp, chi2: chi2, pval: chi2p1(chi2), Fhat: e2 > 0 && n > 0 ? 1 - obs[1] / n / e2 : 0 };
+    const rare = 2 * Math.min(obs[0], obs[2]) + obs[1], pval = chi2p1(chi2);
+    const method = !rare ? 'none' : exp.some(x => x < 5) ? 'exact' : 'chi2';
+    const displayP = method === 'exact' ? exactHWE(n, rare, obs[1]) : method === 'none' ? null : pval;
+    return { method, displayP, n: n, p: p, exp: exp, chi2: chi2, pval: pval, Fhat: e2 > 0 && n > 0 ? 1 - obs[1] / n / e2 : 0 };
   }
 
   // ---------------------------------------------------------------------

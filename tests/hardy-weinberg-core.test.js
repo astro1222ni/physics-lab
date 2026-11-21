@@ -178,4 +178,24 @@ test('直方圖：消失、固定與中間區間的總數 = 族群數', () => {
   assert.strictEqual(h.lost, c.lost); assert.strictEqual(h.fixed, c.fixed);
 });
 
+test('保留 Pearson 舊值；稀樣本精確尾機率與單型樣本', () => {
+  const common = H.hwTest([16, 21, 13]);
+  assert.strictEqual(common.chi2, 1.2319017269879309);
+  assert.strictEqual(common.displayP, 0.26703753369933303);
+  assert.strictEqual(common.method, 'chi2');
+  // Two minor copies: one rare homozygote has probability 1/(2n-1).
+  for (const obs of [[1, 0, 9], [9, 0, 1]]) {
+    const r = H.hwTest(obs);
+    assert.strictEqual(r.method, 'exact');
+    assert.ok(Math.abs(r.displayP - 1 / 19) < 1e-15);
+    assert.ok(r.pval < 0.05);
+  }
+  assert.strictEqual(H.hwTest([8, 2, 0]).displayP, 1);
+  assert.strictEqual(H.hwTest([5, 10, 5]).method, 'chi2'); // expected minimum is exactly five
+  for (const obs of [[20, 0, 0], [0, 0, 20], [0, 0, 0]]) {
+    assert.strictEqual(H.hwTest(obs).displayP, null);
+    assert.strictEqual(H.hwTest(obs).pval, 1);
+  }
+});
+
 console.log(passed + ' 項通過');
