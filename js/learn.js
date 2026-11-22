@@ -167,8 +167,77 @@
     else U.segments.forEach((p,i)=>{const b=button('',()=>go(pages.findIndex(q=>q.id.startsWith((i+1)+'-')),0,false));b.append(el('span','segment-number',String(i+1)),el('span','segment-name',tr(p)));b.title=tr(p);b.setAttribute('aria-label',(i+1)+' · '+tr(p));progressNav.append(b);});
     function syncURL(){const q=new URLSearchParams(location.search),[seg,p]=page().id.split('-');if(presentation)q.set('line',page().id);else{q.set('seg',seg);q.set('p',p);}q.set('t',String(Math.round(t*1000)/1000));history.replaceState(null,'','?'+q);}
     function soundFx(type){if(!sound)return;if(type==='up'||type==='down')LabSound.sweep({from:type==='up'?360:640,to:type==='up'?640:360,dur:.13,gain:.12});else LabSound.tone({freq:type==='right'?740:295,dur:.14,type:'triangle',gain:.19});}
+    // 電腦語音（11/23 站長：「仿照『龍騰：第2章試做』，聲音的播放加入載具本身的英文跟中文。英文分女性跟男性，中文只有女性……是載具本身自己可以轉換的」，
+    // 另加「電腦語音・男（普通話）」；「AI語音・女／男（預錄）」這邊不做）。做法照龍騰 lt-engine.js：瀏覽器內建 speechSynthesis，選項放在語速鍵的選單上半部；
+    // 中文女聲只收臺灣國語（简体介面也收 zh-CN），普通話男聲只在简体介面出現；這台裝置沒有的聲音那格變灰、寫原因。動畫照念到第幾個字對時。
+    const SS=window.speechSynthesis,SSU=window.SpeechSynthesisUtterance,HANS=LabSettings.lang==='zh-Hans';
+    const E_F=[/\baria\b/i,/\bjenny\b/i,/\bava\b/i,/\bemma\b/i,/michelle/i,/google us english/i,/samantha/i,/\bzira\b/i,/\blibby\b/i,/\bsonia\b/i,/google uk english female/i,/\bkaren\b/i,/\bmoira\b/i,/\btessa\b/i,/allison/i,/\bsusan\b/i,/serena/i,/\bfiona\b/i,/victoria/i];
+    const E_M=[/\bguy\b/i,/\bandrew\b/i,/\bbrian\b/i,/christopher/i,/\beric\b/i,/\broger\b/i,/steffan/i,/\bryan\b/i,/google uk english male/i,/\bdaniel\b/i,/\balex\b/i,/\baaron\b/i,/\bfred\b/i,/\bdavid\b/i,/\bmark\b/i,/\bgeorge\b/i,/\btom\b/i,/\boliver\b/i,/\barthur\b/i,/\brishi\b/i];
+    const V_M=[/yunjhe|雲哲/i,/zhiwei|志偉/i,/\breed\b/i,/\beddy\b/i,/\brocko\b/i,/grandpa/i,/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/kangkang|康康/i];
+    const V_MC=[/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/yunjian|雲健|云健/i,/yunze|雲澤|云泽/i,/yunfeng|雲楓|云枫/i,/yunhao|雲皓|云皓/i,/kangkang|康康/i,/li-?mu|李牧/i];
+    const V_F=[/hsiaochen|曉臻/i,/hsiaoyu|曉雨/i,/google/i,/yating|雅婷/i,/hanhan|涵涵/i,/mei-?jia|美佳/i,/\bsandy\b/i,/\bshelley\b/i,/\bflo\b/i,/grandma/i,/xiaoxiao|曉曉|晓晓/i,/xiaoyi|曉伊|晓伊/i,/huihui|慧慧/i,/tingting|婷婷/i];
+    const VO={ready:false,zf:null,mc:null,ef:null,em:null};
+    const langNorm=l=>String(l||'').replace(/_/g,'-').toLowerCase().replace(/-#\w+$/,''),rankIn=(list,name)=>list.findIndex(r=>r.test(name));
+    const isTW=v=>/^(zh|cmn)-(hant-)?tw$/.test(langNorm(v.lang)),isCN=v=>/^(zh|cmn)-(hans-)?cn$/.test(langNorm(v.lang));
+    function pickVoices(){
+      let all=[];try{all=SS.getVoices()||[];}catch{/* 略 */}
+      if(!all.length&&!VO.timedOut)return false;
+      const zh=all.filter(isTW).concat(HANS?all.filter(isCN):[]),byRank=list=>(a,b)=>rankIn(list,a.name)-rankIn(list,b.name);
+      const f=zh.filter(v=>rankIn(V_F,v.name)>=0).sort(byRank(V_F));VO.zf=f[0]||zh.filter(v=>rankIn(V_M,v.name)<0)[0]||null;
+      VO.mc=HANS?all.filter(v=>isCN(v)&&rankIn(V_MC,v.name)>=0).sort(byRank(V_MC))[0]||null:null;
+      const enV=all.filter(v=>/^en(-|$)/.test(langNorm(v.lang))),eRank=list=>v=>{const r=rankIn(list,v.name);return (r<0?99:r)*4+(/^en-us$/.test(langNorm(v.lang))?0:2)+(v.localService===false?0:1);};
+      const ef=enV.filter(v=>rankIn(E_F,v.name)>=0).sort((a,b)=>eRank(E_F)(a)-eRank(E_F)(b)),em=enV.filter(v=>rankIn(E_M,v.name)>=0).sort((a,b)=>eRank(E_M)(a)-eRank(E_M)(b));
+      VO.ef=ef[0]||enV.filter(v=>rankIn(E_M,v.name)<0).sort((a,b)=>eRank([])(a)-eRank([])(b))[0]||null;VO.em=em[0]||null;
+      return true;
+    }
+    const VOICES=['ni','zf',...(HANS?['mc']:[]),'ef','em'],isTTS=v=>v!=='ni',vEN=v=>v==='ef'||v==='em';
+    let vpick=read('learn-voice'+(HANS?'-hans':''),null);if(!VOICES.includes(vpick))vpick=en?'ef':'ni';
+    let tts=null,ttsGen=0;const ttsCps={zh:4.6,en:14};
+    function loadVoices(){if(!SS||!SSU||!pickVoices())return;const was=VO.ready;VO.ready=true;if(document.querySelector('.learn-rmenu')){by('speed').click();by('speed').click();}if(!was&&isTTS(vpick)&&!playing&&page())reloadVoice();controlLabels();}
+    if(SS&&SSU){setTimeout(loadVoices,0);try{SS.addEventListener?SS.addEventListener('voiceschanged',loadVoices):(SS.onvoiceschanged=loadVoices);}catch{/* 略 */}
+      setTimeout(()=>{if(!VO.ready){VO.timedOut=true;loadVoices();}},2500);
+      document.addEventListener('pointerdown',()=>{if(!VO.zf&&!VO.ef)setTimeout(()=>{VO.timedOut=true;loadVoices();},400);},{once:true,capture:true});}
+    function voiceName(v){return v==='ni'?T('倪老師・AI 仿聲','Dr. Ni · AI voice clone'):v==='zf'?T('電腦語音・女','Chinese · female'):v==='mc'?T('電腦語音・男（普通話）','Chinese · male (Mandarin)'):v==='ef'?'English · female':'English · male';}
+    function ttsText(p){
+      const pair=p.speech;if(!pair)return '';
+      const raw=Array.isArray(pair)?(vEN(vpick)?pair[1]:T(pair[0],pair[1])):pair;
+      return parseScript(String(raw||'')).spoken.replace(/\\\(|\\\)|\\\[|\\\]/g,'').replace(/\*\*/g,'').replace(/\\[a-zA-Z]+/g,' ').replace(/[_{}^\\$]/g,' ').replace(/\s+/g,' ').trim();
+    }
+    function ttsUsable(){return isTTS(vpick)&&!!(SS&&SSU)&&VO.ready&&!!VO[vpick]&&sound&&!!ttsText(page());}
+    function ttsCancel(){ttsGen++;try{if(SS&&(SS.speaking||SS.pending))SS.cancel();}catch{/* 略 */}}
+    function startTTS(){
+      const p=page(),id=p.id,text=ttsText(p),isEn=vEN(vpick),len=text.replace(/[，。！？；：、,.!?;:\s]/g,'').length||1;
+      const est=Math.max(1.2,len/(isEn?ttsCps.en:ttsCps.zh)),base=timing[id],k=est/Math.max(.5,(base.dur||est)-.6),marks={};
+      for(const [m,v] of Object.entries(base.marks||{}))marks[m]=v*k;
+      tts={text,len,est,isEn,phase:'idle',started:false,bt:null};trackClock={...base,marks,dur:est+.6};t=Math.min(t,clock().dur);
+    }
+    function ttsSpeak(){
+      if(!tts)return;ttsCancel();
+      if(t>=tts.est-.05){tts.phase='done';return;}
+      const g=ttsGen,v=VO[vpick],off=Math.floor(Math.min(.98,t/tts.est)*tts.text.length),part=tts.text.slice(off),u=new SSU(part);
+      u.voice=v;u.lang=v.lang||(tts.isEn?'en-US':'zh-TW');u.rate=speed;
+      const P=tts;P.phase='speak';P.started=false;P.bt=null;P.ts=performance.now();P.off=off;P.t0=t;
+      u.onstart=()=>{if(g===ttsGen){P.started=true;P.real0=performance.now();}};
+      u.onboundary=e=>{if(g!==ttsGen||!P.started||e?.charIndex==null)return;const pos=(off+e.charIndex)/tts.text.length*P.est;P.bt=pos;if(pos>t)t=Math.min(pos,P.est-.02);};
+      u.onend=()=>{if(g!==ttsGen)return;const real=(performance.now()-(P.real0||P.ts))/1000,done=P.len*(1-off/Math.max(1,P.text.length));
+        if(P.started&&real>.4){const c=done/(real*speed);if(P.isEn){if(c>5&&c<40)ttsCps.en=Math.max(9,Math.min(22,ttsCps.en*.7+c*.3));}else if(c>1.5&&c<12)ttsCps.zh=Math.max(2.8,Math.min(8,ttsCps.zh*.7+c*.3));}
+        P.phase='done';t=Math.max(t,P.est);};
+      u.onerror=e=>{if(g!==ttsGen)return;const er=e?.error;if(er==='interrupted'||er==='canceled')return;P.phase='done';if(er==='not-allowed')setPlaying(false);};
+      try{if(SS.paused)SS.resume();SS.speak(u);}catch{P.phase='done';}
+    }
+    function ttsTick(dt){
+      const P=tts;
+      if(P.phase==='idle')ttsSpeak();
+      else if(P.phase==='speak'){
+        if(P.started)t=Math.min(t+dt*speed,P.est-.02,P.bt!=null?Math.max(t,P.bt+.5*speed):Infinity);
+        else if(performance.now()-P.ts>3000){P.phase='done';}   // 3 秒沒開口：照時間走完，不卡住
+        else if(P.started&&performance.now()-P.real0>(P.est-P.t0)/speed*3000+5000)P.phase='done';
+      }else t=Math.min(clock().dur,t+dt*speed);
+    }
+    function reloadVoice(){const frac=clock().dur?t/clock().dur:0,was=playing;setPlaying(false);stopVoice();loadVoice();t=clamp(frac*clock().dur,0,clock().dur);stamp='';render();if(was)setPlaying(true);}
+    function setVoice(v){vpick=v;write('learn-voice'+(HANS?'-hans':''),v);reloadVoice();controlLabels();}
     function stopVoice(){
-      ++voiceEpoch;clearTimeout(loadTimer);
+      ++voiceEpoch;clearTimeout(loadTimer);ttsCancel();tts=null;
       if(voice){voice.pause();voice.removeAttribute('src');voice.load();}
       voice=null;voiceReady=false;heardFromStart=false;failedRecording=false;trackClock=null;tail=0;audibleUntil=0;
     }
@@ -191,6 +260,7 @@
     }
     function loadVoice(){
       const id=page().id,track=recordings[id];
+      if(ttsUsable()){startTTS();return;}
       if(!track)return;
       const token=voiceEpoch,v=new Audio();voice=v;v.preload='auto';v.muted=!sound;
       loadTimer=setTimeout(()=>{if(!voiceReady)fallbackVoice(token);},6500);
@@ -213,12 +283,12 @@
       by('play').textContent=playing?'❚❚':'▶';by('play').setAttribute('aria-label',playing?T('暫停','Pause'):T('播放','Play'));
       // 喇叭旁邊寫字（照龍騰「聽倪講／倪先安靜」），讓人看得出旁白的開關在這裡
       const sb=by('sound');sb.classList.toggle('on',!!sound);sb.setAttribute('aria-pressed',String(sound));
-      sb.innerHTML='<span class="snd-i" aria-hidden="true">'+(sound?'🔊':'🔇')+'</span><span class="snd-t">'+(sound?T('聽倪講','Ni speaking'):T('倪先安靜','Ni muted'))+'</span>';
+      const dev=isTTS(vpick)&&VO.ready&&!!VO[vpick];sb.innerHTML='<span class="snd-i" aria-hidden="true">'+(sound?'🔊':'🔇')+'</span><span class="snd-t">'+(dev?(sound?T('聽電腦講','Device voice'):T('先安靜','Muted')):(sound?T('聽倪講','Ni speaking'):T('倪先安靜','Ni muted')))+'</span>';
       sb.setAttribute('aria-label',sound?T('聽倪講：旁白開著（按一下關掉）','Narration on (tap to mute)'):T('倪先安靜：旁白關著（按一下打開）','Narration off (tap to turn on)'));
       by('auto').checked=!!auto;by('speed').textContent=speed.toFixed(1)+'×';by('speed').setAttribute('aria-expanded',String(!!document.querySelector('.learn-rmenu')));by('class-mode').setAttribute('aria-pressed',String(klass));
       by('previous').disabled=index===0;by('next').disabled=index===n-1;
     }
-    function setPlaying(on){if(on&&voice&&t<.005)heardFromStart=sound;playing=on;last=0;if(!on){voice?.pause();setHaptic(false);}else followVoice();controlLabels();schedule();}
+    function setPlaying(on){if(on&&voice&&t<.005)heardFromStart=sound;playing=on;last=0;if(!on){voice?.pause();if(tts){ttsCancel();tts.phase='idle';}setHaptic(false);}else if(tts){if(!sound)tts.phase='done';else ttsSpeak();}else followVoice();controlLabels();schedule();}
     function microui(){by('playhead').max=clock().dur;by('playhead').value=t;by('time').textContent=fmtTime(t)+' / '+fmtTime(clock().dur);}
     function fmtTime(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');}
     function defaultModel(id){
@@ -234,7 +304,7 @@
     }
     function seek(v){
       t=clamp(Number(v)||0,0,clock().dur);heardFromStart=playing&&sound&&t===0;coverage=0;last=0;release();setHaptic(false);
-      frameModel=defaultModel(page().id);scene.reset();if(voiceReady){voice.currentTime=voiceOffset();tail=Math.max(0,t-voice.duration);audibleUntil=0;followVoice();}stamp='';render();syncURL();
+      frameModel=defaultModel(page().id);scene.reset();if(voiceReady){voice.currentTime=voiceOffset();tail=Math.max(0,t-voice.duration);audibleUntil=0;followVoice();}if(tts){ttsCancel();tts.phase=playing&&sound?'idle':'done';if(!playing)tts.phase='idle';}stamp='';render();syncURL();
     }
     const landscape=matchMedia('(orientation:landscape) and (max-height:600px)');
     function placeBoard(){
@@ -321,7 +391,8 @@
             if(old>=voice.duration)tail+=dt*speed;
             t=Math.min(clock().dur,voice.duration+tail);
           }else t=clamp(position,0,voice.duration);
-        }else if(!voice)t=Math.min(clock().dur,t+dt*speed);
+        }else if(tts){if(sound)ttsTick(dt);else t=Math.min(clock().dur,t+dt*speed);}
+        else if(!voice)t=Math.min(clock().dur,t+dt*speed);
         coverage+=Math.max(0,t-old);
         if(t>=clock().dur){render();finish();schedule();return;}
       }
@@ -544,11 +615,14 @@
     by('replay').onclick=()=>go(index,0,true);by('play').onclick=()=>{if(t>=clock().dur)go(index,0,true);else setPlaying(!playing);};
     by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').setAttribute('aria-haspopup','true');
     const closeRate=()=>{document.querySelector('.learn-rmenu')?.remove();controlLabels();};
-    const setRate=v=>{speed=v;write('learn-rate',v);if(voice)voice.playbackRate=speed;closeRate();};
+    const setRate=v=>{speed=v;write('learn-rate',v);if(voice)voice.playbackRate=speed;if(tts&&playing&&tts.phase==='speak')ttsSpeak();closeRate();};
     by('speed').onclick=e=>{e.stopPropagation();if(document.querySelector('.learn-rmenu'))return closeRate();
       const m=document.createElement('div');m.className='learn-rmenu';m.setAttribute('role','group');m.setAttribute('aria-label',T('旁白語速','Narration speed'));
-      m.innerHTML='<div class="rm-title">'+T('旁白語速','Narration speed')+'</div><div class="rm-grid">'+RATES.map(r=>'<button type="button" data-rate="'+r+'" aria-pressed="'+(r===speed)+'">'+r.toFixed(1)+'×</button>').join('')+'</div>';
-      m.addEventListener('click',ev=>{const b=ev.target.closest('[data-rate]');if(b)setRate(+b.dataset.rate);});document.body.append(m);
+      const vopt=v=>{const has=v==='ni'||(VO.ready&&!!VO[v]),why=!(SS&&SSU)?T('這個瀏覽器不支援電腦語音','This browser has no device voices'):!VO.ready?T('正在找這台裝置的聲音…','Looking for voices…'):T('這台裝置沒有'+(vEN(v)?(v==='ef'?'英文女聲':'英文男聲'):v==='mc'?'普通話男聲':'臺灣國語女聲'),'No '+(vEN(v)?(v==='ef'?'English female':'English male'):v==='mc'?'Mandarin male':'Chinese female')+' voice on this device');
+        const sub=v==='ni'?T('預錄旁白','Recorded narration'):has?VO[v].name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*-\s*.*$/,''):why;
+        return '<button type="button" class="rm-voice" data-voice="'+v+'" aria-pressed="'+(v===vpick)+'"'+(has?'':' disabled')+'><b>'+voiceName(v)+'</b><small>'+sub+'</small></button>';};
+      m.innerHTML='<div class="rm-title">'+T('旁白聲音','Narration voice')+'</div><div class="rm-voices">'+VOICES.map(vopt).join('')+'</div><div class="rm-title">'+T('旁白語速','Narration speed')+'</div><div class="rm-grid">'+RATES.map(r=>'<button type="button" data-rate="'+r+'" aria-pressed="'+(r===speed)+'">'+r.toFixed(1)+'×</button>').join('')+'</div>';
+      m.addEventListener('click',ev=>{const vb=ev.target.closest('[data-voice]');if(vb&&!vb.disabled){closeRate();setVoice(vb.dataset.voice);return;}const b=ev.target.closest('[data-rate]');if(b)setRate(+b.dataset.rate);});document.body.append(m);
       const r=by('speed').getBoundingClientRect(),W=m.offsetWidth,H=m.offsetHeight,vw=document.documentElement.clientWidth;
       const left=Math.min(Math.max(8,r.left+r.width/2-W/2),vw-W-8),below=r.bottom+6+H<=innerHeight-8;
       m.style.left=left+'px';m.style.top=(below?r.bottom+6:Math.max(8,r.top-6-H))+'px';controlLabels();m.querySelector('[aria-pressed="true"]')?.focus();};
@@ -557,14 +631,14 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.learn-rmenu')){closeRate();by('speed').focus();}});
     by('auto').onchange=e=>{auto=e.target.checked;write('learn-auto',auto);};
     by('sound').onclick=()=>LabSettings.set('sound',!sound);
-    addEventListener('lab:settingschange',e=>{if(e.detail?.name==='sound'){sound=LabSettings.get('sound');if(voice)voice.muted=!sound;if(playing&&!sound)heardFromStart=false;controlLabels();}});
+    addEventListener('lab:settingschange',e=>{if(e.detail?.name==='sound'){sound=LabSettings.get('sound');if(voice)voice.muted=!sound;if(isTTS(vpick))reloadVoice();if(playing&&!sound)heardFromStart=false;controlLabels();}});
     by('class-mode').onclick=()=>{syncURL();const url=new URL(location.href);if(klass)url.searchParams.delete('class');else url.searchParams.set('class','1');location.assign(url.href);};
     if(by('class-reveal'))by('class-reveal').onclick=()=>{showClass=!showClass;by('class-reveal').textContent=showClass?T('收起答案','Hide answer'):T('公布答案','Reveal answer');stamp='';render();if(sideOpen)panel();};
     if(by('share'))by('share').onclick=share;
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){setPanel(sideTab,false);return;}if(!klass||e.altKey||e.ctrlKey||e.metaKey||e.target.closest('input,textarea,select,button,[contenteditable]'))return;
       if(e.key==='ArrowLeft')go(index-1);else if(e.key==='ArrowRight')go(index+1);else if(e.code==='Space')by('play').click();else return;e.preventDefault();});
     document.addEventListener('visibilitychange',()=>{if(document.hidden){setPlaying(false);release();syncURL();}});
-    addEventListener('pagehide',()=>{release();setHaptic(false);voice?.pause();});
+    addEventListener('pagehide',()=>{release();setHaptic(false);voice?.pause();ttsCancel();});
     addEventListener('lab:themechange',()=>{stamp='';render();if(sideOpen)panel();});
     const explicit=['seg','p','t','line'].some(k=>params.has(k)),id=presentation?params.get('line'):(params.get('seg')||'1')+'-'+(params.get('p')||'1');
     const start=explicit?Math.max(0,pages.findIndex(p=>p.id===id)):Math.max(0,pr.get()-1);

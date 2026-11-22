@@ -364,3 +364,11 @@ html.learn-immersive .learn-rmenu {z-index:2147483000}
 }
 @media(min-width:900px) and (min-height:601px){html.learn-immersive #workpad {--lesson-fs:calc(var(--fs,1) * var(--teaching,1) * 1.3)}}
 @media(max-width:600px),(orientation:landscape) and (max-height:600px){#immersive .imm-t {display:none}#immersive {padding:2px 9px;justify-content:center}}
+
+/* 旁白聲音選項（11/23，仿龍騰）：放在語速選單上半部 */
+.learn-rmenu .rm-voices {display:grid;gap:6px;margin-bottom:12px}
+.learn-rmenu .rm-voice {display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-height:44px;padding:6px 12px;text-align:left;border-radius:10px}
+.learn-rmenu:has(.rm-voices) {width:min(380px,calc(100vw - 16px))}
+.learn-rmenu .rm-voice b {font-size:15px;white-space:nowrap}.learn-rmenu .rm-voice small {font-size:12px;font-weight:600;color:var(--muted);text-align:right;min-width:0}
+.learn-rmenu .rm-voice[aria-pressed=true] small {color:var(--surface);opacity:.85}
+.learn-rmenu .rm-voice:disabled {opacity:.5;cursor:not-allowed}
