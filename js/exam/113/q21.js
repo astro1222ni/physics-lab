@@ -137,7 +137,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(21,{groups:{wrong:["瞳孔不是拿來對焦的", "The pupil does not focus"],wrong2:["換元件救不了模糊", "A better sensor cannot fix blur"],solve:["逐項判斷", "Check each choice"],story:["眼睛天生看遠", "Eyes are built for distance"],trick:["口訣", "The rule"]},board:{wrong:String.raw`\text{pupil}\to\text{light},\quad\text{lens}\to f`,wrong2:String.raw`\text{blur: image}\neq\text{sensor}`,solve:String.raw`\boxed{D}\ \ \text{real, inverted}`,story:String.raw`\text{relaxed lens}\Rightarrow f\uparrow`,trick:String.raw`\dfrac1p+\dfrac1q=\dfrac1f`}});
+Exam113.add(21,{groups:{wrong:["瞳孔不是拿來對焦的", "The pupil does not focus"],wrong2:["換元件救不了模糊", "A better sensor cannot fix blur"],solve:["逐項判斷", "Check each choice"],story:["眼睛天生看遠", "Eyes are built for distance"],trick:["口訣", "The rule"]},board:{wrong:[String.raw`\text{瞳孔}\to\text{進光量},\quad\text{水晶體}\to f`,String.raw`\text{pupil}\to\text{light},\quad\text{lens}\to f`],wrong2:[String.raw`\text{模糊：成像位置}\neq\text{感光元件}`,String.raw`\text{blur: image}\neq\text{sensor}`],solve:[String.raw`\boxed{D}\ \ \text{倒立實像}`,String.raw`\boxed{D}\ \ \text{real, inverted}`],story:[String.raw`\text{水晶體放鬆}\Rightarrow f\uparrow`,String.raw`\text{relaxed lens}\Rightarrow f\uparrow`],trick:String.raw`\dfrac1p+\dfrac1q=\dfrac1f`}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q21=[

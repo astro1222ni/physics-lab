@@ -91,7 +91,7 @@
     }
     // trick
     const xs=[16,128,240,352];CHAIN.forEach(([,z,e,c],j)=>{D.chip(g,xs[j],100,96,T(z,e),c,k>j*.2);if(j<3)arrow(g,xs[j]+98,115,xs[j+1]-2,115,k>j*.2+.1?C.white:C.faint,1.5,7);});
-    sci(g,'Δm → Q → K → E_{elec}',230,190,C.gold,20,'center');label(g,T('少一點質量，煮一鍋開水，轉一台發電機','Lose a little mass, boil water, spin a generator'),230,46,C.white,15,'center');
+    sci(g,T('Δm → Q → K → E_{電}','Δm → Q → K → E_{elec}'),230,190,C.gold,20,'center');label(g,T('少一點質量，煮一鍋開水，轉一台發電機','Lose a little mass, boil water, spin a generator'),230,46,C.white,15,'center');
   }
   // 能動手：依序點能量卡，排出能量鏈
   function hands(g,s){
@@ -123,7 +123,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(19,{groups:{wrong:["核分裂不是核融合", "Fission, not fusion"],solve:["一路換能量", "Follow the energy"],feel:["一公克有多大", "How big is one gram"],trick:["口訣", "The rule"]},board:{wrong:String.raw`\text{fission}\neq\text{fusion}`,solve:String.raw`E=\Delta m\,c^{2}`,feel:String.raw`1\,\text{g}\ \to\ 9\times10^{13}\,\text{J}`,trick:String.raw`\Delta m\to Q\to K\to E_{\text{elec}}`}});
+Exam113.add(19,{groups:{wrong:["核分裂不是核融合", "Fission, not fusion"],solve:["一路換能量", "Follow the energy"],feel:["一公克有多大", "How big is one gram"],trick:["口訣", "The rule"]},board:{wrong:[String.raw`\text{核分裂}\neq\text{核融合}`,String.raw`\text{fission}\neq\text{fusion}`],solve:String.raw`E=\Delta m\,c^{2}`,feel:String.raw`1\,\text{g}\ \to\ 9\times10^{13}\,\text{J}`,trick:[String.raw`\Delta m\to Q\to K\to E_{\text{電}}`,String.raw`\Delta m\to Q\to K\to E_{\text{elec}}`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q19=[

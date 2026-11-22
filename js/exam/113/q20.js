@@ -83,7 +83,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(20,{groups:{wrong:["不是只有重力", "Not only gravity"],wrong2:["中子之間也有強力", "Neutrons feel the strong force too"],solve:["逐項判斷", "Check each choice"],trick:["口訣", "The rule"]},board:{wrong:String.raw`F_g\propto\dfrac{1}{r^{2}},\quad F_e\propto\dfrac{1}{r^{2}}`,wrong2:String.raw`p\!-\!p,\ p\!-\!n,\ n\!-\!n`,solve:String.raw`n\to p+e^{-}+\bar{\nu}_e`,trick:String.raw`r_{\text{strong}}\sim10^{-15}\,\text{m}`}});
+Exam113.add(20,{groups:{wrong:["不是只有重力", "Not only gravity"],wrong2:["中子之間也有強力", "Neutrons feel the strong force too"],solve:["逐項判斷", "Check each choice"],trick:["口訣", "The rule"]},board:{wrong:String.raw`F_g\propto\dfrac{1}{r^{2}},\quad F_e\propto\dfrac{1}{r^{2}}`,wrong2:String.raw`p\!-\!p,\ p\!-\!n,\ n\!-\!n`,solve:String.raw`n\to p+e^{-}+\bar{\nu}_e`,trick:[String.raw`r_{\text{強力}}\sim10^{-15}\,\text{m}`,String.raw`r_{\text{strong}}\sim10^{-15}\,\text{m}`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q20=[

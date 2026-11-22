@@ -15,8 +15,8 @@
     caption:['平衡電壓的式子：先看單位','The equilibrium-voltage formula: check the units first'],
     focus:/單位|伏特|焦耳|庫侖|電量|電壓|能量|log|沒有單位|克耳文|電子伏特|units?|volts?|joules?|coulombs?|charge|voltage|energy|no unit|kelvins?|electron ?volts?/i,
     groups:{ai:['會考試與會指揮','Taking tests and directing AI'],wrong:['式子很嚇人','A scary formula'],solve:['先看單位','Look at the units'],others:['其他選項','The other choices'],trick:['電量乘電壓','Charge times voltage']},
-    board:{ai:S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\rm in}}{n_{\rm out}}`,wrong:S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\rm in}}{n_{\rm out}}`,solve:S`[eE]=\mathrm{C\cdot V}=\mathrm J`,others:S`[T]=\mathrm K,\quad[\alpha/e]=\mathrm{V/K},\quad[T/e]=\mathrm{K/C}`,trick:S`1\ \mathrm{eV}=e\times1\ \mathrm V`},
-    specific:{Q47_11:S`C:\ 35\%,\quad D:\ 31\%`,Q47_15:S`[E]=\mathrm V`,Q47_16:S`V=\dfrac{W}{q}`,Q47_18:S`\left[\log\dfrac{n_{\rm in}}{n_{\rm out}}\right]=1`,Q47_19:S`[\alpha T]=[eE]=\mathrm J\quad\boxed{A,\ E}`,Q47_27:S`\boxed{A,\ E}`}
+    board:{ai:[S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\text{內}}}{n_{\text{外}}}`,S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\rm in}}{n_{\rm out}}`],wrong:[S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\text{內}}}{n_{\text{外}}}`,S`E=-\dfrac{\alpha T}{e}\log\dfrac{n_{\rm in}}{n_{\rm out}}`],solve:S`[eE]=\mathrm{C\cdot V}=\mathrm J`,others:S`[T]=\mathrm K,\quad[\alpha/e]=\mathrm{V/K},\quad[T/e]=\mathrm{K/C}`,trick:S`1\ \mathrm{eV}=e\times1\ \mathrm V`},
+    specific:{Q47_11:S`C:\ 35\%,\quad D:\ 31\%`,Q47_15:S`[E]=\mathrm V`,Q47_16:S`V=\dfrac{W}{q}`,Q47_18:[S`\left[\log\dfrac{n_{\text{內}}}{n_{\text{外}}}\right]=1`,S`\left[\log\dfrac{n_{\rm in}}{n_{\rm out}}\right]=1`],Q47_19:S`[\alpha T]=[eE]=\mathrm J\quad\boxed{A,\ E}`,Q47_27:S`\boxed{A,\ E}`}
   });
   // 畫布上的平衡電壓式：E = −(αT / e) log(n內 / n外)
   function formula(g,x,y,size=26,hl=''){

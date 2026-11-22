@@ -21,7 +21,7 @@
     49:/電流是 0|斜率的倒數|平衡電壓|電阻|單位|截距|趨勢線|equilibrium voltage|reciprocal|resistance|slope|unit|intercept|trend line/i
   };
   const formulas={
-    wrong:q===19?'U_{\\rm ISS}>U_{\\rm syn}\\;?':q===23?'v=\\mathrm{const.}\\quad f=f_0\\;?':'I_{\\rm Na}(V)',
+    wrong:q===19?T('U_{\\rm ISS}>U_{\\text{同步}}\\;?','U_{\\rm ISS}>U_{\\rm syn}\\;?'):q===23?T('v=\\text{定值}\\quad f=f_0\\;?','v=\\mathrm{const.}\\quad f=f_0\\;?'):'I_{\\rm Na}(V)',
     flip:q===19?'U=-GMm/r':'f<f_0',flip2:'E=-GMm/(2r)',
     solve:'v=\\sqrt{GM/r},\\quad a=GM/r^2',radius:'T^2\\propto r^3',
     kepler:'r^3/T^2=GM/(4\\pi^2)',judge:q===19?'r\\!\\downarrow\\;\\Rightarrow\\;v\\!\\uparrow,\\ a\\!\\uparrow':'0<f<f_0',
@@ -32,9 +32,9 @@
     trick:q===19?'v^2=GM/r':q===23?'\\beta>0\\;\\Rightarrow\\;f<f_0':'\\Delta I/\\Delta V=1/R_{\\rm Na}'
   };
   const specific={
-    Q19_10:'C:\\ 34\\%,\\quad B:\\ 32\\%',Q19_12:'K_{\\rm ISS}>K_{\\rm syn}\\ \\Rightarrow\\ E_{\\rm ISS}>E_{\\rm syn}\\;?',
+    Q19_10:'C:\\ 34\\%,\\quad B:\\ 32\\%',Q19_12:['K_{\\rm ISS}>K_{\\text{同步}}\\ \\Rightarrow\\ E_{\\rm ISS}>E_{\\text{同步}}\\;?','K_{\\rm ISS}>K_{\\rm syn}\\ \\Rightarrow\\ E_{\\rm ISS}>E_{\\rm syn}\\;?'],
     Q19_21:'GMm/r^2=mv^2/r',Q19_27:'r_{\\rm ISS}\\approx 6800\\;\\mathrm{km}',Q19_34:'\\boxed{D,\\ E}',
-    Q23_09:'f=f_0\\;?',Q23_13:'T_{\\rm rec}>T_0',Q23_22:'\\boxed{A,\\ D}',
+    Q23_09:'f=f_0\\;?',Q23_13:['T_{\\text{接收}}>T_0','T_{\\rm rec}>T_0'],Q23_22:'\\boxed{A,\\ D}',
     Q49_19:'E_{\\rm Na}\\approx50\\;\\mathrm{mV}',Q49_22:'\\Delta V\\approx60\\;\\mathrm{mV},\\quad\\Delta I\\approx0.4\\;\\mathrm{mA}',
     Q49_23:'R_{\\rm Na}\\approx150\\;\\Omega',Q49_29:'R_{\\rm Na}\\approx146\\;\\Omega,\\quad E_{\\rm Na}\\approx50\\;\\mathrm{mV}'
   };
@@ -63,7 +63,7 @@
       if(+n===q)a.setAttribute('aria-current','page');by('exam-nav').append(a);
     }
     by('kind').textContent=T(year+' 學測自然',year+' GSAT Science')+'　/　'+T('第 '+q+' 題','Question '+q);
-    by('point-label').textContent=(Q.key?(single?T('單選','Single choice'):T('多選','Multiple response')):T('非選','Constructed response'))+' · '+T(points+' 分',points+' points');
+    {const pl=by('point-label'),kind=Q.key?(single?'single':'multi'):'open',b=make('b'),pt=make('span');pl.dataset.type=kind;b.className='qtype';pt.className='qpts';b.textContent=kind==='single'?T('單選','Single choice'):kind==='multi'?T('多選','Multiple response'):T('非選','Constructed response');pt.textContent=T(points+' 分',points+' points');pl.replaceChildren(b,pt);}
     by('exam-title').textContent=tr(Q.title);
     if(Q.group){
       const d=by('passage');d.hidden=false;d.open=Q.open??q===23;d.querySelector('summary').textContent=tr(Q.group);
@@ -175,7 +175,7 @@
         viewed(all){if(all)milestone('viewed');refreshSide();}
       };
       window.LearnUnit={id:unit,slug:'exam-'+year,pages,presentation,reveal:{},board:id=>{
-        const p=pages.find(page=>page.id===id),formula=(Q.specific||{})[id]||(year===114&&specific[id])||(Q.board?Q.board[p.row]:formulas[p.row]);if(!formula)return [];
+        const p=pages.find(page=>page.id===id);let formula=(Q.specific||{})[id]||(year===114&&specific[id])||(Q.board?Q.board[p.row]:formulas[p.row]);if(Array.isArray(formula))formula=tr(formula);if(!formula)return [];
         const lines=params.get('class')==='1'?formula.split(',\\quad'): [formula];
         return lines.map(line=>['',line.trim()]);}};
       window.LearnTimings={zh:timing,en:timing,audio:{zh:audio,en:audio}};

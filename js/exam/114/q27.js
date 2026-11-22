@@ -16,7 +16,7 @@
     caption:['圖 5　手機與充電器的線圈對齊、靜止放置','Figure 5 · The phone and charger coils aligned and at rest'],
     focus:/電磁感應|磁場|磁力線|磁通量|感應出?電流|熱效應|發熱|交流電|線圈|有變化|變動|electromagnetic induction|magnetic field|field lines|magnetic flux|induced current|heating effect|heat\w*|alternating current|coils?|chang\w*/i,
     groups:{wrong:['無線還有導線？','A wire in wireless?'],solve:['電磁感應','Electromagnetic induction'],others:['其他選項','The other choices'],life:['你每天都在用','You use it every day'],trick:['有變化，才有感應','Only change induces']},
-    board:{solve:S`\varepsilon=-\dfrac{\Delta\Phi_B}{\Delta t}`,others:S`E_{\rm out}=E_{\rm battery}+Q_{\rm heat}`,life:S`\Delta I\neq0\ \Rightarrow\ \varepsilon\neq0`,trick:S`\Delta\Phi_B=0\ \Rightarrow\ \varepsilon=0`},
+    board:{solve:S`\varepsilon=-\dfrac{\Delta\Phi_B}{\Delta t}`,others:[S`E_{\text{充電器輸出}}=E_{\text{電池}}+Q_{\text{熱}}`,S`E_{\rm out}=E_{\rm battery}+Q_{\rm heat}`],life:S`\Delta I\neq0\ \Rightarrow\ \varepsilon\neq0`,trick:S`\Delta\Phi_B=0\ \Rightarrow\ \varepsilon=0`},
     specific:{Q27_17:S`\varepsilon=-\dfrac{\Delta\Phi_B}{\Delta t}`,Q27_18:S`\Delta I\Rightarrow\Delta B\Rightarrow\Delta\Phi_B\Rightarrow\varepsilon`,Q27_19:S`\boxed{D}`,Q27_24:S`\boxed{D}`}
   });
   const copper='#d98a4e';

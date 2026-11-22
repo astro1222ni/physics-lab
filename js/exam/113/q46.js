@@ -43,7 +43,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(46,{groups:{solve:["出去跟進來點對稱", "Leaving mirrors entering"],why:["為什麼是正的", "Why it is positive"],mark:["標出 9 秒", "Mark 9 seconds"],trick:["口訣", "The rule"]},board:{solve:String.raw`I(6+\tau)=-I(6-\tau)`,why:String.raw`\Phi\downarrow\ \Rightarrow\ I>0\ \text{(CCW)}`,mark:String.raw`t=9\,\text{s}:\ N\ \text{leaves center}`,trick:String.raw`\text{point symmetry about }(6,\,0)`}});
+Exam113.add(46,{groups:{solve:["出去跟進來點對稱", "Leaving mirrors entering"],why:["為什麼是正的", "Why it is positive"],mark:["標出 9 秒", "Mark 9 seconds"],trick:["口訣", "The rule"]},board:{solve:String.raw`I(6+\tau)=-I(6-\tau)`,why:[String.raw`\Phi\downarrow\ \Rightarrow\ I>0\ \text{（逆時針）}`,String.raw`\Phi\downarrow\ \Rightarrow\ I>0\ \text{(CCW)}`],mark:[String.raw`t=9\,\text{s}:\ N\ \text{離開中心}`,String.raw`t=9\,\text{s}:\ N\ \text{leaves center}`],trick:[String.raw`\text{對 }(6,\,0)\text{ 點對稱}`,String.raw`\text{point symmetry about }(6,\,0)`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q46=[

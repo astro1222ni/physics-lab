@@ -85,7 +85,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(24,{groups:{wrong:["熱不會自己往高溫跑", "Heat does not flow uphill"],solve:["冰箱是搬熱", "A fridge moves heat"],room:["打開冰箱門", "Leave the door open"],story:["違反自然要付代價", "Going against nature costs"],trick:["口訣", "The rule"]},board:{wrong:String.raw`T_{\text{coolant}}>T_{\text{room}}\ \text{to release heat}`,solve:String.raw`Q_H=Q_C+W`,room:String.raw`\Delta E_{\text{room}}=W>0`,story:String.raw`Q:\ T_{\text{high}}\to T_{\text{low}}`,trick:String.raw`W\ \text{moves}\ Q`}});
+Exam113.add(24,{groups:{wrong:["熱不會自己往高溫跑", "Heat does not flow uphill"],solve:["冰箱是搬熱", "A fridge moves heat"],room:["打開冰箱門", "Leave the door open"],story:["違反自然要付代價", "Going against nature costs"],trick:["口訣", "The rule"]},board:{wrong:[String.raw`T_{\text{冷媒}}>T_{\text{室內}}\ \text{才能放熱}`,String.raw`T_{\text{coolant}}>T_{\text{room}}\ \text{to release heat}`],solve:String.raw`Q_H=Q_C+W`,room:[String.raw`\Delta E_{\text{室內}}=W>0`,String.raw`\Delta E_{\text{room}}=W>0`],story:[String.raw`Q:\ T_{\text{高}}\to T_{\text{低}}`,String.raw`Q:\ T_{\text{high}}\to T_{\text{low}}`],trick:[String.raw`W\ \text{搬運}\ Q`,String.raw`W\ \text{moves}\ Q`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q24=[

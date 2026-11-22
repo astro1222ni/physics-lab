@@ -15,7 +15,7 @@
     caption:['氫原子的能階與光譜','Energy levels and spectrum of hydrogen'],
     focus:/能階|光子|波長|定態|不穩定|往上跳|往下跳|吸收|放出|輻射|energy levels?|photons?|wavelengths?|stationary|unstable|absorb\w*|emit\w*|radiat\w*/i,
     groups:{wrong:['一個電子只有一種光？','One electron, one color?'],flip:['好多種跳法','Many ways to jump'],cold:['高處不勝寒','Cold at the top'],solve:['定態','Stationary states'],joke:['不是寵物','Not a pet'],others:['其他選項','The other choices'],trick:['口訣','The rule']},
-    board:{wrong:S`1\ e^-\ \Rightarrow\ 1\ \lambda\;?`,flip:S`E_{\gamma}=E_{\rm high}-E_{\rm low}=\dfrac{hc}{\lambda}`,cold:S`E_n=-\dfrac{13.6}{n^2}\ \mathrm{eV}`,solve:S`n=\mathrm{const.}\ \Rightarrow\ \Delta E=0`,others:S`\boxed{D}`,trick:S`\uparrow\,{+E},\quad\downarrow\,{-E}=h f,\quad\to\ 0`},
+    board:{wrong:S`1\ e^-\ \Rightarrow\ 1\ \lambda\;?`,flip:[S`E_{\gamma}=E_{\text{高}}-E_{\text{低}}=\dfrac{hc}{\lambda}`,S`E_{\gamma}=E_{\rm high}-E_{\rm low}=\dfrac{hc}{\lambda}`],cold:S`E_n=-\dfrac{13.6}{n^2}\ \mathrm{eV}`,solve:[S`n=\text{定值}\ \Rightarrow\ \Delta E=0`,S`n=\mathrm{const.}\ \Rightarrow\ \Delta E=0`],others:S`\boxed{D}`,trick:S`\uparrow\,{+E},\quad\downarrow\,{-E}=h f,\quad\to\ 0`},
     specific:{Q24_08:S`3\to2:\ 656\ \mathrm{nm},\quad 3\to1:\ 103\ \mathrm{nm},\quad 2\to1:\ 122\ \mathrm{nm}`}
   });
   const LV=n=>36+190*Math.sqrt(13.6/(n*n)/13.6); // 能階的畫面高度（壓縮上方，好點選）

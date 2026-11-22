@@ -15,7 +15,7 @@
     caption:['重力、電磁力、強力、弱力','Gravity, electromagnetism, strong and weak forces'],
     focus:/強力|弱力|電磁力|電力|萬有引力|靜電|庫侖|正向力|接觸力|摩擦力|β 衰變|核融合|原子核|strong (?:force|interaction)|weak (?:force|interaction)|electromagnetic|electric|gravit\w*|electrostatic|Coulomb|normal force|contact forces?|friction|beta decay|fusion|nucleus/i,
     groups:{wrong:['強力撐不住？','Is the strong force too weak?'],flip:['剛好相反','Exactly the opposite'],solve:['接觸力的本質','What contact forces really are'],joke:['原子互相嫌棄','Atoms that keep their distance'],others:['其他選項','The other choices'],trick:['日常的力','Everyday forces']},
-    board:{wrong:S`F_{\rm strong}<F_{\rm e}\;?`,flip:S`F_{\rm strong}\gg F_{\rm e}\quad(r\sim10^{-15}\ \mathrm m)`,solve:S`N,\ f\ \Rightarrow\ F_{\rm EM}`,others:S`r_{\rm nucleus}\sim10^{-15}\ \mathrm m,\quad r_{\rm atom}\sim10^{-10}\ \mathrm m`,trick:S`F_{\rm EM}:\ N,\ f,\ T,\ \dots`},
+    board:{wrong:[S`F_{\text{強}}<F_{\text{電}}\;?`,S`F_{\rm strong}<F_{\rm e}\;?`],flip:[S`F_{\text{強}}\gg F_{\text{電}}\quad(r\sim10^{-15}\ \mathrm m)`,S`F_{\rm strong}\gg F_{\rm e}\quad(r\sim10^{-15}\ \mathrm m)`],solve:[S`N,\ f\ \Rightarrow\ F_{\text{電磁}}`,S`N,\ f\ \Rightarrow\ F_{\rm EM}`],others:[S`r_{\text{原子核}}\sim10^{-15}\ \mathrm m,\quad r_{\text{原子}}\sim10^{-10}\ \mathrm m`,S`r_{\rm nucleus}\sim10^{-15}\ \mathrm m,\quad r_{\rm atom}\sim10^{-10}\ \mathrm m`],trick:[S`F_{\text{電磁}}:\ N,\ f,\ T,\ \dots`,S`F_{\rm EM}:\ N,\ f,\ T,\ \dots`]},
     specific:{Q26_09:S`n\to p+e^-+\bar\nu`,Q26_24:S`\boxed{B}`}
   });
   const nucleon=(g,x,y,p,r=9)=>{const grad=g.createRadialGradient(x-r/3,y-r/3,1,x,y,r);grad.addColorStop(0,p?'#ffb0a8':'#e4eef2');grad.addColorStop(1,p?'#c4463c':'#7d8f98');K.dot(g,x,y,r,grad);if(p)label(g,'+',x,y+r*.45,'#3a0d0a',r*1.2,'center');};

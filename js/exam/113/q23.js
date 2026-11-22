@@ -76,7 +76,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(23,{groups:{wrong:["X 光不會停下來", "X-rays do not stop"],solve:["打癌細胞、放過正常細胞", "Hit the tumor, spare the rest"],story:["質子的最後一口氣", "The proton’s last gasp"],trick:["口訣", "The rule"]},board:{wrong:String.raw`D_{X}(15\,\text{cm})>0`,solve:String.raw`\text{tumor}\ \uparrow,\ \ \text{normal}\ \downarrow`,story:String.raw`p:\ \text{peak at}\ x\approx 11\,\text{cm}`,trick:String.raw`\text{shallow}\ e^{-},\ \ \text{deep}\ p`}});
+Exam113.add(23,{groups:{wrong:["X 光不會停下來", "X-rays do not stop"],solve:["打癌細胞、放過正常細胞", "Hit the tumor, spare the rest"],story:["質子的最後一口氣", "The proton’s last gasp"],trick:["口訣", "The rule"]},board:{wrong:String.raw`D_{X}(15\,\text{cm})>0`,solve:[String.raw`\text{腫瘤}\ \uparrow,\ \ \text{正常組織}\ \downarrow`,String.raw`\text{tumor}\ \uparrow,\ \ \text{normal}\ \downarrow`],story:[String.raw`p:\ \text{峰值在}\ x\approx 11\,\text{cm}`,String.raw`p:\ \text{peak at}\ x\approx 11\,\text{cm}`],trick:[String.raw`\text{淺層}\ e^{-},\ \ \text{深層}\ p`,String.raw`\text{shallow}\ e^{-},\ \ \text{deep}\ p`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q23=[

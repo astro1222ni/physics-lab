@@ -20,8 +20,8 @@
     caption:['價帶、導電帶與 3.2 eV 的能隙','Valence band, conduction band and the 3.2 eV gap'],
     focus:/光子|一顆|頻率|強度|能隙|價帶|導電帶|跳高|拔河|入射角|顏色|瓦數|photons?|one|frequency|intensity|band gap|valence band|conduction band|high jump|tug of war|angle|colou?r|watt\w*/i,
     groups:{wrong:['開亮一點？','Just make it brighter?'],flip:['一顆光子打一顆電子','One photon, one electron'],solve:['光子能量 E = hf','Photon energy E = hf'],others:['其他選項','The other choices'],trick:['口訣','The rule']},
-    board:{wrong:S`I\uparrow\ \Rightarrow\ ?`,flip:S`I\uparrow\ \Rightarrow\ N_\gamma\uparrow,\quad E_\gamma\ \text{const.}`,solve:S`E=hf,\quad E_{\rm v}<E_{\rm c}`,others:S`\boxed{B,\ E}`,trick:S`hf\ge E_g\ ?\quad N_\gamma\propto I`},
-    specific:{Q50_17:S`E=hf\ \Rightarrow\ f\uparrow,\ E\uparrow\quad(\mathrm E)`,Q50_18:S`E_{\rm valence}<E_{\rm conduction}\quad(\mathrm B)`}
+    board:{wrong:S`I\uparrow\ \Rightarrow\ ?`,flip:[S`I\uparrow\ \Rightarrow\ N_\gamma\uparrow,\quad E_\gamma\ \text{不變}`,S`I\uparrow\ \Rightarrow\ N_\gamma\uparrow,\quad E_\gamma\ \text{const.}`],solve:S`E=hf,\quad E_{\rm v}<E_{\rm c}`,others:S`\boxed{B,\ E}`,trick:S`hf\ge E_g\ ?\quad N_\gamma\propto I`},
+    specific:{Q50_17:S`E=hf\ \Rightarrow\ f\uparrow,\ E\uparrow\quad(\mathrm E)`,Q50_18:[S`E_{\text{價帶}}<E_{\text{導電帶}}\quad(\mathrm B)`,S`E_{\rm valence}<E_{\rm conduction}\quad(\mathrm B)`]}
   });
   // 能帶：導電帶在上、價帶在下
   const YC=80,YV=190;

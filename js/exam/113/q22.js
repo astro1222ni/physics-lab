@@ -65,7 +65,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(22,{groups:{wrong:["有質量追不上光", "Mass cannot reach light speed"],wrong2:["一顆的能量不是顆數", "Energy per particle is not a count"],solve:["讀圖與 E = hf", "Read the graph, use E = hf"],story:["能量與數量", "Energy versus number"],trick:["口訣", "The rule"]},board:{wrong:String.raw`v_{p}<c,\qquad v_{\gamma}=c`,wrong2:String.raw`\alpha={}^{4}_{2}\text{He}\neq p`,solve:String.raw`\dfrac{f_{20}}{f_{4}}=\dfrac{20\,\text{MeV}}{4\,\text{MeV}}=5`,story:String.raw`E=hf,\quad I=\dfrac{N\,hf}{t\,A}`,trick:String.raw`E\ \text{per photon},\ N\ \text{per beam}`}});
+Exam113.add(22,{groups:{wrong:["有質量追不上光", "Mass cannot reach light speed"],wrong2:["一顆的能量不是顆數", "Energy per particle is not a count"],solve:["讀圖與 E = hf", "Read the graph, use E = hf"],story:["能量與數量", "Energy versus number"],trick:["口訣", "The rule"]},board:{wrong:String.raw`v_{p}<c,\qquad v_{\gamma}=c`,wrong2:String.raw`\alpha={}^{4}_{2}\text{He}\neq p`,solve:String.raw`\dfrac{f_{20}}{f_{4}}=\dfrac{20\,\text{MeV}}{4\,\text{MeV}}=5`,story:String.raw`E=hf,\quad I=\dfrac{N\,hf}{t\,A}`,trick:[String.raw`E\ \text{看每顆光子},\ \ N\ \text{看整束}`,String.raw`E\ \text{per photon},\ N\ \text{per beam}`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q22=[

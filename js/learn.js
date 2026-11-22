@@ -520,6 +520,27 @@
     by('side-header').addEventListener('touchstart',e=>edgeStart=e.touches[0].clientX,{passive:true});
     by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-edgeStart>35)setPanel(sideTab,false);},{passive:true});
     by('previous').onclick=()=>go(index-1);by('next').onclick=()=>go(index+1);
+    // 沉浸模式（11/23 站長：「設計有個沉浸模式的按鍵，能夠開全屏幕。不管是載具，可以看全屏幕；然後老師上課投影也是全屏幕。」）
+    // 解題卡蓋滿整個視窗；瀏覽器支援就同時進全螢幕（iPhone 不支援元素全螢幕，只蓋滿視窗）
+    (()=>{
+      const bar=document.querySelector('.transport-buttons');if(!bar||by('immersive'))return;
+      const b=document.createElement('button');b.type='button';b.id='immersive';bar.insertBefore(b,bar.querySelector('.auto-next'));
+      const root=document.documentElement,icon=on=>'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+(on?'<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>':'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')+'</svg>';
+      const label=()=>{const on=root.classList.contains('learn-immersive');b.setAttribute('aria-pressed',String(on));b.innerHTML=icon(on)+'<span class="imm-t">'+(on?T('退出','Exit'):T('沉浸','Immersive'))+'</span>';
+        b.title=on?T('退出沉浸模式（Esc）','Exit immersive mode (Esc)'):T('沉浸模式：解題畫面全螢幕','Immersive mode: full-screen solution');b.setAttribute('aria-label',b.title);};
+      const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
+      function set(on){
+        root.classList.toggle('learn-immersive',on);label();
+        if(on){const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsOn())try{const r=req.call(root);if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+        else if(fsOn()){const ex=document.exitFullscreen||document.webkitExitFullscreen;try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+        dispatchEvent(new Event('resize'));
+      }
+      b.onclick=()=>set(!root.classList.contains('learn-immersive'));
+      const left=()=>{if(!fsOn()&&root.classList.contains('learn-immersive')&&root.dataset.immFs==='1'){root.dataset.immFs='';set(false);}else if(fsOn())root.dataset.immFs='1';};
+      document.addEventListener('fullscreenchange',left);document.addEventListener('webkitfullscreenchange',left);
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.classList.contains('learn-immersive')&&!document.querySelector('.learn-rmenu'))set(false);});
+      label();
+    })();
     by('replay').onclick=()=>go(index,0,true);by('play').onclick=()=>{if(t>=clock().dur)go(index,0,true);else setPlaying(!playing);};
     by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').setAttribute('aria-haspopup','true');
     const closeRate=()=>{document.querySelector('.learn-rmenu')?.remove();controlLabels();};

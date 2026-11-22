@@ -53,7 +53,7 @@
   });
 })();
 /* script:start（build_tracks113.py 由 稿/scripts.py 產生，勿手改） */
-Exam113.add(44,{groups:{wrong:["進來跟出去相反", "In and out are opposite"],solve:["冷次定律：多退少補", "Lenz’s law: oppose the change"],energy:["天下沒有白吃的午餐", "No free lunch"],trick:["口訣", "The rule"]},board:{wrong:String.raw`\Phi\uparrow\ \text{then}\ \Phi\downarrow`,solve:String.raw`\varepsilon=-N\dfrac{\Delta\Phi}{\Delta t}`,energy:String.raw`\vec F_{\text{loop on magnet}}\ \text{opposes}\ \vec v`,trick:String.raw`\vec F\uparrow\ \ \text{while}\ \ \vec v\downarrow`}});
+Exam113.add(44,{groups:{wrong:["進來跟出去相反", "In and out are opposite"],solve:["冷次定律：多退少補", "Lenz’s law: oppose the change"],energy:["天下沒有白吃的午餐", "No free lunch"],trick:["口訣", "The rule"]},board:{wrong:[String.raw`\Phi\uparrow\ \text{再}\ \Phi\downarrow`,String.raw`\Phi\uparrow\ \text{then}\ \Phi\downarrow`],solve:String.raw`\varepsilon=-N\dfrac{\Delta\Phi}{\Delta t}`,energy:[String.raw`\vec F_{\text{環對磁鐵}}\ \text{與}\ \vec v\ \text{反向}`,String.raw`\vec F_{\text{loop on magnet}}\ \text{opposes}\ \vec v`],trick:[String.raw`\vec F\uparrow\ \ \text{同時}\ \ \vec v\downarrow`,String.raw`\vec F\uparrow\ \ \text{while}\ \ \vec v\downarrow`]}});
 /* script:end */
 /* tracks:start（build_tracks113.py 產生，勿手改） */
 ExamTracks.Q44=[

@@ -8,10 +8,16 @@ html.ms-docked body.exam-page{padding-right:0}
 #exam-nav [aria-current=page]{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 -3px var(--accent)}
 .exam-paper,.exam-block{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:clip;margin-bottom:14px}
 .exam-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border)}
-#kind,#point-label,.exam-page figcaption,#credit{color:var(--muted);font-size:calc(14px * var(--fs,1))}
+#kind,.exam-page figcaption,#credit{color:var(--muted);font-size:calc(14px * var(--fs,1))}
 .exam-heading h1{font-size:calc(clamp(22px,3vw,32px) * var(--lesson-fs));line-height:1.2;margin:4px 0 0}
 #kind{color:var(--accent);font-weight:750}
-#point-label{white-space:nowrap}
+/* 題型標籤（11/23 站長：「單選或多選……要再更顯眼一點，然後用不同的顏色」）：單選藍、多選橘、非選紫 */
+#point-label{--qt:#1f7fc4;display:inline-flex;align-items:center;gap:9px;flex:none;white-space:nowrap;padding:6px 14px;border-radius:999px;border:2px solid var(--qt);background:color-mix(in srgb,var(--qt) 13%,transparent);color:var(--qt);font-size:calc(17px * var(--fs,1));line-height:1.2}
+#point-label[data-type=multi]{--qt:#c9560f}#point-label[data-type=open]{--qt:#7b45c4}
+#point-label .qtype{font-weight:850;letter-spacing:.02em}#point-label .qpts{font-weight:650;padding-left:9px;border-left:1.5px solid color-mix(in srgb,var(--qt) 55%,transparent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #point-label{--qt:#69c2ff}:root:not([data-theme="light"]) #point-label[data-type=multi]{--qt:#ffa35c}:root:not([data-theme="light"]) #point-label[data-type=open]{--qt:#c6a0ff}}
+:root[data-theme="dark"] #point-label{--qt:#69c2ff}:root[data-theme="dark"] #point-label[data-type=multi]{--qt:#ffa35c}:root[data-theme="dark"] #point-label[data-type=open]{--qt:#c6a0ff}
+@media(max-width:600px){.exam-heading{flex-wrap:wrap;row-gap:8px}#point-label{font-size:calc(15px * var(--fs,1));padding:5px 12px}}
 .problem-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.85fr)}
 .exam-source,.response-column{padding:16px 22px;min-width:0}
 .response-column{border-left:1px solid var(--border)}
