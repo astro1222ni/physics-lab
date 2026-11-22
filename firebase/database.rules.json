@@ -8,10 +8,18 @@
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && auth.uid === $uid && newData.exists()",
           ".validate": "newData.hasChildren(['p','n','at']) && newData.child('p').val() <= newData.child('n').val() && (!data.exists() || newData.child('p').val() >= data.child('p').val())",
-          "p": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0" },
-          "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0" },
-          "at": { ".validate": "newData.val() === now" },
-          "$other": { ".validate": false }
+          "p": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+          },
+          "n": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+          },
+          "at": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -68,6 +76,26 @@
         },
         "$other": {
           ".validate": false
+        }
+      }
+    },
+    "lt": {
+      "prog": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$unit": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "($unit === '_pref' || $unit.matches(/^[0-9]{1,2}-[0-9]{1,2}$/)) && newData.hasChildren(['d', 'at'])",
+            "d": {
+              ".validate": "newData.isString() && newData.val().length <= 400000"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
         }
       }
     },
