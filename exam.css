@@ -165,3 +165,6 @@ html.learn-immersive body.exam-page #workpad>.transport{transition:opacity .35s 
 html.learn-immersive.learn-imm-idle body.exam-page #workpad>.transport{opacity:.4}
 @media(min-width:601px) and (max-width:1000px){.exam-page .mast-tools{gap:6px}.exam-page .mast-btn{padding:4px 8px}.exam-page .course-name{display:none}} /* 平板、手機橫放：課程名稱收起來（麵包屑已有），讓三鍵和「上課模式」一行放得下 */
 .exam-page #class-mode{white-space:nowrap}
+/* 全螢幕中換題：新題目在全螢幕裡的 iframe 載入（11/23 站長：「換題的時候，不可以跳出沉浸模式。」） */
+html.exam-imm-framed{overflow:hidden}
+#imm-frame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483600;background:var(--bg)}

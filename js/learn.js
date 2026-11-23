@@ -141,7 +141,20 @@
     const host=()=>{const h=window.LearnVoiceHost;return h?{...h,closed:()=>{h.closed&&h.closed();labels();},opened:()=>labels()}:pre;};
     const icon=on=>'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+(on?'<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>':'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')+'</svg>';
     const LANGS=[['zh-Hant','繁體中文','繁中'],['zh-Hans','简体中文','简中'],['en','English','EN']];
-    const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
+    const FLAG='exam-imm-page',ss={get:()=>{try{return sessionStorage.getItem(FLAG)==='1';}catch{return false;}},set:on=>{try{on?sessionStorage.setItem(FLAG,'1'):sessionStorage.removeItem(FLAG);}catch{/* 略 */}}};
+    const outer=(()=>{try{return window.top!==window&&parent.__examImm?parent.__examImm:null;}catch{return null;}})();
+    const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement||(outer&&outer.fsOn());
+    const fsReq=()=>{const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsOn())try{const r=req.call(root);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}};
+    const fsExit=()=>{const ex=document.exitFullscreen||document.webkitExitFullscreen;if(document.fullscreenElement||document.webkitFullscreenElement)try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}};
+    // 換題是整頁換頁，瀏覽器一換頁就退出全螢幕：全螢幕中換題改在全螢幕裡的 iframe 載入新題；退出時整頁換到正在看的那一題
+    let frame=null;
+    if(!outer)window.__examImm={fsOn:()=>document.fullscreenElement||document.webkitFullscreenElement,leave(url){ss.set(false);fsExit();if(url&&url!==location.href)location.href=url;else if(frame){frame.remove();frame=null;root.classList.remove('exam-imm-framed');pageImm(false);}}};
+    function openFrame(url){
+      try{window.LearnPlayer?.pause?.();}catch{/* 略 */}
+      if(!frame){frame=document.createElement('iframe');frame.id='imm-frame';frame.title=document.title;frame.setAttribute('allow','fullscreen; autoplay');document.body.append(frame);root.classList.add('exam-imm-framed');}
+      frame.src=url;frame.focus();
+    }
+    if(ss.get())root.classList.add('exam-imm-page');
     function labels(){
       const on=root.classList.contains('learn-immersive')||root.classList.contains('exam-imm-page');
       imm.setAttribute('aria-pressed',String(on));imm.innerHTML=icon(on)+'<span class="mb-t">'+(on?T('退出','Exit'):T('沉浸','Immersive'))+'</span>';
@@ -154,18 +167,30 @@
       lang.setAttribute('aria-expanded',String(!!lo));
     }
     function pageImm(on){
+      ss.set(on);
+      if(!on&&outer){outer.leave(location.href);return;}
       root.classList.toggle('exam-imm-page',on);
-      if(on){const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsOn())try{const r=req.call(root);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}}
-      else{root.dataset.pageFs='';if(fsOn()&&!root.classList.contains('learn-immersive')){const ex=document.exitFullscreen||document.webkitExitFullscreen;try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}}}
+      if(on)fsReq();else{root.dataset.pageFs='';fsExit();}
       labels();dispatchEvent(new Event('resize'));
     }
     imm.onclick=()=>{
-      if(root.classList.contains('learn-immersive')){by('immersive')?.click();if(root.classList.contains('exam-imm-page'))pageImm(false);return;}
+      if(root.classList.contains('learn-immersive')){by('immersive')?.click();return;}
       if(root.classList.contains('exam-imm-page')){pageImm(false);return;}
       if(by('immersive')&&by('explanation')&&!by('explanation').hidden){by('immersive').click();return;}
       pageImm(true);
     };
-    const fsChange=()=>{if(fsOn())root.dataset.pageFs='1';else if(root.dataset.pageFs==='1'&&root.classList.contains('exam-imm-page'))pageImm(false);};
+    const fsChange=()=>{if(fsOn()){root.dataset.pageFs='1';return;}if(root.dataset.pageFs!=='1'||!root.classList.contains('exam-imm-page'))return;
+      if(frame){let u='';try{u=frame.contentWindow.location.href;}catch{/* 略 */}window.__examImm.leave(u);}else pageImm(false);};
+    // 換題連結：沉浸中留在沉浸；全螢幕中在全螢幕裡載入；在 iframe 裡點到學測頁以外的連結，先退出沉浸再整頁前往
+    document.addEventListener('click',e=>{
+      const a=e.target.closest&&e.target.closest('a[href]');if(!a||e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||a.target==='_blank'||!root.classList.contains('exam-imm-page'))return;
+      let u;try{u=new URL(a.href,location.href);}catch{return;}
+      const exam=u.origin===location.origin&&/\/exam-\d+\.html$/.test(u.pathname);
+      if(outer){if(!exam){e.preventDefault();outer.leave(u.href);}return;}
+      if(exam&&fsOn()){e.preventDefault();openFrame(u.href);}
+    },true);
+    // 換題後（或重新整理）版面照樣沉浸；瀏覽器不讓網頁自己進全螢幕，點畫面任何地方再回到全螢幕
+    if(!outer&&root.classList.contains('exam-imm-page')&&(root.requestFullscreen||root.webkitRequestFullscreen))document.addEventListener('pointerdown',function re(){document.removeEventListener('pointerdown',re,true);if(root.classList.contains('exam-imm-page')&&!fsOn())fsReq();},true);
     document.addEventListener('fullscreenchange',fsChange);document.addEventListener('webkitfullscreenchange',fsChange);
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!VM.host&&root.classList.contains('exam-imm-page')&&!root.classList.contains('learn-immersive'))pageImm(false);});
     snd.onclick=e=>{e.stopPropagation();if(VM.host&&VM.anchor===snd)return closeVoiceMenu();openVoiceMenu(snd,host());};
@@ -713,11 +738,11 @@
       const root=document.documentElement,icon=on=>'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+(on?'<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>':'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')+'</svg>';
       const label=()=>{const on=root.classList.contains('learn-immersive');b.setAttribute('aria-pressed',String(on));b.innerHTML=icon(on)+'<span class="imm-t">'+(on?T('退出','Exit'):T('沉浸','Immersive'))+'</span>';
         b.title=on?T('退出沉浸模式（Esc）','Exit immersive mode (Esc)'):T('沉浸模式：解題畫面全螢幕','Immersive mode: full-screen solution');b.setAttribute('aria-label',b.title);};
-      const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
+      const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement||(()=>{try{return window.top!==window&&parent.__examImm?parent.__examImm.fsOn():null;}catch{return null;}})();
       function set(on){
         root.classList.toggle('learn-immersive',on);label();
         if(on){const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsOn())try{const r=req.call(root);if(r&&r.catch)r.catch(()=>{});}catch(e){}}
-        else if(fsOn()){const ex=document.exitFullscreen||document.webkitExitFullscreen;try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+        else if((document.fullscreenElement||document.webkitFullscreenElement)&&!root.classList.contains('exam-imm-page')){const ex=document.exitFullscreen||document.webkitExitFullscreen;try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){}}
         dispatchEvent(new Event('resize'));
       }
       b.onclick=()=>set(!root.classList.contains('learn-immersive'));
@@ -747,7 +772,7 @@
     const start=explicit?Math.max(0,pages.findIndex(p=>p.id===id)):Math.max(0,pr.get()-1);
     go(start,+params.get('t')||0,!presentation&&!reduced&&!klass&&!explicit);
     setPanel('concept',sideOpen);
-    window.LearnPlayer={get snapshot(){return {id:page().id,index,t,dur:clock().dur,playing,mediaReady:voiceReady,mediaDuration:voiceReady?voice.duration:null,tail,renderer:by('scene').dataset.renderer,geometry:scene.geometry,model:frameModel,colors:scene.colors};}};
+    window.LearnPlayer={pause(){setPlaying(false);},get snapshot(){return {id:page().id,index,t,dur:clock().dur,playing,mediaReady:voiceReady,mediaDuration:voiceReady?voice.duration:null,tail,renderer:by('scene').dataset.renderer,geometry:scene.geometry,model:frameModel,colors:scene.colors};}};
 
   }
   return {parseScript,estimate,numeric,gradeNumber,mount,progress,mastControls};
