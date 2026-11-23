@@ -154,6 +154,22 @@
     $('boardTitle').textContent = tab === 'all' ? T('全科總排名・前 100 名', 'All subjects · top 100') : tabName(tab) + T('排名・前 100 名', ' · top 100');
   }
 
+  // 資料新鮮度（站長 11/23：「總覺得好像一直都沒有翻新」）：讀取時間＋榜上最近一筆得星時間
+  function clock(t, sec) {
+    const d = new Date(t), p = function (n) { return (n < 10 ? '0' : '') + n; };
+    const hm = p(d.getHours()) + ':' + p(d.getMinutes()) + (sec ? ':' + p(d.getSeconds()) : '');
+    return d.toDateString() === new Date().toDateString() ? T('今天 ', 'today ') + hm : (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm;
+  }
+  function renderFresh(list) {
+    const f = $('fresh');
+    if (!f) return;
+    let latest = 0;
+    (list || []).forEach(function (r) { latest = Math.max(latest, +r.at || 0); });
+    f.textContent = T('資料讀取時間 ', 'Data read ') + clock(Date.now(), true) +
+      (latest ? T('｜榜上最近一筆得星 ', ' · latest stars on this board ') + clock(latest) : '') +
+      T('（每分鐘自動更新）', ' (updates every minute)');
+  }
+
   function renderList() {
     const ol = $('list');
     ol.innerHTML = '';
@@ -394,6 +410,7 @@
       if (t !== tab) return;
       top = rankList(list, t).slice(0, 100); // 邊界同分者已一起取回：排序後才截前 100 名
       renderList();
+      renderFresh(list);
       if (st.user) {
         return api.getScore(st.user.uid).then(function (sc) {
           myScore = sc;

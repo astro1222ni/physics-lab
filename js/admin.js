@@ -324,8 +324,20 @@
   }
 
   // ---------- 讀資料 ----------
-  function load() {
-    gate(T('讀取資料中…', 'Loading…'));
+  // 資料新鮮度（站長 11/23：「總覺得好像一直都沒有翻新」）：顯示讀取時間、最近一筆得星，並每分鐘自動重讀
+  let busy = false, readAt = 0;
+  function renderFresh(failed) {
+    let latest = 0;
+    users.forEach(function (u) { Object.keys(u.comp).forEach(function (k) { latest = Math.max(latest, u.comp[k].at || 0); }); });
+    const d = new Date(readAt);
+    $('fresh').textContent = (failed ? T('這次更新失敗，下面是上次的資料。', 'This update failed; showing the previous data. ') : '') +
+      T('資料讀取時間 ', 'Data read ') + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) +
+      T('｜最近一筆得星 ', ' · latest stars ') + fmtTime(latest) + T('（每分鐘自動更新）', ' (updates every minute)');
+  }
+  function load(quiet) {
+    if (busy) return;
+    busy = true;
+    if (!quiet) gate(T('讀取資料中…', 'Loading…'));
     const missionsReady = (LM && LM.loadAll ? LM.loadAll() : Promise.resolve()).then(function () {
       const all = LM ? LM.all() : {};
       Object.keys(all).forEach(function (mod) { all[mod].forEach(function (m) { mission[m.id] = { mod: mod, title: m.title, hidden: !!m.hidden, stars: starsOf(m) }; }); });
@@ -336,24 +348,33 @@
     Promise.all([missionsReady].concat(reads)).then(function (r) {
       const d = {}, denied = [];
       r.slice(1).forEach(function (x) { if (x[1] === null) denied.push(x[0]); else d[x[0]] = x[1]; });
+      busy = false;
+      if (denied.length && quiet && users.length) { renderFresh(true); return; }
       if (denied.length) {
         gate(T('資料庫規則還沒更新，管理員讀不到：', 'The database rules are not updated yet; the administrator cannot read: ') + denied.join(T('、', ', ')) +
           T('。請把 firebase/database.rules.json 貼到 Firebase 主控台的「規則」分頁並發布，再重新整理這一頁。', '. Paste firebase/database.rules.json into the Rules tab of the Firebase console, publish, and reload this page.'));
         return;
       }
       users = build(d);
+      readAt = Date.now();
       $('gate').hidden = true;
       $('main').hidden = false;
       renderTiles();
       renderRows();
+      renderFresh();
       if (open) { const u = users.filter(function (x) { return x.uid === open; })[0]; if (u) renderDetail(u); }
-    });
+    }).catch(function () { busy = false; if (users.length) renderFresh(true); });
   }
 
   $('q').addEventListener('input', renderRows);
   $('sort').addEventListener('change', renderRows);
   $('csv').addEventListener('click', exportCsv);
-  $('reload').addEventListener('click', function () { if (api && uid) load(); });
+  $('reload').addEventListener('click', function () { if (api && uid) load(users.length > 0); });
+  // 頁面開著、而且已經讀過一次時，每 60 秒安靜重讀（不閃「讀取中」、保留搜尋、排序和打開的明細）
+  setInterval(function () { if (api && uid && users.length && document.visibilityState === 'visible') load(true); }, 60000);
+  document.addEventListener('visibilitychange', function () {
+    if (api && uid && users.length && document.visibilityState === 'visible' && Date.now() - readAt > 60000) load(true);
+  });
 
   if (!LM) { gate(T('任務系統沒有載入。', 'The mission system did not load.')); return; }
   gate(T('連線中…', 'Connecting…'));
