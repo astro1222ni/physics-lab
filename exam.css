@@ -137,3 +137,7 @@ html.learn-class:has(body.exam-page){scroll-behavior:auto}
 /* 分享這一題（classroom.js 的共用分享視窗） */
 .exam-tools .lab-tools{margin:2px 0 10px}
 @media (max-width:600px){.exam-tools .lab-tools{display:flex;justify-content:flex-end}.exam-tools .lab-tools .lab-tool{min-height:44px;flex-direction:row;padding:6px 14px}}
+/* 右側「步驟・任務」側標籤蓋在畫面上（頁面仍滿版），靠右的題型膠囊、分享鍵讓出標籤寬度，不被蓋住；徽章不超出螢幕（11/23 站長手機截圖） */
+.exam-page{--edge-w:34px}
+@media(max-width:600px){.exam-page{--edge-w:24px}.exam-page #edge i{font-size:10px;padding:0 2px;border-radius:6px;letter-spacing:-.02em}}
+@media(max-width:1239px){.exam-page .exam-heading{padding-right:calc(var(--edge-w) + 10px)}.exam-page .exam-tools .lab-tools{padding-right:calc(var(--edge-w) + 6px)}}
