@@ -168,3 +168,46 @@ html.learn-immersive.learn-imm-idle body.exam-page #workpad>.transport{opacity:.
 /* 全螢幕中換題：新題目在全螢幕裡的 iframe 載入（11/23 站長：「換題的時候，不可以跳出沉浸模式。」） */
 html.exam-imm-framed{overflow:hidden}
 #imm-frame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483600;background:var(--bg)}
+/* 橫式版面依載具（11/23 站長：「橫式的版面的配置很不理想，左右兩邊空間非常大，你都沒有充分利用到……儘量在同一個頁面呈現你所有的東西。」「不同載具的橫視……要考慮一下不同載具的特性」）
+   電腦與平板橫放（寬 ≥1024、高 >600）：頁面用滿寬度；題目依寬度自動排 1–3 欄（每欄至少約 20 字）；作答欄黏在畫面上自己捲動；解題卡畫面在左、字幕和播放列在右
+   手機橫放（高 ≤600）：題號列一行左右滑、標題列縮小，題目和作答兩欄同一屏 */
+html.exam-imm-page body.exam-page .lab-account,html.exam-imm-page body.exam-page .lab-gear{z-index:31} /* 沉浸時頂列黏住，登入鍵和齒輪不可被頂列底色蓋掉 */
+html.exam-imm-page body.exam-page .response-column{top:var(--mast-h,0px)}
+@media(min-width:1024px) and (min-height:601px){
+  .exam-page #learn-unit{width:100%;max-width:2000px;padding:0 calc(var(--edge-w) + 12px) 18px clamp(16px,2vw,36px)}
+  #exam-nav{gap:2px 4px;margin-bottom:12px}#exam-nav a{padding:0 9px}
+  .exam-heading{padding:12px 22px}
+  .problem-grid{grid-template-columns:minmax(0,1fr) clamp(330px,27%,440px)}
+  .exam-source{columns:3 calc(340px * var(--fs,1));column-gap:34px;column-rule:1px solid var(--border)}
+  .exam-source figure,#figures,#figure-tabs,#passage>summary{break-inside:avoid}
+  #passage{-webkit-box-decoration-break:clone;box-decoration-break:clone}
+  .response-column{position:sticky;top:var(--exam-top,0px);align-self:start;max-height:calc(100dvh - var(--exam-top,0px));overflow-y:auto;overscroll-behavior:contain}
+  html.exam-imm-page body.exam-page .response-column{--exam-top:var(--mast-h,0px)}
+  html:not(.learn-immersive) body.exam-page #workpad{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-areas:"head head" "scene text" "scene board" "scene ." "scene transport";grid-template-rows:auto auto auto minmax(0,1fr) auto}
+  html:not(.learn-immersive) body.exam-page #workpad>.page-heading{grid-area:head}
+  html:not(.learn-immersive) body.exam-page #workpad>.visual-column{display:contents} /* 解題畫面在左；字幕、板書算式、播放列在右 */
+  html:not(.learn-immersive) body.exam-page #scene{grid-area:scene;min-width:0;border-right:1px solid var(--border)}
+  html:not(.learn-immersive) body.exam-page #board{grid-area:board;min-width:0;align-self:start;max-height:none}
+  .exam-paper{display:grid;grid-template-columns:minmax(0,1fr) auto}.exam-heading{grid-column:1;grid-row:1}.problem-grid{grid-column:1/-1} /* 分享鍵放到標題列右邊，不再自己佔一列 */
+  .exam-tools{grid-column:2;grid-row:1;display:flex;align-items:center;padding-right:16px;border-bottom:1px solid var(--border)}.exam-page .exam-tools .lab-tools{margin:0}
+  html:not(.learn-immersive) body.exam-page #workpad>.lesson-text{grid-area:text;min-width:0}
+  html:not(.learn-immersive) body.exam-page #workpad>.transport{grid-area:transport;min-width:0}
+  html:not(.learn-immersive) body.exam-page #scene{max-height:min(60dvh,600px)}
+}
+@media(min-width:1024px) and (max-width:1239px) and (min-height:601px){#exam-nav{gap:2px}#exam-nav a{padding:0 6px}}
+@media(min-width:1240px){body.exam-page.side-open #learn-unit{padding-right:clamp(16px,2vw,36px)}}
+@media(min-width:1400px) and (min-height:601px){html:not(.learn-immersive) body.exam-page #workpad{--lesson-fs:calc(var(--fs,1) * var(--teaching,1) * 1.15)}}
+@media(min-width:1600px) and (min-height:801px){html:not(.learn-immersive) body.exam-page #workpad{--lesson-fs:calc(var(--fs,1) * var(--teaching,1) * 1.3)}}
+@media(orientation:landscape) and (max-height:600px){
+  #exam-nav{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:2px;margin:0 0 6px;padding-bottom:3px;overscroll-behavior-x:contain}
+  #exam-nav::-webkit-scrollbar{display:none}
+  #exam-nav a{flex:none;min-height:40px;padding:0 10px}
+  .exam-heading{padding:6px calc(var(--edge-w) + 10px) 6px 14px}
+  .exam-heading h1{font-size:calc(20px * var(--lesson-fs));margin-top:1px}
+  #kind{font-size:calc(12px * var(--fs,1))}
+  #point-label{font-size:calc(14px * var(--fs,1));padding:3px 10px}
+  .exam-paper{display:grid;grid-template-columns:minmax(0,1fr) auto}.exam-heading{grid-column:1;grid-row:1}.problem-grid{grid-column:1/-1}
+  .exam-tools{grid-column:2;grid-row:1;display:flex;align-items:center;border-bottom:1px solid var(--border)}.exam-page .exam-tools .lab-tools{margin:0;padding-right:calc(var(--edge-w) + 8px)}.exam-page .exam-tools .lab-tools .lab-tool{min-height:40px;padding:4px 10px}
+  html:not(.exam-imm-page) .exam-heading{padding-right:12px}
+  html.exam-imm-page body.exam-page .response-column{max-height:calc(100dvh - var(--mast-h,0px))}
+}

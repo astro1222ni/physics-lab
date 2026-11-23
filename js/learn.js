@@ -209,7 +209,38 @@
     ['pointerdown','pointermove','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,wake,{passive:true}));
     new MutationObserver(()=>{labels();const on=root.classList.contains('learn-immersive');if(on&&!idle&&!root.classList.contains('learn-imm-idle'))idle=setTimeout(sleep,3000);if(!on){clearTimeout(idle);idle=0;if(root.classList.contains('learn-imm-idle'))root.classList.remove('learn-imm-idle');}}).observe(root,{attributes:true,attributeFilter:['class']});
     addEventListener('lab:settingschange',labels);
-    labels();
+    labels();guardNear();
+    {const mast=document.querySelector('.learn-mast');if(mast&&window.ResizeObserver)new ResizeObserver(()=>root.style.setProperty('--mast-h',mast.offsetHeight+'px')).observe(mast);}
+  }
+  // 任務提示框（.ms-near，例如「星星還沒有記錄」）讓位（11/23 站長選 A：提示框蓋住解答播放列）：
+  // 提示框固定在畫面底部，學測頁的播放列也黏在底部；依序試「原本位置 → 播放列正上方 → 畫面上方（避開黏住的頂列）」，挑不蓋到要按的鍵的那個
+  function guardNear(){
+    const KEEP='#workpad>.transport,.mast-btn,#class-mode,#explain,#send-answer,.lab-account,.lab-gear';
+    const vis=e=>{if(!e||e.hidden||!e.getClientRects().length)return null;const r=e.getBoundingClientRect();return r.width&&r.height&&r.bottom>0&&r.top<innerHeight?r:null;};
+    const hit=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+    let busy=false,raf=0;
+    function place(box){
+      if(busy||box.hidden||!box.getClientRects().length)return;busy=true;
+      const keep=[...document.querySelectorAll(KEEP)].map(vis).filter(Boolean);
+      const X=[['','','',''],['12px','auto','none','min(440px,calc(50vw - 24px))'],['auto','12px','none','min(440px,calc(50vw - 24px))']];
+      const setX=x=>{box.style.left=x[0];box.style.right=x[1];box.style.transform=x[2];box.style.width=x[3];};
+      setX(X[0]);box.style.top='';box.style.bottom='';
+      const tr=vis(document.querySelector('#workpad>.transport')),mast=document.querySelector('.learn-mast'),mr=mast&&getComputedStyle(mast).position==='sticky'?vis(mast):null;
+      const cands=[()=>{box.style.top='';box.style.bottom='';}]; // 上下位置：原位、播放列正上方、頂列下方；左右：置中，太矮的橫放畫面再試左半邊、右半邊
+      if(tr)cands.push(()=>{box.style.top='auto';box.style.bottom=(innerHeight-tr.top+8)+'px';});
+      cands.push(()=>{let y=(mr?mr.bottom:0)+8;box.style.bottom='auto';box.style.top=y+'px';for(let i=0;i<4;i++){const r=box.getBoundingClientRect(),k=keep.filter(q=>hit(r,q)>0);if(!k.length)break;y=Math.max(...k.map(q=>q.bottom))+8;box.style.top=y+'px';}});
+      let best=null;const opts=[];X.forEach((x,xi)=>{if(xi&&innerWidth<600)return;cands.forEach(v=>opts.push(()=>{setX(x);v();}));});
+      opts.forEach((apply,i)=>{apply();const r=box.getBoundingClientRect();const cost=keep.reduce((t,q)=>t+hit(r,q),0)+(r.top<0||r.bottom>innerHeight?1e6:0);if(!best||cost<best.cost-1)best={i,cost};});
+      opts[best.i]();busy=false;
+    }
+    const all=()=>document.querySelectorAll('.ms-near').forEach(place);
+    const soon=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(all);};
+    const watch=new MutationObserver(soon),seen=new WeakSet();
+    const hook=()=>document.querySelectorAll('.ms-near').forEach(b=>{if(!seen.has(b)){seen.add(b);watch.observe(b,{attributes:true,attributeFilter:['hidden'],childList:true});}});
+    new MutationObserver(()=>{hook();soon();}).observe(document.body,{childList:true});
+    const ex=document.getElementById('explanation');if(ex)watch.observe(ex,{attributes:true,attributeFilter:['hidden']});
+    watch.observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+    addEventListener('scroll',soon,{passive:true});addEventListener('resize',soon);hook();soon();
   }
   function progress(unit,n,notify) {
     const key='learn-progress:'+unit, local=uid=>uid?key+':'+uid:key;

@@ -62,6 +62,7 @@
       ['line','seg','p','t'].forEach(k=>url.searchParams.delete(k));a.href=url.href;a.title=tr(question.title);
       if(+n===q)a.setAttribute('aria-current','page');by('exam-nav').append(a);
     }
+    requestAnimationFrame(()=>{const nav=by('exam-nav'),cur=nav.querySelector('[aria-current]');if(cur&&nav.scrollWidth>nav.clientWidth+2)nav.scrollLeft+=cur.getBoundingClientRect().left-nav.getBoundingClientRect().left-(nav.clientWidth-cur.offsetWidth)/2;});
     by('kind').textContent=T(year+' 學測自然',year+' GSAT Science')+'　/　'+T('第 '+q+' 題','Question '+q);
     {const pl=by('point-label'),kind=Q.key?(single?'single':'multi'):'open',b=make('b'),pt=make('span');pl.dataset.type=kind;b.className='qtype';pt.className='qpts';b.textContent=kind==='single'?T('單選','Single choice'):kind==='multi'?T('多選','Multiple response'):T('非選','Constructed response');pt.textContent=T(points+' 分',points+' points');pl.replaceChildren(b,pt);}
     by('exam-title').textContent=tr(Q.title);
