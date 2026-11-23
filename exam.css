@@ -141,3 +141,27 @@ html.learn-class:has(body.exam-page){scroll-behavior:auto}
 .exam-page{--edge-w:34px}
 @media(max-width:600px){.exam-page{--edge-w:24px}.exam-page #edge i{font-size:10px;padding:0 2px;border-radius:6px;letter-spacing:-.02em}}
 @media(max-width:1239px){.exam-page .exam-heading{padding-right:calc(var(--edge-w) + 10px)}.exam-page .exam-tools .lab-tools{padding-right:calc(var(--edge-w) + 6px)}}
+/* 頂列三鍵：沉浸、聲音（旁白開關＋聲音＋語速）、語言（11/23 站長：「沉浸模式、語言選擇、語音選擇，根本就沒有上線啊。」原本要答完、開解答、捲到解答卡最下面才找得到） */
+.exam-page .mast-tools{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
+.exam-page .mast-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:44px;padding:4px 11px;border:2px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-weight:800;font-size:calc(15px * var(--fs,1));line-height:1;white-space:nowrap;cursor:pointer}
+.exam-page .mast-btn svg{flex:none}
+.exam-page #mast-voice{border-color:var(--accent)}
+.exam-page #mast-voice .mb-i{font-size:1.1em}
+.exam-page #mast-voice .mb-r{font-size:.85em;color:var(--accent);font-variant-numeric:tabular-nums}
+.exam-page #mast-voice.off .mb-r{color:var(--muted)}
+.exam-page #mast-lang .mb-c{font-size:.75em;color:var(--muted)}
+.exam-page .mast-btn[aria-pressed=true],.exam-page .mast-btn[aria-expanded=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+@media(max-width:600px){
+  .exam-page .learn-mast{flex-wrap:wrap;row-gap:6px;padding-bottom:6px}
+  .exam-page .mast-tools{order:9;flex:0 0 calc(100% + var(--head-reserve,152px));margin-right:calc(-1 * var(--head-reserve,152px));margin-top:12px} /* 第二排在登入、齒輪鍵（top 14px、高 44px）下面 */
+  .exam-page .mast-btn{flex:1 1 0;padding:4px 6px;font-size:calc(14px * var(--fs,1))}
+}
+/* 解答還沒開時的沉浸：整頁全螢幕，收起麵包屑、工具列、頁尾，頂列黏在上面（退出鍵一直按得到） */
+html.exam-imm-page body.exam-page .learn-crumbs,html.exam-imm-page body.exam-page .exam-tools,html.exam-imm-page body.exam-page #credit{display:none}
+html.exam-imm-page body.exam-page .learn-mast{position:sticky;top:0;z-index:30;background:var(--bg)}
+/* 解答的播放列固定在畫面底部（捲到解答卡任何地方都按得到），沉浸時照舊在卡片底部、閒置 3 秒變半透明 */
+html:not(.learn-immersive) body.exam-page #workpad>.transport{position:sticky;bottom:0;z-index:6;background:var(--surface);box-shadow:0 -10px 18px -12px #000a;padding-bottom:max(5px,env(safe-area-inset-bottom))}
+html.learn-immersive body.exam-page #workpad>.transport{transition:opacity .35s ease}
+html.learn-immersive.learn-imm-idle body.exam-page #workpad>.transport{opacity:.4}
+@media(min-width:601px) and (max-width:1000px){.exam-page .mast-tools{gap:6px}.exam-page .mast-btn{padding:4px 8px}.exam-page .course-name{display:none}} /* 平板、手機橫放：課程名稱收起來（麵包屑已有），讓三鍵和「上課模式」一行放得下 */
+.exam-page #class-mode{white-space:nowrap}

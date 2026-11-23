@@ -372,3 +372,14 @@ html.learn-immersive .learn-rmenu {z-index:2147483000}
 .learn-rmenu .rm-voice b {font-size:15px;white-space:nowrap}.learn-rmenu .rm-voice small {font-size:12px;font-weight:600;color:var(--muted);text-align:right;min-width:0}
 .learn-rmenu .rm-voice[aria-pressed=true] small {color:var(--surface);opacity:.85}
 .learn-rmenu .rm-voice:disabled {opacity:.5;cursor:not-allowed}
+/* 選單上方的旁白開關、還沒開解答時的說明、語言選單（11/23） */
+.learn-rmenu {max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain}
+.learn-rmenu .rm-snd {display:flex;align-items:center;gap:8px;width:100%;margin-bottom:10px;padding:6px 12px;text-align:left;font-size:15px}
+.learn-rmenu .rm-snd[aria-pressed=true] {background:var(--accent-soft);color:var(--text);border-color:var(--accent)}
+.learn-rmenu .rm-note {margin:0 2px 10px;font-size:13px;color:var(--muted);line-height:1.5}
+.learn-rmenu.learn-lmenu {width:min(230px,calc(100vw - 16px))}
+.learn-lmenu .rm-lang {display:block;width:100%;margin-top:6px;padding:0 14px;text-align:left}
+/* 語速一排六格放在選單最上面（照龍騰：站長「我連語速度都找不到了」），聲音清單在下面 */
+.learn-rmenu .rm-grid6 {grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.learn-rmenu .rm-grid6 button {padding:0 2px;font-size:15px}
+@media(max-height:600px){.learn-rmenu .rm-note {display:none}.learn-rmenu .rm-voice {min-height:40px;padding:3px 12px}.learn-rmenu .rm-snd {margin-bottom:6px}.learn-rmenu .rm-grid6 {margin-bottom:8px}.learn-rmenu .rm-title {margin-bottom:5px}}

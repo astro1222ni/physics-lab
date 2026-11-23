@@ -2,7 +2,7 @@
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
-  else { root.LearnEngine = api; document.addEventListener('DOMContentLoaded', api.mount); }
+  else { root.LearnEngine = api; document.addEventListener('DOMContentLoaded', api.mount); document.addEventListener('DOMContentLoaded', api.mastControls); }
 })(globalThis, function () {
   'use strict';
   function parseScript(source) {
@@ -48,6 +48,144 @@
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const read=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def;}catch{return def;}};
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{/* private mode */}};
+
+  // ── 電腦語音偵測（11/23 從播放器搬到這裡：學測頁頂列「聲音」鍵在解答還沒打開前也要能先選聲音）
+  let DVK=null;
+  function deviceVoices(){
+    if(DVK)return DVK;
+    // 電腦語音（11/23 站長：「仿照『龍騰：第2章試做』，聲音的播放加入載具本身的英文跟中文。英文分女性跟男性，中文只有女性……是載具本身自己可以轉換的」，
+    // 另加「電腦語音・男（普通話）」；「AI語音・女／男（預錄）」這邊不做）。做法照龍騰 lt-engine.js：瀏覽器內建 speechSynthesis，選項放在語速鍵的選單上半部；
+    // 中文女聲只收臺灣國語（简体介面也收 zh-CN），普通話男聲只在简体介面出現；這台裝置沒有的聲音那格變灰、寫原因。動畫照念到第幾個字對時。
+    const SS=window.speechSynthesis,SSU=window.SpeechSynthesisUtterance,HANS=LabSettings.lang==='zh-Hans';
+    const E_F=[/\baria\b/i,/\bjenny\b/i,/\bava\b/i,/\bemma\b/i,/michelle/i,/google us english/i,/samantha/i,/\bzira\b/i,/\blibby\b/i,/\bsonia\b/i,/google uk english female/i,/\bkaren\b/i,/\bmoira\b/i,/\btessa\b/i,/allison/i,/\bsusan\b/i,/serena/i,/\bfiona\b/i,/victoria/i];
+    const E_M=[/\bguy\b/i,/\bandrew\b/i,/\bbrian\b/i,/christopher/i,/\beric\b/i,/\broger\b/i,/steffan/i,/\bryan\b/i,/google uk english male/i,/\bdaniel\b/i,/\balex\b/i,/\baaron\b/i,/\bfred\b/i,/\bdavid\b/i,/\bmark\b/i,/\bgeorge\b/i,/\btom\b/i,/\boliver\b/i,/\barthur\b/i,/\brishi\b/i];
+    const V_M=[/yunjhe|雲哲/i,/zhiwei|志偉/i,/\breed\b/i,/\beddy\b/i,/\brocko\b/i,/grandpa/i,/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/kangkang|康康/i];
+    const V_MC=[/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/yunjian|雲健|云健/i,/yunze|雲澤|云泽/i,/yunfeng|雲楓|云枫/i,/yunhao|雲皓|云皓/i,/kangkang|康康/i,/li-?mu|李牧/i];
+    const V_F=[/hsiaochen|曉臻/i,/hsiaoyu|曉雨/i,/google/i,/yating|雅婷/i,/hanhan|涵涵/i,/mei-?jia|美佳/i,/\bsandy\b/i,/\bshelley\b/i,/\bflo\b/i,/grandma/i,/xiaoxiao|曉曉|晓晓/i,/xiaoyi|曉伊|晓伊/i,/huihui|慧慧/i,/tingting|婷婷/i];
+    const VO={ready:false,zf:null,mc:null,ef:null,em:null};
+    const langNorm=l=>String(l||'').replace(/_/g,'-').toLowerCase().replace(/-#\w+$/,''),rankIn=(list,name)=>list.findIndex(r=>r.test(name));
+    const isTW=v=>/^(zh|cmn)-(hant-)?tw$/.test(langNorm(v.lang)),isCN=v=>/^(zh|cmn)-(hans-)?cn$/.test(langNorm(v.lang));
+    function pickVoices(){
+      let all=[];try{all=SS.getVoices()||[];}catch{/* 略 */}
+      if(!all.length&&!VO.timedOut)return false;
+      const zh=all.filter(isTW).concat(HANS?all.filter(isCN):[]),byRank=list=>(a,b)=>rankIn(list,a.name)-rankIn(list,b.name);
+      const f=zh.filter(v=>rankIn(V_F,v.name)>=0).sort(byRank(V_F));VO.zf=f[0]||zh.filter(v=>rankIn(V_M,v.name)<0)[0]||null;
+      VO.mc=HANS?all.filter(v=>isCN(v)&&rankIn(V_MC,v.name)>=0).sort(byRank(V_MC))[0]||null:null;
+      const enV=all.filter(v=>/^en(-|$)/.test(langNorm(v.lang))),eRank=list=>v=>{const r=rankIn(list,v.name);return (r<0?99:r)*4+(/^en-us$/.test(langNorm(v.lang))?0:2)+(v.localService===false?0:1);};
+      const ef=enV.filter(v=>rankIn(E_F,v.name)>=0).sort((a,b)=>eRank(E_F)(a)-eRank(E_F)(b)),em=enV.filter(v=>rankIn(E_M,v.name)>=0).sort((a,b)=>eRank(E_M)(a)-eRank(E_M)(b));
+      VO.ef=ef[0]||enV.filter(v=>rankIn(E_M,v.name)<0).sort((a,b)=>eRank([])(a)-eRank([])(b))[0]||null;VO.em=em[0]||null;
+      return true;
+    }
+    const VOICES=['ni','zf',...(HANS?['mc']:[]),'ef','em'],isTTS=v=>v!=='ni',vEN=v=>v==='ef'||v==='em';
+    DVK={SS,SSU,HANS,VO,pickVoices,VOICES,isTTS,vEN};return DVK;
+  }
+  function voiceName(v){const T=(z,e)=>LabSettings.t(z,e);return v==='ni'?T('倪老師・AI 仿聲','Dr. Ni · AI voice clone'):v==='zf'?T('電腦語音・女','Chinese · female'):v==='mc'?T('電腦語音・男（普通話）','Chinese · male (Mandarin)'):v==='ef'?'English · female':'English · male';}
+  const VRATES=[.8,1,1.2,1.4,1.6,1.8],vNear=v=>VRATES.reduce((a,b)=>{const da=Math.abs(a-v),db=Math.abs(b-v);return db<da-1e-9||(Math.abs(db-da)<1e-9&&Math.abs(b-1)<Math.abs(a-1))?b:a;},1);
+  // 彈出選單（旁白聲音＋語速、語言）：一次只開一個；點別處、捲動、改視窗大小、Esc 都收起
+  const VM={anchor:null,host:null,kind:'',build:null,wired:false};
+  function closeVoiceMenu(){document.querySelector('.learn-rmenu')?.remove();const h=VM.host;VM.host=null;VM.kind='';if(h&&h.closed)h.closed();}
+  function openPop(anchor,host,kind,build,keepFocus){
+    document.querySelector('.learn-rmenu')?.remove();VM.anchor=anchor;VM.host=host;VM.kind=kind;VM.build=build;
+    if(!VM.wired){VM.wired=true;
+      document.addEventListener('pointerdown',e=>{if(VM.host&&!e.target.closest('.learn-rmenu')&&!(VM.anchor&&VM.anchor.contains(e.target)))closeVoiceMenu();});
+      addEventListener('resize',()=>VM.host&&closeVoiceMenu());addEventListener('scroll',()=>VM.host&&closeVoiceMenu(),{passive:true});
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'&&VM.host){const a=VM.anchor;closeVoiceMenu();a?.focus();}});}
+    const m=document.createElement('div');m.className='learn-rmenu'+(kind==='lang'?' learn-lmenu':'');m.setAttribute('role','group');
+    build(m);document.body.append(m);
+    const r=anchor.getBoundingClientRect(),W=m.offsetWidth,H=m.offsetHeight,vw=document.documentElement.clientWidth;
+    const left=Math.min(Math.max(8,r.left+r.width/2-W/2),vw-W-8),below=r.bottom+6+H<=innerHeight-8;
+    m.style.left=left+'px';m.style.top=(below?r.bottom+6:Math.max(8,r.top-6-H))+'px';
+    if(!below&&r.top-6-H<8)m.style.maxHeight=(innerHeight-16)+'px';
+    if(!keepFocus)m.querySelector('[aria-pressed="true"]:not([data-snd])')?.focus({preventScroll:true});
+    if(host.opened)host.opened();
+  }
+  function refreshVoiceMenu(){if(VM.host&&VM.kind==='voice'&&document.querySelector('.learn-rmenu'))openPop(VM.anchor,VM.host,'voice',VM.build,true);}
+  function openVoiceMenu(anchor,host,keepFocus){
+    const T=(z,e)=>LabSettings.t(z,e);
+    openPop(anchor,host,'voice',m=>{
+      const {SS,SSU,VO,VOICES,vEN}=deviceVoices(),vpick=host.vpick(),speed=host.speed(),sound=!!LabSettings.get('sound');
+      m.setAttribute('aria-label',T('旁白聲音與語速','Narration voice and speed'));
+      const vopt=v=>{const has=v==='ni'||(VO.ready&&!!VO[v]),why=!(SS&&SSU)?T('這個瀏覽器不支援電腦語音','This browser has no device voices'):!VO.ready?T('正在找這台裝置的聲音…','Looking for voices…'):T('這台裝置沒有'+(vEN(v)?(v==='ef'?'英文女聲':'英文男聲'):v==='mc'?'普通話男聲':'臺灣國語女聲'),'No '+(vEN(v)?(v==='ef'?'English female':'English male'):v==='mc'?'Mandarin male':'Chinese female')+' voice on this device');
+        const sub=v==='ni'?T('預錄旁白','Recorded narration'):has?VO[v].name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*-\s*.*$/,''):why;
+        return '<button type="button" class="rm-voice" data-voice="'+v+'" aria-pressed="'+(v===vpick)+'"'+(has?'':' disabled')+'><b>'+voiceName(v)+'</b><small>'+sub+'</small></button>';};
+      m.innerHTML='<button type="button" class="rm-snd" data-snd aria-pressed="'+sound+'"><span aria-hidden="true">'+(sound?'🔊':'🔇')+'</span>'+(sound?T('旁白開著（按一下關掉）','Narration on (tap to mute)'):T('旁白關著（按一下打開）','Narration off (tap to turn on)'))+'</button>'
+        +(host.premount?'<p class="rm-note">'+T('先選好，打開解答就照這裡的聲音和語速播放。','Pick now; the solution will play with this voice and speed.')+'</p>':'')
+        +'<div class="rm-title">'+T('旁白語速','Narration speed')+'</div><div class="rm-grid rm-grid6">'+VRATES.map(r=>'<button type="button" data-rate="'+r+'" aria-pressed="'+(r===speed)+'">'+r.toFixed(1)+'×</button>').join('')+'</div>'
+        +'<div class="rm-title">'+T('旁白聲音','Narration voice')+'</div><div class="rm-voices">'+VOICES.map(vopt).join('')+'</div>';
+      m.addEventListener('click',ev=>{
+        if(ev.target.closest('[data-snd]')){LabSettings.set('sound',!LabSettings.get('sound'));refreshVoiceMenu();return;}
+        const vb=ev.target.closest('[data-voice]');if(vb&&!vb.disabled){closeVoiceMenu();host.setVoice(vb.dataset.voice);return;}
+        const b=ev.target.closest('[data-rate]');if(b)host.setRate(+b.dataset.rate);});
+    },keepFocus);
+  }
+  function warmVoices(){
+    const K=deviceVoices();if(!K.SS||!K.SSU||K.warm)return;K.warm=true;
+    const go=()=>{if(K.pickVoices()){K.VO.ready=true;refreshVoiceMenu();}};
+    setTimeout(go,0);try{if(K.SS.addEventListener)K.SS.addEventListener('voiceschanged',go);}catch{/* 略 */}
+    setTimeout(()=>{if(!K.VO.ready){K.VO.timedOut=true;go();}},2500);
+  }
+  // ── 學測頁頂列三鍵（11/23 站長：「沉浸模式、語言選擇、語音選擇，根本就沒有上線啊。」原本都要答完、打開解答、捲到解答卡最下面才看得到）
+  // 沉浸：解答開著就讓解題卡蓋滿畫面；還沒開就整頁進全螢幕、收起麵包屑與工具列。聲音：旁白開關＋聲音＋語速，解答還沒開也能先選。語言：繁中／简中／English。
+  function mastControls(){
+    const mast=document.querySelector('body.exam-page .learn-mast');if(!mast||document.getElementById('mast-voice'))return;
+    const T=(z,e)=>LabSettings.t(z,e),root=document.documentElement,by=id=>document.getElementById(id);
+    const mk=(id,label)=>{const b=document.createElement('button');b.type='button';b.id=id;b.className='mast-btn';b.setAttribute('aria-label',label);return b;};
+    const box=document.createElement('div');box.className='mast-tools';
+    const imm=mk('mast-imm',''),snd=mk('mast-voice',T('旁白聲音與語速','Narration voice and speed')),lang=mk('mast-lang',T('切換語言','Language'));
+    snd.setAttribute('aria-haspopup','true');lang.setAttribute('aria-haspopup','true');
+    box.append(imm,snd,lang);const cm=by('class-mode');if(cm)cm.after(box);else mast.append(box);
+    warmVoices();
+    const {HANS,VOICES}=deviceVoices(),vkey='learn-voice'+(HANS?'-hans':'');
+    const pre={premount:true,vpick:()=>{const v=read(vkey,null);return VOICES.includes(v)?v:(LabSettings.lang==='en'?'ef':'ni');},speed:()=>vNear(+read('learn-rate',1)||1),
+      setVoice:v=>{write(vkey,v);labels();},setRate:r=>{write('learn-rate',r);closeVoiceMenu();},closed:()=>labels(),opened:()=>labels()};
+    const host=()=>{const h=window.LearnVoiceHost;return h?{...h,closed:()=>{h.closed&&h.closed();labels();},opened:()=>labels()}:pre;};
+    const icon=on=>'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+(on?'<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>':'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')+'</svg>';
+    const LANGS=[['zh-Hant','繁體中文','繁中'],['zh-Hans','简体中文','简中'],['en','English','EN']];
+    const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
+    function labels(){
+      const on=root.classList.contains('learn-immersive')||root.classList.contains('exam-imm-page');
+      imm.setAttribute('aria-pressed',String(on));imm.innerHTML=icon(on)+'<span class="mb-t">'+(on?T('退出','Exit'):T('沉浸','Immersive'))+'</span>';
+      imm.title=on?T('退出沉浸模式（Esc）','Exit immersive mode (Esc)'):T('沉浸模式：全螢幕','Immersive mode: full screen');imm.setAttribute('aria-label',imm.title);
+      const sound=!!LabSettings.get('sound'),open=VM.host&&VM.anchor===snd;
+      snd.innerHTML='<span class="mb-i" aria-hidden="true">'+(sound?'🔊':'🔇')+'</span><span class="mb-t">'+T('聲音','Voice')+'</span><small class="mb-r">'+host().speed().toFixed(1)+'×</small>';
+      snd.setAttribute('aria-expanded',String(!!open));snd.classList.toggle('off',!sound);
+      const L=LANGS.find(x=>x[0]===LabSettings.lang)||LANGS[0],lo=VM.host&&VM.anchor===lang;
+      lang.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.5 3.8 5.6 3.8 9s-1.2 6.5-3.8 9c-2.6-2.5-3.8-5.6-3.8-9S9.4 5.5 12 3z"/></svg><span class="mb-t" data-no-convert lang="'+L[0]+'">'+L[2]+'</span><span class="mb-c" aria-hidden="true">▾</span>';
+      lang.setAttribute('aria-expanded',String(!!lo));
+    }
+    function pageImm(on){
+      root.classList.toggle('exam-imm-page',on);
+      if(on){const req=root.requestFullscreen||root.webkitRequestFullscreen;if(req&&!fsOn())try{const r=req.call(root);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}}
+      else{root.dataset.pageFs='';if(fsOn()&&!root.classList.contains('learn-immersive')){const ex=document.exitFullscreen||document.webkitExitFullscreen;try{const r=ex&&ex.call(document);if(r&&r.catch)r.catch(()=>{});}catch(e){/* 略 */}}}
+      labels();dispatchEvent(new Event('resize'));
+    }
+    imm.onclick=()=>{
+      if(root.classList.contains('learn-immersive')){by('immersive')?.click();if(root.classList.contains('exam-imm-page'))pageImm(false);return;}
+      if(root.classList.contains('exam-imm-page')){pageImm(false);return;}
+      if(by('immersive')&&by('explanation')&&!by('explanation').hidden){by('immersive').click();return;}
+      pageImm(true);
+    };
+    const fsChange=()=>{if(fsOn())root.dataset.pageFs='1';else if(root.dataset.pageFs==='1'&&root.classList.contains('exam-imm-page'))pageImm(false);};
+    document.addEventListener('fullscreenchange',fsChange);document.addEventListener('webkitfullscreenchange',fsChange);
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!VM.host&&root.classList.contains('exam-imm-page')&&!root.classList.contains('learn-immersive'))pageImm(false);});
+    snd.onclick=e=>{e.stopPropagation();if(VM.host&&VM.anchor===snd)return closeVoiceMenu();openVoiceMenu(snd,host());};
+    lang.onclick=e=>{e.stopPropagation();if(VM.host&&VM.anchor===lang)return closeVoiceMenu();
+      openPop(lang,{closed:labels,opened:labels},'lang',m=>{
+        m.setAttribute('aria-label',T('語言','Language'));
+        m.innerHTML='<div class="rm-title">'+T('顯示語言','Display language')+'</div>'+LANGS.map(([v,name])=>'<button type="button" class="rm-lang" data-lang="'+v+'" lang="'+v+'" data-no-convert aria-pressed="'+(v===LabSettings.lang)+'">'+name+'</button>').join('');
+        m.addEventListener('click',ev=>{const b=ev.target.closest('[data-lang]');if(!b)return;const v=b.dataset.lang;if(v===LabSettings.lang)return closeVoiceMenu();
+          try{const st=JSON.parse(localStorage.getItem('lab-settings')||'{}');st.lang=v;localStorage.setItem('lab-settings',JSON.stringify(st));}catch{/* 略 */}
+          try{const u=new URL(location.href);u.searchParams.delete('lang');location.replace(u.href);}catch{location.reload();}});
+      });};
+    // 沉浸中閒置 3 秒，播放列變半透明（照龍騰學生版：不擋眼睛、手指照樣按得到）
+    // 只在 class 真的要變時才改（改 class 會觸發下面的監看，不能互相觸發成迴圈）
+    let idle=0;const sleep=()=>{idle=0;if(root.classList.contains('learn-immersive')&&!root.classList.contains('learn-imm-idle'))root.classList.add('learn-imm-idle');};
+    const wake=()=>{if(root.classList.contains('learn-imm-idle'))root.classList.remove('learn-imm-idle');clearTimeout(idle);idle=root.classList.contains('learn-immersive')?setTimeout(sleep,3000):0;};
+    ['pointerdown','pointermove','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,wake,{passive:true}));
+    new MutationObserver(()=>{labels();const on=root.classList.contains('learn-immersive');if(on&&!idle&&!root.classList.contains('learn-imm-idle'))idle=setTimeout(sleep,3000);if(!on){clearTimeout(idle);idle=0;if(root.classList.contains('learn-imm-idle'))root.classList.remove('learn-imm-idle');}}).observe(root,{attributes:true,attributeFilter:['class']});
+    addEventListener('lab:settingschange',labels);
+    labels();
+  }
   function progress(unit,n,notify) {
     const key='learn-progress:'+unit, local=uid=>uid?key+':'+uid:key;
     let uid=null,backend=null,epoch=0,ready=false,chain=Promise.resolve(),remote=0,guest=true,known=false,pending=0;
@@ -167,37 +305,13 @@
     else U.segments.forEach((p,i)=>{const b=button('',()=>go(pages.findIndex(q=>q.id.startsWith((i+1)+'-')),0,false));b.append(el('span','segment-number',String(i+1)),el('span','segment-name',tr(p)));b.title=tr(p);b.setAttribute('aria-label',(i+1)+' · '+tr(p));progressNav.append(b);});
     function syncURL(){const q=new URLSearchParams(location.search),[seg,p]=page().id.split('-');if(presentation)q.set('line',page().id);else{q.set('seg',seg);q.set('p',p);}q.set('t',String(Math.round(t*1000)/1000));history.replaceState(null,'','?'+q);}
     function soundFx(type){if(!sound)return;if(type==='up'||type==='down')LabSound.sweep({from:type==='up'?360:640,to:type==='up'?640:360,dur:.13,gain:.12});else LabSound.tone({freq:type==='right'?740:295,dur:.14,type:'triangle',gain:.19});}
-    // 電腦語音（11/23 站長：「仿照『龍騰：第2章試做』，聲音的播放加入載具本身的英文跟中文。英文分女性跟男性，中文只有女性……是載具本身自己可以轉換的」，
-    // 另加「電腦語音・男（普通話）」；「AI語音・女／男（預錄）」這邊不做）。做法照龍騰 lt-engine.js：瀏覽器內建 speechSynthesis，選項放在語速鍵的選單上半部；
-    // 中文女聲只收臺灣國語（简体介面也收 zh-CN），普通話男聲只在简体介面出現；這台裝置沒有的聲音那格變灰、寫原因。動畫照念到第幾個字對時。
-    const SS=window.speechSynthesis,SSU=window.SpeechSynthesisUtterance,HANS=LabSettings.lang==='zh-Hans';
-    const E_F=[/\baria\b/i,/\bjenny\b/i,/\bava\b/i,/\bemma\b/i,/michelle/i,/google us english/i,/samantha/i,/\bzira\b/i,/\blibby\b/i,/\bsonia\b/i,/google uk english female/i,/\bkaren\b/i,/\bmoira\b/i,/\btessa\b/i,/allison/i,/\bsusan\b/i,/serena/i,/\bfiona\b/i,/victoria/i];
-    const E_M=[/\bguy\b/i,/\bandrew\b/i,/\bbrian\b/i,/christopher/i,/\beric\b/i,/\broger\b/i,/steffan/i,/\bryan\b/i,/google uk english male/i,/\bdaniel\b/i,/\balex\b/i,/\baaron\b/i,/\bfred\b/i,/\bdavid\b/i,/\bmark\b/i,/\bgeorge\b/i,/\btom\b/i,/\boliver\b/i,/\barthur\b/i,/\brishi\b/i];
-    const V_M=[/yunjhe|雲哲/i,/zhiwei|志偉/i,/\breed\b/i,/\beddy\b/i,/\brocko\b/i,/grandpa/i,/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/kangkang|康康/i];
-    const V_MC=[/yunxi|雲希|云希/i,/yunyang|雲揚|云扬/i,/yunjian|雲健|云健/i,/yunze|雲澤|云泽/i,/yunfeng|雲楓|云枫/i,/yunhao|雲皓|云皓/i,/kangkang|康康/i,/li-?mu|李牧/i];
-    const V_F=[/hsiaochen|曉臻/i,/hsiaoyu|曉雨/i,/google/i,/yating|雅婷/i,/hanhan|涵涵/i,/mei-?jia|美佳/i,/\bsandy\b/i,/\bshelley\b/i,/\bflo\b/i,/grandma/i,/xiaoxiao|曉曉|晓晓/i,/xiaoyi|曉伊|晓伊/i,/huihui|慧慧/i,/tingting|婷婷/i];
-    const VO={ready:false,zf:null,mc:null,ef:null,em:null};
-    const langNorm=l=>String(l||'').replace(/_/g,'-').toLowerCase().replace(/-#\w+$/,''),rankIn=(list,name)=>list.findIndex(r=>r.test(name));
-    const isTW=v=>/^(zh|cmn)-(hant-)?tw$/.test(langNorm(v.lang)),isCN=v=>/^(zh|cmn)-(hans-)?cn$/.test(langNorm(v.lang));
-    function pickVoices(){
-      let all=[];try{all=SS.getVoices()||[];}catch{/* 略 */}
-      if(!all.length&&!VO.timedOut)return false;
-      const zh=all.filter(isTW).concat(HANS?all.filter(isCN):[]),byRank=list=>(a,b)=>rankIn(list,a.name)-rankIn(list,b.name);
-      const f=zh.filter(v=>rankIn(V_F,v.name)>=0).sort(byRank(V_F));VO.zf=f[0]||zh.filter(v=>rankIn(V_M,v.name)<0)[0]||null;
-      VO.mc=HANS?all.filter(v=>isCN(v)&&rankIn(V_MC,v.name)>=0).sort(byRank(V_MC))[0]||null:null;
-      const enV=all.filter(v=>/^en(-|$)/.test(langNorm(v.lang))),eRank=list=>v=>{const r=rankIn(list,v.name);return (r<0?99:r)*4+(/^en-us$/.test(langNorm(v.lang))?0:2)+(v.localService===false?0:1);};
-      const ef=enV.filter(v=>rankIn(E_F,v.name)>=0).sort((a,b)=>eRank(E_F)(a)-eRank(E_F)(b)),em=enV.filter(v=>rankIn(E_M,v.name)>=0).sort((a,b)=>eRank(E_M)(a)-eRank(E_M)(b));
-      VO.ef=ef[0]||enV.filter(v=>rankIn(E_M,v.name)<0).sort((a,b)=>eRank([])(a)-eRank([])(b))[0]||null;VO.em=em[0]||null;
-      return true;
-    }
-    const VOICES=['ni','zf',...(HANS?['mc']:[]),'ef','em'],isTTS=v=>v!=='ni',vEN=v=>v==='ef'||v==='em';
+    const {SS,SSU,HANS,VO,pickVoices,VOICES,isTTS,vEN}=deviceVoices();
     let vpick=read('learn-voice'+(HANS?'-hans':''),null);if(!VOICES.includes(vpick))vpick=en?'ef':'ni';
     let tts=null,ttsGen=0;const ttsCps={zh:4.6,en:14};
-    function loadVoices(){if(!SS||!SSU||!pickVoices())return;const was=VO.ready;VO.ready=true;if(document.querySelector('.learn-rmenu')){by('speed').click();by('speed').click();}if(!was&&isTTS(vpick)&&!playing&&page())reloadVoice();controlLabels();}
+    function loadVoices(){if(!SS||!SSU||!pickVoices())return;const was=VO.ready;VO.ready=true;refreshVoiceMenu();if(!was&&isTTS(vpick)&&!playing&&page())reloadVoice();controlLabels();}
     if(SS&&SSU){setTimeout(loadVoices,0);try{SS.addEventListener?SS.addEventListener('voiceschanged',loadVoices):(SS.onvoiceschanged=loadVoices);}catch{/* 略 */}
       setTimeout(()=>{if(!VO.ready){VO.timedOut=true;loadVoices();}},2500);
       document.addEventListener('pointerdown',()=>{if(!VO.zf&&!VO.ef)setTimeout(()=>{VO.timedOut=true;loadVoices();},400);},{once:true,capture:true});}
-    function voiceName(v){return v==='ni'?T('倪老師・AI 仿聲','Dr. Ni · AI voice clone'):v==='zf'?T('電腦語音・女','Chinese · female'):v==='mc'?T('電腦語音・男（普通話）','Chinese · male (Mandarin)'):v==='ef'?'English · female':'English · male';}
     function ttsText(p){
       const pair=p.speech;if(!pair)return '';
       const raw=Array.isArray(pair)?(vEN(vpick)?pair[1]:T(pair[0],pair[1])):pair;
@@ -614,21 +728,10 @@
     })();
     by('replay').onclick=()=>go(index,0,true);by('play').onclick=()=>{if(t>=clock().dur)go(index,0,true);else setPlaying(!playing);};
     by('playhead').addEventListener('input',e=>seek(+e.target.value));by('speed').setAttribute('aria-haspopup','true');
-    const closeRate=()=>{document.querySelector('.learn-rmenu')?.remove();controlLabels();};
-    const setRate=v=>{speed=v;write('learn-rate',v);if(voice)voice.playbackRate=speed;if(tts&&playing&&tts.phase==='speak')ttsSpeak();closeRate();};
-    by('speed').onclick=e=>{e.stopPropagation();if(document.querySelector('.learn-rmenu'))return closeRate();
-      const m=document.createElement('div');m.className='learn-rmenu';m.setAttribute('role','group');m.setAttribute('aria-label',T('旁白語速','Narration speed'));
-      const vopt=v=>{const has=v==='ni'||(VO.ready&&!!VO[v]),why=!(SS&&SSU)?T('這個瀏覽器不支援電腦語音','This browser has no device voices'):!VO.ready?T('正在找這台裝置的聲音…','Looking for voices…'):T('這台裝置沒有'+(vEN(v)?(v==='ef'?'英文女聲':'英文男聲'):v==='mc'?'普通話男聲':'臺灣國語女聲'),'No '+(vEN(v)?(v==='ef'?'English female':'English male'):v==='mc'?'Mandarin male':'Chinese female')+' voice on this device');
-        const sub=v==='ni'?T('預錄旁白','Recorded narration'):has?VO[v].name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*-\s*.*$/,''):why;
-        return '<button type="button" class="rm-voice" data-voice="'+v+'" aria-pressed="'+(v===vpick)+'"'+(has?'':' disabled')+'><b>'+voiceName(v)+'</b><small>'+sub+'</small></button>';};
-      m.innerHTML='<div class="rm-title">'+T('旁白聲音','Narration voice')+'</div><div class="rm-voices">'+VOICES.map(vopt).join('')+'</div><div class="rm-title">'+T('旁白語速','Narration speed')+'</div><div class="rm-grid">'+RATES.map(r=>'<button type="button" data-rate="'+r+'" aria-pressed="'+(r===speed)+'">'+r.toFixed(1)+'×</button>').join('')+'</div>';
-      m.addEventListener('click',ev=>{const vb=ev.target.closest('[data-voice]');if(vb&&!vb.disabled){closeRate();setVoice(vb.dataset.voice);return;}const b=ev.target.closest('[data-rate]');if(b)setRate(+b.dataset.rate);});document.body.append(m);
-      const r=by('speed').getBoundingClientRect(),W=m.offsetWidth,H=m.offsetHeight,vw=document.documentElement.clientWidth;
-      const left=Math.min(Math.max(8,r.left+r.width/2-W/2),vw-W-8),below=r.bottom+6+H<=innerHeight-8;
-      m.style.left=left+'px';m.style.top=(below?r.bottom+6:Math.max(8,r.top-6-H))+'px';controlLabels();m.querySelector('[aria-pressed="true"]')?.focus();};
-    document.addEventListener('pointerdown',e=>{if(!e.target.closest('.learn-rmenu,#speed'))document.querySelector('.learn-rmenu')&&closeRate();});
-    addEventListener('resize',()=>document.querySelector('.learn-rmenu')&&closeRate());addEventListener('scroll',()=>document.querySelector('.learn-rmenu')&&closeRate(),{passive:true});
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.learn-rmenu')){closeRate();by('speed').focus();}});
+    const setRate=v=>{speed=v;write('learn-rate',v);if(voice)voice.playbackRate=speed;if(tts&&playing&&tts.phase==='speak')ttsSpeak();closeVoiceMenu();};
+    // 旁白聲音＋語速選單和頂列「聲音」鍵共用（openVoiceMenu）；播放器掛上後，頂列改用這裡的設定
+    const vhost={vpick:()=>vpick,speed:()=>speed,setVoice:v=>setVoice(v),setRate:v=>setRate(v),closed:()=>controlLabels()};window.LearnVoiceHost=vhost;
+    by('speed').onclick=e=>{e.stopPropagation();if(VM.host&&VM.anchor===by('speed'))return closeVoiceMenu();openVoiceMenu(by('speed'),vhost);controlLabels();};
     by('auto').onchange=e=>{auto=e.target.checked;write('learn-auto',auto);};
     by('sound').onclick=()=>LabSettings.set('sound',!sound);
     addEventListener('lab:settingschange',e=>{if(e.detail?.name==='sound'){sound=LabSettings.get('sound');if(voice)voice.muted=!sound;if(isTTS(vpick))reloadVoice();if(playing&&!sound)heardFromStart=false;controlLabels();}});
@@ -647,5 +750,5 @@
     window.LearnPlayer={get snapshot(){return {id:page().id,index,t,dur:clock().dur,playing,mediaReady:voiceReady,mediaDuration:voiceReady?voice.duration:null,tail,renderer:by('scene').dataset.renderer,geometry:scene.geometry,model:frameModel,colors:scene.colors};}};
 
   }
-  return {parseScript,estimate,numeric,gradeNumber,mount,progress};
+  return {parseScript,estimate,numeric,gradeNumber,mount,progress,mastControls};
 });
