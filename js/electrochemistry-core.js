@@ -132,7 +132,9 @@
       s.c = Math.max(0, s.c - nM / s.V);
       s.mCath += nM * m.M; s.dep += nM * m.M;
       const neH = ne - nM * m.z;
-      if (neH > 0) { s.nH2 += neH / 2; s.nH = Math.max(0, s.nH - neH); }
+      if (s.nHNet == null) s.nHNet = s.nH || 0;
+      let dH = 0;
+      if (neH > 0) { s.nH2 += neH / 2; dH -= neH; }
       // 陽極
       if (s.elec === 'Cu') {
         const nCu = ne / 2;
@@ -140,8 +142,11 @@
         if (s.mAnode < 1e-9) s.mAnode = 0;
         if (s.metal === 'Cu') s.c += nCu / s.V; else s.cu2 = (s.cu2 || 0) + nCu / s.V;
       } else {
-        s.nO2 += ne / 4; s.nH += ne;
+        s.nO2 += ne / 4; dH += ne;
       }
+      // 合併兩極淨質子帳（陰極析氫對應消耗 H+ / 產生 OH-，陽極析氧產生 H+），避免空白酸度雙極電解水出現虛假淨酸
+      s.nHNet += dH;
+      s.nH = Math.max(0, s.nHNet);
       s.q += q; s.t += h; left -= h;
     }
     if (left > 1e-12) s.t += left;

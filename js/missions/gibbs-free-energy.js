@@ -31,7 +31,7 @@
     {
       id: 'gibbs-free-energy-3', level: 3,
       title: { zh: '找到轉折溫度', en: 'Find the turning point' },
-      desc: { zh: '選一個真實的反應，把溫度調到 |ΔG°| ≤ 1.0 kJ/mol（快要平衡了），按「記錄這一點」。', en: 'Choose a real reaction, tune the temperature until |ΔG°| ≤ 1.0 kJ/mol (almost at equilibrium) and press “Record this point”.' },
+      desc: { zh: '選一個真實的反應，把溫度調到 |ΔG°| ≤ 1.0 kJ/mol（標準平衡常數 K 接近 1，標準狀態下接近平衡），按「記錄這一點」。', en: 'Choose a real reaction, tune the temperature until |ΔG°| ≤ 1.0 kJ/mol (K ≈ 1, near equilibrium at standard state Q = 1) and press “Record this point”.' },
       check: function (ev) { const d = rec(ev); return real(d) && Math.abs(d.dG) <= 1.0; }
     },
     {

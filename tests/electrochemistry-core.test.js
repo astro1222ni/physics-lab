@@ -147,6 +147,13 @@ test('電解到銅離子用完：藍色褪去，陰極改冒氫氣（電子總�
   rel(s.dep / M.Cu.M * 2 + 2 * s.nH2, 20000 / C.F, 1e-9);
   assert.ok(s.dep <= 0.05 * 0.1 * M.Cu.M + 1e-12);
 });
+test('電解（石墨）：銅離子為零時雙極同時電解水，淨酸度不產生虛假 H+', function () {
+  const s = C.createElectro({ metal: 'Cu', c: 0, V: 0.2, elec: 'C', I: 1 });
+  C.stepElectro(s, 1000);
+  near(s.nH, 0, 1e-12, '陰極析氫與陽極析氧中和，不產生虛假淨酸');
+  rel(s.nH2, 1000 / (2 * C.F), 1e-9);
+  rel(s.nO2, 1000 / (4 * C.F), 1e-9);
+});
 test('未知金屬：E° 在 −1.2～+0.7 V、取到 mV；電解用的未知金屬都是二價', function () {
   let a = 1;
   const r = function () { a = (a * 16807) % 2147483647; return a / 2147483647; };

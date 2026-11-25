@@ -479,8 +479,8 @@
       r: T('原子半徑（單鍵共價半徑）：同週期往右變小，同族往下變大。', 'Atomic radius (single-bond covalent radius): smaller to the right of a period, larger down a group.'),
       IE: T('第一游離能：從氣態原子拿走一個電子所需的能量。同週期往右大致變大，同族往下變小。', 'First ionization energy: the energy to remove one electron from a gaseous atom. It roughly rises across a period and falls down a group.'),
       EN: T('電負度（鮑林）：原子在化學鍵中吸引共用電子的能力。右上角最大。', 'Electronegativity (Pauling): how strongly an atom pulls shared electrons in a bond. Largest at the top right.'),
-      mp: T('熔點（1 atm）：每個週期中間最高，鈍氣與鹼金屬很低。', 'Melting point (1 atm): highest in the middle of each period, low for noble gases and alkali metals.'),
-      rho: T('密度（室溫、1 atm）：用對數色階，氣體大約只有固體的千分之一。', 'Density (room temperature, 1 atm), on a logarithmic colour scale: the gases are about a thousand times less dense than the solids.'),
+      mp: T('熔點（主要為 1 atm；註：碳在 1 atm 昇華、氦需加壓才凝固，圖中以空心圓區分）：每個週期中間最高，鈍氣與鹼金屬很低。', 'Melting point (mostly 1 atm; note: C sublimes at 1 atm and He solidifies only under pressure, shown as open circles): highest in the middle of each period, low for noble gases and alkali metals.'),
+      rho: T('密度（固液體多為室溫 25 °C，氣體依 PubChem 採 0 °C、1 atm）：用對數色階，氣體大約只有固體的千分之一。', 'Density (solids/liquids near 25 °C; gases at 0 °C, 1 atm per PubChem), on a logarithmic colour scale: the gases are about a thousand times less dense than the solids.'),
       cat: T('元素類別：金屬在左下、非金屬在右上，類金屬在中間的斜線上。', 'Kinds of element: metals at the lower left, nonmetals at the upper right, metalloids along the staircase between them.')
     };
     $('propHint').textContent = H[state.prop];
@@ -613,8 +613,16 @@
       const v = shownVal(Z, p);
       if (v == null || (yr.log && v <= 0)) continue;
       const e = P.EL[Z], isNg = e.cat === 'ng', isAlk = e.cat === 'alk';
-      g.fillStyle = isNg ? col.pos : isAlk ? col.neg : col.accent;
-      g.beginPath(); g.arc(A.sx(Z), Y(v), isNg || isAlk ? 3 : narrow ? 1.6 : 2.2, 0, Math.PI * 2); g.fill();
+      const specialMp = p === 'mp' && (Z === 2 || Z === 6);
+      if (specialMp) {
+        g.fillStyle = col['canvas-bg'];
+        g.strokeStyle = isNg ? col.pos : col.accent;
+        g.lineWidth = 1.8;
+        g.beginPath(); g.arc(A.sx(Z), Y(v), 3.6, 0, Math.PI * 2); g.fill(); g.stroke();
+      } else {
+        g.fillStyle = isNg ? col.pos : isAlk ? col.neg : col.accent;
+        g.beginPath(); g.arc(A.sx(Z), Y(v), isNg || isAlk ? 3 : narrow ? 1.6 : 2.2, 0, Math.PI * 2); g.fill();
+      }
     }
     // 猜猜看藏起來的元素
     if (game.on && !game.revealed && game.prop === p && game.Z <= zmax) {

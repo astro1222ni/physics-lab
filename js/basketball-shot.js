@@ -33,11 +33,18 @@
       skin: dark ? shade(wood, .23) : mix(shade(orange, .46), c.equi, .12),
       jersey: dark ? mix(teal, c.accent, .30) : teal, softball: mix(shade(c.equi, .66), shade(c.probe, .74), .22) };
   }
-  const outcome = r => ({
-    swish: T('空心進球','Swish'), bank: T('打板進球','Bank shot'), front: T('碰前框','Front rim'),
-    back: T('碰後框','Back rim'), miss: r.board ? T('打板未進','Bank miss') : T('未進框','Miss'),
-    land: T('壘球落地','Softball lands')
-  })[r.outcome];
+  const outcome = r => {
+    if (r.final && r.outcome !== 'land') {
+      if (r.final.how === 'bank-rim-in') return T('打板碰框進','Bank and rim in');
+      if (r.final.how === 'bank' && r.outcome !== 'bank') return T('打板進球','Bank shot');
+      if (r.firstContact === 'board' && !r.board && r.final.how === 'board-out') return T('打板彈出','Banked out');
+    }
+    return ({
+      swish: T('空心進球','Swish'), bank: T('打板進球','Bank shot'), front: T('碰前框','Front rim'),
+      back: T('碰後框','Back rim'), miss: r.board ? T('打板未進','Bank miss') : T('未進框','Miss'),
+      land: T('壘球落地','Softball lands')
+    })[r.outcome];
+  };
   function finalLabel(d){
     const labels={swish:['空心進','Swish'],bank:['打板進','Banked in'],'rim-in':['碰框彈進','Rimmed in'],'bank-rim-in':['打板碰框進','Bank and rim in'],
       'rim-out':['碰框彈出','Rimmed out'],'board-out':['打板彈出','Banked out'],airball:['籃外空心','Airball']};

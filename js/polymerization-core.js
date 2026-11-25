@@ -100,7 +100,7 @@
     let n = 0;
     while (s.t < tEnd) {
       const R = rad.length;
-      const ad = kd * s.NI, ap = kpN * R * s.NM, at = ktN * R * (R - 1);
+      const ad = s.NM > 0 ? kd * s.NI : 0, ap = kpN * R * s.NM, at = ktN * R * (R - 1);
       const a0 = ad + ap + at;
       if (!(a0 > 0)) { s.t = tEnd; break; }
       const tau = -Math.log(1 - r()) / a0;
@@ -137,7 +137,7 @@
     }
     return n;
   }
-  function addEnded(s) { return (s.NI === 0 && s.rad.length === 0) || s.NM === 0; }
+  function addEnded(s) { return s.NM === 0 ? s.rad.length < 2 : (s.NI === 0 && s.rad.length === 0); }
 
   // ======================= 縮合聚合 =======================
   // 每個分子：n（單體數）、a（A 端數）、b（B 端數），a + b = 2。AA 單體 (1,2,0)、BB 單體 (1,0,2)、AB 單體 (1,1,1)。

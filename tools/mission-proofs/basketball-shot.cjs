@@ -27,7 +27,7 @@ const examples = {
   '8': [[{mode: "throw", height: 1.2, speed: 16, angle: 40, drag: true}, {mode: "throw", height: 1.2, speed: 16, angle: 40}], [{mode: "throw", height: 1.2, speed: 17, angle: 32, drag: true}, {mode: "throw", height: 1.2, speed: 17, angle: 32}]],
   '9': [[{mode: "throw", height: 0, speed: 7, angle: 62}, {mode: "throw", height: 0, speed: 7, angle: 28}], [{mode: "throw", height: 0, speed: 9, angle: 62}, {mode: "throw", height: 0, speed: 9, angle: 28}]],
   '10': [centrePair(4.23,2.2,.004),centrePair(2.3,1.2,.012)],
-  '11': [[{bearing:80,distance:6.70,angle:55,speed:8.84}],[{bearing:-80,distance:6.70,angle:55,speed:8.88}]],
+  '11': [[{bearing:80,distance:6.71,angle:55,speed:8.84}],[{bearing:-80,distance:6.71,angle:55,speed:8.88}]],
   '12': [[{angle:55,speed:7.22}],[{angle:55,speed:7.24}]],
   'h1': [[{angle: 29, speed: 9.43}], [{angle: 32, speed: 8.75}]],
   'h2': [[{speed: 8.55, height: 1.2, distance: 3.2, angle: 52.28}], [{speed: 9.12, height: 1.2, distance: 3.7, angle: 50.61}]],
@@ -118,10 +118,17 @@ function verifyConditions() {
   assert.ok(awarded(release(inside,'single')).includes(slug+'-h1'));
   assert.ok(!awarded(release(outside,'single')).includes(slug+'-h1'));
   assert.ok(!has('7',{...highArc,bearing:35},lowArc));
-  const corner=measure({bearing:80,distance:6.7,angle:55,speed:8.86});
+  const corner=measure({bearing:80,distance:6.71,angle:55,speed:8.86});
   assert.deepEqual(awarded(release(corner,'single')),[slug+'-3']);
   assert.deepEqual(awarded({...corner,trialRole:'single',focus:'finish'}),[slug+'-11']);
   assert.deepEqual(awarded({...corner,trialRole:'reference',focus:'finish'}),[]);
+  // 真 FIBA 三分底角邊界：bearing=60°、distance=6.60 m 仍在圓弧內（距籃框 < 6.75 m 且橫距 5.72 m < 6.60 m）
+  const insideArc=measure({bearing:60,distance:6.60,angle:55,speed:8.80});
+  assert.ok(!awarded({...insideArc,trialRole:'single',focus:'finish'}).includes(slug+'-11'));
+  // 3D 打板後碰框進球也應觸發擦板進球（第 5 題）
+  const bankRim=measure({speed:7.8});
+  assert.ok(bankRim.final && bankRim.final.made && bankRim.firstContact==='board');
+  assert.ok(awarded(release(bankRim,'single')).includes(slug+'-5'));
   const [drag,ideal]=examples.h7[0];
   assert.ok(has('h7',ideal,drag)&&!has('h7',drag));
   assert.ok(!has('h7',{...ideal,drag:true},ideal)); // Only the drag switch changed.

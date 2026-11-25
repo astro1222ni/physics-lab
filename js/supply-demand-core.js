@@ -8,10 +8,15 @@
     if (!Number.isFinite(b) || b <= 0 || !Number.isFinite(d) || d <= 0) {
       throw new RangeError('Demand and supply slope magnitudes must be finite and positive.');
     }
-    // This station recognizes a market only at a positive-quantity intersection.
+    // This station recognizes a positive-quantity free market only when a > c.
+    // Under a price control, buyers or sellers may still express positive demand or supply at the controlled price.
     if (a <= c) {
-      return { equilibriumQty: 0, equilibriumPrice: null, actualPrice: null, binding: false,
-        demand: 0, supply: 0, traded: 0, shortage: 0, excess: 0, revenue: 0,
+      const hasPrice = Number.isFinite(price);
+      const demand = policy === 'ceiling' && hasPrice && price < a ? Math.max(0, (a - price) / b) : 0;
+      const supply = policy === 'floor' && hasPrice && price > c ? Math.max(0, (price - c) / d) : 0;
+      const binding = demand > 0 || supply > 0;
+      return { equilibriumQty: 0, equilibriumPrice: null, actualPrice: binding ? price : null, binding,
+        demand, supply, traded: 0, shortage: demand, excess: supply, revenue: 0,
         consume: 0, produce: 0, surplus: 0, freeConsume: 0, freeProduce: 0, freeSurplus: 0, loss: 0 };
     }
     const equilibriumQty = (a - c) / (b + d);

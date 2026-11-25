@@ -566,8 +566,8 @@
     g.beginPath(); g.moveTo(cx(2) - bw / 2 - 8, sy(s.dG)); g.lineTo(cx(2) + bw / 2 + 8, sy(s.dG)); g.stroke();
     // 欄名
     ['ΔH°', '−TΔS°', 'ΔG°'].forEach(function (n, i) { LD.haloText(g, n, cx(i), y1 + 12, col.muted, 'center', 'alphabetic', '600 12px ' + LD.FONT); });
-    // 判斷
-    const vt = s.verdict === 'yes' ? T('ΔG° < 0：自發', 'ΔG° < 0: spontaneous') : s.verdict === 'no' ? T('ΔG° > 0：不自發', 'ΔG° > 0: not spontaneous') : T('ΔG° ≈ 0：平衡（K ≈ 1）', 'ΔG° ≈ 0: at equilibrium (K ≈ 1)');
+    // 判斷（標準狀態 Q = 1）
+    const vt = s.verdict === 'yes' ? T('ΔG° < 0：標準狀態自發（Q = 1）', 'ΔG° < 0: spontaneous at Q = 1') : s.verdict === 'no' ? T('ΔG° > 0：標準狀態不自發（Q = 1）', 'ΔG° > 0: non-spontaneous at Q = 1') : T('ΔG° ≈ 0：標準狀態平衡（K ≈ 1）', 'ΔG° ≈ 0: equilibrium at Q = 1 (K ≈ 1)');
     const pb = LD.pill(g, vt, x1 - 2, y0 - 2, vc, 'right', '700 13px ' + LD.FONT);
     const age = (performance.now() - flashT0) / 600;
     if (age >= 0 && age <= 1 && !reducedMotion) LD.ripple(g, pb.x + pb.w / 2, pb.y + pb.h / 2, pb.h * 0.8, age, vc);
@@ -669,8 +669,8 @@
     g.fillStyle = LD.alpha(col.probe, col.dark ? 0.10 : 0.07); g.fillRect(A.X0, z, A.X1 - A.X0, A.Y0 - z);
     g.fillStyle = LD.alpha(col.pos, col.dark ? 0.08 : 0.05); g.fillRect(A.X0, A.Y1, A.X1 - A.X0, z - A.Y1);
     // 區域名稱放在左上、左下角（右邊留給各反應的名稱）
-    if (z < A.Y0 - 14) LD.haloText(g, T('自發（ΔG° < 0）', 'spontaneous (ΔG° < 0)'), A.X0 + 6, A.Y0 - 8, col.probe, 'left', 'alphabetic', '600 11px ' + LD.FONT);
-    if (z > A.Y1 + 14) LD.haloText(g, T('不自發（ΔG° > 0）', 'not spontaneous (ΔG° > 0)'), A.X0 + 6, A.Y1 + 14, col.pos, 'left', 'alphabetic', '600 11px ' + LD.FONT);
+    if (z < A.Y0 - 14) LD.haloText(g, T('標準狀態自發（ΔG° < 0，Q = 1）', 'spontaneous at Q = 1 (ΔG° < 0)'), A.X0 + 6, A.Y0 - 8, col.probe, 'left', 'alphabetic', '600 11px ' + LD.FONT);
+    if (z > A.Y1 + 14) LD.haloText(g, T('標準狀態不自發（ΔG° > 0，Q = 1）', 'non-spontaneous at Q = 1 (ΔG° > 0)'), A.X0 + 6, A.Y1 + 14, col.pos, 'left', 'alphabetic', '600 11px ' + LD.FONT);
     // 各反應的直線：適用範圍內實線、範圍外虛線
     const labs = [];
     ids.forEach(function (id) {

@@ -31,20 +31,35 @@ assert.equal(atCrossing.binding, false);
 assert.equal(atCrossing.excess, 0);
 assert.equal(read({ policy: 'ceiling', price: 0 }).shortage, 60);
 
-// 兩個截距分開或只在零杯處接觸時，三種制度都沒有市場。
+// 兩個截距分開或只在零杯處接觸時，自由市場無成交；若設有效管制價，仍有對應短缺或過剩（成交仍為 0）。
 for (const a of [10, 20]) {
   for (const policy of ['free', 'ceiling', 'floor']) {
     for (const price of [0, 10, 12, 15, 18, 20, 42]) {
       const r = read({ a, policy, price });
       assert.equal(r.equilibriumPrice, null);
-      assert.equal(r.actualPrice, null);
-      assert.equal(r.binding, false);
-      for (const field of ['traded', 'equilibriumQty', 'demand', 'supply', 'shortage', 'excess', 'revenue',
-        'consume', 'produce', 'surplus', 'freeConsume', 'freeProduce', 'freeSurplus', 'loss']) assert.equal(r[field], 0, field);
-      assert.deepEqual(stallCounts(r), { served: 0, waiting: 0, unsold: 0 });
+      assert.equal(r.traded, 0);
+      assert.equal(r.equilibriumQty, 0);
+      const expectDemand = policy === 'ceiling' && price < a ? (a - price) / base.b : 0;
+      const expectSupply = policy === 'floor' && price > base.c ? (price - base.c) / base.d : 0;
+      const expectBinding = expectDemand > 0 || expectSupply > 0;
+      assert.equal(r.binding, expectBinding);
+      assert.equal(r.actualPrice, expectBinding ? price : null);
+      close(r.demand, expectDemand);
+      close(r.supply, expectSupply);
+      close(r.shortage, expectDemand);
+      close(r.excess, expectSupply);
+      for (const field of ['revenue', 'consume', 'produce', 'surplus', 'freeConsume', 'freeProduce', 'freeSurplus', 'loss']) {
+        assert.equal(r[field], 0, field);
+      }
+      assert.equal(stallCounts(r).served, 0);
     }
   }
 }
+// 具體案例：a=20, c=40, b=d=1，上限 10 元得短缺 10；下限 50 元得過剩 10。
+const noMktCap = market({ a: 20, b: 1, c: 40, d: 1, policy: 'ceiling', price: 10 });
+assert.equal(noMktCap.traded, 0); assert.equal(noMktCap.demand, 10); assert.equal(noMktCap.supply, 0); assert.equal(noMktCap.shortage, 10); assert.equal(noMktCap.excess, 0);
+const noMktFloor = market({ a: 20, b: 1, c: 40, d: 1, policy: 'floor', price: 50 });
+assert.equal(noMktFloor.traded, 0); assert.equal(noMktFloor.demand, 0); assert.equal(noMktFloor.supply, 10); assert.equal(noMktFloor.excess, 10); assert.equal(noMktFloor.shortage, 0);
 for (const slope of ['b', 'd']) for (const invalid of [0, -1, NaN, Infinity, undefined]) {
   for (const a of [10, 20, 60]) assert.throws(() => read({ a, [slope]: invalid }), RangeError);
 }

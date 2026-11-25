@@ -52,6 +52,16 @@ test('加成聚合：單體守恆（結合與歧化，跑到結束）', function
   });
 });
 
+test('加成聚合：單體耗盡但仍有成對活性鏈時會繼續終止至活性鏈清空', function () {
+  const s = P.createAdd({ init: 0.05, term: 'comb', N: 50000, seed: 19 });
+  s.NM = 0; s.rad = [12, 18, 20, 30]; s.dead = []; s.nPoly = 4; s.s1 = 80; s.s2 = 12 * 12 + 18 * 18 + 20 * 20 + 30 * 30;
+  assert.strictEqual(P.ended(s), false, '仍有 4 條活性鏈可偶合，不應立即結束');
+  while (!P.ended(s)) P.step(s, 50);
+  assert.strictEqual(s.rad.length, 0, '活性鏈應全數偶合終止');
+  assert.strictEqual(s.dead.length, 2, '4 條活性鏈偶合成 2 條死鏈');
+  assert.strictEqual(s.s1, 80, '總單體數守恆');
+});
+
 test('加成聚合：自由基數、轉化率與穩定態解析式一致（−ln(1 − x) = 2kp[R•]0/kd·(1 − e^(−kd t/2))）', function () {
   const I = 0.005, s = P.createAdd({ init: I, seed: 21 });
   const th = P.addTheory(I);

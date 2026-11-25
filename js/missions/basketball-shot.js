@@ -51,8 +51,8 @@
     normal(4,'高弧也會擦邊','A steep but narrow escape','直接投進一球，入框角超過 45°，最小間隙不超過 1 cm。','Make a direct basket at an entry angle above 45° with at most 1 cm of clearance.',false,[
       step('直接進框時的下降角','Descent angle on a direct make',d=>direct(d)&&d.crossing.angle>45,d=>value(direct(d)?d.crossing.angle:null,'°',1)),
       step('球面至框緣的間隙','Ball-to-rim clearance',d=>d.scored&&d.margin<=.01,d=>value(d.margin==null?null:d.margin*100,' cm',1))]),
-    normal(5,'借籃板轉彎','Take it off the glass','讓籃球先碰籃板，再順著反彈路徑穿過籃框。','Send the basketball off the board and through the hoop.',false,[
-      step('打板後進框','Basket after board contact',d=>shot(d)&&d.bank,d=>d.bank?['已進','made']:d.board?['已打板','board hit']:['尚未打板','no board contact'])]),
+    normal(5,'借籃板轉彎','Take it off the glass','讓籃球先碰籃板，再順著反彈路徑穿過籃框（含打板擦框進球）。','Send the basketball off the board and through the hoop (including off-the-glass rim-ins).',false,[
+      step('打板後進框','Basket after board contact',d=>shot(d)&&(d.bank||(d.firstContact==='board'&&!!d.final?.made)),d=>(d.bank||(d.firstContact==='board'&&!!d.final?.made))?['已進','made']:(d.board||d.firstContact==='board')?['已打板','board hit']:['尚未打板','no board contact'])]),
     normal(6,'把壘球送得更遠','Approach the longest throw','先投一顆較短的壘球作為基準。同速、同高、同阻力再擲，讓第二球比基準多飛逾 2 cm，並落在這組條件的最遠射程 0.05 cm 內。','Throw a shorter softball reference first. At the same speed, height and drag setting, land the second throw more than 2 cm beyond the reference and within 0.05 cm of the maximum range.',true,[
       pair,step('阻力設定相同','Matching drag settings',(d,p)=>d.drag===p.drag,(d,p)=>d.drag===p.drag?['相同','same']:['不同','different']),
       step('本球超越基準落點的距離','Distance gained beyond the reference landing point',(d,p)=>d.R-p.R>.02,diff('R',' cm',100,2)),
@@ -95,8 +95,8 @@
         p.vxLand>-p.vyLand+.10&&near(d.vxLand,-d.vyLand,.025)&&d.vLand-d.speed>.45)
   ];
   const extra=[
-    normal(11,'從底角也能進','A corner basket','在距框心至少 6.60 m、站位角度絕對值至少 60° 的底角直接投進。若同時符合舊任務，記錄重點選「站位與反彈」。','Make a direct shot from at least 6.60 m away at a bearing of at least 60° on either side. To prioritise this observation choose Position and rebound.',false,[
-      step('站在三分底角','Corner position',d=>shot(d)&&Math.abs(d.bearing)>=60&&d.distance>=6.60,d=>value(d.distance,' m')+' / '+value(d.bearing,'°',1)),
+    normal(11,'從底角也能進','A corner basket','站在三分線外的底角（站位角度絕對值至少 60°，且在 6.75 m 三分弧外或橫距中軸至少 6.60 m）直接投進。若同時符合舊任務，記錄重點選「站位與反彈」。','Make a direct shot from outside the three-point line in the corner (bearing at least 60° and either at least 6.75 m from the hoop or at least 6.60 m laterally from the centre line). To prioritise this observation choose Position and rebound.',false,[
+      step('站在三分底角（三分線外）','Outside the three-point corner',d=>shot(d)&&Math.abs(d.bearing)>=60&&(d.distance>=6.75-1e-9||d.distance*Math.sin(Math.abs(d.bearing)*Math.PI/180)>=6.60-1e-9),d=>value(d.distance,' m')+' / '+value(d.bearing,'°',1)),
       step('直接進球','Direct basket',direct,d=>direct(d)?['進球','Made']:['尚未進球','Pending'])],5),
     normal(12,'碰框彈進','In off the rim','讓球先碰前框或後框，再彈進網。若同時符合舊任務，記錄重點選「站位與反彈」。','Hit the front or back rim first and rebound into the basket. To prioritise this observation choose Position and rebound.',false,[
       step('首次碰到框緣','First contact is the rim',d=>shot(d)&&!!d.rimHit&&!d.board&&['front','back'].includes(d.outcome)&&d.firstContact==='rim',d=>d.rimHit&&!d.board?['碰框','Rim']:['尚未達成','Pending']),
