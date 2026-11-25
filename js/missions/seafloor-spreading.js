@@ -77,13 +77,13 @@
       id: 'seafloor-spreading-8', level: 5,
       title: { zh: '海面上的極限', en: 'The limit at the surface' },
       desc: { zh: '磁力計留在海面（0 km），把右邊的半擴張速率調到 1.3 cm/yr 以下，卻仍然看得出加拉米佑亞期的峰。', en: 'Keep the magnetometer at the surface (0 km), turn the right half-rate down to 1.3 cm/yr or less, and still resolve the Jaramillo peak.' },
-      check: function (ev) { const d = open(ev); return !!d && d.zs < 0.005 && d.uR <= 1.3 && d.ja; }
+      check: function (ev) { const d = open(ev); return !!d && d.zs < 0.005 && Math.max(d.uR, d.olderRight ?? d.uR) <= 1.3 && d.ja; }
     },
     {
       id: 'seafloor-spreading-9', level: 5,
       title: { zh: '慢速脊上的加拉米佑', en: 'Jaramillo on a slow ridge' },
       desc: { zh: '把右邊的半擴張速率調到 0.9–1.0 cm/yr（像大西洋中洋脊那麼慢），再把磁力計放深，讓加拉米佑亞期的峰重新出現。', en: 'Set the right half-rate to 0.9–1.0 cm/yr (as slow as the Mid-Atlantic Ridge), then lower the magnetometer until the Jaramillo peak reappears.' },
-      check: function (ev) { const d = open(ev); return !!d && d.uR >= 0.9 && d.uR <= 1.0 && d.ja; }
+      check: function (ev) { const d = open(ev); return !!d && d.uR >= 0.9 && d.uR <= 1.0 && (d.olderRight == null || (d.olderRight >= 0.9 && d.olderRight <= 1.0)) && d.ja; }
     },
     {
       id: 'seafloor-spreading-10', level: 6,
@@ -105,7 +105,7 @@
     {
       id: 'seafloor-spreading-h2', level: 6, hidden: true,
       riddle: { zh: '一萬兩千年的一眨眼，慢吞吞的海也記得。', en: 'A twelve-thousand-year blink, and even a sluggish sea remembers it.' },
-      check: function (ev) { const d = open(ev); return !!d && d.uR <= 1.2 && d.cobb; }
+      check: function (ev) { const d = open(ev); return !!d && (d.olderRight ?? d.uR) <= 1.2 && d.cobb; }
     },
     {
       id: 'seafloor-spreading-h3', level: 5, hidden: true,

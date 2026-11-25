@@ -427,7 +427,16 @@
     setOut(el.tB, outNum(state.B.T, 2)); setOut(el.sB, outNum(state.B.S, 2));
     setOut(el.mf, outNum(state.f, 2));
   }
+  $('deepRef').addEventListener('change', updateReadouts);
   function updateReadouts() {
+    const ref = $('deepRef').value;
+    $('deepResult').hidden = ref === '';
+    if (ref !== '') {
+      const [a, b] = K.deepPair(Number(ref));
+      $('deepResult').innerHTML = T('位密度減 1000：南極底層水 ', 'Potential density minus 1000: Antarctic Bottom Water ')
+        + num(a.sigma, 3) + T('、北大西洋深層水 ', ', North Atlantic Deep Water ') + num(b.sigma, 3) + ' kg/m<sup>3</sup>' + T('。', '. ')
+        + (a.sigma > b.sigma ? T('南極底層水較密。', 'Antarctic Bottom Water is denser.') : T('北大西洋深層水較密。', 'North Atlantic Deep Water is denser.'));
+    }
     const c = cur;
     setHTML('rTA', num(c.A.T, 2)); setHTML('rTB', num(c.B.T, 2)); setHTML('rTM', num(c.M.T, 2));
     setHTML('rSA', num(c.A.S, 2)); setHTML('rSB', num(c.B.S, 2)); setHTML('rSM', num(c.M.S, 2));

@@ -90,13 +90,56 @@
     env.ptp = envPRaw(env, zt);
     return env;
   }
-  function envT(env, z) { return z <= env.ztp ? env.Ts - env.gamma * z : env.Ttp; }
+  // 諾曼探空 2011-05-22 12 UTC，節錄海拔（m）及氣溫（°C），保留低層逆溫。
+  const sounding = [[345,22.2],[462,21.4],[720,20.4],[995,18.8],[1054,20],[1093,22.2],
+    [1219,23.2],[1454,22],[1955,18.2],[3096,7.6],[3839,0.6],[4555,-4.5],[4733,-3.3],
+    [5770,-11.1],[7430,-24.9],[9449,-43.5],[10650,-52.1],[12080,-56.5],[13526,-59.3],
+    [14460,-56.5],[15882,-64.3],[16170,-63.3]];
+  function soundingEnv(Ts) {
+    const layers = [];
+    for (const [alt, temp] of sounding) {
+      const z = alt - sounding[0][0], T = Ts + (temp - sounding[0][1]);
+      const prev = layers[layers.length - 1];
+      if (prev) prev.gamma = (prev.T - T) / (z - prev.z);
+      layers.push({ z: z, T: T, gamma: 0, p: prev ? layerPressure(prev, z) : P0 });
+    }
+    return { Ts: Ts, layers: layers, ztp: layers[layers.length - 1].z };
+  }
+  function layerAt(env, z) {
+    let i = env.layers.length - 1;
+    while (i > 0 && env.layers[i].z > z) i--;
+    return env.layers[i];
+  }
+  function layerPressure(l, z) {
+    const dz = z - l.z;
+    return l.gamma === 0 ? l.p * Math.exp(-G0 * dz / (RD * l.T))
+      : l.p * Math.pow(1 - l.gamma * dz / l.T, G0 / (RD * l.gamma));
+  }
+  function envT(env, z) {
+    if (env.layers) {
+      const l = layerAt(env, z);
+      return l.T - l.gamma * (z - l.z);
+    }
+    return z <= env.ztp ? env.Ts - env.gamma * z : env.Ttp;
+  }
+  function freezingHeight(env) {
+    if (!env.layers) return (env.Ts - TK) / (env.gamma || 1e-12);
+    for (const l of env.layers) {
+      if (l.T === TK) return l.z;
+      if (l.T > TK && l.gamma > 0) {
+        const z = l.z + (l.T - TK) / l.gamma;
+        if (layerAt(env, z) === l || Math.abs(envT(env, z) - TK) < 1e-8) return z;
+      }
+    }
+    return env.Ts < TK ? 0 : Infinity;
+  }
   function envPRaw(env, z) {
     if (Math.abs(env.gamma) < 1e-9) return P0 * Math.exp(-G0 * z / (RD * env.Ts));
     return P0 * Math.pow((env.Ts - env.gamma * z) / env.Ts, G0 / (RD * env.gamma));
   }
   /** 環境氣壓（Pa）：靜力平衡的解析解 */
   function envP(env, z) {
+    if (env.layers) return layerPressure(layerAt(env, z), z);
     if (z <= env.ztp) return envPRaw(env, z);
     return env.ptp * Math.exp(-G0 * (z - env.ztp) / (RD * env.Ttp));
   }
@@ -203,7 +246,7 @@
     const RH = Math.min(1, Math.max(0, params.RH));
     const H = Math.max(0, params.H);
     const eff = Math.min(1, Math.max(0, params.eff));
-    const env = makeEnv(T0, params.gamma, params.ztp);
+    const env = params.observed ? soundingEnv(T0) : makeEnv(T0, params.gamma, params.ztp);
     const s0 = startParcel(T0, RH);
     const L = lcl(env, T0, RH);
     const cloud = !!L && L.z < H;
@@ -239,7 +282,7 @@
       f = step(env, f, z, eff);
       free.push({ z: z, T: f.T, Te: envT(env, z), l: f.l });
     }
-    const conv = convection(free, env);
+    const conv = convection(free, env.layers ? H : null);
 
     const zl = L ? Math.min(L.z, H) : H;
     const rateDry = zl > 1 ? (T0 - (L && L.z < H ? L.T : top.T)) / (zl / 1000) : NaN;
@@ -247,7 +290,7 @@
     const Tev = sampleDown(down, zEvap);
     const rateLee = zEvap > 1 ? (lee.T - Tev.T) / (zEvap / 1000) : NaN;
     const gs = moistLapse(T0, P0) * 1000;
-    const stability = params.gamma > GAMMA_D * 1000 ? 'unstable' : (params.gamma > gs ? 'conditional' : 'stable');
+    const stability = env.layers ? 'layered' : params.gamma > GAMMA_D * 1000 ? 'unstable' : (params.gamma > gs ? 'conditional' : 'stable');
 
     return {
       params: { T0: params.T0, RH: RH, H: H, eff: eff, gamma: params.gamma, ztp: env.ztp },
@@ -272,7 +315,7 @@
   }
 
   /** 由自由上升的剖面找 LFC、EL、CAPE、CIN（浮力 b = 氣塊溫度 − 環境溫度；地面上 b = 0） */
-  function convection(free, env) {
+  function convection(free, crest) {
     let lfc = null, el = null, cape = 0, cin = 0;
     const b = function (s) { return s.T - s.Te; };
     for (let i = 1; i < free.length; i++) {
@@ -290,6 +333,13 @@
         if (bc <= 0) {
           const zc = a.z + (c.z - a.z) * ba / (ba - bc + 1e-300);
           cape += G0 * 0.5 * (ba / a.Te) * (zc - a.z);
+          // 探空可能有多層逆溫。越嶺時若早已離開這段正浮力層，改找山頂所在或上方的下一段。
+          if (crest != null && zc <= crest) {
+            lfc = null;
+            cape = 0;
+            cin += G0 * 0.5 * (bc / c.Te) * (c.z - zc);
+            continue;
+          }
           el = zc;
           break;
         }
@@ -356,7 +406,7 @@
     G0: G0, RD: RD, CPD: CPD, RV: RV, EPS: EPS, KAPPA: KAPPA, P0: P0, TK: TK, GAMMA_D: GAMMA_D, ZTP: ZTP, TTP_MIN: TTP_MIN, ZMAX: ZMAX, DZ: DZ,
     FOOT_W: FOOT_W, FOOT_L: FOOT_L,
     esat: esat, Lv: Lv, mixRatio: mixRatio, vapPress: vapPress, rsat: rsat, dewpoint: dewpoint, relHum: relHum,
-    makeEnv: makeEnv, envT: envT, envP: envP,
+    freezingHeight: freezingHeight, makeEnv: makeEnv, envT: envT, envP: envP,
     moistLapse: moistLapse, theta: theta, thetaE: thetaE, boltonTL: boltonTL,
     step: step, startParcel: startParcel, lcl: lcl, simulate: simulate,
     sampleUp: sampleUp, sampleDown: sampleDown, terrain: terrain, stateAtU: stateAtU, uAtZ: uAtZ

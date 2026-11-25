@@ -152,4 +152,10 @@ test('褶皺的地層：侵蝕後背斜核心露出較老的地層、向斜核�
   assert.ok(a > b, a + ' ' + b);
 });
 
+test('既有面傾角改變首先破壞的機制', () => {
+  const st = K.stress({ z: 5, kH: 0.8, kh: 0.6, az: 0, lam: 0.37, mu: 0.6 });
+  assert.equal(K.firstFailure(st, 0, 60).kind, 'weak');
+  assert.equal(K.firstFailure(st, 0, 10).kind, 'fresh');
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

@@ -28,8 +28,17 @@
     mystery: null              // { u, done }：神秘海脊進行中
   };
   function rates() { return state.mystery ? { uL: state.mystery.u, uR: state.mystery.u } : { uL: state.uL, uR: state.uR }; }
-  function P() { const r = rates(); return { uL: r.uL, uR: r.uR, tau: state.tau, zs: state.zs }; }
-  function range() { if (state.mystery) return MYSTERY_R; const r = rates(); return R_MA * Math.max(r.uL, r.uR) * K.KM_PER_MA; }
+  function P() {
+    const r = rates();
+    return { uL: r.uL, uR: r.uR, tau: state.tau, zs: state.zs, changeMa: 1,
+      oldRate: state.mystery ? 0 : Number($('olderRate').value) };
+  }
+  function instantRates() {
+    const p = P();
+    return p.oldRate && p.tau >= p.changeMa ? { uL: p.oldRate, uR: p.oldRate } : rates();
+  }
+  $('olderRate').addEventListener('change', refreshAll);
+  function range() { if (state.mystery) return MYSTERY_R; const r = rates(); return R_MA * Math.max(r.uL, r.uR, P().oldRate) * K.KM_PER_MA; }
   function readSliders() {
     state.uR = val(el.uR);
     state.uL = state.sym ? state.uR : val(el.uL);
@@ -39,7 +48,7 @@
   let prof = null, xs = [], lastKey = '';
   function recompute(force) {
     const R = range(), p = P(), n = cvSize && cvSize.w < 520 ? 360 : 520;
-    const key = [p.uL, p.uR, p.tau, p.zs, R, n].join('|');
+    const key = [p.uL, p.uR, p.tau, p.zs, p.oldRate, R, n].join('|');
     if (!force && key === lastKey) return;
     lastKey = key;
     xs = new Array(n + 1);
@@ -57,7 +66,7 @@
   let resKey = '', resVal = null;
   function stats() {
     let mx = -Infinity; for (let i = 0; i < prof.B.length; i++) if (prof.B[i] > mx) mx = prof.B[i];
-    const p = P(), key = [p.uL, p.uR, p.tau, p.zs].join('|');
+    const p = P(), key = [p.uL, p.uR, p.tau, p.zs, p.oldRate].join('|');
     if (key !== resKey) { resKey = key; resVal = { ja: K.resolved(p, 0.988, 1.072, 30, 1), cobb: K.resolved(p, 1.173, 1.185, 20, 1) }; }
     return { Bmax: mx, ja: resVal.ja, cobb: resVal.cobb };
   }
@@ -134,7 +143,7 @@
     const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
     return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
   }
-  function seafloorZ(x) { const r = rates(), u = (x < 0 ? r.uL : r.uR) * K.KM_PER_MA; return K.depth(Math.abs(x) / u) / 1000; }
+  function seafloorZ(x) { return K.depth(K.ageAt(P(), x)) / 1000; }
   function drawMain(tnow) {
     if (!cvSize || !prof) return;
     const L = lay(), g = ctx, W = L.W, H = L.H, fs = L.narrow ? 10.5 : 11.5;
@@ -195,7 +204,7 @@
       g.fillStyle = e.pol > 0 ? C['sf-n'] : e.pol < 0 ? C['sf-r'] : C['sf-old']; g.fill();
     });
     // 年表以外（較老）的海床：灰色斜線
-    const r = rates(), edgeR = (K.T_MAX - state.tau) * r.uR * K.KM_PER_MA, edgeL = -(K.T_MAX - state.tau) * r.uL * K.KM_PER_MA;
+    const r = instantRates(), edgeR = K.distanceAt(P(), 1, K.T_MAX - state.tau), edgeL = -K.distanceAt(P(), -1, K.T_MAX - state.tau);
     [[edgeR, L.R * 1.05], [-L.R * 1.05, edgeL]].forEach(function (q) {
       if (q[1] <= q[0]) return;
       const a = Math.max(-L.R, q[0]), b = Math.min(L.R, q[1]);
@@ -435,7 +444,7 @@
   function setStatus(s) { $('status').textContent = s; }
   function snapshot() {
     const r = rates(), c = crustAt(state.cx), s = stats(), bm = bmDist();
-    return { uL: r.uL, uR: r.uR, sym: state.sym, zs: state.zs, tau: state.tau, playing: state.running, mystery: !!state.mystery, dragging: dragging,
+    return { uL: r.uL, uR: r.uR, ...(P().oldRate ? { olderRight: P().oldRate } : {}), sym: state.sym, zs: state.zs, tau: state.tau, playing: state.running, mystery: !!state.mystery, dragging: dragging,
       cx: state.cx, cAge: c.age, cBorn: c.born, cPol: c.pol, cIn: c.inRecord, cDepth: K.depth(c.age), cHeat: K.heatFlow(c.age), cB: anomalyAt(state.cx),
       bmL: bm[0], bmR: bm[1], Bmax: s.Bmax, ja: s.ja, cobb: s.cobb, R: range() };
   }
@@ -451,7 +460,7 @@
     setOut(el.tau, outNum(state.tau, 3, 3));
   }
   function updateReadouts() {
-    const r = rates(), c = crustAt(state.cx), s = stats(), bm = bmDist(), hide = !!state.mystery, Q = '？';
+    const r = instantRates(), c = crustAt(state.cx), s = stats(), bm = bmDist(), hide = !!state.mystery, Q = '？';
     setHTML('rX', num(Math.abs(state.cx), 1) + ' km' + (Math.abs(state.cx) < 0.05 ? '' : state.cx > 0 ? T('（右邊）', ' (right)') : T('（左邊）', ' (left)')));
     const B = anomalyAt(state.cx);
     setHTML('rB', (B >= 0 ? '+' : '') + num(B, 0) + ' nT');
@@ -460,12 +469,18 @@
     setHTML('rDepth', hide ? Q : num(K.depth(c.age), 0) + ' m');
     setHTML('rHeat', hide ? Q : c.age < 0.05 ? T('非常高（中洋脊上）', 'very high (on the ridge)') : num(K.heatFlow(c.age), 0) + ' mW/m²');
     setHTML('rBM', hide ? Q : state.tau >= 0.781 ? T('還沒形成', 'not formed yet') : T('左 ', 'left ') + num(bm[0], 1) + T(' km、右 ', ' km, right ') + num(bm[1], 1) + ' km');
+    const params = P();
+    $('stripeResult').hidden = !params.oldRate;
+    if (params.oldRate) {
+      const bounds = K.namedAt(params, 'jaramillo', 1);
+      $('stripeResult').textContent = T('目前右側加拉米佑磁帶寬 ', 'Current right-hand Jaramillo width ') + num(bounds[1] - bounds[0], 2) + ' km';
+    }
     setHTML('rFull', hide ? Q : num(r.uL + r.uR, 2) + ' cm/yr' + T('（每年張開 ', ' (opens ') + num((r.uL + r.uR) * 10, 1) + T(' mm）', ' mm a year)'));
     setHTML('rMax', '+' + num(s.Bmax, 0) + ' nT');
     setHTML('rJa', hide ? Q : state.tau >= 1.072 ? T('還沒形成', 'not formed yet') : s.ja ? T('看得出一個獨立的峰', 'shows as a separate peak') : T('看不出來（和旁邊的訊號糊在一起）', 'not resolved (blurred into its neighbours)'));
     setHTML('rateHint', hide ? T('神秘海脊進行中：速率藏起來了。', 'Mystery ridge: the rate is hidden.')
       : T('全擴張速率 <b>' + num(r.uL + r.uR, 2) + '</b> cm/yr；1 cm/yr = 10 km／百萬年。', 'Full spreading rate <b>' + num(r.uL + r.uR, 2) + '</b> cm/yr; 1 cm/yr = 10 km per million years.'));
-    const gap = K.depth(Math.abs(state.cx) / ((state.cx < 0 ? r.uL : r.uR) * K.KM_PER_MA)) / 1000 - state.zs;
+    const gap = seafloorZ(state.cx) - state.zs;
     setHTML('zsHint', state.zs < 0.01 ? T('在海面：離磁性層約 <b>' + num(gap, 1) + '</b> km，窄的條帶會糊在一起。', 'At the surface: about <b>' + num(gap, 1) + '</b> km above the magnetised layer, so narrow stripes blur together.')
       : T('船下方離海床約 <b>' + num(gap * 1000, 0) + '</b> m（深拖）：離得越近，磁異常越大越尖銳。', 'About <b>' + num(gap * 1000, 0) + '</b> m above the seafloor under the ship (deep tow): the closer, the larger and sharper the anomaly.'));
     setHTML('chartHint', state.chart === 'gpts'
@@ -564,7 +579,7 @@
 
   // ---------- 神秘海脊 ----------
   function setMysteryUI(on) {
-    [el.uR, el.uL, $('sym')].forEach(function (e) { e.disabled = on; });
+    [el.uR, el.uL, $('sym'), $('olderRate')].forEach(function (e) { e.disabled = on; });
     document.querySelectorAll('#rateCard .presets button').forEach(function (b) { b.disabled = on; });
     $('guess').disabled = !on; $('guessBtn').disabled = !on; $('revealBtn').disabled = !on;
   }
@@ -712,7 +727,7 @@
   const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
   const bridge = {
     K: K, T: T, D: D, state: state, colors: function () { return C; }, reducedMotion: reducedMotion,
-    num: num, prof: function () { return { xs: xs, B: prof.B, els: prof.els }; }, range: range, rates: rates, seafloorZ: seafloorZ,
+    num: num, prof: function () { return { xs: xs, B: prof.B, els: prof.els }; }, range: range, rates: instantRates, params: P, seafloorZ: seafloorZ,
     maText: maText, chronName: chronName, anomalyAt: anomalyAt,
     request: function () { requestDraw(); },
     onCam: function (kind) { acted(); emit('cam', { preset: kind }); },

@@ -126,6 +126,7 @@
     @media (orientation: landscape) and (max-height: 600px) {
       .stage-playback { gap: 4px; margin-block: 4px; }
     }
+    label.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   </style>
 </head>
 <body data-en-ready>
@@ -209,6 +210,8 @@
           </div>
           <div class="rowbtn"><button type="button" id="measureBtn" data-en="Measure">量測</button></div>
           <p class="hint" id="sysHint">—</p>
+          <label class="check"><input id="daughterLoss" type="checkbox"> <span data-en="Compare daughter loss">對照子核種流失</span></label>
+          <p id="lossResult" hidden></p>
         </section>
         <section class="card" id="orderCard" hidden data-deck="排列先後|Order events" data-deck-order="3">
           <h2 data-en="From oldest to youngest">由老到新排排看</h2>
@@ -270,10 +273,12 @@
       <ul>
         <li data-en-html="The cross-section is built from a list of geologic events. To find the rock at a point, the program runs time backwards from the youngest event: it un-tilts and un-faults the point, checks whether a dike or an erosion surface reaches it, and fills each sedimentary layer only where there was air at the time — so superposition, unconformities and cross-cutting all come out of the same rules. The sections are illustrative (inspired by the Grand Canyon, but not a copy of it).">剖面由一串地質事件建立。程式找某一點是什麼岩石時，從最年輕的事件往回推：把傾斜轉回去、把斷層移回去，看岩脈或侵蝕面有沒有經過這一點；沉積層只填滿當時是空氣的地方——疊置、不整合與截切關係都從同一套規則產生。兩個剖面是示意的（參考大峽谷的層序，但不是照抄）。</li>
         <li data-en-html="Decay constants: \(^{238}\mathrm{U}\) 1.55125×10<sup>−10</sup> /yr and \(^{235}\mathrm{U}\) 9.8485×10<sup>−10</sup> /yr (Jaffey et al. 1971); \(^{40}\mathrm{K}\) 5.543×10<sup>−10</sup> /yr with 0.581×10<sup>−10</sup> /yr to argon (Steiger &amp; Jäger 1977); \(^{87}\mathrm{Rb}\) 1.3972×10<sup>−11</sup> /yr (Villa et al. 2015); \(^{14}\mathrm{C}\) half-life 5700 yr (NUBASE2020). Each measurement adds a reproducible random error of 0.2–0.6% (1σ), and the age uncertainty is propagated from it.">衰變常數：\(^{238}\mathrm{U}\) 1.55125×10<sup>−10</sup>／年、\(^{235}\mathrm{U}\) 9.8485×10<sup>−10</sup>／年（Jaffey 等人 1971）；\(^{40}\mathrm{K}\) 5.543×10<sup>−10</sup>／年，其中變成氬的是 0.581×10<sup>−10</sup>／年（Steiger 與 Jäger 1977）；\(^{87}\mathrm{Rb}\) 1.3972×10<sup>−11</sup>／年（Villa 等人 2015）；\(^{14}\mathrm{C}\) 半衰期 5700 年（NUBASE2020）。每次量測加上 0.2–0.6%（1σ）可重現的隨機誤差，年代的誤差由它傳遞而來。</li>
-        <li data-en-html="Simplifications: every mineral is a closed system (no lead, argon or strontium lost or gained), the metamorphic gneiss resets only its uranium clock, and radiocarbon ages are not calibrated against tree rings. Fossil ranges and period boundaries follow the International Chronostratigraphic Chart (2023).">簡化：每個礦物都是封閉系統（沒有鉛、氬、鍶跑掉或跑進來）；變質的片麻岩只重設鈾時鐘；碳十四年代沒有用樹輪校正。化石的生存年代與各紀的界線依國際地層委員會的地質年代表（2023）。</li>
+        <li data-en-html="Default measurements treat each mineral as a closed system (no lead, argon or strontium lost or gained), the metamorphic gneiss resets only its uranium clock, and radiocarbon ages are not calibrated against tree rings. Fossil ranges and period boundaries follow the International Chronostratigraphic Chart (2023).">預設量測將每個礦物視為封閉系統（沒有鉛、氬、鍶跑掉或跑進來）；變質的片麻岩只重設鈾時鐘；碳十四年代沒有用樹輪校正。化石的生存年代與各紀的界線依國際地層委員會的地質年代表（2023）。</li>
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="At the midpoint since closure, half the radiogenic daughters accumulated up to that time are lost. The remaining parents continue to decay. Both ratios are inverted with the same closed-system equation. The loss time and fraction are scenario assumptions. Both comparison ages exclude measurement noise.">在樣本封閉至今的一半時間點移除當時一半的放射成因子核種，再讓剩餘母核種衰變至今。對照顯示相同比值反算法得到的表觀年齡。流失比例與時刻是教學設定，封閉對照和受擾對照均省略量測雜訊。</p>
+        <p><a href="https://pubs.usgs.gov/gip/fossils/numeric.html" data-en="USGS numerical dating">美國地質調查所數值定年</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · Strata, fossils, relative and absolute dating, the geologic time scale">課綱對應：高中地球科學・地層與化石、相對定年與絕對定年、地質年代</li>
         <li data-en-html="A. H. Jaffey et al. (1971), “Precision measurement of half-lives and specific activities of <sup>235</sup>U and <sup>238</sup>U”, <i>Physical Review C</i> 4, 1889.">A. H. Jaffey 等人（1971），<i>Physical Review C</i> 4 卷 1889 頁（鈾的半衰期）。</li>

@@ -16,15 +16,17 @@ const DEF = { T0: 28, RH: 70, H: 1500, eff: 100, gamma: 5.5 };
 const round = (v, d) => Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
 function cfg(o) {
   o = Object.assign({}, DEF, o);
-  return { T0: round(o.T0, 2), RH: round(o.RH, 2), H: round(o.H, 1), eff: round(o.eff, 1), gamma: round(o.gamma, 2) };
+  return { T0: round(o.T0, 2), RH: round(o.RH, 2), H: round(o.H, 1), eff: round(o.eff, 1), gamma: round(o.gamma, 2), observed: !!o.observed };
 }
-function sim(o) { o = cfg(o); return K.simulate({ T0: o.T0, RH: o.RH / 100, H: o.H, eff: o.eff / 100, gamma: o.gamma }); }
+function sim(o) { o = cfg(o); return K.simulate({ T0: o.T0, RH: o.RH / 100, H: o.H, eff: o.eff / 100, gamma: o.gamma, observed: o.observed }); }
 /** 與 js/cloud-formation.js 的 missionData() 相同 */
 function data(o) {
   o = cfg(o);
   const res = sim(o), s0 = res.start;
   return {
-    T0: o.T0, RH: (o.RH / 100) * 100, H: o.H, eff: (o.eff / 100) * 100, gamma: o.gamma,
+    T0: o.T0, RH: (o.RH / 100) * 100, H: o.H, eff: (o.eff / 100) * 100,
+    gamma: res.env.layers ? res.env.layers[0].gamma * 1000 : o.gamma,
+    ...(res.env.layers ? { maxGamma: Math.max(...res.env.layers.map(l => l.gamma * 1000)) } : {}),
     Td0: s0.Td - TK, lcl: res.lcl ? res.lcl.z : null, cloud: res.cloud,
     topT: res.top.T - TK, leeT: res.lee.T - TK, leeRH: res.lee.RH * 100, foehn: res.foehn, rain: res.rain * 1000,
     zEvap: res.zEvap, leeCloud: res.cloud && res.zEvap < o.H - 1, lfc: res.lfc, el: res.el, cape: res.cape,
@@ -246,6 +248,8 @@ console.log('雲的形成任務證明（' + missions.length + ' 個任務）');
     (hits.size ? '觸發 ' + [...hits].join('、') : '未觸發 6 級以上或隱藏任務'));
 }
 
+expect('h3', [stateEv({ H: 0, gamma: 10.5, observed: true })], false,
+  '諾曼剖面取實際山腳遞減率，不沿用已停用滑桿的 10.5 °C/km');
 let stars = 0, hidden = 0;
 missions.forEach(m => { if (m.hidden) hidden += 2 * m.level; else stars += m.level; });   // 隱藏任務星星＝等級 × 2（LabMission.starsOf）
 console.log('\n任務 ' + missions.filter(m => !m.hidden).length + ' 個（' + stars + ' 顆星）＋ 隱藏 ' + missions.filter(m => m.hidden).length + ' 個（' + hidden + ' 顆星）');

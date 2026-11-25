@@ -151,6 +151,7 @@
     @media (orientation: landscape) and (max-height: 600px) {
       .stage-playback { gap: 4px; margin-block: 4px; }
     }
+    label.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   </style>
 </head>
 <body data-en-ready>
@@ -239,6 +240,7 @@
           <div class="slider"><label for="gam" data-en="Lapse rate of the surrounding air (°C per km)">周圍大氣的遞減率（°C／km）</label><output></output>
             <input id="gam" type="range" min="3" max="11" step="0.1" value="5.5" data-decimals="2"></div>
           <p class="hint" id="stabHint">—</p>
+          <label class="check"><input id="profileOn" type="checkbox"> <span data-en="Use the Norman sounding profile">套用諾曼實測溫度剖面</span></label>
         </section>
 
         <section class="card">
@@ -335,14 +337,16 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="<strong>Parcel</strong>: 1 kg of dry air with its water vapour and droplets. Its pressure always equals that of the surrounding air at the same height; the surrounding air is in hydrostatic balance with a constant lapse rate up to the tropopause (16 km, or lower if it would otherwise be colder than −80 °C) and constant temperature above, starting from 1013.25 hPa at sea level. The parcel exchanges no heat with its surroundings."><strong>氣塊</strong>：1 kg 乾空氣加上它的水氣與雲滴。它的氣壓永遠等於同高度周圍大氣的氣壓；周圍大氣是靜力平衡、遞減率固定到對流層頂（16 km；若照遞減率算會比 −80 °C 還冷就提早到 −80 °C 的高度），以上等溫，海平面氣壓 1013.25 hPa。氣塊與周圍不交換熱量。</li>
+        <li data-en-html="<strong>Parcel</strong>: 1 kg of dry air with its water vapour and droplets. Its pressure always equals that of the surrounding air at the same height; the default surrounding air is in hydrostatic balance with a constant lapse rate up to the tropopause (16 km, or lower if it would otherwise be colder than −80 °C) and constant temperature above, starting from 1013.25 hPa at sea level. The parcel exchanges no heat with its surroundings."><strong>氣塊</strong>：1 kg 乾空氣加上它的水氣與雲滴。它的氣壓永遠等於同高度周圍大氣的氣壓；預設周圍大氣為靜力平衡、遞減率固定到對流層頂（16 km；若照遞減率算會比 −80 °C 還冷就提早到 −80 °C 的高度），以上等溫，海平面氣壓 1013.25 hPa。氣塊與周圍不交換熱量。</li>
         <li data-en-html="<strong>Each 5 m step</strong>: first the parcel expands or is compressed at constant potential temperature; then, if it is supersaturated, vapour condenses until it is exactly saturated, releasing latent heat (\(c_p\,\Delta T = L_v\,\Delta r\), solved by Newton’s method); if it has droplets and is below saturation, droplets evaporate and absorb heat. This is the same first law of thermodynamics that gives \(\Gamma_s\) (checked in the unit tests). Of the newly condensed water, the chosen fraction (precipitation efficiency) leaves the parcel as rain."><strong>每一步（5 m）</strong>：先以位溫不變的方式膨脹或壓縮；若超過飽和，多的水氣凝結到剛好飽和，放出潛熱（\(c_p\,\Delta T = L_v\,\Delta r\)，用牛頓法求解）；若有雲滴而且未飽和，雲滴蒸發吸熱。這和推出 \(\Gamma_s\) 用的是同一個熱力學第一定律（單元測試有驗證）。新凝結的水依「降水效率」的比例變成雨離開氣塊。</li>
         <li data-en-html="<strong>Water and heat</strong>: saturation vapour pressure over liquid water from Murphy and Koop (2005); \(L_v\) varies with temperature (Bolton 1980). Ice (and the extra latent heat of freezing), the heat capacity of the water and the effect of vapour on buoyancy are left out; the dry-air constants \(R_d = 287.04\) and \(c_p = 1005.7\ \mathrm{J/(kg\,K)}\) are used. Because the surrounding air sets the pressure at each height, a parcel that is warmer than its surroundings warms a little faster than 9.8 °C per km on the way down."><strong>水與熱</strong>：液態水的飽和水氣壓用 Murphy 與 Koop（2005）的公式；\(L_v\) 隨溫度變化（Bolton 1980）。不計冰相（與凝固放出的潛熱）、水的熱容量，以及水氣對浮力的影響；用乾空氣的常數 \(R_d = 287.04\)、\(c_p = 1005.7\ \mathrm{J/(kg\,K)}\)。因為每個高度的氣壓由周圍大氣決定，比周圍暖的氣塊下沉時，每公里增溫會比 9.8 °C 略多一點。</li>
         <li data-en-html="<strong>Convection</strong>: the same parcel is also followed straight up above the crest to 20 km to find the level of free convection, the equilibrium level and CAPE (buoyancy judged by temperature). The mountain “sets off a thunderstorm” when its crest is at or above the LFC. The parcel you see is still pushed over the crest by the wind; the cumulonimbus is drawn above the crest."><strong>對流</strong>：同一個氣塊也從山頂一路往上算到 20 km，找出自由對流高度、平衡高度與 CAPE（以溫度判斷浮力）。山頂高於或等於自由對流高度時，算「山引發了雷雨」。畫面上的氣塊仍被風推過山頂；積雨雲另外畫在山頂上方。</li>
         <li data-en-html="<strong>Pictures</strong>: the mountain is a smooth ridge about 100 km wide at its base; heights are exaggerated. The clouds are drawn where the parcel model says the air is saturated near the slopes; their exact shape and the rain streaks are illustrations. The 3D view uses the same core and the three.js library (MIT license), downloaded only when you switch to 3D."><strong>畫面</strong>：山是底寬約 100 km 的平滑山脊，高度是誇大的。雲畫在氣塊模型判定為飽和的山坡上空，雲的細部形狀與雨絲是示意。3D 檢視用同一個物理核心與 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
       </ul>
 
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="The Norman sounding at 12 UTC on 22 May 2011 warmed from 18.8 to 23.2 °C between 995 and 1219 m elevation. Observed temperature differences are preserved. The station is shifted to the mountain foot and the profile to the selected foot temperature. Pressure is integrated layer by layer. Both profiles share surface pressure, parcel and rain efficiency. Cloud base is the first saturation height. The atmosphere above the last sample is isothermal. Try 28 °C, 40% RH, a 1900 m crest and 9 °C/km. Switch profiles and compare cloud formation and lee warming.">諾曼站 2011 年 5 月 22 日 12 UTC 探空在海拔 995–1219 m 由 18.8 升到 23.2 °C。模型保留逐層溫差，將測站高度平移到山腳、溫度平移到所選氣溫，逐層積分靜力氣壓。兩種剖面共用同一山腳氣壓、氣塊與降水效率，雲底取氣塊首次達飽和的高度。最高取樣層以上作等溫近似。試設 28 °C、相對溼度 40%、山高 1900 m、遞減率 9 °C/km：切換剖面，觀察迎風坡是否成雲及背風增溫。</p>
+        <p><a href="https://raw.githubusercontent.com/Unidata/MetPy/main/staticdata/20110522_OUN_12Z.txt" data-en="Norman sounding data">諾曼站探空原始資料</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · The atmosphere (water vapour, clouds and precipitation, atmospheric stability)">課綱對應：高中地球科學・大氣（水氣、雲與降水、大氣的穩定度）</li>
         <li data-en-html="Saturation vapour pressure: D. M. Murphy and T. Koop (2005), “Review of the vapour pressures of ice and supercooled water for atmospheric applications”, <i>Quarterly Journal of the Royal Meteorological Society</i> 131, 1539–1565 (doi 10.1256/qj.04.94), equation 10.">飽和水氣壓：D. M. Murphy 與 T. Koop（2005），〈Review of the vapour pressures of ice and supercooled water for atmospheric applications〉，<i>Quarterly Journal of the Royal Meteorological Society</i> 131 卷 1539–1565 頁（doi 10.1256/qj.04.94），式 10。</li>

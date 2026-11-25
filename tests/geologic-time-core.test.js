@@ -161,4 +161,13 @@ test('排序題：每個看得到的單元與構造事件都列出，順序就�
   });
 });
 
+test('一次子核種流失的封閉端點與完全重設端點', () => {
+  const age = 500e6;
+  for (const sys of ['U238', 'U235', 'K40']) {
+    assert.ok(Math.abs(G.ageFrom(sys, G.disturbedRatio(sys, age, age / 2, 1)) - age / 2) < 1e-5);
+    assert.ok(Math.abs(G.ageFrom(sys, G.disturbedRatio(sys, age, 0, 0)) - age) < 1e-5);
+    assert.ok(G.ageFrom(sys, G.disturbedRatio(sys, age, age / 2, 0.5)) < age);
+  }
+});
+
 console.log(`\n${passed} 項通過`);

@@ -118,4 +118,17 @@ test('亞期分辨（固定解析度）：加拉米佑在海面要 1.5 cm/yr 以
   assert.ok(!K.resolved({ uL: 2, uR: 2, tau: 1.1, zs: 2 }, 0.988, 1.072, 30, 1), '還沒形成');
 });
 
+test('兩段速率的年代反算及跨界磁帶寬度', () => {
+  for (const tau of [0, 0.8, 1, 2]) {
+    const p = { tau, uR: 2.5, uL: 1, changeMa: 1, oldRate: 5 };
+    for (const side of [-1, 1]) for (const age of [0, 0.2, 1, 2]) {
+      assert.ok(Math.abs(K.ageAt(p, side * K.distanceAt(p, side, age)) - age) < 1e-12);
+    }
+    if (!tau) {
+      const [a, b] = K.namedAt(p, 'jaramillo', 1);
+      assert.ok(Math.abs(b - a - 3.9) < 1e-10);
+    }
+  }
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

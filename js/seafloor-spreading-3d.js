@@ -115,7 +115,7 @@
         segs.push({ a: a, b: b, pol: e.pol });
       });
       [[1, r.uR], [-1, r.uL]].forEach(function (q) {
-        const s = q[0], u = q[1] * K.KM_PER_MA, edge = Math.max(0, (K.T_MAX - state.tau) * u);
+        const s = q[0], edge = K.distanceAt(B.params(), s, K.T_MAX - state.tau);
         if (edge >= R) return;
         const n = 12;
         for (let i = 0; i < n; i++) {
@@ -255,7 +255,7 @@
     }
     function update() {
       const r = B.rates();
-      const key = [r.uL, r.uR, state.tau, state.zs, B.range(), state.cx, B.prof().B.length].join('|');
+      const key = [r.uL, r.uR, B.params().oldRate, state.tau, state.zs, B.range(), state.cx, B.prof().B.length].join('|');
       if (key !== blockKey) {
         blockKey = key;
         if (block) { scene.remove(block); disposeObject(block); }

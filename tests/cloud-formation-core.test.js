@@ -211,4 +211,17 @@ test('路徑：山腳高度 0、山頂高度 H；u 與高度可以互換', () =>
   near(s.T, K.sampleDown(r.down, 1000).T, 1e-9, '背風坡 1000 m');
 });
 
+test('探空逆溫改變迎風成雲及背風增溫', () => {
+  const p = { T0: 28, RH: 0.4, H: 1900, eff: 1, gamma: 9 };
+  const ideal = K.simulate(p), observed = K.simulate({ ...p, observed: true });
+  assert.ok(ideal.cloud && !observed.cloud);
+  assert.ok(ideal.foehn > 0.1 && Math.abs(observed.foehn) < 1e-8);
+  assert.ok(K.envT(observed.env, 874) > K.envT(observed.env, 650) + 4);
+  assert.ok(K.envP(observed.env, 650) > K.envP(observed.env, 874));
+  const cap = K.simulate({ ...p, RH: 0.95, H: 1000, observed: true });
+  assert.ok(cap.top.T < cap.top.Te && !cap.triggered && cap.lfc > 1000);
+  const aboveCap = K.simulate({ ...p, RH: 0.95, H: 3500, observed: true });
+  assert.ok(aboveCap.triggered && aboveCap.el > 3500);
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

@@ -270,4 +270,10 @@ test('全球極值：月球單獨時最高 H、最低 −H/2', () => {
   close(g.lo, -K.H_MOON / 2, 1e-9, '最低');
 });
 
+test('同一時窗內兩座潮站的潮差', () => {
+  for (const hour of [0, 6, 24, 200]) {
+    assert.ok(K.portRange('boston', hour) > 2 * K.portRange('honolulu', hour));
+  }
+});
+
 console.log(`${passed} 個測試通過`);

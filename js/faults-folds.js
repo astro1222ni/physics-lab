@@ -594,7 +594,18 @@
     const dec = { zDepth: 2, kH: 2, kh: 2, lam: 2, mu: 2, az: 0, slip: 0, wl: 0, amp: 0, plunge: 1, ero: 0 };
     ids.forEach(function (k) { setOut(el[k], outNum(P[k], dec[k])); });
   }
+  $('weakDip').addEventListener('change', updateReadouts);
   function updateReadouts() {
+    const dip = $('weakDip').value;
+    $('weakResult').hidden = dip === '';
+    if (dip !== '') {
+      const result = K.firstFailure(F.st, 0, Number(dip));
+      const threshold = function (p) { return isFinite(p) ? num(p, 1) + ' MPa' : T('無剪應力', 'no shear'); };
+      const verdict = { weak: T('既有斷層先滑動', 'Old fault slips first'), fresh: T('新破裂先發生', 'New fracture first'),
+        open: T('岩石先張開', 'Rock opens first'), both: T('同時達標或起點已達標', 'Tied or both critical at the start') };
+      $('weakResult').textContent = verdict[result.kind] + T('。臨界孔壓：弱面 ', '. Critical pore pressure: old plane ')
+        + threshold(result.weak) + T('，新面 ', ', new plane ') + threshold(result.fresh) + T('，張裂 ', ', opening ') + threshold(result.opening);
+    }
     const st = F.st, pl = F.pl;
     setHTML('rSv', num(st.Sv, 1) + ' MPa');
     setHTML('rSH', num(st.SH, 0) + '／' + num(st.Sh, 0) + '／' + num(st.Pp, 0) + ' MPa');

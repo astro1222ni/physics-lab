@@ -48,19 +48,21 @@
     return { p: p, e: e, Td: HM.dewPoint(e), Tf: HM.frostPoint(e), Tw: HM.wetBulb(state.T, e, p, state.type) };
   }
   function dayE0() { return HM.esw(state.Td0); }
-  function dayNow() { return HM.dayState(state.h, state.Tmean, state.range, dayE0()); }
+  function grassDrop() { return Number($('grassDrop').value); }
+  $('grassDrop').addEventListener('change', function () { updateReadouts(); requestDraw(); });
+  function dayNow() { return HM.dayState(state.h, state.Tmean, state.range, dayE0(), grassDrop()); }
   let statsCache = null;
   function dayStats() {
-    const key = state.Tmean + '|' + state.range + '|' + state.Td0;
+    const key = state.Tmean + '|' + state.range + '|' + state.Td0 + '|' + grassDrop();
     if (statsCache && statsCache.key === key) return statsCache;
     const e0 = dayE0(); let minRH = 1e9, maxRH = -1, sat = false, frost = false, satAll = true;
     for (let i = 0; i <= 1200; i++) {
-      const s = HM.dayState(i * 0.02, state.Tmean, state.range, e0);
+      const s = HM.dayState(i * 0.02, state.Tmean, state.range, e0, grassDrop());
       minRH = Math.min(minRH, s.rh); maxRH = Math.max(maxRH, s.rh);
-      if (s.sat) sat = true; else satAll = false;
+      if (s.wet ?? s.sat) sat = true; else satAll = false;
       if (s.frost) frost = true;
     }
-    const dd = HM.dayDew(state.Tmean, state.range, e0);
+    const dd = HM.dayDew(state.Tmean, state.range, e0, grassDrop());
     statsCache = { key: key, minRH: minRH, maxRH: maxRH, sat: sat, frost: frost, satAll: satAll, Tmin: dd.Tmin, tp: dd.tp, start: dd.start, end: dd.end, frozenDew: state.Td0 > 0 && dd.Tmin < 0 && sat };
     return statsCache;
   }
@@ -376,7 +378,7 @@
     ln(0, T('氣溫', 'Temp'), degC(s.T), '#fca5a5');
     ln(1, T('相對溼度', 'RH'), pct(s.rh), '#86efac');
     ln(2, T('露點', 'Dew point'), degC(s.Td), '#67e8f9');
-    if (s.sat) tag(g, s.frost ? T('結霜', 'Frost') : T('結露、起霧', 'Dew and fog'), W - 12, 24, s.frost ? C['hd-frost'] : C['hd-dew'], 'right');
+    if (s.wet ?? s.sat) tag(g, s.frost ? T('結霜', 'Frost') : s.sat ? T('結露、起霧', 'Dew and fog') : T('草面結露', 'Dew on grass'), W - 12, 24, s.frost ? C['hd-frost'] : C['hd-dew'], 'right');
     void st;
   }
 
@@ -637,7 +639,7 @@
       if (snd) snd.tone({ freq: 523, dur: 0.15, type: 'triangle', gain: 0.04 });
     } else {
       const st = dayStats();
-      setStatus(T('一天播完：相對溼度從 ', 'One day: relative humidity from ') + pct(st.minRH) + T(' 到 ', ' to ') + pct(st.maxRH) + T('。', '. ') + (st.sat ? (st.frost ? T('清晨結霜。', 'Frost at dawn.') : T('清晨結露、起霧。', 'Dew and fog at dawn.')) : T('沒有結露。', 'No dew.')));
+      setStatus(T('一天播完：相對溼度從 ', 'One day: relative humidity from ') + pct(st.minRH) + T(' 到 ', ' to ') + pct(st.maxRH) + T('。', '. ') + (st.sat ? (st.frost ? T('清晨結霜。', 'Frost at dawn.') : (grassDrop() ? T('清晨草面結露。', 'Dew on grass at dawn.') : T('清晨結露、起霧。', 'Dew and fog at dawn.'))) : T('沒有結露。', 'No dew.')));
       if (snd) { snd.tone({ freq: 784, dur: 0.12, type: 'triangle', gain: 0.05 }); snd.tone({ freq: 1175, dur: 0.18, type: 'triangle', gain: 0.04, delay: 0.1 }); }
     }
     updateButtons(); updateReadouts();
@@ -726,9 +728,9 @@
       const s = dayNow(), st = dayStats();
       setHTML('dRH', T('相對溼度 ', 'Relative humidity ') + pct(s.rh));
       setHTML('dT', degC(s.T)); setHTML('dTd', degC(s.Td)); setHTML('dE', num(s.e, 2) + ' hPa');
-      setHTML('dDew', s.sat ? (s.frost ? T('結霜', 'Frost') : T('露水、霧', 'Dew, fog')) : T('乾的', 'Dry'));
-      setHTML('dSum', T('最低 ', 'Min ') + degC(st.Tmin) + T('；', '; ') + (st.satAll ? T('整天都飽和', 'saturated all day') : st.sat ? (st.frost ? T('結霜 ', 'frost ') : T('結露 ', 'dew ')) + hhmm(st.start) + '–' + hhmm(st.end) : T('不會結露', 'no dew')));
-      setHTML('dayHint', T('空氣裡的水氣量整天不變（除非結露）：溫度越低，相對溼度越高。最低溫降到露點（0 °C 以下是霜點），草上就有露水或霜。', 'The amount of water vapour stays the same all day (unless dew forms): the colder it is, the higher the relative humidity. If the minimum temperature reaches the dew point (the frost point below 0 °C), dew or frost forms on the grass.'));
+      setHTML('dDew', grassDrop() ? T('草面 ', 'Grass ') + degC(s.grass) + ' · ' + (s.wet ? (s.frost ? T('霜或凍露', 'Frost or frozen dew') : T('露', 'Dew')) : T('乾的', 'Dry')) : s.sat ? (s.frost ? T('結霜', 'Frost') : T('露水、霧', 'Dew, fog')) : T('乾的', 'Dry'));
+      setHTML('dSum', (grassDrop() ? T('草面最低 ', 'Grass minimum ') : T('最低 ', 'Min ')) + degC(st.Tmin) + T('；', '; ') + (st.satAll ? T('整天都飽和', 'saturated all day') : st.sat ? (st.frost ? T('結霜 ', 'frost ') : T('結露 ', 'dew ')) + hhmm(st.start) + '–' + hhmm(st.end) : T('不會結露', 'no dew')));
+      setHTML('dayHint', grassDrop() ? T('藍色區標示 2 m 空氣飽和，草面可在更早的時刻結露。', 'Blue shading marks saturation of 2 m air. Dew can form earlier on grass.') : T('空氣裡的水氣量整天不變（除非結露）：溫度越低，相對溼度越高。最低溫降到露點（0 °C 以下是霜點），草上就有露水或霜。', 'The amount of water vapour stays the same all day (unless dew forms): the colder it is, the higher the relative humidity. If the minimum temperature reaches the dew point (the frost point below 0 °C), dew or frost forms on the grass.'));
     }
     const hint = {
       psy: T('左邊是普通的溫度計（乾球），右邊的球包著溼紗布（溼球），水蒸發吸熱讓它變冷。兩支差越多，空氣越乾。', 'The left thermometer is ordinary (dry bulb); the right one is wrapped in wet cloth (wet bulb), cooled by evaporation. The bigger the difference, the drier the air.'),

@@ -128,7 +128,7 @@
       const cols = new Float32Array((NX + 1) * (NY + 1) * 3);
       const land = col('cf-land'), forest = col('cf-forest'), rock = col('cf-rock'), snow = col('cf-snow'), sea = col('cf-sea');
       const dry = new THREE.Color(C.dark ? '#8a7448' : '#c9a66b');
-      const zSnow = res.params.T0 / res.params.gamma * 1000;              // 周圍大氣 0 °C 的高度
+      const zSnow = K.freezingHeight(res.env);              // 周圍大氣 0 °C 的高度
       const dryF = Math.max(0, Math.min(1, (0.55 - res.lee.RH) / 0.35)) * (res.foehn > 0.3 ? 1 : 0);
       const xCoast = X(0.1);
       const c = new THREE.Color();

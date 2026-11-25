@@ -139,4 +139,14 @@ test('冷杯子：杯溫照指數趨近冷卻的極限；在露點以下才起�
   assert.ok(f.kind === 'frost' && f.T < H.frostPoint(e2) && f.T > H.dewPoint(e2) - 1);
 });
 
+test('清晨草面可在空氣未飽和時結露或結霜', () => {
+  const e = H.esw(13), air = H.dayState(5.5, 20, 10, e), grass = H.dayState(5.5, 20, 10, e, 3);
+  assert.equal(air.sat, false);
+  assert.equal(grass.wet, true);
+  assert.equal(grass.sat, false);
+  assert.equal(grass.grass, 12);
+  assert.equal(H.dayState(5.5, 6, 10, H.esw(-1), 3).frost, true);
+  assert.equal(H.dayState(14, 20, 10, e, 3).grass, 25);
+});
+
 console.log(`humidity-dewpoint-core：${passed} 項通過`);

@@ -85,6 +85,8 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+    label:has(> #grassDrop) { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    #grassDrop { min-height: 44px; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body data-en-ready>
@@ -192,7 +194,12 @@
               <input id="hour" type="range" min="0" max="24" step="0.05" value="12" data-decimals="2"></div>
             <div class="presets" role="group" aria-label="天氣" data-en-aria-label="Weather" id="wxSeg"></div>
             <p class="hint" id="dayHint">—</p>
-          </section>
+          <label><span data-en="Dawn grass cooling below 2 m air">清晨草面低於 2 m 氣溫</span>
+          <select id="grassDrop">
+            <option value="0" data-en="0 °C">0 °C</option>
+            <option value="3" data-en="3 °C">3 °C</option>
+          </select></label>
+        </section>
           <section class="card">
             <h2 data-en="Right now">現在</h2>
             <p class="big-num" id="dRH">—</p>
@@ -220,7 +227,9 @@
       <p data-en-html="Here \(T\) is the dry bulb, \(T_w\) the wet bulb and \(p\) the air pressure. The constant \(A\) depends on the airflow: in a fan-ventilated psychrometer \(A \approx 6.5\times10^{-4}\ \mathrm{K}^{-1}\); in a screen without a fan the wet bulb does not cool as much and \(A \approx 8.0\times10^{-4}\ \mathrm{K}^{-1}\), so each kind of instrument needs its own table. On a high mountain the pressure is lower, the same difference means moister air, and a sea-level table gives the wrong answer.">\(T\) 是乾球、\(T_w\) 是溼球、\(p\) 是氣壓。係數 \(A\) 和通風有關：有風扇通風的乾溼計 \(A \approx 6.5\times10^{-4}\ \mathrm{K}^{-1}\)；放在百葉箱裡沒有風扇時，溼球冷得沒那麼多，\(A \approx 8.0\times10^{-4}\ \mathrm{K}^{-1}\)，所以不同的儀器要用不同的表。到了高山上氣壓變小，同樣的溫度差代表比較溼的空氣，拿平地的表來查就錯了。</p>
       <h3 data-en="Dew, fog and frost">露、霧、霜</h3>
       <p data-en-html="On a clear, calm night the ground loses heat by radiation and the air near it cools. The amount of water vapour stays the same, so as the temperature falls the relative humidity rises; when the temperature reaches the dew point, dew forms on the grass and fog may form in the air. After sunrise the temperature rises, the dew evaporates and the relative humidity falls again. Weather forecasters use this: if tonight’s minimum temperature is at or below the dew point, expect dew or fog.">晴朗無風的夜晚，地面輻射散熱，貼近地面的空氣跟著變冷。水氣的量不變，所以溫度越低、相對溼度越高；溫度降到露點，草上就結露，空氣裡也可能起霧。日出後溫度回升，露水蒸發，相對溼度又降下來。氣象預報就用這個道理：今晚的最低溫若降到露點以下，就可能有露水或霧。</p>
-      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en="On clear, calm nights grass can radiate heat and cool below the 2 m thermometer. In the cold part of the cycle, the model increases the contrast to 3 °C at dawn. Cloud, wind and ground conditions change the actual difference. At Aberdeen on 2 October 2008 the 2 m air was about 1.1 °C while the near-ground sensor reached 0 °C. The 3 °C contrast is a scenario setting. Grass saturation uses water or ice vapour pressure at grass temperature; air saturation uses 2 m temperature. Earlier dew may freeze. Film phase changes are not tracked.">晴朗微風的夜晚，草面可因長波輻射散熱而比 2 m 測溫處更冷。對照將冷段溫差隨降溫放大至清晨 3 °C，實際大小隨風、雲與地表變化。美國亞伯丁在 2008 年 10 月 2 日清晨測得 2 m 處約 1.1 °C、近地面約 0 °C；3 °C 是對照設定。草面對水面或冰面飽和即可有露或霜；空氣是否飽和仍用 2 m 氣溫判讀。若先結露再降到零度以下，也可能形成凍露，本模型不追蹤水膜相變。</p>
+        <p><a href="https://www.weather.gov/abr/frost_fall2012" data-en="NWS paired near-ground and air observations">美國國家氣象局草面與測溫高度對照</a></p>
+        <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="Saturation vapour pressure over water and ice: Murphy and Koop (2005); relative humidity is taken with respect to water, as the WMO does, even below 0 °C. Wet bulb: the psychrometer equation is solved for \(T_w\) by bisection (with an ice bulb and \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\) below 0 °C); the thermometer approaches it with a time constant of 30 s (ventilated) or 150 s (screen), shown 30 times faster. Air pressure from the standard atmosphere. Cup: Newton’s law of cooling with a 60 s time constant, shown 5 times faster; a film of water becomes visible after a fixed amount of condensation, so a fast-cooling cup mists at a temperature below the true dew point. Day: the temperature follows two half cosines (minimum 05:30, maximum 14:00) and the amount of water vapour stays fixed, except that the air cannot hold more than saturation: the extra becomes dew or frost and evaporates again in the morning.">水面與冰面的飽和水氣壓：Murphy 與 Koop（2005）；相對溼度照世界氣象組織的定義，0 °C 以下也以水面為準。溼球：用二分法解乾溼計公式求 \(T_w\)（0 °C 以下溼球結冰，改用冰面與 \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\)）；溫度計以 30 秒（通風）或 150 秒（百葉箱）的時間常數趨近，畫面快 30 倍。氣壓用標準大氣。杯子：牛頓冷卻定律，時間常數 60 秒，畫面快 5 倍；杯壁凝結到一定的量才看得出水膜，所以冷得快的杯子，起霧時的杯溫比真正的露點低。一天：氣溫照兩段半餘弦（05:30 最低、14:00 最高），水氣量整天固定，只是空氣最多只能到飽和，多的變成露或霜，早上再蒸發回來。</p>
     </section>
 

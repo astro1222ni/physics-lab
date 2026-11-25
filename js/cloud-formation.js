@@ -35,7 +35,7 @@
     state.eff = val(elEff) / 100; state.gamma = val(elGam);
   }
   function recompute() {
-    state.res = K.simulate({ T0: state.T0, RH: state.RH, H: state.H, eff: state.eff, gamma: state.gamma });
+    state.res = K.simulate({ T0: state.T0, RH: state.RH, H: state.H, eff: state.eff, gamma: state.gamma, observed: $('profileOn').checked });
     state.ver++;
     state.dirty = false;
     layerKey = ''; tzKey = '';
@@ -190,9 +190,9 @@
       g.fill();
       g.clip();
       // 雪線：周圍大氣 0 °C 的高度以上
-      const zs = (res.params.T0) / res.params.gamma * 1000;
-      if (zs >= 0 && zs < Hm) {
-        const ys = l.Y(zs);
+      const snowHeight = K.freezingHeight(res.env);
+      if (snowHeight >= 0 && snowHeight < Hm) {
+        const ys = l.Y(snowHeight);
         const sg = g.createLinearGradient(0, ys, 0, ys - 14);
         sg.addColorStop(0, D.alpha(C['cf-snow'], 0));
         sg.addColorStop(1, D.alpha(C['cf-snow'], 0.95));
@@ -667,6 +667,7 @@
     setOut(elGam, outNum(state.gamma, 1, 2));
   }
   function stabName(s) {
+    if (s === 'layered') return T('分層遞減率，低層有逆溫', 'Variable lapse rate with a low-level inversion');
     return s === 'stable' ? T('絕對穩定', 'Absolutely stable') : s === 'unstable' ? T('絕對不穩定', 'Absolutely unstable') : T('條件性不穩定', 'Conditionally unstable');
   }
   function updateResults() {
@@ -691,6 +692,7 @@
     let trig;
     if (res.triggered) trig = T('會。山頂高過自由對流高度，空氣自己往上衝，長成雲頂 ', 'Yes. The crest is above the level of free convection; the air rises by itself into a cumulonimbus topped at ') + km(res.el, 1) + T(' 的積雨雲。', '.');
     else if (res.lfc != null) trig = T('不會。還要把空氣抬到 ', 'No. The air would have to be lifted to ') + meters(res.lfc) + T('（比山頂高 ', ' (') + meters(res.lfc - res.params.H) + T('）才會自己往上衝。', ' above the crest) before it rises by itself.');
+    else if (res.env.layers) trig = T('不會。山頂及上方剖面沒有可延續的正浮力層。', 'No. There is no sustained positively buoyant layer at or above the crest.');
     else trig = T('不會。這團空氣抬到多高都比周圍冷。', 'No. However high this air is lifted, it stays colder than its surroundings.');
     setHTML('rTrig', trig);
   }
@@ -721,7 +723,9 @@
   function missionData() {
     const res = R(), s0 = res.start;
     return {
-      T0: state.T0, RH: state.RH * 100, H: state.H, eff: state.eff * 100, gamma: state.gamma,
+      T0: state.T0, RH: state.RH * 100, H: state.H, eff: state.eff * 100,
+        gamma: res.env.layers ? res.env.layers[0].gamma * 1000 : state.gamma,
+        ...(res.env.layers ? { maxGamma: Math.max(...res.env.layers.map(l => l.gamma * 1000)) } : {}),
       Td0: s0.Td - TK, lcl: res.lcl ? res.lcl.z : null, cloud: res.cloud,
       topT: res.top.T - TK, leeT: res.lee.T - TK, leeRH: res.lee.RH * 100, foehn: res.foehn, rain: res.rain * 1000,
       zEvap: res.zEvap, leeCloud: res.cloud && res.zEvap < state.H - 1, lfc: res.lfc, el: res.el, cape: res.cape,
@@ -778,6 +782,10 @@
   // =====================================================================
   // 控制項
   // =====================================================================
+  $('profileOn').addEventListener('change', function () {
+    elGam.disabled = this.checked;
+    recompute(); requestDraw(); updateNow(true);
+  });
   [elT0, elRH, elH, elEff, elGam].forEach(function (el) {
     el.addEventListener('input', function () { acted(); readSliders(); state.dirty = true; refreshOutputs(); requestDraw(); });
     el.addEventListener('change', function () { readSliders(); recompute(); requestDraw(); updateNow(true); emitState(); });

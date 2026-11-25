@@ -117,6 +117,9 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+    #coastCase label { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    #coastCase select { min-height: 44px; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    label.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   </style>
 </head>
 <body data-en-ready>
@@ -198,6 +201,28 @@
           <div class="slider"><label for="hd" data-en="Heading (bearing it moves toward, °)">移動方向（往哪個方位，°）</label><output></output>
             <input id="hd" type="range" min="0" max="359" step="1" value="300" data-decimals="0"></div>
           <p class="hint" id="moveHint">—</p>
+          <label class="check"><input id="windOn" type="checkbox"> <span data-en="Compare onshore wind setup">比較向岸風增水</span></label>
+          <div id="coastCase" hidden>
+            <label><span data-en="Onshore wind (m/s)">向岸風速（m/s）</span>
+            <select id="wind10">
+              <option value="20" data-en="20">20</option>
+              <option value="10" data-en="10">10</option>
+              <option value="25" data-en="25">25</option>
+            </select></label>
+            <label><span data-en="Depth (m)">水深（m）</span>
+            <select id="shelf">
+              <option value="10" data-en="10">10</option>
+              <option value="30" data-en="30">30</option>
+              <option value="50" data-en="50">50</option>
+            </select></label>
+            <label><span data-en="Fetch (km)">風域長度（km）</span>
+            <select id="fetchKm">
+              <option value="50" data-en="50">50</option>
+              <option value="20" data-en="20">20</option>
+              <option value="80" data-en="80">80</option>
+            </select></label>
+            <p id="windResult"></p>
+          </div>
         </section>
         <section class="card">
           <h2 data-en="Strength and size">強度與大小</h2>
@@ -208,7 +233,7 @@
             <dt data-en="Radius of force-7 winds (gale radius)">七級風暴風半徑</dt><dd id="rR7">—</dd>
             <dt data-en="Radius of force-10 winds">十級風暴風半徑</dt><dd id="rR10">—</dd>
             <dt data-en="Pressure drop Δp">中心比環境低</dt><dd id="rDp">—</dd>
-            <dt data-en="Sea surface raised at the centre">中心海面被「吸」高</dt><dd id="rSurge">—</dd>
+            <dt data-en="Inverse-barometer level at the centre (about 1 cm per hPa)">中心倒氣壓水位（每 1 hPa 約 1 cm）</dt><dd id="rSurge">—</dd>
             <dt data-en="Gradient wind (above the boundary layer)">邊界層上方的梯度風</dt><dd id="rVg">—</dd>
           </dl>
         </section>
@@ -261,11 +286,13 @@
         <li data-en-html="Holland (1980) pressure profile and gradient wind with \(\rho = 1.15\ \mathrm{kg/m^3}\), environmental pressure 1010 hPa, \(f = 2\Omega\sin\varphi\). Surface (10 m) wind = 0.8 × gradient wind, turned 20° inward, plus 55% of the motion vector (Lin and Chavas 2012).">Holland（1980）氣壓剖面與梯度風，\(\rho = 1.15\ \mathrm{kg/m^3}\)，環境氣壓 1010 hPa，\(f = 2\Omega\sin\varphi\)。地面（10 m）風 ＝ 0.8 × 梯度風，往內偏 20°，再加上移動速度的 55%（Lin 與 Chavas 2012）。</li>
         <li data-en-html="The typhoon moves in a straight line at constant speed and keeps its strength; land, terrain (such as Taiwan’s Central Mountain Range), rain bands and gusts are left out. Wind speeds are 10-minute averages, as used by the Central Weather Administration.">颱風以等速直線前進、強度不變；沒有陸地、地形（例如中央山脈）、雨帶與陣風。風速是 10 分鐘平均風，和中央氣象署相同。</li>
         <li data-en-html="The gale radii use the average (symmetric) wind; the real radii published for a typhoon are usually larger on the dangerous side. Wind direction is accumulated only while the station is within 300 km of the centre.">暴風半徑用平均（對稱）的風速；實際公布的暴風半徑通常在危險半圓那一側比較大。風向的轉動只在測站離中心 300 km 以內時累計。</li>
-        <li data-en-html="The sea-surface rise is the inverse-barometer effect, \(\Delta h = \Delta p/(\rho_w g)\), about 1 cm per hPa. Real storm surges are often much higher because the wind piles water onto the coast.">海面升高是倒氣壓效應 \(\Delta h = \Delta p/(\rho_w g)\)，每 hPa 約 1 cm。真實的暴潮常常高得多，因為強風把海水推向岸邊。</li>
+        <li data-en-html="The sea-surface rise is the inverse-barometer effect, \(\Delta h = \Delta p/(\rho_w g)\), about 1 cm per hPa. Real storm surges are often much higher because the wind piles water onto the coast.">中心倒氣壓水位來自氣壓差 \(\Delta h = \Delta p/(\rho_w g)\)，每 hPa 約 1 cm。真實的暴潮常常高得多，因為強風把海水推向岸邊。</li>
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
 
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="Assume the local pressure drop equals the selected central deficit. Independently impose sustained shore-normal wind at 10 m. Setup equals wind stress times fetch divided by water density, gravity and shelf depth. Air and water densities are 1.15 and 1025 kg per cubic metre. The Large–Pond drag law is used at 10–25 m/s. Depth and fetch are scenario inputs. At 20 m/s over 50 km, setup is about 0.41 m in 10 m of water and 0.08 m in 50 m. Tides, waves and moving winds are omitted.">假設沿岸氣壓降幅等於所設中心壓差，再獨立指定垂直海岸、持續的 10 m 高度風。定深直岸的風增水＝風應力 × 風域長度 ÷（海水密度 × 重力加速度 × 水深）。空氣與海水密度分別取 1.15、1025 公斤／立方公尺。風速 10–25 m/s 使用 Large–Pond 阻力式，水深與風程是情境量。20 m/s、50 km 的風在 10 m 水深約增水 0.41 m，水深 50 m 時約 0.08 m。天文潮、波浪與移動風場另有影響。</p>
+        <p><a href="https://www.hec.usace.army.mil/confluence/rasdocs/ras1dtechref/6.6/theoretical-basis-for-one-dimensional-and-two-dimensional-hydrodynamic-calculations/2d-unsteady-flow-hydrodynamics/hydraulic-equations/wind-surface-stress" data-en="USACE wind stress">美國陸軍工兵署風應力</a> · <a href="https://repository.library.noaa.gov/view/noaa/9561/noaa_9561_DS1.pdf" data-en="Wind setup equation">風增水方程</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · Weather (typhoons, pressure systems, wind)">課綱對應：高中地球科學・天氣（颱風、氣壓系統、風）</li>
         <li data-en-html="Central Weather Administration (Taiwan), typhoon intensity classes by the near-centre maximum 10-minute wind: tropical depression below 17.2 m/s, mild 17.2–32.6, moderate 32.7–50.9, severe 51.0 m/s and above; the gale radius is the distance of the force-7 lower limit (13.9 m/s).">中央氣象署：依近中心最大（10 分鐘平均）風速分級——熱帶性低氣壓未達 17.2 m/s、輕度颱風 17.2–32.6、中度颱風 32.7–50.9、強烈颱風 51.0 m/s 以上；暴風半徑是七級風下限（13.9 m/s）處到中心的距離。</li>

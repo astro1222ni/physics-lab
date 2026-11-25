@@ -273,7 +273,27 @@
     return { v: v, h: sub(a, scale(rh, v)) };
   }
 
+  // NOAA 調和常數依序為 M2、S2、K1、O1，振幅用公尺，相位採格林威治角。
+  const frequencies = [28.984104, 30, 15.041069, 13.943035];
+  const ports = {
+    boston: [[1.371, 109.2], [0.208, 146.2], [0.143, 205.6], [0.116, 187.1]],
+    honolulu: [[0.171, 59.4], [0.056, 54.7], [0.149, 226.8], [0.081, 215.9]]
+  };
+  function portHeight(port, hour) {
+    return ports[port].reduce(function (sum, term, i) {
+      return sum + term[0] * Math.cos((frequencies[i] * hour - term[1]) * DEG);
+    }, 0);
+  }
+  function portRange(port, start) {
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i <= 288; i++) {
+      const h = portHeight(port, start + i / 12);
+      lo = Math.min(lo, h); hi = Math.max(hi, h);
+    }
+    return hi - lo;
+  }
   const api = {
+    portHeight: portHeight, portRange: portRange,
     DEG: DEG, TAU: TAU,
     G: G, M_EARTH: M_EARTH, R_EARTH: R_EARTH, M_MOON: M_MOON, A_MOON: A_MOON, PERIGEE: PERIGEE, APOGEE: APOGEE,
     M_SUN: M_SUN, AU: AU, G_SURF: G_SURF, P_SYN: P_SYN, DEC_MAX: DEC_MAX, DEC_MAX_LOW: DEC_MAX_LOW, SITE_LON: SITE_LON,

@@ -99,4 +99,10 @@ test('水團：σθ 都在合理範圍；以海面為參考時 NADW 比 AABW 還
   assert.strictEqual(top.id, 'nadw');
 });
 
+test('深水團於同一壓力比較時密度排序反轉', () => {
+  const surface = K.deepPair(0), deep = K.deepPair(4000);
+  assert.ok(surface[0].sigma < surface[1].sigma && deep[0].sigma > deep[1].sigma);
+  assert.ok(deep[0].t > surface[0].t);
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

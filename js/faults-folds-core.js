@@ -107,6 +107,20 @@
     return { sn: sn, tau: tau, snEff: sn - st.Pp, slip: slip, rake: rake };
   }
 
+  // 固定總應力，逐漸提高孔隙壓力。先達到的臨界孔壓決定先發生的事件。
+  function firstFailure(st, strike, dip) {
+    function threshold(pl, mu) {
+      const r = resolve(st, pl);
+      return r.tau < 1e-9 ? Infinity : r.sn - r.tau / mu;
+    }
+    const weak = threshold(plane(strike, dip), st.mu / 2);
+    const fresh = threshold(optimalPlanes(st)[0], st.mu);
+    const first = Math.min(weak, fresh);
+    let kind = weak < fresh ? 'weak' : 'fresh';
+    if (first >= st.s3) kind = 'open';
+    else if (Math.abs(weak - fresh) < 1e-8 || Math.max(weak, fresh) <= 0) kind = 'both';
+    return { weak: weak, fresh: fresh, opening: st.s3, kind: kind };
+  }
   /**
    * 整個斷層狀態。o 除了 stress 的參數，再加 plane（0／1：共軛的哪一個面）、slip（累積滑移量 m）、erode（是否侵蝕成平地）。
    * 應力沒有達到臨界時不會滑動（滑移量 0）。
@@ -224,6 +238,7 @@
   }
 
   return {
+    firstFailure: firstFailure,
     RHO: RHO, G: G, H: H, NL: NL, BASE: BASE, DIKE: DIKE, AIR: AIR, L: L, DEPTH: DEPTH, DIKE_W: DIKE_W, HYDRO: HYDRO,
     qCrit: qCrit, stress: stress, plane: plane, planeFromNormal: planeFromNormal, optimalPlanes: optimalPlanes, resolve: resolve,
     fault: fault, faultLayerAt: faultLayerAt, hangingSide: hangingSide, exposure: exposure, faultKinds: faultKinds,

@@ -183,6 +183,13 @@
     rhoW: rhoW, rho0: rho0, secantK: secantK, rho: rho, sigma: sigma, alpha: alpha, beta: beta, tMaxDensity: tMaxDensity,
     freezing: freezing, adiabat: adiabat, theta: theta, tFromTheta: tFromTheta, pressure: pressure, mix: mix,
     PROFILES: PROFILES, Z_MAX: Z_MAX, profileAt: profileAt, profileSigma: profileSigma, settle: settle, profileInversion: profileInversion,
+    deepPair: function (p) {
+      return ['aabw', 'nadw'].map(function (id) {
+        const mass = MASSES.find(function (m) { return m.id === id; });
+        const t = tFromTheta(mass.S, mass.T, p);
+        return { t: t, sigma: sigma(mass.S, t, p) };
+      });
+    },
     MASSES: MASSES
   };
 });

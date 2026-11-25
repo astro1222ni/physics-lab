@@ -128,6 +128,7 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+    label.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   </style>
 </head>
 <body data-en-ready>
@@ -206,6 +207,8 @@
               <button type="button" data-win="30" aria-pressed="false" data-en="30 days">30 天</button>
             </div>
           </div>
+          <label class="check"><input id="portsOn" type="checkbox"> <span data-en="Compare Boston and Honolulu">對照波士頓與檀香山</span></label>
+          <p id="portRange" hidden></p>
         </section>
         <section class="card" data-deck="月球|The Moon" data-deck-order="1">
           <h2 data-en="The Moon">月球</h2>
@@ -323,7 +326,9 @@
         <li data-en-html="<strong>Pictures</strong>: in the top view the ocean is drawn along the equator; its bulges are exaggerated (about 2.5 million times; less if you bring the Moon closer, as the corner says) and drawn on a water layer that is itself far too thick. The Moon is drawn to scale with the Earth but much too close, and the Sun only as a direction. The cross-section uses the same heights through the plane of the axis and the Moon. The 3D view uses the same core and the same exaggeration, with the three.js library (MIT license), downloaded only when you switch to 3D."><strong>畫面</strong>：俯視圖沿赤道畫出海面；隆起是誇大的（約 250 萬倍；把月球拉近時倍數會變小，畫面角落有寫），畫在一層本身也太厚的海水上。月球與地球的大小比例正確，但距離近得多；太陽只畫出方向。截面圖用同樣的潮高，畫在包含地軸與月球的平面上。3D 檢視用同一個物理核心與同樣的誇大倍數，使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
 
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="The same astronomical periods drive both sites. Basin depth, shape, resonance and friction change amplitude and phase. M2 alone gives ranges of 2.74 m at Boston and 0.34 m at Honolulu. The separate four-constituent comparison uses local mean level, GMT phases and a common idealized astronomical origin on the playback clock. Other constituents and nodal corrections are omitted. It does not predict tides for a calendar date.">兩地受同一組天文週期驅動。海盆深度、形狀、共振與摩擦改變各分潮的振幅及相位。主太陰半日分潮單獨造成的潮差在波士頓為 2.74 m、檀香山為 0.34 m。地方對照另以兩站的 M2、S2、K1、O1 疊加，各以當地平均面為零。時間沿用播放時鐘，共用假設的起始天文角，省略其他分潮及交點修正，不能用來查某日潮時。</p>
+        <p><a href="https://tidesandcurrents.noaa.gov/harcon.html?id=8443970" data-en="NOAA Boston">波士頓分潮</a> · <a href="https://tidesandcurrents.noaa.gov/harcon.html?id=1612340" data-en="NOAA Honolulu">檀香山分潮</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · The ocean (tides)">課綱對應：高中地球科學・海洋（潮汐）</li>
         <li data-en-html="Constants: masses of the Earth (\(5.9722\times10^{24}\ \mathrm{kg}\)), the Moon (\(7.346\times10^{22}\ \mathrm{kg}\)) and the Sun (\(1.9884\times10^{30}\ \mathrm{kg}\)), the Earth’s mean radius \(6371\ \mathrm{km}\) and surface gravity \(9.820\ \mathrm{m/s^2}\), the Moon’s mean distance \(384\,400\ \mathrm{km}\), perigee and apogee and the range of its declination, from the NASA NSSDCA <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Earth</a>, <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Moon</a> and <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Sun</a> fact sheets; \(G = 6.6743\times10^{-11}\ \mathrm{N\,m^2/kg^2}\) (CODATA 2018); 1 AU \(= 149\,597\,870.7\ \mathrm{km}\) (IAU 2012 Resolution B2); synodic month 29.530 589 d (J. Meeus, <i>Astronomical Algorithms</i>); Love numbers from the IERS Conventions (2010).">常數：地球（\(5.9722\times10^{24}\ \mathrm{kg}\)）、月球（\(7.346\times10^{22}\ \mathrm{kg}\)）、太陽（\(1.9884\times10^{30}\ \mathrm{kg}\)）的質量，地球平均半徑 \(6371\ \mathrm{km}\) 與表面重力 \(9.820\ \mathrm{m/s^2}\)，月地平均距離 \(384\,400\ \mathrm{km}\)、近地點、遠地點與赤緯範圍，出自 NASA NSSDCA 的<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" target="_blank" rel="noopener">地球</a>、<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">月球</a>、<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html" target="_blank" rel="noopener">太陽</a>資料表；\(G = 6.6743\times10^{-11}\ \mathrm{N\,m^2/kg^2}\)（CODATA 2018）；1 AU \(= 149\,597\,870.7\ \mathrm{km}\)（IAU 2012 年 B2 決議）；朔望月 29.530 589 日（J. Meeus《Astronomical Algorithms》）；洛夫數出自 IERS Conventions（2010）。</li>

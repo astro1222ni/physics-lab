@@ -455,7 +455,17 @@
     if (Math.abs(r) < 5) return T('幾乎沒轉', 'hardly at all');
     return (r > 0 ? T('順轉（順時針）', 'veered (clockwise) ') : T('逆轉（逆時針）', 'backed (anticlockwise) ')) + num(Math.abs(r), 0) + '°';
   }
+  function coastalReading() {
+    $('coastCase').hidden = !$('windOn').checked;
+    if ($('coastCase').hidden) return;
+    const wind = K.windSetup(+$('wind10').value, +$('shelf').value, +$('fetchKm').value);
+    $('windResult').textContent = T('倒氣壓 ', 'Pressure alone ') + num(sum.surge * 100, 0)
+      + T(' cm，向岸風另增 ', ' cm, wind adds ') + num(wind * 100, 0)
+      + T(' cm，同地疊加約 ', ' cm, combined at the same site about ') + num((wind + sum.surge) * 100, 0) + ' cm';
+  }
+  ['windOn', 'wind10', 'shelf', 'fetchKm'].forEach(function (id) { $(id).addEventListener('change', coastalReading); });
   function updateReadouts() {
+    coastalReading();
     const S = run.S;
     setHTML('rCls', clsHTML(sum.cls));
     setHTML('rVmax', num(sum.vMax, 1) + ' m/s（' + kmh(sum.vMax) + '，' + beauText(sum.vMax) + '）');

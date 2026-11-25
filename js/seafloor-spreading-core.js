@@ -81,18 +81,33 @@
 
   /** 參數 P = { uL, uR（cm/yr）, tau（Ma 前）, zs（感測器在海面下多深，km）, M0（A/m，預設 10） } */
   function rateAt(P, x) { return (x < 0 ? P.uL : P.uR) * KM_PER_MA; }
+  // oldRate 為轉折前兩翼各自的半速率。tau 是當時距今的年代，age 是地殼當時的年齡。
+  function distanceAt(P, side, age) {
+    const u = rateAt(P, side);
+    if (!P.oldRate) return age * u;
+    const recent = Math.min(age, Math.max(0, P.changeMa - (P.tau || 0)));
+    return recent * u + (age - recent) * P.oldRate * KM_PER_MA;
+  }
+  function ageAt(P, x) {
+    const distance = Math.abs(x), u = rateAt(P, x);
+    if (!P.oldRate) return distance / u;
+    const recent = Math.max(0, P.changeMa - (P.tau || 0)), edge = recent * u;
+    return distance <= edge ? distance / u : recent + (distance - edge) / (P.oldRate * KM_PER_MA);
+  }
   /** 位置 x（km，右為正）的地殼：{ age（Ma，相對於 τ 那時）, born（形成於幾 Ma 前）, pol, inRecord } */
   function crustAt(P, x) {
-    const u = rateAt(P, x), age = Math.abs(x) / u, born = (P.tau || 0) + age;
+    const age = ageAt(P, x), born = (P.tau || 0) + age;
     return { age: age, born: born, pol: polarity(born), inRecord: born <= T_MAX };
   }
   /** 把一側（s = +1 右、−1 左）的地殼切成段：[{ a, b（km，a < b）, m（A/m）, dA、dB（a、b 兩端磁性層頂部在感測器下方幾 km） }] */
   function elements(P, s, xmax) {
-    const u = (s > 0 ? P.uR : P.uL) * KM_PER_MA, tau = P.tau || 0, Mm = P.M0 != null ? P.M0 : M0, zs = P.zs || 0;
-    const ageMax = Math.min(xmax / u, T_MAX - tau);
+    const tau = P.tau || 0, Mm = P.M0 != null ? P.M0 : M0, zs = P.zs || 0;
+    const ageMax = Math.min(ageAt(P, s * xmax), T_MAX - tau);
     if (!(ageMax > 0)) return [];
     // 段的邊界（以「相對年齡」計）：每次反轉，以及 √年齡 每 0.05 一段
     const cuts = [0];
+    const change = P.changeMa - tau;
+    if (P.oldRate && change > 0 && change < ageMax) cuts.push(change);
     reversals(T_MAX).forEach(function (t) { const a = t - tau; if (a > 0 && a < ageMax) cuts.push(a); });
     for (let q = 0.05; q * q < ageMax; q += 0.05) cuts.push(q * q);
     cuts.push(ageMax);
@@ -103,7 +118,7 @@
       if (a1 - a0 < 1e-9) continue;
       const mid = (a0 + a1) / 2, pol = polarity(tau + mid);
       const t0 = depth(a0) / 1000 - zs, t1 = depth(a1) / 1000 - zs;
-      const x0 = a0 * u, x1 = a1 * u;
+      const x0 = distanceAt(P, s, a0), x1 = distanceAt(P, s, a1);
       out.push({ a: s > 0 ? x0 : -x1, b: s > 0 ? x1 : -x0, dA: s > 0 ? t0 : t1, dB: s > 0 ? t1 : t0, m: pol * Mm, age0: a0, age1: a1, pol: pol });
     }
     return out;
@@ -150,8 +165,8 @@
   /** 某個有名字的期在一側的位置（km，正值）：[開始, 結束]，以現在（τ = 0）計 */
   function namedAt(P, key, s) {
     const N = NAMED.find(function (q) { return q.key === key; });
-    const u = (s > 0 ? P.uR : P.uL) * KM_PER_MA, tau = P.tau || 0;
-    return [Math.max(0, N.a - tau) * u, Math.max(0, N.b - tau) * u];
+    const tau = P.tau || 0;
+    return [distanceAt(P, s, Math.max(0, N.a - tau)), distanceAt(P, s, Math.max(0, N.b - tau))];
   }
 
   /** 一段正向亞期 [a, b]（Ma）在右側（s = 1）或左側（s = −1）的磁異常裡「看得出一個獨立的峰」嗎？
@@ -160,17 +175,17 @@
     s = s || 1;
     const u = (s > 0 ? P.uR : P.uL) * KM_PER_MA, tau = P.tau || 0, t0 = Math.max(0, a - tau), t1 = Math.max(0, b - tau);
     if (!(t1 > t0)) return false;
-    const x0 = t0 * u, x1 = t1 * u, w = x1 - x0, pad = 0.3 * w + 0.5, lo = Math.max(0, x0 - pad - 8), hi = x1 + pad + 8;
+    const x0 = distanceAt(P, s, t0), x1 = distanceAt(P, s, t1), w = x1 - x0, pad = 0.3 * w + 0.5, lo = Math.max(0, x0 - pad - 8), hi = x1 + pad + 8;
     if (b > T_MAX) return false;
     const n = Math.min(1200, Math.ceil((hi - lo) / 0.02)), xs = [];
     for (let i = 0; i <= n; i++) xs.push(s * (lo + (hi - lo) * i / n));
     if (s < 0) xs.reverse();
-    const B = profile(P, xs, T_MAX * u + 1).B;
+    const B = profile(P, xs, (P.oldRate ? Math.max(distanceAt(P, 1, T_MAX), distanceAt(P, -1, T_MAX)) : T_MAX * u) + 1).B;
     return s > 0 ? peaks(xs, B, prom, x0 - pad, x1 + pad) > 0 : peaks(xs, B, prom, -x1 - pad, -x0 + pad) > 0;
   }
 
   return {
-    resolved: resolved,
+    distanceAt: distanceAt, ageAt: ageAt, resolved: resolved,
     NORMAL: NORMAL, NAMED: NAMED, T_MAX: T_MAX, MU0_2PI: MU0_2PI, LAYER: LAYER, M0: M0, KM_PER_MA: KM_PER_MA,
     polarity: polarity, reversals: reversals, depth: depth, heatFlow: heatFlow, ageFromDepth: ageFromDepth,
     crustAt: crustAt, elements: elements, profile: profile, blockField: blockField, peaks: peaks, namedAt: namedAt, F: F, G: G

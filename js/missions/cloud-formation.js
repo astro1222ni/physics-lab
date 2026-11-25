@@ -22,7 +22,7 @@
   const sat = function (r) { return r.RH >= 99.9; };
   const near = function (a, b, tol) { return a != null && Math.abs(a - b) <= tol; };
   // 真實的大氣：山腳沒有起霧（溼度低於 100%）、環境遞減率低於乾絕熱 9.8 °C/km（不是絕對不穩定）
-  const real = function (d) { return d.RH < 100 && d.gamma < 9.8; };
+  const real = function (d) { return d.RH < 100 && (d.maxGamma ?? d.gamma) < 9.8; };
 
   LabMission.register('cloud-formation', [
     {
@@ -128,7 +128,7 @@
         const d = ev.data;
         if (d.T0 <= 0 || !d.cloud || d.rain <= 0) return false;
         // 固定山腳氣象與降水效率，比較暖山頂與跨過冰點的較高山頂。
-        const air = [d.T0, d.RH, d.eff, d.gamma].join('|');
+        const air = [d.T0, d.RH, d.eff, d.gamma, d.maxGamma].join('|');
         if (d.topT >= 2) mem.warm = { air: air, height: d.H };
         return !!mem.warm && mem.warm.air === air && d.H > mem.warm.height && d.topT <= -1;
       }

@@ -135,4 +135,10 @@ test('時間積分：步長 30 秒與 120 秒的測站統計一致；靜止的�
   near(K.stats(r, 0).rot, 0, 1e-9);
 });
 
+test('向岸風增水隨風程增加、隨水深減少', () => {
+  assert.equal(K.windSetup(0, 10, 50), 0);
+  assert.ok(Math.abs(K.windSetup(20, 10, 50) - 0.4094) < 0.001);
+  assert.equal(K.windSetup(20, 10, 50), 5 * K.windSetup(20, 50, 50));
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '（有失敗）' : ''}`);

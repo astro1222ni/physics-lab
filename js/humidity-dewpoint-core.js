@@ -133,21 +133,32 @@
     return Math.cos(Math.PI * s / span);
   }
   /** 一天裡某時刻的狀態：Tmean 日均溫、range 日較差、e0 水氣壓。回傳 T、e、RH、Td、是否結露／結霜、露水量（g/m³ 空氣） */
-  function dayState(h, Tmean, range, e0) {
+  function dayState(h, Tmean, range, e0, grassDrop) {
     const T = Tmean + range / 2 * dayShape(h), es = esSurf(T), e = Math.min(e0, es);
     const sat = e0 >= es;
+    if (grassDrop > 0) {
+      // 溫差在夜間冷段加大，清晨最大；保留兩公尺空氣的水氣壓與溼度。
+      const grass = T - grassDrop * Math.max(0, -dayShape(h));
+      const surface = esSurf(grass), wet = e >= surface;
+      return { h: h, T: T, e: e, rh: rh(T, e), Td: dewPoint(e), sat: sat, grass: grass,
+        wet: wet, frost: wet && grass < 0, dew: wet ? Math.max(0, absHum(grass, e0) - absHum(grass, surface)) : 0 };
+    }
     return { h: h, T: T, e: e, rh: rh(T, e), Td: dewPoint(e), sat: sat, frost: sat && T < 0, dew: sat ? absHum(T, e0) - absHum(T, e) : 0 };
   }
   /** 一天裡最低溫與開始結露的時刻（結不了露是 null） */
-  function dayDew(Tmean, range, e0) {
-    const tp = depositPoint(e0), Tmin = Tmean - range / 2;
+  function dayDew(Tmean, range, e0, grassDrop) {
+    const tp = depositPoint(e0), Tmin = Tmean - range / 2 - (grassDrop || 0);
+    function surfaceTemp(h) {
+      const shape = dayShape(h);
+      return Tmean + range / 2 * shape - (grassDrop || 0) * Math.max(0, -shape);
+    }
     if (Tmin > tp) return { Tmin: Tmin, tp: tp, start: null, end: null };
     // 黃昏到清晨氣溫一路下降：二分法找 T = tp 的時刻（14:00 → 隔天 05:30）
-    const T = function (s) { return Tmean + range / 2 * dayShape(H_MAX + s); }, span = 24 - (H_MAX - H_MIN);
+    const T = function (s) { return surfaceTemp(H_MAX + s); }, span = 24 - (H_MAX - H_MIN);
     let lo = 0, hi = span; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (T(m) > tp) lo = m; else hi = m; }
     const start = (H_MAX + lo) % 24;
     // 早上回升：05:30 → 14:00
-    const U = function (s) { return Tmean + range / 2 * dayShape(H_MIN + s); };
+    const U = function (s) { return surfaceTemp(H_MIN + s); };
     lo = 0; hi = H_MAX - H_MIN; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (U(m) < tp) lo = m; else hi = m; }
     return { Tmin: Tmin, tp: tp, start: start, end: H_MIN + lo };
   }

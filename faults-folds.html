@@ -114,6 +114,8 @@
     @media (max-width: 560px) and (orientation: portrait) {
       #cv { max-height: 560px; }
     }
+    label:has(> #weakDip) { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    #weakDip { min-height: 44px; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body data-en-ready>
@@ -184,6 +186,13 @@
             <input id="lam" type="range" min="0" max="0.95" step="0.01" value="0.37" data-decimals="3"></div>
           <div class="slider"><label for="mu" data-en="Friction coefficient μ">摩擦係數 μ</label><output></output>
             <input id="mu" type="range" min="0.2" max="1" step="0.01" value="0.6" data-decimals="3"></div>
+          <label><span data-en="Old plane dip (north–south strike)">既有弱面傾角（南北走向）</span>
+          <select id="weakDip">
+            <option value="" data-en="Off">關閉</option>
+            <option value="60" data-en="60°">60°</option>
+            <option value="10" data-en="10°">10°</option>
+          </select></label>
+          <p id="weakResult" hidden></p>
         </section>
         <section class="card" data-deck="方向|Direction" data-deck-order="2">
           <h2 data-en="Direction">方向</h2>
@@ -274,7 +283,9 @@
         <li data-en-html="Folds are sinusoidal with layer length conserved; interlimb-angle classes after Fleuty (1964). Real folds have thickening hinges, chevrons and faults; this is the simplest geometry.">褶皺用正弦形、層長守恆；翼間角分類照 Fleuty（1964）。真實的褶皺有轉折處增厚、尖稜褶皺與斷層，這裡是最簡單的幾何。</li>
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="Total stresses are fixed as pore pressure rises from zero. The old north–south plane has half the selected friction coefficient in this scenario. A new fracture takes the most favourable orientation. The default weak-plane friction is 0.3. Clay-rich grains from San Andreas drill cuttings measured 0.3–0.5. Both use zero cohesion. Critical pressure is normal stress minus shear stress divided by friction. Opening occurs when the least effective principal stress reaches zero. The main diagram shows the original conjugate plane.">固定目前的三個總主應力，從零提高孔隙壓力。既有弱面走向固定南北，摩擦係數取面板值的一半作教學對照，新破裂沿最有利面。預設弱面摩擦係數為 0.3；聖安地列斯斷層富黏土鑽屑的實驗值為 0.3–0.5。兩者都忽略內聚力，臨界孔壓為正應力減去剪應力除以摩擦係數。若最小有效主應力先降至零，改判張裂。主圖仍顯示原有共軛面。</p>
+        <p><a href="https://pubs.usgs.gov/publication/70030123" data-en="Morrow et al., measured friction of fault materials">Morrow 等人的斷層材料摩擦實驗</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · Plate tectonics, geologic structures, relative dating">課綱對應：高中地球科學・板塊構造、地質構造、相對定年</li>
         <li data-en-html="E. M. Anderson (1951), <i>The Dynamics of Faulting and Dyke Formation with Applications to Britain</i>, 2nd ed., Oliver &amp; Boyd.">E. M. Anderson（1951），<i>The Dynamics of Faulting and Dyke Formation with Applications to Britain</i> 第 2 版，Oliver &amp; Boyd。</li>

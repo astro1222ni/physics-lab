@@ -15,12 +15,12 @@ const byId = id => missions.find(m => m.id === 'seafloor-spreading-' + id);
 function snap(o) {
   const s = Object.assign({ uL: 2.5, uR: 2.5, zs: 0, tau: 0, cx: 0, playing: false, mystery: false, dragging: false }, o);
   if (o && o.u != null) { s.uL = s.uR = o.u; }
-  const P = { uL: s.uL, uR: s.uR, tau: s.tau, zs: s.zs };
-  const R = s.mystery ? 400 : 8.6 * Math.max(s.uL, s.uR) * K.KM_PER_MA, n = 520, xs = [];
+  const P = { uL: s.uL, uR: s.uR, tau: s.tau, zs: s.zs, changeMa: 1, oldRate: s.mystery ? 0 : s.olderRight || 0 };
+  const R = s.mystery ? 400 : 8.6 * Math.max(s.uL, s.uR, P.oldRate) * K.KM_PER_MA, n = 520, xs = [];
   for (let i = 0; i <= n; i++) xs.push(-R + 2 * R * i / n);
   const B = K.profile(P, xs, R * 1.04).B, c = K.crustAt(P, s.cx);
   let Bmax = -Infinity; for (const b of B) Bmax = Math.max(Bmax, b);
-  return { uL: s.uL, uR: s.uR, sym: s.uL === s.uR, zs: s.zs, tau: s.tau, playing: s.playing, mystery: s.mystery, dragging: s.dragging,
+  return { uL: s.uL, uR: s.uR, ...(P.oldRate ? { olderRight: P.oldRate } : {}), sym: s.uL === s.uR, zs: s.zs, tau: s.tau, playing: s.playing, mystery: s.mystery, dragging: s.dragging,
     cx: s.cx, cAge: c.age, cBorn: c.born, cPol: c.pol, cIn: c.inRecord, cDepth: K.depth(c.age), cHeat: K.heatFlow(c.age),
     bmL: K.namedAt(P, 'brunhes', -1)[1], bmR: K.namedAt(P, 'brunhes', 1)[1], Bmax: Bmax,
     ja: K.resolved(P, 0.988, 1.072, 30, 1), cobb: K.resolved(P, 1.173, 1.185, 20, 1), R: R };
@@ -124,6 +124,13 @@ expect('h3 現在（0 Ma）不算', !h3.check(ev({ tau: 0 })));
   }
   expect('滑桿全在極端值（64 種組合）：' + (hit.size ? '觸發了 ' + [...hit].join('、') : '精確任務都沒有觸發'), hit.size === 0);
 }
+
+// 加拉米佑跨越速率轉折，卡布山則完全位在較老段。
+const fastOld = ev({ u: 1, olderRight: 5, zs: 2.5 });
+expect('舊段快速形成的磁帶可辨識，但不算慢速脊任務',
+  fastOld.data.ja && !byId('8').check(fastOld) && !byId('9').check(fastOld) && !byId('h2').check(fastOld));
+const fastOldSurface = ev({ u: 1, olderRight: 5 });
+expect('海面可見的快速舊磁帶不算海面慢速任務', fastOldSurface.data.ja && !byId('8').check(fastOldSurface));
 
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
 console.log(`\n公開 ${pub.length} 個（${pub.reduce((s, m) => s + m.level, 0)} 顆星），隱藏 ${hid.length} 個（等級 × 2 共 ${hid.reduce((s, m) => s + 2 * m.level, 0)} 顆星），合計 ${pub.reduce((s, m) => s + m.level, 0) + hid.reduce((s, m) => s + 2 * m.level, 0)} 顆`);

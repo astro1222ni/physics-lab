@@ -768,11 +768,18 @@
   const cache = { key: '', next: null };
   function setHTML(id, html) { const e = $(id); if (e && e.innerHTML !== html) e.innerHTML = html; }
   function setOut(id, txt) { const o = $(id); if (o && o.textContent !== txt && !o.dataset.editing) o.textContent = txt; }
+  $('portsOn').addEventListener('change', function () { updateReadouts(true); });
   function updateReadouts(force) {
     const now = performance.now();
     if (!force && now - lastRead < 140) return;
     lastRead = now;
     const p = P(), psi = psiNow(), t = state.t;
+    const portsOn = $('portsOn').checked;
+    $('portRange').hidden = !portsOn;
+    if (portsOn) {
+      $('portRange').textContent = T('同一時刻起算 24 小時潮差：波士頓 ', '24-hour range from the same instant: Boston ')
+        + num(K.portRange('boston', t), 2) + T(' m，檀香山 ', ' m, Honolulu ') + num(K.portRange('honolulu', t), 2) + ' m';
+    }
     const am = K.subPointAccel(K.M_MOON, K.moonDist(p)), as = K.subPointAccel(K.M_SUN, K.AU);
     const rel = 1 / Math.pow(state.dist, 3);
     setHTML('rAm', sci(am, 2) + ' m/s²<small>' + T('地表重力的 ', '') + sci(am / K.G_SURF, 2) + T('', ' of gravity') +

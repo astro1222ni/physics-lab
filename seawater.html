@@ -107,6 +107,8 @@
       .stage .playbar { gap: 4px; margin-block: 4px; }
       .stage .playbar button { min-height: 44px; padding-inline: 6px; }
     }
+    label:has(> #deepRef) { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    #deepRef { min-height: 44px; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body data-en-ready>
@@ -201,6 +203,13 @@
             <button type="button" id="toA" data-en="Copy to A" title="把這個水團的溫度、鹽度設給水團 A" data-en-title="Give parcel A this water mass’s temperature and salinity">設給 A</button>
           </div>
           <p class="hint" id="massHint" data-en="Tap a grey diamond on the diagram or choose one from the list.">點 T–S 圖上的灰色菱形，或從清單選一個。</p>
+          <label><span data-en="Deep-water reference pressure">深水團同壓比較</span>
+          <select id="deepRef">
+            <option value="" data-en="Off">關閉</option>
+            <option value="0" data-en="Surface (0 dbar)">海面（0 dbar）</option>
+            <option value="4000" data-en="Deep ocean (4000 dbar)">深海（4000 dbar）</option>
+          </select></label>
+          <p id="deepResult" hidden></p>
         </section>
       </aside>
     </div>
@@ -236,7 +245,9 @@
         <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
       </ul>
 
-      <h3 data-en="References">參考資料</h3>
+      <p data-en="The representative surface potential temperatures and practical salinities are −0.5 °C and 34.65 (AABW), and 2.5 °C and 34.92 (NADW). Each parcel moves adiabatically to the same reference pressure before EOS-80 density is evaluated. 4000 dbar is roughly 4 km deep, depending on latitude. The settling diagram uses surface-referenced potential density.">對照使用站內典型水團的海面位溫與實用鹽度：南極底層水 −0.5 °C、34.65，北大西洋深層水 2.5 °C、34.92。先算兩團水各自絕熱移至同一參考壓力後的溫度，再用 EOS-80 算密度。4000 dbar 約在 4 km 深，實際深度隨緯度而異。這組溫鹽代表值用來比較排序；原停留深度圖一律以海面為參考。</p>
+        <p><a href="https://unesdoc.unesco.org/ark:/48223/pf0000059832" data-en="UNESCO seawater algorithms">UNESCO 海水性質演算法</a></p>
+        <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: High school Earth Science · Properties of seawater, ocean circulation">課綱對應：高中地球科學・海水的性質、海水的運動</li>
         <li data-en-html="UNESCO (1981), <i>Tenth report of the Joint Panel on Oceanographic Tables and Standards</i>, UNESCO Technical Papers in Marine Science 36 (EOS-80).">UNESCO（1981），<i>Tenth report of the Joint Panel on Oceanographic Tables and Standards</i>，UNESCO Technical Papers in Marine Science 36（EOS-80）。</li>

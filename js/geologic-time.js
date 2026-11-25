@@ -825,7 +825,20 @@
       li.classList.toggle('now', !!now || (n === 0 && k === -1));
     });
   }
+  $('daughterLoss').addEventListener('change', updateReadouts);
   function updateReadouts() {
+    const showLoss = $('daughterLoss').checked;
+    $('lossResult').hidden = !showLoss;
+    if (showLoss) {
+      const last = state.last;
+      if (last && last.u === state.sel && last.sys === state.sys && last.m.ok && G.SYSTEMS[last.sys].kind === 'ratio') {
+        const years = last.m.trueAge * 1e6;
+        const ratio = G.disturbedRatio(last.sys, years, years / 2, 0.5);
+        $('lossResult').textContent = T('同一樣本，無量測雜訊：封閉 ', 'Same sample, without analytical noise: closed ')
+          + num(last.m.trueAge, 2) + T(' Ma，中途流失一半子核種 ', ' Ma; half the accumulated daughters lost midway: ')
+          + num(G.ageFrom(last.sys, ratio) / 1e6, 2) + ' Ma';
+      } else $('lossResult').textContent = T('選岩樣，用適合的鈾鉛或鉀氬法量測後比較。', 'Measure a suitable sample by U–Pb or K–Ar to compare ages.');
+    }
     // 故事
     const t = tNow, n = G.countAt(S, t), dep = G.depositingAt(S, t), depNow = dep && dep.i === n ? S.events[dep.i] : null;
     setHTML('rT', fmtT(t));

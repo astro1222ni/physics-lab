@@ -203,6 +203,11 @@
     OMEGA: OMEGA, ROT_R: ROT_R, RHO: RHO, RHOW: RHOW, G: G, KS: KS, INFLOW: INFLOW, TRANS: TRANS, DEG: DEG, BEAUFORT: BEAUFORT, CLASSES: CLASSES,
     coriolisF: coriolisF, dp: dp, pressure: pressure, dpdr: dpdr, gradWind: gradWind, surfaceSym: surfaceSym, motion: motion,
     windAt: windAt, maxGrad: maxGrad, maxSurface: maxSurface, radiusOf: radiusOf, classify: classify, beaufort: beaufort,
+    windSetup: function (wind, depth, fetchKm) {
+      // 直岸定深，持續且垂直向岸的 10 m 風。阻力係數取 Large 與 Pond 的中強風式。
+      const cd = 0.001 * (0.49 + 0.065 * wind);
+      return RHO * cd * wind * wind * fetchKm * 1000 / (RHOW * G * depth);
+    },
     surge: surge, summary: summary,
     makeRun: makeRun, centerAt: centerAt, lateral: lateral, observe: observe, begin: begin, advance: advance, stats: stats
   };

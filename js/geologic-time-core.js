@@ -30,6 +30,11 @@
     Rb87: { lambda: 1.3972e-11, branch: 1, rel: 0.002, minAge: 1e7, maxAge: 4.6e9, kind: 'isochron' },       // 87Rb → 87Sr（Villa 2015）
     C14: { lambda: LN2 / 5700, branch: 1, rel: 0.004, minAge: 0, maxAge: 5e4, kind: 'remain' }               // 14C（NUBASE2020：5700 ± 30 年）
   };
+  // 擾動時只移除當時累積的放射成因子核種。其後母核種繼續衰變。
+  function disturbedRatio(sys, age, sinceLoss, loss) {
+    const recent = ratioAt(sys, sinceLoss), closed = ratioAt(sys, age);
+    return recent + (1 - loss) * (closed - recent);
+  }
   function halfLife(sys) { return LN2 / SYSTEMS[sys].lambda; }
   /** t 年後的量測值：ratio → D/P（K40 是 Ar/K）；remain → N/N0 */
   function ratioAt(sys, t) {
@@ -315,7 +320,7 @@
   }
 
   return {
-    LN2: LN2, SYSTEMS: SYSTEMS, halfLife: halfLife, ratioAt: ratioAt, ageFrom: ageFrom, ageSigma: ageSigma,
+    disturbedRatio: disturbedRatio, LN2: LN2, SYSTEMS: SYSTEMS, halfLife: halfLife, ratioAt: ratioAt, ageFrom: ageFrom, ageSigma: ageSigma,
     ISO_X: ISO_X, SR0: SR0, isochron: isochron, fitIsochron: fitIsochron, gauss: gauss,
     AIR: AIR, BASE: BASE, W: W, Z_LO: Z_LO, Z_HI: Z_HI, ROCKS: ROCKS, FOSSILS: FOSSILS, ERAS: ERAS, PERIODS: PERIODS, periodAt: periodAt,
     build: build, rockAt: rockAt, rockAtTime: rockAtTime, countAt: countAt, depositingAt: depositingAt, levelAt: levelAt, unitAge: unitAge, unitRock: unitRock,
