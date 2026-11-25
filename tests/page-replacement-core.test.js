@@ -251,4 +251,8 @@ test('fmt 與堆疊距離的小例子', () => {
   assert.deepStrictEqual(C.stackDistances([1, 2, 1, 3, 2]), [Infinity, Infinity, 2, Infinity, 3]);
 });
 
+test("百分之百回看前一筆會持續重用同一頁", () => {
+  assert.strictEqual(new Set(C.randomRefs(5, 30, 10, 1, 1).slice(1)).size, 1);
+});
+
 console.log(process.exitCode ? '\n有測試失敗' : '\n全部 ' + passed + ' 項通過');

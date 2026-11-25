@@ -362,4 +362,9 @@ test('距離向量沒收斂前切斷線，封包可能在迴圈裡繞到 TTL 歸
   assert.ok(d && !d.looped && d.hops + 1 === bfsHops(w.net, w.net.pc, w.net.sv));
 });
 
+test("各段線速分別進入儲存轉送時間", () => {
+  assert.strictEqual(R.theoryTime([{rate:2,cost:1},{rate:4,cost:2}],4,4),9);
+  assert.strictEqual(R.buildNet('line4').routers.length,4);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '（有失敗）' : ''));

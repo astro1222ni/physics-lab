@@ -367,7 +367,7 @@
     D.backdrop(ctx, cw, ch);
     // 值的格線與刻度
     ctx.save();
-    ctx.font = fnt(L.narrow ? 10 : 11, 500);
+    ctx.font = fnt(12, 500);
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     const vmax = Math.max(1, state.vmax);
     const ticks = [0, Math.round(vmax / 2), vmax];
@@ -545,7 +545,7 @@
     const cp = st.copy;
     if (!cp || !st.aux) {
       D.haloText(ctx, T('（合併時，把兩半複製到這裡，再一個個寫回上面）', '(when merging, the two halves are copied here and written back one by one)'),
-        (L.left + L.right) / 2, top + H / 2, alpha(C.muted, 0.9), 'center', 'middle', fnt(L.narrow ? 10 : 11, 500));
+        (L.left + L.right) / 2, top + H / 2, alpha(C.muted, 0.9), 'center', 'middle', fnt(12, 500));
       return;
     }
     const hl = st.hl, ptr = st.ptr || {};
@@ -739,7 +739,7 @@
     const X = function (n) { return ml + n / NMAX * pw; };
     const Y = function (c) { return mt + ph - c / CMAX * ph; };
     ctx2.save();
-    ctx2.font = fnt(narrow ? 10 : 11, 500);
+    ctx2.font = fnt(12, 500);
     ctx2.fillStyle = C.muted;
     ctx2.textAlign = 'center'; ctx2.textBaseline = 'top';
     for (let n = 0; n <= NMAX; n += 8) {
@@ -1045,7 +1045,7 @@
   });
   $('shuffle').addEventListener('click', function () {
     if (state.shape === 'custom') {
-      const r = S.rng((Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0), a = state.custom;
+      const r = S.rng(Number($('customSeed').value) || 1), a = state.custom;
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const v = a[i]; a[i] = a[j]; a[j] = v; }
       $('custom').value = a.join(' ');
       setCustomMsg('', false);

@@ -719,12 +719,13 @@
     const title = frameTitle(f);
     ctx.font = fnt(13, 700, MONO);
     ctx.fillStyle = C['ct-fn']; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(title, x0 + pad, y + headH / 2 + 4);
-    const tw = ctx.measureText(title).width;
-    ctx.font = fnt(11.5, 500);
-    ctx.fillStyle = C.muted;
-    const lab = nFrames > 1 ? (top ? T('呼叫堆疊最上面（正在執行）', 'top of the call stack (running)') : T('等待中', 'waiting')) : T('變數', 'variables');
-    if (x0 + pad + tw + 12 + ctx.measureText(lab).width < x0 + w - pad) ctx.fillText(lab, x0 + pad + tw + 12, y + headH / 2 + 4);
+    const lab = nFrames > 1 ? (top ? T('執行中', 'running') : T('等待中', 'waiting')) : T('變數', 'variables');
+    ctx.font = fnt(12, 500);
+    const labelWidth = ctx.measureText(lab).width;
+    ctx.fillStyle = C.muted; ctx.textAlign = 'right';
+    ctx.fillText(lab, x0 + w - pad, y + headH / 2 + 4);
+    ctx.fillStyle = C['ct-fn']; ctx.textAlign = 'left'; ctx.font = fnt(13, 700, MONO);
+    ctx.fillText(title, x0 + pad, y + headH / 2 + 4, Math.max(1, w - 2 * pad - labelWidth - 8));
     if (!f.vars.length) {
       ctx.fillStyle = C.muted; ctx.font = fnt(12.5, 500);
       ctx.fillText(T('（還沒有變數）', '(no variables yet)'), x0 + pad, y + headH + 8 + 8);

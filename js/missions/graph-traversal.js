@@ -52,7 +52,7 @@
     {
       id: 'graph-traversal-5', level: 3,
       title: { zh: '斷了聯絡', en: 'Out of touch' },
-      desc: { zh: '在「一般圖」點鄰接矩陣的格子拿掉幾條邊，讓起點走不到的點至少有 3 個，再讓兩者都跑完。', en: 'In “Graph”, click cells of the adjacency matrix to remove some edges so that at least 3 vertices cannot be reached from the start, then let both finish.' },
+      desc: { zh: '在「一般圖」設定圖的連線，讓起點走不到的點至少有 3 個，再讓兩者都跑完。', en: 'In “Graph”, arrange the edges so that at least 3 vertices cannot be reached from the start, then let both finish.' },
       check: function (ev) { const d = ev.data; return graph(ev) && d.V - d.reach >= 3; }
     },
     {

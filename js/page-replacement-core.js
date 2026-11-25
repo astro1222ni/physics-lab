@@ -61,14 +61,14 @@
   function format(refs) { return refs.join(' '); }
 
   /** 隨機參考字串：頁面 0…kinds−1；有區域性（約 45% 的機會重用最近 4 個參考中的一頁）。同一個種子永遠得到同一串。 */
-  function randomRefs(seed, len, kinds) {
+  function randomRefs(seed, len, kinds, probability = 0.45, windowSize = 4) {
     len = Math.max(LIMITS.randLenMin, Math.min(LIMITS.randLenMax, Math.round(len)));
     kinds = Math.max(LIMITS.kindsMin, Math.min(LIMITS.kindsMax, Math.round(kinds)));
     const r = rng(seed * 7919 + len * 31 + kinds);
     const out = [];
     for (let i = 0; i < len; i++) {
-      if (i >= 2 && r() < 0.45) {
-        const back = 1 + Math.floor(r() * Math.min(4, i));
+      if (i >= 2 && r() < probability) {
+        const back = 1 + Math.floor(r() * Math.min(windowSize, i));
         out.push(out[i - back]);
       } else out.push(Math.floor(r() * kinds));
     }

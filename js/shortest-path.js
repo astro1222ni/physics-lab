@@ -16,6 +16,7 @@
   const reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const alpha = D.alpha, shade = D.shade;
   const INF = Infinity;
+  $('mapCoordinates').innerHTML = S.CITIES.map(city => '<tr><td data-en="' + city.en + '">' + T(city.zh, city.en) + '</td><td>' + city.lat.toFixed(2) + '</td><td>' + city.lon.toFixed(2) + '</td></tr>').join('');
 
   // ======================= 狀態 =======================
   const store = {};   // 各模式各自保存的圖、起點、終點（切回來時保留修改）
@@ -287,7 +288,7 @@
       g.strokeStyle = C.text; g.lineWidth = 1.5; g.lineCap = 'butt';
       g.beginPath(); g.moveTo(bx, by - 4); g.lineTo(bx, by + 2); g.lineTo(bx + len, by + 2); g.lineTo(bx + len, by - 4); g.stroke();
       g.fillStyle = C.text; g.fillRect(bx, by - 1, len / 2, 3);
-      D.haloText(g, '50 km', bx + len / 2, by - 7, C.text, 'center', 'alphabetic', fnt(11, 600));
+      D.haloText(g, '50 km', bx + len / 2, by - 7, C.text, 'center', 'alphabetic', fnt(12, 600));
       // 指北
       const nx = w - 22, ny = 26;
       g.beginPath(); g.moveTo(nx, ny - 13); g.lineTo(nx + 6, ny + 5); g.lineTo(nx, ny + 1); g.lineTo(nx - 6, ny + 5); g.closePath();
@@ -557,8 +558,8 @@
     // ---- 方格的起點、終點小標 ----
     if (state.mode === 'grid') {
       const ps = L.pos[state.s], pt = L.pos[state.t], off = r + 18;
-      D.pill(ctx, T('起點', 'start'), ps.x, ps.y + off, C.text, 'center', fnt(11, 700));
-      if (state.t !== state.s) D.pill(ctx, T('終點', 'goal'), pt.x, pt.y + off, C['sp-path'], 'center', fnt(11, 700));
+      D.pill(ctx, T('起點', 'start'), ps.x, ps.y + off, C.text, 'center', fnt(12, 700));
+      if (state.t !== state.s) D.pill(ctx, T('終點', 'goal'), pt.x, pt.y + off, C['sp-path'], 'center', fnt(12, 700));
     }
 
     if (checkTag) {

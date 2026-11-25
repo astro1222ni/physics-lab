@@ -175,7 +175,9 @@
     setHTML('rN', n + T('（' + cnt.join('／') + '）', ' (' + cnt.join(' / ') + ')'));
     setHTML('rQ', coordTxt(S.q.gx, S.q.gy));
     setHTML('rK', n ? String(qa.kEff) + (cfg.k > n ? T('（k 比點數大：用全部）', ' (k > n: all of them)') : '') : '—');
-    setHTML('rKth', n ? numTxt(qa.kthD) + (cfg.std ? T('（標準化單位）', ' (standardised)') : '') : '—');
+    const axes = cfg.std && n ? ['x1', 'x2'].filter((_, i) => S.P.constant[i]) : [];
+    const fallback = axes.length ? ' · ' + axes.join(', ') + T(' 採一格尺度', ' uses a one-step scale') : '';
+    setHTML('rKth', n ? numTxt(qa.kthD) + (cfg.std ? T('（標準化單位）', ' (standardised)') : '') + fallback : '—');
     setHTML('rVotes', n ? qa.votes.map(function (v, c) { return span(c, String(v)); }).join('：') : '—');
     setHTML('rPred', qa.pred >= 0 ? span(qa.pred, clsTxt(qa.pred)) + (qa.tie !== 'none' ? T('（平手後決定）', ' (after a tie)') : '') : '—');
     const cur = S.looAt(cfg.k), best = S.best();
@@ -646,7 +648,7 @@
       }
       D.haloText(c, String(v), cx, Math.max(top + 10, bot - h - 8), C.text, 'center', 'middle', fnt(12, 700));
       marker(c, k, cx, bot + 14, 5.5, { shadow: false });
-      D.haloText(c, NAMES[k], cx, bot + 29, k === qa.pred ? C.text : C.muted, 'center', 'middle', fnt(11, k === qa.pred ? 700 : 500));
+      D.haloText(c, NAMES[k], cx, bot + 29, k === qa.pred ? C.text : C.muted, 'center', 'middle', fnt(12, k === qa.pred ? 700 : 500));
     });
     const note = qa.tie === 'none' ? T('票最多的勝出', 'most votes wins') : qa.tie === 'dist' ? T('平手：距離總和小的勝', 'tie: smaller total distance') : T('平手：看最前面的鄰居', 'tie: first neighbour decides');
     D.haloText(c, note, x0 + pw / 2, y0 + ph - 8, qa.tie === 'none' ? C.muted : C.cur, 'center', 'alphabetic', fnt(wide ? 11 : 10.5, qa.tie === 'none' ? 500 : 700));
@@ -835,6 +837,12 @@
       sync();
     });
   });
+  $('classApply').addEventListener('click', function () {
+    const name = $('clusterShape').value;
+    const counts = ['A', 'B', 'C'].map(c => Math.max(0, Math.min(26, Math.round(Number($('count' + c).value)))));
+    stopPlay(); S.loadPreset(name, false, {seed: Number($('classSeed').value) || 1, counts: counts});
+    dataChanged(); afterQuery(); sync();
+  });
   function setCls(c) {
     state.cls = c;
     ['clsA', 'clsB', 'clsC'].forEach(function (id, i) { $(id).setAttribute('aria-pressed', String(i === c)); });
@@ -1015,8 +1023,7 @@
   // 設定
   // =====================================================================
   const elK = $('kSl'), elRate = $('rate');
-  if (window.LabNum) window.LabNum.register(elK, { toValue: function (pos) { return 2 * Math.round(pos) + 1; }, toPos: function (v) { return (v - 1) / 2; }, min: 1, max: K.K_MAX, decimals: 0 });
-  function readK() { const v = Math.round(val(elK)); return Math.max(1, Math.min(K.K_MAX, 2 * Math.round((v - 1) / 2) + 1)); }
+  function readK() { const v = Math.round(val(elK)); return Math.max(1, Math.min(K.K_MAX, v)); }
   function refreshOutputs() {
     $('kOut').textContent = String(S.cfg.k);
     $('rateo').textContent = String(Math.round(val(elRate)));

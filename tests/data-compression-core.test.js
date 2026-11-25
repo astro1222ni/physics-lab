@@ -307,4 +307,8 @@ test('出題可以用種子重現；相鄰的字盡量不同', () => {
   for (let i = 1; i < a.length; i++) assert.notStrictEqual(a[i], a[i - 1]);
 });
 
+test("非正方形黑白圖按中心重新取樣", () => {
+  assert.deepStrictEqual(C.resizePixels([0,1],2,1,4,2), [0,0,1,1,0,0,1,1]);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : '，全部通過'));

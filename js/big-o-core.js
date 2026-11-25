@@ -177,12 +177,15 @@
   // =====================================================================
   // 一次完整的執行（頁面與任務證明共用）
   // =====================================================================
-  function run(n, shape, seed) {
+  function run(n, shape, seed, options = {}) {
     n = Math.max(MIN_N, Math.min(MAX_N, Math.round(n)));
-    const data = makeData(n, shape, seed), sorted = range1(n), target = n + 1;
+    let data = makeData(n, shape, seed);
+    if (options.limit > 0) data = data.map(v => 1 + (v - 1) % options.limit);
+    const sorted = data.slice().sort((a, b) => a - b);
+    const target = options.target === 'first' ? sorted[0] : options.target === 'middle' ? sorted[Math.floor((n - 1) / 2)] : sorted[n - 1] + 1;
     const lin = linearSearch(sorted, target), bin = binarySearch(sorted, target);
     const pr = pairs(data), ms = mergeSort(data);
-    const sum = n * (n + 1) / 2;
+    const sum = data.reduce((total, v) => total + v, 0);
     const formula = n > REAL_SUBSET_MAX;
     const sub = formula ? { count: F.subsets(n), hits: 0 } : subsets(data, sum + 1);
     return {
@@ -192,7 +195,7 @@
     };
   }
   /** 只要次數（加倍實驗用；合併排序照樣真的跑） */
-  function counts(n, shape, seed) { return run(n, shape, seed).counts; }
+  function counts(n, shape, seed, options) { return run(n, shape, seed, options).counts; }
 
   // =====================================================================
   // 每個操作 1 奈秒
@@ -339,9 +342,9 @@
     return { n: r.n, shape: r.shape, counts: Object.assign({}, r.counts), formula: r.formula, via: via, mergeBound: F.merge(r.n),
       timeNs: Object.assign({}, r.counts) };
   }
-  function doubleEvent(n0, shape, seed) {
+  function doubleEvent(n0, shape, seed, options) {
     const n1 = 2 * n0;
-    const c0 = counts(n0, shape, seed), c1 = counts(n1, shape, seed);
+    const c0 = counts(n0, shape, seed, options), c1 = counts(n1, shape, seed, options);
     const ratio = {}, diff = {};
     ALGOS.forEach(function (k) { ratio[k] = c0[k] > 0 ? c1[k] / c0[k] : null; diff[k] = c1[k] - c0[k]; });
     return { n0: n0, n1: n1, shape: shape, before: c0, after: c1, ratio: ratio, diff: diff };

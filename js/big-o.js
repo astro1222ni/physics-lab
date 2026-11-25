@@ -308,7 +308,7 @@
     const n = state.n, color = col(algo), k = kOf(algo), fin = k >= total(algo);
     const tw = Math.min(box.h * 1.3, RL.narrow ? 30 : 40);
     const cb = { x: box.x, y: box.y, w: box.w - tw - 8, h: box.h };
-    const hOf = function (i) { return 0.32 + 0.68 * (i + 1) / n; };
+    const hOf = function (i) { return 0.32 + 0.68 * state.run.sorted[i] / state.run.sorted[n - 1]; };
     let lo = 0, hi = n - 1, mid = -1;
     if (algo === 'binary' && k > 0) { const s = state.run.binTrace[k - 1]; lo = s.lo2; hi = s.hi2; mid = s.mid; }
     if (algo === 'binary' && lo <= hi && k < total(algo)) {
@@ -330,7 +330,7 @@
     });
     const cur = algo === 'linear' ? k - 1 : mid;
     if (cur >= 0 && !fin) { const cw = cb.w / n; glowAt(c, cb.x + cur * cw, cb.y + cb.h * (1 - hOf(cur)), cw, cb.h * hOf(cur), color); }
-    targetCard(c, box.x + box.w - tw, box.y + 2, tw, box.h - 2, color, fin);
+    targetCard(c, box.x + box.w - tw, box.y + 2, tw, box.h - 2, color, fin && !state.run.sorted.includes(state.run.target));
   }
   function visPairs(c, box) {
     const n = state.n, color = col('pairs'), k = kOf('pairs'), tot = total('pairs'), fin = k >= tot;
@@ -408,8 +408,8 @@
         g.addColorStop(0, shade(color, D.dark ? 0.25 : 0.2)); g.addColorStop(1, shade(color, D.dark ? -0.1 : -0.15));
         c.fillStyle = g; c.fill();
       } else { c.fillStyle = neutral(); c.fill(); }
-      if (sz >= 16 && bit < n) {
-        c.font = fnt(Math.min(11, sz * 0.5), 650);
+      if (bit < n && sz >= 8 * String(d[bit]).length + 2) {
+        c.font = fnt(12, 650);
         c.fillStyle = on ? (D.dark ? '#0b1215' : '#ffffff') : alpha(C.text, 0.55);
         c.textAlign = 'center'; c.textBaseline = 'middle';
         c.fillText(String(d[bit]), x + sz / 2, y + sz / 2 + 0.5);
@@ -867,7 +867,7 @@
     updatePlayLabel();
   }
   function rebuild() {
-    state.run = B.run(state.n, state.shape, state.seed);
+    state.run = B.run(state.n, state.shape, state.seed, sampleOptions());
     mergeMemo = { k: -1, st: null, run: null };
     resetRace();
     updateCounts();
@@ -981,8 +981,9 @@
     ORDER.forEach(function (a) {
       const v = r.counts[a];
       let sub;
-      if (a === 'merge') sub = T('上界 ', 'bound ') + commas(B.formula.merge(r.n)) + (r.shape === 'worst' ? T('（剛好）', ' (reached)') : '');
+      if (a === 'merge') sub = T('上界 ', 'bound ') + commas(B.formula.merge(r.n)) + (r.counts.merge === B.formula.merge(r.n) ? T('（剛好）', ' (reached)') : '');
       else if (a === 'subsets' && r.formula) sub = '2<sup>' + r.n + '</sup>' + T('，用公式算', ', by formula');
+      else if (a === 'binary' || a === 'linear') sub = '≤ ' + FORM_HTML[a];
       else sub = '= ' + FORM_HTML[a];
       h += '<tr><td class="nm">' + rowName(a) + '</td><td class="hl">' + numHTML(v) + '<small>' + sub + '</small></td><td>' + timeHTML(v) + '</td></tr>';
     });
@@ -1126,6 +1127,10 @@
   elN.addEventListener('input', onNInput);
   elN.addEventListener('change', onNChange);
   elSpeed.addEventListener('input', function () { state.speed = readInt(elSpeed, 1, 1000000); refreshOutputs(); });
+  function sampleOptions() {
+    return { target: $('targetMode').value, limit: Math.max(0, Math.trunc(Number($('valueRange').value))) };
+  }
+  for (const id of ['targetMode', 'valueRange']) $(id).addEventListener('change', rebuild);
   function setShape(s) {
     state.shape = s;
     ['shRandom', 'shSorted', 'shWorst'].forEach(function (id, j) { $(id).setAttribute('aria-pressed', String(B.SHAPES[j] === s)); });
@@ -1163,7 +1168,7 @@
   $('dbl').addEventListener('click', function () {
     const n0 = state.n, n1 = 2 * n0;
     if (n1 > B.MAX_N) return;
-    const ev = B.doubleEvent(n0, state.shape, state.seed);
+    const ev = B.doubleEvent(n0, state.shape, state.seed, sampleOptions());
     state.dbl = ev;
     ORDER.forEach(function (a) {
       addPoint(n0, a, ev.before[a], a === 'subsets' && n0 > B.REAL_SUBSET_MAX, state.shape);

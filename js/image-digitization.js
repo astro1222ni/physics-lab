@@ -4,7 +4,7 @@
  * 任務事件只在使用者操作之後送出（見 js/missions/image-digitization.js 開頭的說明）。 */
 (function () {
   'use strict';
-  const K = window.ImageDigitCore;
+  let K = window.ImageDigitCore;
   const D = window.LabDraw;
   const FONT = D.FONT;
   const MONO = 'ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace';
@@ -489,7 +489,7 @@
     ctx.save(); ctx.strokeStyle = C['id-sel']; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(ox, oy, 4, 0, Math.PI * 2);
     ctx.moveTo(ox - 6, oy); ctx.lineTo(ox + 6, oy); ctx.moveTo(ox, oy - 6); ctx.lineTo(ox, oy + 6); ctx.stroke(); ctx.restore();
-    D.haloText(ctx, 'O (0, 0)', ox + 7, oy, C.text, 'left', 'middle', fnt(10, 650));
+    D.haloText(ctx, 'O (0, 0)', ox + 7, oy, C.text, 'left', 'middle', fnt(12, 650));
     const mag = drawSelection();
     drawFocus(mag);
   }
@@ -641,7 +641,7 @@
     requestDraw();
   }
   function snapOf() {
-    return cur ? { w: cur.w, h: cur.h, bpp: cur.bpp, bits: cur.size.bits, method: cur.method, mode: cur.mode, b: cur.b, scene: cur.scene } : null;
+    return cur ? { ringK: K.RING_K, w: cur.w, h: cur.h, bpp: cur.bpp, bits: cur.size.bits, method: cur.method, mode: cur.mode, b: cur.b, scene: cur.scene } : null;
   }
 
   // =====================================================================
@@ -658,7 +658,7 @@
       uniform: cur.q.colors === 1,
       faithful: cur.scene === 'checker' && K.checkerFaithful(cur.w, cur.h),
       eyeRows: cur.scene === 'eyechart' ? K.eyeRowsExact(cur.w, cur.h) : 0,
-      view: state.view, nyq: state.nyq,
+      view: state.view, nyq: state.nyq, ringK: K.RING_K,
       prev: prevSnap
     });
   }
@@ -829,6 +829,13 @@
       changed('scene');
       say(sceneTip());
     });
+  });
+  for (const id of ['ringFrequency', 'eyeSeed', 'eyeCount', 'eyeDirection']) $(id).addEventListener('change', function () {
+    K = window.ImageDigitCore.makeSource({frequency: Number($('ringFrequency').value), seed: Number($('eyeSeed').value) || 1,
+      count: Number($('eyeCount').value), direction: $('eyeDirection').value});
+    sampleCache.clear(); rasterJob++; delete rasters.rings; delete rasters.eyechart;
+    const scene = id === 'ringFrequency' ? 'rings' : 'eyechart';
+    sceneBtns.find(b => b.dataset.scene === scene).click();
   });
   function sceneTip() {
     switch (state.scene) {

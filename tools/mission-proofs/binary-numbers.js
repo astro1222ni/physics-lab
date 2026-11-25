@@ -68,6 +68,8 @@ console.log('預設狀態（8 位元、值 0、b = 3），只動一下不改值�
 
 // ---------- 2. 每個任務的解法 ----------
 console.log('\n公開任務：');
+expect('1', new Sim().type(10, '5').ev, false, '直接輸入 5');
+expect('1', new Sim().set(5, 'auto').ev, false, '自動數到 5');
 expect('1', new Sim().toggle(2).toggle(0).ev, true, '點亮第 2、0 位 → 101（二）= 5');
 expect('2', new Sim().type(16, '2A').ev, true, '十六進位輸入 2A（= 42）');
 expect('3', new Sim().bitsTo(7).inc().ev, true, '0111 按 +1 → 1000，4 盞燈改變');

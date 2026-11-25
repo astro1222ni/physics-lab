@@ -15,7 +15,7 @@
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const alpha = D.alpha, shade = D.shade;
-  const N16 = K.SIZE, NPX = N16 * N16;
+  let gridWidth = K.SIZE, gridHeight = K.SIZE, NPX = gridWidth * gridHeight;
 
   // 範例文字（英文模式用英文；簡體模式用簡體字）
   const EXAMPLES = {
@@ -79,9 +79,9 @@
     const top = 30;
     let G = wide ? Math.min(400, Math.floor((W - 3 * pad) * 0.54)) : Math.min(W - 2 * pad, 420);
     // 橫放時格子和遊程並排，上下各保留一列給掃描方向和播放鍵。
-    if (compact) G = Math.min(G, Math.max(N16, innerHeight - 152));
-    const cell = Math.floor(G / N16);
-    G = cell * N16;
+    if (compact) G = Math.min(G, Math.max(gridWidth, innerHeight - 152));
+    const cell = Math.floor(G / Math.max(gridWidth, gridHeight));
+    G = cell * Math.max(gridWidth, gridHeight);
     const gx = wide ? pad : Math.round((W - G) / 2), gy = top;
     const tokW = state.rle.fmt === 'alt' ? 36 : 46, tokH = 24, gap = 5;
     let tx, ty, tw, th;
@@ -135,9 +135,9 @@
   // =====================================================================
   function rleRecompute() {
     const r = state.rle;
-    r.sum = K.rleSummary(r.px, N16, N16, r.scan, r.fmt, r.k);
-    r.order = K.scanOrder(N16, N16, r.scan);
-    r.hash = K.pixelsHash(r.px);
+    r.sum = K.rleSummary(r.px, gridWidth, gridHeight, r.scan, r.fmt, r.k);
+    r.order = K.scanOrder(gridWidth, gridHeight, r.scan);
+    r.hash = gridWidth + 'x' + gridHeight + ':' + K.pixelsHash(r.px);
     // 改了圖或設定：停止播放，直接顯示完整的結果
     if (state.mode === 'rle') stopPlay();
     r.tokIdx = r.sum.tokens.length; r.pos = NPX; r.done = true; r.lastTok = r.tokIdx - 1;
@@ -190,8 +190,8 @@
     updatePlayButton();
     sndDone(r.sum.bits <= r.sum.raw);
     const s = r.sum;
-    say(T('掃描完成：' + s.tokens.length + ' 段 × ' + s.per + ' 位元 = ' + s.bits + ' 位元，' + (s.bits < s.raw ? '比原始的 256 位元少 ' + (s.raw - s.bits) + ' 位元。' : s.bits === s.raw ? '和原始的 256 位元一樣多。' : '比原始的 256 位元還多 ' + (s.bits - s.raw) + ' 位元！'),
-      'Scan finished: ' + s.tokens.length + ' runs × ' + s.per + ' bits = ' + s.bits + ' bits, ' + (s.bits < s.raw ? (s.raw - s.bits) + ' bits fewer than the original 256.' : s.bits === s.raw ? 'exactly the same as the original 256.' : (s.bits - s.raw) + ' bits MORE than the original 256!')));
+    say(T('掃描完成：' + s.tokens.length + ' 段 × ' + s.per + ' 位元 = ' + s.bits + ' 位元，' + (s.bits < s.raw ? '比原始的 ' + NPX + ' 位元少 ' + (s.raw - s.bits) + ' 位元。' : s.bits === s.raw ? '和原始的 ' + NPX + ' 位元一樣多。' : '比原始的 ' + NPX + ' 位元還多 ' + (s.bits - s.raw) + ' 位元！'),
+      'Scan finished: ' + s.tokens.length + ' runs × ' + s.per + ' bits = ' + s.bits + ' bits, ' + (s.bits < s.raw ? (s.raw - s.bits) + ' bits fewer than the original ' + NPX + '.' : s.bits === s.raw ? 'exactly the same as the original ' + NPX + '.' : (s.bits - s.raw) + ' bits MORE than the original ' + NPX + '!')));
     const d = rleEventData('run');
     d.stepped = r.stepped;
     emit('rleRun', d);
@@ -213,10 +213,18 @@
     r.painted++;
     return true;
   }
+  $('rleDimensions').addEventListener('click', function () {
+    const w = Number($('rleWidth').value), h = Number($('rleHeight').value), r = state.rle;
+    if (w === gridWidth && h === gridHeight) return;
+    r.px = K.resizePixels(r.px, gridWidth, gridHeight, w, h);
+    gridWidth = w; gridHeight = h; NPX = w * h;
+    r.hover = -1; r.cursor = Math.floor(h / 2) * w + Math.floor(w / 2);
+    rleChanged('resize'); resize();
+  });
   function loadPattern(name) {
     const r = state.rle;
-    if (name === 'noise') { r.noiseSeed = (r.noiseSeed * 48271) % 2147483647; r.px = K.noise(r.noiseSeed); }
-    else r.px = name === 'blank' ? new Array(NPX).fill(0) : K.pattern(name);
+    if (name === 'noise') { r.noiseSeed = (r.noiseSeed * 48271) % 2147483647; r.px = K.noise(r.noiseSeed, NPX); }
+    else r.px = name === 'blank' ? new Array(NPX).fill(0) : K.resizePixels(K.pattern(name), K.SIZE, K.SIZE, gridWidth, gridHeight);
     r.origin = name;
     r.painted = 0;
     sndPattern();
@@ -226,7 +234,7 @@
   }
   function summaryText() {
     const s = state.rle.sum;
-    return T(s.runs.length + ' 個遊程，編碼後 ' + s.bits + ' 位元（原始 256）。', s.runs.length + ' runs, ' + s.bits + ' bits encoded (original 256).');
+    return T(s.runs.length + ' 個遊程，編碼後 ' + s.bits + ' 位元（原始 ' + NPX + '）。', s.runs.length + ' runs, ' + s.bits + ' bits encoded (original ' + NPX + ').');
   }
 
   // =====================================================================
@@ -542,7 +550,7 @@
     sprites[key] = c;
     return c;
   }
-  function cellXY(i) { return { x: L.gx + (i % N16) * L.cell, y: L.gy + Math.floor(i / N16) * L.cell }; }
+  function cellXY(i) { return { x: L.gx + (i % gridWidth) * L.cell, y: L.gy + Math.floor(i / gridWidth) * L.cell }; }
 
   function drawRle(t) {
     const r = state.rle, s = r.sum, cell = L.cell, G = L.G;
@@ -587,8 +595,8 @@
       ctx.strokeStyle = C['dc-ink']; ctx.lineWidth = 3.5; ctx.stroke();
       ctx.strokeStyle = C['dc-paper']; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.restore();
-      const right = r.cursor % N16 < N16 / 2;
-      D.haloText(ctx, 'P (' + (Math.floor(r.cursor / N16) + 1) + ', ' + (r.cursor % N16 + 1) + ')',
+      const right = r.cursor % gridWidth < gridWidth / 2;
+      D.haloText(ctx, 'P (' + (Math.floor(r.cursor / gridWidth) + 1) + ', ' + (r.cursor % gridWidth + 1) + ')',
         x + (right ? 1 : -1) * (radius + 3), y, C.text, right ? 'left' : 'right', 'middle', fnt(12, 700));
     }
     drawTokens();
@@ -866,9 +874,9 @@
     ctx.fillStyle = C.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = fnt(fs, 700);
     ctx.fillText(showSym(nd.s), p.x, p.y - hgt * 0.15);
-    ctx.font = fnt(Math.max(8, Math.min(11, w * 0.3)), 600, MONO);
+    ctx.font = fnt(12, 600, MONO);
     ctx.fillStyle = alpha(C.muted, 1);
-    ctx.fillText(String(nd.w), p.x, p.y + hgt * 0.27);
+    if (ctx.measureText(String(nd.w)).width <= w - 2) ctx.fillText(String(nd.w), p.x, p.y + hgt * 0.27);
   }
   function drawInner(nd, p, u, inQueue, isNext) {
     const r = L.nr * (0.4 + 0.6 * u);
@@ -878,10 +886,10 @@
     D.ball(ctx, p.x, p.y, r, C['dc-node'], { glow: D.dark ? 0.25 : 0, ring: isNext ? C['dc-hl'] : (inQueue ? alpha(C['dc-hl'], 0.6) : undefined) });
     ctx.restore();
     if (L.nr >= 8) {
-      ctx.font = fnt(Math.min(11, r * 0.95), 700, MONO);
+      ctx.font = fnt(12, 700, MONO);
       ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = u;
-      ctx.fillText(String(nd.w), p.x, p.y + 0.5);
+      if (ctx.measureText(String(nd.w)).width <= 2 * r - 2) ctx.fillText(String(nd.w), p.x, p.y + 0.5);
       ctx.globalAlpha = 1;
     }
   }
@@ -947,7 +955,7 @@
     const Y = function (v) { return bottom - (bottom - top) * v / vmax; };
     D.haloText(c, narrow ? T('每一種長度欄位 k', 'Each length field k') : T('長度欄位 k 的每一種選擇（同樣的掃描順序與格式）', 'Every choice of the length field k (same scan order and format)'), 12, 16, C.muted, 'left', 'alphabetic', fnt(12, 600));
     // 圖例：虛線 = 原始 256 位元
-    const lg = T('原始 256 位元', 'original 256 bits');
+    const lg = T('原始 ' + NPX + ' 位元', 'original ' + NPX + ' bits');
     c.font = fnt(11.5, 600);
     const lgx = right - c.measureText(lg).width;
     c.save(); c.setLineDash([5, 4]); c.strokeStyle = C['dc-raw']; c.lineWidth = 1.5;
@@ -1045,8 +1053,8 @@
   function updateRleReadouts() {
     const r = state.rle, s = r.sum;
     const bitsU = T(' 位元', ' bits');
-    setHTML('rRaw', '256' + bitsU + ' <small>(16 × 16)</small>');
-    setHTML('rBlack', s.black + ' ／ 256');
+    setHTML('rRaw', NPX + bitsU + ' <small>(' + gridWidth + ' × ' + gridHeight + ')</small>');
+    setHTML('rBlack', s.black + ' ／ ' + NPX);
     setHTML('rRuns', s.tokens.length + T(' 段', '') + ' <small>' + T('（遊程 ' + s.runs.length + ' 個）', '(' + s.runs.length + ' runs before splitting)') + '</small>');
     setHTML('rPer', s.per + bitsU + ' <small>' + (r.fmt === 'alt' ? T('（長度 ' + r.k + '）', '(length ' + r.k + ')') : T('（顏色 1 + 長度 ' + r.k + '）', '(colour 1 + length ' + r.k + ')')) + '</small>');
     setHTML('rBits', s.bits + bitsU);
@@ -1055,7 +1063,7 @@
     const ch = (s.bits - s.raw) / s.raw * 100;
     setHTML('rChange', (ch > 0 ? '+' : ch < 0 ? '−' : '') + fmt(Math.abs(ch), 1) + '%');
     $('rChange').className = ch > 0 ? 'big' : ch < 0 ? 'good' : '';
-    katexInto($('rleEq'), s.tokens.length + ' \\times ' + (r.fmt === 'alt' ? r.k : '(1 + ' + r.k + ')') + ' = ' + s.bits + (s.bits < 256 ? ' < ' : s.bits > 256 ? ' > ' : ' = ') + '256');
+    katexInto($('rleEq'), s.tokens.length + ' \\times ' + (r.fmt === 'alt' ? r.k : '(1 + ' + r.k + ')') + ' = ' + s.bits + (s.bits < NPX ? ' < ' : s.bits > NPX ? ' > ' : ' = ') + NPX);
     // 遊程清單
     let html = '';
     s.tokens.forEach(function (t) {
@@ -1200,7 +1208,7 @@
     let s = '';
     if (state.mode === 'rle') {
       const r = state.rle, n = r.sum.tokens.length;
-      s = T('段 ', 'run ') + (r.done ? n : r.tokIdx) + ' / ' + n + ' · ' + T('格 ', 'square ') + (r.done ? NPX : Math.floor(r.pos)) + ' / 256';
+      s = T('段 ', 'run ') + (r.done ? n : r.tokIdx) + ' / ' + n + ' · ' + T('格 ', 'square ') + (r.done ? NPX : Math.floor(r.pos)) + ' / ' + NPX;
     } else if (state.huf.tree) {
       const h = state.huf, n = h.tree.steps.length;
       s = T('合併 ', 'merge ') + h.built + ' / ' + n;
@@ -1364,7 +1372,7 @@
     touchTap = null;
     cv.style.cursor = 'default';
     $('cv2').setAttribute('aria-label', m === 'rle'
-      ? T('長度欄位 k 的每一種選擇的編碼後位元數長條圖，虛線是原始的 256 位元。', 'Bar chart of the encoded size for every choice of the length field k; the dashed line is the original 256 bits.')
+      ? T('長度欄位 k 的每一種選擇的編碼後位元數長條圖，虛線是原始的 ' + NPX + ' 位元。', 'Bar chart of the encoded size for every choice of the length field k; the dashed line is the original ' + NPX + ' bits.')
       : T('H–L 圖：每段文字一個點，橫軸是熵 H，縱軸是平均碼長 L；所有點都落在 L = H 與 L = H + 1 兩條線之間。', 'H–L chart: one point per text, entropy H across and average code length L up; every point lies between the lines L = H and L = H + 1.'));
     updateCap();
     if (m === 'huf') say(T('霍夫曼編碼：常見的字給短碼、少見的字給長碼。按「下一步」看樹一步一步長出來。', 'Huffman coding: common characters get short codes, rare ones long codes. Press “Next step” to watch the tree grow step by step.'));
@@ -1471,8 +1479,8 @@
   function hitCell(p) {
     if (!L || L.kind !== 'rle') return -1;
     const c = Math.floor((p.x - L.gx) / L.cell), r = Math.floor((p.y - L.gy) / L.cell);
-    if (c < 0 || c >= N16 || r < 0 || r >= N16) return -1;
-    return r * N16 + c;
+    if (c < 0 || c >= gridWidth || r < 0 || r >= gridHeight) return -1;
+    return r * gridWidth + c;
   }
   function hitLeaf(p) {
     const h = state.huf, t = h.tree;
@@ -1488,9 +1496,9 @@
   }
   function moveBrush(dx, dy) {
     const r = state.rle;
-    const row = Math.max(0, Math.min(N16 - 1, Math.floor(r.cursor / N16) - dy));
-    const col = Math.max(0, Math.min(N16 - 1, r.cursor % N16 + dx));
-    r.cursor = row * N16 + col;
+    const row = Math.max(0, Math.min(gridHeight - 1, Math.floor(r.cursor / gridWidth) - dy));
+    const col = Math.max(0, Math.min(gridWidth - 1, r.cursor % gridWidth + dx));
+    r.cursor = row * gridWidth + col;
     r.kbFocus = true;
     requestDraw();
   }
@@ -1541,9 +1549,9 @@
   });
   function cellsOnLine(a, b) {
     const out = [];
-    const ar = Math.floor(a / N16), ac = a % N16, br = Math.floor(b / N16), bc = b % N16;
+    const ar = Math.floor(a / gridWidth), ac = a % gridWidth, br = Math.floor(b / gridWidth), bc = b % gridWidth;
     const n = Math.max(Math.abs(br - ar), Math.abs(bc - ac));
-    for (let s = 1; s <= n; s++) { const r = Math.round(ar + (br - ar) * s / n), c = Math.round(ac + (bc - ac) * s / n); out.push(r * N16 + c); }
+    for (let s = 1; s <= n; s++) { const r = Math.round(ar + (br - ar) * s / n), c = Math.round(ac + (bc - ac) * s / n); out.push(r * gridWidth + c); }
     return out;
   }
   function paintDone() {
@@ -1615,7 +1623,7 @@
   /** 滑鼠連續畫圖時先更新讀數，放開再送任務事件。 */
   function rleLiveUpdate() {
     const r = state.rle;
-    r.sum = K.rleSummary(r.px, N16, N16, r.scan, r.fmt, r.k);
+    r.sum = K.rleSummary(r.px, gridWidth, gridHeight, r.scan, r.fmt, r.k);
     r.tokIdx = r.sum.tokens.length; r.pos = NPX; r.done = true;
     updateRleReadouts();
     requestDraw();
@@ -1640,7 +1648,7 @@
   });
   function cellDesc() {
     const r = state.rle, i = r.cursor;
-    return T('第 ' + (Math.floor(i / N16) + 1) + ' 列第 ' + (i % N16 + 1) + ' 行：' + (r.px[i] ? '黑' : '白') + '。', 'Row ' + (Math.floor(i / N16) + 1) + ', column ' + (i % N16 + 1) + ': ' + (r.px[i] ? 'black' : 'white') + '.');
+    return T('第 ' + (Math.floor(i / gridWidth) + 1) + ' 列第 ' + (i % gridWidth + 1) + ' 行：' + (r.px[i] ? '黑' : '白') + '。', 'Row ' + (Math.floor(i / gridWidth) + 1) + ', column ' + (i % gridWidth + 1) + ': ' + (r.px[i] ? 'black' : 'white') + '.');
   }
   const kb = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('壓縮畫布。遊程編碼：用方向鍵移動游標，Enter 或空白鍵切換這一格的黑白。霍夫曼編碼：用左右方向鍵選一個字，聽它的碼。',

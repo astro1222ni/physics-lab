@@ -269,4 +269,17 @@ test('fmt：四捨五入、不顯示 −0', () => {
   assert.strictEqual(C.fmt(NaN), '—');
 });
 
+test("預估值影響挑選次序，RR 等待含返回時的切換", () => {
+  const p = [{arr:0, burst:4}, {arr:0, burst:1}];
+  for (const algo of ['sjf', 'srtf']) {
+    const result = C.schedule(p, algo, { estimates: [1, 4] });
+    assert.deepStrictEqual(result.fin, [4, 5]);
+  }
+  for (const cs of [0, 1]) {
+    const jobs = Array.from({ length: 3 }, () => ({ arr: 0, burst: 5 }));
+    const slices = C.schedule(jobs, 'rr', {q: 1, cs: cs}).segs.filter(s => s.kind === 'run' && s.p === 0);
+    assert.strictEqual(slices[1].t0 - slices[0].t1, 2 + 3 * cs);
+  }
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗項目' : ''));

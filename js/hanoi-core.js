@@ -414,11 +414,12 @@
     this.newSegment(this.seg.startKind === 'shuffled' && this.stack.length === 0 ? 'shuffled' : null);
     return true;
   };
-  SP.shuffle = function () {
+  SP.shuffle = function (seed) {
+    const rand = seed == null ? this.rand : rng(seed);
     const n = this.n;
     if (n < 2) { this.reset(); return; }
     let p;
-    do { p = [0]; for (let d = 1; d <= n; d++) p.push(Math.floor(this.rand() * 3)); } while (perfectPeg(p, n) >= 0 || this.distOf(p) === 0);
+    do { p = [0]; for (let d = 1; d <= n; d++) p.push(Math.floor(rand() * 3)); } while (perfectPeg(p, n) >= 0 || this.distOf(p) === 0);
     this.pos = p; this.lastSrc = 'shuffle';
     this.newSegment('shuffled');
   };

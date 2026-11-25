@@ -509,8 +509,8 @@
       ctx.fillStyle = '#ffffff'; ctx.fillText(g.names[v], P.x, P.y + 0.5);
       // 順序與距離
       if (state.nums && st.num[v]) {
-        D.pill(ctx, '#' + st.num[v], P.x + R * 0.95, P.y - R * 0.55, deep, 'left', fnt(11, 600));
-        if (p === 1) D.pill(ctx, 'd=' + st.dist[v], P.x, P.y + R + 18, C.muted, 'center', fnt(11, 500));
+        D.pill(ctx, '#' + st.num[v], P.x + R * 0.95, P.y - R * 0.55, deep, 'left', fnt(12, 600));
+        if (p === 1) D.pill(ctx, 'd=' + st.dist[v], P.x, P.y + R + 18, C.muted, 'center', fnt(12, 500));
       }
     }
     if (front.length === 0 && st.k > 0) {
@@ -1081,7 +1081,7 @@
   const presetSel = $('presetSel'), elGv = $('gv'), gsSel = $('gsSel');
   function loadGraph() {
     const q = state.gr;
-    q.g = q.preset === 'sample' ? G.sampleGraph() : G.randomGraph(q.V, q.seed);
+    q.g = q.preset === 'sample' ? G.sampleGraph() : G.randomGraph(q.V, q.seed, $('edgeDensity').value === 'default' ? null : Number($('edgeDensity').value), $('connected').value === 'yes');
     q.edits = 0;
     if (q.s >= q.g.V) q.s = 0;
     fillStarts();
@@ -1107,6 +1107,11 @@
     if (v === state.gr.V) return;
     state.gr.V = v;
     if (state.gr.preset === 'random') { loadGraph(); if (!isMaze()) graphChanged(); }
+  });
+  for (const id of ['edgeDensity', 'connected']) $(id).addEventListener('change', function () {
+    state.gr.preset = presetSel.value = 'random';
+    elGv.disabled = false;
+    loadGraph(); graphChanged();
   });
   $('newGraph').addEventListener('click', function () {
     state.gr.preset = 'random'; presetSel.value = 'random'; elGv.disabled = false;

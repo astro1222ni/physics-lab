@@ -10,12 +10,16 @@
  *   灰階先用 ITU-R BT.601 的亮度公式 Y = 0.299 R + 0.587 G + 0.114 B 轉成一個色版。
  * 檔案大小（未壓縮、不含檔頭）：位元數 = w × h × 每像素位元數（灰階 b、彩色 3b）；位元組 = ⌈位元數 ÷ 8⌉；1 KB = 1000 B、1 KiB = 1024 B。
  */
-(function (root) {
-  'use strict';
+(function (root, makeSource) {
+  const api = makeSource();
+  api.makeSource = makeSource;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.ImageDigitCore = api;
+})(typeof window !== 'undefined' ? window : this, function makeSource(options = {}) {
   const ASPECT = 0.75;                 // 高 ÷ 寬
   const W_MAX = 320, H_MAX = 240;
   const SCENES = ['sunset', 'checker', 'rings', 'eyechart', 'wheel'];
-  const RING_K = 256;                  // 同心圓：亮度 = ½ + ½ cos(π K r^2)，r 以畫面寬為單位；局部條紋頻率 = K r（每個畫面寬幾週）
+  const RING_K = options.frequency || 256;                  // 同心圓：亮度 = ½ + ½ cos(π K r^2)，r 以畫面寬為單位；局部條紋頻率 = K r（每個畫面寬幾週）
   const CHECK_NX = 24, CHECK_NY = 18;  // 棋盤：橫 24 格、直 18 格，畫面邊緣各切掉半格
   const BUDGET = 260000;               // 整格平均的子取樣點總數上限
 
@@ -168,14 +172,17 @@
     { e: 50, n: 40, g: 30, y0: 2600 }
   ];
   (function () {
-    let seed = 20261112;
+    let seed = options.seed || 20261112;
     const rnd = function () { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
     EROWS.forEach(function (r) {
+      if (options.count) r.n = Math.min(r.n, options.count);
       r.s = r.e / 5;
       r.x0 = (EU - (r.n * r.e + (r.n - 1) * r.g)) / 2;
       r.dirs = [];
       let prev = -1;
-      for (let k = 0; k < r.n; k++) { let d; do { d = Math.floor(rnd() * 4); } while (d === prev); r.dirs.push(d); prev = d; }
+      for (let k = 0; k < r.n; k++) { let d; do { d = Math.floor(rnd() * 4); } while (d === prev && (!options.direction || options.direction === 'original'));
+        if (options.direction === 'same') d = 0;
+        r.dirs.push(d); prev = d; }
       // 每個 E 拆成四個不重疊的長方形（在 5 × 5 的筆畫格裡）：dir 0 開口向右、1 向下、2 向左、3 向上
       r.rects = r.dirs.map(function (d, k) {
         const ox = r.x0 + k * (r.e + r.g), oy = r.y0, s = r.s;
@@ -432,6 +439,5 @@
     eyeExactRows: eyeExactRows, eyeRowsExact: eyeRowsExact, wheelPolar: wheelPolar,
     colorAt: colorAt, subSamples: subSamples, sample: sample, quantize: quantize, skyBand: skyBand, raster: raster
   };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.ImageDigitCore = api;
-})(typeof window !== 'undefined' ? window : this);
+  return api;
+});

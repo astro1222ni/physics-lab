@@ -112,7 +112,7 @@ expect('1', new Sim().play().ev, true, '預設字串按「播放」跑到最後'
 expect('2', new Sim().hand('1 2 1 2 3 1 3 1 4 1 4 1').toEnd().ev, true, '1 2 1 2 3 1 3 1 4 1 4 1，3 個框：' + sum(S('1 2 1 2 3 1 3 1 4 1 4 1'), 3) + '（LRU 命中 8／12）');
 expect('2', new Sim().toEnd().ev, false, '預設字串 3 個框：LRU 命中 8／20 = 40%');
 expect('3', new Sim().presetTo('belady').toEnd().framesTo(4).ev, true, '範例 Belady 3 框跑完（FIFO 9），再改 4 框（已在最後一步，直接顯示：FIFO 10）');
-expect('3', new Sim().presetTo('belady').framesTo(4).toEnd().framesTo(3).ev, true, '反過來先 4 框再 3 框也算');
+expect('3', new Sim().presetTo('belady').framesTo(4).toEnd().framesTo(3).ev, false, '先 4 框再 3 框不算');
 expect('3', new Sim().presetTo('belady').framesTo(4).toEnd().ev, false, '只跑 4 框不算（要兩種都看過）');
 expect('3', new Sim().presetTo('silb').toEnd().framesTo(4).ev, false, '課本字串 3 → 4 框 FIFO 15 → 10，沒有異常');
 expect('4', new Sim().framesTo(4).toEnd().ev, true, '預設字串：OPT 3 框 9 次；LRU 3 框 12、4 框 8 → 最少 4 框');

@@ -476,8 +476,8 @@
       ctx3.fillStyle = C.muted; ctx3.fillText(String(v), M.x0 - 6, y);
     }
     ctx3.textAlign = 'center'; ctx3.textBaseline = 'top';
-    for (let f = 1; f <= 7; f++) { ctx3.fillStyle = f === state.frames ? C.accent : C.muted; ctx3.font = fnt(11, f === state.frames ? 700 : 400); ctx3.fillText(String(f), xf(f), M.y1 + 5); }
-    ctx3.font = fnt(11); ctx3.fillStyle = C.muted;
+    for (let f = 1; f <= 7; f++) { ctx3.fillStyle = f === state.frames ? C.accent : C.muted; ctx3.font = fnt(12, f === state.frames ? 700 : 400); ctx3.fillText(String(f), xf(f), M.y1 + 5); }
+    ctx3.font = fnt(12); ctx3.fillStyle = C.muted;
     ctx3.fillText(T('框數', 'frames'), (M.x0 + M.x1) / 2, M.y1 + 20);
     ctx3.textAlign = 'left'; ctx3.textBaseline = 'alphabetic';
     ctx3.fillText(T('缺頁次數', 'page faults'), 4, 13);
@@ -708,10 +708,11 @@
     changed();
   });
   function newRandom() {
-    state.refs = K.randomRefs(state.seed, state.len, state.kinds); state.sheet = 'random'; state.preset = ''; state.rev = false;
+    state.refs = K.randomRefs(state.seed, state.len, state.kinds, Math.max(0, Math.min(100, Number($('reusePct').value))) / 100, Math.max(1, Math.min(30, Math.round(Number($('lookBack').value))))); state.sheet = 'random'; state.preset = ''; state.rev = false;
     $('preset').value = ''; $('refErr').textContent = ''; elRefs.classList.remove('bad');
     changed();
   }
+  for (const id of ['reusePct', 'lookBack']) $(id).addEventListener('change', newRandom);
   $('rand').addEventListener('click', function () { state.seed++; newRandom(); });
   $('rev').addEventListener('click', function () { state.refs = state.refs.slice().reverse(); state.rev = !state.rev; changed(); });
   elLen.addEventListener('input', function () { state.len = Math.round(val(elLen)); $('leno').textContent = String(state.len); state.seed = Math.max(1, state.seed); newRandom(); });

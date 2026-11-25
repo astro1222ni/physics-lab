@@ -289,7 +289,7 @@
     D.backdrop(ctx, W, H);
     const run = state.run;
     tag(ctx, T('目標 ', 'Target ') + numTxt(state.target), L.padL, 5, C['bs-target'], 'left', { solid: true, weight: 700, size: 12.5 });
-    const kindName = { sorted: T('排好的', 'sorted'), dups: T('有重複的值', 'with repeats'), unsorted: T('沒排序', 'not sorted') }[state.kind];
+    const kindName = { sorted: T('排好的', 'sorted'), same: T('全部相同', 'all equal'), dups: T('有重複的值', 'with repeats'), unsorted: T('沒排序', 'not sorted') }[state.kind];
     const rightTop = 'n = ' + state.n + ' · ' + kindName + (run && run.steps ? ' · ' + T('第 ' + run.steps + ' 步', 'step ' + run.steps) : '');
     tag(ctx, rightTop, W - L.padR, 5, C.muted, 'right', { weight: 600, size: 11.5 });
 
@@ -386,12 +386,12 @@
       const y = rc.y + rc.h + 4;
       ctx.beginPath(); ctx.moveTo(rc.cx, y); ctx.lineTo(rc.cx - 5, y + 6); ctx.lineTo(rc.cx + 5, y + 6); ctx.closePath();
       ctx.fillStyle = C['bs-bin']; ctx.fill();
-      D.haloText(ctx, label, rc.cx, y + 8, C['bs-bin'], 'center', 'top', fnt(11, 700));
+      D.haloText(ctx, label, rc.cx, y + 8, C['bs-bin'], 'center', 'top', fnt(12, 700));
     };
     if (lo === hi) draw(lo, 'lo = hi');
     else {
       const A = cardRect(lo, 1), Bc = cardRect(hi, 1);
-      if (A.row === Bc.row && Bc.cx - A.cx < 30) { draw(lo, 'lo'); D.haloText(ctx, 'hi', Bc.cx + 8, Bc.y + Bc.h + 12, C['bs-bin'], 'left', 'top', fnt(11, 700)); }
+      if (A.row === Bc.row && Bc.cx - A.cx < 30) { draw(lo, 'lo'); D.haloText(ctx, 'hi', Bc.cx + 8, Bc.y + Bc.h + 12, C['bs-bin'], 'left', 'top', fnt(12, 700)); }
       else { draw(lo, 'lo'); draw(hi, 'hi'); }
     }
   }
@@ -1153,16 +1153,18 @@
   function setKind(k) {
     if (k === state.kind) return;
     state.kind = k;
-    ['kSorted', 'kDups', 'kUnsorted'].forEach(function (id, j) { $(id).setAttribute('aria-pressed', String(B.KINDS[j] === k)); });
+    ['kSorted', 'kDups', 'kUnsorted', 'kSame'].forEach(function (id, j) { $(id).setAttribute('aria-pressed', String(B.KINDS[j] === k)); });
     rebuild();
     resetRun({
       sorted: T('排好的卡片（由小到大、不重複）。', 'Sorted cards (increasing, no repeats).'),
+      same: T('所有卡片的值都相同。', 'All cards have the same value.'),
       dups: T('排好的卡片，但有些值重複。', 'Sorted cards with some repeated values.'),
       unsorted: T('同一批數字，打亂了順序：二分搜尋的前提不成立了。', 'The same numbers shuffled: binary search’s assumption no longer holds.')
     }[k]);
     dirty = true; requestDraw();
   }
   $('kSorted').addEventListener('click', function () { setKind('sorted'); });
+  $('kSame').addEventListener('click', () => setKind('same'));
   $('kDups').addEventListener('click', function () { setKind('dups'); });
   $('kUnsorted').addEventListener('click', function () { setKind('unsorted'); });
   $('firstMode').addEventListener('change', function () {

@@ -253,6 +253,10 @@
           <div class="pick" style="margin-top:8px"><label for="gsSel" data-en="Start">起點</label><select id="gsSel"></select></div>
           <p class="hint" id="graphInfo"></p>
           <p class="hint" data-en="Tap a vertex to make it the start. In the Adjacency tab, tap a matrix cell to add or remove an edge. The matrix stays symmetric.">點畫布上的點，可設為起點。在「鄰接表與矩陣」分頁點矩陣格，即可加邊或移除邊，矩陣會保持對稱。</p>
+          <details><summary style="min-height:44px" data-en="Random edge settings">隨機連線設定</summary>
+            <label><span data-en="Edge density">邊密度</span> <select id="edgeDensity" style="min-height:44px"><option value="default" data-en="Default">原設定</option><option value="0" data-en="0%">0%</option><option value="0.25" data-en="25%">25%</option><option value="0.5" data-en="50%">50%</option><option value="1" data-en="100%">100%</option></select></label>
+            <label><span data-en="Guarantee connectivity">保證連通</span> <select id="connected" style="min-height:44px"><option value="yes" data-en="Yes">是</option><option value="no" data-en="No">否</option></select></label>
+          </details>
         </section>
 
         <section class="card" data-deck="走法|Traversal" data-deck-order="3">

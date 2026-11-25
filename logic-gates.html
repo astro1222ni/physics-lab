@@ -143,7 +143,7 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;information-technology.html&quot;&gt;Information Technology&lt;/a&gt; / &lt;a href=&quot;information-technology.html#system&quot;&gt;Computer Systems&lt;/a&gt; / &lt;a href=&quot;information-technology.html#ch-logic&quot;&gt;Logic Gates and Circuits&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="information-technology.html">資訊科技</a> / <a href="information-technology.html#system">計算機系統</a> / <a href="information-technology.html#ch-logic">邏輯閘與電路</a></nav>
       <h1 data-en="Logic Gates and Adders">邏輯閘與加法器</h1>
-      <p data-en="A computer adds numbers with nothing but tiny switches called logic gates. Flip the inputs and watch the lamps; build every gate out of NAND alone; then chain gates into a half adder, a full adder and a 4- or 8-bit ripple-carry adder. Each gate takes one unit of time to respond, so you can watch a carry ripple from bit to bit — and catch the brief wrong answers (glitches) on the way.">電腦做加法，靠的只是一個個叫做「邏輯閘」的小開關。撥動輸入、看燈亮不亮；只用 NAND 拼出其他的閘；再把閘接成半加器、全加器和 4 或 8 位元的漣波進位加法器。每個閘都要花 1 個單位時間才反應過來，所以你看得到進位一格一格往前傳，還能抓到途中一閃而過的錯誤答案（突波）。</p>
+      <p data-en="A computer adds numbers with nothing but tiny switches called logic gates. Flip the inputs and watch the lamps; build every gate out of NAND alone; then chain gates into a half adder, a full adder and a 4- or 8-bit ripple-carry adder. Each gate takes one unit of time to respond, so you can watch a carry ripple from bit to bit — and catch the brief wrong answers (glitches) on the way.">電腦做加法，靠的只是一個個叫做「邏輯閘」的小開關。撥動輸入、看燈亮不亮；只用 NAND 拼出其他的閘；再把閘接成半加器、全加器和 4 或 8 位元的漣波進位加法器。預設每個閘都要花 1 個單位時間才反應過來，所以你看得到進位一格一格往前傳，還能抓到途中一閃而過的錯誤答案（突波）。</p>
     </header>
 
     <p class="try-hint" data-en="Try it: in “Logic gates”, switch both inputs to 1 and watch the AND lamp light up; then open “Multi-bit adder” and work out 9 + 7.">試試看：在「邏輯閘」把兩個輸入都撥成 1，看 AND 的燈亮起來；再到「多位元加法器」算 9 + 7。</p>
@@ -179,7 +179,7 @@
           </div>
         </section>
         <canvas id="cv2" aria-label="時序圖：橫軸是時間（單位是閘延遲），每一列是一條導線的值，高是 1、低是 0；粉紅色的區段是突波，直線游標是目前播放到的時間。" data-en-aria-label="Timing diagram: time in gate delays across, one row per wire, high for 1 and low for 0; pink stretches are glitches and the vertical cursor is the time being shown."></canvas>
-        <p class="chart-cap" id="chartCap" data-en="Timing diagram: every wire, gate delay by gate delay. The dashed line marks the longest path through the circuit — the slowest it can ever be.">時序圖：每一條導線隨時間（以閘延遲為單位）的值。虛線標出電路裡最長的路徑——最慢也不會超過它。</p>
+        <p class="chart-cap" id="chartCap" data-en="Timing diagram: every wire, gate delay by gate delay. The dashed line marks the longest path depth for simultaneous inputs and unit gate delays.">時序圖：每一條導線隨時間（以閘延遲為單位）的值。虛線標出各閘延遲均為 1 且輸入同步時的最長路徑深度。</p>
       </div>
 
       <aside class="panel">
@@ -280,7 +280,12 @@
           <div class="slider"><label for="speed" data-en="Speed (gate delays per second)">速度（每秒幾個閘延遲）</label><output id="speedo"></output>
             <input id="speed" type="range" min="0.5" max="8" step="0.5" value="2" data-decimals="1"></div>
           <div class="checks"><label><input id="autoPlay" type="checkbox" checked><span data-en="Play automatically">自動播放</span></label></div>
-          <p class="hint" data-en="Every gate answers one unit of time after its inputs change. Turn off “Play automatically” and use “Step” to go one gate delay at a time.">每個閘在輸入改變後 1 個單位時間才給出新答案。關掉「自動播放」，就能用「單步」一次走一個閘延遲。</p>
+          <p class="hint" data-en="By default every gate answers one unit of time after its inputs change. Turn off “Play automatically” and use “Step” to go one gate delay at a time.">預設每個閘在輸入改變後 1 個單位時間才給出新答案。關掉「自動播放」，就能用「單步」一次走一個閘延遲。</p>
+          <details><summary style="min-height:44px" data-en="Compare input and gate delays">比較輸入與閘延遲</summary>
+            <label><span data-en="Second input delay">第二個輸入延後幾個時間單位</span> <input id="inputSkew" type="number" min="0" max="8" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Gate-delay seed (0 gives unit delays)">閘延遲種子（0 表示各閘延遲 1）</span> <input id="delaySeed" type="number" min="0" max="999999" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <button type="button" id="replayDelay" data-en="Replay last transition">重播上次輸入轉換</button>
+          </details>
         </section>
 
         <section class="card">
@@ -314,7 +319,7 @@
       <p data-en-html="\(G = 1\) means this bit <em>generates</em> a carry by itself; \(P = 1\) means it <em>propagates</em> (passes on) a carry that arrives; when both inputs are \(0\) it <em>kills</em> any carry (K). Chaining \(n\) full adders, each carry-out feeding the next carry-in, gives an \(n\)-bit <strong>ripple-carry adder</strong>. Its answer is \(A + B + C_{\text{in}}\) modulo \(2^{n}\); the carry out of the top bit is the part that does not fit — an unsigned <strong>overflow</strong>.">\(G = 1\) 表示這一位自己就<em>產生</em>進位；\(P = 1\) 表示它會把收到的進位<em>傳遞</em>下去；兩個輸入都是 \(0\) 時，進位到這裡就被<em>吸收</em>（K）。把 \(n\) 個全加器串起來，每一個的進位輸出接到下一個的進位輸入，就是 \(n\) 位元的<strong>漣波進位加法器</strong>。它算出的是 \(A + B + C_{\text{in}}\) 除以 \(2^{n}\) 的餘數；最高位送出的進位就是放不下的部分——無號數的<strong>溢位</strong>。</p>
 
       <h3 data-en="Gate delays and the critical path">閘延遲與關鍵路徑</h3>
-      <p data-en-html="A real gate needs a little time (picoseconds in a modern chip) before its output follows its inputs. Here every gate takes exactly one unit. Inside a full adder the carry passes through an AND and an OR, so it moves two gate delays per bit; the first bit also has to wait one delay for \(P_{0}\). The carry out of the top bit of an \(n\)-bit adder can therefore need, in gate delays,">真正的閘要花一點點時間（現代晶片裡是皮秒等級）輸出才會跟上輸入。這裡每個閘都剛好花 1 個單位。在全加器裡，進位要經過一個 AND 和一個 OR，所以每往前一位要 2 個閘延遲；最低位還要先等 1 個閘延遲算出 \(P_{0}\)。因此 \(n\) 位元加法器最高位的進位最慢要（以閘延遲為單位）</p>
+      <p data-en-html="A real gate needs a little time (depending on gate type, load and manufacturing process) before its output follows its inputs. By default each gate takes one time unit and both inputs change together. In the timing comparison, input two can arrive later and a nonzero seed gives each gate a reproducible delay of one to three units. The depth formula assumes unit delays. Inside a full adder the carry passes through an AND and an OR, so it moves two gate delays per bit; the first bit also has to wait one delay for \(P_{0}\). The carry out of the top bit of an \(n\)-bit adder can therefore need, in gate delays,">真正的閘要花一點點時間（依閘類型、負載與製程而異）輸出才會跟上輸入。預設各閘延遲 1 個單位，輸入同時切換。在延遲對照中可延後第二個輸入，非零種子會為各閘指定可重播的 1 至 3 單位延遲。以下深度公式採用單位延遲。在全加器裡，進位要經過一個 AND 和一個 OR，所以每往前一位要 2 個閘延遲；最低位還要先等 1 個閘延遲算出 \(P_{0}\)。因此 \(n\) 位元加法器最高位的進位最慢要（以閘延遲為單位）</p>
       <div class="formula">\[ T_{\max} = 2n + 1 \]</div>
       <p data-en-html="This longest route is the <strong>critical path</strong>; the clock of a processor must be slow enough for it. Faster designs such as carry-lookahead adders compute the carries in parallel instead of letting them ripple.">這條最長的路線叫<strong>關鍵路徑</strong>，處理器的時脈必須慢到等得了它。進位前瞻加法器之類的設計，就是改成同時把各位的進位算出來，不讓它一格一格傳。</p>
 
@@ -336,7 +341,7 @@
 
       <h3 data-en="How the page computes">計算方法</h3>
       <ul>
-        <li data-en-html="<strong>Event-driven simulation with unit gate delays.</strong> The circuit starts settled; at \(t = 0\) the inputs change. At every later step, only the gates whose inputs changed in the previous step are recomputed, and every new output appears one unit later (wires take no time). The step at which the last wire changes is the settling time. This is the <em>transport-delay</em> model: even a pulse one unit long travels on. Real gates have slightly different delays and can swallow very short pulses, so real glitches are often smaller than here."><strong>單位閘延遲的事件驅動模擬。</strong>電路先處在穩定狀態，\(t = 0\) 時輸入改變。之後每一步，只重算「輸入在上一步改變過」的閘，新的輸出晚 1 個單位出現（導線不花時間）。最後一條導線改變的時刻就是穩定所需的時間。這是<em>傳輸延遲</em>模型：就算只有 1 個單位長的脈衝也會傳下去。真實的閘延遲各不相同，也會吞掉很短的脈衝，所以真實的突波常常比這裡少。</li>
+        <li data-en-html="<strong>Default timing with unit gate delays.</strong> The circuit starts settled; at \(t = 0\) the inputs change. At every later step, only the gates whose inputs changed in the previous step are recomputed, and every new output appears one unit later (wires take no time). The step at which the last wire changes is the settling time. This is the <em>transport-delay</em> model: even a pulse one unit long travels on. Real gates have slightly different delays and can swallow very short pulses, so real glitches are often smaller than here."><strong>預設的單位閘延遲模式。</strong>電路先處在穩定狀態，\(t = 0\) 時輸入改變。之後每一步，只重算「輸入在上一步改變過」的閘，新的輸出晚 1 個單位出現（導線不花時間）。最後一條導線改變的時刻就是穩定所需的時間。這是<em>傳輸延遲</em>模型：就算只有 1 個單位長的脈衝也會傳下去。真實的閘延遲各不相同，也會吞掉很短的脈衝，所以真實的突波常常比這裡少。</li>
         <li data-en-html="The unit tests check the truth tables of the seven gates and of their NAND-only versions, De Morgan’s laws, the half and full adder, every one of the 512 inputs of the 4-bit adder and all 131 072 inputs of the 8-bit adder against ordinary integer addition, the critical path \(2n + 1\), that the slowest single-switch change really takes \(2n + 1\) delays, that the event-driven simulation matches a step-by-step recomputation of every gate at every moment, and the fewest NAND or NOR gates for each function found by trying every wiring.">單元測試檢查：七種閘與它們只用 NAND 的版本的真值表、笛摩根定律、半加器與全加器、4 位元加法器全部 512 組輸入與 8 位元全部 131 072 組輸入都等於一般的整數加法、關鍵路徑 \(2n + 1\)、只撥一個開關時最慢真的要 \(2n + 1\) 個閘延遲、事件驅動的結果和「每一步把所有閘都重算」逐時刻相同，以及窮舉所有接法得到的 NAND、NOR 最少閘數。</li>
       </ul>
 

@@ -74,6 +74,7 @@
     run.c = c;
     run.inVals = inputsOf(m);
     run.prevIn = run.inVals;
+    run.unitTiming = true;
     run.sim = LC.simulate(c, run.inVals, run.inVals);
     run.t = 0; run.playing = false; run.changed = false;
     run.depth = LC.depths(c);
@@ -84,7 +85,10 @@
   /** 輸入改變：從舊的穩定狀態模擬到新的輸入 */
   function applyInputs() {
     const nv = inputsOf(st.mode);
-    run.sim = LC.simulate(run.c, run.inVals, nv);
+    const skew = Math.max(0, Math.min(8, Math.round(Number($('inputSkew').value))));
+    const seed = Math.max(0, Math.round(Number($('delaySeed').value)));
+    run.unitTiming = !skew && !seed;
+    run.sim = run.unitTiming ? LC.simulate(run.c, run.inVals, nv) : LC.simulateTimed(run.c, run.inVals, nv, skew, seed);
     run.prevIn = run.inVals;
     run.inVals = nv;
     run.changed = true;
@@ -99,6 +103,7 @@
     updateAll();
     requestDraw();
   }
+  $('replayDelay').addEventListener('click', function () { run.inVals = run.prevIn; applyInputs(); });
   function tNow() { return Math.floor(run.t + 1e-9); }
   function nodeVal(node) { return LC.valueAt(run.sim, node, tNow()); }
   /** 這個節點下一刻就要改變（它的閘正在反應） */
@@ -768,7 +773,7 @@
     const tMax = Math.max(3, run.maxDepth, run.sim.settle) + 1;
     const Xp = function (t) { return ml + t / tMax * pw; };
     ctx2.save();
-    ctx2.font = fnt(narrow ? 10 : 11, 500);
+    ctx2.font = fnt(12, 500);
     ctx2.textAlign = 'center'; ctx2.textBaseline = 'top';
     const every = pw / tMax < 16 ? 2 : 1;
     for (let t = 0; t <= tMax; t++) {
@@ -782,8 +787,8 @@
     const xd = Xp(run.maxDepth);
     ctx2.save(); ctx2.strokeStyle = alpha(C['lg-prop'], 0.8); ctx2.lineWidth = 1.4; ctx2.setLineDash([4, 3]);
     ctx2.beginPath(); ctx2.moveTo(xd, mt - 2); ctx2.lineTo(xd, mt + ph); ctx2.stroke(); ctx2.restore();
-    const capTxt = T('t（閘延遲）→', 't (gate delays) →'), capF = fnt(narrow ? 10 : 11, 500);
-    const labTxt = (st.mode === 'adder' ? '2n + 1 = ' : T('最長路徑 ', 'longest path ')) + run.maxDepth, labF = fnt(narrow ? 10 : 11, 700);
+    const capTxt = T('t（閘延遲）→', 't (gate delays) →'), capF = fnt(12, 500);
+    const labTxt = (st.mode === 'adder' ? '2n + 1 = ' : T('單位延遲深度 ', 'unit-delay depth ')) + run.maxDepth, labF = fnt(12, 700);
     ctx2.font = capF; const capW = ctx2.measureText(capTxt).width;
     ctx2.font = labF; const labW = ctx2.measureText(labTxt).width;
     const capX0 = ml + pw - capW;
@@ -970,7 +975,7 @@
   function finalOf(name) { return run.sim.final[run.c.idx[name]]; }
   function settleTxt() {
     if (!run.changed) return '—';
-    return gd(run.sim.settle) + ' <small>' + T('（最長路徑 ', '(longest path ') + run.maxDepth + T('）', ')') + '</small>';
+    return gd(run.sim.settle) + ' <small>' + T('（單位延遲深度 ', '(unit-delay depth ') + run.maxDepth + T('）', ')') + '</small>';
   }
   function updateReadouts() {
     const m = st.mode, ro = $('ro');
@@ -1140,7 +1145,7 @@
     maxFlips = Math.max(maxFlips, LC.flips(run.sim, run.c.idx['C' + n]));
     return { src: src, n: n, a: A.a, b: A.b, cin: A.cin, s: res.s, cout: res.cout, sum: A.a + A.b + A.cin, signed: A.signed,
       sa: LC.signedOf(A.a, n), sb: LC.signedOf(A.b, n), ss: LC.signedOf(res.s, n), v: LC.overflowV(n, A.a, A.b, A.cin),
-      settle: run.sim.settle, chain: info.chain, maxFlips: maxFlips, prev: prevAdder() };
+      unitTiming: run.unitTiming, settle: run.sim.settle, chain: info.chain, maxFlips: maxFlips, prev: prevAdder() };
   }
   /** 這次改變之前的 A、B、Cin（輸入向量的順序：A0…、B0…、Cin） */
   function prevAdder() {

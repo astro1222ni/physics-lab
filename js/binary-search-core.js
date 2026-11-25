@@ -15,7 +15,7 @@
 (function (root) {
   'use strict';
   const MIN_N = 4, MAX_N = 1023;
-  const KINDS = ['sorted', 'dups', 'unsorted'];
+  const KINDS = ['sorted', 'dups', 'unsorted', 'same'];
 
   /** 有種子的亂數產生器（mulberry32），回傳 [0, 1) 的均勻亂數 */
   function rng(seed) {
@@ -51,6 +51,7 @@
   function makeData(seed, n, kind) {
     n = Math.max(1, Math.min(MAX_N, Math.round(n)));
     const a = [];
+    if (kind === 'same') return { a: Array(n).fill(1 + Math.floor(rng(seed)() * 9)), n: n, seed: seed, kind: kind };
     if (kind === 'dups') {
       const r = rng((seed ^ 0x5bd1e995) >>> 0);
       let v = 1 + Math.floor(r() * 3);

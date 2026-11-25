@@ -198,6 +198,9 @@
             <dt data-en="Index of coincidence IC">重合指數 IC</dt><dd id="rIc">—</dd>
           </dl>
           <p class="hint" data-en="The bars are the letters of the input text. The grey outlines are English, slid along by g. Tap a bar to guess that this letter stands for E. The smaller χ², the better the two shapes match.">實心長條是輸入文字的字母；灰色外框是英文的字母頻率，往右移了 g 格。點一根長條，等於猜「這個字母代表 E」。χ² 越小，兩組形狀越吻合。</p>
+          <details><summary style="min-height:44px" data-en="Compare reference texts">比較參考語料</summary>
+            <label><span data-en="Reference text (blank uses the English table). Add one count per letter.">參考文字（空白採英文參考表，自訂語料每個字母加計一次）</span><textarea id="freqReference" rows="2" maxlength="2000" style="min-height:44px;max-width:100%"></textarea></label>
+          </details>
         </section>
 
         <section class="card" data-deck="金鑰|Key" data-deck-order="2" data-tabs="vig" hidden>
@@ -248,6 +251,12 @@
           <p class="msg" id="mystMsg" aria-live="polite"></p>
           <div class="tablewrap"><table class="data" id="crackLog"></table></div>
           <p class="log-empty" id="logEmpty" data-en="Cracked messages are listed here.">破解成功的訊息會列在這裡。</p>
+          <details><summary style="min-height:44px" data-en="Replay a puzzle">重播謎題</summary>
+            <label><span data-en="Puzzle seed">題目種子</span> <input id="puzzleSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Sample length in letters">取樣字母數</span> <input id="puzzleLength" type="number" min="1" max="80" step="1" value="30" style="min-height:44px;width:7em"></label>
+            <button type="button" id="seedCaesar" data-en="Replay Caesar puzzle">重播凱撒題</button>
+            <button type="button" id="seedVig" data-en="Replay Vigenère puzzle">重播維吉尼亞題</button>
+          </details>
         </section>
 
         <section class="card" data-deck="金鑰|Keys" data-deck-order="1" data-tabs="rsa" hidden>

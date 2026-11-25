@@ -173,7 +173,11 @@
             <button type="button" id="shWorst" aria-pressed="false" data-en="Worst case">最壞情況</button>
           </div>
           <div class="row1"><button id="reseed" type="button" data-en="New random data">換一組資料</button></div>
-          <p class="hint" data-en="The data are the numbers 1 to n. Both searches look for a number larger than all of them (not found: their worst case); the subset check looks for a total one more than the sum of everything, so no subset can stop it early. Tap a number to type it.">資料是 1 到 n 這 n 個數。兩種搜尋都找一個比全部都大的數（找不到，是它們的最壞情況）；檢查子集合時找的總和比全部加起來還多 1，沒有一個子集合能讓它提早結束。點數字可以直接輸入。</p>
+          <p class="hint" data-en="By default the data are the numbers 1 to n. Both searches look for a number larger than all of them (not found: their worst case); the subset check looks for a total one more than the sum of everything, so no subset can stop it early. Tap a number to type it.">預設資料是 1 到 n 這 n 個數。預設兩種搜尋都找一個比全部都大的數（找不到，是它們的最壞情況）；檢查子集合時找的總和比全部加起來還多 1，沒有一個子集合能讓它提早結束。點數字可以直接輸入。</p>
+          <details><summary style="min-height:44px" data-en="Search and repeated values">搜尋與重複值</summary>
+            <label><span data-en="Search target">搜尋目標</span> <select id="targetMode" style="min-height:44px"><option value="miss" data-en="Above maximum">大於最大值</option><option value="first" data-en="First value">第一格的值</option><option value="middle" data-en="Middle value">中間格的值</option></select></label>
+            <label><span data-en="Distinct value limit (0 keeps original data)">相異值上限（0 沿用原資料）</span> <input id="valueRange" type="number" min="0" max="1024" step="1" value="0" style="min-height:44px;width:7em"></label>
+          </details>
         </section>
 
         <section class="card">

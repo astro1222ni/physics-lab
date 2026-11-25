@@ -486,4 +486,10 @@ test('兩個堆疊做出佇列：放進 A，B 空了才把 A 全部搬到 B，�
   assert.deepStrictEqual([S.deskDo(e, 'popB').v, S.deskDo(e, 'popB').v], [3, 2]);
 });
 
+test("右側容量獨立限制排入次數", () => {
+  const d = S.newDesk({cap:3}); d.rightCap = 5;
+  for (let i=0;i<5;i++) assert.ok(S.deskDo(d,'enq').ok);
+  assert.strictEqual(S.deskDo(d,'enq').ok,false);
+});
+
 console.log(`\n${passed} 項測試通過`);

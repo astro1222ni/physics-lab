@@ -231,4 +231,11 @@ test('精確相等的判斷：沒有 log 的整數函數用 BigInt 驗證；n = 
   assert.ok(!B.exactEqual('sqrt', 1, 'log', 1, 9));
 });
 
+test("全同值的中點搜尋一次即命中", () => {
+  const r = B.run(16, 'random', 7, {target: 'middle', limit: 1});
+  assert.strictEqual(r.counts.binary, 1);
+  assert.strictEqual(r.counts.linear, 1);
+  assert.strictEqual(r.subsetTarget, 17);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

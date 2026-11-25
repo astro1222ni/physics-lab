@@ -47,9 +47,9 @@
       check: function (ev, mem) {
         const d = ev.data;
         if (!isRun(ev)) return false;
-        const seen = remember(mem, 'fr', key(d.refs), d.frames);
-        const f = d.frames, c = d.curves.fifo;
-        return (seen[f - 1] && rise(c, f) > 0) || (seen[f + 1] && rise(c, f + 1) > 0);
+        if (key(d.refs) !== BELADY) return false;
+        if (d.frames === 3) mem.classicThree = true;
+        return d.frames === 4 && !!mem.classicThree && rise(d.curves.fifo, 4) > 0;
       }
     },
     {

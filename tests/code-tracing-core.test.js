@@ -381,4 +381,8 @@ test('猜輸出：忽略多餘的空白與換行、等號逗號旁的空白、�
   assert.strictEqual(C.checkGuess(C.program('factorial'), C.build('factorial', { n: 13 }).trace, '0'), null);   // 出錯時不判定
 });
 
+test("本直譯器從左到右求函式引數的值", () => {
+  assert.strictEqual(runSrc('int f(int n) { printf("%d", n); return n; } int sum(int a,int b) { return a+b; } int main(){ int x=sum(f(1),f(2)); return 0; }').output, '12');
+});
+
 console.log('\n' + passed + ' 項通過' + (process.exitCode ? '，有失敗' : ''));

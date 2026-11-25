@@ -339,4 +339,12 @@ test('傳說：64 個盤子每秒一步要 2^64 − 1 秒 ≈ 5.85 × 10^11 年�
   assert.strictEqual(H.legendTime(100, 1e9).steps, (2n ** 100n - 1n).toString());
 });
 
+test("同一種子重現同一個打亂盤位", () => {
+  const s = new H.Session({ n: 5 });
+  s.shuffle(23);
+  const first = s.pos.slice();
+  s.shuffle(23);
+  assert.deepStrictEqual(s.pos, first);
+});
+
 console.log(`\n${passed} 項測試通過` + (process.exitCode ? '，有測試失敗' : ''));

@@ -322,7 +322,7 @@
     let binS = K.bin(cpv, Math.max(pb, 4 * Math.ceil(Math.log2(cpv + 1) / 4)));
     binS = binS.replace(/\B(?=(\d{4})+(?!\d))/g, ' ');
     if (!A.narrow || binS.length <= 26) { const bt = '= ' + binS + T('（二進位）', ' (binary)'); D.haloText(c, bt, tx, hy + 60, alpha(C.muted, 0.95), 'left', 'alphabetic', fitFnt(c, bt, 12, 500, MONO, w - tx - 6)); }
-    else D.haloText(c, '= ' + binS, tx, hy + 60, alpha(C.muted, 0.95), 'left', 'alphabetic', fnt(11, 500, MONO));
+    else D.haloText(c, '= ' + binS, tx, hy + 60, alpha(C.muted, 0.95), 'left', 'alphabetic', fnt(12, 500, MONO));
 
     // ---------- UTF-8 ----------
     const bytes8 = K.utf8Bytes(it.lone ? 0xFFFD : it.cp);
@@ -595,6 +595,8 @@
   // =====================================================================
   function fmtBytes(n) { return n + T(' 位元組', n === 1 ? ' byte' : ' bytes'); }
   function updateDom() {
+    const little = $('byteOrder').value === 'le';
+    $('u16Bytes').textContent = (little ? 'UTF-16LE: ' : 'UTF-16BE: ') + (its.length ? K.hexStr(K.utf16Bytes(its[state.sel].lone ? 0xFFFD : its[state.sel].cp, little)) : '—');
     $('rN').textContent = String(its.length);
     $('rUnits').textContent = String(state.text.length);
     $('rU8').textContent = fmtBytes(sz.u8);
@@ -677,6 +679,16 @@
   $('nextBtn').addEventListener('click', function () { select(state.sel + 1, 'btn'); });
 
   // 文字框：打字（中文輸入法組字完成後）停 0.4 秒就更新
+  $('byteOrder').addEventListener('change', updateDom);
+  $('sampleApply').addEventListener('click', function () {
+    const r = K.rng(Number($('sampleSeed').value) || 1);
+    const pool = ['A', 'é', '倪', '😀'];
+    const first = pool[Math.floor(r() * pool.length)];
+    const n = Math.max(1, Math.min(40, Math.round(Number($('sampleLength').value) || 1)));
+    const s = Array.from({ length: n }, () => $('sampleKind').value === 'uniform' ? first : pool[Math.floor(r() * pool.length)]).join('');
+    elTxt.value = s;
+    setText(s, 'example', { sel: 0 });
+  });
   const elTxt = $('txt');
   let typeTimer = 0, composing = false;
   elTxt.addEventListener('compositionstart', function () { composing = true; });

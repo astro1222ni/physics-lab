@@ -133,6 +133,7 @@ console.log('公開任務的解法');
   }
   expect('11', [page().finish('merge', S.mergeWorstData(16), 'custom')], true, '自訂 ' + S.mergeWorstData(16).join(' ') + '：49 次');
   expect('11', [page().finish('merge', data(16, 'reversed'), 'reversed')], false, '反序只有 32 次');
+  expect('12', [page().finish('quick', S.quickBestData(15), 'random')], false, '比較次數達到下限，但來源不是自訂');
   expect('12', [page().finish('quick', S.quickBestData(15), 'custom')], true, '自訂 ' + S.quickBestData(15).join(' ') + '：34 次');
   expect('12', [page().finish('quick', S.quickBestData(16), 'custom')], true, '自訂 16 個數：' + S.quickMin(16) + ' 次');
   expect('12', [page().finish('quick', data(15, 'random', 1), 'random')], false, '亂序（' + S.count('quick', data(15, 'random', 1)).comps + ' 次）');

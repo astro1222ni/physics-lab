@@ -48,13 +48,13 @@
     {
       id: 'data-compression-1', level: 1,
       title: { zh: '看掃描頭讀完一張圖', en: 'Watch a picture being scanned' },
-      desc: { zh: '按「播放」，讓掃描頭一格一格讀完整張黑白圖。', en: 'Press “Play” and let the scan head read the whole black-and-white picture, square by square.' },
+      desc: { zh: '用「播放」或「下一步」，讓掃描頭一格一格讀完整張黑白圖。', en: 'Use “Play” or “Next step” and let the scan head read the whole black-and-white picture, square by square.' },
       check: function (ev) { return is(ev, 'rleRun'); }
     },
     {
       id: 'data-compression-2', level: 2,
       title: { zh: '越壓越大', en: 'Compressed into something bigger' },
-      desc: { zh: '按「清空」後自己畫一張圖，讓編碼後的位元數比原始的 256 位元還多。', en: 'Press “Clear”, paint your own picture and make the encoded size larger than the original 256 bits.' },
+      desc: { zh: '按「清空」後自己畫一張圖，讓編碼後的位元數比原圖需要的位元數還多。', en: 'Press “Clear”, paint your own picture and make the encoded size larger than the original bit count.' },
       check: function (ev) { const d = ev.data; return is(ev, 'rle') && d.origin === 'blank' && d.painted >= 1 && d.bits > d.raw; }
     },
     {

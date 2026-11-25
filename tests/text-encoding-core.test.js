@@ -290,4 +290,8 @@ test('挑戰題：題目的位元組數是 2–4、答案檢查正確', () => {
   }
 });
 
+test("小端序只交換各碼元的兩個位元組", () => {
+  assert.deepStrictEqual(C.utf16Bytes(0x1F600, true), [0x3D, 0xD8, 0x00, 0xDE]);
+});
+
 console.log(process.exitCode ? '\n有測試失敗。' : '\n全部 ' + passed + ' 項測試通過。');

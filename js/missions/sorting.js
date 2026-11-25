@@ -115,7 +115,7 @@
       id: 'sorting-12', level: 10,
       title: { zh: '完美的樞紐', en: 'Perfect pivots' },
       desc: { zh: '用「自訂」資料（至少 15 個數），讓「快速排序」（不勾「三數取中」）的比較次數降到最少可能值——15 個數只要 34 次。', en: 'With “Custom” data (at least 15 values), bring “Quicksort” (without “Median of three”) down to the fewest comparisons possible — only 34 for 15 values.' },
-      check: function (ev) { const d = ev.data; return !d.median3 && d.n >= 15 && anyRun(ev, function (r) { return r.algo === 'quick' && r.comps === quickMin(d.n); }); }
+      check: function (ev) { const d = ev.data; return d.shape === 'custom' && !d.median3 && d.n >= 15 && anyRun(ev, function (r) { return r.algo === 'quick' && r.comps === quickMin(d.n); }); }
     },
 
     // ---------------- 隱藏任務（只看單一演算法） ----------------

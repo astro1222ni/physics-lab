@@ -297,4 +297,10 @@ test('文字長度上限與只取字母', () => {
   assert.strictEqual(C.keyShifts('A'.repeat(100)).length, C.MAX_KEY);
 });
 
+test("自訂語料可辨識已知位移且期望頻率皆為正", () => {
+  const ref = C.reference('AAAAA');
+  assert.strictEqual(C.bestShift(C.counts('BBBBB'), ref), 1);
+  assert.ok(ref.every(p => p > 0));
+});
+
 console.log(`\n${passed} 項測試通過`);

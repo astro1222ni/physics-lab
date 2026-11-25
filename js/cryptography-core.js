@@ -66,23 +66,27 @@
     return { c: c, n: n };
   }
   /** 觀察到的字母次數和「英文、位移 g」的期望次數比較：χ²（越小越像） */
-  function chiSquared(cnt, g) {
+  function reference(text) {
+    const cnt = counts(text);
+    return cnt.n ? cnt.c.map(n => (n + 1) / (cnt.n + 26)) : P_EN;
+  }
+  function chiSquared(cnt, g, ref = P_EN) {
     const N = cnt.n;
     if (!N) return NaN;
     let s = 0;
     for (let i = 0; i < 26; i++) {
-      const E = N * P_EN[mod(i - g, 26)];
+      const E = N * ref[mod(i - g, 26)];
       const d = cnt.c[i] - E;
       s += d * d / E;
     }
     return s;
   }
-  function chiAll(cnt) { const a = []; for (let g = 0; g < 26; g++) a.push(chiSquared(cnt, g)); return a; }
+  function chiAll(cnt, ref) { const a = []; for (let g = 0; g < 26; g++) a.push(chiSquared(cnt, g, ref)); return a; }
   /** χ² 最小的位移（同分取小的） */
-  function bestShift(cnt) {
+  function bestShift(cnt, ref) {
     if (!cnt.n) return 0;
     let best = 0, bv = Infinity;
-    for (let g = 0; g < 26; g++) { const v = chiSquared(cnt, g); if (v < bv - 1e-12) { bv = v; best = g; } }
+    for (let g = 0; g < 26; g++) { const v = chiSquared(cnt, g, ref); if (v < bv - 1e-12) { bv = v; best = g; } }
     return best;
   }
   /** 重合指數 Σ n_i(n_i − 1) / (N(N − 1))；少於 2 個字母回傳 NaN */
@@ -346,7 +350,7 @@
     const m = o.myst || null, pv = o.prov || null;
     const trueShift = m && m.kind === 'caesar' ? m.k : (pv ? mod(pv.shift, 26) : -1);
     return {
-      src: o.src, g: o.g, gBest: bestShift(cnt), chi2: round(chiSquared(cnt, o.g), 2), N: cnt.n,
+      src: o.src, g: o.g, gBest: bestShift(cnt, o.ref), chi2: round(chiSquared(cnt, o.g, o.ref), 2), N: cnt.n,
       overlay: !!o.overlay, chiAll: !!o.chiAll, myst: m ? m.kind : '', trueShift: trueShift,
       user: !!(pv && pv.user), plainIc: pv ? round(iocText(pv.plain), 4) : null, plainWords: pv ? words(pv.plain) : 0,
       plainE: pv ? counts(pv.plain).c[4] : -1, ic: round(ioc(cnt), 4)
@@ -391,7 +395,7 @@
   }
 
   const api = {
-    MAX_TEXT: MAX_TEXT, MAX_KEY: MAX_KEY, MAX_L: MAX_L, FREQ_EN: FREQ_EN, P_EN: P_EN, IC_EN: IC_EN, IC_RANDOM: IC_RANDOM,
+    MAX_TEXT: MAX_TEXT, MAX_KEY: MAX_KEY, MAX_L: MAX_L, reference: reference, FREQ_EN: FREQ_EN, P_EN: P_EN, IC_EN: IC_EN, IC_RANDOM: IC_RANDOM,
     letterIndex: letterIndex, letter: letter, mod: mod, lettersOnly: lettersOnly, clampText: clampText, shiftChar: shiftChar,
     caesar: caesar, caesarApply: caesarApply,
     counts: counts, chiSquared: chiSquared, chiAll: chiAll, bestShift: bestShift, ioc: ioc, iocText: iocText, topLetter: topLetter, words: words,

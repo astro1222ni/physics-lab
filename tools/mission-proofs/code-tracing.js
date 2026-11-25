@@ -104,6 +104,7 @@ expect('7', page().run('factorial', { n: 13 }), true, '「階乘」n = 13：12! 
 expect('7', page().run('factorial', { n: 12 }), false, 'n = 12 放得下');
 expect('7', page().run('power', { b: 2, e: 31 }), true, '「次方」2 的 31 次方 = 2147483648 超過');
 expect('7', page().run('power', { b: -2, e: 31 }), false, '(−2) 的 31 次方 = −2147483648 剛好是最小的 int');
+expect('8', [{ type: 'finish', data: { prog: 'custom', error: 'steps' } }], false, '自訂程式達到步數上限');
 expect('8', page().run('collatz', { n: 0 }), true, '「冰雹數」n = 0：0 是偶數，除以 2 還是 0，永遠到不了 1');
 expect('8', page().run('collatz', { n: 1 }), false, 'n = 1：一圈也不跑');
 {

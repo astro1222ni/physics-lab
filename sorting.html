@@ -212,6 +212,9 @@
             <label><input id="ties" type="checkbox" checked><span data-en="Mark the original order of equal values">標出相同值的原本順序</span></label>
           </div>
           <p class="hint" data-en="Random, nearly sorted and many-duplicates data come from a seeded random generator: “Shuffle” gives the next one. Changing the data starts again from step 0.">亂序、幾乎排好、很多重複是用有種子的亂數產生的，按「洗牌」換下一份。換資料會回到第 0 步。</p>
+          <details><summary style="min-height:44px" data-en="Replay a custom shuffle">重播自訂洗牌</summary>
+            <label><span data-en="Shuffle seed">洗牌種子</span> <input id="customSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
+          </details>
         </section>
 
         <section class="card">

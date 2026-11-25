@@ -65,9 +65,9 @@
     };
   }
   /** 兩團：A 在左、B 在右；兩團在 x1 方向分開、在 x2 方向拉得很長（所以只看 x2 分不出來） */
-  function genBlobs(serial) {
+  function genBlobs(serial, counts) {
     const r = rng(serial * 7919 + 101), out = [], add = adder(out, {});
-    const want = [18, 22];
+    const want = [18, 22].map((v, i) => counts && counts[i] || v);
     [[-0.45, 0, 0], [0.45, 0, 1]].forEach(function (cfg) {
       let k = 0, guard = 0;
       while (k < want[cfg[2]] && guard++ < 5000) if (add(cfg[0] + 0.21 * gauss(r), cfg[1] + 0.42 * gauss(r), cfg[2])) k++;
@@ -75,9 +75,9 @@
     return out;
   }
   /** 三團：A、B、C 三團排成三角形 */
-  function genThree(serial) {
+  function genThree(serial, counts) {
     const r = rng(serial * 6271 + 202), out = [], add = adder(out, {});
-    const n = [13, 14, 15];
+    const n = [13, 14, 15].map((v, i) => counts && counts[i] || v);
     for (let c = 0; c < 3; c++) {
       const th = Math.PI / 2 + c * 2 * Math.PI / 3, cx = 0.52 * Math.cos(th), cy = 0.48 * Math.sin(th) - 0.05;
       let k = 0, guard = 0;
@@ -86,9 +86,9 @@
     return out;
   }
   /** 月牙：兩個交錯的半圓（A 在上、B 在下） */
-  function genMoons(serial) {
+  function genMoons(serial, counts) {
     const r = rng(serial * 4513 + 303), out = [], add = adder(out, {});
-    const want = [22, 20], sc = 0.6;
+    const want = [22, 20].map((v, i) => counts && counts[i] || v), sc = 0.6;
     for (let c = 0; c < 2; c++) {
       let k = 0, guard = 0;
       while (k < want[c] && guard++ < 5000) {
@@ -143,6 +143,7 @@
       for (let i = 0; i < n; i++) { s1 += gx[i]; s2 += gy[i]; q1 += gx[i] * gx[i]; q2 += gy[i] * gy[i]; }
       let V1 = n * q1 - s1 * s1, V2 = n * q2 - s2 * s2;
       const nn = Math.max(1, n) * Math.max(1, n);
+      P.constant = [V1 === 0, V2 === 0];
       if (!(V1 > 0)) V1 = nn;          // 標準差是 0：當成 1 格
       if (!(V2 > 0)) V2 = nn;
       P.V1 = V1; P.V2 = V2; P.nn = Math.max(1, n);
@@ -291,11 +292,11 @@
     return out;
   }
 
-  /** k 的清單：1, 3, 5, …，到第一個 ≥ n − 1 的奇數為止（上限 K_MAX）——留一法正確率對 k 的圖用 */
+  /** k 的清單：從 1 到可用鄰居數 n − 1（上限 K_MAX）——留一法正確率對 k 的圖用 */
   function kList(n) {
     const out = [];
     const top = Math.min(K_MAX, Math.max(1, n - 1));
-    for (let k = 1; k <= K_MAX; k += 2) { out.push(k); if (k >= top) break; }
+    for (let k = 1; k <= top; k++) out.push(k);
     return out;
   }
   /**
@@ -333,7 +334,7 @@
     return { ks: ks, correct: correct, n: n, perPoint: detail, distCount: distCount };
   }
   /** 某個 k 在留一法清單裡的索引（k 比清單大時用最後一個，也就是「其他全部」） */
-  function kIndex(ks, k) { return Math.max(0, Math.min(ks.length - 1, Math.floor((k - 1) / 2))); }
+  function kIndex(ks, k) { return Math.max(0, Math.min(ks.length - 1, Math.round(k) - 1)); }
   /** 自己考自己（重新代入）的正確率：每個點用全部的點（包括它自己）來猜 */
   function resubstitution(points, cfg, k) {
     const n = points.length;
@@ -437,10 +438,18 @@
     const ks = L.ks.filter(function (k, t) { return L.correct[t] === mx; });
     return { correct: mx, acc: mx / L.n, ks: ks };
   };
-  Session.prototype.loadPreset = function (name, silent) {
+  Session.prototype.loadPreset = function (name, silent, sample) {
     if (!PRESETS[name]) return false;
     this.serial[name]++;
-    this.points = this._mark(PRESETS[name](this.serial[name]), false);
+    let pts;
+    if (sample) {
+      // 先建立固定的候選點，再依各類筆數取前綴；比較比例時，其他類別的點位保持一致。
+      const defaults = { blobs: [18, 22], three: [13, 14, 15], moons: [22, 20] }[name];
+      if (!defaults) return false;
+      const remaining = defaults.map((n, i) => sample.counts[i] || n);
+      pts = PRESETS[name](sample.seed, [26, 26, 26]).filter(p => remaining[p.c]-- > 0);
+    } else pts = PRESETS[name](this.serial[name]);
+    this.points = this._mark(pts, false);
     this.set = name; this.base = name;
     this.edits = zeroEdits();
     this._changed('preset', silent);
@@ -493,7 +502,7 @@
     return true;
   };
   Session.prototype.setCfg = function (k, v, silent) {
-    if (k === 'k') v = Math.max(1, Math.min(K_MAX, 2 * Math.round((Math.round(v) - 1) / 2) + 1));
+    if (k === 'k') v = Math.max(1, Math.min(K_MAX, Math.round(v)));
     if (k === 'scale') v = v === 100 ? 100 : 1;
     if (k === 'std') v = !!v;
     if (this.cfg[k] === v) return false;

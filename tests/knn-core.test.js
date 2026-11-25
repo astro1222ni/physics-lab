@@ -242,14 +242,14 @@ test('兩類人數相同時，k = n − 1 的留一法正確率一定是 0（拿
     assert.strictEqual(res.correct[res.correct.length - 1], 0);
   }
 });
-test('k 的清單：1, 3, 5, … 到第一個 ≥ n − 1 的奇數（上限 99）；kIndex 對應正確', () => {
+test('k 的清單：從 1 到 n − 1（上限 99）；kIndex 對應正確', () => {
   assert.deepStrictEqual(K.kList(2), [1]);
-  assert.deepStrictEqual(K.kList(5), [1, 3, 5]);
-  assert.deepStrictEqual(K.kList(6), [1, 3, 5]);
-  assert.deepStrictEqual(K.kList(7), [1, 3, 5, 7]);
+  assert.deepStrictEqual(K.kList(5), [1, 2, 3, 4]);
+  assert.deepStrictEqual(K.kList(6), [1, 2, 3, 4, 5]);
+  assert.deepStrictEqual(K.kList(7), [1, 2, 3, 4, 5, 6]);
   assert.strictEqual(K.kList(80).slice(-1)[0], 79);
   assert.strictEqual(K.kIndex(K.kList(10), 99), K.kList(10).length - 1);
-  assert.strictEqual(K.kIndex(K.kList(10), 5), 2);
+  assert.strictEqual(K.kIndex(K.kList(10), 5), 4);
 });
 test('標準化時，x2 的單位 × 1 和 × 100 的留一法曲線一模一樣', () => {
   const r = K.rng(34);
@@ -315,8 +315,8 @@ test('工作階段：載入時不送事件；每個操作送一個 state；留�
   assert.strictEqual(done.length, 1);
   assert.strictEqual(done[0].d.correct, S.looAt(7).correct);
   assert.strictEqual(ev.filter(e => e.t === 'looStep').length, S.points.length);
-  assert.strictEqual(S.setCfg('k', 4), true, '偶數會變成奇數');
-  assert.strictEqual(S.cfg.k, 5);
+  assert.strictEqual(S.setCfg('k', 4), true, '保留偶數 k');
+  assert.strictEqual(S.cfg.k, 4);
 });
 test('只有兩個不同類的點時：查詢點在垂直平分線上，兩點完全一樣遠', () => {
   const ev = [];
@@ -328,6 +328,16 @@ test('只有兩個不同類的點時：查詢點在垂直平分線上，兩點�
   assert.ok(ev[ev.length - 1].eqDist);
   S.moveQuery(3, 2);
   assert.ok(!ev[ev.length - 1].eqDist);
+});
+
+test("三類採用指定的樣本數", () => {
+  const s = new K.Session();
+  s.loadPreset('three', true, {seed: 7, counts: [3, 7, 5]});
+  assert.deepStrictEqual([0, 1, 2].map(c => s.points.filter(p => p.c === c).length), [3, 7, 5]);
+  const positions = () => s.points.filter(p => p.c === 1).map(p => [p.gx, p.gy]);
+  const first = positions();
+  s.loadPreset('three', true, {seed: 7, counts: [12, 7, 5]});
+  assert.deepStrictEqual(positions(), first);
 });
 
 console.log(`\n${passed} 項通過${process.exitCode ? '，有失敗項目' : '，全部通過'}。`);

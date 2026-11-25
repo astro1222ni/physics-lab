@@ -22,7 +22,7 @@
     {
       id: 'cryptography-1', level: 1,
       title: { zh: '凱撒的位移', en: 'Caesar’s own shift' },
-      desc: { zh: '把「位移 k」調成 3，用「加密」把一段至少 10 個字母的訊息加密——這就是凱撒自己用的位移。', en: 'Set “Shift k” to 3 and “Encrypt” a message of at least 10 letters — the very shift Caesar used.' },
+      desc: { zh: '在「加密」模式使用至少 10 個字母（可沿用預設訊息），把「位移 k」調成 3 即會顯示密文——這就是凱撒自己用的位移。', en: 'In Encrypt mode use at least 10 letters (the default message works) and set “Shift k” to 3 to see the ciphertext immediately — the very shift Caesar used.' },
       check: function (ev) { const d = ev.data; return is(ev, 'caesar') && d.k === 3 && d.dir === 'enc' && d.letters >= 10; }
     },
     {

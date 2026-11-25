@@ -287,4 +287,11 @@ test('原圖點陣：大小正確、不透明', () => {
   C.SCENES.forEach(sc => { const r = C.raster(sc, 40, 30); assert.strictEqual(r.length, 40 * 30 * 4); for (let k = 3; k < r.length; k += 4) assert.strictEqual(r[k], 255); });
 });
 
+test("原圖頻率、視標方向與整位元組取整", () => {
+  const source = C.makeSource({frequency: 128, seed: 9, count: 2, direction: 'same'});
+  assert.strictEqual(source.nyquistBox(64, 48).hx, 0.25);
+  assert.ok(source.EROWS.every(r => r.n === 2 && r.dirs.every(d => d === 0)));
+  assert.deepStrictEqual([1,2].map(n => C.fileSize(n,n,1).bytes), [1,1]);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

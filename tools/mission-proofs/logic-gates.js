@@ -134,6 +134,11 @@ expect('10', [adderEv(4, [0, 0, 0], [9, 9, 0], true, 'slider')], false, '負 + �
 const xor4 = fromMin('NAND', 6);
 expect('11', [buildEv('NAND', xor4)], true, 'NAND 拼 XOR：' + JSON.stringify(xor4) + '（' + xor4.length + ' 個）');
 expect('11', [buildEv('NAND', [['A', 'A'], ['B', 'B'], ['A', 1], ['B', 0], [2, 3]])], false, '5 個 NAND 的 XOR（A·¬B + ¬A·B 的接法）');
+{
+  const event = adderEv(8, [254, 0, 1], [255, 0, 1]);
+  event.data.unitTiming = false;
+  expect('12', [event], false, '使用自訂延遲時，17 單位不能證明單位延遲模型的最長路徑');
+}
 expect('12', [adderEv(8, [254, 0, 1], [255, 0, 1])], true, '8 位元：B = 0、Cin = 1、A 從 254 改成 255（只撥 A0）→ 17 個閘延遲');
 expect('12', [adderEv(8, [255, 0, 0], [255, 0, 1], false, 'toggle')], false, '改 Cin 只要 2n = 16 個');
 expect('12', [adderEv(4, [14, 0, 1], [15, 0, 1])], false, '4 位元最多 9 個');

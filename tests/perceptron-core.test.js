@@ -322,4 +322,22 @@ test('改設定（學習率、初始權重、順序、種子、偏差）都會�
   assert.ok(!s.setCfg('seed', 4), '值沒變就不重來');
 });
 
+test("矛盾標籤與可控雜訊", () => {
+  const s = new P.Session();
+  assert.ok(s.addPoint(0, 0, 1));
+  assert.ok(s.addPoint(0, 0, -1));
+  s.loadPreset('noisy', true, {seed: 17, n: 32, flips: 4});
+  assert.strictEqual(s.points.length, 32);
+  assert.strictEqual(s.noiseTotal, 4);
+});
+
+test('無偏差時修正原點的權重與分數都不變', () => {
+  const s = new P.Session();
+  s.addPoint(0, 0, -1);
+  s.setCfg('bias',false);
+  const r = s.trainer.step();
+  assert.ok(r.wrong);
+  assert.deepStrictEqual(r.before,r.after);
+});
+
 console.log(`\n${passed} 項測試通過` + (process.exitCode ? '，有測試失敗' : ''));

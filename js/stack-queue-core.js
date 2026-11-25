@@ -437,7 +437,8 @@
   }
   function takeVal(d) {
     const v = d.next;
-    if (d.auto) d.next = d.next >= VAL_MAX ? VAL_MIN : d.next + 1;
+    if (d.stream) d.next = VAL_MIN + Math.floor(d.stream() * (VAL_MAX - VAL_MIN + 1));
+    else if (d.auto) d.next = d.next >= VAL_MAX ? VAL_MIN : d.next + 1;
     return v;
   }
   /**
@@ -448,7 +449,7 @@
   function deskDo(d, op) {
     const Q = d.rk === 'queue';
     const r = { op: op, ok: false, err: '', v: null, cost: 0, extra: {} };
-    const fullA = d.A.length >= d.cap, fullR = d.R.length >= d.cap;
+    const fullA = d.A.length >= d.cap, fullR = d.R.length >= (d.rightCap || d.cap);
     let changedA = false, changedR = false;
     const endCycA = function () {
       if (d.A.length) return;

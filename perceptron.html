@@ -203,6 +203,13 @@
             <button type="button" data-set="sep" class="wide" aria-pressed="false" data-en="Random separable">隨機可分</button>
             <button type="button" data-set="noisy" class="wide" aria-pressed="false" data-en="Noisy">有雜訊</button>
           </div>
+          <details><summary style="min-height:44px" data-en="Sample settings">自訂樣本</summary>
+            <label><span data-en="Data seed">資料種子</span> <input id="dataSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Sample size">樣本數</span> <input id="sampleN" type="number" min="16" max="60" step="1" value="24" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Labels to flip">翻轉標籤數</span> <input id="flipN" type="number" min="0" max="60" step="1" value="3" style="min-height:44px;width:7em"></label>
+            <button type="button" id="sampleDraw" data-en="Generate from seed">依種子產生</button>
+            <button type="button" id="duplicateLabel" data-en="Add selected class at cursor">在游標加入所選類別</button>
+          </details>
         </section>
         <section class="card" data-deck="編輯資料點|Edit points" data-deck-order="2">
           <h2 data-en="Edit points">編輯資料點</h2>
@@ -289,10 +296,10 @@
 
       <h3 data-en="The learning rule">學習規則</h3>
       <p data-en-html="Show the points one at a time. If a point with label \(y = \pm 1\) is classified correctly (\(y\,z > 0\)), nothing happens. If it is wrong — or lies exactly on the line (\(y\,z \le 0\)) — the weights are corrected:">把點一個一個拿給感知器看。類別是 \(y = \pm 1\) 的點如果分對了（\(y\,z > 0\)），什麼都不改；分錯了、或剛好落在線上（\(y\,z \le 0\)），就修正權重：</p>
-      <div class="formula">\[ \mathbf{w} \leftarrow \mathbf{w} + \eta\, y\, \mathbf{x}, \qquad b \leftarrow b + \eta\, y \]</div>
+      <div class="formula">\[ \mathbf{w} \leftarrow \mathbf{w} + \eta\, y\, \mathbf{x}, \qquad b \leftarrow b + I\,\eta\, y \]</div>
       <p data-en-html="\(\eta > 0\) is the <strong>learning rate</strong>. Many books write the same rule as \(\mathbf{w} \leftarrow \mathbf{w} + \eta\,(t - \hat{y})\,\mathbf{x}\) with labels \(t \in \{0, 1\}\) and outputs \(\hat{y} \in \{0, 1\}\): when the answer is wrong, \(t - \hat{y}\) is \(+1\) or \(-1\) — exactly our \(y\). Why does it help? After a correction, the same point has">\(\eta > 0\) 是<strong>學習率</strong>。很多書把同一條規則寫成 \(\mathbf{w} \leftarrow \mathbf{w} + \eta\,(t - \hat{y})\,\mathbf{x}\)，標籤 \(t \in \{0, 1\}\)、輸出 \(\hat{y} \in \{0, 1\}\)：答錯時 \(t - \hat{y}\) 是 \(+1\) 或 \(-1\)，正好就是這裡的 \(y\)。為什麼這樣改有用？修正之後，同一個點的</p>
-      <div class="formula">\[ y\,z_{\text{new}} = y\,z_{\text{old}} + \eta\,\bigl(x_1^2 + x_2^2 + 1\bigr) \]</div>
-      <p data-en-html="so it is always pushed toward its own side. One pass through all the points is a <strong>round</strong> (epoch); a round with no mistakes means the perceptron has <strong>converged</strong> and will never change again.">所以它一定被往自己那一側推。所有點看過一次叫做<strong>一輪</strong>；一整輪都沒有分錯，就是<strong>收斂</strong>了，之後再也不會改變。</p>
+      <div id="correctionRule" class="formula">\[ y\,z_{\text{new}} = y\,z_{\text{old}} + \eta\,\bigl(x_1^2 + x_2^2 + I\bigr) \]</div>
+      <p data-en-html="Here I is 1 with bias enabled and 0 with bias disabled. Without bias, a correction at the origin changes neither the weights nor the score: the origin stays on the boundary. One pass through all the points is a <strong>round</strong> (epoch); a round with no mistakes means the perceptron has <strong>converged</strong> and will never change again.">開啟偏差時 I 取 1，關閉時取 0。關閉偏差後，原點的修正量為零，權重與分數都不變，原點會一直停在分界線上。所有點看過一次叫做<strong>一輪</strong>；一整輪都沒有分錯，就是<strong>收斂</strong>了，之後再也不會改變。</p>
 
       <h3 data-en="The convergence theorem">收斂定理</h3>
       <p data-en-html="Treat the bias as a third weight: \(\tilde{\mathbf{x}} = (x_1, x_2, 1)\) and \(\tilde{\mathbf{w}} = (w_1, w_2, b)\), so \(z = \tilde{\mathbf{w}}\cdot\tilde{\mathbf{x}}\). Let \(R\) be the largest length \(\lVert\tilde{\mathbf{x}}\rVert\) among the points, and \(\gamma\) the largest <strong>margin</strong>: the biggest number for which some unit vector \(\mathbf{u}\) gives every point \(y\,(\mathbf{u}\cdot\tilde{\mathbf{x}}) \ge \gamma\). If \(\gamma > 0\) (the data can be separated by a line), then starting from \(\tilde{\mathbf{w}} = \mathbf{0}\), in any order and with any learning rate, the number of corrections \(k\) satisfies (Novikoff, 1962)">把偏差當成第三個權重：\(\tilde{\mathbf{x}} = (x_1, x_2, 1)\)、\(\tilde{\mathbf{w}} = (w_1, w_2, b)\)，於是 \(z = \tilde{\mathbf{w}}\cdot\tilde{\mathbf{x}}\)。令 \(R\) 是所有點裡最大的長度 \(\lVert\tilde{\mathbf{x}}\rVert\)，\(\gamma\) 是最大的<strong>間隔</strong>：存在某個單位向量 \(\mathbf{u}\)，讓每個點都有 \(y\,(\mathbf{u}\cdot\tilde{\mathbf{x}}) \ge \gamma\) 的最大的 \(\gamma\)。只要 \(\gamma > 0\)（資料能用一條直線分開），從 \(\tilde{\mathbf{w}} = \mathbf{0}\) 出發，不論順序、不論學習率，修正次數 \(k\) 一定滿足（Novikoff，1962）</p>

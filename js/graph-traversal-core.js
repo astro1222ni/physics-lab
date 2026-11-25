@@ -174,13 +174,25 @@
     return g;
   }
   /** 隨機連通圖：先連成一棵隨機樹，再加 ⌊V/2⌋ 條邊（所以一定有迴路）；點排在一個圓上 */
-  function randomGraph(V, seed) {
+  function randomGraph(V, seed, density, connected = true) {
     const g = blankGraph(V), rnd = rng((Math.imul(seed | 0, 2246822519) ^ Math.imul(V, 3266489917)) >>> 0);
     for (let i = 0; i < V; i++) {
       const a = -Math.PI / 2 + 2 * Math.PI * i / V;
       g.pos.push({ x: 0.5 + 0.42 * Math.cos(a), y: 0.5 + 0.42 * Math.sin(a) });
     }
-    for (let i = 1; i < V; i++) setEdge(g, i, Math.floor(rnd() * i), true);
+    if (connected) for (let i = 1; i < V; i++) setEdge(g, i, Math.floor(rnd() * i), true);
+    if (density != null) {
+      const candidates = [];
+      for (let a = 0; a < V; a++) for (let b = a + 1; b < V; b++) if (!hasEdge(g, a, b)) candidates.push([a, b]);
+      const possible = V * (V - 1) / 2;
+      const count = Math.min(candidates.length, Math.round(density * possible) - (possible - candidates.length));
+      for (let i = 0; i < count; i++) {
+        const j = i + Math.floor(rnd() * (candidates.length - i));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        setEdge(g, candidates[i][0], candidates[i][1], true);
+      }
+      return g;
+    }
     let extra = Math.floor(V / 2), guard = 0;
     while (extra > 0 && guard++ < 500) {
       const a = Math.floor(rnd() * V), b = Math.floor(rnd() * V);

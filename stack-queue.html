@@ -262,6 +262,11 @@
             <button type="button" data-rk="stack" aria-pressed="false" data-en="Second stack">第二個堆疊</button>
           </div>
           <p class="hint" data-en="Changing the capacity or what is on the right empties both sides.">改容量或右邊放的東西，兩邊都會清空重來。</p>
+          <details><summary style="min-height:44px" data-en="Capacity and input stream">容量與輸入流</summary>
+            <label><span data-en="Right capacity">右側容量</span> <select id="rightCap" style="min-height:44px"><option value="0" data-en="Match left">與左側相同</option><option value="3" data-en="3">3</option><option value="4" data-en="4">4</option><option value="5" data-en="5">5</option><option value="6" data-en="6">6</option><option value="7" data-en="7">7</option><option value="8" data-en="8">8</option><option value="9" data-en="9">9</option><option value="10" data-en="10">10</option></select></label>
+            <label><span data-en="Input seed (0 uses normal mode)">輸入種子（0 沿用原模式）</span> <input id="streamSeed" type="number" min="0" max="999999" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <button type="button" id="streamStart" data-en="Reset input stream">重設輸入流</button>
+          </details>
         </section>
 
         <section class="card" id="ringCard" hidden>

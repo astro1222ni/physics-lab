@@ -52,6 +52,15 @@
         ['R1', 'R4', 2], ['R4', 'R7', 3], ['R2', 'R5', 2], ['R5', 'R8', 2], ['R3', 'R6', 2], ['R6', 'R9', 3], ['R6', 'SV', 1]]
     }
   };
+  for (const count of [2, 4, 8]) {
+    const nodes = [['PC', 0.04, 0.5]], links = [];
+    for (let i = 1; i <= count; i++) {
+      nodes.push(['R' + i, 0.04 + 0.92 * i / (count + 1), 0.5]);
+      links.push([nodes[i - 1][0], nodes[i][0], 2]);
+    }
+    nodes.push(['SV', 0.96, 0.5]); links.push(['R' + count, 'SV', 2]);
+    NETWORKS['line' + count] = {nodes: nodes, links: links, zh: '直線網路', en: 'Chain'};
+  }
   const NET_IDS = ['city', 'ring', 'grid'];
 
   function buildNet(id) {
@@ -60,7 +69,7 @@
     const nodes = def.nodes.map(function (n, i) { idx[n[0]] = i; return { i: i, id: n[0], host: n[0] === 'PC' || n[0] === 'SV', x: n[1], y: n[2] }; });
     const links = def.links.map(function (l, i) {
       const a = idx[l[0]], b = idx[l[1]];
-      return { i: i, a: a, b: b, cost: l[2], cost0: l[2], up: true, access: nodes[a].host || nodes[b].host };
+      return { i: i, a: a, b: b, cost: l[2], cost0: l[2], rate: RATE, up: true, access: nodes[a].host || nodes[b].host };
     });
     const net = { id: def === NETWORKS[id] ? id : 'city', nodes: nodes, links: links, pc: idx.PC, sv: idx.SV, idx: idx };
     net.routers = nodes.filter(function (n) { return !n.host; }).map(function (n) { return n.i; });
@@ -70,7 +79,7 @@
   }
   function cloneNet(net) {
     const c = buildNet(net.id);
-    net.links.forEach(function (l, i) { c.links[i].cost = l.cost; c.links[i].up = l.up; });
+    net.links.forEach(function (l, i) { c.links[i].rate = l.rate; c.links[i].cost = l.cost; c.links[i].up = l.up; });
     return c;
   }
   function other(l, u) { return l.a === u ? l.b : l.a; }
@@ -84,7 +93,7 @@
     for (let i = 0; i < net.links.length; i++) { const l = net.links[i]; if ((l.a === u && l.b === v) || (l.a === v && l.b === u)) return l; }
     return null;
   }
-  function topoKey(net) { return net.id + '|' + net.links.map(function (l) { return (l.up ? '' : 'x') + l.cost; }).join(','); }
+  function topoKey(net) { return net.id + '|' + net.links.map(function (l) { return (l.up ? '' : 'x') + l.cost + (l.rate === RATE ? '' : '@' + l.rate); }).join(','); }
   function costEdited(net) { return net.links.some(function (l) { return l.cost !== l.cost0; }); }
   /** 從 s 能不能走到 t（只走通的連線；主機不轉送） */
   function connected(net, s, t) {
@@ -274,12 +283,13 @@
     const sizes = split('x'.repeat(M), k).map(function (p) { return HEADER + p.length; });
     let prevFinish = new Array(props.length).fill(0), last = 0;
     sizes.forEach(function (sz) {
-      const tx = sz / RATE, fin = [];
+      const fin = [];
       let ready = 0;
       for (let h = 0; h < props.length; h++) {
+        const link = props[h], tx = sz / (typeof link === 'number' ? RATE : link.rate);
         const start = Math.max(ready, prevFinish[h]);
         fin.push(start + tx);
-        ready = start + tx + props[h];
+        ready = start + tx + (typeof link === 'number' ? link : link.cost);
       }
       prevFinish = fin;
       last = ready;
@@ -455,7 +465,7 @@
   W.sendOn = function (p, u, link) {
     const v = other(link, u), dir = link.a === u ? 0 : 1, key = link.i * 2 + dir;
     const start = Math.max(this.t, this.busy[key] || 0);
-    const tx = p.size / RATE;
+    const tx = p.size / link.rate;
     this.busy[key] = start + tx;
     p.where = { link: link.i, from: u, to: v, start: start, tx: tx, prop: link.cost, qAt: this.t };
     if (p.loseAt === p.hops.length - 1) { p.where.lossAt = start + (tx + link.cost) / 2; p.ev = this.schedule(p.where.lossAt, 'lose', { p: p }); }
@@ -558,7 +568,7 @@
     const j = this.job = {
       n: n, kind: 'msg', t0: this.t, msg: msg, k: k, M: msg.length, P: parts.length, parts: parts,
       ttl: Math.max(1, Math.min(TTL_MAX, Math.round(opt.ttl || 16))), loss: Math.max(0, Math.min(0.5, opt.loss || 0)),
-      seed: this.seedBase + n, rand: rng(this.seedBase + n),
+      seed: opt.seed || this.seedBase + n, rand: rng(opt.seed || this.seedBase + n),
       algo0: this.algo, topo0: topoKey(this.net), topoChanged: false, cutOnIntact: cutOnIntact,
       acked: [], attempts: [], sendAt: [], srtt: null, rto: RTO_INIT, retx: 0, sent: 0, sendDone: false, failed: false, ended: false,
       have: [], nextSeq: 0, text: '', ooo: 0, dup: 0, maxSeq: -1, arrivals: [], first: [], recvDone: false, tDone: -1,
@@ -663,7 +673,7 @@
     let best = { time: -1, ks: [] };
     if (single && !j.topoChanged) {
       const props = [];
-      for (let i = 1; i < single.length; i++) props.push(linkBetween(net, single[i - 1], single[i]).cost);
+      for (let i = 1; i < single.length; i++) props.push(linkBetween(net, single[i - 1], single[i]));
       best = bestSizes(props, j.M);
     }
     return {

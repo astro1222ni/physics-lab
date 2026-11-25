@@ -39,7 +39,7 @@
       id: 'binary-numbers-1', level: 1,
       title: { zh: '第一個數字', en: 'Your first number' },
       desc: { zh: '點亮幾盞燈，讓燈號表示十進位的 5。', en: 'Switch on some lamps so that they show the decimal number 5.' },
-      check: function (ev) { return isVal(ev) && ev.data.v === 5; }
+      check: function (ev) { return isVal(ev) && ev.data.src === 'toggle' && ev.data.v === 5; }
     },
     {
       id: 'binary-numbers-2', level: 2,
@@ -98,7 +98,7 @@
     {
       id: 'binary-numbers-11', level: 7,
       title: { zh: '最少的步驟', en: 'The fewest steps' },
-      desc: { zh: '按「歸零」後只用「+1」和「×2」做出 100，而且步數最少（9 步）。', en: 'After “Reset to 0”, use only “+1” and “×2” to build 100 in the fewest possible steps (9).' },
+      desc: { zh: '從 0 出發，只用「+1」和「×2」做出 100，而且步數最少（9 步）。', en: 'Starting from 0, use only “+1” and “×2” to build 100 in the fewest possible steps (9).' },
       check: function (ev) { const d = ev.data; return isVal(ev) && d.v === 100 && d.chain === 9; }
     },
     {

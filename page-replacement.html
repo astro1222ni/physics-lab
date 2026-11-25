@@ -199,6 +199,10 @@
             <input id="kinds" type="range" min="2" max="10" step="1" value="6" data-decimals="0"></div>
           <p class="seedinfo" id="seedInfo"></p>
           <p class="hint" data-en="Changing either slider generates a new reference string.">調整長度或頁面種類時，會產生新的參考字串。</p>
+          <details><summary style="min-height:44px" data-en="Locality settings">區域性設定</summary>
+            <label><span data-en="Reuse probability (%)">回看機率（%）</span> <input id="reusePct" type="number" min="0" max="100" step="1" value="45" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Look-back window">回看筆數</span> <input id="lookBack" type="number" min="1" max="30" step="1" value="4" style="min-height:44px;width:7em"></label>
+          </details>
         </section>
 
         <section class="card" data-deck="記憶體|Memory" data-deck-order="2">

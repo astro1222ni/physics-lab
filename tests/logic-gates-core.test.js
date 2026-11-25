@@ -236,4 +236,11 @@ test('真值表遮罩與 16 種函數的名稱一一對應', () => {
   L.GATE_LIST.forEach(g => { if (L.GATES[g].arity === 2) assert.strictEqual(L.ttMask(L.truthTable(g)), L.TARGETS[g]); });
 });
 
+test("XOR 錯開輸入產生脈衝，延遲種子可重播", () => {
+  const c = L.gateCircuit('XOR');
+  const r = L.simulateTimed(c,[0,0],[1,1],3,0);
+  assert.deepStrictEqual(r.hist[c.gates[0].out], [[1,1],[4,0]]);
+  assert.deepStrictEqual(L.simulateTimed(c,[0,0],[1,1],3,8), L.simulateTimed(c,[0,0],[1,1],3,8));
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗。' : '。'));

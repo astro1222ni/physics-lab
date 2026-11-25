@@ -161,9 +161,9 @@
     const c = cp - 0x10000;
     return [0xD800 + (c >> 10), 0xDC00 + (c & 0x3FF)];
   }
-  function utf16Bytes(cp) {
+  function utf16Bytes(cp, littleEndian) {
     const out = [];
-    utf16Units(cp).forEach(function (u) { out.push(u >> 8, u & 255); });
+    utf16Units(cp).forEach(function (u) { if (littleEndian) out.push(u & 255, u >> 8); else out.push(u >> 8, u & 255); });
     return out;
   }
   function utf16Decode(bytes) {

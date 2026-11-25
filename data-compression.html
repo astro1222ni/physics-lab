@@ -197,6 +197,11 @@
             <button type="button" id="patNoise" data-en="Random noise">雜訊</button>
           </div>
           <p class="hint" data-en="Tap a square to switch its colour. Swipe to scroll, or drag with a mouse to paint a stroke. Open the brush pad to move P by one square in any direction. Its centre switches black and white. Each square is one bit (white 0, black 1).">輕點單格切換黑白，手指滑動可捲頁，滑鼠按住可連續畫。打開畫筆鍵盤，用方向鍵移動 P，每次一格，按中央鍵換色。每格占 1 位元（白 0、黑 1）。</p>
+          <details><summary style="min-height:44px" data-en="Resample the picture">重新取樣畫布</summary>
+            <label><span data-en="Width (cells)">寬（格）</span> <select id="rleWidth" style="min-height:44px"><option value="16" data-en="16">16</option><option value="8" data-en="8">8</option><option value="32" data-en="32">32</option></select></label>
+            <label><span data-en="Height (cells)">高（格）</span> <select id="rleHeight" style="min-height:44px"><option value="16" data-en="16">16</option><option value="8" data-en="8">8</option><option value="32" data-en="32">32</option></select></label>
+            <button type="button" id="rleDimensions" data-en="Apply dimensions">套用寬高</button>
+          </details>
         </section>
 
         <section class="card m-rle">
@@ -325,8 +330,8 @@
 
     <section class="notes">
       <h2 data-en="The ideas behind it">背後的原理</h2>
-      <h3 data-en="Lossless compression needs a pattern">無失真壓縮靠的是規律</h3>
-      <p data-en-html="<strong>Lossless</strong> compression means that decompressing gives back exactly the same bits. That is only possible when the data has some pattern — long stretches that repeat, or some symbols that turn up far more often than others. A counting argument shows why: there are \(2^{n}\) different files of \(n\) bits but fewer than \(2^{n}\) shorter files, so no method can shrink every file. Whatever a method saves on some inputs, it must lose on others.">無失真壓縮是指解壓縮後，每一個位元都和原來一模一樣。這只有在資料有規律時才做得到——例如同樣的東西一長串重複，或某些符號比別的常出現得多。用數數就看得出為什麼：\(n\) 位元的檔案有 \(2^{n}\) 種，比它短的檔案卻不到 \(2^{n}\) 種，所以沒有任何方法能把每一個檔案都變小；一種方法在某些資料上省下來的，在別的資料上一定會賠回去。</p>
+      <h3 data-en="Exact recovery and encoded size">完整還原與編碼大小</h3>
+      <p data-en-html="<strong>Lossless</strong> compression means that decompressing gives back exactly the same bits. Exact recovery also works when the encoding is longer. For instance, alternating black and white pixels give runs of length one: each run costs more bits than its single pixel in this format. Long runs can save space. A counting argument shows why: there are \(2^{n}\) different files of \(n\) bits but fewer than \(2^{n}\) shorter files, so no method can shrink every file. Whatever a method saves on some inputs, it must lose on others.">無失真壓縮是指解壓縮後，每一個位元都和原來一模一樣。即使編碼後變長，仍能完整還原。例如黑白逐格交錯時，每段只有一格，這個格式記錄一段所需的位元比原來的一格還多；同色連續多格才有機會省空間。用數數就看得出為什麼：\(n\) 位元的檔案有 \(2^{n}\) 種，比它短的檔案卻不到 \(2^{n}\) 種，所以沒有任何方法能把每一個檔案都變小；一種方法在某些資料上省下來的，在別的資料上一定會賠回去。</p>
 
       <h3 data-en="Run-length encoding">遊程編碼（run-length encoding）</h3>
       <p data-en-html="Read the 256 squares one after another in the chosen scan order. A stretch of squares of the same colour is a <strong>run</strong>; instead of the squares we store each run as a length. With a length field of \(k\) bits a run can be at most \(2^{k}-1\) long; a longer run is split into pieces. In the “Colour + length” format each piece costs \(k+1\) bits; in the “Length only” format the colours simply take turns, starting with white, so each piece costs \(k\) bits — a picture that starts with black begins with a white run of length 0, and a run that is too long is split as “\(2^{k}-1\), 0, the rest”, where the 0 is an empty run of the other colour that keeps the turns in order. If there are \(m\) pieces,">依照選定的掃描順序，把 256 格排成一長串。連續同色的一段叫一個<strong>遊程</strong>（run）；我們不記每一格，而是記每一段有多長。長度欄位有 \(k\) 位元時，一段最長只能記 \(2^{k}-1\)，更長的要拆成幾段。「顏色＋長度」格式每段要 \(k+1\) 位元；「只記長度」格式規定從白色開始、黑白輪流，所以每段只要 \(k\) 位元——圖從黑色開始時，先記一段長度 0 的白；一段太長時拆成「\(2^{k}-1\)、0、剩下的」，中間那個 0 是另一種顏色的空段，讓黑白輪流的規則不被打亂。若共有 \(m\) 段：</p>
@@ -349,7 +354,7 @@
 
       <h3 data-en="Things to observe">觀察重點</h3>
       <ul>
-        <li data-en-html="<strong>When does run-length coding lose?</strong> Press “Clear” and paint scattered dots. How many runs does it take before the encoded picture is larger than 256 bits? What changes if you make the length field shorter?"><strong>遊程編碼什麼時候會輸？</strong>按「清空」畫一些零散的點。要幾段遊程，編碼後就比 256 位元還大？把長度欄位調短，又會怎樣？</li>
+        <li data-en-html="<strong>When does run-length coding lose?</strong> Press “Clear” and paint scattered dots. How many runs does it take before the encoded picture is larger than the original (256 bits at the default size)? What changes if you make the length field shorter?"><strong>遊程編碼什麼時候會輸？</strong>按「清空」畫一些零散的點。要幾段遊程，編碼後就比原圖還大（預設尺寸為 256 位元）？把長度欄位調短，又會怎樣？</li>
         <li data-en-html="<strong>Direction matters</strong>: draw a few horizontal lines and switch between “By rows” and “By columns”. Why does the same picture cost so differently?"><strong>方向很重要</strong>：畫幾條橫線，在「逐列」和「逐行」之間切換。同一張圖，為什麼代價差這麼多？</li>
         <li data-en-html="<strong>Watch the codes grow</strong>: step through the Huffman tree with “Next step”. The codes under each leaf grow from right to left — one bit for every merge."><strong>看碼一位一位長出來</strong>：用「下一步」一步步建霍夫曼樹。每個葉下面的碼是由右往左長的——每合併一次多一位。</li>
         <li data-en-html="<strong>Between H and H + 1</strong>: try several texts and watch where their points land on the H–L chart. Can you make a point land exactly on the line L = H? How close can you get to L = H + 1?"><strong>夾在 H 與 H + 1 之間</strong>：多試幾段文字，看它們在 H–L 圖上的點落在哪裡。能不能讓點剛好落在 L = H 的線上？最接近 L = H + 1 能到哪裡？</li>

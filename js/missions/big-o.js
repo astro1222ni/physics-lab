@@ -65,7 +65,7 @@
     {
       id: 'big-o-7', level: 4,
       title: { zh: '兩種直線', en: 'Two kinds of straight line' },
-      desc: { zh: '把成長曲線切到「半對數」，再切到「雙對數」，看哪一種曲線在哪一種座標裡變成直線。', en: 'Switch the growth chart to “Semi-log” and then to “Log–log”, and see which curves turn into straight lines in which view.' },
+      desc: { zh: '把成長曲線分別切到「半對數」與「雙對數」，看哪一種曲線在哪一種座標裡變成直線。', en: 'Switch the growth chart to both “Semi-log” and “Log–log” in either order, and see which curves turn into straight lines in which view.' },
       check: function (ev, mem) {
         if (ev.type !== 'axis') return false;
         mem[ev.data.mode] = true;

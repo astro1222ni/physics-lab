@@ -155,7 +155,7 @@
           <span><i class="ln"></i><span data-en="reach of the k neighbours">k 個鄰居的範圍</span></span>
           <span><span class="sw ring"></span><span data-en="guessed wrong in leave-one-out">留一法猜錯</span></span>
         </div>
-        <canvas id="cv2" aria-label="留一法正確率對 k 的圖：橫軸是 k（只取奇數），縱軸是留一法猜對的比例；目前的 k 用直線標出，最好的 k 用圓點標出，虛線是換設定之前的舊曲線。點一下圖可以把 k 設成那個值。" data-en-aria-label="Leave-one-out accuracy against k: the horizontal axis is k (odd values only) and the vertical axis is the share of points guessed right; the current k is marked by a line, the best k by dots, and dashed lines are older curves from before a setting changed. Tap the chart to set k to that value."></canvas>
+        <canvas id="cv2" aria-label="留一法正確率對 k 的圖：橫軸是 k，縱軸是留一法猜對的比例；目前的 k 用直線標出，最好的 k 用圓點標出，虛線是換設定之前的舊曲線。點一下圖可以把 k 設成那個值。" data-en-aria-label="Leave-one-out accuracy against k: the horizontal axis is k and the vertical axis is the share of points guessed right; the current k is marked by a line, the best k by dots, and dashed lines are older curves from before a setting changed. Tap the chart to set k to that value."></canvas>
         <p class="chart-cap" data-en="Leave-one-out accuracy for every k. Small k follows every single point (even the odd ones out); very large k smooths everything away until it only ever guesses the biggest class.">每個 k 的留一法正確率。k 很小時，連離群的點也照單全收；k 很大時，什麼細節都被抹平，最後只會猜人數最多的那一類。</p>
       </div>
 
@@ -182,12 +182,20 @@
           <dl class="readout" style="margin-top:10px">
             <dt data-en="Points n (A / B / C)">點數 n（A／B／C）</dt><dd id="rN">—</dd>
           </dl>
+          <details><summary style="min-height:44px" data-en="Compare class counts with a fixed seed">固定種子比較類別比例</summary>
+            <label><span data-en="Seed">種子</span> <input id="classSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Class A count (0 uses default)">A 類點數（0 沿用預設）</span> <input id="countA" type="number" min="0" max="26" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Class B count (0 uses default)">B 類點數（0 沿用預設）</span> <input id="countB" type="number" min="0" max="26" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Class C count (0 uses default)">C 類點數（0 沿用預設）</span> <input id="countC" type="number" min="0" max="26" step="1" value="0" style="min-height:44px;width:7em"></label>
+            <label><span data-en="Distribution">分布</span> <select id="clusterShape" style="min-height:44px"><option value="blobs" data-en="Two clusters">兩團</option><option value="three" data-en="Three clusters">三團</option><option value="moons" data-en="Moons">月牙</option></select></label>
+            <button type="button" id="classApply" data-en="Generate sample">產生樣本</button>
+          </details>
         </section>
 
         <section class="card" data-deck="分類設定|Classifier settings" data-deck-order="2">
           <h2 data-en="Classifier settings">分類設定</h2>
           <div class="slider"><label for="kSl" data-en="Number of neighbours k">鄰居數 k</label><output id="kOut"></output>
-            <input id="kSl" type="range" min="0" max="49" step="1" value="2" data-decimals="0"></div>
+            <input id="kSl" type="range" min="1" max="99" step="1" value="5" data-decimals="0"></div>
           <p class="lbl" id="metLbl" data-en="Distance">距離</p>
           <div class="seg2" role="group" aria-labelledby="metLbl">
             <button type="button" id="metE" aria-pressed="true" data-en="Euclidean">歐氏</button>
@@ -203,7 +211,7 @@
             <label><input id="regionChk" type="checkbox" checked><span data-en="Colour the regions">決策區域上色</span></label>
             <label><input id="wrongChk" type="checkbox" checked><span data-en="Mark leave-one-out mistakes">標出留一法猜錯的點</span></label>
           </div>
-          <p class="hint" data-en="k only takes odd values. Standardise: subtract each feature’s mean and divide by its standard deviation before measuring distance, so the unit of x2 no longer matters.">k 只取奇數。標準化：量距離之前，每個特徵先減去平均、再除以標準差，這樣 x2 用什麼單位就不再有影響。</p>
+          <p class="hint" data-en="Try k = 2 to compare two equally represented classes. Standardise: subtract each feature’s mean and divide by its standard deviation before measuring distance, so the unit of x2 no longer matters.">可用 k = 2 比較兩類各得一票時的判定。標準化：量距離之前，每個特徵先減去平均、再除以標準差，這樣 x2 用什麼單位就不再有影響。</p>
         </section>
 
         <section class="card">
@@ -251,7 +259,7 @@
       <h3 data-en="Units matter: standardise">單位很重要：標準化</h3>
       <p data-en-html="The features here are \(f_1 = x_1\) and \(f_2 = s\,x_2\), where \(s\) is the unit of \(x_2\) (×1 or ×100, like metres changed to centimetres). With \(s = 100\) a tiny difference in \(x_2\) outweighs any difference in \(x_1\): the circle is squashed into a thin horizontal band and the classifier effectively looks at \(x_2\) alone. <strong>Standardising</strong> each feature fixes this:">這裡的特徵是 \(f_1 = x_1\)、\(f_2 = s\,x_2\)，\(s\) 是 \(x_2\) 的單位（×1 或 ×100，好比公尺改成公分）。\(s = 100\) 時，\(x_2\) 一點點的差距就比 \(x_1\) 的任何差距都大：圓被壓扁成一條細細的橫帶，分類器等於只看 \(x_2\)。把每個特徵<strong>標準化</strong>就能解決：</p>
       <div class="formula">\[ z = \frac{f - \bar{f}}{\sigma_f}, \qquad \sigma_f = \sqrt{\tfrac{1}{n}\textstyle\sum (f - \bar{f})^2} \]</div>
-      <p data-en-html="Multiplying \(f\) by 100 multiplies both \(f - \bar{f}\) and \(\sigma_f\) by 100, so \(z\) does not change at all: after standardising, the unit of \(x_2\) makes no difference.">\(f\) 乘以 100，\(f - \bar{f}\) 和 \(\sigma_f\) 也都乘以 100，所以 \(z\) 完全不變：標準化之後，\(x_2\) 用什麼單位都一樣。</p>
+      <p data-en-html="If a feature is constant, its standard deviation is zero. This model substitutes one grid step (0.05 before unit conversion). Multiplying \(f\) by 100 multiplies both \(f - \bar{f}\) and \(\sigma_f\) by 100, so \(z\) does not change at all: after standardising, the unit of \(x_2\) makes no difference.">若同一特徵的訓練值全相同，標準差為零，本模型改用一格作為尺度（換算單位前為 0.05）。\(f\) 乘以 100，\(f - \bar{f}\) 和 \(\sigma_f\) 也都乘以 100，所以 \(z\) 完全不變：標準化之後，\(x_2\) 用什麼單位都一樣。</p>
       <h3 data-en="Rules for ties (this page)">平手時怎麼辦（本頁的規則）</h3>
       <ul>
         <li data-en="Choosing neighbours: points are ordered by distance; when two are equally far, the one placed earlier comes first.">挑鄰居：照距離由近到遠排；兩個點一樣遠時，先放的點排在前面。</li>

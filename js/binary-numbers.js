@@ -256,7 +256,7 @@
       if (state.show.place) {
         D.supText(ctx, '2', String(i), p.x, p.y0 + 14, C.muted, fnt(L.narrow ? 12 : 13, 600), 'center');
         const pv = intText(Math.pow(2, i));
-        ctx.font = fnt(pv.length > 4 ? 9.5 : 10.5, 500);
+        ctx.font = fnt(12, 500);
         ctx.fillStyle = alpha(C.muted, 0.9);
         ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
         ctx.fillText(pv, p.x, p.y0 + 28);

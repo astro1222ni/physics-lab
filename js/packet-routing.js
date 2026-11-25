@@ -163,6 +163,8 @@
     return { a: a, b: b, ux: dx / len, uy: dy / len, len: len };
   }
   function drawNet() {
+    const job = w.job;
+    $('rtoRead').textContent = job && job.kind === 'msg' ? '2 × SRTT: ' + (job.srtt == null ? '—' : fmt(2 * job.srtt) + ' ms') + ' · RTO: ' + fmt(job.rto) + ' ms' : '';
     const c = ctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     backdropDots(c);
@@ -565,7 +567,7 @@
           c.font = fnt(9.5, 700);
           c.fillText('#' + (s + 1), b.x + b.w / 2, b.y + 9);
         } else { c.font = fnt(10.5, 700); c.fillText(String(s + 1), b.x + b.w / 2, b.y + b.h / 2); }
-        if (ord > 0) D.pill(c, String(ord), b.x + b.w + 2, b.y + 8, late ? C['pr-warn'] : C.muted, 'right', fnt(9, 700));
+        if (ord > 0) D.pill(c, String(ord), b.x + b.w + 2, b.y + 8, late ? C['pr-warn'] : C.muted, 'right', fnt(12, 700));
       } else {
         c.save();
         c.setLineDash([4, 3]);
@@ -796,7 +798,7 @@
   function theoryOf(d) {
     if (d.paths !== 1 || d.topoChanged || d.lostAll || d.retx) return null;
     const ids = d.path.split('>'), net = w.net, props = [];
-    for (let i = 1; i < ids.length; i++) { const l = RC.linkBetween(net, net.idx[ids[i - 1]], net.idx[ids[i]]); if (!l) return null; props.push(l.cost); }
+    for (let i = 1; i < ids.length; i++) { const l = RC.linkBetween(net, net.idx[ids[i - 1]], net.idx[ids[i]]); if (!l) return null; props.push(l); }
     return RC.theoryTime(props, d.M, d.k);
   }
   function onDelivered(d) {
@@ -906,6 +908,7 @@
     w.net.links.forEach(function (x, i) { if (opts[i]) opts[i].textContent = linkLabel(x); });
     $('link').value = String(state.link);
     if (window.LabNum) window.LabNum.set(elCost, l.cost); else elCost.value = l.cost;
+    $('linkRate').value = l.rate;
     $('costo').textContent = String(l.cost);
     const cb = $('cutBtn');
     cb.textContent = l.up ? T('切斷', 'Cut') : T('接回', 'Reconnect');
@@ -970,7 +973,7 @@
     setPause(false);
     state.firstDrop = false;
     state.selSeq = 0;
-    w.send({ msg: msg, k: Math.round(val(elK)), ttl: Math.round(val(elTtl)), loss: Math.round(val(elLoss)) / 100 });
+    w.send({ seed: Number($('lossSeed').value), msg: msg, k: Math.round(val(elK)), ttl: Math.round(val(elTtl)), loss: Math.round(val(elLoss)) / 100 });
     setResult({});
     say(T('傳送「' + msg + '」：切成 ' + w.job.P + ' 個封包。', 'Sending “' + msg + '”: cut into ' + w.job.P + ' packets.'));
     resizeStrip(); renderHeader();
@@ -1017,6 +1020,12 @@
   });
   $('router').addEventListener('change', function () { state.router = +this.value; renderTable(); requestDraw(); });
   $('link').addEventListener('change', function () { state.link = +this.value; syncLinkUI(); requestDraw(); });
+  $('linkRate').addEventListener('change', function () {
+    const l = w.net.links[state.link];
+    l.rate = Math.max(1, Math.min(32, Math.round(Number(this.value) || 4)));
+    if (w.job) w.job.topoChanged = true;
+    afterTopology();
+  });
   elCost.addEventListener('input', function () {
     const v = Math.round(val(elCost));
     $('costo').textContent = String(v);

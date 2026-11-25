@@ -173,7 +173,14 @@
   // =====================================================================
   // 計算
   // =====================================================================
-  function opt() { return { q: state.q, cs: state.cs, tie: state.tie }; }
+  function opt() {
+    const raw = $('estimates').value.trim();
+    const values = raw.split(/[ ,，]+/).map(Number);
+    const valid = values.length === state.procs.length && values.every(v => Number.isFinite(v) && v > 0);
+    $('estimateMsg').textContent = raw && !valid ? T('每個行程需要一個正數，目前採用實際值。', 'Enter one positive number per process. Actual times are in use.') : '';
+    return { q: state.q, cs: state.cs, tie: state.tie, estimates: raw && valid ? values : null };
+  }
+  $('estimates').addEventListener('change', changed);
   function niceMax(v) {
     const steps = [10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400];
     for (let i = 0; i < steps.length; i++) if (v <= steps[i]) return steps[i];
@@ -303,7 +310,7 @@
     ctx.restore();
     D.roundRect(ctx, cx, cy, chip, chip, 7);
     ctx.strokeStyle = alpha('#ffffff', D.dark ? 0.18 : 0.3); ctx.lineWidth = 1; ctx.stroke();
-    ctx.font = fnt(10, 700); ctx.fillStyle = alpha('#ffffff', 0.7); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = fnt(12, 700); ctx.fillStyle = alpha('#ffffff', 0.9); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText('CPU', cx + 6, cy + 5);
     const ix = cx + 9, iy = cy + 19, iw = chip - 18, ih = chip - 28;
     if (st.state === 'run') {
@@ -466,7 +473,7 @@
       if (res.fin[i] <= t + 1e-9) {
         const x = X(res.fin[i]) + 7;
         D.ball(ctx, x, y + rh / 2, Math.min(6, rh / 2 - 2), C.p[i % 8], { shadow: false });
-        ctx.font = fnt(9, 800); ctx.fillStyle = C.ink[i]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = fnt(12, 800); ctx.fillStyle = C.ink[i]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('✓', x, y + rh / 2 + 0.5);
       }
     });

@@ -351,4 +351,9 @@ test('預設迷宮（12 × 12、隨機 DFS、第 1 號、左上到右下）：�
   assert.ok(!rp.sameOrder);
 });
 
+test("不保證連通時可產生空圖，密度一產生完全圖", () => {
+  assert.strictEqual(G.graphEdges(G.randomGraph(8, 1, 0, false)), 0);
+  assert.strictEqual(G.graphEdges(G.randomGraph(8, 1, 1, true)), 28);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗！' : '。'));

@@ -41,7 +41,7 @@
     {
       id: 'cpu-scheduling-3', level: 2,
       title: { zh: 'CPU 在發呆', en: 'The CPU daydreams' },
-      desc: { zh: '把某個行程的到達時間改晚，讓 CPU 在第一個行程到達之後閒置一段時間，再跑到最後。', en: 'Make some process arrive later so that the CPU sits idle for a while after the first process has arrived, then run to the end.' },
+      desc: { zh: '調整行程表，讓 CPU 在第一個行程到達之後閒置一段時間，再跑到最後。', en: 'Arrange the workload so that the CPU sits idle for a while after the first process has arrived, then run to the end.' },
       check: function (ev) { return isRun(ev) && ev.data.gap > EPS; }
     },
     {

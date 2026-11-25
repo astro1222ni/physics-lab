@@ -245,10 +245,13 @@
     resetAll(T('整疊放回 A 柱，從頭開始。最少要 2<sup>' + S.n + '</sup> − 1 = ' + HC.minMoves(S.n) + ' 步' + (S.target.kind === 'peg' && S.target.peg !== 0 ? '。' : '（目標是自訂的擺法時另計）。'),
       'The whole tower is back on peg A. The fewest moves is 2<sup>' + S.n + '</sup> − 1 = ' + HC.minMoves(S.n) + (S.target.kind === 'peg' ? '.' : ' (for a custom target it differs).')));
   });
-  $('shuffleBtn').addEventListener('click', function () {
-    S.shuffle();
+  $('replayShuffle').addEventListener('click', () => shuffleWithSeed(Number($('shuffleSeed').value) || 1));
+  $('shuffleBtn').addEventListener('click', () => shuffleWithSeed(1 + Math.floor(Math.random() * 999999)));
+  function shuffleWithSeed(seed) {
+    $('shuffleSeed').value = seed;
+    S.shuffle(seed);
     resetAll(T('打亂成 ' + S.state() + '（盤 1 起每個盤在哪根柱）。離目標最少 ' + S.dist() + ' 步——試著用最少步數搬回去。', 'Shuffled to ' + S.state() + ' (the peg of each disc, disc 1 first). The target is at least ' + S.dist() + ' moves away — try to get there in the fewest moves.'));
-  });
+  }
   $('clearBtn').addEventListener('click', function () {
     S.clearAll();
     ui.quizRes = null; renderQuiz();
@@ -911,7 +914,7 @@
         g.fillStyle = done ? col : alpha(C.bg, 0.95); g.fill();
         g.strokeStyle = done ? shade(col, -0.35) : alpha(col, 0.75); g.lineWidth = 1.2; g.stroke();
         if (r >= 6.5) {
-          g.font = fnt(Math.min(11, r * 1.25), 700); g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.font = fnt(12, 700); g.textAlign = 'center'; g.textBaseline = 'middle';
           g.fillStyle = done ? '#ffffff' : C.text; g.fillText(String(nd.k), p.x, p.y + 0.5);
         }
       } else {

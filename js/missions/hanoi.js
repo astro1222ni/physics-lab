@@ -81,7 +81,7 @@
         return [item(n === 64, '將傳說的盤子數設為 64', 'Set the legend to 64 discs', n), item(ui.rate === 1, '選每秒 1 步', 'Select one move per second', ui.rate)];
       }),
       title: { zh: '世界末日還有多久', en: 'How long until the end of the world?' },
-      desc: { zh: '把「傳說的盤子數 N」設成 64，再選「每秒 1 步」。', en: 'Set “Discs in the legend N” to 64, then choose “1 move per second”.' },
+      desc: { zh: '把「傳說的盤子數 N」設成 64，速率使用「每秒 1 步」（可沿用預設）。', en: 'Set “Discs in the legend N” to 64, using “1 move per second” (the default).' },
       check: function (ev) { return ev.type === 'legend' && ev.data.N === 64 && ev.data.rate === 1; }
     },
     {

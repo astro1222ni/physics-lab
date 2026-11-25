@@ -295,7 +295,10 @@
       </ul>
 
       <h3 data-en="Distances on the map">地圖上的距離</h3>
-      <p data-en-html="On the Taiwan map each weight is the great-circle distance between the two cities, from the haversine formula (\(\varphi\) latitude, \(\lambda\) longitude), rounded to the nearest kilometre. Each city is placed near its railway station or town centre, with latitude and longitude to two decimal places (about 1 km).">臺灣地圖上每條邊的權重，是兩個城市之間的大圓距離，用半正矢（haversine）公式算（\(\varphi\) 是緯度、\(\lambda\) 是經度），再四捨五入到公里。每個城市的位置取火車站或市中心附近，經緯度取到小數第二位（約 1 公里）。</p>
+      <p data-en-html="On the Taiwan map each weight is the great-circle distance between the two cities, from the haversine formula (\(\varphi\) latitude, \(\lambda\) longitude), rounded to the nearest kilometre. City nodes use the illustrative coordinates in the simulation, at 0.01-degree resolution (roughly 1 km). They represent cities rather than surveyed landmarks.">臺灣地圖上每條邊的權重，是兩個城市之間的大圓距離，用半正矢（haversine）公式算（\(\varphi\) 是緯度、\(\lambda\) 是經度），再四捨五入到公里。城市節點採用本頁模擬的示意座標，經緯度記至小數第二位（約 1 公里），代表城市的大致位置。</p>
+      <details><summary style="min-height:44px" data-en="City coordinates used in the calculation">查看計算採用的城市座標</summary>
+        <table class="cmp"><thead><tr><th data-en="City">城市</th><th data-en="Latitude (°N)">緯度（北緯）</th><th data-en="Longitude (°E)">經度（東經）</th></tr></thead><tbody id="mapCoordinates"></tbody></table>
+      </details>
       <div class="formula">\[ d = 2R \arcsin \sqrt{\sin^2 \frac{\Delta\varphi}{2} + \cos\varphi_1 \cos\varphi_2 \sin^2 \frac{\Delta\lambda}{2}}, \qquad R = 6371\ \mathrm{km} \]</div>
       <p data-en-html="These are straight-line distances, <strong>not road distances</strong>. A real road has to wind round the Central Mountain Range and along the coast, so the map’s answer (for example that from Keelung to Pingtung the east side is shorter) need not hold for driving. Change a weight to a real road distance and see whether the answer changes.">這是直線距離，<strong>不是公路里程</strong>。真正的公路要繞過中央山脈、沿著海岸彎彎曲曲，所以地圖給的答案（例如基隆到屏東走東部比較近）開車時不一定成立。把一條邊改成真正的公路里程，看看答案會不會變。</p>
 

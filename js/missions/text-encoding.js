@@ -55,7 +55,7 @@
     {
       id: 'text-encoding-5', level: 4,
       title: { zh: 'Big5 省下三分之一', en: 'Big5 saves a third' },
-      desc: { zh: '自己打一句至少 10 個字、全部都是中文字（標點用全形）的話，讓 UTF-8 的位元組數剛好是 Big5 的 1.5 倍。', en: 'Type your own sentence of at least 10 characters, all Chinese characters (with full-width punctuation), so that its UTF-8 size is exactly 1.5 times its Big5 size.' },
+      desc: { zh: '自行輸入至少 10 個 Big5 可表示的雙位元組字元，讓 UTF-8 的位元組數剛好是 Big5 的 1.5 倍。', en: 'Type at least 10 characters that Big5 encodes in two bytes each, so that its UTF-8 size is exactly 1.5 times its Big5 size.' },
       check: function (ev) { const d = ev.data; return is(ev, 'text') && typed(d) && d.n >= 10 && d.b5 !== null && d.nonAscii === d.n && d.u8 * 2 === d.b5 * 3; }
     },
     {

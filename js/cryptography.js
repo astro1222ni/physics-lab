@@ -70,8 +70,9 @@
   function recompute() {
     cache.cnt = K.counts(state.text);
     cache.out = curOutput();
-    cache.best = K.bestShift(cache.cnt);
-    cache.chis = cache.cnt.n ? K.chiAll(cache.cnt) : [];
+    cache.ref = K.reference($('freqReference').value);
+    cache.best = K.bestShift(cache.cnt, cache.ref);
+    cache.chis = cache.cnt.n ? K.chiAll(cache.cnt, cache.ref) : [];
     if (state.tab === 'vig') {
       cache.cipherL = K.lettersOnly(state.vig.dir === 'dec' ? state.text : cache.out);
       cache.prof = K.iocProfile(cache.cipherL, K.MAX_L);
@@ -472,11 +473,12 @@
   // 頻率分析
   // =====================================================================
   function drawFreqBars(c, x0, x1, yTop, yBase, cnt, g, overlay, barColor, hoverI) {
+    const ref = state.tab === 'freq' ? cache.ref : K.P_EN;
     const N = cnt.n, bw = (x1 - x0) / 26;
     let maxP = 0;
     for (let i = 0; i < 26; i++) {
       if (N) maxP = Math.max(maxP, cnt.c[i] / N * 100);
-      if (overlay) maxP = Math.max(maxP, K.FREQ_EN[mod(i - g, 26)]);
+      if (overlay) maxP = Math.max(maxP, (100 * ref[mod(i - g, 26)]));
     }
     const ymax = Math.max(14, Math.ceil(maxP / 2) * 2);
     const ys = function (v) { return yBase - v / ymax * (yBase - yTop); };
@@ -494,7 +496,7 @@
     }
     if (overlay) {
       for (let i = 0; i < 26; i++) {
-        const p = K.FREQ_EN[mod(i - g, 26)], xc = x0 + (i + 0.5) * bw, yy = ys(p);
+        const p = (100 * ref[mod(i - g, 26)]), xc = x0 + (i + 0.5) * bw, yy = ys(p);
         D.roundRect(c, xc - bw * 0.42, yy, bw * 0.84, yBase - yy, Math.min(3, bw * 0.2));
         c.fillStyle = alpha(C['cr-ref'], D.dark ? 0.2 : 0.14); c.fill();
         c.strokeStyle = alpha(C['cr-ref'], 0.75); c.lineWidth = 1; c.stroke();
@@ -509,7 +511,7 @@
     }
     if (overlay) {
       const iE = mod(4 + g, 26), xc = x0 + (iE + 0.5) * bw;
-      D.haloText(c, 'E', xc, ys(K.FREQ_EN[4]) - 5, C['cr-ref'], 'center', 'alphabetic', fnt(11.5, 800));
+      D.haloText(c, 'E', xc, ys(100 * ref[4]) - 5, C['cr-ref'], 'center', 'alphabetic', fnt(11.5, 800));
     }
     return { bw: bw, ys: ys };
   }
@@ -518,7 +520,7 @@
     const x0 = L.x0, x1 = L.x1, yTop = L.top, yBase = L.top + L.mainH;
     D.haloText(c, T('每個字母占全部字母的比例（%）', 'Share of each letter (%)'), x0, 18, C.muted, 'left', 'alphabetic', fnt(12.5, 600));
     if (N) {
-      const chi = K.chiSquared(cnt, g), isBest = g === best;
+      const chi = K.chiSquared(cnt, g, cache.ref), isBest = g === best;
       const txt = 'χ²(g = ' + g + ') = ' + chi.toFixed(1) + (isBest ? T('　最小', '  smallest') : '');
       const fl = state.flash && t < state.flash + 700 && !reduced() ? 1 - (t - state.flash) / 700 : 0;
       const box = D.pill(c, txt, x1, 26, isBest ? C['cr-ok'] : C.muted, 'right', fnt(12.5, 700));
@@ -532,8 +534,8 @@
       D.haloText(c, K.letter(i), xc, yBase + 16, C['cr-cipher'], 'center', 'alphabetic', fnt(fs, 800, MONO));
       D.haloText(c, K.letter(i - g), xc, yBase + 33, C['cr-plain'], 'center', 'alphabetic', fnt(fs - 1, 600, MONO));
     }
-    D.haloText(c, T('輸入', 'in'), x0 - 4, yBase + 16, C['cr-cipher'], 'right', 'alphabetic', fnt(10, 600));
-    D.haloText(c, T('解密', 'out'), x0 - 4, yBase + 33, C['cr-plain'], 'right', 'alphabetic', fnt(10, 600));
+    D.haloText(c, T('輸入', 'in'), x0 - 4, yBase + 16, C['cr-cipher'], 'right', 'alphabetic', fnt(12, 600));
+    D.haloText(c, T('解密', 'out'), x0 - 4, yBase + 33, C['cr-plain'], 'right', 'alphabetic', fnt(12, 600));
     if (!N) D.haloText(c, T('輸入框裡還沒有英文字母。', 'There are no English letters in the input yet.'), (x0 + x1) / 2, (yTop + yBase) / 2, C.muted, 'center', 'middle', fnt(14, 500));
     if (kb && kb.focused()) focusBox(c, x0 - 34, yTop - 8, x1 - x0 + 40, yBase - yTop + 46);
     if (state.freq.chiAll && N) drawChiAll(c, x0, L.chiTop, x1, L.chiB);
@@ -882,7 +884,7 @@
     emit('caesar', K.caesarEvent({ src: src, input: state.text, k: state.caesar.k, dir: state.caesar.dir, back: state.caesar.back, myst: state.myst ? state.myst.kind : '' }));
   }
   function emitFreq(src) {
-    emit('freq', K.freqEvent({ src: src, input: state.text, g: state.freq.g, overlay: state.freq.overlay, chiAll: state.freq.chiAll, myst: state.myst, prov: state.prov }));
+    emit('freq', K.freqEvent({ ref: cache.ref, src: src, input: state.text, g: state.freq.g, overlay: state.freq.overlay, chiAll: state.freq.chiAll, myst: state.myst, prov: state.prov }));
   }
   function emitVig(src) {
     emit('vig', K.vigEvent({ src: src, input: state.text, key: state.vig.key, keySrc: state.vig.keySrc, dir: state.vig.dir, L: state.vig.L, myst: state.myst, autoKey: !!(state.myst && state.myst.autoKey) }));
@@ -946,7 +948,7 @@
       const cnt = cache.cnt, N = cnt.n;
       $('rN').textContent = String(N);
       if (N) {
-        const chi = K.chiSquared(cnt, state.freq.g);
+        const chi = K.chiSquared(cnt, state.freq.g, cache.ref);
         $('rChi').textContent = chi.toFixed(1) + (state.freq.g === cache.best ? T('（最小）', ' (smallest)') : '');
         const top = K.topLetter(cnt);
         $('rTop').textContent = K.letter(top) + '（' + (cnt.c[top] / N * 100).toFixed(1) + '%）';
@@ -1227,8 +1229,18 @@
   // =====================================================================
   // 破解挑戰
   // =====================================================================
-  function loadMystery(kind) {
-    const m = kind === 'caesar' ? K.makeCaesarMystery(qrand, state.mystPrev.caesar) : K.makeVigMystery(qrand, state.mystPrev.vig);
+  $('freqReference').addEventListener('input', refresh);
+  $('seedCaesar').addEventListener('click', () => loadMystery('caesar', true));
+  $('seedVig').addEventListener('click', () => loadMystery('vig', true));
+  function loadMystery(kind, replay) {
+    const random = replay ? K.rng(Number($('puzzleSeed').value) || 1) : qrand;
+    const m = kind === 'caesar' ? K.makeCaesarMystery(random, replay ? -1 : state.mystPrev.caesar) : K.makeVigMystery(random, replay ? -1 : state.mystPrev.vig);
+    if (replay) {
+      const n = Math.max(1, Math.min(80, Math.round(Number($('puzzleLength').value) || 1)));
+      const letters = K.lettersOnly(m.plain);
+      m.plain = letters.repeat(Math.ceil(n / letters.length)).slice(0, n);
+      m.cipher = kind === 'caesar' ? K.caesar(m.plain, m.k) : K.vigenere(m.plain, m.key, 'enc');
+    }
     state.mystPrev[kind] = m.idx;
     state.myst = { kind: m.kind, idx: m.idx, k: m.k, key: m.key, plain: m.plain, cipher: m.cipher, chiShown: state.freq.chiAll, caesarTouched: false, autoKey: false, solved: false };
     setText(m.cipher, 'myst');
@@ -1577,7 +1589,7 @@
       kbItems.push({
         name: function () { return T('猜測位移 g', 'guessed shift g'); },
         move: function (dx, dy, big) { const d = (dx || dy) * (big ? 5 : 1); if (!d) return false; setG(state.freq.g + d, 'key'); return true; },
-        describe: function () { return 'g = ' + state.freq.g + (cache.cnt.n ? '，χ² = ' + K.chiSquared(cache.cnt, state.freq.g).toFixed(1) : ''); }
+        describe: function () { return 'g = ' + state.freq.g + (cache.cnt.n ? T('，卡方值 = ', ', chi-square = ') + K.chiSquared(cache.cnt, state.freq.g, cache.ref).toFixed(1) : ''); }
       });
     } else if (t === 'vig') {
       kbItems.push({

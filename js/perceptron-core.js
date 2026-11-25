@@ -328,9 +328,14 @@
     const self = this;
     return pts.map(function (p) { return Object.assign({}, p, { id: self.nextId++, user: !!user, moved: false, noise: !!p.noise }); });
   };
-  Session.prototype.loadPreset = function (name, silent) {
+  Session.prototype.loadPreset = function (name, silent, sample) {
     let pts;
     if (GATES[name]) pts = gate(name);
+    else if (sample && (name === 'noisy' || name === 'sep')) {
+      pts = genSeparable(sample.seed, { n: sample.n });
+      const order = shuffled(pts.length, rng(sample.seed));
+      for (const i of order.slice(0, sample.flips)) { pts[i].c *= -1; pts[i].noise = true; }
+    }
     else if (name === 'sep') pts = genSeparable(++this.serial.sep);
     else if (name === 'noisy') pts = genNoisy(++this.serial.noisy);
     else return false;
@@ -347,7 +352,7 @@
   };
   Session.prototype.addPoint = function (gx, gy, c) {
     gx = Math.max(-GRID, Math.min(GRID, Math.round(gx))); gy = Math.max(-GRID, Math.min(GRID, Math.round(gy)));
-    if (this.points.length >= MAX_POINTS || this.indexAt(gx, gy) >= 0) return false;
+    if (this.points.length >= MAX_POINTS || this.points.some(p => p.gx === gx && p.gy === gy && p.c === c)) return false;
     this.points.push(this._mark([pt(gx, gy, c)], true)[0]);
     this.edits.added++;
     this.set = 'custom';

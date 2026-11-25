@@ -32,7 +32,7 @@
     {
       id: 'shortest-path-1', level: 1,
       title: { zh: '第一條最短路', en: 'Your first shortest route' },
-      desc: { zh: '在「臺灣地圖」上選兩個不同的城市，用 Dijkstra 跑到最後一步（可以按「直接跑完」）。', en: 'On the “Taiwan map”, pick two different cities and run Dijkstra to the last step (you may press “Run to the end”).' },
+      desc: { zh: '在「臺灣地圖」上使用兩個不同的城市（可沿用預設起終點），用 Dijkstra 跑到最後一步（可以按「直接跑完」）。', en: 'On the “Taiwan map”, use two different cities (the default endpoints are fine) and run Dijkstra to the last step (you may press “Run to the end”).' },
       check: function (ev) { const d = ev.data; return fin(ev) && tw(d) && dij(d) && d.s !== d.t && d.dist !== null; }
     },
     {

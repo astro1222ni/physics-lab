@@ -738,7 +738,7 @@
     rows.forEach(function (r) {
       const yc = r.y + r.h / 2;
       if (r.kind === 'carry') {
-        D.haloText(c, T('進位', 'carry'), lx, yc, alpha(C['tc-c'], 0.9), 'left', 'middle', fnt(11, 600));
+        D.haloText(c, T('進位', 'carry'), lx, yc, alpha(C['tc-c'], 0.9), 'left', 'middle', fnt(12, 600));
         const cs = wk.carries;
         for (let i = 0; i <= n; i++) {
           const at = t0 + i * gap;
@@ -782,7 +782,7 @@
         c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - 3.5, y2 - 6); c.lineTo(x2 + 3.5, y2 - 6); c.closePath();
         c.fillStyle = alpha(C['tc-sign'], 0.85); c.fill();
         c.restore();
-        D.haloText(c, T('複製符號位', 'copy the sign bit'), x1 + 10, yc, C['tc-sign'], 'left', 'middle', fnt(11, 600));
+        D.haloText(c, T('複製符號位', 'copy the sign bit'), x1 + 10, yc, C['tc-sign'], 'left', 'middle', fnt(12, 600));
         return;
       }
       if (r.kind === 'flags') { drawFlags(c, r, lx, now >= t0 + (n + 1) * gap || gap === 0); return; }

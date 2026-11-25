@@ -62,7 +62,7 @@
       id: 'code-tracing-8', level: 5,
       title: { zh: '停不下來', en: 'It never stops' },
       desc: { zh: '找一個數字，讓「冰雹數（3n + 1）」跑到 10000 步還停不下來。', en: 'Find a number that keeps “Hailstone numbers (3n + 1)” running past 10000 steps.' },
-      check: function (ev) { const d = fin(ev); return !!(d && d.error === 'steps'); }
+      check: function (ev) { const d = fin(ev); return !!(d && d.prog === 'collatz' && d.error === 'steps'); }
     },
     {
       id: 'code-tracing-9', level: 6,

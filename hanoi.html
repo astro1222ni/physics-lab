@@ -230,6 +230,10 @@
             <label><input id="hint" type="checkbox"><span data-en="Show shortest path">顯示最短路</span></label>
           </div>
           <p class="hint" data-en="Disc 1 is the smallest. “Shuffle” and “Restart” start counting again; so does changing n or the target. With “Custom target”, tap a dot on the state graph (up to 7 discs).">盤 1 最小。按「打亂」「重來」、改盤子數或目標，步數都從頭算。選「自訂目標」後，在狀態圖上點一個點（最多 7 個盤子）。</p>
+          <details><summary style="min-height:44px" data-en="Replay a shuffle">重播打亂盤位</summary>
+            <label><span data-en="Seed">種子</span> <input id="shuffleSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
+            <button type="button" id="replayShuffle" data-en="Shuffle with seed">依種子打亂</button>
+          </details>
         </section>
 
         <section class="card">

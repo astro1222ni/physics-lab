@@ -101,7 +101,7 @@ class Sim {
       bits: bits, bytes: Math.ceil(bits / 8), levels: 1 << st.b,
       faithful: st.scene === 'checker' && K.checkerFaithful(st.w, st.h),
       eyeRows: st.scene === 'eyechart' ? K.eyeRowsExact(st.w, st.h) : 0,
-      view: st.view, nyq: st.nyq, prev: prev
+      view: st.view, nyq: st.nyq, ringK: st.ringK || 256, prev: prev
     };
     const lazy = (name, fn) => { let v, done = false; Object.defineProperty(d, name, { enumerable: true, get: () => { if (!done) { v = fn(); done = true; } return v; } }); };
     lazy('colors', () => colorsOf(st));
@@ -223,6 +223,9 @@ const sol = {};
   expect('8', sol[8], true, '灰階：80 × 60 × 8 位元 = 160 × 120 × 2 位元 = 38,400 位元（像素差 4 倍）');
 
   sol[9] = new Sim().scene('rings').setW(256);
+  const differentK = new Sim().change('source', st => { st.ringK = 128; }).scene('rings').setW(256);
+  expect('9', differentK, false, 'K 為 128、寬 256 時框超出邊界');
+  expect('9', differentK.setW(128), true, 'K 為 128、寬 128 時框碰到兩側');
   expect('9', sol[9], true, '同心圓、奈奎斯特範圍（預設勾選）、寬 256：框的半寬 = 256 ÷ 512 = 0.5 個畫面寬');
 
   const s10 = new Sim().setW(160);
@@ -296,6 +299,7 @@ const sol = {};
   expect('h9', h9, true, where + '、灰階：點亮度 ' + p85.y.toFixed(2) + ' 的像素 (' + p85.i + ', ' + p85.j + ')，8、2、4 位元都存成 85（85 = 255 ÷ 3 = 255 × 5 ÷ 15 = 255 × 21 ÷ 63；170 也可以）');
 
   sol.h10 = new Sim().scene('rings').lock(false).setW(128).setH(72);
+  expect('h10', new Sim().change('source', st => { st.ringK = 128; }).scene('rings').lock(false).setW(64).setH(36), true, 'K 減半時，兩方向的取樣數同步減半');
   expect('h10', sol.h10, true, '同心圓、取每格中心點、取消固定 4:3、128 × 72：假的圓心在 x = ±128 ÷ 256 = ±0.5（左右兩邊）與 y = ±72 ÷ 0.75 ÷ 256 = ±0.375（上下兩邊），平移半張圖亮暗剛好相反');
   expect('h10', new Sim().scene('rings').setW(128), false, '固定 4:3 的 128 × 96 只有左右兩邊（上下的假圓心在圖外）');
 }

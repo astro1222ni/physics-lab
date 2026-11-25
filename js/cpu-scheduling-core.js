@@ -93,8 +93,9 @@
     const ready = [];
     let switches = 0, preempts = 0, expires = 0, idle = 0, csTime = 0;
 
-    const keyOf = algo === 'sjf' ? function (p) { return bur[p]; }
-      : algo === 'srtf' ? function (p) { return rem[p]; }
+    const estimates = opt.estimates || bur;
+    const keyOf = algo === 'sjf' ? function (p) { return estimates[p]; }
+      : algo === 'srtf' ? function (p) { return Math.max(0, estimates[p] - (bur[p] - rem[p])); }
         : (algo === 'pn' || algo === 'pp') ? function (p) { return pri[p]; } : null;
     /** a 是否比 b 優先（鍵值 → 到達時間 → 編號） */
     function better(a, b) {

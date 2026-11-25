@@ -105,8 +105,8 @@
     {
       id: 'logic-gates-12', level: 10,
       title: { zh: '最慢的一次', en: 'The slowest change' },
-      desc: { zh: '用 8 位元加法器，讓電路花滿 17 個閘延遲（2n + 1）才穩定。', en: 'With the 8-bit adder, make the circuit need the full 17 gate delays (2n + 1) before it settles.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'adder' && d.n === 8 && d.settle === 17; }
+      desc: { zh: '沿用同步輸入、各閘延遲 1 的設定，用 8 位元加法器，讓電路花滿 17 個閘延遲（2n + 1）才穩定。', en: 'With simultaneous inputs and unit gate delays, make the 8-bit adder need the full 17 gate delays (2n + 1) before it settles.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'adder' && d.n === 8 && d.unitTiming !== false && d.settle === 17; }
     },
 
     // ---------------- 隱藏任務 ----------------

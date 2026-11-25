@@ -328,26 +328,26 @@
     const w = cw, narrow = w < 560, d = state.desk, Q = d.rk === 'queue';
     const p = narrow ? 21 : 24, pw = narrow ? 74 : 96, ph = narrow ? 16 : 18;
     const L = { kind: 'desk', narrow: narrow, Q: Q, p: p, pw: pw, ph: ph, top: 52 };
-    L.floor = L.top + d.cap * p + 10;
+    L.floor = L.top + Math.max(d.cap, Q ? 0 : d.rightCap || d.cap) * p + 10;
     if (!Q) {
       L.ax = Math.round(w * (narrow ? 0.27 : 0.3)); L.bx = Math.round(w * (narrow ? 0.73 : 0.7));
       L.H = L.floor + 48;
     } else if (narrow) {
       L.ax = Math.round(w * 0.5);
-      L.sw = Math.min(46, (w - 36) / d.cap);
-      L.lx0 = Math.round((w - L.sw * d.cap) / 2);
+      L.sw = Math.min(46, (w - 36) / (d.rightCap || d.cap));
+      L.lx0 = Math.round((w - L.sw * (d.rightCap || d.cap)) / 2);
       L.ly = L.floor + 120;
       L.H = L.ly + 56;
     } else {
       L.ax = Math.max(84, Math.round(w * 0.15));
       L.lx0 = L.ax + pw / 2 + 74;
-      L.sw = Math.min(60, (w - 44 - L.lx0) / d.cap);
+      L.sw = Math.min(60, (w - 44 - L.lx0) / (d.rightCap || d.cap));
       L.ly = L.floor;
       L.H = L.floor + 62;
     }
     L.msgAt = function (which) {
       if (which === 'A') return { x: L.ax, y: L.top - 22 };
-      if (which === 'R') return Q ? { x: L.lx0 + L.sw * d.cap / 2, y: L.ly - 80 } : { x: L.bx, y: L.top - 22 };
+      if (which === 'R') return Q ? { x: L.lx0 + L.sw * (d.rightCap || d.cap) / 2, y: L.ly - 80 } : { x: L.bx, y: L.top - 22 };
       return null;
     };
     return L;
@@ -477,7 +477,8 @@
     const slotY = function (i) { return L.floor - 7 - (i + 0.5) * p; };
     const stackOf = function (which, cx, label, vals, ids, side) {
       cx += shakeOf(which);
-      const rk = rack(cx, L.floor, L.pw, d.cap * p + 4, label, vals.length + ' / ' + d.cap);
+      const cap = which === 'A' ? d.cap : d.rightCap || d.cap;
+      const rk = rack(cx, L.floor, L.pw, cap * p + 4, label, vals.length + ' / ' + cap);
       // 容量線
       ctx.save();
       ctx.setLineDash([4, 4]);
@@ -500,23 +501,23 @@
     }
     stackOf('A', L.ax, T('堆疊', 'Stack'), d.A, I.A, 'left');
     // 佇列：front 在左、rear 在右
-    const sw = L.sw, x0 = L.lx0 + shakeOf('R'), x1 = x0 + d.cap * sw, y = L.ly, s = Math.min(1, sw / 42);
+    const sw = L.sw, x0 = L.lx0 + shakeOf('R'), x1 = x0 + (d.rightCap || d.cap) * sw, y = L.ly, s = Math.min(1, sw / 42);
     D.block(ctx, x0 - 8, y, x1 - x0 + 16, 9, C['sq-floor'], { r: 4 });
     ctx.save();
-    for (let j = 0; j < d.cap; j++) {
+    for (let j = 0; j < (d.rightCap || d.cap); j++) {
       ctx.beginPath(); ctx.ellipse(x0 + (j + 0.5) * sw, y - 1, sw * 0.3, 2.4, 0, 0, Math.PI * 2);
       ctx.fillStyle = alpha(C.text, D.dark ? 0.1 : 0.07); ctx.fill();
     }
     ctx.restore();
     D.haloText(ctx, T('佇列', 'Queue'), x0, y - 66, C.text, 'left', 'alphabetic', fnt(13.5, 700));
-    D.haloText(ctx, d.R.length + ' / ' + d.cap, x1, y - 66, C.muted, 'right', 'alphabetic', fnt(12, 600));
+    D.haloText(ctx, d.R.length + ' / ' + (d.rightCap || d.cap), x1, y - 66, C.muted, 'right', 'alphabetic', fnt(12, 600));
     if (x0 > 44) {
       D.arrow(ctx, x0 - 6, y - 24, x0 - 32, y - 24, alpha(C['sq-front'], 0.85), 2.2);
-      D.haloText(ctx, T('離開', 'out'), x0 - 19, y - 34, C['sq-front'], 'center', 'alphabetic', fnt(11, 600));
+      D.haloText(ctx, T('離開', 'out'), x0 - 19, y - 34, C['sq-front'], 'center', 'alphabetic', fnt(12, 600));
     }
     if (x1 + 40 < cw) {
       D.arrow(ctx, x1 + 34, y - 24, x1 + 8, y - 24, alpha(C['sq-rear'], 0.85), 2.2);
-      D.haloText(ctx, T('排入', 'in'), x1 + 21, y - 34, C['sq-rear'], 'center', 'alphabetic', fnt(11, 600));
+      D.haloText(ctx, T('排入', 'in'), x1 + 21, y - 34, C['sq-rear'], 'center', 'alphabetic', fnt(12, 600));
     }
     const pf = person(s);
     const by = y - 14 * s - 2;
@@ -1004,7 +1005,8 @@
       const look = op === 'top' || op === 'front' || op === 'topB';
       if (r.err === 'overflow') {
         const tgt = op === 'push' || op === 'toL' ? 'A' : 'R';
-        say('溢位！' + zhName(tgt) + '已經有 ' + d.cap + ' 個（容量 ' + d.cap + '），放不進去；內容不變。', 'Overflow! ' + cap1(enName(tgt)) + ' already holds ' + d.cap + ' (its capacity), so nothing more fits; nothing changes.', true);
+        const cap = tgt === 'A' ? d.cap : d.rightCap || d.cap;
+        say('溢位！' + zhName(tgt) + '容量為 ' + cap + '，已經滿了。', 'Overflow! ' + cap1(enName(tgt)) + ' is full (capacity ' + cap + ').', true);
       } else {
         const src = op === 'pop' || op === 'top' || op === 'toR' ? 'A' : 'R';
         if (look) say(zhName(src) + '是空的，沒有東西可以看。', cap1(enName(src)) + ' is empty: there is nothing to look at.', true);
@@ -1310,8 +1312,8 @@
       const d = state.desk, Q = d.rk === 'queue';
       rd = [[Q ? T('堆疊的大小', 'Stack size') : T('A 的大小', 'Size of A'), d.A.length + ' <small>/ ' + d.cap + '</small>'],
         [Q ? T('頂端（top）', 'Top') : T('A 的頂端', 'Top of A'), d.A.length ? numStr(d.A[d.A.length - 1]) : T('—（空的）', '— (empty)')]];
-      if (Q) rd.push([T('佇列的大小', 'Queue size'), d.R.length + ' <small>/ ' + d.cap + '</small>'], [T('前端（front）', 'Front'), d.R.length ? numStr(d.R[0]) : T('—（空的）', '— (empty)')], [T('尾端（rear）', 'Rear'), d.R.length ? numStr(d.R[d.R.length - 1]) : '—']);
-      else rd.push([T('B 的大小', 'Size of B'), d.R.length + ' <small>/ ' + d.cap + '</small>'], [T('B 的頂端', 'Top of B'), d.R.length ? numStr(d.R[d.R.length - 1]) : T('—（空的）', '— (empty)')]);
+      if (Q) rd.push([T('佇列的大小', 'Queue size'), d.R.length + ' <small>/ ' + (d.rightCap || d.cap) + '</small>'], [T('前端（front）', 'Front'), d.R.length ? numStr(d.R[0]) : T('—（空的）', '— (empty)')], [T('尾端（rear）', 'Rear'), d.R.length ? numStr(d.R[d.R.length - 1]) : '—']);
+      else rd.push([T('B 的大小', 'Size of B'), d.R.length + ' <small>/ ' + (d.rightCap || d.cap) + '</small>'], [T('B 的頂端', 'Top of B'), d.R.length ? numStr(d.R[d.R.length - 1]) : T('—（空的）', '— (empty)')]);
       rd.push([T('下一個要放的數', 'Next number to put in'), String(d.next)], [T('基本操作次數', 'Basic operations'), String(d.ops)]);
       strip = '<p><b>' + (Q ? T('取出（pop）的順序：', 'Popped, in order: ') : T('從 A 取出的順序：', 'Popped from A: ')) + '</b>' + seq(d.outA) + '</p>' +
         '<p><b>' + (Q ? T('離開（dequeue）的順序：', 'Dequeued, in order: ') : T('從 B 取出的順序：', 'Popped from B: ')) + '</b>' + seq(d.outR) + '</p>';
@@ -1450,6 +1452,16 @@
     updateAll();
   });
   $('auto').addEventListener('change', function () { state.desk.auto = state.ring.auto = $('auto').checked; updateAll(); });
+  $('rightCap').addEventListener('change', function () {
+    state.desk.rightCap = Number(this.value);
+    S.deskSet(state.desk, {cap: state.desk.cap}); state.ids = { A: [], R: [] }; updateAll();
+  });
+  $('streamStart').addEventListener('click', function () {
+    const d = state.desk, seed = Number($('streamSeed').value);
+    d.stream = seed ? S.rng(seed) : null;
+    if (d.stream) d.next = 1 + Math.floor(d.stream() * 99);
+    updateAll();
+  });
   capEl.addEventListener('input', function () {
     const n = Math.round(val(capEl));
     $('capo').textContent = String(n);

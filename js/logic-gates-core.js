@@ -92,6 +92,33 @@
    * 傳回 { init（t = 0 之前每個節點的值）, final, hist（每個節點的變化 [[t, 值], …]）, settle（最後一次變化的時間）,
    *        events（節點變化總次數，含輸入）, evals（重算閘的次數） }
    */
+  function simulateTimed(c, oldIn, newIn, skew, seed) {
+    const init = steady(c, oldIn), v = init.slice(), projected = init.slice();
+    const hist = c.names.map(() => []), pending = new Map(), fan = fanout(c);
+    let last = 0, settle = 0, events = 0, evals = 0, word = seed >>> 0;
+    const delays = c.gates.map(() => {
+      word = (Math.imul(word, 1664525) + 1013904223) >>> 0;
+      return seed ? 1 + Math.floor(word / 4294967296 * 3) : 1;
+    });
+    function queue(t, node, value) {
+      if (!pending.has(t)) pending.set(t, []);
+      pending.get(t).push([node, value]); last = Math.max(last, t);
+    }
+    c.inputs.forEach((node, i) => { if (newIn[i] !== v[node]) queue(i === 1 ? skew : 0, node, newIn[i]); });
+    for (let t = 0; t <= last; t++) {
+      const affected = new Set();
+      for (const [node, value] of pending.get(t) || []) {
+        v[node] = value; hist[node].push([t, value]); settle = t; events++;
+        for (const gi of fan[node]) affected.add(gi);
+      }
+      for (const gi of affected) {
+        const g = c.gates[gi], value = gateOut(g, v); evals++;
+        if (value === projected[g.out]) continue;
+        projected[g.out] = value; queue(t + delays[gi], g.out, value);
+      }
+    }
+    return {init: init, final: v, hist: hist, settle: settle, events: events, evals: evals};
+  }
   function simulate(c, oldIn, newIn, limit) {
     limit = limit || 1000;
     const fan = fanout(c);
@@ -353,7 +380,7 @@
   const api = {
     X: X, GATES: GATES, GATE_LIST: GATE_LIST, evalGate: evalGate, truthTable: truthTable,
     circuit: circuit, addInput: addInput, addGate: addGate, fanout: fanout, steady: steady, depths: depths,
-    simulate: simulate, simulateSync: simulateSync, valueAt: valueAt, nextChange: nextChange, flips: flips, glitchy: glitchy,
+    simulate: simulate, simulateTimed: simulateTimed, simulateSync: simulateSync, valueAt: valueAt, nextChange: nextChange, flips: flips, glitchy: glitchy,
     gateCircuit: gateCircuit, nandForm: nandForm, halfAdder: halfAdder, fullAdder: fullAdder, rippleAdder: rippleAdder,
     adderInputs: adderInputs, adderRead: adderRead, carryInfo: carryInfo, signedOf: signedOf, overflowV: overflowV,
     FUNCS: FUNCS, ttMask: ttMask, maskTT: maskTT, TARGETS: TARGETS, TARGET_LIST: TARGET_LIST,

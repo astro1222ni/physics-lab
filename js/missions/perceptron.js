@@ -64,7 +64,7 @@
       id: 'perceptron-2', level: 2,
       need: gateProgress('and'),
       title: { zh: '學會 AND', en: 'Learning AND' },
-      desc: { zh: '按「AND」，再按「學到收斂」，讓感知器有一整輪都沒有分錯。', en: 'Press “AND”, then “Learn until done”, until the perceptron gets through a whole round without a mistake.' },
+      desc: { zh: '使用 AND 資料（可沿用預設），逐步執行或按「學到收斂」，讓感知器有一整輪都沒有分錯。', en: 'Use AND (the default) and step through training or press “Learn until done”, until the perceptron gets through a whole round without a mistake.' },
       check: function (ev) { return learned(ev) && ev.data.set === 'and'; }
     },
     {

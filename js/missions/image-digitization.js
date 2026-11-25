@@ -154,10 +154,10 @@
     },
     {
       id: 'image-digitization-9', level: 5,
-      need: progress(d => [scene(d, 'rings', '同心圓', 'Rings'), item(d.nyq, '勾選奈奎斯特範圍', 'Enable Nyquist limit'), item(d.w === 256, '調整寬度，讓框的左右邊與圖像邊緣重合', 'Adjust width until the two sides of the box meet the image edges', d.w + ' px')]),
+      need: progress(d => [scene(d, 'rings', '同心圓', 'Rings'), item(d.nyq, '勾選奈奎斯特範圍', 'Enable Nyquist limit'), item(d.w === (d.ringK || 256), '調整寬度，讓框的左右邊與圖像邊緣重合', 'Adjust width until the two sides of the box meet the image edges', d.w + ' px')]),
       title: { zh: '奈奎斯特範圍', en: 'The Nyquist limit' },
       desc: { zh: '在「同心圓」勾選「奈奎斯特範圍」，調整「寬 w」，讓虛線框的左右兩邊剛好碰到圖的左右邊緣。', en: 'In “Rings”, tick “Nyquist limit” and change “Width w” until the left and right sides of the dashed box just touch the left and right edges of the picture.' },
-      check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'rings' && d.nyq && d.w === 256; }
+      check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'rings' && d.nyq && d.w === (d.ringK || 256); }
     },
     {
       id: 'image-digitization-10', level: 6,
@@ -271,7 +271,7 @@
       id: 'image-digitization-h10', level: 10, hidden: true,
       riddle: { zh: '池心只投下一顆石子；把相機調好，讓憑空多出來的漣漪，中心剛好都落在四面的岸邊。', en: 'Only one stone fell into the middle of the pond. Set up the camera so that the ripples that appear from nowhere are all centred exactly on the shore, on all four sides.' },
       // 同心圓取每格中心點：寬 128 時假的圓心在左右兩邊（x = ±128 ÷ 256 = ±0.5 個畫面寬），高 72 時也在上下兩邊（y = ±72 ÷ 0.75 ÷ 256 = ±0.375）
-      check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'rings' && d.method === 'center' && d.w === 128 && d.h === 72; }
+      check: function (ev) { const d = ev.data; return isImg(ev) && d.scene === 'rings' && d.method === 'center' && 2 * d.w === (d.ringK || 256) && 32 * d.h === 9 * (d.ringK || 256); }
     }
   ]);
 })();

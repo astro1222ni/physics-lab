@@ -185,6 +185,13 @@
       '################'
     ]
   };
+  function resizePixels(px, w, h, newW, newH) {
+    return Array.from({length: newW * newH}, (_, i) => {
+      const x = Math.floor((i % newW + 0.5) * w / newW);
+      const y = Math.floor((Math.floor(i / newW) + 0.5) * h / newH);
+      return px[y * w + x];
+    });
+  }
   function pattern(name) {
     const rows = PATTERNS[name];
     const px = new Array(SIZE * SIZE).fill(0);
@@ -193,9 +200,9 @@
     return px;
   }
   /** 隨機雜訊：每格以機率 1/2 是黑（種子可重現） */
-  function noise(seed) {
+  function noise(seed, count = SIZE * SIZE) {
     const r = rng(seed), px = [];
-    for (let i = 0; i < SIZE * SIZE; i++) px.push(r() < 0.5 ? 1 : 0);
+    for (let i = 0; i < count; i++) px.push(r() < 0.5 ? 1 : 0);
     return px;
   }
 
@@ -386,7 +393,7 @@
   }
 
   const api = {
-    SIZE: SIZE, K_MIN: K_MIN, K_MAX: K_MAX, MAX_CHARS: MAX_CHARS, MAX_KINDS: MAX_KINDS, PATTERNS: PATTERNS,
+    SIZE: SIZE, resizePixels: resizePixels, K_MIN: K_MIN, K_MAX: K_MAX, MAX_CHARS: MAX_CHARS, MAX_KINDS: MAX_KINDS, PATTERNS: PATTERNS,
     scanOrder: scanOrder, sequence: sequence, runsOf: runsOf, maxRun: maxRun, tokenBits: tokenBits, rleTokens: rleTokens,
     tokenCode: tokenCode, rleEncode: rleEncode, rleDecode: rleDecode, rleSummary: rleSummary, pixelsHash: pixelsHash, pattern: pattern, noise: noise,
     symbols: symbols, countSymbols: countSymbols, huffman: huffman, partialCode: partialCode, entropy: entropy, avgLength: avgLength,

@@ -252,4 +252,8 @@ test('搜尋摘要：有重複時一般版停的位置、第一個位置、出�
   assert.strictEqual(e.worst, 3);
 });
 
+test("全同值資料維持指定長度", () => {
+  assert.strictEqual(new Set(B.makeData(12, 32, 'same').a).size, 1);
+});
+
 console.log(`\n${passed} 項通過${process.exitCode ? '，有失敗' : ''}。`);

@@ -255,6 +255,7 @@
     setHTML('rR', n ? mm.R.toFixed(3) : '—');
     setHTML('rBound', boundHtml(mm));
     setHTML('rW', '(' + num(w[0]) + ', ' + num(w[1]) + ')');
+    setHTML('correctionRule', tex('y\\,z_{\\text{new}}=y\\,z_{\\text{old}}+\\eta(x_1^2+x_2^2' + (S.cfg.bias ? '+1' : '') + ')'));
     setHTML('rB', S.cfg.bias ? num(w[2]) : T('不使用（0）', 'not used (0)'));
     setHTML('rEpoch', n ? String(t.done() ? t.errs.length : t.epoch) : '—');
     setHTML('rErr', n && !t.done() ? String(t.errThis) : '—');
@@ -521,7 +522,7 @@
       c.moveTo(x, y - radius - 3); c.lineTo(x, y + radius + 3); c.stroke(); c.restore();
     }
     mark(X(0), Y(0), 5);
-    D.haloText(c, 'O (0, 0)', X(0) + 10, Y(0) - 9, C.muted, 'left', 'middle', fnt(10, 600));
+    D.haloText(c, 'O (0, 0)', X(0) + 10, Y(0) - 9, C.muted, 'left', 'middle', fnt(12, 600));
     // 資料點
     const wrong = wrongNow();
     const pts = S.points, last = state.last, lastIdx = last ? pts.indexOf(last.p) : -1;
@@ -533,6 +534,7 @@
     pts.forEach(function (p, i) { drawPoint(c, p, r, { hover: i === state.hover || (state.drag && state.drag.i === i) }); });
     pts.forEach(function (p, i) {
       const x = X(p.x), y = Y(p.y);
+      if (pts.findIndex(q => q.gx === p.gx && q.gy === p.gy) < i) D.pill(c, '±', x, y, C.text, 'center', fnt(13, 700));
       if (wrong[i]) ring(c, x, y, r + 4.5, C.wrong, 1.8, [3.5, 3]);
       if (state.showBand && mm.separable && mm.support && mm.support.indexOf(i) >= 0) ring(c, x, y, r + 8, C.band, 1.4, null, 0.8);
       if (p.label && !p.moved) {
@@ -540,7 +542,7 @@
         const id = String.fromCharCode(65 + (p.gx > 0 ? 2 : 0) + (p.gy > 0 ? 1 : 0));
         const lx = Math.max(P.x + 42, Math.min(P.x + P.s - 42, x));
         D.haloText(c, id + ' (' + p.x + ', ' + p.y + ')', lx, y + r + 14, C.text, 'center', 'middle', fnt(10.5, 650));
-        D.haloText(c, T('輸入 ', 'in ') + p.label, lx, y + r + 27, C.muted, 'center', 'middle', fnt(10, 500));
+        D.haloText(c, T('輸入 ', 'in ') + p.label, lx, y + r + 27, C.muted, 'center', 'middle', fnt(12, 500));
       }
     });
     if (nextIdx >= 0 && nextIdx !== lastIdx) {
@@ -905,6 +907,13 @@
 
   // ---------- 畫布：放點、移除、拖曳 ----------
   function evPos(e) { const b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+  $('sampleDraw').addEventListener('click', function () {
+    const n = Math.max(16, Math.min(60, Math.round(Number($('sampleN').value) || 24)));
+    const flips = Math.max(0, Math.min(n, Math.round(Number($('flipN').value) || 0)));
+    stopPlay(); S.loadPreset(flips ? 'noisy' : 'sep', false, {seed: Number($('dataSeed').value) || 1, n: n, flips: flips});
+    sync();
+  });
+  $('duplicateLabel').addEventListener('click', function () { stopPlay(); addAt(state.cursor.gx, state.cursor.gy, state.cls); });
   function hitPoint(px, py) {
     const r = ptR() + 7;
     let best = -1, bd = r;
