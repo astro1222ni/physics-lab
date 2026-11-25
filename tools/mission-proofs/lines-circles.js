@@ -15,7 +15,7 @@ const DEF = { h: 0, k: 0, r: 4, a: 1, b: 2, c: -12, px: 7, py: 3 };
 
 function lineEv(o, chal) {
   const s = Object.assign({}, DEF, o);
-  const d = G.dist(s.a, s.b, s.c, s.h, s.k), rel = G.relation(d, s.r), q = G.quadratic(s.a, s.b, s.c, s.h, s.k, s.r);
+  const d = G.dist(s.a, s.b, s.c, s.h, s.k), rel = G.relation(d, s.r, G.TOL_TOUCH), q = G.quadratic(s.a, s.b, s.c, s.h, s.k, s.r);
   return { type: 'line', data: { a: s.a, b: s.b, c: s.c, h: s.h, k: s.k, r: s.r, d: d, rel: rel, chord: rel === 'cross' ? G.chord(d, s.r) : null,
     pts: G.intersections(s.a, s.b, s.c, s.h, s.k, s.r), foot: G.foot(s.a, s.b, s.c, s.h, s.k), disc: q ? q.disc : null, chal: !!chal } };
 }

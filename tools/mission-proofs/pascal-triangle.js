@@ -47,6 +47,7 @@ function expect(id, events, want, note) {
 }
 
 // ---------- 三角形 ----------
+expect(1, [cellEv(0, 0), cellEv(4, 0), cellEv(4, 4)], false, '頂點與邊界沒有兩個父格');
 expect(1, [cellEv(4, 2, null, 12)], true, '點第 4 列第 2 格（6）');
 expect(2, [triEv(32, 2)], true, '32 列、除以 2 的餘數');
 expect(2, [triEv(31, 2), triEv(40, 3)], false, '31 列或 m = 3 都不算');

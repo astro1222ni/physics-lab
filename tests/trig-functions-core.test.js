@@ -11,6 +11,14 @@ function test(name, fn) {
 function close(a, b, tol, msg) {
   assert.ok(Math.abs(a - b) <= tol, (msg || '') + ` 期望 ${b}（容許 ${tol}），得到 ${a}`);
 }
+test('零振幅的常數函數沒有基本週期', function () {
+  for (const w of [0.25, 1, 4]) {
+    const p = { A: 0, w: w, phi: 17, k: 3 };
+    assert.strictEqual(C.waveY(p, 12), 3);
+    assert.strictEqual(C.waveInfo(p).period, null);
+  }
+});
+
 /** 可重現的亂數（mulberry32） */
 function rng(seed) {
   let s = seed >>> 0;

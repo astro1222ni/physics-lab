@@ -297,7 +297,7 @@
 
       <h3 data-en="How the page computes">計算方法</h3>
       <ul>
-        <li data-en-html="Eigenvalues come from the quadratic above; a discriminant within \(10^{-9}\) of 0 counts as a repeated root, so matrices typed to two decimals behave exactly. The rank of a \(3 \times 3\) matrix is found by Gaussian elimination with partial pivoting. The unit tests check that the determinant equals the shoelace area of the transformed square and flag, that it equals the volume of the transformed cube, that \(A\mathbf v = \lambda\mathbf v\), and the singular values against a fine sweep of the unit circle.">特徵值由上面的二次方程式求出；判別式和 0 相差 \(10^{-9}\) 以內算重根，所以打字到小數兩位的矩陣會得到正確的判斷。\(3 \times 3\) 矩陣的秩用部分選主元的高斯消去法求。單元測試檢查行列式等於變形後正方形與小旗子的鞋帶公式面積、等於變形後立方體的體積、\(A\mathbf v = \lambda\mathbf v\)，並用細密掃過單位圓的方式核對奇異值。</li>
+        <li data-en-html="Eigenvalues come from the quadratic above; a discriminant within \(10^{-9}(1+t^2+|d|)\) of zero counts as a repeated root, where \(t\) is the trace and \(d\) the determinant. This scales the tolerance with the terms of the discriminant. The rank of a \(3 \times 3\) matrix is found by Gaussian elimination with partial pivoting. The unit tests check that the determinant equals the shoelace area of the transformed square and flag, that it equals the volume of the transformed cube, that \(A\mathbf v = \lambda\mathbf v\), and the singular values against a fine sweep of the unit circle.">特徵值由上面的二次方程式求出；判別式與零之差在 \(10^{-9}(1+t^2+|d|)\) 以內算重根，其中 \(t\) 是跡，\(d\) 是行列式。容差隨判別式各項的尺度調整。\(3 \times 3\) 矩陣的秩用部分選主元的高斯消去法求。單元測試檢查行列式等於變形後正方形與小旗子的鞋帶公式面積、等於變形後立方體的體積、\(A\mathbf v = \lambda\mathbf v\)，並用細密掃過單位圓的方式核對奇異值。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

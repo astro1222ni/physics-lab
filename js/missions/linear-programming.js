@@ -22,7 +22,7 @@
       id: 'linear-programming-1', level: 1,
       title: { zh: '掃一遍', en: 'One sweep' },
       desc: { zh: '按「掃描」，看橘色的等高線掃過可行域，停在最後碰到的地方。', en: 'Press “Sweep” and watch the orange level line slide across the region and stop at the last place it touches.' },
-      check: function (ev) { return ev.type === 'sweep'; }
+      check: function (ev) { return ev.type === 'sweep' && (ev.data.status === 'unique' || ev.data.status === 'edge'); }
     },
     {
       id: 'linear-programming-2', level: 1,

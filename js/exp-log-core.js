@@ -21,10 +21,13 @@
   const N_MIN = 1, N_MAX = 1e6;
   function nFromPos(p) { return Math.round(Math.pow(10, 6 * Math.max(0, Math.min(100, p)) / 100)); }
   function posFromN(n) { return Math.max(0, Math.min(100, Math.log10(Math.max(1, n)) / 6 * 100)); }
-  /** 翻倍需要幾年（離散：解 (1 + r/n)^(n t) = 2；n = Infinity 時是連續複利） */
+  /** 翻倍需要幾年（離散：取首次達到兩倍的完整期數，再換算為年；n = Infinity 時是連續複利） */
   function doublingTime(r, n) {
     if (!(r > 0)) return null;
-    return n === Infinity ? LN2 / r : LN2 / (n * Math.log1p(r / n));
+    if (n === Infinity) return LN2 / r;
+    const step = Math.log1p(r / n);
+    const whole = Math.floor(LN2 / step);
+    return (Math.exp(whole * step) >= 2 ? whole : whole + 1) / n;
   }
 
   // ---------- 二、指數與對數 ----------

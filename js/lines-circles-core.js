@@ -34,7 +34,7 @@
   }
   /** 位置關係：'apart'（相離）、'tangent'（相切）、'cross'（相交兩點） */
   function relation(d, r, tol) {
-    const e = tol == null ? TOL_TOUCH : tol;
+    const e = tol == null ? 8 * Number.EPSILON * Math.max(d, r) : tol;
     if (d == null) return null;
     if (Math.abs(d - r) <= e) return 'tangent';
     return d > r ? 'apart' : 'cross';
@@ -47,11 +47,15 @@
     const f = foot(a, b, c, h, k);
     if (rel === 'apart') return [];
     if (rel === 'tangent') return [f];
-    const n = Math.hypot(a, b), ux = -b / n, uy = a / n, s = Math.sqrt(Math.max(0, r * r - d * d));
+    const n = Math.hypot(a, b), ux = -b / n, uy = a / n, s = Math.sqrt(Math.max(0, (r - d) * (r + d)));
     const p = [[f[0] - s * ux, f[1] - s * uy], [f[0] + s * ux, f[1] + s * uy]];
     return p.sort(function (P, Q) { return P[0] - Q[0] || P[1] - Q[1]; });
   }
-  function chord(d, r) { return d == null || d > r ? null : 2 * Math.sqrt(Math.max(0, r * r - d * d)); }
+  function chord(d, r) {
+    const rel = relation(d, r);
+    if (rel === 'tangent') return 0;
+    return rel === 'cross' ? 2 * Math.sqrt((r - d) * (r + d)) : null;
+  }
 
   /**
    * 代入法：b ≠ 0 時把 y = −(a x + c)/b 代入圓，得 A x² + B x + C = 0（已乘 b²）；
@@ -61,11 +65,13 @@
     if (Math.abs(b) > 1e-12) {
       const ck = c + b * k;
       const A = a * a + b * b, B = 2 * (a * ck - b * b * h), C = b * b * h * h + ck * ck - b * b * r * r;
-      return { v: 'x', A: A, B: B, C: C, disc: B * B - 4 * A * C };
+      const d = dist(a, b, c, h, k);
+      return { v: 'x', A: A, B: B, C: C, disc: relation(d, r) === 'tangent' ? 0 : 4 * b * b * A * (r - d) * (r + d) };
     }
     if (Math.abs(a) > 1e-12) {
       const x0 = -c / a, A = 1, B = -2 * k, C = k * k + (x0 - h) * (x0 - h) - r * r;
-      return { v: 'y', A: A, B: B, C: C, disc: B * B - 4 * A * C };
+      const d = Math.abs(x0 - h);
+      return { v: 'y', A: A, B: B, C: C, disc: relation(d, r) === 'tangent' ? 0 : 4 * (r - d) * (r + d) };
     }
     return null;
   }

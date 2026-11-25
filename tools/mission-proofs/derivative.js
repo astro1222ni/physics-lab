@@ -62,6 +62,8 @@ function expect(id, events, want, note) {
 // ---------- 逐一證明 ----------
 expect('1', [stateEv('cubic', 2.2, 0.01)], true, 'h = 0.01');
 expect('1', [stateEv('cubic', 2.2, DC.hFromPos(100))], true, '滑桿拉到最右：h = ' + DC.hFromPos(100));
+expect('1', [stateEv('abs', 0, 0.005)], false, '尖點沒有切線');
+expect('1', [stateEv('ln', 0.1, 0.01)], false, '間隔雖小，斜率仍差太多');
 expect('1', [stateEv('cubic', 2.2, 0.011)], false, 'h = 0.011');
 expect('1', [stateEv('cubic', 2.2, 0.005, null, { chal: true })], false, '挑戰中不算');
 expect('2', [{ type: 'shrink', data: { fn: 'cubic', from: 1.5, to: DC.hFromPos(100) } }], true, '「讓 h → 0」從 1.5 跑到 0.001（h 已很小時按鈕也會從 1.5 開始）');

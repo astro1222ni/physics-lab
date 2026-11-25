@@ -128,9 +128,9 @@
   // 落球
   // =====================================================================
   /** 一段動作：from、to 是「邏輯位置」（畫的時候才換成像素，改版面也不會錯位） */
-  function spawnBall() {
+  function spawnBall(single) {
     const d = G.drop(rand, state.n, pEff());
-    const b = { path: d.path, k: d.k, r: -1, j: 0, t: 0, seg: null };
+    const b = { single: !!single, path: d.path, k: d.k, r: -1, j: 0, t: 0, seg: null };
     nextSeg(b);
     state.balls.push(b);
   }
@@ -171,13 +171,13 @@
       b.t += dt * speed;
       while (b.t >= b.seg.dur) {
         b.t -= b.seg.dur;
-        if (b.seg.to.bin != null) { land(b.k, b.path); state.balls.splice(i, 1); break; }
+        if (b.seg.to.bin != null) { land(b.k, b.path, b.single); state.balls.splice(i, 1); break; }
         nextSeg(b);
       }
     }
   }
   /** 一顆球落進第 k 格 */
-  function land(k, path) {
+  function land(k, path, single) {
     state.counts[k]++;
     state.N++;
     state.lastPath = path; state.lastK = k;
@@ -185,7 +185,7 @@
     landSound(k);
     if (L && !reducedMotion) state.fx.push({ k: k, t: 0 });
     dirty = true;
-    emitDrop('ball');
+    emitDrop(single ? 'ball' : 'stream');
   }
   /** 一次很多顆（不動畫）：分段落下，讓差距圖每段都有一個點 */
   function dropBatch(count) {
@@ -727,7 +727,13 @@
     el.addEventListener('change', function () { emitBoard(); refreshOutputs(); });
   });
   elRate.addEventListener('input', function () { state.rate = Math.round(val(elRate)); refreshOutputs(); });
-  $('drop1').addEventListener('click', function () { enqueue(1, 30); });
+  $('drop1').addEventListener('click', function () {
+    if (reducedMotion || state.balls.length >= MAX_ACTIVE) {
+      const d = G.drop(rand, state.n, pEff());
+      land(d.k, d.path, true);
+    } else spawnBall(true);
+    requestDraw();
+  });
   $('drop10').addEventListener('click', function () { enqueue(10, 20); });
   $('drop100').addEventListener('click', function () { enqueue(100, 60); });
   $('drop1000').addEventListener('click', function () { dropBatch(1000); requestDraw(); });

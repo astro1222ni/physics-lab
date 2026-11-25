@@ -65,7 +65,7 @@
     {
       id: 'linear-transform-7', level: 5,
       title: { zh: '特徵值 −1', en: 'Eigenvalue −1' },
-      desc: { zh: '找一個 b、c 不全是 0 的矩陣，和一個方向 x，讓 A x = −x（λ 在 −1.02 到 −0.98 之間）。', en: 'Find a matrix with b and c not both 0 and a direction x with Ax = −x (λ between −1.02 and −0.98).' },
+      desc: { zh: '找一個 b、c 不全是 0 的矩陣，和一個長度至少 0.5、兩分量絕對值都至少 0.1 的探針 x，讓 A x = −x（λ 在 −1.02 到 −0.98 之間）。', en: 'Find a matrix with b and c not both 0 and a probe x of length at least 0.5 with both components at least 0.1 in magnitude with Ax = −x (λ between −1.02 and −0.98).' },
       check: function (ev) { const d = ev.data; return m2(ev) && offDiag(d.M) && eigenProbe(d) && near(d.lambda, -1, 0.02); }
     },
     {

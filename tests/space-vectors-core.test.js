@@ -9,6 +9,12 @@ function test(name, fn) {
 function near(a, b, tol, msg) { if (!(Math.abs(a - b) <= tol)) throw new Error((msg || '') + ' 得到 ' + a + '，應為 ' + b + '（容許 ' + tol + '）'); }
 function nearV(a, b, tol, msg) { for (let i = 0; i < 3; i++) near(a[i], b[i], tol, (msg || '') + '[' + i + ']'); }
 function ok(c, msg) { if (!c) throw new Error(msg || '條件不成立'); }
+test('視線跨方位角界線只轉 20 度，靠近極點時更小', function () {
+  const turn = p => V.angleDeg(V.viewBasis(170, p).e, V.viewBasis(-170, p).e);
+  near(turn(0), 20, 1e-10);
+  ok(turn(80) < 4);
+});
+
 const rand = V.rng(31);
 const rv = function () { return [0, 1, 2].map(function () { return rand() * 8 - 4; }); };
 

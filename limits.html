@@ -252,7 +252,8 @@
       <p data-en-html="If \(g(x) \le f(x) \le h(x)\) near \(a\) and both \(g\) and \(h\) tend to \(L\), then so does \(f\). Because \(|\sin t| \le 1\): \(-|x| \le x\sin\frac1x \le |x|\), so \(x\sin\frac1x \to 0\), and \(-\frac1n \le \frac{\sin n}{n} \le \frac1n\). For \(0 < |x| < \frac{\pi}{2}\): \(\cos x \le \frac{\sin x}{x} \le 1\), so \(\frac{\sin x}{x} \to 1\).">若在 \(a\) 附近 \(g(x) \le f(x) \le h(x)\)，而 \(g\)、\(h\) 都趨近 \(L\)，則 \(f\) 也趨近 \(L\)。因為 \(|\sin t| \le 1\)：\(-|x| \le x\sin\frac1x \le |x|\)，所以 \(x\sin\frac1x \to 0\)；同理 \(-\frac1n \le \frac{\sin n}{n} \le \frac1n\)。當 \(0 < |x| < \frac{\pi}{2}\)：\(\cos x \le \frac{\sin x}{x} \le 1\)，所以 \(\frac{\sin x}{x} \to 1\)。</p>
 
       <h3 data-en="Infinite geometric series">無窮等比級數</h3>
-      <div class="formula">\[ S_n = a + ar + \cdots + ar^{n-1} = \frac{a(1 - r^n)}{1 - r}, \qquad |r| < 1 \;\Rightarrow\; \sum_{k=1}^{\infty} ar^{k-1} = \lim_{n\to\infty} S_n = \frac{a}{1-r}. \]</div>
+      <div class="formula">\[ S_n = a + ar + \cdots + ar^{n-1} = \begin{cases}\dfrac{a(1-r^n)}{1-r},&r\ne1,\\na,&r=1.\end{cases}\]</div>
+      <div class="formula">\[ |r| < 1 \;\Rightarrow\; \sum_{k=1}^{\infty} ar^{k-1} = \lim_{n\to\infty} S_n = \frac{a}{1-r}. \]</div>
       <p data-en-html="The sum of infinitely many terms is defined as the limit of the partial sums. When \(|r| < 1\), \(r^n \to 0\); when \(|r| \ge 1\) (and \(a \ne 0\)) the partial sums have no limit. For example \(0.9 + 0.09 + 0.009 + \cdots = \frac{0.9}{1 - 0.1} = 1\).">無窮多項的和，定義成部分和的極限。\(|r| < 1\) 時 \(r^n \to 0\)；\(|r| \ge 1\)（且 \(a \ne 0\)）時部分和沒有極限。例如 \(0.9 + 0.09 + 0.009 + \cdots = \frac{0.9}{1 - 0.1} = 1\)。</p>
 
       <h3 data-en="Things to observe">觀察重點</h3>

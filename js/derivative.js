@@ -440,8 +440,13 @@
     c.beginPath(); c.moveTo(hx, mt); c.lineTo(hx, mt + ph); c.stroke(); c.restore();
     if (q.err != null) D.ball(c, hx, Ye(q.err), 5, C['dv-secant']);
     if (state.show.sym && q.errSym != null) D.ball(c, hx, Ye(q.errSym), 4.5, C['dv-sym']);
-    D.pill(c, T('單邊：誤差 ∝ h', 'one-sided: error ∝ h'), ml + 8, mt + 22, C['dv-secant'], 'left', fnt(11.5, 600));
-    D.pill(c, T('對稱：誤差 ∝ h²', 'symmetric: error ∝ h²'), ml + 8, mt + 44, C['dv-sym'], 'left', fnt(11.5, 600));
+    function orderLabel(symmetric) {
+      const order = DC.errorOrder(fn, a, k, symmetric);
+      if (order === 0) return T('局部精確', 'locally exact');
+      return order === 1 ? T('一階誤差', 'first-order error') : T('二階誤差', 'second-order error');
+    }
+    D.pill(c, T('單邊：', 'one-sided: ') + orderLabel(false), ml + 8, mt + 22, C['dv-secant'], 'left', fnt(11.5, 600));
+    D.pill(c, T('對稱：', 'symmetric: ') + orderLabel(true), ml + 8, mt + 44, C['dv-sym'], 'left', fnt(11.5, 600));
   }
 
   // =====================================================================

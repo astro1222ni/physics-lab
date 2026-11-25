@@ -16,8 +16,8 @@
     {
       id: 'pascal-triangle-1', level: 1,
       title: { zh: '點一格', en: 'Tap a number' },
-      desc: { zh: '在巴斯卡三角形上點一格，看它是上面哪兩格加起來的。', en: 'Tap a cell of Pascal’s triangle and see which two cells above add up to it.' },
-      check: function (ev) { return ev.type === 'cell'; }
+      desc: { zh: '在巴斯卡三角形上點一個內部格，看它是上面哪兩格加起來的。', en: 'Tap an interior cell of Pascal’s triangle and see which two cells above add up to it.' },
+      check: function (ev) { return ev.type === 'cell' && ev.data.k > 0 && ev.data.k < ev.data.n; }
     },
     {
       id: 'pascal-triangle-2', level: 2,

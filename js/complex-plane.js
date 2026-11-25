@@ -251,7 +251,11 @@
   function playCaption() {
     const p = state.play;
     if (!p) return '';
-    if (p.mode === 'mul') return T('乘以 z：轉 ', 'Times z: turning ') + fmt(state.t * (M.argDeg(state.z) || 0), 1) + T('°、伸縮 ', '°, stretching ') + fmt(Math.pow(M.abs(state.z), state.t), 3) + T(' 倍', '×');
+    if (p.mode === 'mul') {
+      const scale = fmt(M.abs(M.partial(state.z, state.t)), 3);
+      if (M.abs(state.z) === 0) return T('沿直線縮向原點，倍率 ', 'Shrinking straight to the origin, scale ') + scale;
+      return T('乘以 z：轉 ', 'Times z: turning ') + fmt(state.t * M.argDeg(state.z), 1) + T('°、伸縮 ', '°, stretching ') + scale + T(' 倍', '×');
+    }
     if (p.mode === 'pow') return 'z^' + p.k + ' = ' + cfmt(M.powInt(state.z, p.k), 3);
     if (p.mode === 'root') return T('第 ', 'Root ') + (p.k + 1) + T(' 個根', '');
     return T('w 的箭頭搬到 z 的尖端', 'Moving the arrow w to the tip of z');
@@ -554,8 +558,8 @@
       else if (state.mode === 'add') tex = '(' + ctex(z) + ') + (' + ctex(w) + ') = ' + ctex(result());
       else if (state.mode === 'mul') {
         const s = result();
-        tex = '|zw| = ' + fmt(M.abs(z), 3).replace(/−/g, '-') + ' \\times ' + fmt(M.abs(w), 3).replace(/−/g, '-') + ' = ' + fmt(M.abs(s), 3).replace(/−/g, '-') +
-          ',\\quad \\arg(zw) = ' + fmt(M.argDeg(z), 2).replace(/−/g, '-') + '^\\circ + ' + fmt(M.argDeg(w), 2).replace(/−/g, '-') + '^\\circ';
+        tex = '|zw| = ' + fmt(M.abs(z), 3).replace(/−/g, '-') + ' \\times ' + fmt(M.abs(w), 3).replace(/−/g, '-') + ' = ' + fmt(M.abs(s), 3).replace(/−/g, '-');
+        if (M.abs(s) > 0) tex += ',\\quad \\arg(zw) \\equiv ' + fmt(M.argDeg(z), 2).replace(/−/g, '-') + '^\\circ + ' + fmt(M.argDeg(w), 2).replace(/−/g, '-') + '^\\circ \\pmod{360^\\circ}';
       }
       else if (state.mode === 'pow') tex = 'z^{' + state.pn + '} = ' + (r === 0 ? '0' : fmt(r, 4).replace(/−/g, '-') + '^{' + state.pn + '}(\\cos ' + state.pn + '\\theta + i\\sin ' + state.pn + '\\theta) = ' + ctex(result()));
       else tex = 'w^{' + state.rn + '} = z = ' + pz;
@@ -567,8 +571,8 @@
   function modeNote() {
     const N = {
       add: ['把 w 的箭頭接到 z 的尖端：0、z、z + w、w 圍成平行四邊形。', 'Put the arrow w on the tip of z: 0, z, z + w and w make a parallelogram.'],
-      mul: ['乘以 z：整張方格紙繞 0 轉 arg z、伸縮 |z| 倍。三角形 (0, 1, z) 和 (0, w, zw) 相似。', 'Times z: the whole grid turns about 0 by arg z and stretches by |z|. The triangles (0, 1, z) and (0, w, zw) are similar.'],
-      pow: ['一直乘以 z：每一步都加上同一個角度、乘上同一個倍數，點排在一條螺線上。', 'Keep multiplying by z: each step adds the same angle and multiplies by the same factor, so the points lie on a spiral.'],
+      mul: ['乘以非零 z：整張方格紙繞 0 轉 arg z、伸縮 |z| 倍。三角形 (0, 1, z) 和 (0, w, zw) 相似。', 'For nonzero z: the whole grid turns about 0 by arg z and stretches by |z|. The triangles (0, 1, z) and (0, w, zw) are similar.'],
+      pow: ['從 1 開始，每一步都乘以同一個 z。觀察各點到原點的距離和方向。', 'Start at 1 and multiply by z at every step. Watch the distance and direction from the origin.'],
       root: ['w^n = z 的 n 個根：絕對值都是 |z| 的 n 次方根，幅角相差 360°／n，圍成正 n 邊形。', 'The n solutions of w^n = z: all with modulus the n-th root of |z| and angles 360°/n apart, at the corners of a regular n-gon.']
     }[state.mode];
     $('modeNote').textContent = T(N[0], N[1]);
@@ -589,7 +593,8 @@
     }
     if (state.mode === 'pow') {
       const zn = result();
-      const how = r === 0 ? '' : Math.abs(r - 1) < 1e-9 ? T('|z| = 1，點沿著單位圓走。', '|z| = 1, so the points walk round the unit circle.') : r < 1 ? T('|z| < 1，螺線往內捲。', '|z| < 1, so the spiral winds inwards.') : T('|z| > 1，螺線往外。', '|z| > 1, so the spiral winds outwards.');
+      if (r === 0) { setStatus(T('乘以零後，各點停在原點，幅角沒有定義。', 'After multiplication by zero the points stay at the origin, where the argument is undefined.')); return; }
+      const how = th === 0 ? T('點留在正實軸。', 'The points stay on the positive real axis.') : Math.abs(r - 1) < 1e-9 ? T('|z| = 1，點沿著單位圓走。', '|z| = 1, so the points walk round the unit circle.') : r < 1 ? T('|z| < 1，螺線往內捲。', '|z| < 1, so the spiral winds inwards.') : T('|z| > 1，螺線往外。', '|z| > 1, so the spiral winds outwards.');
       setStatus('z^' + state.pn + ' = ' + cfmt(zn, 3) + T('，幅角是 ', ', argument ') + fmt(state.pn, 0) + ' × ' + fmt(th, 3) + '°' + T('。', '. ') + how + (M.abs(zn) > CAP ? T('（已超出畫面）', ' (off the screen)') : ''));
       return;
     }
@@ -692,7 +697,7 @@
     state.play = { mode: mode, t0: performance.now(), dur: dur, k: 0, frac: 0, lastK: -1 };
     state.t = mode === 'mul' || mode === 'add' ? 0 : 1;
     $('play').textContent = T('停止', 'Stop');
-    if (mode === 'mul') setStatus(T('t 從 0 走到 1：方格紙轉過 t·arg z、伸縮 |z| 的 t 次方倍。', 't runs from 0 to 1: the grid turns by t·arg z and stretches by |z| to the power t.'));
+    if (mode === 'mul') setStatus(M.abs(state.z) === 0 ? T('乘數為零：伸縮倍率從 1 線性降到 0。', 'Zero multiplier: the scale decreases linearly from 1 to 0.') : T('t 從 0 走到 1：方格紙轉過 t·arg z、伸縮 |z| 的 t 次方倍。', 't runs from 0 to 1: the grid turns by t·arg z and stretches by |z| to the power t.'));
     playStep();
   });
   function playStep() {

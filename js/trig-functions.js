@@ -669,7 +669,7 @@
     } else if (state.mode === 'wave') {
       const info = TC.waveInfo(state.p);
       setHTML('wAmp', trimN(info.amp, 2));
-      setHTML('wPer', radText(info.period));
+      setHTML('wPer', info.period == null ? T('常數函數，無最小正週期', 'Constant function; no least positive period') : radText(info.period));
       setHTML('wMax', trimN(info.max, 2) + T('、', ', ') + trimN(info.min, 2));
       setHTML('wMid', 'y = ' + trimN(state.p.k, 2));
       const h = info.shift;
@@ -913,7 +913,7 @@
     retarget(false);
     updateChallengeUI();
     chime(false);
-    say(T('新的目標曲線：調整 A、ω、φ、k，讓你的曲線和虛線完全重合。', 'New target curve: adjust A, ω, φ and k until your curve lies exactly on the dashed one.'));
+    say(T('新的目標曲線：調整 A、ω、φ、k，讓你的曲線與虛線在圖上的高度差都不超過 0.05。', 'New target curve: adjust A, ω, φ and k until your curve is within 0.05 of the dashed one across the graph.'));
     requestDraw();
   }
   function checkMatch() {
@@ -943,7 +943,7 @@
       m.textContent = T('對準了！', 'Matched!') + (state.streak > 1 ? T('（連續 ', ' (streak ') + state.streak + T(' 題）', ')') : '');
       m.className = 'chal-msg ok';
     } else {
-      m.textContent = T('第 ', 'Curve ') + state.nTarget + T(' 題：讓你的曲線和綠色虛線完全重合。', ': lay your curve exactly on the green dashed one.');
+      m.textContent = T('第 ', 'Curve ') + state.nTarget + T(' 題：讓你的曲線與綠色虛線在圖上的高度差都不超過 0.05。', ': match the green dashed curve within 0.05 across the graph.');
       m.className = 'chal-msg';
     }
   }

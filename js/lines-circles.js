@@ -47,14 +47,23 @@
   function tx(v, dec) { return G.trim(v, dec == null ? 3 : dec); }
   function txp(v, dec) { const s = tx(v, dec); return s.charAt(0) === '-' ? '(' + s + ')' : s; }
   function pt(p, dec) { return '(' + tr(p[0], dec == null ? 2 : dec) + ', ' + tr(p[1], dec == null ? 2 : dec) + ')'; }
+  function distanceText(q) {
+    const rounded = num(q.d, 3);
+    return q.rel !== 'tangent' && Number(rounded) === state.r ? String(q.d) : rounded;
+  }
+  function lineRelationName(q) {
+    const near = q.rel !== 'tangent' && q.actionRel === 'tangent';
+    return relName(q.rel) + (near ? T('（接近相切）', ' (near tangent)') : '');
+  }
   function relName(rel) { return rel === 'apart' ? T('相離', 'miss') : rel === 'tangent' ? T('相切', 'touch') : rel === 'cross' ? T('相交兩點', 'cut at two points') : '—'; }
 
   // ---------- 目前的量 ----------
   function QL() {
     const d = G.dist(state.a, state.b, state.c, state.h, state.k);
     const rel = G.relation(d, state.r);
+    const actionRel = G.relation(d, state.r, G.TOL_TOUCH);
     return {
-      d: d, rel: rel, foot: G.foot(state.a, state.b, state.c, state.h, state.k),
+      d: d, rel: rel, actionRel: actionRel, foot: G.foot(state.a, state.b, state.c, state.h, state.k),
       pts: G.intersections(state.a, state.b, state.c, state.h, state.k, state.r), chord: rel === 'cross' ? G.chord(d, state.r) : rel === 'tangent' ? 0 : null,
       quad: G.quadratic(state.a, state.b, state.c, state.h, state.k, state.r)
     };
@@ -224,7 +233,7 @@
       const u = unit([q.foot[0] - state.h, q.foot[1] - state.k]), v = unit([-state.b, state.a]);
       if (q.d > 0.3) rightMark(c, q.foot, [-u[0], -u[1]], v, C['lc-dist']);
       const m = [(state.h + q.foot[0]) / 2, (state.k + q.foot[1]) / 2];
-      if (inView(m)) D.pill(c, 'd = ' + tr(q.d, 3), F.X(m[0]) + (u[1] >= 0 ? 10 : -10), F.Y(m[1]) + 5, C['lc-dist'], u[1] >= 0 ? 'left' : 'right', fnt(12, 600));
+      if (inView(m)) D.pill(c, 'd = ' + distanceText(q), F.X(m[0]) + (u[1] >= 0 ? 10 : -10), F.Y(m[1]) + 5, C['lc-dist'], u[1] >= 0 ? 'left' : 'right', fnt(12, 600));
       if (inView(q.foot)) D.ball(c, F.X(q.foot[0]), F.Y(q.foot[1]), 3.5, C['lc-dist']);
     }
     // 交點
@@ -250,7 +259,7 @@
       }
     }
     // 位置關係
-    const rel = hide ? T('讓直線和圓相切', 'make the line touch the circle') : relName(q.rel) + (q.rel === 'apart' ? '：d > r' : q.rel === 'tangent' ? '：d = r' : q.rel === 'cross' ? '：d < r' : '');
+    const rel = hide ? T('讓直線和圓相切', 'make the line touch the circle') : lineRelationName(q) + (q.rel === 'apart' ? '：d > r' : q.rel === 'tangent' ? '：d = r' : q.rel === 'cross' ? '：d < r' : '');
     D.pill(c, rel, F.r.x0 + 12, F.r.y0 + 24, q.rel === 'tangent' && !hide ? C['lc-pt'] : C.text, 'left', fnt(13, 700));
     // 直線方程式
     D.haloText(c, G.lineEq(state.a, state.b, state.c, 2), F.r.x1 - 10, F.r.y0 + 10, C['lc-line'], 'right', 'top', fnt(12.5, 600));
@@ -366,21 +375,23 @@
       const q = QL();
       setHTML('rL', G.lineEq(state.a, state.b, state.c, 2));
       setHTML('rC', G.circleEq(state.h, state.k, state.r, 2).replace(/²/g, '<sup>2</sup>'));
-      setHTML('rD', hide ? '?' : num(q.d, 3));
-      setHTML('rRel', hide ? '?' : relName(q.rel));
+      setHTML('rD', hide ? '?' : distanceText(q));
+      setHTML('rRel', hide ? '?' : lineRelationName(q));
       setHTML('rP', hide ? '?' : q.pts.length ? q.pts.map(function (p) { return pt(p, 2); }).join(' ') : T('沒有', 'none'));
-      setHTML('rCh', hide ? '?' : q.rel === 'cross' ? num(q.chord, 3) : q.rel === 'tangent' ? '0' : '—');
+      setHTML('rCh', hide ? '?' : q.rel === 'cross' ? q.chord < 0.001 ? String(+q.chord.toPrecision(3)) : num(q.chord, 3) : q.rel === 'tangent' ? '0' : '—');
       if (!(Math.hypot(state.a, state.b) > 0)) { setEq('rEq', 'a = b = 0'); setEq('rEq2', ''); }
       else if (hide) {
         setEq('rEq', 'd = \\frac{|a h + b k + c|}{\\sqrt{a^2 + b^2}} = \\frac{|' + txp(state.a, 2) + '\\cdot' + txp(state.h, 2) + ' + ' + txp(state.b, 2) + '\\cdot' + txp(state.k, 2) + ' + c|}{\\sqrt{' + txp(state.a, 2) + '^2 + ' + txp(state.b, 2) + '^2}} \\overset{?}{=} ' + tx(state.r, 2));
         setEq('rEq2', '\\Delta \\overset{?}{=} 0');
       } else {
         const cmp = q.rel === 'tangent' ? '=' : q.rel === 'apart' ? '>' : '<';
-        setEq('rEq', 'd = \\frac{|' + txp(state.a, 2) + '\\cdot' + txp(state.h, 2) + ' + ' + txp(state.b, 2) + '\\cdot' + txp(state.k, 2) + ' + ' + txp(state.c, 2) + '|}{\\sqrt{' + txp(state.a, 2) + '^2 + ' + txp(state.b, 2) + '^2}} \\approx ' + tx(q.d, 3) + '\\;' + cmp + '\\; r = ' + tx(state.r, 2));
+        setEq('rEq', 'd = \\frac{|' + txp(state.a, 2) + '\\cdot' + txp(state.h, 2) + ' + ' + txp(state.b, 2) + '\\cdot' + txp(state.k, 2) + ' + ' + txp(state.c, 2) + '|}{\\sqrt{' + txp(state.a, 2) + '^2 + ' + txp(state.b, 2) + '^2}} \\approx ' + distanceText(q) + '\\;' + cmp + '\\; r = ' + tx(state.r, 2));
         const Q = q.quad;
         if (Q) {
-          const dc = q.rel === 'tangent' ? '= 0' : Q.disc > 0 ? '> 0' : '< 0';
-          setEq('rEq2', polyTex(Q.A, Q.B, Q.C, Q.v) + ',\\quad \\Delta = ' + (q.rel === 'tangent' ? '0' : tx(Q.disc, 2)) + (q.rel === 'tangent' ? '' : '\\;' + dc.charAt(0) + '\\;0'));
+          const disc = +Q.disc.toPrecision(8);
+          const shown = String(disc).replace(/e([+-]?\d+)/, '\\times10^{$1}');
+          const sign = disc > 0 ? '>0' : disc < 0 ? '<0' : '';
+          setEq('rEq2', polyTex(Q.A, Q.B, Q.C, Q.v) + ',\\quad \\Delta ' + (disc === Q.disc ? '=' : '\\approx ') + shown + '\\;' + sign);
         }
       }
     } else {
@@ -436,7 +447,7 @@
   /** 位置關係改變時發聲：相離低音、相交兩個音、相切亮的和弦 */
   function relSound() {
     let rel;
-    if (state.mode === 'line') rel = state.chal ? null : QL().rel;
+    if (state.mode === 'line') rel = state.chal ? null : QL().actionRel;
     else { const q = QT(); rel = q.inside ? 'in' : q.on ? 'on' : 'out'; }
     if (rel && state.lastRel && rel !== state.lastRel) {
       const S = sound();
@@ -456,7 +467,7 @@
   function emitNow() {
     if (state.mode === 'line') {
       const q = QL();
-      emit('line', { a: state.a, b: state.b, c: state.c, h: state.h, k: state.k, r: state.r, d: q.d, rel: q.rel, chord: q.rel === 'cross' ? q.chord : null, pts: q.pts, foot: q.foot, disc: q.quad ? q.quad.disc : null, chal: !!state.chal });
+      emit('line', { a: state.a, b: state.b, c: state.c, h: state.h, k: state.k, r: state.r, d: q.d, rel: q.actionRel, chord: q.rel === 'cross' ? q.chord : null, pts: q.pts, foot: q.foot, disc: q.quad ? q.quad.disc : null, chal: !!state.chal });
     } else {
       const q = QT();
       emit('tan', { px: state.px, py: state.py, h: state.h, k: state.k, r: state.r, L: q.L, len: q.len, angle: q.on ? null : q.angle, on: q.on, inside: q.inside });
@@ -587,7 +598,7 @@
           changed(true); return true;
         },
         describe: function () {
-          if (state.mode === 'line') { const q = QL(); return G.lineEq(state.a, state.b, state.c, 2) + (state.chal ? '' : '，' + relName(q.rel)); }
+          if (state.mode === 'line') { const q = QL(); return G.lineEq(state.a, state.b, state.c, 2) + (state.chal ? '' : '，' + lineRelationName(q)); }
           return 'P' + pt([state.px, state.py], 2);
         }
       }],

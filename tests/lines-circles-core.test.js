@@ -45,6 +45,18 @@ test('交點：相交時兩點都在直線與圓上、弦長公式；相切時�
     } else if (rel === 'apart') ok(P.length === 0 && G.chord(d, r) === null);
   }
   ok(seen.apart > 50 && seen.cross > 50, '兩種情形都有測到');
+  // 十進表示的相切直線，距離的浮點運算相差一個末位。
+  const dTouch = G.dist(3, 4, 11.56, 0.03, 0.3);
+  ok(G.relation(dTouch, 2.57) === 'tangent' && G.chord(dTouch, 2.57) === 0);
+  ok(G.quadratic(3, 4, 11.56, 0.03, 0.3, 2.57).disc === 0);
+  for (const c of [-24.99, -25, -25.01]) {
+    const d = G.dist(0, 5, c, 0, 0);
+    ok(G.relation(d, 5, G.TOL_TOUCH) === 'tangent');
+    const pts = G.intersections(0, 5, c, 0, 0, 5);
+    ok(pts.length === (c > -25 ? 2 : c < -25 ? 0 : 1));
+    near(G.quadratic(0, 5, c, 0, 0, 5).disc, -100 * (c * c - 625), 1e-9);
+    if (pts.length === 2) near(G.chord(d, 5), Math.abs(pts[1][0] - pts[0][0]), 1e-12);
+  }
   const T = G.intersections(3, 4, -25, 0, 0, 5);
   ok(T.length === 1 && Math.abs(T[0][0] - 3) < 1e-12 && Math.abs(T[0][1] - 4) < 1e-12, '3x + 4y = 25 切圓 x² + y² = 25 於 (3, 4)');
   // 整數交點：x − y + 1 = 0 與 x² + y² = 25 交於 (−4, −3)、(3, 4)

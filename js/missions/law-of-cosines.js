@@ -39,7 +39,7 @@
     {
       id: 'law-of-cosines-4', level: 3,
       title: { zh: '圍不起來', en: 'It will not close' },
-      desc: { zh: '在「SSS」給三條圍不成三角形的邊，看兩個圓為什麼碰不到。', en: 'In “SSS”, give three sides that cannot make a triangle and see why the two circles cannot meet.' },
+      desc: { zh: '在「SSS」給三條圍不成三角形的邊，看兩圓相離或相切時，為什麼都圍不出有面積的三角形。', en: 'In “SSS”, give three sides that cannot make a triangle and see why disjoint or tangent circles give no triangle of positive area.' },
       check: function (ev) { return ev.type === 'tri' && ev.data.mode === 'sss' && !ev.data.ok; }
     },
     {

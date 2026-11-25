@@ -23,7 +23,7 @@
       id: 'galton-board-1', level: 1,
       title: { zh: '第一顆球', en: 'The first ball' },
       desc: { zh: '放一顆球下去，看它一路碰釘子、掉進哪一格。', en: 'Drop one ball and watch it bounce off the pegs into a bin.' },
-      check: function (ev) { return ev.type === 'drop' && ev.data.N >= 1; }
+      check: function (ev) { return ev.type === 'drop' && ev.data.src === 'ball' && ev.data.N >= 1; }
     },
     {
       id: 'galton-board-2', level: 2,

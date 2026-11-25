@@ -31,10 +31,14 @@ test('階梯：每期結束才入帳，期末等於複利公式；翻倍時間�
   near(E.stair(0.12, 4, 0.2), 1, 0, '第一季還沒結束');
   near(E.stair(0.12, 4, 0.25), 1.03, 1e-12, '第一季結束');
   for (let k = 0; k <= 40; k++) near(E.stair(0.08, 4, k / 4), E.compound(0.08, 4, k / 4), 1e-12, '第 ' + k + ' 期');
-  near(E.doublingTime(0.08, 1), Math.log(2) / Math.log(1.08), 1e-12);
+  near(E.doublingTime(Math.expm1(Math.LN2 / 123), 1), 123, 0, '剛好在第 123 期翻倍');
+  near(E.doublingTime(0.1, 1), 8, 0);
+  ok(E.stair(0.1, 1, 7) < 2 && E.stair(0.1, 1, 8) >= 2);
+  for (const n of [4, 12, 365, 1000000]) {
+    const years = E.doublingTime(0.08, n);
+    ok(E.stair(0.08, n, years - 1 / n) < 2 && E.stair(0.08, n, years) >= 2);
+  }
   near(E.doublingTime(0.08, Infinity), Math.log(2) / 0.08, 1e-12);
-  near(E.compound(0.08, 1, E.doublingTime(0.08, 1)), 2, 1e-12, '翻倍');
-  [0.04, 0.06, 0.08, 0.1].forEach(function (r) { near(E.doublingTime(r, 1), 72 / (r * 100), 0.35, '72 法則 r = ' + r); });
   ok(E.doublingTime(0, 1) === null);
 });
 

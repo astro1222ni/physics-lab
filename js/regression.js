@@ -400,7 +400,7 @@
   }
   function strength(r) {
     const a = Math.abs(r);
-    if (a >= 0.99999) return T('完全在一條直線上', 'exactly on a line');
+    if (a >= 0.99999) return T('共線或接近共線', 'on or very close to a line');
     const dir = r > 0 ? T('正', 'positive') : T('負', 'negative');
     if (a >= 0.7) return T('強烈的' + dir + '相關', 'strong ' + dir + ' correlation');
     if (a >= 0.3) return T('中度的' + dir + '相關', 'moderate ' + dir + ' correlation');
@@ -454,9 +454,9 @@
         : k <= 1.02 ? T('很好！你的直線的殘差平方和只比最小值多 ' + num(100 * (k - 1), 1) + '%。', 'Very good! Your line is only ' + num(100 * (k - 1), 1) + '% above the least sum of squares.')
           : T('你的直線的殘差平方和是最小值的 ' + num(k, 2) + ' 倍：讓粉紅色正方形的總面積再小一點。', 'Your line’s sum of squares is ' + num(k, 2) + ' times the least: shrink the pink squares.');
     }
-    if (['I', 'II', 'III', 'IV'].indexOf(state.set) >= 0) return T('安斯康姆 ' + state.set + '：r ≈ 0.816、迴歸直線 y ≈ 0.5x + 3，四組都一樣，圖卻完全不同。', 'Anscombe ' + state.set + ': r ≈ 0.816 and y ≈ 0.5x + 3, the same for all four sets, yet the pictures are completely different.');
+    if (['I', 'II', 'III', 'IV'].indexOf(state.set) >= 0) return T('安斯康姆 ' + state.set + '：r ≈ 0.816、迴歸直線 y ≈ 0.5x + 3，四組的數值非常接近，圖卻完全不同。', 'Anscombe ' + state.set + ': r ≈ 0.816 and y ≈ 0.5x + 3, very similar across the four sets, yet the pictures are completely different.');
     if (s.quad && s.quad.R2 != null && s.quad.R2 >= 0.999 && Math.abs(s.quad.a) >= 0.05 && Math.abs(s.r) < 0.5) return T('這些點整齊地排在一條拋物線上，但 r 只量「直線」關係。', 'These points sit neatly on a parabola, but r only measures straight-line relations.');
-    if (Math.abs(s.r) >= 0.99999) return T('所有點都在同一條直線上：|r| = 1，殘差都是 0。', 'All the points are on one line: |r| = 1 and every residual is 0.');
+    if (Math.abs(s.r) >= 0.99999) return T('|r| ≥ 0.99999，資料點共線或接近共線。', 'The points lie on or very close to a line (|r| ≥ 0.99999).');
     return strength(s.r) + T('（r = ', ' (r = ') + num(s.r, 3) + T('）。迴歸直線一定通過平均點。', '). The regression line always passes through the mean point.');
   }
 

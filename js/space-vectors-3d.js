@@ -53,14 +53,16 @@
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.85;
     controls.screenSpacePanning = true;
-    let startAng = null;
-    controls.addEventListener('start', function () { startAng = [controls.getAzimuthalAngle(), controls.getPolarAngle()]; });
-    controls.addEventListener('end', function () {
-      if (!startAng) return;
-      const turned = Math.abs(controls.getAzimuthalAngle() - startAng[0]) + Math.abs(controls.getPolarAngle() - startAng[1]);
-      startAng = null;
-      if (turned > 0.3) B.onRotate();
+    const viewDirection = function () { return camera.position.clone().sub(controls.target).normalize(); };
+    let previousDirection = null;
+    controls.addEventListener('start', function () { previousDirection = viewDirection(); });
+    controls.addEventListener('change', function () {
+      if (!previousDirection) return;
+      const direction = viewDirection();
+      B.onRotate(previousDirection.angleTo(direction) / DEG);
+      previousDirection = direction;
     });
+    controls.addEventListener('end', function () { previousDirection = null; });
 
     // ---------- 光線與環境反光 ----------
     scene.add(new THREE.HemisphereLight(0xffffff, 0x3a4250, 0.9));
@@ -410,7 +412,7 @@
       camera.position.copy(controls.target).add(new THREE.Vector3(v.x, -v.z, v.y));
       controls.update();
       requestRender();
-      B.onRotate();
+      B.onRotate(off.angleTo(viewDirection()) / DEG);
     });
 
     const api = {

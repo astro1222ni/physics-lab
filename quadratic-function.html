@@ -279,7 +279,7 @@
 
       <h3 data-en="How the page computes">計算方法</h3>
       <ul>
-        <li data-en-html="All values come from the formulas above. The roots use \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\) and \(x_2 = \frac{c}{a x_1}\) so that nothing is lost by subtracting nearly equal numbers. Because the sliders give finite decimals, a discriminant within \(10^{-9}\) of 0 is treated as exactly 0. The unit tests compare the vertex, roots, extreme values on intervals and intersections with direct evaluation at thousands of points.">所有數值都用上面的公式計算。求根用 \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\)、\(x_2 = \frac{c}{a x_1}\)，避免兩個很接近的數相減失準。滑桿的值都是有限小數，所以判別式和 0 相差 \(10^{-9}\) 以內就當成 0。單元測試用幾千個點的直接計算，核對頂點、根、區間上的最大最小值和交點。</li>
+        <li data-en-html="All values come from the formulas above. For a repeated root use \(x=-b/(2a)\). For two distinct real roots set \(\operatorname{sgn}(0)=+1\) in the following algorithm. The roots use \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\) and \(x_2 = \frac{c}{a x_1}\) so that nothing is lost by subtracting nearly equal numbers. Because the sliders give finite decimals, a discriminant within \(10^{-9}\) of 0 is treated as exactly 0. The unit tests compare the vertex, roots, extreme values on intervals and intersections with direct evaluation at thousands of points.">所有數值都用上面的公式計算。重根取 \(x=-b/(2a)\)。求兩相異實根時，本算法約定 \(\operatorname{sgn}(0)=+1\)，用 \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\)、\(x_2 = \frac{c}{a x_1}\)，避免兩個很接近的數相減失準。滑桿的值都是有限小數，所以判別式和 0 相差 \(10^{-9}\) 以內就當成 0。單元測試用幾千個點的直接計算，核對頂點、根、區間上的最大最小值和交點。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

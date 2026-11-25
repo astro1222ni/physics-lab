@@ -99,7 +99,7 @@
     {
       id: 'trig-functions-9', level: 6,
       title: { zh: '對準目標', en: 'On target' },
-      desc: { zh: '在波形模式按「挑戰：對準目標曲線」，調整 A、ω、φ、k，讓你的曲線和目標完全重合。', en: 'In wave mode press “Challenge: match a curve” and adjust A, ω, φ and k until your curve lies exactly on the target.' },
+      desc: { zh: '在波形模式按「挑戰：對準目標曲線」，調整 A、ω、φ、k，讓兩條曲線的最大高度差在 0.05 以內。', en: 'In wave mode press “Challenge: match a curve” and adjust A, ω, φ and k until the maximum vertical difference is at most 0.05.' },
       check: function (ev) { return ev.type === 'match' && ev.data.streak >= 1; }
     },
     {

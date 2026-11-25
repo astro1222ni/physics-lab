@@ -160,7 +160,7 @@
     {
       id: 'triangle-centers-h9', level: 9, hidden: true,
       title: { zh: '在小圓心折一下', en: 'A fold at the small centre' },
-      desc: { zh: '大圓心、小圓心與一個頂點，在小圓心處折出一個端正的角；三角形本身卻沒有。', en: 'The big circle’s centre, the small circle’s centre and a corner fold into a square corner at the small one — though the triangle itself has none.' },
+      desc: { zh: '大圓心、小圓心與一個頂點，在小圓心處折出一個端正的角；三角形本身卻沒有，最小角也至少有 10°。', en: 'The big circle’s centre, the small circle’s centre and a corner fold into a square corner at the small one — though the triangle itself has none, and its smallest angle is at least 10°.' },
       // OI ⊥ AI ⇔ b + c = 2a（三邊成等差），不是直角、最小角 ≥ 10°，與 90° 差 0.001° 以內
       check: function (ev) { const d = ev.data; return tc(ev) && d.oiPerp <= 1e-3 && notRight(d) && d.small >= 10; }
     },

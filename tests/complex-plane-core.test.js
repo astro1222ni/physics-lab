@@ -89,6 +89,7 @@ test('乘法的過程：partial(z, 0) = 1、partial(z, 1) = z，中間的模與�
     const s = rand(), p = M.partial(z, s);
     near(M.abs(p), Math.pow(M.abs(z), s), 1e-9);
   }
+  nearC(M.partial(C(0, 0), 0.5), C(0.5, 0), 1e-12, '乘零播放到中段仍有一半尺度');
   nearC(M.partial(C(0, 0), 1), C(0, 0), 1e-12, '乘 0：縮成一點');
 });
 test('歐拉：(1 + iπ／n)^n → −1；n = 100 時差 0.05、n = 1000 時差 0.005', function () {

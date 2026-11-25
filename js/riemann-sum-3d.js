@@ -143,16 +143,20 @@
       // 圓盤（梯形法是圓台）；正負交錯兩種亮度，看得出一片一片
       const seg = n > 100 ? 40 : 56;
       for (let i = 0; i < n; i++) {
-        const d = R.disk(state.key, a, b, n, rule, i), h = d.r - d.l;
-        if (d.rl < 1e-6 && d.rr < 1e-6) continue;
-        const mid = rule === 'trap' ? (f(d.l) + f(d.r)) / 2 : R.piece(state.key, a, b, n, rule === 'upper' || rule === 'lower' ? 'mid' : rule, i).y;
-        const base = mid < 0 ? negC.clone() : posC.clone();
-        const col = base.offsetHSL(0, 0, (i % 2 ? -0.06 : 0.04));
-        const geo = new THREE.CylinderGeometry(Math.max(1e-4, d.rl), Math.max(1e-4, d.rr), h * (n > 1 ? 0.985 : 1), seg, 1, false);
-        geo.rotateZ(PI / 2);       // 圓柱的軸 +y → −x：radiusTop 在左端
-        const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.38, metalness: 0.12, envMapIntensity: 0.9 }));
-        m.position.set((d.l + d.r) / 2, 0, 0);
-        world.add(m);
+        const slice = R.disk(state.key, a, b, n, rule, i);
+        for (const d of R.diskParts(slice)) {
+          const h = d.r - d.l;
+          if (d.rl === 0 && d.rr === 0) continue;
+          const mid = rule === 'trap' ? (d.rl === 0 ? f(slice.r) : f(slice.l) || f(slice.r))
+            : R.piece(state.key, a, b, n, rule === 'upper' || rule === 'lower' ? 'mid' : rule, i).y;
+          const col = (mid < 0 ? negC : posC).clone().offsetHSL(0, 0, (i % 2 ? -0.06 : 0.04));
+          const height = slice.zero == null && n > 1 ? h * 0.985 : h;
+          const geo = new THREE.CylinderGeometry(d.rl, d.rr, height, seg, 1, false);
+          geo.rotateZ(PI / 2);       // 圓柱的軸 +y → −x：radiusTop 在左端
+          const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.38, metalness: 0.12, envMapIntensity: 0.9 }));
+          m.position.set((d.l + d.r) / 2, 0, 0);
+          world.add(m);
+        }
       }
 
       // 準確的旋轉體：半透明曲面

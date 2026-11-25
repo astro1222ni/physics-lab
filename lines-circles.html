@@ -219,7 +219,7 @@
 
       <h3 data-en="How the page computes">計算方法</h3>
       <ul>
-        <li data-en-html="Crossing points are found from the foot of the perpendicular, plus and minus half the chord along the line, which stays accurate even when the line is nearly tangent. “Tangent” here means \(|d - r| \le 0.005\). The unit tests check that crossing points lie on both curves, that the roots of the quadratic are the crossing points, and the formula for \(\Delta\) above.">交點用「垂足 ± 半弦長」求，直線幾乎相切時也準確。這一頁的「相切」指 \(|d - r| \le 0.005\)。單元測試檢查交點同時在直線與圓上、二次方程式的根就是交點、以及上面的 \(\Delta\) 公式。</li>
+        <li data-en-html="Crossing points are found from the foot of the perpendicular, plus and minus half the chord along the line, which stays accurate even when the line is nearly tangent. The operation tolerance for tangency is \(|d - r| \le 0.005\). Intersection counts, chord lengths and discriminants use the geometric values. The unit tests check that crossing points lie on both curves, that the roots of the quadratic are the crossing points, and the formula for \(\Delta\) above.">交點用「垂足 ± 半弦長」求，直線幾乎相切時也準確。相切操作的容差為 \(|d - r| \le 0.005\)；交點數、弦長和判別式依實際幾何位置計算。單元測試檢查交點同時在直線與圓上、二次方程式的根就是交點、以及上面的 \(\Delta\) 公式。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

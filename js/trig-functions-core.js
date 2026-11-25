@@ -154,7 +154,7 @@
     const amp = Math.abs(p.A);
     return {
       A: p.A, w: p.w, phi: p.phi, k: p.k,
-      amp: amp, period: TAU / p.w, freq: p.w / TAU,
+      amp: amp, period: amp === 0 ? null : TAU / p.w, freq: amp === 0 ? null : p.w / TAU,
       max: p.k + amp, min: p.k - amp,
       shift: -p.phi * DEG / p.w,      // y = A sin(ω(x − h)) + k 的 h（正：右移，負：左移）
       firstMax: firstMax(p, 0), firstZeroUp: firstRise(p, 0)

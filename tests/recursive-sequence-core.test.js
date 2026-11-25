@@ -20,7 +20,7 @@ test('一次式：逐步迭代 = 公式解 L + (a_1 − L)p^(n−1)；|p| < 1 �
     near(ts[n - 1], M.linTerm(p, q, a1, n), 1e-7 * Math.max(1, Math.abs(ts[n - 1])), '公式解 p = ' + p);
     const fp = M.fixedPoints('lin', { p: p, q: q });
     if (p !== 1) { eq(fp.length, 1); near(p * fp[0].x + q, fp[0].x, 1e-9, '不動點'); eq(fp[0].stable, Math.abs(p) < 1); }
-    else ok(fp.length === 0, 'p = 1 沒有不動點');
+    else ok(fp.length === 0, 'p = 1 沒有孤立不動點');
   }
   near(M.iterate('lin', { p: 0.5, q: 2 }, 0, 60)[59], 4, 1e-12, '0.5x + 2 收斂到 4');
   const sp = M.iterate('lin', { p: -0.5, q: 3 }, 0, 6); // L = 2：0, 3, 1.5, 2.25, 1.875, 2.0625
@@ -66,6 +66,11 @@ test('邏輯斯諦：週期加倍 1 → 2 → 4 → 8，3.83 附近有週期 3�
   eq(M.logiPeriod(2.8, 0.2), 1); eq(M.logiPeriod(3.2, 0.2), 2); eq(M.logiPeriod(3.5, 0.2), 4); eq(M.logiPeriod(3.55, 0.2), 8);
   eq(M.logiPeriod(3.83, 0.2), 3); eq(M.logiPeriod(3.84, 0.2), 3);
   eq(M.logiPeriod(3.7, 0.2), 0, '3.7 混沌'); eq(M.logiPeriod(4, 0.2), 0, '4 混沌');
+  ok(M.fixedPointSet('lin', { p: 1, q: 0 }).all);
+  ok(!M.fixedPointSet('lin', { p: 1, q: 1 }).all);
+  eq(M.logiOrbit(4, 0.75).sample, 0.75);
+  eq(M.F.logi.df(0.75, { r: 4 }), -2);
+  eq(M.logiOrbit(4, 1).sample, 0);
   eq(M.logiPeriod(4, 0.75), 1, 'r = 4、0.75 是不動點');
   eq(M.logiPeriod(0.5, 0.3), 1, 'r < 1 走到 0');
   // 理論區間：週期 2 在 3 < r < 1 + √6，週期 4 在 1 + √6 < r < 3.5441
@@ -111,6 +116,15 @@ test('費氏型：比值趨近 φ；起始比剛好 −1/φ 時是等比、越�
     });
   }
   ok(M.tiling(-1, 2, 5) === null && M.tiling(1, 0, 5) === null, '有非正數的項就不拼');
+});
+
+test('超過搜尋上限的週期會回報未辨識', function () {
+  const r = 3.5699;
+  const orbit = M.logiOrbit(r, 0.2);
+  const tail = M.iterate('logi', { r: r }, orbit.sample, 256);
+  eq(orbit.period, 0);
+  ok(tail.slice(0, 128).some((x, i) => Math.abs(x - tail[i + 64]) > 1e-4));
+  for (let i = 0; i < 128; i++) near(tail[i], tail[i + 128], 1e-12);
 });
 
 test('科學記號與第一次進到誤差範圍', function () {

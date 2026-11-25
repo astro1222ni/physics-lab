@@ -49,7 +49,7 @@
     {
       id: 'conic-sections-2', level: 1,
       title: { zh: '換個角度看', en: 'See it from another side' },
-      desc: { zh: '打開「3D 立體」檢視，拖曳轉動視角，從不同方向看圓錐、切平面和兩顆丹德林球。', en: 'Open the 3D view and drag to turn it: look at the cone, the cutting plane and the two Dandelin spheres from another direction.' },
+      desc: { zh: '打開「3D 立體」檢視，拖曳轉動視角，從不同方向觀察切平面和圓錐的交集。', en: 'Open the 3D view and drag to turn it: look at the intersection of the cone and the cutting plane from another direction.' },
       check: function (ev) { return ev.type === 'rotate3d'; }
     },
     {

@@ -105,7 +105,12 @@
   /** 第 i 片：圓盤（半徑 r）或圓台（半徑 rl、rr）；upper／lower 用 |f| 在這段的最大／最小值 */
   function disk(key, a, b, n, rule, i) {
     const F = FUNCS[key], h = (b - a) / n, l = a + i * h, r = i === n - 1 ? b : a + (i + 1) * h;
-    if (rule === 'trap') return { l: l, r: r, rl: Math.abs(F.f(l)), rr: Math.abs(F.f(r)) };
+    if (rule === 'trap') {
+      const yl = F.f(l), yr = F.f(r);
+      const d = { l: l, r: r, rl: Math.abs(yl), rr: Math.abs(yr) };
+      if (yl * yr < 0) d.zero = l + (r - l) * yl / (yl - yr);
+      return d;
+    }
     if (rule === 'upper' || rule === 'lower') {
       const e = extremes(key, l, r);
       const big = Math.max(Math.abs(e[0]), Math.abs(e[1])), small = (e[0] <= 0 && e[1] >= 0) ? 0 : Math.min(Math.abs(e[0]), Math.abs(e[1]));
@@ -115,12 +120,18 @@
     const p = piece(key, a, b, n, rule, i), rad = Math.abs(p.y);
     return { l: l, r: r, rl: rad, rr: rad };
   }
-  /** 近似體積：圓盤 π r² h；圓台 π h (r₁² + r₁r₂ + r₂²)/3 */
+  /** 用線性插值的零點切開，兩側各自繞軸旋轉。 */
+  function diskParts(d) {
+    if (d.zero == null) return [d];
+    return [{ l: d.l, r: d.zero, rl: d.rl, rr: 0 }, { l: d.zero, r: d.r, rl: 0, rr: d.rr }];
+  }
+  /** 把每個圓台或圓錐的體積相加。 */
   function volSum(key, a, b, n, rule) {
     let s = 0;
     for (let i = 0; i < n; i++) {
-      const d = disk(key, a, b, n, rule, i), h = d.r - d.l;
-      s += PI * h * (d.rl * d.rl + d.rl * d.rr + d.rr * d.rr) / 3;
+      for (const d of diskParts(disk(key, a, b, n, rule, i))) {
+        s += PI * (d.r - d.l) * (d.rl * d.rl + d.rl * d.rr + d.rr * d.rr) / 3;
+      }
     }
     return s;
   }
@@ -188,7 +199,7 @@
   const api = {
     FUNCS: FUNCS, KEYS: KEYS, RULES: RULES, N_MAX: N_MAX, MIN_W: MIN_W, CHAL: CHAL, CHAL_TOL: CHAL_TOL,
     clampAB: clampAB, extremes: extremes, piece: piece, sum: sum, exact: exact, all: all,
-    volExact: volExact, disk: disk, volSum: volSum, errSeries: errSeries, shrink: shrink,
+    volExact: volExact, disk: disk, diskParts: diskParts, volSum: volSum, errSeries: errSeries, shrink: shrink,
     rng: rng, genChallenge: genChallenge, chalHit: chalHit, trim: trim
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

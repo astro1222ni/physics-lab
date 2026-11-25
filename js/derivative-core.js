@@ -94,6 +94,14 @@
     const y0 = f(id, a, k);
     return { m: m, y0: y0, b: y0 - m * a, xInt: m !== 0 ? a - y0 / m : null };
   }
+  /** 局部截斷誤差的階數；0 表示間隔夠小時差商在數學上精確。 */
+  function errorOrder(id, a, k, symmetric) {
+    if (d1(id, a, k) == null) return null;
+    if (!symmetric && d2(id, a, k) !== 0) return 1;
+    if (id === 'sin' && Math.abs(a % Math.PI) === Math.PI / 2 && symmetric) return 0;
+    return d3(id, a, k) === 0 ? 0 : 2;
+  }
+
   /** 差商的主要誤差項（泰勒展開的第一項）：前向 h·f″(a)/2，對稱 h²·f‴(a)/6 */
   function leadErr(id, a, h, k, sym) {
     if (sym) { const t = d3(id, a, k); return t == null ? null : h * h * t / 6; }
@@ -287,7 +295,7 @@
   const api = {
     FUNCS: FUNCS, IDS: IDS, DEFAULT_COEF: DEFAULT_COEF, TAU: TAU,
     f: f, d1: d1, d2: d2, d3: d3, inDomain: inDomain, oneSided: oneSided,
-    diffQuot: diffQuot, symQuot: symQuot, tangent: tangent, leadErr: leadErr,
+    diffQuot: diffQuot, symQuot: symQuot, tangent: tangent, leadErr: leadErr, errorOrder: errorOrder,
     H_MIN: H_MIN, H_MAX: H_MAX, hFromPos: hFromPos, posFromH: posFromH,
     slopePoints: slopePoints, cubicRoots: cubicRoots, viewY: viewY, niceUp: niceUp,
     CHAL_CUBICS: CHAL_CUBICS, rng: rng, genChallenge: genChallenge, chalSolutions: chalSolutions, chalHit: chalHit,

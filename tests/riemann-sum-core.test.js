@@ -97,6 +97,12 @@ test('旋轉體：準確體積（球、拋物面）、圓盤與圓台的和收�
   // 一片圓台：r 從 0 到 2、長 3 的圓錐
   near(R.volSum('sq', 0, 1, 1, 'trap'), PI * 1 * (0 + 0 + 1) / 3, 1e-15, '圓錐 π r² h/3');
   // 一片圓盤
+  near(R.volSum('sin', -1, 1, 1, 'trap'), 2 * PI * Math.sin(1) ** 2 / 3, 1e-12);
+  const parts = R.diskParts(R.disk('sin', -0.5, 1, 1, 'trap', 0));
+  const zero = -0.5 + 1.5 * Math.sin(0.5) / (Math.sin(0.5) + Math.sin(1));
+  near(parts[0].r, zero, 1e-12);
+  near(parts[1].l, zero, 1e-12);
+  ok(parts[0].rr === 0 && parts[1].rl === 0);
   near(R.volSum('sq', 0, 2, 1, 'right'), PI * 16 * 2, 1e-12);
   // 中點圓盤對球的誤差也是 1/n²
   const e = function (n) { return R.volSum('semi', -2, 2, n, 'mid') - 32 * PI / 3; };

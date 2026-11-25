@@ -75,7 +75,7 @@
     {
       id: 'regression-9', level: 6,
       title: { zh: '排成一直線', en: 'All in a line' },
-      desc: { zh: '至少 5 個點，而且都在同一條斜直線上：|r| ≥ 0.99999。打開「對齊格線」比較好排。', en: 'Put at least 5 points on one slanted straight line: |r| ≥ 0.99999. “Snap to grid” helps.' },
+      desc: { zh: '至少 5 個點，而且排在同一條斜直線上或非常接近它：|r| ≥ 0.99999。打開「對齊格線」比較好排。', en: 'Put at least 5 points on or very close to one slanted straight line: |r| ≥ 0.99999. “Snap to grid” helps.' },
       check: function (ev) { const d = ev.data; return pts(ev) && d.n >= 5 && d.r != null && Math.abs(d.r) >= 0.99999; }
     },
     {

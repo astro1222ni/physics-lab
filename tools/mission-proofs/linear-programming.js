@@ -82,6 +82,7 @@ const OPEN = S([{ a: 1, b: 2, c: 4, s: '>=' }, { a: 3, b: 1, c: 6, s: '>=' }], 1
 
 // ---------- 每個任務做得到（以及接近但不算的情況） ----------
 expect('1', [sweep(FAC)], true, '按「掃描」');
+expect('1', [{ type: 'sweep', data: { status: 'unbounded' } }], false, '無界時沒有最後接觸點');
 expect('2', [tryP(FAC, 1, 1)], true, '工廠題 P = (1, 1)：可行');
 expect('2', [tryP(FAC, 7, 1)], false, 'P = (7, 1)：3·7 + 1 = 22 > 18，不可行');
 expect('3', [tryP(FAC, 4.4, 4.8)], true, 'P 吸到頂點 (4.4, 4.8)');

@@ -189,7 +189,7 @@
           <h2 data-en="y = A sin(ωx + φ) + k">y = A sin(ωx + φ) + k</h2>
           <div class="slider"><label for="amp" data-en="A (stretches up and down; negative flips it)">A（上下伸縮；負號上下翻轉）</label><output id="ampo"></output>
             <input id="amp" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
-          <div class="slider"><label for="omega" data-en="ω (period T = 2π / ω)">ω（週期 T = 2π ／ ω）</label><output id="omegao"></output>
+          <div class="slider"><label for="omega" data-en="ω (angular frequency)">ω（角頻率）</label><output id="omegao"></output>
             <input id="omega" type="range" min="0.25" max="4" step="0.05" value="1" data-decimals="2"></div>
           <div class="slider"><label for="phi" data-en="φ (phase, degrees)">φ（相位，度）</label><output id="phio"></output>
             <input id="phi" type="range" min="-180" max="180" step="5" value="0" data-decimals="1"></div>
@@ -230,7 +230,7 @@
           </dl>
           <dl class="readout mw">
             <dt data-en="Amplitude |A|">振幅 |A|</dt><dd id="wAmp">—</dd>
-            <dt data-en="Period T = 2π / ω">週期 T = 2π ／ ω</dt><dd id="wPer">—</dd>
+            <dt data-en="Fundamental period T">基本週期 T</dt><dd id="wPer">—</dd>
             <dt data-en="Maximum, minimum">最大值、最小值</dt><dd id="wMax">—</dd>
             <dt data-en="Midline">中線</dt><dd id="wMid">—</dd>
             <dt data-en="Shift compared with sin(ωx)">與 sin(ωx) 相比的平移</dt><dd id="wShift">—</dd>
@@ -248,7 +248,7 @@
         <section class="card mw">
           <h2 data-en="Challenge record">挑戰紀錄</h2>
           <div class="tablewrap"><table class="data" id="log"></table></div>
-          <p class="log-empty" id="logEmpty" data-en="Press “Challenge: match a curve”, then use A, ω, φ and k to lay your curve exactly on the dashed target.">按「挑戰：對準目標曲線」，再調 A、ω、φ、k，讓你的曲線和虛線完全重合。</p>
+          <p class="log-empty" id="logEmpty" data-en="Press “Challenge: match a curve”, then use A, ω, φ and k to match the dashed target within 0.05 across the graph.">按「挑戰：對準目標曲線」，再調 A、ω、φ、k，讓你的曲線與虛線在圖上的高度差都不超過 0.05。</p>
         </section>
       </aside>
     </div>
@@ -269,7 +269,7 @@
       <h3 data-en="The four knobs of y = A sin(ωx + φ) + k">y = A sin(ωx + φ) + k 的四個旋鈕</h3>
       <ul>
         <li data-en-html="\(|A|\) is the <strong>amplitude</strong>: the curve reaches \(k + |A|\) and \(k - |A|\). A negative \(A\) flips the wave upside down, which is the same as adding \(\pi\) to the phase.">\(|A|\) 是<strong>振幅</strong>：最大值 \(k + |A|\)、最小值 \(k - |A|\)。\(A\) 是負的，波上下翻轉，效果和相位加上 \(\pi\) 一樣。</li>
-        <li data-en-html="\(\omega\) squeezes the wave sideways: the <strong>period</strong> is \(T = \dfrac{2\pi}{\omega}\).">\(\omega\) 把波左右壓縮：<strong>週期</strong> \(T = \dfrac{2\pi}{\omega}\)。</li>
+        <li data-en-html="\(\omega\) squeezes the wave sideways: for \(A\ne0\) the <strong>fundamental period</strong> is \(T = \dfrac{2\pi}{\omega}\). At zero amplitude the graph is horizontal and every positive number is a period.">\(\omega\) 把波左右壓縮。\(A\ne0\) 時的<strong>基本週期</strong> \(T = \dfrac{2\pi}{\omega}\)。振幅為零時曲線是水平線，每個正數都是週期。</li>
         <li data-en-html="\(\varphi\) is the <strong>phase</strong>. Write \(\omega x + \varphi = \omega\left(x + \dfrac{\varphi}{\omega}\right)\): the graph of \(y = \sin(\omega x)\) moves <em>left</em> by \(\dfrac{\varphi}{\omega}\), not by \(\varphi\).">\(\varphi\) 是<strong>相位</strong>。把 \(\omega x + \varphi\) 寫成 \(\omega\left(x + \dfrac{\varphi}{\omega}\right)\)：\(y = \sin(\omega x)\) 的圖形往<strong>左</strong>平移 \(\dfrac{\varphi}{\omega}\)，不是平移 \(\varphi\)。</li>
         <li data-en-html="\(k\) lifts the whole wave; the line \(y = k\) is the <strong>midline</strong>.">\(k\) 把整條波往上移；直線 \(y = k\) 是<strong>中線</strong>。</li>
       </ul>

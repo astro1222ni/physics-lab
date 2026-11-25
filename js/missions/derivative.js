@@ -32,8 +32,8 @@
     {
       id: 'derivative-1', level: 1,
       title: { zh: '割線變切線', en: 'From secant to tangent' },
-      desc: { zh: '把間隔 h 縮小到 0.01 以下，看割線幾乎和切線重合。', en: 'Shrink the gap h below 0.01 and watch the secant all but merge with the tangent.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'state' && !d.chal && d.dq != null && Math.abs(d.h) <= 0.01 + 1e-12; }
+      desc: { zh: '把間隔 h 縮小到 0.01 以下，看割線幾乎和切線重合（斜率差不超過 0.05）。', en: 'Shrink the gap h below 0.01 and watch the secant approach the tangent (slopes within 0.05).' },
+      check: function (ev) { const d = ev.data; return ev.type === 'state' && !d.chal && d.d1 != null && d.err != null && d.err <= 0.05 && Math.abs(d.h) <= 0.01 + 1e-12; }
     },
     {
       id: 'derivative-2', level: 2,

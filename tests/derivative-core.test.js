@@ -9,6 +9,16 @@ function test(name, fn) {
 function near(a, b, tol, msg) { if (!(Math.abs(a - b) <= tol)) throw new Error((msg || '') + ' 得到 ' + a + '，應為 ' + b + '（容許 ' + tol + '）'); }
 function ok(c, msg) { if (!c) throw new Error(msg || '條件不成立'); }
 
+test('sin 在原點的兩種差商有相同二階誤差，線性區段局部精確', function () {
+  for (const symmetric of [false, true]) {
+    const quotient = symmetric ? D.symQuot : D.diffQuot;
+    near((1 - quotient('sin', 0, 0.1)) / (1 - quotient('sin', 0, 0.05)), 4, 0.002);
+    ok(D.errorOrder('sin', 0, null, symmetric) === 2);
+    ok(D.errorOrder('abs', 1, null, symmetric) === 0);
+    ok(D.errorOrder('abs', 0, null, symmetric) === null);
+  }
+});
+
 const K = { a: 0.3, b: -0.6, c: -0.9, d: 1.2 };
 const rand = D.rng(2024);
 const randCoef = function () { const r = function () { return Math.round((rand() * 6 - 3) * 10) / 10; }; return { a: r(), b: r(), c: r(), d: r() }; };

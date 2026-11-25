@@ -112,9 +112,10 @@
   function a1() { return state.fn === 'logi' ? state.x0 : state.s0; }
   function Q() {
     const ts = M.iterate(state.fn, state.P, a1(), state.n);
-    const fixed = M.fixedPoints(state.fn, state.P);
-    const period = state.fn === 'logi' ? M.logiPeriod(state.P.r, state.x0) : null;
-    return { ts: ts, an: ts[ts.length - 1], full: ts.length === state.n, fixed: fixed, period: period };
+    const fixed = M.fixedPointSet(state.fn, state.P);
+    const orbit = state.fn === 'logi' ? M.logiOrbit(state.P.r, state.x0) : null;
+    return { ts: ts, an: ts[ts.length - 1], full: ts.length === state.n, fixed: fixed.points,
+      allFixed: fixed.all, orbit: orbit, period: orbit && orbit.period };
   }
   function QF() {
     const ts = M.fibTerms(state.f1, state.f2, state.fnN), n = ts.length;
@@ -536,9 +537,9 @@
     if (state.mode === 'cob') {
       const q = Q();
       setHTML('rAn', q.full ? fmtH(q.an) : T('第 ', 'undefined after term ') + q.ts.length + T(' 項之後沒有定義', ''));
-      setHTML('rFix', q.fixed.length ? q.fixed.map(function (o) { return fmtH(o.x); }).join('、') : T('沒有', 'none'));
-      setHTML('rSlope', q.fixed.length ? q.fixed.map(function (o) { return fmtH(r6(o.slope)) + (o.stable ? T('（吸住）', ' (pulls in)') : T('（推開）', ' (pushes away)')); }).join('<br>') : '—');
-      if (state.fn === 'logi') setHTML('rPer', q.period === 1 ? T('1（停在一點）', '1 (settles)') : q.period === 0 ? T('沒有（混沌）', 'none (chaos)') : q.period > 0 ? q.period + T(' 點循環', '-cycle') : '—');
+      setHTML('rFix', q.allFixed ? T('所有實數', 'All real numbers') : q.fixed.length ? q.fixed.map(function (o) { return fmtH(o.x); }).join('、') : T('沒有', 'none'));
+      setHTML('rSlope', q.allFixed ? '1' : q.fixed.length ? q.fixed.map(function (o) { return fmtH(r6(o.slope)) + (o.stable ? T('（吸住）', ' (pulls in)') : Math.abs(o.slope) === 1 ? T('（斜率判準無法判定）', ' (slope test inconclusive)') : T('（推開）', ' (pushes away)')); }).join('<br>') : '—');
+      if (state.fn === 'logi') setHTML('rPer', q.period === 1 ? T('1（容差內）', '1 (within tolerance)') : q.period === 0 ? T('搜尋範圍內未辨識', 'undetected within search limits') : q.period > 0 ? q.period + T(' 點循環', '-cycle') : '—');
       let tex = ruleTex();
       if (state.fn === 'lin' && state.P.p !== 1) tex += ',\\quad L = \\frac{q}{1 - p} = ' + fmtT(q.fixed[0].x) + ',\\quad a_n = L + (a_1 - L)\\,p^{\\,n-1}';
       else if (state.fn === 'lin') tex += '\\quad(p = 1\\text{: }a_n = a_1 + (n-1)q)';
@@ -564,9 +565,17 @@
     if (state.fn === 'logi') {
       const p = q.period;
       if (state.P.r <= 1) return T('r ≤ 1：族群一代比一代少，最後走到 0。', 'r ≤ 1: each generation is smaller and the terms die out to 0.');
-      if (p === 1) return T('數列停在不動點 ' + fmt(q.fixed[q.fixed.length - 1].x) + '：那裡的斜率 |f′| < 1，附近的項都被吸過去。', 'The terms settle at ' + fmt(q.fixed[q.fixed.length - 1].x) + ': the slope there has |f′| < 1, so nearby terms are pulled in.');
-      if (p > 1) return T('數列最後在 ' + p + ' 個值之間輪流跳（' + p + ' 點循環）；不動點的斜率已經超過 1，留不住了。', 'In the long run the terms take turns between ' + p + ' values (a ' + p + '-cycle); the fixed point has become too steep to hold them.');
-      return T('數列永遠不重複：這就是混沌。起點只要差一點點，後面就完全不一樣。', 'The terms never repeat: this is chaos. A tiny change in the start changes everything later.');
+      if (p === 1) {
+        const x = q.orbit.sample;
+        const fp = q.fixed.reduce(function (a, b) { return Math.abs(x - a.x) < Math.abs(x - b.x) ? a : b; });
+        const slope = fmt(r6(fp.slope));
+        const behavior = Math.abs(fp.slope) === 1 ? T('單靠斜率無法判定穩定性。', 'The slope test is inconclusive.')
+          : fp.stable ? T('附近的軌跡會靠近它。', 'Nearby orbits approach it.') : T('附近的軌跡會離開它。', 'Nearby orbits move away.');
+        return T('取樣軌跡在容差內停留。最近的不動點為 ', 'The sampled orbit stays put within tolerance. The nearest fixed point is ')
+          + fmt(fp.x) + T('，斜率為 ', ', with slope ') + slope + T('。', '. ') + behavior;
+      }
+      if (p > 1) return T('在取樣範圍與容差內，辨識到的最短週期為 ', 'The shortest repeat found in this sample, within tolerance, is ') + p + T('。', '.');
+      return T('略過 20 000 步後檢查 161 項，容差 0.0001。週期 1 到 64 都未辨識到，可能仍在過渡期，也可能有更長週期或混沌。', 'After 20,000 steps, 161 terms were checked at tolerance 0.0001. No period from 1 to 64 was detected. A transient, a longer cycle or chaos is possible.');
     }
     const st = q.fixed.filter(function (o) { return o.stable; });
     const near = st.find(function (o) { return Math.abs(q.an - o.x) < 1e-3 * Math.max(1, Math.abs(o.x)); });

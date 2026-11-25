@@ -746,7 +746,7 @@
   let rotAcc = 0;
   function noteRotate(deg) {
     rotAcc += Math.abs(deg);
-    if (rotAcc >= 30) { rotAcc = 0; emit('rotate', { view: view3 && view3.active ? '3d' : '2d' }); }
+    if (rotAcc >= 30 - 1e-9) { rotAcc = 0; emit('rotate', { view: view3 && view3.active ? '3d' : '2d' }); }
   }
 
   // =====================================================================
@@ -865,13 +865,15 @@
   cv.addEventListener('pointermove', function (ev) {
     if (!drag || ev.pointerId !== drag.id) return;
     const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+    const before = SV.viewBasis(state.yaw, state.pitch).e;
     state.yaw = drag.yaw - dx * 0.45;
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') state.pitch = Math.max(-85, Math.min(89, drag.pitch + dy * 0.35));
+    noteRotate(SV.angleDeg(before, SV.viewBasis(state.yaw, state.pitch).e));
     requestDraw();
   });
   function endDrag(ev) {
     if (!drag || (ev && ev.pointerId !== drag.id)) return;
-    noteRotate(Math.abs(state.yaw - drag.yaw) + Math.abs(state.pitch - drag.pitch));
+    // 拖曳期間已逐段累計實際視線轉角。
     drag = null;
   }
   cv.addEventListener('pointerup', endDrag);
@@ -885,9 +887,10 @@
         move: function (dx, dy, big) {
           const st = big ? 30 : 7.5;
           if (state.spinning) setSpin(false);
+          const before = SV.viewBasis(state.yaw, state.pitch).e;
           state.yaw -= dx * st;
           state.pitch = Math.max(-85, Math.min(89, state.pitch + dy * st));
-          noteRotate(Math.abs(dx * st) + Math.abs(dy * st));
+          noteRotate(SV.angleDeg(before, SV.viewBasis(state.yaw, state.pitch).e));
           requestDraw();
           return true;
         },
@@ -999,7 +1002,7 @@
     colors: function () { readColors(); return C; },
     quantities: Q, crossScale: crossScale, boxR: boxR, extentOf: extentOf, num: num, vtxt: vtxt,
     yaw0: YAW0, pitch0: PITCH0,
-    onRotate: function () { noteRotate(30); },
+    onRotate: noteRotate,
     onContextLost: function () {
       setView('2d');
       viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 斜視圖。', 'The 3D graphics context was lost, so the view switched back to 2D.');

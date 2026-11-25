@@ -30,7 +30,7 @@
     return out;
   }
 
-  /** 不動點（實數）與穩定性：[{ x, slope = f′(x), stable: |f′| < 1 }]，由小到大 */
+  /** 孤立不動點（實數）與穩定性：[{ x, slope = f′(x), stable: |f′| < 1 }]，由小到大 */
   function fixedPoints(fid, P) {
     let xs = [];
     if (fid === 'lin') { if (P.p !== 1) xs = [P.q / (1 - P.p)]; }
@@ -50,20 +50,25 @@
     return L + (a1 - L) * Math.pow(p, n - 1);
   }
 
-  /** 邏輯斯諦長期的週期：先走 20000 步，再找最小的週期（1 到 64）；找不到就是 0（混沌） */
-  function logiPeriod(r, a1) {
+  function fixedPointSet(fid, P) {
+    return { all: fid === 'lin' && P.p === 1 && P.q === 0, points: fixedPoints(fid, P) };
+  }
+
+  /** 略過過渡段後觀察 161 項；period = 0 表示搜尋範圍內未辨識。 */
+  function logiOrbit(r, a1) {
     let x = a1;
-    if (!(x >= 0 && x <= 1)) return -1;
+    if (!(x >= 0 && x <= 1)) return { period: -1, sample: null };
     for (let i = 0; i < 20000; i++) x = r * x * (1 - x);
     const orb = [x];
     for (let i = 0; i < 160; i++) orb.push(r * orb[i] * (1 - orb[i]));
     for (let p = 1; p <= 64; p++) {
       let ok = true;
       for (let i = 0; i + p < orb.length; i++) if (Math.abs(orb[i + p] - orb[i]) > 1e-4) { ok = false; break; }
-      if (ok) return p;
+      if (ok) return { period: p, sample: x };
     }
-    return 0;
+    return { period: 0, sample: x };
   }
+  function logiPeriod(r, a1) { return logiOrbit(r, a1).period; }
 
   /** 費氏型 a_(k+2) = a_(k+1) + a_k 的前 n 項 */
   function fibTerms(a1, a2, n) {
@@ -131,7 +136,7 @@
   }
 
   const api = {
-    PHI: PHI, DOTTIE: DOTTIE, F: F, iterate: iterate, fixedPoints: fixedPoints, linTerm: linTerm, logiPeriod: logiPeriod,
+    PHI: PHI, DOTTIE: DOTTIE, F: F, iterate: iterate, fixedPoints: fixedPoints, fixedPointSet: fixedPointSet, logiOrbit: logiOrbit, linTerm: linTerm, logiPeriod: logiPeriod,
     fibTerms: fibTerms, tiling: tiling, firstWithin: firstWithin, sci: sci, rng: rng, P_CHOICES: P_CHOICES, genChallenge: genChallenge
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

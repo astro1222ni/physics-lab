@@ -12,9 +12,9 @@ require(ROOT + 'js/missions/galton-board.js');
 const byId = id => missions.find(m => m.id === 'galton-board-' + id);
 
 // ---------- 與 js/galton-board.js 相同的事件資料 ----------
-function dropEv(n, p, counts, hidden) {
+function dropEv(n, p, counts, hidden, src) {
   const st = G.stats(counts);
-  return { type: 'drop', data: { src: 'ball', n: n, p: p, hidden: !!hidden, N: st.N, mean: st.mean, variance: st.variance, tv: G.tv(counts, G.pmf(n, p)), counts: counts.slice() } };
+  return { type: 'drop', data: { src: src || 'batch', n: n, p: p, hidden: !!hidden, N: st.N, mean: st.mean, variance: st.variance, tv: G.tv(counts, G.pmf(n, p)), counts: counts.slice() } };
 }
 function boardEv(n, p) {
   return { type: 'board', data: { n: n, p: p, mean: G.mean(n, p), variance: G.variance(n, p), normErr: G.maxNormalErr(n, p), modes: G.modes(n, p) } };
@@ -28,7 +28,7 @@ function guessEv(n, p, guess, N) { return { type: 'guess', data: { n: n, p: p, g
 function dropSeq(rand, n, p, count, counts, hidden) {
   counts = counts || G.zeros(n + 1);
   const out = [];
-  for (let i = 0; i < count; i++) { counts[G.drop(rand, n, p).k]++; out.push(dropEv(n, p, counts, hidden)); }
+  for (let i = 0; i < count; i++) { counts[G.drop(rand, n, p).k]++; out.push(dropEv(n, p, counts, hidden, 'ball')); }
   return out;
 }
 
@@ -56,12 +56,14 @@ function chance(id, trials, trial, note, minRate, maxRate) {
 // ---------- 預設狀態不觸發 ----------
 {
   const defaults = [boardEv(10, 0.5)];
-  const hit = missions.filter(m => { m.mem = {}; return m.id !== 'galton-board-1' && defaults.some(e => m.check(e, m.mem)); }).map(m => m.id);
+  const hit = missions.filter(m => { m.mem = {}; return defaults.some(e => m.check(e, m.mem)); }).map(m => m.id);
   if (hit.length) { fail++; console.log('  ✗ 預設狀態觸發了 ' + hit.join('、')); }
   else console.log('  ✓ 預設釘板（n = 10、p = 0.5）不觸發任何任務');
 }
 
 // ---------- 確定做得到的任務 ----------
+expect('1', [{ type: 'drop', data: { src: 'stream', N: 1 } }], false, '連續落球的第一顆也不是單球操作');
+expect('1', [{ type: 'drop', data: { src: 'batch', N: 1000 } }], false, '瞬間一千顆不算單球');
 expect('1', dropSeq(G.rng(1), 10, 0.5, 1), true, '放一顆球');
 expect('2', [selectEv(10, 0.5, 5)], true, 'n = 10、p = 0.5 選第 5 格');
 expect('2', [selectEv(10, 0.5, 4)], false, '第 4 格不是最大');
