@@ -51,6 +51,7 @@
  html.cb-study.labdeck-drawer:not([data-lp-state=collapsed]) .lp-panel{left:auto!important;right:0!important;top:0!important;bottom:0!important;transform:none!important;width:var(--deck-w)!important;max-width:none!important;padding-top:72px}
  html.cb-study.labdeck-drawer:not([data-lp-state=collapsed]) .lp-strip{left:auto!important;right:0!important;top:0!important;bottom:auto!important;transform:none!important;width:var(--deck-w)!important;max-width:none!important;height:72px;min-height:72px}
  html.cb-study.labdeck-drawer[data-lp-state=collapsed] .lp-strip{display:none!important}
+ html.cb-study.cb-slide.labdeck-drawer[data-lp-state=collapsed] body{padding-right:0!important}
  html.cb-study.labdeck-drawer .lp-tabs button{font-size:13px;padding:3px}
 }
 @media(min-width:881px) and (max-width:1239px){
@@ -84,7 +85,9 @@ html[data-lab-mode=lab]:not(.cb-example) .lp-strip,html[data-lab-mode=lab]:not(.
 /* 自學已有九步指引，原六步總覽留在實驗模式；桌面先呈現旋鈕與歸零。 */
 .cb-study #cb-procedure,.cb-study .labdeck-tabs [aria-controls=cb-procedure]{display:none!important}
 @media(orientation:landscape) and (max-height:600px){html.labdeck-drawer .cb .playbar{flex-wrap:nowrap;gap:3px}html.labdeck-drawer .cb .playbar button{min-width:0;flex:1;padding:3px;font-size:12px}}
-/* 自學標頭與側板已有入口；收掉重複側標籤，避免蓋住右欄電流讀值。 */
-html.cb-study .lp-dock-tab,html.cb-study .ms-dock-tab{display:none!important}
+/* 自學側板展開時收掉重複側標籤，避免蓋住右欄讀值；收起後保留側標籤方便一鍵重開。 */
+html.cb-study .ms-dock-tab,html.cb-study:not([data-lp-state=collapsed]) .lp-dock-tab{display:none!important}
+html.cb-study[data-lp-state=collapsed] .lp-dock-tab{display:block!important}
+html.cb-study.cb-slide.labdeck-drawer[data-lp-state=collapsed] .lp-dock-tab{right:0!important}
 /* 範例圖保持比例；座標與單位以手機至少約 14 px 排字。 */
 .cb-study .cb-example-plot{height:auto;aspect-ratio:720/350}

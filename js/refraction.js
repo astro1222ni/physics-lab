@@ -805,16 +805,22 @@
   function fibreGeom() {
     const W = main.w, H = main.h;
     const cy = Math.round(H * 0.5);
-    const x0 = Math.round(W * (W < 500 ? 0.3 : 0.26)), x1 = W - 10;
-    const a = Math.round(Math.max(16, Math.min(42, H * 0.085)));
+    const x0 = Math.round(W * (W < 500 ? 0.3 : 0.26));
+    const availW = Math.max(80, W - 10 - x0);
+    const aMax = Math.max(16, Math.min(42, H * 0.085));
+    const FM = RC.FIBRE_MODEL;
+    // 以固定實體尺度計算光路，再等比例縮放至畫布，確保反射次數與累積漏光不隨螢幕大小改變且角度不變形
+    const scale = Math.min(availW / FM.length, (2 * aMax) / FM.thickness);
+    const x1 = x0 + scale * FM.length;
+    const a = scale * FM.thickness / 2;
     const clad = Math.round(Math.max(18, H * 0.10));
-    const tr = RC.fibreTrace({ n0: 1, nCore: state.nCore, nClad: state.nClad, thetaIn: state.inSide * state.thIn, length: x1 - x0, thickness: 2 * a, maxBounces: 300 });
+    const tr = RC.fibreTrace({ n0: 1, nCore: state.nCore, nClad: state.nClad, thetaIn: state.inSide * state.thIn, length: FM.length, thickness: FM.thickness, maxBounces: 300 });
     const Ls = Math.min(x0 - 26, H * 0.42);
     const ci = Math.cos(state.thIn), si = Math.sin(state.thIn);
     const uIn = [ci, -state.inSide * si];
-    return { W: W, H: H, cy: cy, x0: x0, x1: x1, a: a, clad: clad, tr: tr, Ls: Ls, uIn: uIn, lx: x0 - uIn[0] * Ls, ly: cy - uIn[1] * Ls };
+    return { W: W, H: H, cy: cy, x0: x0, x1: x1, a: a, clad: clad, scale: scale, tr: tr, Ls: Ls, uIn: uIn, lx: x0 - uIn[0] * Ls, ly: cy - uIn[1] * Ls };
   }
-  function toScreen(G, pt) { return [G.x0 + pt.x, G.cy - pt.y]; }
+  function toScreen(G, pt) { return [G.x0 + pt.x * G.scale, G.cy - pt.y * G.scale]; }
 
   /**
    * 光纖的靜態圖層：背景、格線、玻璃棒（包層＋纖芯，位置與厚度和計算完全相同）。

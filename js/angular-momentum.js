@@ -834,10 +834,10 @@
     samplePlat(true);
     recPlat('start', T('伸手（起始）', 'Arms out (start)'));
   }
-  function platI() { return P.drop ? C.platformI(P.p, 0, true).total : C.platformI(P.p, P.r).total; }
+  function platI() { return P.drop ? C.platformI(P.p, P.r, true).total : C.platformI(P.p, P.r).total; }
   function platOmega() { return P.drop ? P.drop.w : P.L / platI(); }
   function platK() {
-    if (P.drop) return 0.5 * C.platformI(P.p, 0, true).total * P.drop.w * P.drop.w;
+    if (P.drop) return 0.5 * C.platformI(P.p, P.r, true).total * P.drop.w * P.drop.w;
     let rd = 0;
     if (P.mv) rd = C.armAt(P.mv.r0, P.mv.r1, P.mv.dur, P.t - P.mv.t0).rd;
     return C.spinEnergy(P.p, P.L, P.r, rd, 0).total;
@@ -910,7 +910,7 @@
     setStatus(T('鬆開啞鈴：啞鈴沿切線飛出，帶走自己的角動量；人的轉速仍是 ' + num(w, 2) + ' rad/s，沒有變快。',
       'Dumbbells released: they fly off along the tangent, carrying their own angular momentum away; the person still turns at ' + num(w, 2) + ' rad/s — no faster.'));
     recPlat('free', T('鬆開啞鈴', 'Dumbbells released'));
-    emit('drop', { r: P.r, w: w, wAfter: w, md: P.p.md, L: P.L, Lperson: C.platformI(P.p, 0, true).total * w, armsIn: P.armsIn });
+    emit('drop', { r: P.r, w: w, wAfter: w, md: P.p.md, L: P.L, Lperson: C.platformI(P.p, P.r, true).total * w, armsIn: P.armsIn });
     updateButtons();
     play();
   }
@@ -1200,7 +1200,7 @@
     const LU = ' kg·m<sup>2</sup>/s', IU = ' kg·m<sup>2</sup>';
     setHTML('p_t', num(P.t, 2) + ' s');
     setHTML('p_r', P.drop ? T('—（已鬆開）', '— (released)') : num(P.r, 3) + ' m');
-    setHTML('p_I', num(I, 3) + IU + '<small>' + T('人體 ', 'body ') + num(parts.body, 3) + ' + ' + T('平台 ', 'turntable ') + num(parts.plat, 3) + (P.drop ? '' : ' + ' + T('啞鈴 ', 'dumbbells ') + num(parts.dumb, 3)) + '</small>');
+    setHTML('p_I', num(I, 3) + IU + '<small>' + T('軀幹 ', 'torso ') + num(parts.torso, 3) + ' + ' + T('雙臂 ', 'arms ') + num(parts.arms, 3) + ' + ' + T('平台 ', 'turntable ') + num(parts.plat, 3) + (P.drop ? '' : ' + ' + T('啞鈴 ', 'dumbbells ') + num(parts.dumb, 3)) + '</small>');
     setHTML('p_w', num(w, 3) + ' rad/s<small>' + num(w / (2 * Math.PI), 3) + T(' 圈/秒', ' rev/s') + '</small>');
     setHTML('p_L', num(I * w, 3) + LU + (P.drop ? '<small>' + T('加上飛出的啞鈴：', 'with the flying dumbbells: ') + num(P.drop.Lbefore, 3) + '</small>' : ''));
     setHTML('p_K', num(Kk, 3) + ' J');

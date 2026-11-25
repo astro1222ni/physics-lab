@@ -272,7 +272,8 @@
   // 模式二：旋轉平台
   // =====================================================================
   const PLAT = {
-    Rb: 0.15,        // m：人體圓柱的半徑
+    Rb: 0.15,        // m：人體軀幹圓柱的半徑
+    armFrac: 0.10,   // 雙臂合計佔人體總質量的比例（每臂約 5%，人體工學典型值）
     Mp: 8,           // kg：平台（均勻圓盤）的質量
     Rp: 0.35,        // m：平台半徑
     rArmMin: 0.15,   // m：啞鈴離轉軸最近（貼在胸前）
@@ -280,12 +281,16 @@
     fwdMax: 1.05     // rad：雙手收到胸前時往前轉的角度（只是姿勢，左右對稱，不影響 L 與 I）
   };
 
-  /** 轉動慣量（kg·m²）：p = { Mb（人體質量）, md（每個啞鈴的質量）}，r = 啞鈴到轉軸的距離。與轉速無關。 */
+  /** 轉動慣量（kg·m²）：p = { Mb（人體質量）, md（每個啞鈴的質量）}，r = 手與啞鈴到轉軸的距離。與轉速無關。 */
   function platformI(p, r, noDumbbells) {
-    const body = 0.5 * p.Mb * PLAT.Rb * PLAT.Rb;
+    const rEff = Math.max(PLAT.Rb, r);
+    const torso = 0.5 * (1 - PLAT.armFrac) * p.Mb * PLAT.Rb * PLAT.Rb;
+    // 雙臂視為從肩側 Rb 延伸到 rEff 的兩根均勻細桿：I = (m_arms / 3)(Rb² + Rb·rEff + rEff²)
+    const arms = (PLAT.armFrac * p.Mb / 3) * (PLAT.Rb * PLAT.Rb + PLAT.Rb * rEff + rEff * rEff);
+    const body = torso + arms;
     const plat = 0.5 * PLAT.Mp * PLAT.Rp * PLAT.Rp;
     const dumb = noDumbbells ? 0 : 2 * p.md * r * r;
-    return { body: body, plat: plat, dumb: dumb, total: body + plat + dumb };
+    return { torso: torso, arms: arms, body: body, plat: plat, dumb: dumb, total: body + plat + dumb };
   }
   /** 雙手往前轉的姿勢角（只隨 r 變，左右手對稱） */
   function armForward(r) {
@@ -327,7 +332,7 @@
   function spinEnergy(p, L, r, rd, alphaDot) {
     const I = platformI(p, r).total, w = L / I;
     const rot = 0.5 * I * w * w;
-    const extra = p.md * rd * rd + p.md * r * r * (alphaDot || 0) * (alphaDot || 0);
+    const extra = (p.md + PLAT.armFrac * p.Mb / 6) * rd * rd + p.md * r * r * (alphaDot || 0) * (alphaDot || 0);
     return { I: I, omega: w, rot: rot, total: rot + extra };
   }
   /** 收手或伸手前後的比較（I 只看 r） */

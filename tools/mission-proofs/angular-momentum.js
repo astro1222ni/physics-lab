@@ -66,7 +66,7 @@ function arms(o, dir, wStart) {
 function drop(o, armsIn) {
   const p = { Mb: o.Mb, md: o.md }, r = armsIn ? o.rIn : o.rOut;
   const L = C.platformI(p, o.rOut).total * o.w1, w = L / C.platformI(p, r).total;
-  return { type: 'drop', data: { r: r, w: w, wAfter: w, md: o.md, L: L, Lperson: C.platformI(p, 0, true).total * w, armsIn: !!armsIn } };
+  return { type: 'drop', data: { r: r, w: w, wAfter: w, md: o.md, L: L, Lperson: C.platformI(p, r, true).total * w, armsIn: !!armsIn } };
 }
 
 // ---------- 模式三 ----------
@@ -124,20 +124,20 @@ expect(4, [couple({ mu: 0.25 })], true, '只調整摩擦，仍能等到兩盤同
 expect(4, [couple({ M2: 2, w2: -8 })], false, '角動量抵銷後兩盤靜止');
 // 5 轉速 3 倍
 {
-  const o = Object.assign({}, PLAT0, { rIn: 0.15, rOut: 0.81 });
+  const o = Object.assign({}, PLAT0, { rIn: 0.15, rOut: 0.66 });
   const e = arms(o, 'in');
-  expect(5, [e], true, 'm = 2 kg、M = 60 kg、r伸 = 0.81、r收 = 0.15 → ω ×' + f4(e.data.w1 / e.data.w0));
+  expect(5, [e], true, 'm = 2 kg、M = 60 kg、r伸 = 0.66、r收 = 0.15 → ω ×' + f4(e.data.w1 / e.data.w0));
   const e0 = arms(PLAT0, 'in');
   expect(5, [e0], false, '預設 r伸 0.75、r收 0.2 → ×' + f3(e0.data.w1 / e0.data.w0));
 }
 // 6 動能 4 倍
 {
-  const o = Object.assign({}, PLAT0, { md: 3, rIn: 0.15, rOut: 0.82 });
+  const o = Object.assign({}, PLAT0, { md: 3, rIn: 0.15, rOut: 0.72 });
   const e = arms(o, 'in');
-  expect(6, [e], true, 'm = 3 kg、r伸 = 0.82、r收 = 0.15 → K ×' + f4(e.data.K1 / e.data.K0) + '（= I伸/I收 = ω 的倍率；W = ' + f3(e.data.W) + ' J）');
-  const o2 = Object.assign({}, PLAT0, { md: 5, Mb: 40, rIn: 0.3, rOut: 0.8 });
+  expect(6, [e], true, 'm = 3 kg、r伸 = 0.72、r收 = 0.15 → K ×' + f4(e.data.K1 / e.data.K0) + '（= I伸/I收 = ω 的倍率；W = ' + f3(e.data.W) + ' J）');
+  const o2 = Object.assign({}, PLAT0, { md: 5, Mb: 40, rIn: 0.2, rOut: 0.64 });
   const e2 = arms(o2, 'in');
-  expect(6, [e2], true, '另一解 m = 5 kg、M = 40 kg、r伸 = 0.80、r收 = 0.30 → K ×' + f4(e2.data.K1 / e2.data.K0));
+  expect(6, [e2], true, '另一解 m = 5 kg、M = 40 kg、r伸 = 0.64、r收 = 0.20 → K ×' + f4(e2.data.K1 / e2.data.K0));
 }
 // 7 一半變成熱
 {

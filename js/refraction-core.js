@@ -246,10 +246,14 @@
     return [ch(r), ch(g), ch(b)];
   }
 
+  /** 教學示範光纖的固定實體尺寸（mm）：長厚比固定，避免因螢幕或畫布寬高不同而改變反射次數與累積漏光 */
+  const FIBRE_MODEL = { length: 100, thickness: 14 };
+
   const api = {
     C: C,
     DEG: DEG,
     MEDIA: MEDIA,
+    FIBRE_MODEL: FIBRE_MODEL,
     refractionAngle: refractionAngle,
     criticalAngle: criticalAngle,
     isTIR: isTIR,

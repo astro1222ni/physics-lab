@@ -256,4 +256,13 @@ test('fibreInfo：射入角 ≤ 最大接收角時側面全反射，超過就漏
   close(f.wallR, RC.fresnel(1.5, 1.33, f.phi).R, 0);
 });
 
+test('FIBRE_MODEL：固定實體尺度，等比例縮放後反射次數與出射功率完全不變', () => {
+  const m = RC.FIBRE_MODEL;
+  assert.ok(m && m.length > 0 && m.thickness > 0);
+  const a = RC.fibreTrace({ n0: 1, nCore: 1.48, nClad: 1.46, thetaIn: rad(35), length: m.length, thickness: m.thickness });
+  const b = RC.fibreTrace({ n0: 1, nCore: 1.48, nClad: 1.46, thetaIn: rad(35), length: m.length * 3.7, thickness: m.thickness * 3.7 });
+  assert.strictEqual(a.bounces, b.bounces);
+  close(a.out, b.out, 1e-14);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗項目' : ''));

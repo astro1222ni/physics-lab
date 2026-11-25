@@ -221,9 +221,11 @@ test('aimAngle 與 freeClosest：在算出的角度鬆手，直線剛好通過�
 
 // ---------------- 模式二：旋轉平台 ----------------
 const PP = { Mb: 60, md: 2 };
-test('I = ½M_bR_b² + ½M_pR_p² + 2m r²，只由質量分布決定（與轉速無關）', () => {
+test('I = I軀幹 + I雙臂(r) + I平台 + 2m r²，只由質量分布決定（與轉速無關），空手收臂也會加速', () => {
   const I = C.platformI(PP, 0.75);
-  close(I.body, 0.5 * 60 * 0.15 * 0.15, 1e-14, '人體圓柱');
+  close(I.torso, 0.5 * 54 * 0.15 * 0.15, 1e-14, '軀幹圓柱（90% 質量）');
+  close(I.arms, (6 / 3) * (0.15 * 0.15 + 0.15 * 0.75 + 0.75 * 0.75), 1e-14, '雙臂細桿（10% 質量）');
+  close(I.body, I.torso + I.arms, 1e-14, '人體合計');
   close(I.plat, 0.5 * 8 * 0.35 * 0.35, 1e-14, '平台圓盤');
   close(I.dumb, 2 * 2 * 0.75 * 0.75, 1e-14, '啞鈴');
   close(I.total, I.body + I.plat + I.dumb, 1e-14);
@@ -232,7 +234,9 @@ test('I = ½M_bR_b² + ½M_pR_p² + 2m r²，只由質量分布決定（與轉�
     const a = C.armChange(PP, L, 0.75, 0.2);
     close(a.I1, C.platformI(PP, 0.75).total, 1e-14); close(a.I2, C.platformI(PP, 0.2).total, 1e-14);
   }
-  close(C.platformI({ Mb: 60, md: 0 }, 0.9).total, C.platformI({ Mb: 60, md: 0 }, 0.2).total, 1e-15, '沒有啞鈴：I 與手臂位置無關');
+  const emptyOut = C.platformI({ Mb: 60, md: 0 }, 0.9), emptyIn = C.platformI({ Mb: 60, md: 0 }, 0.2);
+  assert.ok(emptyOut.total > emptyIn.total * 1.8, '沒有啞鈴時伸臂慣量仍顯著大於收臂');
+  close(C.platformI({ Mb: 60, md: 0 }, 0.15).arms, 6 * 0.15 * 0.15, 1e-14, '手貼胸前時雙臂慣量連續接軌 m_arms·Rb²');
 });
 
 test('收手：ω2/ω1 = I1/I2，L 不變，ΔK = ½L²(1/I2 − 1/I1) > 0；伸手相反', () => {
