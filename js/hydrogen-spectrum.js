@@ -215,7 +215,7 @@
   }
 
   function roundRect(c, x, y, w, h, r) {
-    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
     c.beginPath();
     c.moveTo(x + r, y);
     c.arcTo(x + w, y, x + w, y + h, r);
@@ -395,12 +395,12 @@
     for (let nf = 1; nf <= 6; nf++) {
       const xa = G.slotL + u * groupStart(nf) - u * 0.2, w = u * (8 - nf) + u * 0.4;
       const yb = Ey(HC.energy(nf));
-      if (yb - y0 < 4) continue;
+      if (w <= 0 || yb - y0 < 4) continue;
       const g = c.createLinearGradient(0, y0, 0, yb);
       g.addColorStop(0, alpha(colors.field, 0));
       g.addColorStop(1, alpha(colors.field, colors.dark ? 0.1 : 0.065));
       c.fillStyle = g;
-      roundRect(c, xa, y0, w, yb - y0, Math.min(3, w / 2));
+      roundRect(c, xa, y0, w, yb - y0, Math.max(0, Math.min(3, w / 2)));
       c.fill();
     }
 
