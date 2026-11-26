@@ -786,10 +786,10 @@
     items.push([T('平衡常數 K', 'Equilibrium constant K') + '<small>K = e<sup>−ΔG°/RT</sup></small>', kHTML(s.log10K, 3), 'big']);
     let ts;
     if (hide) ts = q;
-    else if (s.turn.T != null) ts = num(s.turn.T, 1) + ' K<small>' + num(s.turn.T - 273.15, 1) + ' °C・' + (s.turn.kind === 'low' ? T('低於它才自發', 'spontaneous below it') : T('高於它才自發', 'spontaneous above it')) + '</small>';
-    else ts = s.turn.kind === 'always' ? T('沒有：任何溫度都自發', 'none: always spontaneous') : s.turn.kind === 'never' ? T('沒有：任何溫度都不自發', 'none: never spontaneous') : T('沒有：ΔG° 不隨溫度改變', 'none: ΔG° does not change with T');
+    else if (s.turn.T != null) ts = num(s.turn.T, 1) + ' K<small>' + num(s.turn.T - 273.15, 1) + ' °C・' + (s.turn.kind === 'low' ? T('標準狀態下低於它才自發', 'spontaneous below it at standard state') : T('標準狀態下高於它才自發', 'spontaneous above it at standard state')) + '</small>';
+    else ts = s.turn.kind === 'always' ? T('沒有：標準狀態下任何溫度都自發', 'none: spontaneous at any T (standard state)') : s.turn.kind === 'never' ? T('沒有：標準狀態下任何溫度都不自發', 'none: never spontaneous (standard state)') : T('沒有：ΔG° 不隨溫度改變', 'none: ΔG° does not change with T');
     items.push([T('轉折溫度 T* = ΔH°/ΔS°', 'Turning temperature T* = ΔH°/ΔS°'), ts]);
-    const vt = s.verdict === 'yes' ? T('自發', 'spontaneous') : s.verdict === 'no' ? T('不自發', 'not spontaneous') : T('平衡（K ≈ 1）', 'at equilibrium (K ≈ 1)');
+    const vt = s.verdict === 'yes' ? T('標準狀態自發（Q = 1）', 'spontaneous at Q = 1') : s.verdict === 'no' ? T('標準狀態不自發（Q = 1）', 'not spontaneous at Q = 1') : T('K ≈ 1（標準狀態接近平衡）', 'K ≈ 1 (near equilibrium at Q = 1)');
     items.push([T('判斷', 'Verdict'), hide ? q : vt, hide ? '' : s.verdict === 'yes' ? 'yes' : s.verdict === 'no' ? 'no' : '']);
     if (s.dn != null) items.push([T('氣體莫耳數變化 Δn', 'Change in moles of gas Δn'), sgn(s.dn, 0) + ' mol']);
     $('readout').innerHTML = items.map(function (it) { return '<dt>' + it[0] + '</dt><dd' + (it[2] ? ' class="' + it[2] + '"' : '') + '>' + it[1] + '</dd>'; }).join('');
@@ -807,9 +807,9 @@
     if (state.sweeping) return T('溫度掃描中：', 'Sweeping the temperature: ') + 'T = ' + num(s.T, 0) + ' K';
     if (isMys()) return T('未知反應：只看得到 K。在幾個溫度按「記錄這一點」，再到右邊算出 ΔH° 與 ΔS°。', 'Unknown reaction: only K is visible. Press “Record this point” at a few temperatures, then work out ΔH° and ΔS° on the right.');
     const g = 'ΔG° = ' + sgn(s.dG, 2) + ' kJ/mol';
-    if (s.verdict === 'yes') return T('在 ' + tK(s.T) + ' K，' + g + ' < 0：反應自發，平衡時偏向生成物。', 'At ' + tK(s.T) + ' K, ' + g + ' < 0: the reaction is spontaneous and the products are favoured.');
-    if (s.verdict === 'no') return T('在 ' + tK(s.T) + ' K，' + g + ' > 0：反應不自發，平衡時偏向反應物。', 'At ' + tK(s.T) + ' K, ' + g + ' > 0: the reaction is not spontaneous and the reactants are favoured.');
-    return T('在 ' + tK(s.T) + ' K，' + g + '，幾乎為零：反應物與生成物處於平衡，K ≈ 1。', 'At ' + tK(s.T) + ' K, ' + g + ', almost zero: reactants and products are at equilibrium, K ≈ 1.');
+    if (s.verdict === 'yes') return T('在 ' + tK(s.T) + ' K，' + g + ' < 0：標準狀態（Q = 1）下反應自發，K > 1，平衡時偏向生成物；實際方向看 ΔG = ΔG° + RT ln Q。', 'At ' + tK(s.T) + ' K, ' + g + ' < 0: spontaneous at standard state (Q = 1), K > 1, products favoured at equilibrium; the actual direction follows ΔG = ΔG° + RT ln Q.');
+    if (s.verdict === 'no') return T('在 ' + tK(s.T) + ' K，' + g + ' > 0：標準狀態（Q = 1）下反應不自發，K < 1，平衡時偏向反應物；Q 夠小時仍會往右進行。', 'At ' + tK(s.T) + ' K, ' + g + ' > 0: not spontaneous at standard state (Q = 1), K < 1, reactants favoured at equilibrium; with a small enough Q it still goes forward.');
+    return T('在 ' + tK(s.T) + ' K，' + g + '，幾乎為零：K ≈ 1，標準狀態的混合物（Q = 1）接近平衡。', 'At ' + tK(s.T) + ' K, ' + g + ', almost zero: K ≈ 1, so the standard-state mixture (Q = 1) is close to equilibrium.');
   }
   function rxInfoHTML() {
     if (isMys()) return '<span class="eqn">A(g) → B(g)</span>' + T('ΔH°、ΔS° 看不到；只能量 K。', 'ΔH° and ΔS° are hidden; only K can be measured.');

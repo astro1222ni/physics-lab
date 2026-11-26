@@ -175,4 +175,11 @@ test('每個 H3O+ 配多少個水分子：25 °C 純水約 5.5 × 10^8 個', fun
   near(S('water', 0).waterPerH3O / 5.535e8, 1, 0.01);
 });
 
+test('每個 H3O+ 配多少個水分子：100 °C 用該溫度的水密度（958 g/L）', function () {
+  const P = require('../js/ph-scale-core.js');
+  near(P.waterMolarity(100) / (958.35 / 18.015), 1, 0.001);
+  const r = S('water', 0, 100);
+  near(r.waterPerH3O, P.waterMolarity(100) / r.h, 1e-9);
+});
+
 console.log(process.exitCode ? '有測試失敗' : '全部 ' + passed + ' 項通過');

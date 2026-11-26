@@ -34,6 +34,12 @@
 
   const T_MIN = 25, T_MAX = 100;       // 溫度範圍（°C）
   const WATER_M = 55.35;               // 25 °C 純水的莫耳濃度（997 g/L ÷ 18.015 g/mol），只用在「多少個水分子才有一個 H3O+」
+  // 純水密度（g/L）隨溫度：Kell (1975) 0–150 °C 經驗式；25 °C 997.05、100 °C 958.4
+  function waterDensity(Tc) {
+    const t = Tc;
+    return (999.83952 + 16.945176 * t - 7.9870401e-3 * t * t - 46.170461e-6 * t * t * t + 105.56302e-9 * t * t * t * t - 280.54253e-12 * t * t * t * t * t) / (1 + 16.879850e-3 * t);
+  }
+  function waterMolarity(Tc) { return waterDensity(Tc) / 18.015; }   // 該溫度純水的莫耳濃度
 
   /** 物質：kind = water／sa（強酸）／wa（弱酸）／sb（強鹼）／wb（弱鹼）；K = Ka 或 Kb（25 °C） */
   const SPECIES = {
@@ -106,7 +112,7 @@
     const h = solveH(kind, C, K, kw), oh = kw / h;
     const r = { sp: sp, kind: kind, logC: kind === 'water' ? null : logC, C: C, T: Tc, pKw: pkw, Kw: kw, K: K == null ? null : K, pK: K ? -Math.log10(K) : null,
       h: h, oh: oh, pH: -Math.log10(h), pOH: pkw + Math.log10(h), neutral: pkw / 2,
-      alpha: null, alphaLim: null, HA: 0, A: 0, B: 0, BH: 0, pHapprox: null, waterPerH3O: WATER_M / h };
+      alpha: null, alphaLim: null, HA: 0, A: 0, B: 0, BH: 0, pHapprox: null, waterPerH3O: waterMolarity(Tc) / h };
     if (kind === 'sa') { r.A = C; r.alpha = 1; r.pHapprox = -logC; }
     else if (kind === 'wa') {
       r.alpha = K / (K + h); r.A = C * r.alpha; r.HA = C - r.A;
@@ -142,7 +148,7 @@
 
   const api = {
     parseConcentration: parseConcentration,
-    LOGC_MIN: LOGC_MIN, LOGC_MAX: LOGC_MAX, T_MIN: T_MIN, T_MAX: T_MAX, WATER_M: WATER_M,
+    LOGC_MIN: LOGC_MIN, LOGC_MAX: LOGC_MAX, T_MIN: T_MIN, T_MAX: T_MAX, WATER_M: WATER_M, waterMolarity: waterMolarity,
     SPECIES: SPECIES, ORDER: ORDER, isAcid: isAcid, isBase: isBase, isWeak: isWeak, isStrong: isStrong,
     pKw: pKw, Kw: Kw, solveH: solveH, solution: solution, balance: balance, kaFrom: kaFrom, newUnknown: newUnknown
   };

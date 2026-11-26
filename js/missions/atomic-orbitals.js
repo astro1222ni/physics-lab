@@ -22,7 +22,7 @@
     {
       id: 'atomic-orbitals-1', level: 1,
       title: { zh: '立體的電子雲', en: 'The cloud in 3D' },
-      desc: { zh: '按「3D 立體」，把電子雲轉一圈看看。', en: 'Press “3D view” and turn the electron cloud around.' },
+      desc: { zh: '按「3D 立體」切換成立體的電子雲（切過去就完成，之後可以拖曳轉一轉看看）。', en: 'Press “3D view” to switch to the 3D electron cloud (switching completes it; then drag to turn it around).' },
       check: function (ev) { return ev.type === 'view3d'; }
     },
     {

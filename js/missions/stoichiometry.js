@@ -46,7 +46,7 @@
     {
       id: 'stoichiometry-4', level: 3,
       title: { zh: '讀彎月面', en: 'Read the meniscus' },
-      desc: { zh: '反應結束後，從放大鏡讀出量筒的刻度並按「計算」：讀數與真正的值相差不超過最小刻度的 0.2 格。', en: 'After the reaction, read the cylinder in the magnifier and press “Calculate”: your reading must be within 0.2 of the smallest division of the true value.' },
+      desc: { zh: '反應結束、量筒沒有溢出氣體時，從放大鏡讀出量筒的刻度並按「計算」：讀數與真正的值相差不超過最小刻度的 0.2 格。', en: 'After the reaction, with no gas escaping from the cylinder, read the cylinder in the magnifier and press “Calculate”: your reading must be within 0.2 of the smallest division of the true value.' },
       check: function (ev) { const d = ev2(ev, 'analyze'); return !!d && d.ended && !d.escaped && d.onScale && d.readErr <= 0.2; }
     },
     {
