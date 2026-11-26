@@ -517,14 +517,20 @@
         need:!done[i] && action ? [...needs[i],action] : needs[i]}))};
     }
     LabStepGuide.define(controls,{key});
-    function showNext() {
+    function showNext(stepIndex) {
       const {next}=procedure();
+      let idx = next;
+      if (typeof stepIndex === 'number' && stepIndex >= 0) {
+        if (stepIndex === 0) idx = policy !== 'free' ? 0 : state.traded <= 0 ? 1 : 2;
+        else if (stepIndex === 1) idx = policy !== 'ceiling' ? 3 : 4;
+        else if (stepIndex === 2) idx = 5;
+      }
       LabSide.instance?.close();
-      if (next<0) { LabStepGuide.hide(); return; }
-      LabDeck.reveal(document.querySelector(controls[next].target));
-      LabStepGuide.show(next,{key});
+      if (idx<0) { LabStepGuide.hide(); return; }
+      LabDeck.reveal(document.querySelector(controls[idx].target));
+      LabStepGuide.show(idx,{key});
     }
-    LabSide.mount({module:key,steps:()=>procedure().steps,guide:showNext});
+    LabSide.mount({module:key,steps:()=>procedure().steps,guide:i=>showNext(i)});
     document.addEventListener('click',e=>{
       if (e.target.closest('.labside-guide-head .sg-toggle')) showNext();
     });

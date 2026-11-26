@@ -85,7 +85,7 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 .labside-rail>.labside-fold{writing-mode:horizontal-tb!important;height:34px!important;min-height:34px!important;padding:0!important;font-size:calc(22px * var(--fs,1));line-height:1;letter-spacing:0;border-color:var(--border)!important;color:var(--muted);box-shadow:none}
 html.labside-railed .labside-rail{transform:translateX(calc(100% + 8px));visibility:hidden;pointer-events:none}
 html.labside-railed.labside-pulling .labside-rail{visibility:visible;transition:none}
-.labside-edge{display:none;position:fixed;right:0;top:32%;z-index:1100;width:30px;height:96px;padding:0;border:0;background:transparent;touch-action:pan-y;cursor:pointer}
+.labside-edge{display:none;position:fixed;right:0;top:32%;z-index:1100;width:44px;height:96px;padding:0;border:0;background:transparent;touch-action:pan-y;cursor:pointer}
 .labside-edge::after{content:"‹";position:absolute;right:0;top:0;bottom:0;width:15px;display:flex;align-items:center;justify-content:center;border-radius:9px 0 0 9px;background:color-mix(in srgb,var(--accent) 78%,transparent);color:var(--bg);font-size:18px;font-weight:800;box-shadow:-2px 0 8px rgba(0,0,0,.25)}
 .labside-edge::before{content:"";position:absolute;right:15px;top:50%;width:4px;height:36px;margin-top:-18px;border-radius:2px;background:color-mix(in srgb,var(--accent) 45%,transparent);animation:labside-nudge 2.4s ease-in-out 3}
 @keyframes labside-nudge{0%,70%,100%{transform:none}80%{transform:translateX(-5px)}90%{transform:translateX(0)}}

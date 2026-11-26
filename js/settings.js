@@ -292,7 +292,7 @@
   // ---------- 齒輪按鈕與設定面板 ----------
   const T = isEn ? {
     gear: 'Settings', title: 'Settings', lang: 'Display language (text)', font: 'Text size', theme: 'Appearance',
-    auto: 'System', light: 'Light', dark: 'Dark', reset: 'Reset to defaults', close: 'Close', preview: 'Sample text 物理',
+    auto: 'System', light: 'Light', dark: 'Dark', reset: 'Reset to defaults', close: 'Close', preview: 'Sample text · Science',
     sound: 'Sound effects', on: 'On', off: 'Off', volume: 'Volume', vS: 'Low', vM: 'Medium', vL: 'High'
   } : {
     gear: '設定', title: '設定', lang: '顯示語言（文字）Display language', font: '字體大小', theme: '外觀',

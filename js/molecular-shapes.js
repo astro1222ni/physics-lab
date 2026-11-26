@@ -1567,8 +1567,14 @@
     new ResizeObserver(resize).observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
-  // 3D 是這個實驗的主角：瀏覽器支援 WebGL、而且使用者沒有選過 2D，就在頁面載入後自動切到 3D
+  // 初訪先畫 2D 以壓低首次載入量（≤ 1.5 MB）；回訪者若選過 3D 才在首幀後空檔恢復 3D 視角
   let pref = null;
   try { pref = localStorage.getItem('ms-view'); } catch (e) { pref = null; }
-  if (pref !== '2d' && webglAvailable()) setTimeout(function () { setView('3d', true); }, 60);
+  if (pref === '3d' && webglAvailable()) {
+    const restore3d = function () { if (!loadToken) setView('3d', true); };
+    requestAnimationFrame(function () {
+      if (window.requestIdleCallback) window.requestIdleCallback(restore3d, { timeout: 1800 });
+      else setTimeout(restore3d, 250);
+    });
+  }
 })();

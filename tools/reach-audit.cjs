@@ -46,7 +46,11 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
         });
         const top = top0;
         ctl.sort((a, b) => b.y - a.y);
-        return { top: Math.round(top), n: ctl.length, far: ctl.length ? ctl[0].y : 0, worst: ctl.slice(0, 4), over: ctl.filter(c => c.y > 1170).length, deck: !!document.querySelector('.labdeck'), sw: document.documentElement.scrollWidth };
+        // 量畫布底到 .labdeck 頂的死空白（deadPx > 80 應檢查是否可收緊）
+        const cv0 = [...labs[0].querySelectorAll('.stage canvas, .stage svg')].find(big);
+        const dk0 = document.querySelector('.labdeck');
+        const deadPx = (cv0 && dk0 && vis(dk0)) ? Math.round(Y(dk0) - (Y(cv0) + cv0.getBoundingClientRect().height)) : null;
+        return { top: Math.round(top), n: ctl.length, far: ctl.length ? ctl[0].y : 0, worst: ctl.slice(0, 4), over: ctl.filter(c => c.y > 1170).length, deck: !!dk0, deadPx, sw: document.documentElement.scrollWidth };
       });
       if (process.env.SHOTS && !r.err) {
         const dk = await pg.evaluate(() => { const d = document.querySelector('.labdeck'); if (!d || d.hidden) return null; const b = d.getBoundingClientRect(); return { b: Math.round(b.bottom + scrollY), tabs: [...d.querySelectorAll('.labdeck-tabs button')].filter(x => !x.hidden).map(x => x.textContent) }; });
@@ -55,7 +59,7 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
         await pg.screenshot({ path: process.env.SHOTS + '/' + m + '.png', clip: { x: 0, y: y0, width: W, height: hh }, fullPage: true });
       }
       res.push(Object.assign({ m }, r));
-      console.log(m, r.err || ('最遠 ' + r.far + ' px、超過一頁半 ' + r.over + '/' + r.n));
+      console.log(m, r.err || ('最遠 ' + r.far + ' px、超過一頁半 ' + r.over + '/' + r.n + (r.deadPx != null ? '、死空白 ' + r.deadPx + ' px' + (r.deadPx > 80 ? ' [!]' : '') : '')));
     } catch (e) { res.push({ m, err: String(e.message).slice(0, 100) }); console.log(m, '錯誤', String(e.message).slice(0, 80)); }
     await ctx.close();
   };
@@ -66,5 +70,8 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
   const over = res.filter(x => !x.err && x.far > 1170).sort((a, b) => b.far - a.far);
   console.log('\n超過一頁半（> 1170 px）：' + over.length + ' / ' + res.length);
   over.forEach(x => console.log('  ' + x.m + ' ' + x.far + ' px：' + x.worst.slice(0, 2).map(w => (w.card ? w.card + '／' : '') + w.lab).join('；')));
+  const dead = res.filter(x => !x.err && x.deadPx != null && x.deadPx > 80).sort((a, b) => b.deadPx - a.deadPx);
+  console.log('死空白過大（deadPx > 80 px）：' + dead.length + ' / ' + res.length);
+  dead.forEach(x => console.log('  ' + x.m + ' ' + x.deadPx + ' px'));
   await b.close(); srv.close(); process.exit(0);
 });
