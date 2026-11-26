@@ -289,7 +289,7 @@
     if (res.triggered) {
       const rand = rng(4242);
       const zb = Math.max(res.lcl ? res.lcl.z : 0, Math.min(res.lfc, Hm));
-      const ztop = Math.min(res.el, ZVIEW + 800);
+      const ztop = Math.min(res.el != null ? res.el : K.ZMAX, ZVIEW + 800);
       const xc = l.X(0.52);
       g.save();
       g.beginPath(); g.rect(0, 0, l.W, l.Y(0)); g.clip();
@@ -390,8 +390,9 @@
     // 積雨雲的雲頂
     if (res.triggered) {
       const x = l.X(0.56);
-      const yTop = res.el > ZVIEW ? l.pad.t + 44 : l.Y(res.el) - 4;
-      place((res.el > ZVIEW ? '↑ ' : '') + T('積雨雲，雲頂 ', 'Cumulonimbus, top ') + km(res.el, 1), x, yTop, C['cf-lee'], 'center');
+      const elz = res.el != null ? res.el : K.ZMAX;
+      const yTop = elz > ZVIEW ? l.pad.t + 44 : l.Y(elz) - 4;
+      place((elz > ZVIEW ? '↑ ' : '') + T('積雨雲，雲頂 ', 'Cumulonimbus, top ') + (res.el != null ? km(res.el, 1) : T('> 20 km', '> 20 km')), x, yTop, C['cf-lee'], 'center');
     }
     // 氣塊走的路徑（貼著地面）
     g.save();

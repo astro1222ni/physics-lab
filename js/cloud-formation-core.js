@@ -300,7 +300,7 @@
       rateDry: rateDry, rateMoist: rateMoist, rateLee: rateLee,
       gammaMoist0: gs, stability: stability,
       lfc: conv.lfc, el: conv.el, elTopped: conv.elTopped, cape: conv.cape, cin: conv.cin,
-      triggered: conv.lfc != null && conv.lfc <= H + 1e-6 && conv.el != null && conv.el > conv.lfc
+      triggered: conv.lfc != null && conv.lfc <= H + 1e-6 && (conv.elTopped || (conv.el != null && conv.el > conv.lfc))
     };
   }
 
