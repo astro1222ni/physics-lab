@@ -56,18 +56,6 @@
           <span class="door-me" id="door-exam-me"></span>
         </span><i aria-hidden="true">→</i>
       </a>
-      <!-- 11/21 深夜站長：「併入到主網頁……放一起，封面畫一個大鎖，鎖頭鎖起來，寫『不開放』」；接著：「如果點在那個框面的話，輸入密碼就可以進入解鎖」「也不是倪老師的聲音……那句拿掉」。卡上不放講義內容、題目、截圖。 -->
-      <a class="lobby-door locked" href="lt/ch2-1cd1492bda/" rel="nofollow">
-        <span class="door-tile lock" aria-hidden="true"><svg viewBox="0 0 64 72" width="64" height="72"><path d="M17 33V22a15 15 0 0 1 30 0v11" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><rect x="7" y="31" width="50" height="38" rx="8" fill="currentColor"/><circle cx="32" cy="46" r="5.5" fill="#3b3f45"/><path d="M29.5 49h5l1.6 11h-8.2z" fill="#3b3f45"/></svg></span>
-        <span class="door-body">
-          <strong data-en="Web handouts">網頁講義</strong>
-          <span class="door-what" data-en="Every page and every problem has a step-by-step explanation with animation, text and narration.">每一頁、每一題都有逐步動畫、文字及旁白講解。</span>
-          <span class="door-shut" data-en="🔒 Not open">🔒 不開放</span>
-          <span class="door-how" data-en="Have the password? Tap here to unlock.">有密碼的人，點這裡輸入密碼解鎖。</span>
-        </span><i aria-hidden="true">→</i>
-      </a>
-      <script>/* 這台裝置輸入過密碼（密碼頁打勾「記住」會存 lt-key-*），卡片改寫已解鎖。只看有沒有這把鑰匙，不讀內容 */
-      (function(){try{var ok=false;for(var i=0;i<localStorage.length;i++){if(/^lt-key-/.test(localStorage.key(i))){ok=true;break;}}if(!ok)return;var c=document.querySelector('.lobby-door.locked');c.classList.add('unlocked');var s=c.querySelector('.door-shut'),h=c.querySelector('.door-how');s.textContent='🔓 這台裝置已解鎖';s.setAttribute('data-en','🔓 Unlocked on this device');h.textContent='點這裡直接進入。';h.setAttribute('data-en','Tap to open.');}catch(e){}})();</script>
     </div>
     <section id="textbook" hidden>
       <a class="lobby-back" href="learn.html" data-en="‹ Physics Study Room">‹ 物理自習室</a>
