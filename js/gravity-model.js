@@ -230,8 +230,8 @@
   function drawBreak(v, captions) {
     const a = byId(state.from), b = byId(state.to);
     if (!a || !b || a.id === b.id) return;
-    const pa = P(v, a), pb = P(v, b), f = K.breakFrac(a.pop, b.pop, state.b);
-    const x = pa[0] + f * (pb[0] - pa[0]), y = pa[1] + f * (pb[1] - pa[1]);
+    const pa = P(v, a), pb = P(v, b), bp = K.breakPoint(a, b, state.b, state.mode, barrier());
+    const [x, y] = P(v, bp.at);
     ctx.save();
     ctx.setLineDash([6, 5]); ctx.strokeStyle = D.alpha(C['gm-break'], 0.8); ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); ctx.setLineDash([]);

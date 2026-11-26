@@ -299,7 +299,7 @@
       foehn: lee.T - T0, rain: top.rain, liquidTop: top.l,
       rateDry: rateDry, rateMoist: rateMoist, rateLee: rateLee,
       gammaMoist0: gs, stability: stability,
-      lfc: conv.lfc, el: conv.el, cape: conv.cape, cin: conv.cin,
+      lfc: conv.lfc, el: conv.el, elTopped: conv.elTopped, cape: conv.cape, cin: conv.cin,
       triggered: conv.lfc != null && conv.lfc <= H + 1e-6 && conv.el != null && conv.el > conv.lfc
     };
   }
@@ -346,8 +346,8 @@
         cape += G0 * 0.5 * (ba / a.Te + bc / c.Te) * (c.z - a.z);
       }
     }
-    if (lfc != null && el == null) el = free[free.length - 1].z; // 20 km 還沒停（不會發生在合理的範圍）
-    return { lfc: lfc, el: el, cape: lfc == null ? 0 : cape, cin: lfc == null ? NaN : cin };
+    const elTopped = lfc != null && el == null;
+    return { lfc: lfc, el: el, elTopped: elTopped, cape: lfc == null ? 0 : cape, cin: lfc == null ? NaN : cin };
   }
 
   /** 線性內插：上升段（z 遞增） */

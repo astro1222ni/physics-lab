@@ -188,7 +188,8 @@
     const H = D.Q.map(q => G.map(row => q.reduce((a, v, j) => a + v * row[j], 0))); // m × n
     const R = rng(seed || 1), pts = [];
     const cb = fixed ? 1000 * C * assumeTau : 0;
-    const bias = sats.map(s => (mp ? multipathBias(s.el, mp.m, mp.el) : 0) + cb);
+    const mpOnly = sats.map(s => mp ? multipathBias(s.el, mp.m, mp.el) : 0);
+    const bias = mpOnly.map(v => v + cb);
     let se = 0, sn = 0, su = 0, h2 = 0;
     for (let k = 0; k < count; k++) {
       const eps = sats.map((s, i) => sigma * R.n() + bias[i]);
@@ -196,7 +197,8 @@
       pts.push(d); se += d[0]; sn += d[1]; su += d[2]; h2 += d[0] * d[0] + d[1] * d[1];
     }
     const b = [0, 1, 2].map(j => H[j].reduce((a, v, i) => a + v * bias[i], 0));
-    return { pts, mean: [se / count, sn / count, su / count], hrms: Math.sqrt(h2 / count), bias: b, biasH: Math.hypot(b[0], b[1]), dop: D };
+    const mpB = [0, 1, 2].map(j => H[j].reduce((a, v, i) => a + v * mpOnly[i], 0));
+    return { pts, mean: [se / count, sn / count, su / count], hrms: Math.sqrt(h2 / count), bias: b, biasH: Math.hypot(b[0], b[1]), mpBias: mpB, mpBiasH: Math.hypot(mpB[0], mpB[1]), dop: D };
   }
 
   // ---------------- 平面練習：島上的發射塔 ----------------

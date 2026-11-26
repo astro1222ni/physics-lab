@@ -811,7 +811,7 @@
     setHTML('rP', s.P >= 100 ? pText(s.P) + T('（', ' (') + sig(s.P / 101325, 3) + ' atm' + T('）', ')') : pText(s.P) + T('（', ' (') + sci(s.P / 101325, 3) + ' atm' + T('）', ')'));
     setHTML('rAbove', pctText(s.above));
     setHTML('rRho', rhoText(s.rho));
-    setHTML('rO2', pText(s.pO2) + T('（海平面的 ', ' (') + pctText(s.P / K.P0) + T('）', ' of sea level)'));
+    setHTML('rO2', s.pO2 == null ? T('異質層（不適用 20.95% 混合比）', 'Heterosphere (20.95% mix not applicable)') : pText(s.pO2) + T('（海平面的 ', ' (') + pctText(s.P / K.P0) + T('）', ' of sea level)'));
     setHTML('rBoil', s.boil == null ? T('沒有液態水（低於三相點）', 'no liquid water (below the triple point)') : num(s.boil, 1) + ' °C');
     setHTML('rC', num(s.c, 1) + ' m/s');
     setHTML('rH', num(s.H / 1000, 2) + ' km');

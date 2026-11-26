@@ -184,7 +184,7 @@ let e;
 e = gridFind('10', [P.H0], (Om, OL) => Om >= 2 && Om % 0.5 === 0 && OL % 0.25 === 0);
 ex('10', e, e ? 'Ωm = ' + e.data.Om + '、ΩΛ = ' + e.data.OL + '：' + f3(e.data.crunch) + ' 十億年後大崩墜' : '找不到');
 const eClosed = ageEv(P.H0, 3, 0, 'closed'); no('10', eClosed, '按「封閉」（' + f3(eClosed.data.crunch) + ' 十億年後才大崩墜）');
-e = ageEv(P.H0, 0.2, 0.8); ex('11', e, 'Ωm = 0.2、ΩΛ = 0.8：z_acc = ' + f3(e.data.zacc));
+e = ageEv(P.H0, 0.195, 0.805); ex('11', e, 'Ωm = 0.195、ΩΛ = 0.805：z_acc = ' + f3(e.data.zacc));
 no('11', def, 'Planck 的 z_acc = ' + f3(def.data.zacc));
 // h6：H0 = 70、平坦、138 億年
 { let hit = null; for (let i = 100; i <= 600 && !hit; i++) { const Om = i / 1000, OL = rd(1 - Om, 3), e = ageEv(70, Om, OL); if (hits('h6', e) && !otherHidden('h6').some(h => hits(h, e))) hit = e; }

@@ -22,8 +22,8 @@
     {
       id: 'stars-hr-1', level: 1,
       title: { zh: '紅色的星', en: 'A red star' },
-      desc: { zh: '做一顆 M 型星：表面溫度低於 3900 K，看它是什麼顏色。', en: 'Make an M-type star: surface temperature below 3900 K. What colour is it?' },
-      check: function (ev) { const d = parked(ev); return !!d && d.T < 3900; }
+      desc: { zh: '做一顆 M 型星：表面溫度介於 2300–3900 K，看它是什麼顏色。', en: 'Make an M-type star: surface temperature between 2300 K and 3900 K. What colour is it?' },
+      check: function (ev) { const d = parked(ev); return !!d && d.T >= 2300 && d.T < 3900; }
     },
     {
       id: 'stars-hr-2', level: 2,

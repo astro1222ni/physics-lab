@@ -156,13 +156,13 @@
     }
     return Object.keys(m).map(Number).sort(function (a, b) { return a - b; }).map(function (k) { return { day: k, frac: m[k] }; });
   }
-  /** 理想時區裡，日期在哪一條經線上換（午夜所在的時區西界）；0:00 剛好在時區界上 */
+  /** 理想時區裡，日期在哪一條經線上換（午夜所在的時區西界）；同為 0:00（UTC 12:00）時取已進入次日的 UTC+12 西界（+172.5°） */
   function midnightLon(utc) {
-    // 區時 = utc + z；剛過午夜的時區：(utc + z) mod 24 最小的那一區
+    // 區時 = utc + z；剛過午夜的時區：(utc + z) mod 24 最小的那一區；平手時取 z 較大者（次日半區）
     let best = null, bv = Infinity;
     for (let z = -12; z <= 12; z++) {
       const c = mod(utc + z, 24);
-      if (c < bv - 1e-9) { bv = c; best = z; }
+      if (c < bv - 1e-9 || (Math.abs(c - bv) <= 1e-9 && (best == null || z > best))) { bv = c; best = z; }
     }
     return zoneBounds(best)[0];
   }

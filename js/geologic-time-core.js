@@ -58,12 +58,17 @@
   // 等時線：同一岩體的四種礦物（斜長石、角閃石、鉀長石、黑雲母）的 87Rb/86Sr
   const ISO_X = [0.05, 0.8, 4, 18], SR0 = 0.7045;
   function isochron(t) { const k = Math.expm1(SYSTEMS.Rb87.lambda * t); return ISO_X.map(function (x) { return [x, SR0 + x * k]; }); }
-  /** 最小平方法直線：回傳 { slope, icpt, age } */
+  /** 最小平方法直線：回傳 { slope, icpt, age, sigmaSlope, sigmaAge } */
   function fitIsochron(pts) {
     const n = pts.length; let sx = 0, sy = 0, sxx = 0, sxy = 0;
     pts.forEach(function (p) { sx += p[0]; sy += p[1]; sxx += p[0] * p[0]; sxy += p[0] * p[1]; });
+    const xm = sx / n, ssx = sxx - n * xm * xm;
     const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx), icpt = (sy - slope * sx) / n;
-    return { slope: slope, icpt: icpt, age: Math.log1p(slope) / SYSTEMS.Rb87.lambda };
+    let sse = 0;
+    pts.forEach(function (p) { const r = p[1] - (icpt + slope * p[0]); sse += r * r; });
+    const sigmaSlope = n > 2 && ssx > 0 ? Math.sqrt((sse / (n - 2)) / ssx) : 0;
+    const sigmaAge = sigmaSlope / (Math.max(1e-12, 1 + slope) * SYSTEMS.Rb87.lambda);
+    return { slope: slope, icpt: icpt, age: Math.log1p(slope) / SYSTEMS.Rb87.lambda, sigmaSlope: sigmaSlope, sigmaAge: sigmaAge };
   }
   // 決定性的擬隨機（同一個樣本、同一次量測永遠得到同一個數，方便任務與測試）
   function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -225,7 +230,18 @@
     if (Sy.kind === 'isochron') {
       const pts = isochron(t).map(function (p, i) { return [p[0], p[1] * (1 + Sy.rel * 0.25 * gauss(seed + i))]; });
       const fit = fitIsochron(pts);
-      return { ok: true, sys: sys, pts: pts, fit: fit, age: fit.age / 1e6, sigma: tMa * 0.006 + 2, trueAge: tMa, what: what };
+      // 儀器量測誤差由各點 y_i 的 1σ (= y_i * rel * 0.25) 傳遞至最小平方斜率，再與擬合殘差標準誤取較大值（MSWD 保守估計）
+      let sx = 0; pts.forEach(function (p) { sx += p[0]; });
+      const xm = sx / pts.length;
+      let ssx = 0, varSlope = 0;
+      pts.forEach(function (p) { ssx += (p[0] - xm) * (p[0] - xm); });
+      pts.forEach(function (p) {
+        const w = (p[0] - xm) / ssx, ey = p[1] * Sy.rel * 0.25;
+        varSlope += w * w * ey * ey;
+      });
+      const sigSlope = Math.max(fit.sigmaSlope, Math.sqrt(varSlope));
+      const sigAge = sigSlope / (Math.max(1e-12, 1 + fit.slope) * Sy.lambda);
+      return { ok: true, sys: sys, pts: pts, fit: fit, age: fit.age / 1e6, sigma: sigAge / 1e6, trueAge: tMa, what: what };
     }
     const r0 = ratioAt(sys, t), r = r0 * (1 + Sy.rel * gauss(seed));
     return { ok: true, sys: sys, r: r, age: ageFrom(sys, r) / 1e6, sigma: ageSigma(sys, r, Sy.rel) / 1e6, trueAge: tMa, what: what };

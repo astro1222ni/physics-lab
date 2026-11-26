@@ -167,8 +167,39 @@
     const tr = transit(o);
     const first = sunsetHA(o.lat, tr.dec, h0);
     const out = { noon: tr.clock, noonAlt: tr.alt, h0: h0, polar: first.polar, rise: null, set: null, len: first.polar === 'day' ? 24 : 0, riseAz: null, setAz: null };
-    if (first.polar) return out;
     const q = Object.assign({}, o);
+    if (first.polar) {
+      // 正午赤緯判為極晝／極夜時，高緯度或極點在交界日仍可能因當日太陽赤緯變化而跨過 h0，逐段掃描當地 0–24 時驗證
+      const N = 288;
+      const altAt = function (c) { q.clock = c; return sunLocal(q).alt - h0; };
+      let prevC = 0, prevF = altAt(0), rise = null, set = null;
+      for (let i = 1; i <= N; i++) {
+        const curC = 24 * i / N, curF = altAt(curC);
+        if (prevF <= 0 && curF > 0 && rise == null) {
+          let lo = prevC, hi = curC;
+          for (let k = 0; k < 40; k++) { const m = 0.5 * (lo + hi); if (altAt(m) > 0) hi = m; else lo = m; }
+          rise = 0.5 * (lo + hi);
+        } else if (prevF > 0 && curF <= 0 && set == null) {
+          let lo = prevC, hi = curC;
+          for (let k = 0; k < 40; k++) { const m = 0.5 * (lo + hi); if (altAt(m) > 0) lo = m; else hi = m; }
+          set = 0.5 * (lo + hi);
+        }
+        prevC = curC; prevF = curF;
+      }
+      if (rise == null && set == null) {
+        const up = altAt(12) > 0;
+        out.polar = up ? 'day' : 'night';
+        out.len = up ? 24 : 0;
+        return out;
+      }
+      out.polar = null;
+      if (rise != null) { q.clock = rise; out.rise = rise; out.riseAz = sunLocal(q).az; }
+      if (set != null) { q.clock = set; out.set = set; out.setAz = sunLocal(q).az; }
+      if (rise != null && set != null) out.len = set >= rise ? set - rise : (24 - rise) + set;
+      else if (rise != null) out.len = 24 - rise;
+      else out.len = set;
+      return out;
+    }
     function solve(sign) {
       // 先用正午的 δ 估計，再改用當時的 δ 與時角逐次修正（割線法解 h(c) = h0）
       let c = tr.clock + sign * first.H0 / 15;

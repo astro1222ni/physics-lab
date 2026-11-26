@@ -55,7 +55,7 @@
     {
       id: 'contour-map-5', level: 3,
       title: { zh: '朝南的山坡', en: 'A south-facing slope' },
-      desc: { zh: '找一處朝正南（坡向 175°–185°）、坡度至少 30% 的山坡。在北半球，這樣的坡面曬到最多太陽。', en: 'Find a slope facing due south (aspect 175°–185°) and at least 30% steep. In the northern hemisphere such slopes get the most sun.' },
+      desc: { zh: '找一處朝正南（坡向 175°–185°）、坡度至少 30% 的山坡。在北回歸線以北、坡度相同且無地形遮蔽時，朝南坡面全年平均曬到較多太陽。', en: 'Find a slope facing due south (aspect 175°–185°) and at least 30% steep. North of the Tropic of Cancer, for equal steepness and unobstructed skies, south-facing slopes receive more annual sunlight.' },
       check: function (ev) { const d = M(ev), p = pr(d); return !!p && p.land && p.pct >= 30 && within(p.aspect, 175, 185); }
     },
     {

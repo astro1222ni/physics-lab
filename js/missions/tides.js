@@ -41,13 +41,13 @@
     {
       id: 'tides-2', level: 2,
       title: { zh: '大潮', en: 'Spring tide' },
-      desc: { zh: '加入太陽，把月球放到新月或滿月的位置（與太陽的夾角 0° 或 180°，誤差 3° 以內），讓月球與太陽的隆起疊在一起。', en: 'With the Sun included, put the Moon at new moon or full moon (0° or 180° from the Sun, within 3°) so the two sets of bulges line up.' },
+      desc: { zh: '加入太陽，把月球放到新月或滿月的位置（赤經差 ψ 為 0° 或 180°，誤差 3° 以內），讓月球與太陽的隆起在經度上對齊。', en: 'With the Sun included, put the Moon at new moon or full moon (equatorial angle ψ at 0° or 180°, within 3°) so the two sets of bulges align in longitude.' },
       check: function (ev) { return isState(ev) && ev.data.sun && (near(ev.data.psi, 0, 3) || near(ev.data.psi, 180, 3)); }
     },
     {
       id: 'tides-3', level: 2,
       title: { zh: '小潮', en: 'Neap tide' },
-      desc: { zh: '加入太陽，把月球放到上弦或下弦的位置（與太陽的夾角 90° 或 270°，誤差 3° 以內），讓兩組隆起互相垂直。', en: 'With the Sun included, put the Moon at first or last quarter (90° or 270° from the Sun, within 3°) so the two sets of bulges are at right angles.' },
+      desc: { zh: '加入太陽，把月球放到上弦或下弦的位置（赤經差 ψ 為 90° 或 270°，誤差 3° 以內），讓兩組隆起在經度上互相垂直。', en: 'With the Sun included, put the Moon at first or last quarter (equatorial angle ψ at 90° or 270°, within 3°) so the two sets of bulges cross at right angles in longitude.' },
       check: function (ev) { return isState(ev) && ev.data.sun && (near(ev.data.psi, 90, 3) || near(ev.data.psi, 270, 3)); }
     },
     {

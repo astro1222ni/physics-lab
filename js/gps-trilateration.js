@@ -480,7 +480,7 @@
         lat: state.lat, lon: state.lon, t: state.t, mask: state.mask, wall: state.wall, mp: state.mp, sig: state.sig, clock: state.clock, ctau: state.ctau,
         nVis: S.vis.length, nUsed: S.used.length, nExcl: S.vis.length - S.used.length, maxEl: S.maxEl, pAll: S.pAll, playing: state.playing,
         dop: d ? { p: d.p, h: d.h, v: d.v, t: d.t } : null,
-        hrms: S.sc ? S.sc.hrms : null, biasH: S.sc ? S.sc.biasH : null, biasV: S.sc ? Math.abs(S.sc.bias[2]) : null
+        hrms: S.sc ? S.sc.hrms : null, biasH: S.sc ? S.sc.biasH : null, biasV: S.sc ? Math.abs(S.sc.bias[2]) : null, mpBiasH: S.sc ? S.sc.mpBiasH : null
       }
     };
   }

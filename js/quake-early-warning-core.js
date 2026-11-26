@@ -94,10 +94,11 @@
   /** 波前在地表的半徑（震央距離）：時刻 t 時 √((v t)² − h²) */
   function surfaceRadius(t, h, v) { const r = v * t; return r > h ? Math.sqrt(r * r - h * h) : 0; }
 
-  /** 地表最大加速度（gal） */
-  function pga(M, d, h) {
+  /** 地表最大加速度（gal）；regime 可指定 'crustal'（淺層地殼）或 'subduction'（隱沒板塊），省略時以深度 DEEP=35 km 切換 */
+  function pga(M, d, h, regime) {
     const Dp = Math.max(1, h);
-    if (h >= DEEP) {
+    const useSub = regime === 'subduction' ? true : regime === 'crustal' ? false : h >= DEEP;
+    if (useSub) {
       const Dh = hypo(d, h);
       return Math.exp(4.7141 + 0.8468 * M - 0.1745 * Math.log(Dp) - 1.2972 * Math.log(Dh));
     }

@@ -705,7 +705,7 @@
       setText('gFar', km(H[G.L - 1].far));
       setText('gCov', pct(G.coverage, 1) + (G.coverage < 1 - 1e-9 ? T('（角落太遠）', ' (corners too far)') : ''));
     } else {
-      setText('gL', T('沒有地方賣：最高一級的市場區也湊不滿門檻', 'Nowhere: even the top rank\'s market is below the threshold'));
+      setText('gL', T('沒有地方賣：商品圈內或最高級市場區湊不滿門檻', 'Nowhere: range or top-rank market falls below the threshold'));
       ['gPop', 'gFill', 'gFar', 'gCov'].forEach(function (id) { setText(id, '—'); });
     }
     document.querySelectorAll('#showSeg button').forEach(function (b) {

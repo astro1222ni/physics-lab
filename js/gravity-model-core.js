@@ -140,6 +140,33 @@
   }
   /** 雷利分界點：從 i 出發、在 i 與 j 連線上的距離比例 x/d */
   function breakFrac(Pi, Pj, b) { return 1 / (1 + Math.pow(Pj / Pi, 1 / b)); }
+  /** 兩城連線上引力相等的分界點：直線距離用解析雷利公式，時間／高鐵／山脈阻抗沿連線求 pull(a)=pull(b) */
+  function breakPoint(a, b, beta, mode, mountains = false) {
+    const pa = toXY(a), pb = toXY(b);
+    const atU = u => fromXY(pa[0] + u * (pb[0] - pa[0]), pa[1] + u * (pb[1] - pa[1]));
+    if (!mode || mode === 'km') {
+      const f = breakFrac(a.pop, b.pop, beta);
+      return { f, at: atU(f) };
+    }
+    const diff = u => { const p = atU(u); return pull(a, p, beta, mode, mountains) - pull(b, p, beta, mode, mountains); };
+    const N = 60;
+    let lo = 0, hi = 1, found = false, prevU = 0, prevD = diff(0), bestU = 0.5, bestAbs = Infinity;
+    for (let i = 1; i <= N; i++) {
+      const u = i / N, d = diff(u);
+      if (Math.abs(d) < bestAbs) { bestAbs = Math.abs(d); bestU = u; }
+      if (prevD >= 0 && d <= 0) { lo = prevU; hi = u; found = true; break; }
+      prevU = u; prevD = d;
+    }
+    let f = bestU;
+    if (found) {
+      for (let k = 0; k < 30; k++) {
+        const m = 0.5 * (lo + hi);
+        if (diff(m) > 0) lo = m; else hi = m;
+      }
+      f = 0.5 * (lo + hi);
+    }
+    return { f, at: atU(f) };
+  }
   /** 引力（某一點受城市 c 吸引的大小） */
   function pull(c, p, b, mode, mountains = false) { return c.pop / Math.pow(Math.max(dist(c, p, mode, mountains), 1), b); }
   /** 某一點的勢力歸屬：回傳 { k（最大的城市）, ratio（第一名 ÷ 第二名） } */
@@ -234,8 +261,7 @@
     const a = list[ix(st.from)], b = list[ix(st.to)];
     let pair = null;
     if (a && b && a.id !== b.id) {
-      const km = haversine(a, b), f = breakFrac(a.pop, b.pop, st.b), pa = toXY(a), pb = toXY(b);
-      const bp = fromXY(pa[0] + f * (pb[0] - pa[0]), pa[1] + f * (pb[1] - pa[1]));
+      const km = haversine(a, b), bpObj = breakPoint(a, b, st.b, st.mode, st.mountains), f = bpObj.f, bp = bpObj.at;
       let near = null, nk = Infinity;
       CITIES.forEach(c => { if (c.id === a.id || c.id === b.id) return; const d = haversine(c, bp); if (d < nk) { nk = d; near = c.id; } });
       pair = { km, car: dist(a, b, 'car', st.mountains), hsr: dist(a, b, 'hsr', st.mountains), frac: f, fracBig: a.pop >= b.pop ? f : 1 - f,
@@ -274,7 +300,7 @@
   return {
     RIDGE, NANGANG, TOUCHENG, FENGGANG, side, carRoad, roadRoute, summary,
     R_EARTH, CITIES, HSR, COAST, ROAD, CAR, HSR_V, HSR_WAIT, KX, KY,
-    haversine, carMin, dist, nearestStation, interaction, flowsFrom, allPairs, breakFrac, pull, dominant, fitB,
+    haversine, carMin, dist, nearestStation, interaction, flowsFrom, allPairs, breakFrac, breakPoint, pull, dominant, fitB,
     toXY, fromXY, inside, withTown, grid, areas
   };
 });

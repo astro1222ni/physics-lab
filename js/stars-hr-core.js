@@ -122,7 +122,7 @@
   ];
   function spectral(T) {
     for (let i = 0; i < CLASSES.length; i++) if (T >= CLASSES[i].lo) return CLASSES[i].k;
-    return 'M';
+    return 'L';
   }
 
   // ---------- 主序星 ----------

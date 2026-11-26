@@ -634,6 +634,8 @@
       tag((res.triggered ? T('雲頂 ', 'Top ') : T('可能的雲頂 ', 'Possible top ')) + km(res.el, 1), L.X(s.T) + 8, L.Y(res.el) + 6, C['cf-cape'], 'left');
     } else if (res.el != null) {
       tag('↑ ' + (res.triggered ? T('雲頂 ', 'Top ') : T('可能的雲頂 ', 'Possible top ')) + km(res.el, 1), x1 - 2, y0 + 20, C['cf-cape'], 'right');
+    } else if (res.elTopped) {
+      tag('↑ ' + (res.triggered ? T('雲頂 ', 'Top ') : T('可能的雲頂 ', 'Possible top ')) + '> 20 km', x1 - 2, y0 + 20, C['cf-cape'], 'right');
     }
     dot(res.lee.T, 0, C['cf-lee']);
     // 目前的氣塊
@@ -687,10 +689,12 @@
     const rd = isFinite(res.rateDry) ? num(res.rateDry, 1) : '—', rm = isFinite(res.rateMoist) ? num(res.rateMoist, 1) : '—';
     setHTML('rRates', T('雲底以下 ', 'Below the cloud base ') + '<b>' + rd + '</b>' + T('，雲裡 ', ', in cloud ') + '<b>' + rm + '</b> °C/km');
     setHTML('rLfc', res.lfc == null ? T('沒有', 'None') : meters(res.lfc));
-    setHTML('rEl', res.el == null ? '—' : km(res.el, 1));
+    setHTML('rEl', res.el != null ? km(res.el, 1) : (res.elTopped ? T('> 20 km（未達平衡）', '> 20 km (no EL in model)') : '—'));
     setHTML('rCape', res.lfc == null ? '0 J/kg' : num(res.cape, 0) + ' J/kg');
     let trig;
-    if (res.triggered) trig = T('會。山頂高過自由對流高度，空氣自己往上衝，長成雲頂 ', 'Yes. The crest is above the level of free convection; the air rises by itself into a cumulonimbus topped at ') + km(res.el, 1) + T(' 的積雨雲。', '.');
+    if (res.triggered) trig = res.el != null
+      ? T('會。山頂高過自由對流高度，空氣自己往上衝，長成雲頂 ', 'Yes. The crest is above the level of free convection; the air rises by itself into a cumulonimbus topped at ') + km(res.el, 1) + T(' 的積雨雲。', '.')
+      : T('會。山頂高過自由對流高度，氣塊在模型頂端（20 km）仍具正浮力、尚未達平衡高度。', 'Yes. The crest is above the level of free convection; the parcel remains positively buoyant past the 20 km model top without reaching an equilibrium level.');
     else if (res.lfc != null) trig = T('不會。還要把空氣抬到 ', 'No. The air would have to be lifted to ') + meters(res.lfc) + T('（比山頂高 ', ' (') + meters(res.lfc - res.params.H) + T('）才會自己往上衝。', ' above the crest) before it rises by itself.');
     else if (res.env.layers) trig = T('不會。山頂及上方剖面沒有可延續的正浮力層。', 'No. There is no sustained positively buoyant layer at or above the crest.');
     else trig = T('不會。這團空氣抬到多高都比周圍冷。', 'No. However high this air is lifted, it stays colder than its surroundings.');

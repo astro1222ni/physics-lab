@@ -62,8 +62,20 @@
   function age(M) { return hasBang(M) ? timeBetween(M, 0, 1) : null; }
   /** 回溯時間（Gyr）：紅移 z 的光走了多久 */
   function lookback(M, z) { return timeBetween(M, 1 / (1 + z), 1); }
-  /** 開始加速膨脹時的尺度因子（不計輻射；ΩΛ ≤ 0 是 null） */
-  function aAccel(M) { return M.OL > 0 ? Math.cbrt(M.Om / (2 * M.OL)) : null; }
+  /** 開始加速膨脹時的尺度因子（含物質與輻射：解 2 ΩΛ a⁴ − Ωm a − 2 Ωr = 0；ΩΛ ≤ 0 是 null） */
+  function aAccel(M) {
+    if (!(M.OL > 0)) return null;
+    const om = Math.max(0, M.Om || 0), or = Math.max(0, M.Or || 0);
+    if (om === 0 && or === 0) return 0;
+    if (or === 0) return Math.cbrt(om / (2 * M.OL));
+    if (om === 0) return Math.pow(or / M.OL, 0.25);
+    let lo = 0, hi = Math.max(Math.cbrt(om / (2 * M.OL)), Math.pow(or / M.OL, 0.25)) * 2;
+    for (let i = 0; i < 80; i++) {
+      const m = 0.5 * (lo + hi);
+      if (2 * M.OL * m * m * m * m - om * m - 2 * or < 0) lo = m; else hi = m;
+    }
+    return 0.5 * (lo + hi);
+  }
 
   /** a(t) 的歷史：從現在（t = 0，a = 1）往回推到大霹靂、往後推到 tMax 或大崩墜。t 單位 Gyr。
    *  回傳 { pts: [{t, a}]（時間由小到大）, bang（大霹靂的 t，負數）, crunch（大崩墜的 t）, bounce（往回推會反彈） } */

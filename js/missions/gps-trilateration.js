@@ -73,7 +73,7 @@
       id: 'gps-trilateration-9', level: 5,
       title: { zh: '繞路的訊號', en: 'Signals that take the long way' },
       desc: { zh: '仰角遮罩至少 10°，讓多路徑造成的水平固定偏移至少 6 m。', en: 'With an elevation mask of at least 10°, make multipath shift the position sideways by at least 6 m.' },
-      check: function (ev) { const s = S(ev); return !!s && s.mask >= 10 && s.biasH != null && s.biasH >= 6; }
+      check: function (ev) { const s = S(ev); const mpH = s && s.mpBiasH != null ? s.mpBiasH : (s ? s.biasH : null); return !!s && s.mask >= 10 && s.mp > 0 && mpH != null && mpH >= 6; }
     },
     {
       id: 'gps-trilateration-10', level: 6,

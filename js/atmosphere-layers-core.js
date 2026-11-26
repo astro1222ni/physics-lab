@@ -144,7 +144,7 @@
       c: Math.sqrt(GAMMA * RSTAR * T / M),
       mfp: KB * T / (Math.SQRT2 * Math.PI * DCOLL * DCOLL * P),
       above: P / P0,
-      pO2: O2 * P,
+      pO2: z <= Z86 ? O2 * P : null,
       boil: boilingPoint(P),
       layer: layerOf(z)
     };

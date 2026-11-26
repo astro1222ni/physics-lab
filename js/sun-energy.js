@@ -1003,6 +1003,7 @@
         : T('同一個 τ 的紀錄先換算到正入射（實心點），再擬合直線：ln S = ln S<sub>0</sub> − τm。直線延長到 m = 0，就是大氣頂端的陽光。空心點是其他 τ 的紀錄。', 'Measurements with the same τ (filled dots) are corrected to normal incidence before fitting: ln S = ln S<sub>0</sub> − τm. Extend it to m = 0 for the sunlight at the top of the atmosphere. Hollow dots were taken with another τ.'));
     } else {
       const fu = SC.fusion(Lw), t = lifes();
+      const isWD = state.R <= 0.05 && state.T >= 8000;
       setHTML('uRate', big(fu.rate, 3) + T(' 次', ''));
       setHTML('uH', big(fu.H, 3) + T(' 公斤', ' kg'));
       setHTML('uDm', big(fu.dm, 3) + T(' 公斤', ' kg'));
@@ -1010,8 +1011,8 @@
       setHTML('uChem', years(t.chem));
       setHTML('uGrav', years(t.grav));
       setHTML('uNuc', years(t.nuc));
-      setHTML('cvHint', T('左邊：質子–質子鏈（太陽約 99 % 的能量來自它）。按「看一次核融合」播放。右邊：4 個氫原子比 1 個氦原子重一點點，少掉的質量變成能量。'.replace('左邊', sideWide() ? '左邊' : '上面').replace('右邊', sideWide() ? '右邊' : '下面'), (sideWide() ? 'Left' : 'Top') + ': the proton–proton chain (about 99 % of the Sun’s energy). Press “Watch a fusion” to play it. ' + (sideWide() ? 'Right' : 'Bottom') + ': four hydrogen atoms weigh a little more than one helium atom; the missing mass becomes energy.'));
-      setHTML('chartHint', T('三種燃料讓目前這顆恆星發光能撐多久（用目前的光度）。綠線是地球的年齡：只有核融合撐得過。', 'How long each fuel could keep this star shining at its present luminosity. Green: the age of the Earth — only fusion lasts that long.'));
+      setHTML('cvHint', (isWD ? T('提醒：白矮星已停止核心核融合，靠殘餘熱能緩慢冷卻發光；下列為假設以質子–質子鏈支撐同光度時的等效估算。', 'Note: a white dwarf has stopped core fusion and shines by cooling its residual heat; the figures below are equivalent proton–proton estimates at the same luminosity. ') : '') + T('左邊：質子–質子鏈（太陽約 99 % 的能量來自它）。按「看一次核融合」播放。右邊：4 個氫原子比 1 個氦原子重一點點，少掉的質量變成能量。'.replace('左邊', sideWide() ? '左邊' : '上面').replace('右邊', sideWide() ? '右邊' : '下面'), (sideWide() ? 'Left' : 'Top') + ': the proton–proton chain (about 99 % of the Sun’s energy). Press “Watch a fusion” to play it. ' + (sideWide() ? 'Right' : 'Bottom') + ': four hydrogen atoms weigh a little more than one helium atom; the missing mass becomes energy.'));
+      setHTML('chartHint', (isWD ? T('白矮星不靠核融合發光，此處僅作同光度下的燃料比較。', 'White dwarfs do not fuse fuel; shown here only as an equivalent-luminosity comparison. ') : '') + T('三種燃料讓目前這顆恆星發光能撐多久（用目前的光度）。綠線是地球的年齡：只有核融合撐得過。', 'How long each fuel could keep this star shining at its present luminosity. Green: the age of the Earth — only fusion lasts that long.'));
     }
     cv.setAttribute('aria-label', state.mode === 'flux' ? T('恆星的光向外擴散。', 'Starlight spreading out. ') + starName() + T('，距離 ', ', distance ') + auTxt(state.d) + T('，每平方公尺 ', ', ') + (Sv == null ? '—' : sig(Sv, 3) + ' W') : state.mode === 'ground' ? T('陽光穿過大氣照到黑色水盒。', 'Sunlight crossing the air onto a black water pan. ') + 'h = ' + num(state.h, 1) + '°' : T('質子–質子鏈與質量的帳本。', 'The proton–proton chain and the mass ledger.'));
   }

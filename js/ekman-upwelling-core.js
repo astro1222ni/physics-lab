@@ -131,9 +131,10 @@
     const dh = tau * L_PAC / (RHO_W * GP_EQ * H_EQ);   // 西邊比東邊深多少
     const hERaw = H_EQ - dh / 2;
     const hW = Math.max(0, H_EQ + dh / 2), hE = Math.max(0, hERaw);
-    const deta = GP_EQ / G * dh;                       // 西邊海面比東邊高多少（m）
-    return { p: p, U: (p < 0 ? -1 : 1) * U_NORMAL * Math.sqrt(Math.abs(p)), tau: tau, dh: dh, hW: hW, hE: hE, hERaw: hERaw,
-      outcrop: hERaw <= 0 || H_EQ + dh / 2 <= 0, deta: deta, sstE: sstFromH(hE), sstW: sstFromH(hW), slope: -dh / L_PAC };
+    const dhEff = hW - hE;
+    const deta = GP_EQ / G * dhEff;                    // 西邊海面比東邊高多少（m），與露頭夾零後的實際溫躍層差一致
+    return { p: p, U: (p < 0 ? -1 : 1) * U_NORMAL * Math.sqrt(Math.abs(p)), tau: tau, dh: dh, dhEff: dhEff, hW: hW, hE: hE, hERaw: hERaw,
+      outcrop: hERaw <= 0 || H_EQ + dh / 2 <= 0, deta: deta, sstE: sstFromH(hE), sstW: sstFromH(hW), slope: -dhEff / L_PAC };
   }
   function sstFromH(h) { return TW - (TW - TC) * Math.exp(-Math.max(0, h) / HS); }
   /** 東經 120° 到西經 80° 之間，位置 x（0 = 西端、1 = 東端）的溫躍層深度 */

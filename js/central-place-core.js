@@ -153,10 +153,10 @@
     }
     return out;
   }
-  /** 一種商品放進中地體系：在哪一級提供（市場區人數 ≥ 門檻的最低一級），有多少人買得到 */
+  /** 一種商品放進中地體系：在哪一級提供（市場區且商品圈內可觸及人數 ≥ 門檻的最低一級），有多少人買得到 */
   function goodIn(rho, d1, k, N, T, R) {
     const H = hierarchy(rho, d1, k, N);
-    const lv = H.find(function (h) { return h.pop >= T - 1e-9; }) || null;
+    const lv = H.find(function (h) { return customers(h.d, R, rho) >= T - 1e-9; }) || null;
     if (!lv) return { L: null, fill: null, coverage: 0, reach: null, tight: null };
     return {
       L: lv.L, fill: T / lv.pop,                 // 門檻 ÷ 市場區人數（1 = 剛好沒有超額利潤）
