@@ -75,7 +75,7 @@
     {
       id: 'ekman-upwelling-10', level: 3,
       title: { zh: '中等強度的聖嬰', en: 'A moderate El Niño' },
-      desc: { zh: '切到「赤道太平洋」，減弱信風（但仍往西吹），讓東太平洋比平常暖 1.0–1.5 °C（美國 NOAA 分級的中等強度聖嬰）。雨雲跑到哪裡了？', en: 'In “Equatorial Pacific”, weaken the trade winds (still blowing west) until the east Pacific is 1.0–1.5 °C warmer than normal (a moderate El Niño on NOAA’s scale). Where did the rain clouds go?' },
+      desc: { zh: '切到「赤道太平洋」，減弱信風（但仍往西吹），讓模型東端的海面比平常暖 1.0–1.5 °C（美國 NOAA 分級的中等強度聖嬰）。雨雲跑到哪裡了？', en: 'In “Equatorial Pacific”, weaken the trade winds (still blowing west) until the model’s eastern end is 1.0–1.5 °C warmer than normal (a moderate El Niño on NOAA’s scale). Where did the rain clouds go?' },
       check: function (ev) { const d = Eq(ev); return !!d && d.p > 0 && d.anom >= 1 && d.anom < 1.5; }
     },
     {

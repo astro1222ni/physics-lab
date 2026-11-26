@@ -49,7 +49,7 @@
       id: 'parallax-4', level: 3,
       title: { zh: '壓扁的橢圓', en: 'A flattened ellipse' },
       desc: { zh: '在「一年的視差」把恆星放到黃道上，讓視差橢圓的半短軸不到半長軸的 1 %：恆星只會來回走一條線。', en: 'In “A year of parallax”, put the star on the ecliptic so the ellipse’s short axis is under 1 % of the long one: the star just goes back and forth along a line.' },
-      check: function (ev) { const d = mode(ev, 'orbit'); return !!d && d.ellB <= 0.01 * d.ellA; }
+      check: function (ev) { const d = mode(ev, 'orbit'); return !!d && d.ellB < 0.01 * d.ellA; }
     },
     {
       id: 'parallax-5', level: 3,

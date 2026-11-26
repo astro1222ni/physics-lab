@@ -95,7 +95,7 @@
     {
       id: 'tides-11', level: 10,
       title: { zh: '隆起消失', en: 'The bulges vanish' },
-      desc: { zh: '先按暫停，加入太陽，讓月球留在天赤道上（赤緯 0°，誤差 0.3° 以內），只調整月球的位置與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: 'Pause first. With the Sun included and the Moon kept on the celestial equator (declination 0°, within 0.3°), adjust only the Moon’s position and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
+      desc: { zh: '（建議先按暫停）加入太陽，讓月球留在天赤道上（赤緯 0°，誤差 0.3° 以內），只調整月球的位置與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: '(Pausing first helps.) With the Sun included and the Moon kept on the celestial equator (declination 0°, within 0.3°), adjust only the Moon’s position and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
       check: function (ev) { return isState(ev) && ev.data.sun && Math.abs(ev.data.dec) <= 0.3 && ev.data.eqRange < 0.01; }
     },
     {

@@ -47,7 +47,7 @@
     {
       id: 'magma-crystallization-4', level: 3,
       title: { zh: '冷凝邊', en: 'The chilled margin' },
-      desc: { zh: '在靠近接觸面的地方取樣（位置 0.8 以上）：這裡的晶體比同一個岩體中心的小 5 倍以上，兩處都還是結晶的岩石（玻璃不到一半）。', en: 'Sample near the contact (position 0.8 or more): the crystals there are at least 5 times smaller than at the centre of the same body, and both places are still crystalline (less than half glass).' },
+      desc: { zh: '不用岩漿庫的斑晶，在靠近接觸面的地方取樣（位置 0.8 以上）：這裡的晶體比同一個岩體中心的小 5 倍以上，兩處都還是結晶的岩石（玻璃不到一半）。', en: 'Without phenocrysts from the deep chamber, sample near the contact (position 0.8 or more): the crystals there are at least 5 times smaller than at the centre of the same body, and both places are still crystalline (less than half glass).' },
       check: function (ev) { const d = cool(ev); return !!d && d.xr >= 0.8 && d.phen === 0 && d.glass < 0.5 && d.glassC < 0.5 && d.L > 0 && d.L * 5 <= d.Lc; }
     },
     {

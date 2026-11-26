@@ -53,7 +53,7 @@
     {
       id: 'sediment-transport-5', level: 3,
       title: { zh: '黏住了', en: 'Stuck together' },
-      desc: { zh: '把黏土（0.0039 mm 以下）的河床挖起來：顆粒那麼小，卻要比細砂快得多的水流。', en: 'Erode a bed of clay (finer than 0.0039 mm): tiny grains, yet it takes a much faster flow than for fine sand.' },
+      desc: { zh: '把黏土（小於 0.0039 mm）的河床挖起來：顆粒那麼小，卻要比細砂快得多的水流。', en: 'Erode a bed of clay (finer than 0.0039 mm): tiny grains, yet it takes a much faster flow than for fine sand.' },
       check: function (ev) { const d = mode(ev, 'bed'); return !!d && d.cls === 'clay' && moved(d); }
     },
     {

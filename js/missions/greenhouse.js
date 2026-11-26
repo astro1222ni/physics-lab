@@ -26,7 +26,7 @@
       id: 'greenhouse-1', level: 1,
       title: { zh: '沒有毯子的地球', en: 'An Earth without its blanket' },
       desc: { zh: '關掉回饋，把 ε0 調成 0（大氣不吸收紅外線），反照率 0.30、太陽 100%，讓地表到達平衡：溫度應該在 254–256 K。', en: 'With the feedbacks off, set ε0 to 0 (no infrared absorbed), albedo 0.30 and the Sun at 100%, and let the surface reach equilibrium: it should be 254–256 K.' },
-      check: function (ev) { const d = S(ev); return !!d && !d.ice && d.eps0 <= 0.0005 && near(d.alpha0, 0.3, 0.0005) && near(d.S, 100, 0.25) && d.eq && d.T >= 254 && d.T <= 256; }
+      check: function (ev) { const d = S(ev); return !!d && !d.wv && !d.ice && d.eps0 <= 0.0005 && near(d.alpha0, 0.3, 0.0005) && near(d.S, 100, 0.25) && d.eq && d.T >= 254 && d.T <= 256; }
     },
     {
       id: 'greenhouse-2', level: 2,

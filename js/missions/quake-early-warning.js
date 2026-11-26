@@ -86,7 +86,7 @@
       id: 'quake-early-warning-11', level: 7,
       title: { zh: '救回臺中', en: 'Saving Taichung' },
       desc: { zh: '1999 集集地震不變，選臺中。只改預警系統（至少要 4 站、計算至少 2 秒，不用現地型），讓臺中的區域型預警時間至少 5 秒。', en: 'Keep the 1999 Chi-Chi earthquake and choose Taichung. Change only the system (at least 4 stations and 2 s of computing, no on-site warning) to give Taichung at least 5 s of regional warning.' },
-      check: function (ev) { const d = any(ev); return !!d && d.preset === 'chichi1999' && d.dM === 0 && d.n >= 4 && d.proc >= 2 && d.site.id === 'TXG' && d.site.lead >= 5; }
+      check: function (ev) { const d = any(ev); return !!d && d.preset === 'chichi1999' && d.dM === 0 && !d.onsite && d.n >= 4 && d.proc >= 2 && d.site.id === 'TXG' && d.site.lead >= 5; }
     },
     {
       id: 'quake-early-warning-12', level: 8,

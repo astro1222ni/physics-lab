@@ -100,7 +100,7 @@
       title: { zh: '差一點點', en: 'Not quite' },
       riddle: { zh: '冰塊放進去，杯子還是乾的，只差一點點。', en: 'Ice goes in, the cup stays dry, by a hair.' },
       desc: { zh: '空氣的露點在 0–0.5 °C：冰水（0.5 °C）冷到底，杯子還是不會起霧。', en: 'With the air’s dew point at 0–0.5 °C, ice water (0.5 °C) cools the cup all the way down and it still never mists.' },
-      check: function (ev) { const d = runOf(ev, 'cup'); return !!d && d.runKind === 'end' && d.bath === 'ice' && !d.kind && d.Td >= 0; }
+      check: function (ev) { const d = runOf(ev, 'cup'); return !!d && d.runKind === 'end' && d.bath === 'ice' && !d.kind && d.Td >= 0 && d.Td <= 0.5 + 1e-9; }
     },
     {
       id: 'humidity-dewpoint-h2', level: 4, hidden: true,

@@ -61,7 +61,7 @@
     {
       id: 'typhoon-6', level: 4,
       title: { zh: '颱風眼經過', en: 'The eye passes over' },
-      desc: { zh: '讓颱風眼正好經過一個測站：風先變強、再突然減弱到 5 m/s 以下、然後又變強。', en: 'Let the eye pass right over a station: the wind rises, suddenly drops below 5 m/s, then rises again.' },
+      desc: { zh: '讓颱風眼正好經過一個測站：風先變強（超過 25 m/s）、再突然減弱到 5 m/s 以下、然後又變強（再超過 25 m/s）。', en: 'Let the eye pass right over a station: the wind rises above 25 m/s, suddenly drops below 5 m/s, then rises above 25 m/s again.' },
       check: function (ev) { const d = P(ev); return !!d && any(d, function (s) { return s.eye; }); }
     },
     {
