@@ -1051,7 +1051,7 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 :root {
   --daily: #6d28d9; --daily-soft: #f1ebff;
   --band-easy: #15803d; --band-mid: #b45309; --band-hard: #b91c1c;
-  --r-cu: #a85a26; --r-ag: #5f6b78; --r-au: #a87700; --r-dia: #0278b8; --r-key: #a21caf;
+  --r-cu: #a85a26; --r-ag: #5f6b78; --r-au: #8f6400; --r-dia: #0278b8; --r-key: #a21caf;
   --d-chem: #be185d; --d-bio: #c2410c;
 }
 @media (prefers-color-scheme: dark) {
@@ -1998,7 +1998,7 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
 .ms-need-mark { flex: none; width: 1.2em; text-align: center; font-weight: 800; }
 .ms-need-ok { color: var(--muted) !important; }
 .ms-need-ok .ms-need-mark { color: var(--probe); }
-.ms-need-no .ms-need-mark { color: var(--pos); }
+.ms-need-no .ms-need-mark { color: color-mix(in srgb, var(--pos) 82%, var(--text)); }
 .ms-need-act .ms-need-mark { color: var(--accent); }
 .ms-near { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 109;
   width: min(440px, calc(100vw - 24px)); padding: 10px 12px 10px 14px; border: 1px solid var(--border); border-left: 5px solid var(--pos); border-radius: 12px;

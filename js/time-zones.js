@@ -499,7 +499,7 @@
     const sh = K.dateShares(state.day, state.utc);
     setHTML('rDates', sh.map(function (x, i) {
       const col = sh.length > 1 && i > 0 ? 'var(--tz-dateB)' : 'var(--tz-dateA)';
-      return '<b style="color:' + col + '">' + dateTxt(x.day) + '</b> ' + num(x.frac * 100, 1) + '%';
+      return '<b style="color:color-mix(in srgb,' + col + ' 50%,var(--text))">' + dateTxt(x.day) + '</b> ' + num(x.frac * 100, 1) + '%';
     }).join(T('、', ', ')) + (sh.length === 1 ? T('（整個地球同一天）', ' (one date everywhere)') : ''));
 
     // 量測點
