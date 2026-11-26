@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://lab.astroni.org/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/?lang=en"/>
@@ -10,7 +10,7 @@
   </url>
   <url>
     <loc>https://lab.astroni.org/leaderboard.html</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/leaderboard.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/leaderboard.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/leaderboard.html?lang=en"/>
@@ -18,7 +18,7 @@
   </url>
   <url>
     <loc>https://lab.astroni.org/daily.html</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/daily.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/daily.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/daily.html?lang=en"/>
@@ -26,7 +26,7 @@
   </url>
   <url>
     <loc>https://lab.astroni.org/about.html</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/about.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/about.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/about.html?lang=en"/>
@@ -34,11 +34,43 @@
   </url>
   <url>
     <loc>https://lab.astroni.org/labs.html</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/labs.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/labs.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/labs.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/labs.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/learn.html</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/learn.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/learn.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/learn.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/learn.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/learn-phy-5-1.html</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/learn-phy-5-1.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/learn-phy-5-1.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/learn-phy-5-1.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/learn-phy-5-1.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/exam-113.html</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/exam-113.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/exam-113.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/exam-113.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/exam-113.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/exam-114.html</loc>
+    <lastmod>2026-11-26</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/exam-114.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/exam-114.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/exam-114.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/exam-114.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/physics.html</loc>

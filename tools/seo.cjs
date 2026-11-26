@@ -49,7 +49,12 @@ const pages = [
   { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天十個每日任務，每個一天完成一次：銅幣必掉，銀幣、金幣、鑽石與稀有鑰匙獨立掉落；機率依難度，數量權重固定。', kind: 'page' },
   { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: '讓倪動手⚡高中全科模擬實驗室是什麼、作者、內容怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' },
   // 11/21 全科模擬實驗室大廳：首頁的四大類科目區搬到這裡
-  { slug: 'labs', url: SITE + 'labs.html', title: '全科模擬實驗室｜' + SITE_ZH, desc: '全科模擬實驗室：數理、人文與社會、藝能科、其他四大類，' + subjects.filter(s => labs.some(l => l.subject.id === s.id)).length + ' 科、' + labs.length + ' 個互動模擬實驗，點科目進去照課本分支與章挑實驗。', kind: 'labs' }
+  { slug: 'labs', url: SITE + 'labs.html', title: '全科模擬實驗室｜' + SITE_ZH, desc: '全科模擬實驗室：數理、人文與社會、藝能科、其他四大類，' + subjects.filter(s => labs.some(l => l.subject.id === s.id)).length + ' 科、' + labs.length + ' 個互動模擬實驗，點科目進去照課本分支與章挑實驗。', kind: 'labs' },
+  // 11/27 站長決定開放 Google 搜尋收錄物理自習室與學測題解 4 頁（管理頁、龍騰密碼版、下架實驗、舊樣品仍維持 noindex）
+  { slug: 'learn', url: SITE + 'learn.html', title: '物理自習室｜' + SITE_ZH, desc: '物理自習室：課本模式（必修物理 5-1 功與能量的形式、實驗自學單元）與自然科學測題解（113、114 年學測物理逐題互動動畫與倪老師講解）。', kind: 'study', ogImg: 'index' },
+  { slug: 'learn-phy-5-1', url: SITE + 'learn-phy-5-1.html', title: '必修物理 5-1・功與能量的形式｜' + SITE_ZH, desc: '必修物理 5-1 功與能量的形式互動自學課：倪老師逐頁旁白、互動圖解與 3D 場景、隨堂自動批改與學習星星任務。', kind: 'study-unit', ogImg: 'index' },
+  { slug: 'exam-113', url: SITE + 'exam-113.html', title: '113 自然科學測題解｜' + SITE_ZH, desc: '113 年學測自然科物理 12 題互動詳解（第 19–27、44–46 題）：先自行作答比對全國答對率，再看互動動畫圖解與倪老師逐句解析。', kind: 'study-unit', ogImg: 'index' },
+  { slug: 'exam-114', url: SITE + 'exam-114.html', title: '114 自然科學測題解｜' + SITE_ZH, desc: '114 年學測自然科物理 14 題互動詳解：先自行作答比對全國作答分布，再看互動動畫圖解與倪老師逐句講解。', kind: 'study-unit', ogImg: 'index' }
 ].concat(subjects.map(s => {
   const own = labs.filter(l => l.subject.id === s.id), names = [...new Set(own.map(l => l.branch.zh))];
   return { slug: s.page, url: SITE + s.page + '.html', title: s.zh + '｜' + SITE_ZH,
@@ -57,7 +62,7 @@ const pages = [
 }), labs.map(l => ({ slug: l.slug, url: SITE + l.slug + '.html', title: l.zh + '｜' + SITE_ZH, desc: l.dzh, kind: 'lab', lab: l })));
 
 function block(pg) {
-  const img = SITE + 'img/og/' + pg.slug + '.jpg';
+  const img = SITE + 'img/og/' + (pg.ogImg || pg.slug) + '.jpg';
   const alt = pg.kind === 'lab' ? pg.lab.zh + '的模擬畫面' : SITE_ZH + '的實驗縮圖';
   const L = [
     '<!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->',
@@ -102,6 +107,8 @@ function block(pg) {
   if (pg.kind === 'subject') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: pg.subject.zh, alternateName: pg.subject.en, description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE }, hasPart: pg.labs.map(l => ({ '@type': 'LearningResource', name: l.zh, alternateName: l.en, url: SITE + l.slug + '.html' })) };
   if (pg.kind === 'labs') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: '全科模擬實驗室', alternateName: 'Simulation Lab', description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE },
     hasPart: subjects.map(s => ({ '@type': 'CollectionPage', name: s.zh, alternateName: s.en, url: SITE + s.page + '.html' })) };
+  if (pg.kind === 'study') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: '物理自習室', alternateName: 'Physics Study Room', description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE }, author: { '@type': 'Person', name: 'Astro Ni' }, license: 'https://creativecommons.org/licenses/by-nc/4.0/' };
+  if (pg.kind === 'study-unit') ld = { '@context': 'https://schema.org', '@type': 'LearningResource', name: pg.title.split('｜')[0], description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], learningResourceType: ['Interactive resource', 'Lesson'], educationalLevel: 'High school', audience: { '@type': 'EducationalAudience', educationalRole: ['student', 'teacher'] }, isAccessibleForFree: true, isPartOf: { '@type': 'CollectionPage', name: '物理自習室', url: SITE + 'learn.html' }, author: { '@type': 'Person', name: 'Astro Ni' }, license: 'https://creativecommons.org/licenses/by-nc/4.0/' };
   if (pg.kind === 'about') {
     ld = { '@context': 'https://schema.org', '@type': 'AboutPage', name: pg.title, url: pg.url, description: pg.desc, inLanguage: ['zh-Hant', 'zh-Hans', 'en'],
       isPartOf: { '@type': 'WebSite', name: SITE_ZH, alternateName: SITE_EN, url: SITE },
