@@ -262,6 +262,9 @@ html.learn-class {--teaching:1.4}
 .door-tile b{font:800 26px/1.1 system-ui,sans-serif;letter-spacing:.04em}.door-tile small{font:700 15px Georgia,serif;opacity:.85;margin-top:4px}
 .door-body{display:flex;flex-direction:column;gap:8px;min-width:0}
 .door-body strong{font-size:calc(30px * var(--fs,1));line-height:1.15}
+.exam-em{color:#c2410c}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .exam-em{color:#ffb347}}
+:root[data-theme="dark"] .exam-em{color:#ffb347}
 .door-body>span{font-size:calc(16px * var(--fs,1));line-height:1.5}
 .door-what{color:var(--text)}.door-how,.door-now{color:var(--muted)}
 .door-new{display:flex;gap:8px;align-items:baseline;color:var(--text)}.door-new b{flex:none;padding:1px 7px;border-radius:6px;background:var(--star,#de9a31);color:#1d1406;font-size:calc(12px * var(--fs,1));letter-spacing:.06em}
