@@ -8,7 +8,7 @@
  *   node tools/layout-audit.cjs                    量所有已上線的實驗（js/missions/index.js 的 LAB_LIVE_MODULES）
  *   node tools/layout-audit.cjs ohms-law,atwood    只量指定的站
  *   選項：--json 檔名（全部數字存檔）、--shots 資料夾（412 深色、844、1280 各存一張，從畫布頂截）、
- *         --all（合格的站也印一行）、--light（預設深色）
+ *         --all（合格的站也印一行）、--light（預設深色）、--font（另量第 ⑥ 條橫放字高）
  *   結束碼：0 全部合格；1 有不合格；2 參數錯誤。
  *
  * 量什麼、合格標準（數字都可用環境變數改）：
@@ -21,6 +21,8 @@
  *   ④ 縮圖：js/thumbs.js 的版本表有這一站。
  *   ⑤ 滑桿間距 ≤ 56：操作台每個分頁逐一點開，量相鄰兩根滑桿的上下距離（中間夾著按鈕、選單的那一對不算，11/21 準則：電流天平的「I₁ 反向」）；
  *      412、844、1280 三種寬度都量。
+ *   ⑥（加 --font 才量）844×390 橫放時畫布上的字實際顯示高 ≥ 9 px：攔 fillText／strokeText，
+ *      字級 × 目前變換倍數 × 畫布顯示寬 ÷ 繪圖寬；每張畫布只算最後 0.4 秒畫的字（11/27 試玩串的量法）。
  *   另外三種寬度都查左右捲動（scrollWidth > 視窗寬）。
  * 只用 mock 後端、擋掉所有對外連線，不寫正式資料庫。瀏覽器經 tools/browser.cjs（全機最多 3 組，會自動排隊）。
  */
@@ -29,7 +31,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const LIM = {
   dead: +(process.env.LA_DEAD || 80), first: +(process.env.LA_FIRST || 780), reach: +(process.env.LA_REACH || 1170),
-  pitch: +(process.env.LA_PITCH || 56), landH: +(process.env.LA_LAND_H || 390), landW: +(process.env.LA_LAND_W || 0.45), landScale: +(process.env.LA_LAND_SCALE || 0.7)
+  pitch: +(process.env.LA_PITCH || 56), landH: +(process.env.LA_LAND_H || 390), landW: +(process.env.LA_LAND_W || 0.45), landScale: +(process.env.LA_LAND_SCALE || 0.7), font: +(process.env.LA_FONT || 9)
 };
 // 11/21 主串判定：演算法、流程類一直按的是單步／播放主鍵，第一根拉桿只在開頭設一次
 const EXEMPT_FIRST = new Set((process.env.LA_EXEMPT_FIRST || 'data-compression,packet-routing,graph-traversal,shortest-path').split(','));
@@ -43,6 +45,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--shots') opt.shots = argv[++i];
   else if (a === '--all') opt.all = true;
   else if (a === '--light') opt.light = true;
+  else if (a === '--font') opt.font = true;
   else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]); process.exit(0); }
   else if (a.startsWith('--')) { console.error('不認得的參數：' + a); process.exit(2); }
   else list = (list || []).concat(a.split(',').map(s => s.trim().replace(/\.html$/, '')).filter(Boolean));
@@ -72,6 +75,9 @@ const LAND = `(()=>{const vis=e=>e&&e.getClientRects().length&&getComputedStyle(
 const out={sw:document.documentElement.scrollWidth,vw:innerWidth};if(!c)return Object.assign(out,{noCanvas:true});const r=c.getBoundingClientRect();out.cw=Math.round(r.width);out.ch=Math.round(r.height);out.canvas=c.id||'canvas';
 let sc=9,scId='';[...document.querySelectorAll('.stage canvas')].filter(x=>vis(x)&&x.clientWidth>150&&x.width>0).forEach(x=>{const k=x.getBoundingClientRect().width/(x.width/(devicePixelRatio||1));if(k<sc){sc=k;scId=x.id||'canvas'}});if(sc<9){out.scale=Math.round(sc*100)/100;out.scaleCanvas=scId}
 const d=document.querySelector('.labdeck');if(vis(d)){const dr=d.getBoundingClientRect();out.deckRight=dr.left>=r.right-4;out.deckLeft=Math.round(dr.left)}else out.deckRight=null;return out})()`;
+const FONT_HOOK = `(()=>{const P=CanvasRenderingContext2D.prototype;const rec=window.__laFont=[];const wrap=n=>{const f=P[n];P[n]=function(t){try{if(t!=null&&String(t).trim()){const m=/(\\d*\\.?\\d+)px/.exec(this.font);if(m){let k=1;try{const T=this.getTransform();k=Math.hypot(T.a,T.b)||1}catch(e){}rec.push([this.canvas,+m[1]*k,performance.now(),String(t).slice(0,12)]);if(rec.length>6000)rec.splice(0,3000)}}}catch(e){}return f.apply(this,arguments)}};wrap('fillText');wrap('strokeText')})()`;
+const FONT = `(()=>{const R=window.__laFont||[];const by=new Map();R.forEach(r=>{if(!by.has(r[0]))by.set(r[0],[]);by.get(r[0]).push(r)});let min=99,where='';
+by.forEach((a,c)=>{if(!c||!c.isConnected||!c.offsetParent||!c.width||!c.closest('.lab')||c.closest('.labdeck-away'))return;const rc=c.getBoundingClientRect();if(rc.width<60)return;let tmax=0;a.forEach(r=>{if(r[2]>tmax)tmax=r[2]});a.forEach(r=>{if(r[2]<tmax-400)return;const e=r[1]*rc.width/c.width;if(e<min){min=e;where=(c.id||'canvas')+'「'+r[3]+'」'}})});return min<99?{min:Math.round(min*100)/100,where}:null})()`;
 const PITCH = `(async()=>{const vis=r=>r.offsetParent&&!r.closest('.labdeck-away,[hidden]')&&getComputedStyle(r).visibility!=='hidden';const root=document.querySelector('.labdeck')||document.querySelector('.panel')||document.body;
 const measure=()=>{const rs=[...root.querySelectorAll('input[type=range]')].filter(vis).map(r=>r.getBoundingClientRect()).sort((a,b)=>a.top-b.top);const others=[...root.querySelectorAll('button,select,input:not([type=range]),canvas,textarea')].filter(vis).map(e=>e.getBoundingClientRect());let worst=0;
  for(let i=1;i<rs.length;i++){const a=rs[i-1],b=rs[i];const d=b.top-a.top;if(d<=0||d>=200)continue;if(others.some(o=>o.top>=a.bottom-1&&o.bottom<=b.top+1))continue;if(d>worst)worst=d}return Math.round(worst)};
@@ -98,6 +104,7 @@ srv.listen(0, '127.0.0.1', async () => {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, colorScheme: opt.light ? 'light' : 'dark', hasTouch: W < 1000, isMobile: W < 1000 });
     await ctx.addInitScript(() => { try { localStorage.setItem('lab-welcome-v1', 'skip'); } catch (e) {} });
     await ctx.addInitScript(mock);
+    if (opt.font && W === 844) await ctx.addInitScript(FONT_HOOK);
     await ctx.route(u => !u.href.startsWith(base), r => r.abort());
     const pg = await ctx.newPage();
     const errs = []; pg.on('pageerror', e => { if (!/about:blank/.test(String(e.stack || ''))) errs.push(String(e.message).slice(0, 80)); });
@@ -120,7 +127,7 @@ srv.listen(0, '127.0.0.1', async () => {
       r.p = await s.pg.evaluate(PORTRAIT); r.p.pitch = await s.pg.evaluate(PITCH); r.p.errs = s.errs;
       await shot(s.pg, m, '412'); await s.ctx.close();
       s = await open(m, 844, 390);
-      r.l = await s.pg.evaluate(LAND); r.l.pitch = await s.pg.evaluate(PITCH); r.l.errs = s.errs;
+      r.l = await s.pg.evaluate(LAND); if (opt.font) r.l.font = await s.pg.evaluate(FONT); r.l.pitch = await s.pg.evaluate(PITCH); r.l.errs = s.errs;
       await shot(s.pg, m, '844'); await s.ctx.close();
       s = await open(m, 1280, 800);
       r.d = { sw: await s.pg.evaluate(() => document.documentElement.scrollWidth), vw: 1280, pitch: await s.pg.evaluate(PITCH), errs: s.errs };
@@ -144,6 +151,8 @@ srv.listen(0, '127.0.0.1', async () => {
       if (l.cw < LIM.landW * 844) B.push('③橫放畫布只有 ' + l.cw + '×' + l.ch + '（寬 < ' + Math.round(LIM.landW * 100) + '%，像郵票）');
       if (l.scale != null && l.scale < LIM.landScale) B.push('③橫放畫布 ' + l.scaleCanvas + ' 縮成 ' + l.scale + ' 倍（< ' + LIM.landScale + '，字會變小）');
     }
+    // ⑥
+    if (opt.font && l.font && l.font.min < LIM.font) B.push('⑥橫放畫布最小字 ' + l.font.min + ' px（< ' + LIM.font + '：' + l.font.where + '）');
     // ④
     if (!r.thumb) B.push('④js/thumbs.js 版本表沒有這站');
     // ⑤
@@ -161,7 +170,7 @@ srv.listen(0, '127.0.0.1', async () => {
     while (q.length) {
       const m = q.shift(); const r = await one(m); res.push(r); done++;
       if (r.bad.length) console.log('✗ ' + m + '\n    ' + r.bad.join('\n    '));
-      else if (opt.all) console.log('✓ ' + m + '（死空白 ' + r.p.deadPx + '、首拉桿 ' + r.p.firstSliderBottom + '、reach ' + r.p.reach + '、橫放 ' + r.l.cw + '×' + r.l.ch + (r.l.scale != null ? '、' + r.l.scale + ' 倍' : '') + '）');
+      else if (opt.all) console.log('✓ ' + m + '（死空白 ' + r.p.deadPx + '、首拉桿 ' + r.p.firstSliderBottom + '、reach ' + r.p.reach + '、橫放 ' + r.l.cw + '×' + r.l.ch + (r.l.scale != null ? '、' + r.l.scale + ' 倍' : '') + (r.l.font ? '、最小字 ' + r.l.font.min + ' px' : '') + '）');
     }
   }));
   await browser.close(); srv.close();
