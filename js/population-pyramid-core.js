@@ -46,7 +46,7 @@
   function ageBand(lo, hi) {
     return Float64Array.from(MIG, (_, a) => a >= lo && a <= hi ? 1 / (hi - lo + 1) : 0);
   }
-  const migrationProfiles = { general: MIG, student: ageBand(18, 24), worker: ageBand(25, 44), retired: ageBand(60, 100) };
+  const migrationProfiles = { general: MIG, student: ageBand(18, 24), worker: ageBand(25, 44), retired: ageBand(60, 79) };
 
   // ---------- 死亡機率 ----------
   function baseQ(sex) {

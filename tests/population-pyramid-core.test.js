@@ -159,7 +159,7 @@ test('遷移年齡守恆、男女各半；退休情境的扶養比高於勞動�
   const pop = K.basePop(), sc = Object.assign({}, K.DEFAULT, { net: 10000 });
   const base = K.step(pop, Object.assign({}, sc, { net: 0 }));
   const result = {};
-  for (const [profile, lo, hi] of [['student',18,24], ['worker',25,44], ['retired',60,100]]) {
+  for (const [profile, lo, hi] of [['student',18,24], ['worker',25,44], ['retired',60,79]]) {
     const p = K.step(pop, Object.assign({}, sc, { migAge: profile }));
     for (const sex of ['m','f']) for (let a = 0; a <= 100; a++) {
       const expected = a >= lo && a <= hi ? 5000 / (hi - lo + 1) : 0;

@@ -496,7 +496,7 @@
       probe.ok = !!B.mask[k];
     }
     return {
-      act: act || 'param', fac: state.fac, method: state.method, view: state.view, layer: state.layer,
+      act: act || 'param', planned: state.planned, fac: state.fac, method: state.method, view: state.view, layer: state.layer,
       cfg: JSON.parse(JSON.stringify(state.cfg)), w: Object.assign({}, state.w),
       bool: { cells: B.cells, area: B.area, patches: B.patches, largest: B.largest, sitesBig: B.sitesBig, fail: Object.assign({}, B.fail) },
       weight: { best: W.best, bestK: W.bestK, area70: W.area70, bestOk: W.bestK >= 0 && !!B.mask[W.bestK] },

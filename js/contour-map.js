@@ -668,7 +668,8 @@
       setHTML('rAsc', num(P.ascent, 0) + ' m ／ ' + num(P.descent, 0) + ' m');
       setHTML('rStep', (P.visible ? T('看得見', 'Visible') : T('看不見', 'Blocked')) + ' · ' + num(P.refined.clear, 2) + ' m · ' + num(P.L / 400, 2) + ' m ／ ' + num(P.L / 4000, 2) + ' m');
       setHTML('rVis', P.clear >= 0 ? T('<b>看得見</b>：視線最低處離地 ' + num(P.clear, 1) + ' m', '<b>Yes</b>: the sightline clears the ground by ' + num(P.clear, 1) + ' m')
-        : T('<b>看不見</b>：在離 A ' + km(P.grazeAt) + ' 處被擋住（視線低了 ' + num(-P.clear, 1) + ' m）', '<b>No</b>: blocked ' + km(P.grazeAt) + ' from A (the sightline is ' + num(-P.clear, 1) + ' m too low)'));
+        : T('<b>看不見</b>：在離 A ' + km(P.grazeAt) + ' 處被擋住（視線低了 ' + num(-P.clear, 1) + ' m）', '<b>No</b>: blocked ' + km(P.grazeAt) + ' from A (the sightline is ' + num(-P.clear, 1) + ' m too low)')
+        + (P.visible !== (P.clear >= 0) ? (P.visible ? T('（加密取樣後其實看得見，最低處離地 ' + num(P.refined.clear, 2) + ' m）', ' (with finer sampling it is actually visible: ' + num(P.refined.clear, 2) + ' m clear)') : T('（加密取樣後被擋住：低了 ' + num(-P.refined.clear, 2) + ' m）', ' (with finer sampling it is blocked: ' + num(-P.refined.clear, 2) + ' m too low)')) : ''));
     } else ['rL', 'rAB', 'rAvg', 'rMaxS', 'rApp', 'rAsc', 'rVis', 'rStep'].forEach(function (id) { setHTML(id, '—'); });
   }
 

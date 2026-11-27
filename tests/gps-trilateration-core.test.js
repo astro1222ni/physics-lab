@@ -147,7 +147,13 @@ test('平面的 DOP：和三維一樣由幾何決定，塔圍著接收機時比�
 test('街道旋轉、固定延遲與散布重抽', () => {
   assert.strictEqual(K.blockedBy(20, 0, 0, { w: 60, dir: 0 }), '');
   assert.strictEqual(K.blockedBy(20, 0, 0, { w: 60, dir: 90 }), 'building');
-  assert.ok(Math.abs(K.atmosphereDelay(30) - 10.6) < 1e-12);
+  // 仰角 30°：電離層 3 × 1.751 ≈ 5.25 m，對流層 2.3 ÷ 0.5 = 4.6 m
+  assert.ok(Math.abs(K.atmosphereDelay(30) - (3 * K.ionoMap(30) + 4.6)) < 1e-12);
+  assert.ok(Math.abs(K.ionoMap(30) - 1.7511) < 1e-3);
+  assert.ok(Math.abs(K.ionoMap(90) - 1) < 1e-12);
+  // 低仰角時薄殼係數遠小於 1/sin：11° 時約 2.73，1/sin 約 5.24；地平線附近有上限（約 3.1）
+  assert.ok(K.ionoMap(11) < 2.8 && K.ionoMap(11) > 2.6);
+  assert.ok(K.ionoMap(0) < 3.2);
   const sky = K.sky({ lat: 23.5, lon: 121, t: 0, mask: 10 });
   assert.strictEqual(sky.length, 24);
   const sats = sky.filter(s => s.visible);

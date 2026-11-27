@@ -180,9 +180,16 @@
    * 誤差只有幾公尺到幾百公尺，用線性化 δ = (G^T G)^-1 G^T ε 就很準（單元測試和完整迭代比對過）。
    * 回傳每一次的 [東, 北, 天]（公尺）、平均、水平均方根誤差、系統偏差 bias 與 DOP。
    */
+  // 天頂延遲（教學設定）：電離層 3 m、對流層 2.3 m。
+  // 電離層用薄殼投影：電子集中在約 350 km 高的薄層，斜向穿過它的路徑比天頂長 1/cos z'，
+  // sin z' = R/(R+h)·cos(仰角)；對流層貼近地面，用 1/sin(仰角)。仰角下限 1°。
+  const R_E_KM = 6371, H_IONO_KM = 350;
+  function ionoMap(el) {
+    const s = R_E_KM / (R_E_KM + H_IONO_KM) * Math.cos(Math.max(1, el) * DEG);
+    return 1 / Math.sqrt(1 - s * s);
+  }
   function atmosphereDelay(el) {
-    const sinEl = Math.sin(Math.max(1, el) * DEG);
-    return 3 / sinEl + 2.3 / sinEl;
+    return 3 * ionoMap(el) + 2.3 / Math.sin(Math.max(1, el) * DEG);
   }
   function scatter(sats, sigma, count, seed, mp, assumeTau, atmosphere) {
     const fixed = typeof assumeTau === 'number';
@@ -273,7 +280,7 @@
 
   return {
     C, RE, RS, T_SID, T_ORB, INC, NSAT, PLANES, PER, ISLAND, TOWERS,
-    inverse, normalMatrix, dop, station, enuBasis, satellite, blockedBy, sky, multipathBias, atmosphereDelay,
+    inverse, normalMatrix, dop, station, enuBasis, satellite, blockedBy, sky, multipathBias, atmosphereDelay, ionoMap,
     geometry3, geometryFixed, dopFixed, solve3, toENU, rng, scatter, TOWER_NOISE, pseudo2, geometry2, solve2, circleX, segDist, miss2
   };
 });

@@ -799,8 +799,6 @@
   }
   $('cameraHome').addEventListener('click', function () {
     state.panX = state.panY = 0; state.az = -0.6; state.el = 0.62;
-    state.zoom = 0;
-    document.querySelectorAll('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.zoom === 0)));
     requestDraw();
   });
   let drag = null;
