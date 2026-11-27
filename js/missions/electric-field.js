@@ -21,6 +21,24 @@
   const up = function (d, tol) { return isFinite(d.dir) && Math.abs(d.dir - 90) <= tol; };
   const ended = function (ev, reason) { return ev.type === 'end' && ev.data.clean && ev.data.reason === reason; };
 
+  // 電量可輸入至 0.01 nC；比值比較容許浮點尾差。位置用 cm，座標鍵每步 0.1 cm。
+  // 場量比容許 1.5% 的定位誤差，抵消情形另以各來源大小總和歸一。
+  function closeRatio(value, target) { return Math.abs(value - target) <= 0.015 * Math.abs(target); }
+  function chargeRatio(d, target) {
+    const a = Math.abs(d.qA), b = Math.abs(d.qB);
+    return Math.min(a, b) > 0 && same(Math.max(a, b), target * Math.min(a, b));
+  }
+  function equidistant(d) {
+    return Math.abs(Math.hypot(d.x - d.xA, d.y - d.yA) - Math.hypot(d.x - d.xB, d.y - d.yB)) <= 0.012 * d.d;
+  }
+  function singleRelease(ev) {
+    const d = ev.data;
+    return ev.type === 'release' && (d.qA === 0) !== (d.qB === 0) && Number.isFinite(d.E) && d.E > 0;
+  }
+  function sourceKey(d, sign = 1) {
+    return d.qA ? [d.xA, d.yA, sign * d.qA].join('/') : [d.xB, d.yB, sign * d.qB].join('/');
+  }
+
   LabMission.register('electric-field', [
     {
       id: 'electric-field-1', level: 1,
@@ -148,6 +166,87 @@
       id: 'electric-field-h3', level: 7, hidden: true,
       riddle: { zh: '從最高的山巔一路墜進最深的谷底，快得像一道閃電。', en: 'From the highest peak all the way down into the deepest valley, swift as a bolt of lightning.' },
       check: function (ev) { return ended(ev, 'hit') && ev.data.v >= 60; }
+    },
+    {
+      id: 'electric-field-h4', level: 3, hidden: true,
+      riddle: { zh: '離燈遠了，兩把尺卻各自縮短。', en: 'Farther from the lantern, two rulers shrink at different rates.' },
+      desc: { zh: '同一單一點電荷，從兩個位置釋放試探電荷。第二個位置到場源的距離加倍，電位減半，電場大小剩四分之一。', en: 'Release from two points around one unchanged point charge. At twice the radius, measure half the potential and one quarter of the field magnitude.' },
+      check: function (ev, mem) {
+        if (!singleRelease(ev)) return false;
+        const d = ev.data, a = mem.last;
+        mem.last = d;
+        return !!a && sourceKey(a) === sourceKey(d) &&
+          closeRatio(d.V / a.V, 0.5) && closeRatio(d.E / a.E, 0.25);
+      }
+    },
+    {
+      id: 'electric-field-h5', level: 4, hidden: true,
+      riddle: { zh: '山形倒映成谷，風也循著舊路折返。', en: 'A hill becomes a valley and the wind retraces its path.' },
+      desc: { zh: '同一測點與單一場源位置，反轉場源電荷的正負，驗證電位與電場向量都反號。', en: 'Reverse the sign of a single source without changing its magnitude or position. Release at the same point and verify that potential and field both reverse.' },
+      check: function (ev, mem) {
+        if (!singleRelease(ev)) return false;
+        const d = ev.data, a = mem.last;
+        mem.last = d;
+        return !!a && same(a.x, d.x) && same(a.y, d.y) && sourceKey(a, -1) === sourceKey(d) &&
+          closeRatio(d.V / a.V, -1) && Math.hypot(d.ex + a.ex, d.ey + a.ey) <= 0.01 * a.E;
+      }
+    },
+    {
+      id: 'electric-field-h6', level: 6, hidden: true,
+      riddle: { zh: '兩股順風迎面撞上，靜處偏向小山。', en: 'Two winds meet head-on. The still air lies closer to the smaller hill.' },
+      desc: { zh: '兩個同號電荷的電量比為 4 比 1，在兩者之間找到零電場並從該處釋放。', en: 'Use like charges in a four-to-one magnitude ratio and release at the field null between them.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'release' && d.qA * d.qB > 0 && chargeRatio(d, 4) && d.E <= 0.018 * d.Esum;
+      }
+    },
+    {
+      id: 'electric-field-h7', level: 7, hidden: true,
+      riddle: { zh: '谷底與山頂各說一句，帳面歸零，腳下仍有風。', en: 'The hill and valley settle their accounts. A wind still blows.' },
+      desc: { zh: '對電量大小比為 3 比 1 的異號電荷，從兩者之間的零電位點釋放，觀察兩電場在此同向相加。', en: 'Release between opposite charges in a three-to-one magnitude ratio where potential vanishes but the fields add in the same direction.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'release' && opposite(d) && chargeRatio(d, 3) &&
+          Math.abs(d.V) <= 0.012 * d.Vsum && d.E >= 0.998 * d.Esum;
+      }
+    },
+    {
+      id: 'electric-field-h8', level: 8, hidden: true,
+      riddle: { zh: '沿著兩山中間的小路，風最強處並不在山口。', en: 'Along the path between twin hills, the strongest wind misses the pass.' },
+      desc: { zh: '在兩個等量同號電荷的中垂線上，從電場大小達到極大的位置釋放。', en: 'Release on the perpendicular bisector of equal like charges where the field magnitude along that line reaches its maximum.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'release' && d.qA !== 0 && same(d.qA, d.qB) && equidistant(d) &&
+          closeRatio(d.E / d.Esum, 1 / Math.sqrt(3));
+      }
+    },
+    {
+      id: 'electric-field-h9', level: 9, hidden: true,
+      riddle: { zh: '兩端隔岸相望，第三個角上的風朝向哪裡？', en: 'Two banks face each other. Which way does the wind blow at the third corner?' },
+      desc: { zh: '從電偶極與測點構成正三角形的位置釋放，量到零電位，合場強度等於兩場強大小總和的一半。', en: 'Release at the third vertex of an equilateral triangle formed with an electric dipole. Potential is zero and the net field is half the sum of the individual magnitudes.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'release' && d.qA !== 0 && same(d.qA, -d.qB) && equidistant(d) &&
+          Math.abs(d.V) <= 0.012 * d.Vsum && closeRatio(d.E / d.Esum, 0.5);
+      }
+    },
+    {
+      id: 'electric-field-h10', level: 10, hidden: true,
+      riddle: { zh: '拉鋸的繩心挪到了隊伍外，帳上的數目卻沒有歸零。', en: 'The tug of war balances beyond the teams, with a balance still on the books.' },
+      desc: { zh: '異號電荷的電量大小比為 9 比 4，在連線外側尋得零電場，此處電位絕對值占兩份電位絕對值和的五分之一。', en: 'With opposite charges in a nine-to-four magnitude ratio, find the exterior field null. The remaining potential magnitude is one fifth of the sum of the individual magnitudes.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'release' && opposite(d) && chargeRatio(d, 2.25) &&
+          d.E <= 0.012 * d.Esum && closeRatio(Math.abs(d.V) / d.Vsum, 0.2);
+      }
     }
-  ]);
+  ].map(function (mission) {
+    if (!mission.hidden || !mission.desc) return mission;
+    // 兩款既有任務面板都讀 riddle.zh/en。每次繪製時依目前玩家紀錄選字，
+    // 可處理重新登入及讀回舊進度，也讓尚未取得星星的預覽維持謎面。
+    const clue = mission.riddle;
+    const text = () => LabMission._state?.done?.[mission.id] ? mission.desc : clue;
+    mission.riddle = { get zh() { return text().zh; }, get en() { return text().en; } };
+    return mission;
+  }));
 })();

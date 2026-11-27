@@ -58,7 +58,19 @@ const periods = (run) => run.evs.filter(e => e.type === 'period');
 const lastPeriod = (run) => periods(run).pop().data.Tm;
 
 let fail = 0;
+const legacyHistory = new Map();
 function expect(id, events, want, note) {
+  if (want) {
+    const added = missions.filter(m => /-h(?:[4-9]|10)$/.test(m.id));
+    require('node:assert/strict').deepEqual(
+      added.filter(m => { const mem = {}; return events.some(e => m.check(e, mem)); }).map(m => m.id), [],
+      '舊任務 ' + id + ' 的達成例觸發了新任務');
+    for (const mission of added) {
+      if (!legacyHistory.has(mission.id)) legacyHistory.set(mission.id, {});
+      require('node:assert/strict').ok(!events.some(e => mission.check(e, legacyHistory.get(mission.id))),
+        mission.id + ' 在累積舊任務 ' + id + ' 的量測後觸發');
+    }
+  }
   const m = byId(id); m.mem = {};
   let ok = false;
   events.forEach(e => { if (!ok) ok = !!m.check(e, m.mem); });
@@ -240,6 +252,42 @@ expect('h2', springRun({ m: 4, k: 3, A: 0.15 }).evs, false, 'm = 4、k = 3 → T
   if (/回|越過|不擺/.test(h3)) bad.push('h3 提示句出現禁用字');
   if (bad.length) { fail++; console.log('  ✗ 任務文字：' + bad.join('；')); }
   else console.log('  ✓ 任務文字：沒有 HTML、英文沒有中文、沒有上下標字元；h2、h3 提示句沒有禁用字');
+}
+// 操作順序：每次從靜止釋放，等第一次完整週期。
+const spring = options => springRun({ m: 1, k: 16, A: 0.12, ...options }).evs;
+const pend = options => pendRun({ L: 1, g: 9.8, m: 0.5, th0: 40, ...options }).evs;
+const cases = [
+  [spring, [{ A: 0.09 }, { A: 0.18 }], { A: 0.179 }],
+  [pend, [{ m: 0.4 }, { m: 1.2 }], { m: 1.19 }],
+  [spring, [{ m: 0.6, k: 12 }, { m: 1.2, k: 24 }], { m: 1.2, k: 23.9 }],
+  [spring, [{ b: 0 }, { b: 6.93 }], { b: 6.92 }],
+  [pend, [{ L: 0.8, th0: 35 }, { L: 1.8, th0: 35 }], { L: 1.79, th0: 35 }],
+  [spring, [{ k: 36, A: 0.1 }, { k: 9, A: 0.2 }], { k: 9.1, A: 0.2 }],
+  [pend, [{ L: 0.8, g: 4.9, m: 1.6, th0: 50 }, { L: 1.6, g: 9.8, m: 0.4, th0: 50 }], { L: 1.6, g: 9.8, m: 0.41, th0: 50 }]
+];
+for (const [i, [simulate, steps, miss]] of cases.entries()) {
+  const hits = configs => {
+    const events = configs.flatMap(simulate);
+    return missions.filter(m => {
+      const mem = {};
+      return m.hidden && events.some(e => m.check(e, mem));
+    }).map(m => m.id);
+  };
+  const id = 'oscillation-h' + (4 + i);
+  require('node:assert/strict').deepEqual(hits(steps), [id], id);
+  require('node:assert/strict').deepEqual(hits([...steps.slice(0, -1), miss]), [], id + ' near miss');
+  console.log('✓', id, JSON.stringify(steps), '近失末步', JSON.stringify(miss));
+}
+// h7 必須有同一組 m、k 的實測基準。只看阻尼解或臨界阻尼的停止事件都不能過關。
+const dampedPeriod = byId('h7');
+for (const configs of [[{ b: 6.93 }], [{ m: 0.5, k: 8 }, { b: 6.93 }],
+  [{ b: 0 }, { b: 8 }], [{ b: 0 }, { b: 6.94 }], [{ b: 0 }, { b: 1.72 }]]) {
+  const mem = {};
+  require('node:assert/strict').ok(!configs.flatMap(spring).some(e => dampedPeriod.check(e, mem)), JSON.stringify(configs));
+}
+for (const b of [6.92, 6.93, 6.94]) {
+  const d = spring({ b }).find(e => e.type === 'period').data;
+  console.log('m=1 k=16 A=0.12 b=' + b, '同向轉折實測週期', d.Tm, '週期比', d.Tm / d.T0);
 }
 console.log(fail ? '\n有 ' + fail + ' 項失敗' : '\n全部通過');
 process.exitCode = fail ? 1 : 0;

@@ -25,6 +25,17 @@
   /** 動能與位能相等（差不到力學能的 4%） */
   const halfHalf = function (d) { return d.E > 0 && Math.abs(d.KE - d.PE) <= 0.04 * d.E; };
 
+  // 每次釋放只取第一個完整實測週期，重複轉折不擠掉前一次測量。
+  // 輸入比值可在打字格點精確取得；實測週期留 0.1% 給轉折時間內插，能量比留 0.2%。
+  function comparePeriods(ev, mem, mode, matches) {
+    if (!isPeriod(ev, mode) || ev.data.n !== 2) return false;
+    const runs = mem.runs || (mem.runs = []);
+    const hit = runs.some(function (previous) { return matches(previous, ev.data); });
+    runs.push(ev.data);
+    if (runs.length > 24) runs.shift();
+    return hit;
+  }
+
   LabMission.register('oscillation', [
     {
       id: 'oscillation-1', level: 1,
@@ -152,6 +163,97 @@
       id: 'oscillation-h3', level: 6, hidden: true,
       riddle: { zh: '陷進蜜裡的旅人，十個呼吸之後，仍在半路上。', en: 'A wanderer caught in honey — ten breaths on, still somewhere along the road.' },
       check: function (ev) { const d = ev.data; return ev.type === 'settle' && d.regime === 'over' && d.t >= 10 * d.T0; }
+    },
+    {
+      id: 'oscillation-h4', level: 3, hidden: true,
+      riddle: { zh: '鐘聲照舊，匣裡的存糧卻多了好幾份。', en: 'The bell keeps time while the larder fills.' },
+      desc: { zh: '同一無阻尼彈簧振子將振幅加倍，再量一次週期，驗證週期不變、初始能量成為四倍。', en: 'Double the amplitude of the same undamped oscillator and measure again. Its period stays fixed while its initial energy quadruples.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'spring', function (a, b) {
+          return near(a.m, b.m) && near(a.k, b.k) && near(b.A, 2 * a.A) &&
+            rel(b.E0, 4 * a.E0, 0.002) && rel(b.Tm, a.Tm, 0.001);
+        });
+      }
+    },
+    {
+      id: 'oscillation-h5', level: 4, hidden: true,
+      riddle: { zh: '換了乘客，鞦韆還在同一拍回來。', en: 'A new passenger takes the seat. The swing returns on the same beat.' },
+      desc: { zh: '無阻尼單擺保持擺長、重力加速度及釋放角，把擺錘質量改為三倍，量得相同週期與三倍初始能量。', en: 'Triple the bob mass without changing length, gravity or release angle. Measure the same period and three times the initial energy.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'pendulum', function (a, b) {
+          return sameSwing(a, b) && near(a.th0, b.th0) && near(b.m, 3 * a.m) &&
+            rel(b.E0, 3 * a.E0, 0.002) && rel(b.Tm, a.Tm, 0.001);
+        });
+      }
+    },
+    {
+      id: 'oscillation-h6', level: 6, hidden: true,
+      riddle: { zh: '兩個砝碼換了位置，節拍器沒有察覺。', en: 'Two weights change the bargain. The metronome fails to notice.' },
+      desc: { zh: '無阻尼彈簧的質量與力常數同步加倍，保持振幅，再量得同一週期與兩倍初始能量。', en: 'Double mass and spring constant at fixed amplitude. Measure the same undamped period with twice the initial energy.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'spring', function (a, b) {
+          return near(b.m, 2 * a.m) && near(b.k, 2 * a.k) && near(a.A, b.A) &&
+            rel(b.Tm, a.Tm, 0.001) && rel(b.E0, 2 * a.E0, 0.002);
+        });
+      }
+    },
+    {
+      id: 'oscillation-h7', level: 7, hidden: true,
+      riddle: { zh: '牆上的鐘照走，熟悉的腳步卻錯過了約定。', en: 'The clock on the wall keeps its word. The familiar footsteps miss their appointment.' },
+      desc: { zh: '先量彈簧振子的無阻尼週期。保持質量與力常數，加入阻尼後再量相鄰同向轉折點的時間間隔，使欠阻尼週期為原來的兩倍（相對誤差 0.25% 內）。', en: 'Measure the undamped spring period. Keep the mass and spring constant fixed, add damping, and measure the time between successive turning points on the same side. Make the underdamped period twice the original, within 0.25%.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'period' || d.mode !== 'spring' || d.n !== 2) return false;
+        if (!d.damp) {
+          mem.free = { m: d.m, k: d.k, Tm: d.Tm };
+          return false;
+        }
+        const first = mem.free;
+        // m=1、k=16 時 b 的理論值約 6.9282。輸入至 0.01 的半格誤差使週期變化約 0.22%。
+        return d.regime === 'under' && !!first && near(first.m, d.m) && near(first.k, d.k) &&
+          rel(d.Tm, 2 * first.Tm, 0.0025);
+      }
+    },
+    {
+      id: 'oscillation-h8', level: 7, hidden: true,
+      riddle: { zh: '繩上的結換了地方，回聲落在另一個拍點。', en: 'The knot moves along the rope. The echo finds another beat.' },
+      desc: { zh: '保持重力、擺錘與釋放角，把無阻尼單擺的擺長改為原來的四分之九，量到一倍半的週期。', en: 'At fixed gravity, bob mass and angle, make the undamped pendulum nine quarters as long and measure a period three halves as long.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'pendulum', function (a, b) {
+          return near(a.g, b.g) && near(a.m, b.m) && near(a.th0, b.th0) && near(b.L, 2.25 * a.L) &&
+            rel(b.Tm, 1.5 * a.Tm, 0.001);
+        });
+      }
+    },
+    {
+      id: 'oscillation-h9', level: 9, hidden: true,
+      riddle: { zh: '一樣多的存糧，走得更遠，也回得更遲。', en: 'With the same provisions the traveller goes farther and comes back later.' },
+      desc: { zh: '保持質量，把無阻尼彈簧的力常數降為四分之一、振幅加倍，使能量不變而週期加倍。', en: 'Keep the mass, quarter the spring constant and double the amplitude. Verify equal energy and twice the period.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'spring', function (a, b) {
+          return near(a.m, b.m) && near(a.k, 4 * b.k) && near(b.A, 2 * a.A) &&
+            rel(b.E0, a.E0, 0.002) && rel(b.Tm, 2 * a.Tm, 0.001);
+        });
+      }
+    },
+    {
+      id: 'oscillation-h10', level: 10, hidden: true,
+      riddle: { zh: '異鄉的鞦韆，連啟程的代價都一樣。', en: 'On a distant world even the price of setting the swing in motion is familiar.' },
+      desc: { zh: '相同釋放角下同時加倍擺長與重力加速度，將擺錘質量減至四分之一，再量得原來的週期與初始能量。', en: 'Double length and gravity, quarter the bob mass and keep the release angle fixed. Recover both the undamped period and the initial energy.' },
+      check: function (ev, mem) {
+        return comparePeriods(ev, mem, 'pendulum', function (a, b) {
+          return near(b.L, 2 * a.L) && near(b.g, 2 * a.g) && near(a.m, 4 * b.m) && near(a.th0, b.th0) &&
+            rel(b.Tm, a.Tm, 0.001) && rel(b.E0, a.E0, 0.002);
+        });
+      }
     }
-  ]);
+  ].map(function (mission) {
+    if (!mission.hidden || !mission.desc) return mission;
+    // 兩款既有任務面板都讀 riddle.zh/en。每次繪製時依目前玩家紀錄選字，
+    // 可處理重新登入及讀回舊進度，也讓尚未取得星星的預覽維持謎面。
+    const clue = mission.riddle;
+    const text = () => LabMission._state?.done?.[mission.id] ? mission.desc : clue;
+    mission.riddle = { get zh() { return text().zh; }, get en() { return text().en; } };
+    return mission;
+  }));
 })();

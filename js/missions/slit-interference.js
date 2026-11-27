@@ -37,6 +37,15 @@
     return mem.seen;
   }
 
+  // 程差窗以波長為單位，配合可調屏幕範圍，讓相鄰游標格可跨越解；強度皆以中央峰歸一。
+  function placed(ev, mode) { return mono(ev) && ev.data.mode === mode && ev.data.cursorPlaced; }
+  function pairedReading(mem, d, mark, partner) {
+    const key = [d.mode, d.N, d.a, d.d, d.lam, d.L].join('/');
+    if (mem.key !== key) { mem.key = key; mem.marks = []; }
+    if (!mem.marks.includes(mark)) mem.marks.push(mark);
+    return mem.marks.includes(partner);
+  }
+
   LabMission.register('slit-interference', [
     {
       id: 'slit-interference-1', level: 1,
@@ -173,6 +182,88 @@
         const d = ev.data;
         return white(ev) && d.mode === 'double' && d.cursor && Math.abs(d.pathD) >= 4000 && d.I >= 0.3 && sat(d) <= 0.05;
       }
+    },
+    {
+      id: 'slit-interference-h4', level: 3, hidden: true,
+      riddle: { zh: '兩旁相對的座位，都空著。', en: 'The matching seats on either side are empty.' },
+      desc: { zh: '單色單狹縫，在中央兩側各找到第二個繞射暗紋。', en: 'Locate the second diffraction minimum on each side of the centre for one monochromatic slit.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return placed(ev, 'single') && near(Math.abs(d.pa), 2, 0.025) && d.I < 0.0002 &&
+          pairedReading(mem, d, Math.sign(d.pa), -Math.sign(d.pa));
+      }
+    },
+    {
+      id: 'slit-interference-h5', level: 5, hidden: true,
+      riddle: { zh: '最亮的那盞燈，肩上也藏著一把尺。', en: 'The brightest lamp carries a ruler on its shoulders.' },
+      desc: { zh: '在同一單狹縫中央峰的兩側，分別找出光強降為峰值一半的位置。', en: 'Find both half-maximum points of the central peak for one single-slit pattern.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return placed(ev, 'single') && Math.abs(d.pa) < 1 && near(d.I, 0.5, 0.012) &&
+          pairedReading(mem, d, Math.sign(d.pa), -Math.sign(d.pa));
+      }
+    },
+    {
+      id: 'slit-interference-h6', level: 6, hidden: true,
+      riddle: { zh: '細紋沉入黑處，寬闊的帷幕才走了一半。', en: 'A fine stripe goes dark halfway down the broad curtain.' },
+      desc: { zh: '雙狹縫的相鄰縫程差為 2.5 個波長、縫內程差為半波長時，量到干涉暗紋。', en: 'Measure a double-slit minimum with 2.5 wavelengths between slits and half a wavelength across one slit.' },
+      check: function (ev) {
+        const d = ev.data;
+        return placed(ev, 'double') && near(Math.abs(d.pd), 2.5, 0.015) &&
+          near(Math.abs(d.pa), 0.5, 0.008) && d.I < 0.001;
+      }
+    },
+    {
+      id: 'slit-interference-h7', level: 7, hidden: true,
+      riddle: { zh: '兩道門縫夾住一束光，門的外面還有夜色。', en: 'A shaft of light stands between two narrow doors.' },
+      desc: { zh: '在四縫光柵的同一側，找出第一級主極大兩旁最近的兩個暗紋。', en: 'Locate both adjacent nulls bracketing the same first-order principal maximum of a four-slit grating.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!placed(ev, 'grating') || d.N !== 4 || d.I > 0.001 || Math.abs(d.pa) >= 0.75) return false;
+        const order = Math.abs(d.pd), side = Math.sign(d.pd);
+        if (near(order, 0.75, 0.008)) return pairedReading(mem, d, side, 2 * side);
+        return near(order, 1.25, 0.008) && pairedReading(mem, d, 2 * side, side);
+      }
+    },
+    {
+      id: 'slit-interference-h8', level: 8, hidden: true,
+      riddle: { zh: '落單的一盞燈，在明暗交界仍肯發亮。', en: 'One unpaired lantern still shines between processions.' },
+      desc: { zh: '三縫光柵中讓相鄰縫程差為半波長、縫內程差為六分之一波長，觀察中央峰與一級峰間的次極大附近仍有光。', en: 'In a three-slit grating, set half a wavelength between slits and one sixth across each slit. Measure the surviving light between principal peaks.' },
+      check: function (ev) {
+        const d = ev.data;
+        return placed(ev, 'grating') && d.N === 3 && near(Math.abs(d.pd), 0.5, 0.008) &&
+          near(Math.abs(d.pa), 1 / 6, 0.004) && near(d.I, 1 / (Math.PI * Math.PI), 0.0015);
+      }
+    },
+    {
+      id: 'slit-interference-h9', level: 9, hidden: true,
+      riddle: { zh: '兩把不同的梳子，終於同時少了一齒。', en: 'Two different combs finally share a missing tooth.' },
+      desc: { zh: '讓雙狹縫第一次缺級發生在第五級，並量得該處同時為單縫的第二個暗紋。', en: 'Make the fifth order the first missing double-slit order and measure its coincidence with the second single-slit minimum.' },
+      check: function (ev) {
+        const d = ev.data;
+        return placed(ev, 'double') && d.first === 5 && near(Math.abs(d.pd), 5, 0.025) &&
+          near(Math.abs(d.pa), 2, 0.012) && d.I < 0.0001;
+      }
+    },
+    {
+      id: 'slit-interference-h10', level: 10, hidden: true,
+      riddle: { zh: '席位變多了，原來沉默的地方竟有了回音。', en: 'More seats are filled. A silent spot answers back.' },
+      desc: { zh: '固定光柵幾何與游標，在相鄰縫程差 1.25 波長、縫內程差四分之一波長處，觀察四縫為暗紋，改六縫後有光。', en: 'At a fixed point with 1.25 wavelengths between slits and a quarter across each slit, observe a four-slit null and then a nonzero six-slit intensity.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!placed(ev, 'grating') || !near(Math.abs(d.pd), 1.25, 0.008) || !near(Math.abs(d.pa), 0.25, 0.004)) return false;
+        const key = [d.a, d.d, d.lam, d.L, d.y].join('/');
+        if (d.N === 4 && d.I < 0.001) mem.dark = key;
+        return d.N === 6 && mem.dark === key && near(d.I, 4 / (9 * Math.PI * Math.PI), 0.003);
+      }
     }
-  ]);
+  ].map(function (mission) {
+    if (!mission.hidden || !mission.desc) return mission;
+    // 兩款既有任務面板都讀 riddle.zh/en。每次繪製時依目前玩家紀錄選字，
+    // 可處理重新登入及讀回舊進度，也讓尚未取得星星的預覽維持謎面。
+    const clue = mission.riddle;
+    const text = () => LabMission._state?.done?.[mission.id] ? mission.desc : clue;
+    mission.riddle = { get zh() { return text().zh; }, get en() { return text().en; } };
+    return mission;
+  }));
 })();

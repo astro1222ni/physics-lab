@@ -37,9 +37,18 @@ function passing(st) {
   return { e: e.data, out: list.filter(m => m.check(e, mems[m.id])).map(m => m.id) };
 }
 let bad = 0;
+const legacyHistory = new Map();
 function expect(id, steps, note) {
   reset(); let r;
-  steps.forEach(st => { r = passing(st); });
+  steps.forEach(st => {
+    r = passing(st);
+    require('node:assert/strict').deepEqual(r.out.filter(x => /-h(?:[4-9]|10)$/.test(x)), [], id + ' 舊解');
+    for (const mission of list.filter(m => /-h(?:[4-9]|10)$/.test(m.id))) {
+      if (!legacyHistory.has(mission.id)) legacyHistory.set(mission.id, {});
+      require('node:assert/strict').ok(!mission.check({ type: 'setup', data: r.e }, legacyHistory.get(mission.id)),
+        mission.id + ' 在累積舊任務 ' + id + ' 的量測後觸發');
+    }
+  });
   const ok = r.out.includes(id); if (!ok) bad++;
   const e = r.e;
   console.log((ok ? 'OK  ' : 'FAIL ') + id.padEnd(22), note, '|', ['dy', 'W', 'k', 'first', 'nCentral', 'y400', 'y700', 'y', 'pd', 'pathD', 'I'].filter(k => e[k] !== undefined && !Number.isNaN(e[k])).map(k => k + '=' + (typeof e[k] === 'number' ? +e[k].toFixed(4) : e[k])).join(' '), '| also:', r.out.filter(x => x !== id).join(','));
@@ -97,5 +106,37 @@ expect('slit-interference-h2', [{ mode: 'grating', N: 5, white: true, a: 10, d: 
 expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(900, 50, 1, 50, 700) }], '只有第 2 級的地方不算');
 expect('slit-interference-h3', [{ white: true, a: 5, d: 400, y: yAt(5000, 400, 1, 30, 700) }], 'a = 5、d = 400，游標在 d sinθ = 5 μm（y ≈ 12.5 mm）');
 expectNot('slit-interference-h3', [{ white: true, a: 40, d: 120, y: yAt(5000, 120, 1, 50, 700) }], '預設縫寬太寬：高級條紋太暗');
+// 將目標程差換成真實屏距，量化到可點或用方向鍵到達的屏幕位置。
+const point = (mode, a, d, N, order, zoom) => ({
+  mode, a, d, N, y: yAt(order * 550, mode === 'single' ? a : d, 1, zoom, 700)
+});
+const single = u => point('single', 40, 120, 1, u, Math.abs(u) > 1 ? 30 : 10);
+const pair = u => point('double', 20, 100, 2, u, 20);
+const four = u => point('grating', 20, 100, 4, u, 10);
+const three = u => point('grating', 30, 90, 3, u, 10);
+const missing = u => point('double', 40, 100, 2, u, 30);
+const six = u => point('grating', 20, 100, 6, u, 10);
+const cases = [
+  [[single(-2), single(2)], single(2.04)],
+  [[single(-0.443), single(0.443)], single(0.455)],
+  [[pair(2.5)], pair(2.525)],
+  [[four(0.75), four(1.25)], four(1.265)],
+  [[three(0.5)], three(0.512)],
+  [[missing(5)], missing(4.96)],
+  [[four(1.25), six(1.25)], six(1.265)]
+];
+const assert = require('node:assert/strict');
+function hiddenHits(steps) {
+  reset();
+  const hit = new Set();
+  for (const st of steps) passing(st).out.filter(x => x.includes('-h')).forEach(x => hit.add(x));
+  return [...hit];
+}
+for (const [i, [steps, miss]] of cases.entries()) {
+  const id = 'slit-interference-h' + (4 + i);
+  assert.deepEqual(hiddenHits(steps), [id], id);
+  assert.deepEqual(hiddenHits([...steps.slice(0, -1), miss]), [], id + ' near miss');
+  console.log('✓', id, JSON.stringify(steps), '近失末步', JSON.stringify(miss));
+}
 console.log(bad ? '\n有 ' + bad + ' 項不符' : '\n全部符合');
 if (bad) process.exitCode = 1;

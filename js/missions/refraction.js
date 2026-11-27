@@ -44,6 +44,9 @@
     return false;
   }
 
+  // 折射率可輸入至 0.001、角度至 0.01°。角度窗包含取整的誤差；
+  // 接收角及穿透深度在臨界附近較敏感，所以另給較寬的輸出量容差。
+
   LabMission.register('refraction', [
     {
       id: 'refraction-1', level: 1,
@@ -142,6 +145,90 @@
       id: 'refraction-h3', level: 6, hidden: true,
       riddle: { zh: '門已緊緊關上，門縫底下卻滲出一道長長的光影。', en: 'The door is shut tight, yet a long ribbon of light seeps out beneath it.' },
       check: function (ev) { const d = ev.data; return ev.type === 'setup' && d.mode === 'wave' && d.tir && d.depth >= 1 && d.depth <= 100; }
+    },
+    {
+      id: 'refraction-h4', level: 3, hidden: true,
+      riddle: { zh: '來時的渡資，歸途也恰好夠用。', en: 'The fare you paid on the way out carries you home.' },
+      desc: { zh: '讓光垂直入射，量到至少 1% 的反射率。對調兩側介質後以同一波長再量一次，兩個方向反射的能量比例相同。', en: 'At normal incidence, measure a reflectance of at least 1%. Swap the two media and measure again at the same wavelength. The same fraction of incident energy is reflected in both directions.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        // 半個角度輸入格只接受 0.00°。1% 排除兩側幾乎相同的平凡解。
+        if (!flat(ev) || !near(d.th1, 0, 0.005) || !(d.R >= 0.01 - EPS)) return false;
+        const first = mem.incident;
+        mem.incident = { n1: d.n1, n2: d.n2, nm: d.nm, R: d.R };
+        return !!first && is(first.n1, d.n2) && is(first.n2, d.n1) &&
+          first.nm === d.nm && near(first.R, d.R, 1e-8);
+      }
+    },
+    {
+      id: 'refraction-h5', level: 4, hidden: true,
+      riddle: { zh: '折過的紙角，展開後還認得原來的斜線。', en: 'An unfolded corner remembers its diagonal.' },
+      desc: { zh: '在光線模式讓入射角為 45°、折射角為 30°。', en: 'In ray view, refract a ray incident at 45 degrees to 30 degrees.' },
+      check: function (ev) {
+        const d = ev.data;
+        return flat(ev) && d.mode === 'ray' && near(d.th1, 45, 0.02) && near(d.th2, 30, 0.02);
+      }
+    },
+    {
+      id: 'refraction-h6', level: 6, hidden: true,
+      riddle: { zh: '鏡子挑走一種顫動，另一種只留淡痕。', en: 'The mirror picks one tremor and leaves a faint trace of it.' },
+      desc: { zh: '從光疏介質以布魯斯特角入射，使 s 偏振的反射率為九分之一。', en: 'At Brewster incidence from the lower-index side, reflect one ninth of the s-polarized light.' },
+      check: function (ev) {
+        const d = ev.data;
+        return flat(ev) && d.mode === 'ray' && d.n1 < d.n2 && perp(d, 0.03) && near(d.Rs, 1 / 9, 0.0004);
+      }
+    },
+    {
+      id: 'refraction-h7', level: 7, hidden: true,
+      riddle: { zh: '裁縫又放寬了一寸，天邊仍在原處。', en: 'The tailor lets out another inch. The horizon stays put.' },
+      desc: { zh: '在空氣中以至少 85° 射入光纖。先讓數值孔徑剛達 1，再保持纖芯與射入角、調整包層使數值孔徑增加至少 5%。兩次的最大接收角都是 90°，進入纖芯的光都在側壁全反射。', en: 'Launch from air at 85 degrees or more. Start with a numerical aperture just reaching one. Keep the core and launch angle fixed and change the cladding to increase the aperture by at least 5%. The acceptance half-angle stays at 90 degrees and the light entering the core is guided in both trials.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!fibre(ev) || !d.guided || d.thIn < 85 - EPS || d.NA < 1 - EPS || !near(d.acc, 90, 1e-6)) return false;
+        // 折射率可打到 0.001，起點留 0.001 的單側孔徑窗；5% 的增量遠大於一格捨入。
+        if (near(d.NA, 1, 0.001)) {
+          mem.threshold = { nCore: d.nCore, thIn: d.thIn, NA: d.NA };
+          return false;
+        }
+        const first = mem.threshold;
+        return !!first && is(first.nCore, d.nCore) && is(first.thIn, d.thIn) && d.NA >= 1.05 * first.NA - EPS;
+      }
+    },
+    {
+      id: 'refraction-h8', level: 8, hidden: true,
+      riddle: { zh: '影子留在岸外，尺上的刻痕卻很短。', en: 'The shadow spills beyond the bank and barely marks the ruler.' },
+      desc: { zh: '在波前模式從折射率比 3 比 2 的光密側全反射，使漸逝波強度的穿透深度等於真空波長的四分之一。', en: 'In wave view, use total internal reflection at a 3-to-2 index ratio and obtain an intensity penetration depth of one quarter of the vacuum wavelength.' },
+      check: function (ev) {
+        const d = ev.data;
+        return flat(ev) && d.mode === 'wave' && d.tir && near(d.n1 / d.n2, 1.5, 0.001) && near(d.depth, 0.25, 0.0015);
+      }
+    },
+    {
+      id: 'refraction-h9', level: 9, hidden: true,
+      riddle: { zh: '光走自己的斜徑，身後的門還能再開。', en: 'Light takes a slanting path. The door behind it could open wider.' },
+      desc: { zh: '設計最大接收角為 60° 的光纖，使折入纖芯的光線與軸成 30° 並由側壁全反射。', en: 'Design a fibre with a 60-degree acceptance angle and guide a ray at 30 degrees to its axis inside the core.' },
+      check: function (ev) {
+        const d = ev.data;
+        return fibre(ev) && d.guided && near(d.acc, 60, 0.08) && near(d.thR, 30, 0.025);
+      }
+    },
+    {
+      id: 'refraction-h10', level: 10, hidden: true,
+      riddle: { zh: '一列波紋舒展開來，鏡中只認得一個方向。', en: 'The ripples stretch apart. The mirror remembers a single direction.' },
+      desc: { zh: '在波前模式讓透射波長加倍，同時讓 p 偏振無反射、s 偏振反射率為 36%。', en: 'In wave view, double the transmitted wavelength while extinguishing p reflection and reflecting 36 percent of the s component.' },
+      check: function (ev) {
+        const d = ev.data;
+        return flat(ev) && d.mode === 'wave' && near(d.lam2 / d.lam1, 2, 0.001) &&
+          perp(d, 0.03) && d.Rp < 1e-6 && near(d.Rs, 0.36, 0.001);
+      }
     }
-  ]);
+  ].map(function (mission) {
+    if (!mission.hidden || !mission.desc) return mission;
+    // 兩款既有任務面板都讀 riddle.zh/en。每次繪製時依目前玩家紀錄選字，
+    // 可處理重新登入及讀回舊進度，也讓尚未取得星星的預覽維持謎面。
+    const clue = mission.riddle;
+    const text = () => LabMission._state?.done?.[mission.id] ? mission.desc : clue;
+    mission.riddle = { get zh() { return text().zh; }, get en() { return text().en; } };
+    return mission;
+  }));
 })();

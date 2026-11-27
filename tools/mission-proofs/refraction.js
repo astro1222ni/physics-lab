@@ -30,10 +30,19 @@ function ev(st) {
     nCore: s.nCore, nClad: s.nClad, thIn: toDeg(thIn), thR: toDeg(b.thR), phi: toDeg(b.phi),
     fCrit: toDeg(b.crit), acc: toDeg(b.acc), NA: b.NA, guided: b.guided, entryT: b.entryT, wallR: b.wallR } };
 }
-const passing = st => { const e = ev(st); return list.filter(m => settled(m, e, {})).map(m => m.id); };
+function passing(st, memory = new Map()) {
+  const e = ev(st);
+  return list.filter(m => {
+    if (!memory.has(m.id)) memory.set(m.id, {});
+    return settled(m, e, memory.get(m.id));
+  }).map(m => m.id);
+}
+const legacyMemory = new Map();
 let bad = 0;
 function expect(id, st, note) {
   const p = passing(st); const e = ev(st).data;
+  require('node:assert/strict').deepEqual(passing(st, legacyMemory).filter(x => /-h(?:[4-9]|10)$/.test(x)), [], id + ' 累積舊解');
+  require('node:assert/strict').deepEqual(p.filter(x => /-h(?:[4-9]|10)$/.test(x)), [], id + ' 舊解');
   const ok = p.includes(id); if (!ok) bad++;
   console.log((ok ? 'OK ' : 'FAIL ') + id.padEnd(15), JSON.stringify(st), note || '', '| th2=' + e.th2.toFixed(3), 'crit=' + e.crit.toFixed(3), 'R=' + e.R.toFixed(4), 'lam2=' + e.lam2.toFixed(2), 'acc=' + e.acc.toFixed(3), '| also:', p.filter(x => x !== id).join(','));
 }
@@ -88,6 +97,51 @@ expectNot('refraction-h3', { mode: 'wave', n1: 1.5, n2: 1, th1: 'crit' }, '恰�
 expect('refraction-h3', { mode: 'wave', n1: 1.33, n2: 1, th1: 48.8 }, '水→空氣 48.8°（滑桿）');
 expectNot('refraction-h3', { mode: 'wave', n1: 1.5, n2: 1, th1: 60 }, '深入全反射區，漸逝波很淺');
 console.log('h3 深度 41.9°：', ev({ mode: 'wave', n1: 1.5, n2: 1, th1: 41.9 }).data.depth.toFixed(3), '；60°：', ev({ mode: 'wave', n1: 1.5, n2: 1, th1: 60 }).data.depth.toFixed(3));
-console.log(bad ? '\n有 ' + bad + ' 項不符' : '\n全部符合');
+// 第一個任務用單獨的計時測試，補上它的達成例。
+const assert = require('node:assert/strict');
+assert.deepEqual(passing({ n1: 1.5, n2: 1, th1: 60 }).filter(x => /-h(?:[4-9]|10)$/.test(x)), []);
+const outward = { n1: 1.2, n2: 1.8, th1: 0 };
+const inward = { n1: 1.8, n2: 1.2, th1: 0 };
+const threshold = { mode: 'fibre', nCore: 1.45, nClad: 1.05, thIn: 88 };
+const wider = { ...threshold, nClad: 1 };
+const cases = [
+  [[outward, inward], { n2: 1.201 }],
+  [{ n2: 1.414, th1: 45 }, { th1: 45.03 }],
+  [{ n2: 1.414, th1: 'brew' }, { n2: 1.417 }],
+  [[threshold, wider], { nClad: 1.001 }],
+  [{ mode: 'wave', n1: 1.5, n2: 1, th1: 44.40 }, { th1: 44.44 }],
+  [{ mode: 'fibre', nCore: 1.5, nClad: 1.225, thIn: 48.59 }, { thIn: 48.66 }],
+  [{ mode: 'wave', n1: 2.2, n2: 1.1, th1: 'brew' }, { n2: 1.101 }]
+];
+function hiddenHits(steps) {
+  const memory = new Map();
+  return [...new Set(steps.flatMap(st => passing(st, memory).filter(x => x.includes('-h'))))];
+}
+for (const [i, [config, change]] of cases.entries()) {
+  const id = 'refraction-h' + (i + 4);
+  const steps = Array.isArray(config) ? config : [config];
+  if (steps.length > 1) {
+    for (const st of steps) assert.deepEqual(hiddenHits([st]), [], id + ' 單獨一步');
+  }
+  assert.deepEqual(hiddenHits(steps), [id], id);
+  assert.deepEqual(hiddenHits([...steps.slice(0, -1), { ...steps.at(-1), ...change }]), [], id + ' near miss');
+  console.log('✓', id, JSON.stringify(steps), '近失變更', JSON.stringify(change));
+}
+// 同向重測、同反射率但不是同一對介質、或入射角差一格，都不能證明互易。
+for (const st of [outward, { n1: 2.4, n2: 1.6, th1: 0 }, { ...inward, th1: 0.01 }]) {
+  assert.deepEqual(hiddenHits([outward, st]), []);
+}
+assert.deepEqual(hiddenHits([inward, outward]), ['refraction-h4'], '可以從任一側開始');
+assert.deepEqual(hiddenHits([{ n1: 1.5, n2: 1.501, th1: 0 }, { n1: 1.501, n2: 1.5, th1: 0 }]), [], '反光太弱');
+// 還未飽和、只改射入角、或兩次顛倒，都不構成數值孔徑越過門檻後的比較。
+assert.deepEqual(hiddenHits([{ ...threshold, nClad: 1.051 }, wider]), []);
+assert.deepEqual(hiddenHits([threshold, { ...wider, thIn: 88.01 }]), []);
+assert.deepEqual(hiddenHits([wider, threshold]), []);
+console.log('互易 R =', ev(outward).data.R, ev(inward).data.R);
+for (const st of [threshold, wider, { ...wider, nClad: 1.001 }]) {
+  const d = ev(st).data;
+  console.log('包層', st.nClad, 'NA', d.NA, '最大接收角', d.acc, '側壁全反射', d.guided);
+}
 mock.timers.reset();
+console.log(bad ? '\n有 ' + bad + ' 項不符' : '\n全部符合');
 if (bad) process.exitCode = 1;
