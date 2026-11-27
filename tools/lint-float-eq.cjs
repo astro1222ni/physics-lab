@@ -4,9 +4,10 @@
  * 預設依 js/catalog.js 的 d=math、s=代號挑站，掃來源目錄的同名 JS
  * 及代號-*.js（核心、控制等）；--all 遞迴掃來源目錄的所有 JS。
  * ==、!=、===、!== 的任一側若是數字常值、Math 數字常數或其簡單算式即提醒。
- * 預設略過字串、typeof、長度、索引和名稱為 i/j/k/n/idx/index/count
- * 或以這些單字結尾（駝峰、底線，idx/count 也接受小寫連寫）的計數器。
- * --no-skip 列出上述略過項。陣列取出的元素可能是計算值，照樣檢查。
+ * 預設略過 typeof、長度、索引、DOM 整數屬性、Math 整數函式及整數取餘。
+ * 計數器限獨立的 i/j，或 idx/index/count 等有明確字義的名稱；取餘時也把
+ * 慣用的獨立 n 視為項次。k 與大寫 I/J/K/N 不單憑名稱略過。
+ * --no-skip 列出全部數字候選。字串常值比較另計數，不列逐筆。
  * 這是詞彙層級的提醒，不推斷型別；略過註解、正規式與整段樣板字串。
  * 有提醒仍回傳 0；用法／掃描輸入錯誤回傳 2。
  */
@@ -20,8 +21,12 @@ const NUMBER = /^(?:0[xX][\da-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:\d[\d_]*(?:\.[
 const EQUALITY = /^(?:===?|!==?)$/;
 const MATH_CONSTANT = /^(?:E|LN10|LN2|LOG10E|LOG2E|PI|SQRT1_2|SQRT2)$/;
 const IDENTIFIER = /^[\p{ID_Start}$_][\p{ID_Continue}$]*$/u;
-const CAMEL_COUNTER = /(?:[IJKN]|Idx|Index|Count|_(?:i|j|k|n|index)|idx|count)$/;
-const ARITHMETIC = /^(?:[+*/%<>-]|\*\*|<<|>>|>>>|<=|>=)$/;
+const COUNTER = /^(?:idx|index|count)$|(?:Idx|Index|Count|_(?:idx|index|count))$/;
+const INTEGER_MEMBER = /^(?:length|size|button|buttons|keyCode|which|nodeType|readyState|selectedIndex|tabIndex)$/;
+const INDEX_METHOD = /^(?:index|indexOf|lastIndexOf|findIndex|findLastIndex)$/;
+const INTEGER_MATH = /^(?:round|floor|ceil|trunc|sign)$/;
+const ARITHMETIC = /^(?:[+*/%-]|\*\*|<<|>>|>>>)$/;
+const RELATIONAL = /^(?:[<>]=?|in|instanceof)$/;
 const VALUE_PREFIX = /^(?:return|throw|case|yield|void|typeof|delete|in|of|await)$/;
 
 function tokenize(source) {
@@ -108,26 +113,58 @@ function unwrap(values) {
 }
 
 function numeric(values) {
-  let v = unwrap(values);
-  if (v[0] === '-' || v[0] === '+') v = unwrap(v.slice(1));
-  return (v.length === 1 && NUMBER.test(v[0])) ||
-    (v[0] === 'Math' && v[1] === '.' && MATH_CONSTANT.test(v[2]) &&
-      (v.length === 3 || (v.length === 5 && /^[*/]$/.test(v[3]) && NUMBER.test(v[4]))));
+  let i = 0;
+  function term() {
+    while (values[i] === '+' || values[i] === '-') i++;
+    if (NUMBER.test(values[i])) {
+      i++;
+      return true;
+    }
+    if (values[i] === 'Math' && values[i + 1] === '.' && MATH_CONSTANT.test(values[i + 2])) {
+      i += 3;
+      return true;
+    }
+    if (values[i] !== '(') return false;
+    i++;
+    return expression() && values[i++] === ')';
+  }
+  function expression() {
+    if (!term()) return false;
+    while (/^(?:[+*/-]|\*\*)$/.test(values[i])) {
+      i++;
+      if (!term()) return false;
+    }
+    return true;
+  }
+  return expression() && i === values.length;
 }
 
 const stringLiteral = v => v.length === 1 && /^[`"']/.test(v[0]);
 
+function integerExpression(values) {
+  const v = unwrap(values);
+  let literal = v;
+  if (['+', '-'].includes(v[0])) literal = unwrap(v.slice(1));
+  if (literal.length === 1 && NUMBER.test(literal[0])) return Number.isInteger(Number(literal[0].replace(/_/g, '')));
+  if (v.length === 1) return /^(?:i|j)$/.test(v[0]) || COUNTER.test(v[0]);
+  const end = v.length - 1, name = v[end];
+  if (atom(v, end, -1).start !== 0) return false;
+  if (['.', '?.'].includes(v[end - 1])) return INTEGER_MEMBER.test(name) || COUNTER.test(name);
+  const open = name === ')' ? groupEnd(v, v.length - 1, -1) : -1;
+  return INDEX_METHOD.test(v[open - 1]) ||
+    (open === 3 && v[0] === 'Math' && v[1] === '.' && INTEGER_MATH.test(v[2]));
+}
+
 function skip(values) {
   const v = unwrap(values);
-  if (v[0] === 'typeof' || stringLiteral(v)) return true;
-  const name = v.at(-1);
-  const member = v.length === 1 || ['.', '?.'].includes(v.at(-2));
-  if (member && (/^(?:length|size|i|j|k|n|idx|index|count)$/i.test(name) || CAMEL_COUNTER.test(name))) {
-    return atom(v, v.length - 1, -1).start === 0;
-  }
-  const open = name === ')' ? groupEnd(v, v.length - 1, -1) : -1;
-  return /^(?:index|indexOf|lastIndexOf|findIndex)$/.test(v[open - 1]) &&
-    atom(v, v.length - 1, -1).start === 0;
+  if (v[0] === 'typeof') return true;
+  if (integerExpression(v) && !numeric(v)) return true;
+  const left = atom(v, 0, 1).end;
+  if (v[left + 1] !== '%') return false;
+  const dividend = unwrap(v.slice(0, left + 1));
+  const divisor = v.slice(left + 2);
+  return (integerExpression(dividend) || (dividend.length === 1 && dividend[0] === 'n')) &&
+    integerExpression(divisor);
 }
 
 function scan(source) {
@@ -141,8 +178,10 @@ function scan(source) {
     const left = operand(values, i - 1, -1);
     const right = operand(values, i + 1, 1);
     const l = values.slice(left.start, i), r = values.slice(i + 1, right.end + 1);
-    const skipped = skip(l) || skip(r);
-    if (!numeric(l) && !numeric(r) && !stringLiteral(unwrap(l)) && !stringLiteral(unwrap(r))) continue;
+    // 相等運算前的關係式是布林值，避免將其尾端或開頭誤作數字運算元。
+    if (RELATIONAL.test(values[left.start - 1]) || RELATIONAL.test(values[right.end + 1])) continue;
+    const string = stringLiteral(unwrap(l)) || stringLiteral(unwrap(r));
+    if (!string && !numeric(l) && !numeric(r)) continue;
     const offset = tokens[i].offset;
     while (nextNewline >= 0 && nextNewline < offset) {
       line++;
@@ -150,7 +189,8 @@ function scan(source) {
     }
     const tail = tokens[right.end];
     const end = tail.offset + tail.value.length;
-    findings.push({ line, snippet: source.slice(tokens[left.start].offset, end).replace(/\s+/g, ' '), skipped });
+    findings.push({ line, snippet: source.slice(tokens[left.start].offset, end).replace(/\s+/g, ' '),
+      kind: string ? 'string' : 'number', skipped: !string && (skip(l) || skip(r)) });
   }
   return findings;
 }
@@ -195,18 +235,19 @@ function main(args) {
     if (!matches.length && slugs.length) throw new Error('找不到站台程式：' + slug);
     matches.forEach(file => selected.add(file));
   }
-  let hits = 0, skipped = 0;
+  let hits = 0, skipped = 0, strings = 0;
   for (const file of (all ? files : [...selected]).sort()) {
     const label = path.relative(ROOT, file).split(path.sep).join('/');
     for (const item of scan(fs.readFileSync(file, 'utf8'))) {
-      if (item.skipped && !noSkip) skipped++;
+      if (item.kind === 'string') strings++;
+      else if (item.skipped && !noSkip) skipped++;
       else {
         hits++;
         console.log(label + ':' + item.line + '  ' + item.snippet);
       }
     }
   }
-  console.log('共 ' + hits + ' 處（已略過 ' + skipped + ' 處）');
+  console.log('共 ' + hits + ' 處（已略過 ' + skipped + ' 處，字串比較 ' + strings + ' 處另計）');
 }
 
 if (require.main === module) {

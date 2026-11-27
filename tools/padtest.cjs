@@ -4,9 +4,9 @@
  * Windows 驗收請用共用 browser-lock.cjs run -- node tools/padtest.cjs … 排隊。
  * 以假後端載入本機實驗模式，攔截所有網路請求，只供應工作樹內的靜態檔。
  * 用共用 LabVPad 的 point 回呼讀目前選取點相對於畫布的 CSS px，
- * 分別確認 → 使 x 增加、↑ 使 y 減少，以及中央格切換選取。
- * 站台須有共用小鍵盤、可移動的二維點及可切換的中央格。
- * 成功 0、測試失敗 1、參數錯誤 2；預設淺色，--dark 使所有寬度用深色。
+ * 分別確認 → 使 x 增加、↑ 使 y 減少，以及可用的中央格切換選取。
+ * 單點站的停用中央格略過。未載入共用小鍵盤或預設模式隱藏者列為不適用。
+ * 無不合格組別回 0，有不合格回 1，參數錯誤回 2。--dark 改用深色。
  */
 'use strict';
 
@@ -65,7 +65,7 @@ async function serveLocal(route) {
 function observePad(theme) {
   localStorage.setItem('lab-settings', JSON.stringify({ theme, lang: 'zh-Hant', fs: 1 }));
   localStorage.setItem('lab-welcome-v1', 'skip');
-  const states = new WeakMap();
+  const states = new Map();
   Object.defineProperty(window, 'LabVPad', {
     configurable: true,
     set(api) {
@@ -78,6 +78,14 @@ function observePad(theme) {
       Object.defineProperty(window, 'LabVPad', { configurable: true, writable: true, value: api });
     }
   });
+  window.preparePadTest = async () => {
+    const mounted = [...states.keys()].filter(element => element.isConnected);
+    const current = mounted.find(element => !element.hidden);
+    states.get(current)?.canvas?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    // 捲動畫布後，讓小鍵盤完成位置和可見性的更新。
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return { loaded: typeof window.LabVPad?.mount === 'function', mounted: mounted.length };
+  };
   window.readPadTest = element => {
     const options = states.get(element);
     const selected = options?.selected();
@@ -98,6 +106,7 @@ async function testPad(browser, slug, width, dark) {
     colorScheme: dark ? 'dark' : 'light', serviceWorkers: 'block'
   });
   const errors = [], reasons = [], readings = [];
+  let notApplicable, singlePoint = false;
   let stage = '載入頁面';
   try {
     await context.route('**/*', serveLocal);
@@ -116,35 +125,45 @@ async function testPad(browser, slug, width, dark) {
     });
     const response = await page.goto(ORIGIN + '/' + slug + '.html?mode=lab', { timeout: 12000 });
     if (!response?.ok()) throw new Error('HTTP ' + (response?.status() ?? '無回應'));
-    await page.locator('#cv').evaluate(canvas => canvas.scrollIntoView({ block: 'center', behavior: 'instant' }));
-    stage = '展開小鍵盤';
+    const { loaded, mounted } = await page.evaluate(() => window.preparePadTest());
     const pad = page.locator('.lab-vpad:visible').first();
-    await pad.waitFor();
-    await pad.locator('.vpad-launch').click();
-    const read = async label => {
-      const value = await pad.evaluate(element => window.readPadTest(element));
-      readings.push({ label, ...value });
-      if (!Number.isFinite(value.x) || !Number.isFinite(value.y)) throw new Error('讀不到點的座標');
-      return value;
-    };
-    const press = selector => {
-      const button = pad.locator(selector);
-      return width < 600 ? button.tap() : button.click();
-    };
-    const initial = await read('展開後');
-    stage = '→ 鍵';
-    await press('[data-direction="5"]');
-    const right = await read('按 → 後');
-    if (right.x - initial.x <= 1e-7) reasons.push('→ 未使 x 增加');
-    stage = '↑ 鍵';
-    await press('[data-direction="1"]');
-    const up = await read('按 ↑ 後');
-    if (up.y - right.y >= -1e-7) reasons.push('↑ 未使 y 減少');
-    stage = '中央格';
-    await press('.vpad-select');
-    const switched = await read('切換後');
-    if (up.selected === switched.selected && up.label === switched.label && up.center === switched.center) {
-      reasons.push('中央格未切換目標');
+    if (!loaded && !mounted && !await pad.isVisible()) notApplicable = '未載入共用小鍵盤';
+    else if (!mounted) reasons.push('已載入共用元件但未掛載小鍵盤');
+    else if (!await pad.isVisible()) notApplicable = '預設模式未顯示小鍵盤';
+    else {
+      const read = async label => {
+        const value = await pad.evaluate(element => window.readPadTest(element));
+        readings.push({ label, ...value });
+        if (!Number.isFinite(value.x) || !Number.isFinite(value.y)) throw new Error('讀不到點的座標');
+        return value;
+      };
+      const press = selector => {
+        const button = pad.locator(selector);
+        return width < 600 ? button.tap() : button.click();
+      };
+      stage = '展開小鍵盤';
+      if (!await pad.locator('.vpad-body').isVisible()) {
+        await press('.vpad-launch');
+        await pad.locator('.vpad-body').waitFor({ state: 'visible' });
+      }
+      const initial = await read('展開後');
+      stage = '→ 鍵';
+      await press('[data-direction="5"]');
+      const right = await read('按 → 後');
+      if (right.x - initial.x <= 1e-7) reasons.push('→ 未使 x 增加');
+      stage = '↑ 鍵';
+      await press('[data-direction="1"]');
+      const up = await read('按 ↑ 後');
+      if (up.y - right.y >= -1e-7) reasons.push('↑ 未使 y 減少');
+      stage = '中央格';
+      singlePoint = await pad.locator('.vpad-select').isDisabled();
+      if (!singlePoint) {
+        await press('.vpad-select');
+        const switched = await read('切換後');
+        if (up.selected === switched.selected && up.label === switched.label && up.center === switched.center) {
+          reasons.push('中央格未切換目標');
+        }
+      }
     }
   } catch (error) {
     reasons.push(stage + '操作失敗');
@@ -153,16 +172,17 @@ async function testPad(browser, slug, width, dark) {
     await context.close();
   }
   if (errors.length && !reasons.length) reasons.push('主控台有錯誤');
-  return { reasons, readings, errors };
+  return { reasons, readings, errors, notApplicable: reasons.length ? undefined : notApplicable, singlePoint };
 }
 
 async function main({ slugs, widths, dark }) {
   const browser = await launch({ args: ['--mute-audio', '--disable-background-networking'] });
-  let passed = 0, failed = 0;
+  let passed = 0, failed = 0, skipped = 0;
+  const skippedSites = new Set();
   try {
     for (const slug of slugs) {
       for (const width of widths) {
-        const { reasons, readings, errors } = await testPad(browser, slug, width, dark);
+        const { reasons, readings, errors, notApplicable, singlePoint } = await testPad(browser, slug, width, dark);
         const label = slug + ' ' + width + ' px ';
         if (reasons.length) {
           failed++;
@@ -172,30 +192,41 @@ async function main({ slugs, widths, dark }) {
               (r.x?.toFixed(3) ?? '?') + ', ' + (r.y?.toFixed(3) ?? '?') + ')');
           }
           for (const error of new Set(errors)) console.log('  ' + error.replace(/\s+/g, ' '));
+        } else if (notApplicable) {
+          skipped++;
+          skippedSites.add(slug);
+          console.log(label + '不適用（' + notApplicable + '）');
         } else {
           passed++;
           const [a, b, c, d] = readings;
           const pos = r => '(' + r.x.toFixed(3) + ', ' + r.y.toFixed(3) + ')';
+          const center = singlePoint ? '單點（中央格停用）' :
+            '中央格 ' + (c.center || c.selected) + ' → ' + (d.center || d.selected);
           console.log(label + '合格（→/↑ ' + pos(a) + ' → ' + pos(b) + ' → ' + pos(c) +
-            '，中央格 ' + (c.center || c.selected) + ' → ' + (d.center || d.selected) + '，主控台 0 錯誤）');
+            '，' + center + '，主控台 0 錯誤）');
         }
       }
     }
   } finally {
     await browser.close();
   }
-  console.log('共 ' + (passed + failed) + ' 組（合格 ' + passed + '，不合格 ' + failed + '）');
+  console.log('共 ' + (passed + failed + skipped) + ' 組（合格 ' + passed +
+    '，不合格 ' + failed + '，不適用 ' + skipped + ' 組／' + skippedSites.size + ' 站）');
   return failed ? 1 : 0;
 }
 
-let options;
-try { options = argumentsFor(process.argv.slice(2)); }
-catch (error) {
-  console.error(error.message);
-  console.error('用法：node tools/padtest.cjs <代號…> [--width 412,1280] [--dark]');
-  process.exitCode = 2;
+if (require.main === module) {
+  let options;
+  try { options = argumentsFor(process.argv.slice(2)); }
+  catch (error) {
+    console.error(error.message);
+    console.error('用法：node tools/padtest.cjs <代號…> [--width 412,1280] [--dark]');
+    process.exitCode = 2;
+  }
+  if (options) main(options).then(code => { process.exitCode = code; }).catch(error => {
+    console.error('無法完成小鍵盤測試：' + error.message);
+    process.exitCode = 1;
+  });
 }
-if (options) main(options).then(code => { process.exitCode = code; }).catch(error => {
-  console.error('無法完成小鍵盤測試：' + error.message);
-  process.exitCode = 1;
-});
+
+module.exports = { testPad };
