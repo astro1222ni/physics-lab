@@ -194,9 +194,9 @@
           <h2 data-en="Two notes">兩個音</h2>
           <div class="slider"><label for="f1" data-en-html="Lower note f<sub>1</sub> (Hz)">下方音 f<sub>1</sub>（Hz）</label><output id="f1o"></output>
             <input id="f1" type="range" min="0" max="3600" step="1" value="1500" data-decimals="2"></div>
-          <p class="hint tight" id="f1Note"></p>
           <div class="slider"><label for="rr" data-en-html="Frequency ratio r = f<sub>2</sub> / f<sub>1</sub>">頻率比 r = f<sub>2</sub> / f<sub>1</sub></label><output id="rro"></output>
             <input id="rr" type="range" min="0" max="1442" step="1" value="100" data-decimals="4"></div>
+          <p class="hint tight" id="f1Note"></p>
         </section>
 
         <section class="card" data-deck="音程|Intervals" data-deck-order="2">
@@ -237,9 +237,9 @@
             <input id="nn" type="range" min="1" max="10" step="1" value="6" data-decimals="0"></div>
           <div class="slider" id="ppBox"><label for="pp" data-en-html="Roll-off exponent p (strength 1/k<sup>p</sup>)">衰減指數 p（強度 1/k<sup>p</sup>）</label><output id="ppo"></output>
             <input id="pp" type="range" min="0" max="2" step="0.05" value="1" data-decimals="2"></div>
-          <label class="chk" id="oddBox"><input type="checkbox" id="odd"><span data-en="Odd partials only (like a clarinet)">只留奇次泛音（像單簧管）</span></label>
           <div class="slider" id="ssBox"><label for="ss" data-en-html="Stretch exponent s (partial k at k<sup>s</sup> × f)">拉伸係數 s（第 k 個在 k<sup>s</sup> 倍）</label><output id="sso"></output>
             <input id="ss" type="range" min="0.8" max="1.2" step="0.001" value="1.1" data-decimals="3"></div>
+          <label class="chk" id="oddBox"><input type="checkbox" id="odd"><span data-en="Odd partials only (like a clarinet)">只留奇次泛音（像單簧管）</span></label>
           <p class="hint" id="timbreHint"></p>
         </section>
 

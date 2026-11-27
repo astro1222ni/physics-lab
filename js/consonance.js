@@ -155,7 +155,7 @@
     $('ppo').textContent = fx(state.timbre.p, 2);
     $('sso').textContent = fx(state.timbre.s, 3);
     const n = noteOf(state.f1);
-    $('f1Note').textContent = T('約 ', '≈ ') + n.name + ' ' + sg(n.dev, 0) + T(' 音分（A4 = 440 Hz）', ' cents (A4 = 440 Hz)') + (state.f1 < 200 ? T('；手機小喇叭聽不太到 200 Hz 以下，靠泛音也聽得出音高', '; phone speakers barely play below 200 Hz, but the overtones still carry the pitch') : '');
+    $('f1Note').textContent = T('下方音約 ', 'Lower note ≈ ') + n.name + ' ' + sg(n.dev, 0) + T(' 音分（A4 = 440 Hz）', ' cents (A4 = 440 Hz)') + (state.f1 < 200 ? T('；手機小喇叭聽不太到 200 Hz 以下，靠泛音也聽得出音高', '; phone speakers barely play below 200 Hz, but the overtones still carry the pitch') : '');
   }
 
   // ---------- 頻率比 r ----------
