@@ -36,6 +36,7 @@ const TYPES = {
   '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.glb': 'model/gltf-binary',
+  '.m4a': 'audio/mp4', '.wasm': 'application/wasm',
 };
 class ParameterError extends Error {}
 
@@ -51,14 +52,18 @@ function parseArgs(args) {
     const name = arg.slice(2);
     if (arg.startsWith('--') && valued.has(name)) {
       const value = args[i + 1];
-      if (!value || value.startsWith('--')) throw new Error(`${arg} 需要指定值`);
+      // --do、--wait、--text 的值是程式碼或選擇器，可以 -- 開頭（11/27 Antigravity 複查【中】3）
+      if (value === undefined || value === '' || (value.startsWith('--') && !['do', 'wait', 'text'].includes(name))) throw new Error(`${arg} 需要指定值`);
       opt[name] = value;
       i++;
     } else if (arg === '--full' || arg === '--keep-overlays') {
       opt[name] = true;
+    } else if (arg.startsWith('--sheet=')) {
+      opt.sheet = arg.slice(8) || 'sheet.png';
     } else if (arg === '--sheet') {
+      // 後面接的是 .png 或路徑才當檔名；「--sheet kepler」的 kepler 是實驗代號（複查【中】3）
       const next = args[i + 1];
-      opt.sheet = next && !next.startsWith('-') ? args[++i] : 'sheet.png';
+      opt.sheet = next && !next.startsWith('-') && (/\.png$/i.test(next) || /[\\/]/.test(next)) ? args[++i] : 'sheet.png';
     } else if (arg.startsWith('-') || modules !== undefined) {
       throw new Error(`不認得的參數 ${arg}`);
     } else {
@@ -153,6 +158,10 @@ async function capture(browser, origin, mock, opt, shot) {
     const page = await ctx.newPage();
     page.on('console', msg => { if (msg.type() === 'error') recordError(msg.text()); });
     page.on('pageerror', err => recordError(err.message));
+    // 本機資源 404 不可被「Failed to load resource」過濾吃掉，另外記（複查【中】1）
+    page.on('response', res => {
+      if (res.url().startsWith(origin) && res.status() >= 400 && errs.length < 5) errs.push('HTTP ' + res.status() + ' ' + res.url().slice(origin.length));
+    });
     const response = await page.goto(`${origin}/${slug}.html?${opt.query}`, { waitUntil: 'load', timeout: 30000 });
     if (!response?.ok()) throw new Error(`頁面載入失敗（HTTP ${response?.status() ?? '無回應'}）`);
     const selectors = { '--text': opt.text, '--scroll': ['top', 'canvas'].includes(opt.scroll) ? null : opt.scroll };
@@ -180,6 +189,8 @@ async function capture(browser, origin, mock, opt, shot) {
         throw new Error(`--do 執行失敗（${err.message.split('\n')[0]}）`);
       }
     }
+    const twoFrames = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    if (opt.do) await twoFrames(); // 畫布多半在下一幀才重畫（複查【中】2）
 
     if (opt.wait) {
       try {
@@ -205,7 +216,8 @@ async function capture(browser, origin, mock, opt, shot) {
       const deck = document.querySelector('.labdeck');
       const deckTop = deck?.getClientRects().length && getComputedStyle(deck).visibility !== 'hidden'
         ? deck.getBoundingClientRect().top : Infinity;
-      const valid = c => c.offsetParent && c.clientHeight > 60;
+      // position:fixed 的畫布 offsetParent 是 null，改看 getClientRects（複查【中】4）
+      const valid = c => c.getClientRects().length > 0 && getComputedStyle(c).visibility !== 'hidden' && c.clientHeight > 60;
       let canvas = [...document.querySelectorAll('.stage canvas')].find(valid);
       if (!canvas || canvas.getBoundingClientRect().top > deckTop) {
         canvas = [...document.querySelectorAll('canvas')]
@@ -220,6 +232,7 @@ async function capture(browser, origin, mock, opt, shot) {
       return Boolean(canvas);
     }, opt.scroll);
     if (!found) console.log(`⚠ 找不到捲動目標「${opt.scroll}」（${path.basename(file)}）`);
+    await twoFrames();
 
     const strings = opt.text ? await page.evaluate(selectors => {
       const elements = [...document.querySelectorAll(selectors)];
@@ -238,11 +251,11 @@ async function capture(browser, origin, mock, opt, shot) {
 }
 
 function makeSheet(file, shots) {
-  const helper = 'G:/Claude/tools/helper/shotsheet.py';
+  const helper = process.env.LAB_SHOTSHEET_SCRIPT || 'G:/Claude/tools/helper/shotsheet.py';
   const configured = process.env.LAB_SHOTSHEET_PYTHON;
   const candidates = configured ? [configured] : ['python', 'G:/個人核心知識庫/.venv/Scripts/python.exe'];
   const python = candidates.find(exe =>
-    spawnSync(exe, ['-I', '-c', 'import PIL'], { windowsHide: true, timeout: 10000 }).status === 0);
+    spawnSync(exe, ['-I', '-c', 'from PIL import Image; Image.Resampling.LANCZOS'], { windowsHide: true, timeout: 10000 }).status === 0);
   if (!python) throw new Error('找不到裝有 Pillow 的 Python，請用 LAB_SHOTSHEET_PYTHON 指定');
   const captions = shots.map(({ slug, viewport, theme }) =>
     `${slug} ${viewport.width}x${viewport.height} ${theme === 'dark' ? '深色' : '淺色'}`);
@@ -260,7 +273,7 @@ function planShots(opt) {
 }
 
 async function main() {
-  if (/^(?:-h|--help)$/.test(process.argv[2] ?? '')) {
+  if (process.argv.slice(2).some(a => a === '-h' || a === '--help')) { // 任何位置都認（複查【中】4）
     console.log(fs.readFileSync(__filename, 'utf8').split('/*')[1].split('*/')[0].trimEnd());
     return;
   }

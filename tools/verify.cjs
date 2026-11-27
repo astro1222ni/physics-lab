@@ -34,6 +34,10 @@ require('./browser.cjs').lowerPriority(); // 整支（含單元測試、任務�
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
+// --help 與打錯的旗標不可直接開跑全站總檢查（11/27 Antigravity 複查【中】2）
+if (args.includes('-h') || args.includes('--help')) { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]); process.exit(0); }
+{ const known = ['--quick', '--fresh', '--audit', '--accept', '--brief']; const bad = args.filter(a => a.startsWith('-') && !known.includes(a) && !a.startsWith('--accept='));
+  if (bad.length) { console.error('✗ 不認得的參數：' + bad.join(' ') + '（node tools/verify.cjs --help 看用法）'); process.exit(2); } }
 const QUICK = args.includes('--quick');
 const FRESH = args.includes('--fresh'); // 任務證明全部重算，不用快取
 const AUDIT = args.includes('--audit'); // 只跑靜態稽核與介面稽核（改介面時快速看提醒）
@@ -60,7 +64,9 @@ function run(label, cmd, cmdArgs) {
   const r = spawnSync(cmd, cmdArgs, { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20 });
   const ok = r.status === 0;
   report.steps[label] = { ok, sec: Math.round((Date.now() - t) / 1000) };
-  const detail = ok ? '' : ((r.stdout || '') + (r.stderr || '')).split('\n').filter(l => /✗|Error|錯|失敗|FAIL|assert/i.test(l)).slice(0, 30).join('\n');
+  const all = ((r.stdout || '') + (r.stderr || '')).trim();
+  let detail = ok ? '' : all.split('\n').filter(l => /✗|Error|錯|失敗|FAIL|assert/i.test(l)).slice(0, 30).join('\n');
+  if (!ok && !detail.trim()) detail = all.split('\n').slice(-10).join('\n'); // 濾完是空的就附最後 10 行，不可只說「沒有通過」（複查【中】4）
   if (!BRIEF) console.log((ok ? '✓ ' : '✗ ') + label + '（' + report.steps[label].sec + ' 秒）');
   if (!ok) { if (!BRIEF) console.log(detail); err(label, '沒有通過' + (BRIEF && detail.trim() ? '\n      ' + detail.trim().split('\n').join('\n      ') : '')); }
   return { ok, out: (r.stdout || '') + (r.stderr || '') };
@@ -72,8 +78,9 @@ if (!AUDIT) run('單元測試', process.execPath, [path.join(ROOT, 'tools/run-te
 // 2. 任務證明（每支都要結束碼 0）
 if (!AUDIT) {
   const dir = path.join(ROOT, 'tools/mission-proofs');
-  const slugOf = f => f.replace(/\.c?js$/, '').replace(/-\d+$/, '');
-  const files = fs.readdirSync(dir).filter(f => /\.c?js$/.test(f) && (!ACCEPT || only.includes(slugOf(f)))).sort();
+  // 站名本身可能以「-數字」結尾（exam-115）：先比完整檔名，再比去掉「-數字」的（複查【低】5）
+  const proofFor = f => { const b = f.replace(/\.c?js$/, ''); return only.includes(b) || only.includes(b.replace(/-\d+$/, '')); };
+  const files = fs.readdirSync(dir).filter(f => /\.c?js$/.test(f) && (!ACCEPT || proofFor(f))).sort();
   const bad = [];
   const t = Date.now();
   // 快取：證明腳本、它用到的 js 檔、該實驗的頁面程式都沒變，上次又通過，就不重算（省 CPU；--fresh 全部重算）
@@ -140,7 +147,10 @@ if (!AUDIT) {
     if (unstamped.length) warn('快取', p, '有 ' + unstamped.length + ' 個 CSS/JS 沒有版本號（python tools/stamp.py）');
     if (p !== 'index' && p !== 'leaderboard' && !/data-en-ready/.test(h)) warn('語言', p, '<body> 沒有 data-en-ready');
   }
-  for (const f of fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js') && f !== 'hans-map.js')) {
+  // 驗收只看這幾站頁面實際載入的 js（別站的檔有問題不該卡住這站；複查【中】1）
+  const accJs = ACCEPT ? new Set(only.flatMap(p => exists(p + '.html') ? [...read(p + '.html').matchAll(/src="js\/([\w.-]+\.js)(?:\?[^"]*)?"/g)].map(m => m[1]) : [])) : null;
+  const jsList = ACCEPT ? [...accJs].filter(f => exists('js/' + f)) : fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js'));
+  for (const f of jsList.filter(f => f !== 'hans-map.js')) {
     const src = read('js/' + f).replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
     if (SUPS.test(src)) err('字元', 'js/' + f + ' 有上標／下標數字字元（畫布要自己畫小字上標）');
   }
@@ -249,7 +259,7 @@ if (ACCEPT) {
 } else if (QUICK) finish();
 else {
   // 4. 介面稽核（Playwright，390 px 淺色繁體）：觸控目標、文字對比、說明文字、頁面重量
-  const { launch } = require('G:/physics-lab/tools/browser.cjs');
+  const { launch } = require('./browser.cjs');
   const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
     '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
   let bytes = 0;

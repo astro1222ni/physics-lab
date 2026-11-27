@@ -22,7 +22,9 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const sh = (cmd, args, o = {}) => { const r = spawnSync(cmd, args, Object.assign({ encoding: 'utf8', windowsHide: true, maxBuffer: 64 << 20 }, o)); return { ok: r.status === 0, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() }; };
+const sh = (cmd, args, o = {}) => { const r = spawnSync(cmd, args, Object.assign({ encoding: 'utf8', windowsHide: true, maxBuffer: 64 << 20 }, o)); return { ok: r.status === 0, out: (r.stdout || '').trim(), raw: r.stdout || '', err: (r.stderr || '').trim() }; };
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const validName = n => !!n && /^[\w.-]+$/.test(n) && !/^\.+$/.test(n);   // 擋 ..、/、\（11/27 Antigravity 複查【中】5）
 const here = path.resolve(__dirname, '..');
 const common = sh('git', ['rev-parse', '--git-common-dir'], { cwd: here });
 if (!common.ok) { console.error('✗ 不在 git 倉庫裡'); process.exit(2); }
@@ -53,14 +55,19 @@ function procsOf(dir) {
   if (!ps.ok) return null;
   let list = []; try { list = JSON.parse(ps.out); } catch (e) { return null; }
   if (!Array.isArray(list)) list = [list];
+  // 路徑後面要接分隔符、空白、引號或結尾：procs phy 不可抓到 phy-2 的程式（11/27 Antigravity 複查【高】1，否則 --kill 會誤殺隔壁工作樹）
   const a = norm(dir), b = a.replace(/\//g, '\\');
-  return list.filter(p => p.CommandLine && p.ProcessId !== process.pid && (p.CommandLine.toLowerCase().includes(a) || p.CommandLine.toLowerCase().includes(b)))
+  const re = new RegExp('(?:' + esc(a) + '|' + esc(b) + ')(?=$|[\\s"\'\\\\/])', 'i');
+  return list.filter(p => p.CommandLine && p.ProcessId !== process.pid && re.test(p.CommandLine))
     .filter(p => !/wt\.cjs/.test(p.CommandLine));
 }
 const showProcs = l => l.forEach(p => say('    PID ' + p.ProcessId + ' ' + p.Name + '：' + p.CommandLine.replace(/\s+/g, ' ').slice(0, 160)));
 
+if (cmd === '-h' || cmd === '--help' || !cmd) { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]); process.exit(0); }
+if (['new', 'done', 'procs'].includes(cmd) && name && !validName(name)) die('名稱只能用英數、- _ .（不可含 .. 或斜線）：' + name, 2);
+
 if (cmd === 'new') {
-  if (!name || !/^[\w.-]+$/.test(name)) die('用法：node tools/wt.cjs new <名稱>（英數、- _ .）', 2);
+  if (!name || !validName(name)) die('用法：node tools/wt.cjs new <名稱>（英數、- _ .）', 2);
   const dir = path.join(WT, name);
   if (fs.existsSync(dir)) die('已經有 ' + dir, 2);
   if (git(['rev-parse', '--verify', '--quiet', 'refs/heads/' + name]).ok) die('已經有分支 ' + name + '（換個名稱，或先 done 收掉舊的）', 2);
@@ -104,12 +111,13 @@ if (cmd === 'done') {
   const dir = path.join(WT, name);
   if (!w) die('找不到工作樹 ' + dir + '（node tools/wt.cjs list 看有哪些）', 2);
   if (norm(w.worktree) === norm(MAIN)) die('不可以收主工作區', 2);
-  if (norm(process.cwd()).startsWith(norm(dir))) die('目前所在資料夾就在這個工作樹裡，先 cd 出去再收', 2);
+  const cwdN = norm(process.cwd()), dirN = norm(dir);
+  if (cwdN === dirN || cwdN.startsWith(dirN + '/')) die('目前所在資料夾就在這個工作樹裡，先 cd 出去再收', 2);
   const br = w.branch ? String(w.branch).replace('refs/heads/', '') : null;
   let blocked = false;
   // ① 殘留行程
   const ps = procsOf(dir);
-  if (ps === null) { say('⚠ 讀不到行程清單，略過殘留行程檢查'); }
+  if (ps === null) { say('✗ 讀不到行程清單（PowerShell 失敗或逾時），保險起見不收'); if (!DRY) blocked = true; }   // fail-closed（複查【中】6）
   else if (ps.length) {
     if (flags.has('--kill') && !DRY) {
       for (const p of ps) sh('taskkill', ['/PID', String(p.ProcessId), '/T', '/F']);
@@ -118,7 +126,7 @@ if (cmd === 'done') {
     } else { say((DRY ? '會收' : '✗ 還有') + '殘留行程 ' + ps.length + ' 個' + (DRY ? '' : '（加 --kill 收掉）') + '：'); showProcs(ps); if (!DRY) blocked = true; }
   }
   // ② 沒 commit 的改動、沒加進 git 的檔
-  const st = git(['status', '--porcelain'], dir).out.split('\n').filter(Boolean).filter(l => !/ node_modules\/?$/.test(l));
+  const st = git(['status', '--porcelain'], dir).raw.split(/\r?\n/).filter(Boolean).filter(l => !/ node_modules\/?$/.test(l));
   if (st.length) { say('✗ 有沒 commit 的改動或新檔（先 commit、搬走或刪掉，這支不會硬刪）：'); st.slice(0, 20).forEach(l => say('    ' + l)); if (st.length > 20) say('    …共 ' + st.length + ' 個'); blocked = true; }
   // ②½ 改名探測：有程式以這個資料夾為工作目錄、或開著裡面的檔（命令列裡看不到路徑的那種），Windows 不准改名，就停下（11/27 實測：否則 git 只刪一半）
   if (!blocked && !DRY) {
@@ -143,17 +151,27 @@ if (cmd === 'done') {
   // 分支
   let brMsg = br ? '分支 ' + br + ' 保留' : '原本是 detached，沒有分支';
   if (br) {
-    const ahead = git(['cherry', 'origin/main', br]).out.split('\n').filter(l => l.startsWith('+')).length;
+    // 先 fetch，cherry 失敗就當作「不確定」：保留分支（11/27 Antigravity 複查【高】3：origin/main 缺失時曾把未併的分支 -D 強刪）
+    const fetched = git(['fetch', '-q', 'origin']).ok;
+    const ch = git(['cherry', 'origin/main', br]);
+    const ahead = ch.ok ? ch.out.split('\n').filter(l => l.startsWith('+')).length : null;
     if (flags.has('--delete-branch')) {
-      if (ahead) brMsg = '分支 ' + br + ' 還有 ' + ahead + ' 個 commit 不在 origin/main，不刪';
+      if (!fetched || ahead === null) brMsg = '分支 ' + br + ' 保留：' + (!fetched ? 'git fetch 失敗' : 'git cherry 失敗（' + (ch.err || '找不到 origin/main') + '）') + '，無法確認內容都已進 main';
+      else if (ahead) brMsg = '分支 ' + br + ' 還有 ' + ahead + ' 個 commit 不在 origin/main，不刪';
       else if (DRY) brMsg = '會刪分支 ' + br;
       else brMsg = git(['branch', '-D', br]).ok ? '分支 ' + br + ' 已刪（內容都在 origin/main）' : '分支 ' + br + ' 刪不掉';
-    } else if (ahead) brMsg += '（還有 ' + ahead + ' 個 commit 不在 origin/main）';
+    } else if (ahead === null) brMsg += '（無法確認是否都已進 main）';
+    else if (ahead) brMsg +='（還有 ' + ahead + ' 個 commit 不在 origin/main）';
   }
   // F 槽暫存
   let tmpMsg = '';
   if (flags.has('--clean-tmp') && fs.existsSync(TMP)) {
-    const hits = fs.readdirSync(TMP).filter(d => d.startsWith(name) && d !== 'ClaudeBackup');
+    // 只認「<名稱>」本身或「<名稱>_…」「<名稱>-…」；若剛好是另一個現存工作樹的名稱開頭（收 phy 時遇到 phy-2_…）就跳過（11/27 Antigravity 複查【高】2）
+    const others = worktrees().map(x => path.basename(x.worktree)).filter(o => o.toLowerCase() !== name.toLowerCase() && o.toLowerCase().startsWith(name.toLowerCase()));
+    const mine = d => { const l = d.toLowerCase(), n = name.toLowerCase(); return l === n || l.startsWith(n + '_') || l.startsWith(n + '-'); };
+    const theirs = d => others.some(o => { const l = d.toLowerCase(), n = o.toLowerCase(); return l === n || l.startsWith(n + '_') || l.startsWith(n + '-'); });
+    const hits = name.length < 3 ? [] : fs.readdirSync(TMP).filter(d => mine(d) && !theirs(d) && d !== 'ClaudeBackup');
+    if (name.length < 3) say('⚠ 名稱太短（少於 3 個字），不自動清 F 槽暫存');
     for (const d of hits) { if (DRY) say('會刪 ' + TMP + '/' + d); else fs.rmSync(path.join(TMP, d), { recursive: true, force: true }); }
     tmpMsg = hits.length ? '；F 槽暫存刪了 ' + hits.join('、') : '；F 槽沒有同名暫存';
   }
@@ -161,5 +179,5 @@ if (cmd === 'done') {
   process.exit(0);
 }
 
-console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]);
-process.exit(cmd ? 2 : 0);
+console.error('✗ 不認得的指令：' + cmd + '（node tools/wt.cjs --help 看用法）');
+process.exit(2);

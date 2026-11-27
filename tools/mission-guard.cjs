@@ -28,26 +28,28 @@ let base = null, list = false;
 const only = [];
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
-  if (a === '--base') base = argv[++i];
-  else if (a.startsWith('--base=')) base = a.slice(7);
+  if (a === '--base' || a.startsWith('--base=')) {
+    base = a === '--base' ? argv[++i] : a.slice(7);
+    if (!base || base.startsWith('--')) { console.error('✗ --base 後面要接 commit 或分支名'); process.exit(2); }   // 漏值不可靜默退回預設（11/27 Antigravity 複查【中】1）
+  }
   else if (a === '--list') list = true;
   else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]); process.exit(0); }
-  else if (a.startsWith('--')) { console.error('不認得的參數：' + a); process.exit(2); }
+  else if (a.startsWith('--')) { console.error('✗ 不認得的參數：' + a); process.exit(2); }
   else only.push(...a.split(',').map(s => s.trim().replace(/\.(html|js)$/, '')).filter(Boolean));
 }
-const git = (...a) => { const r = spawnSync('git', a, { cwd: ROOT, encoding: 'utf8', windowsHide: true, maxBuffer: 64 << 20 }); return { ok: r.status === 0, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() }; };
+const git = (...a) => { const r = spawnSync('git', ['-c', 'core.quotepath=false'].concat(a), { cwd: ROOT, encoding: 'utf8', windowsHide: true, maxBuffer: 64 << 20 }); return { ok: r.status === 0, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() }; };
 if (!base) {
   const mb = git('merge-base', 'HEAD', 'origin/main');
-  if (!mb.ok) { console.error('找不到 HEAD 與 origin/main 的分叉點（先 git fetch，或用 --base 指定）：' + mb.err); process.exit(2); }
+  if (!mb.ok) { console.error('✗ 找不到 HEAD 與 origin/main 的分叉點（先 git fetch，或用 --base 指定）：' + mb.err); process.exit(2); }
   base = mb.out;
-} else if (!git('rev-parse', '--verify', base + '^{commit}').ok) { console.error('找不到基準：' + base); process.exit(2); }
+} else if (!git('rev-parse', '--verify', base + '^{commit}').ok) { console.error('✗ 找不到基準：' + base); process.exit(2); }
 
 // 要比的任務檔：基準到現在（含工作區）改過的，加上還沒加進 git 的新檔
 let files;
 if (only.length) {
   files = only.map(s => 'js/missions/' + s + '.js');
   const miss = only.filter(s => !fs.existsSync(path.join(ROOT, 'js/missions', s + '.js')) && !git('cat-file', '-e', base + ':js/missions/' + s + '.js').ok);
-  if (miss.length) { console.error('找不到任務檔：' + miss.join('、')); process.exit(2); }
+  if (miss.length) { console.error('✗ 找不到任務檔：' + miss.join('、')); process.exit(2); }
 } else {
   const d = git('diff', '--name-only', base, '--', 'js/missions/');
   const u = git('ls-files', '--others', '--exclude-standard', '--', 'js/missions/');
@@ -63,6 +65,7 @@ function load(src, name) {
   vm.runInContext(src, vm.createContext(sb), { filename: name, timeout: 3000 });
   const out = [];
   for (const r of reg) for (const m of r.list || []) out.push(m);
+  out.ids = reg.map(r => r.id);
   return out;
 }
 const txt = v => (v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
@@ -79,6 +82,8 @@ for (const f of files) {
   if (now == null) { if (A.length) bad.push(slug + '：整個任務檔被刪掉了（基準有 ' + A.length + ' 題）'); continue; }
   try { B = load(now, f); } catch (e) { console.error('✗ ' + f + ' 讀不進來：' + e.message.split('\n')[0]); broken++; continue; }
   nOld += A.length; nNew += B.length;
+  // register 的第一個參數要等於檔名代號：複製任務檔忘了改，任務會掛到別的實驗（11/27 複查【中】3）
+  for (const id of B.ids || []) if (id !== slug && !String(id).startsWith(slug + '-') && !(A.ids || []).includes(id)) bad.push(slug + '：LabMission.register 的實驗代號是「' + id + '」，和檔名不符');
   const seen = new Set();
   for (const m of B) { if (seen.has(m.id)) bad.push(slug + '：代號 ' + m.id + ' 重複'); seen.add(m.id); }
   const byId = new Map(B.map(m => [m.id, m]));
@@ -100,6 +105,7 @@ for (const f of files) {
   for (const b of B) {
     if (oldIds.has(b.id)) continue;
     nAdd++;
+    if (!Number.isInteger(b.level) || b.level < 1 || b.level > 10) bad.push(slug + '：新任務 ' + b.id + ' 的等級 ' + JSON.stringify(b.level) + ' 不是 1–10 的整數');
     if (!String(b.id).startsWith(slug + '-')) bad.push(slug + '：新任務代號 ' + b.id + ' 沒有以「' + slug + '-」開頭');
     notes.push(slug + '：新增 ' + b.id + '（' + b.level + ' 級' + (b.hidden ? '，隱藏' : '') + (b.study ? '，自學' : '') + '）');
   }
