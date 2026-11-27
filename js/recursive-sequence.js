@@ -234,9 +234,11 @@
       const px = X(o.x), pyy = Y(o.x);
       c.lineWidth = 2.2; c.strokeStyle = C['rs-fix'];
       c.beginPath(); c.arc(px, pyy, 7, 0, Math.PI * 2);
+      // 實心＝吸住；空心＝推開；虛線圈＝斜率剛好 ±1，斜率判準無法判定
       if (o.stable) { c.fillStyle = alpha(C['rs-fix'], 0.85); c.fill(); }
       else { c.fillStyle = C['canvas-bg']; c.fill(); }
-      c.stroke();
+      if (!o.stable && neutral(o.slope)) c.setLineDash([3, 3]);
+      c.stroke(); c.setLineDash([]);
     });
     // 每一項在鏡子上的點
     for (let k = 1; k < cnt; k++) {
