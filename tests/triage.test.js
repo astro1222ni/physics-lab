@@ -32,8 +32,8 @@ test('parseArgs：驗證合法與非法旗標、保留 --context 0', () => {
   assert.ok(T.parseArgs(['report.md', '--by']).error);
 });
 
-test('extractFileRefs：同時支援 POSIX / 與 Windows \\ 分隔符', () => {
-  const refs = T.extractFileRefs('js\\sample.js:2 與 js/missions/foo.js:10-20');
+test('extractFileRefs：支援 POSIX /、Windows \\ 與行號，並忽略程式片段反引號中的檔名字串', () => {
+  const refs = T.extractFileRefs('js\\sample.js:2 與 `js/missions/foo.js:10-20` 及 `const SOURCE = "vendor.js"` 與 `load("other.js")`');
   assert.strictEqual(refs.length, 2);
   assert.deepStrictEqual(refs[0], { file: 'js/sample.js', line: 2, endLine: null });
   assert.deepStrictEqual(refs[1], { file: 'js/missions/foo.js', line: 10, endLine: 20 });
@@ -49,7 +49,7 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
       [
         'const prefix = 0;',
         'const generic = oldPrefix + 1;',
-        'function helper() {}',
+        'function helper() { load("vendor.js"); }',
         'const crossing =',
         '  prefix + 42;',
         'const tail = 99;',
@@ -60,6 +60,7 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
       'utf8'
     );
     fs.writeFileSync(path.join(jsDir, 'locked.js'), 'const lockedFlag = oldPrefix + 2;\n', 'utf8');
+    fs.writeFileSync(path.join(tmp, 'vendor.js'), 'const SOURCE = "vendor.js";\n', 'utf8');
 
     // 1. Windows 反斜線路徑 js\sample.js:2 應正常讀取並判「仍存在」
     const itemWin = T.parseReportLine(
@@ -152,6 +153,31 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
     assert.deepStrictEqual(batch[1].missingFiles, ['js/locked.js']);
     assert.strictEqual(batch[1].readErrors.length, 1);
     assert.strictEqual(batch[1].readErrors[0].code, 'EBUSY');
+
+    // 7b. 正向反例：片段 `const SOURCE = "vendor.js"` 不可讓存在的 vendor.js 頂替缺檔的 js/missing.js
+    const itemPathLiteralPos = T.parseReportLine(
+      '- **#9** 【中】sample｜5｜字串常值不當來源｜`js/missing.js:7` `const SOURCE = "vendor.js"`｜建議｜高',
+      'r.md', 9, 9
+    );
+    assert.deepStrictEqual(itemPathLiteralPos.locRefs, [{ file: 'js/missing.js', line: 7, endLine: null }]);
+    const resPathLiteralPos = T.probeItem(itemPathLiteralPos, tmp, 0);
+    assert.strictEqual(resPathLiteralPos.status, T.STATUS.UNREADABLE);
+    assert.strictEqual(resPathLiteralPos.matchedFile, 'js/missing.js');
+    assert.strictEqual(resPathLiteralPos.matchedLine, 7);
+    assert.deepStrictEqual(resPathLiteralPos.missingFiles, ['js/missing.js']);
+
+    // 7c. 反向反例：位置欄只有片段 `load("vendor.js")`，描述欄有 js/sample.js:3，應以描述欄檔案為主要來源並判「仍存在」
+    const itemPathLiteralRev = T.parseReportLine(
+      '- **#10** 【中】sample｜5｜在 js/sample.js:3 呼叫載入｜`load("vendor.js")`｜建議｜高',
+      'r.md', 10, 10
+    );
+    assert.deepStrictEqual(itemPathLiteralRev.locRefs, []);
+    assert.deepStrictEqual(itemPathLiteralRev.descRefs, [{ file: 'js/sample.js', line: 3, endLine: null }]);
+    const resPathLiteralRev = T.probeItem(itemPathLiteralRev, tmp, 0);
+    assert.strictEqual(resPathLiteralRev.status, T.STATUS.PRESENT);
+    assert.strictEqual(resPathLiteralRev.matchedFile, 'js/sample.js');
+    assert.strictEqual(resPathLiteralRev.matchedLine, 3);
+    assert.strictEqual(resPathLiteralRev.contextBlock.length, 1);
 
     // 8. CLI 實測：--by typo 回結束碼 2；--json --context 0 回 0 且只帶 1 行上下文
     const mdFile = path.join(tmp, 'report.md');

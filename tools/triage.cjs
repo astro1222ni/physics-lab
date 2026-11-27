@@ -183,24 +183,58 @@ function normalizeRelPath(p) {
   return String(p || '').replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-/** 萃取檔案與行號參照，同時支援 POSIX `/` 與 Windows `\` 分隔符。 */
-function extractFileRefs(text) {
-  const refs = [];
-  const re = /([A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
-  let m;
-  const raw = String(text || '');
-  while ((m = re.exec(raw)) !== null) {
-    refs.push({
-      file: normalizeRelPath(m[1]),
-      line: m[2] ? parseInt(m[2], 10) : null,
-      endLine: m[3] ? parseInt(m[3], 10) : null
-    });
-  }
-  return refs;
-}
-
 function isPureFileRef(s) {
   return /^[A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css)(?::\d+(?:[–-]\d+)?)?$/.test(s);
+}
+
+function isFileRefList(s) {
+  const tokens = String(s || '').trim().split(/[\s,，、;；]+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every(isPureFileRef);
+}
+
+/**
+ * 從單一欄位萃取獨立的檔案與行號參照（同時支援 POSIX `/` 與 Windows `\` 分隔符）：
+ * - 反引號區塊若為純檔案定位（單一或清單）則解析；若為程式碼片段（如 `const SOURCE = "vendor.js"` 或 `load("vendor.js")`）則整段忽略，避免把片段中的檔名字串誤當來源檔。
+ * - 反引號外的裸文先剔除 URL 與單／雙引號字串常值，再解析獨立檔案定位。
+ */
+function extractFileRefs(text) {
+  const refs = [];
+  const raw = String(text || '');
+  const refRe = /([A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
+
+  const pushMatches = chunk => {
+    refRe.lastIndex = 0;
+    let m;
+    while ((m = refRe.exec(chunk)) !== null) {
+      refs.push({
+        file: normalizeRelPath(m[1]),
+        line: m[2] ? parseInt(m[2], 10) : null,
+        endLine: m[3] ? parseInt(m[3], 10) : null
+      });
+    }
+  };
+
+  const scanPlain = chunk => {
+    const cleaned = chunk
+      .replace(/https?:\/\/\S+/gi, ' ')
+      .replace(/"[^"\r\n]*"/g, ' ')
+      .replace(/'[^'\r\n]*'/g, ' ');
+    pushMatches(cleaned);
+  };
+
+  const btRe = /`([^`]+)`/g;
+  let last = 0;
+  let bm;
+  while ((bm = btRe.exec(raw)) !== null) {
+    if (bm.index > last) scanPlain(raw.slice(last, bm.index));
+    const inner = bm[1].trim();
+    if (isFileRefList(inner)) {
+      pushMatches(inner);
+    }
+    last = bm.index + bm[0].length;
+  }
+  if (last < raw.length) scanPlain(raw.slice(last));
+  return refs;
 }
 
 function extractBacktickSnippets(text) {
@@ -211,7 +245,7 @@ function extractBacktickSnippets(text) {
   const raw = String(text || '');
   while ((m = re.exec(raw)) !== null) {
     const s = m[1].trim();
-    if (s.length >= 3 && !isPureFileRef(s) && !seen.has(s)) {
+    if (s.length >= 3 && !isFileRefList(s) && !seen.has(s)) {
       seen.add(s);
       out.push(s);
     }
