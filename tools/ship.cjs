@@ -16,7 +16,7 @@
  *        node tools/ship.cjs --handoff G:/physics-lab-wt/交件/化學-xxx.md -m "一句話說明"
  *
  * 選項：
- *   --retries N     push 被拒（別人先推）時重來幾次，預設 3
+ *   --retries N     push 被拒（別人先推）或連線暫時失敗時重來幾次，預設 5（11/27 同時有 4 件在推，3 次曾用完）
  *   --no-test       不跑 npm test（只在純文字、純設定時用；預設一定跑）
  *   --no-stamp      不蓋版本號
  *   --no-verify     推完不去正式站比對
@@ -43,7 +43,7 @@ const GIT_ENV = Object.assign({}, process.env, { GIT_TERMINAL_PROMPT: '0', GCM_I
 
 // ── 參數 ──
 const argv = process.argv.slice(2);
-const opt = { retries: 3, timeout: 480 };
+const opt = { retries: 5, timeout: 480 };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   const val = () => { if (i + 1 >= argv.length) die('參數 ' + a + ' 後面要接值', 2); return argv[++i]; };
@@ -204,7 +204,7 @@ async function verifySite(changed, deleted, rev) {
   const pick = changed.filter(f => /\.(html|js|css|json)$/.test(f) && !f.startsWith('tests/') && !f.startsWith('tools/') && !f.startsWith('.'))
     .sort((a, b) => (b.endsWith('.html') - a.endsWith('.html'))).slice(0, 8);
   const gone = deleted.filter(f => !f.startsWith('tests/') && !f.startsWith('tools/')).slice(0, 3);
-  if (!pick.length && !gone.length) { console.log('  沒有網頁檔，略過正式站比對'); return true; }
+  if (!pick.length && !gone.length) { console.log('  沒有網頁檔，不需要比對正式站'); return 'skip'; }
   const want = {}; for (const f of pick) want[f] = lf(execFileSync('git', ['show', rev + ':' + f], { cwd, maxBuffer: 64 << 20 }));
   const t0 = Date.now(); let left = pick.slice(), leftGone = gone.slice(), round = 0;
   while (Date.now() - t0 < opt.timeout * 1000) {
@@ -347,12 +347,12 @@ function stamp8() { const d = new Date(Date.now() + 8 * 3600e3).toISOString(); r
     const r = git([...PUSH_FLAGS, 'push', '-q', 'origin', 'HEAD:main'], { allowFail: true, full: true });
     if (r.status === 0) { console.log(ahead); break; }
     const err = (r.stderr || '') + (r.stdout || '');
-    if (/rejected|non-fast-forward|fetch first/i.test(err) && attempt < opt.retries) { attempt++; console.log('  別人先推了一版，重新接上再推'); continue; }
+    if ((/rejected|non-fast-forward|fetch first|timed out|Could not resolve|unable to access/i.test(err) || !err.trim()) && attempt < opt.retries) { attempt++; console.log('  別人先推了一版，重新接上再推'); continue; }
     die('push 失敗：\n' + err.trim().split('\n').slice(-8).join('\n') + (/rejected/.test(err) ? '\n（已重試 ' + attempt + ' 次；可加 --retries）' : ''));
   }
   const head = git(['rev-parse', '--short', 'HEAD']);
   let ok = true;
   if (!opt.noVerify) { step('正式站比對'); ok = await verifySite(diff.changed, diff.deleted); }
-  console.log((ok ? '✓' : '△') + ' 已推上 main：' + head + (opt.from ? '（來源 ' + opt.from + '）' : '') + (pages.length ? '，蓋版本號 ' + pages.length + ' 頁' : '') + (ok ? '，正式站已是新版' : '，但正式站比對逾時，請自己再看'));
+  console.log((ok ? '✓' : '△') + ' 已推上 main：' + head + (opt.from ? '（來源 ' + opt.from + '）' : '') + (pages.length ? '，蓋版本號 ' + pages.length + ' 頁' : '') + (ok === 'skip' ? '（只改了工具或測試，正式站不用比對）' : ok ? '，正式站已是新版' : '，但正式站比對逾時，請自己再看'));
   process.exitCode = ok ? 0 : 1;
 })().catch(e => die(e && e.stack || String(e)));
