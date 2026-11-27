@@ -210,13 +210,13 @@
         </section>
         <section class="card" data-deck="注射胰島素|Insulin injections" data-deck-order="3" data-section="lab1">
           <h2 data-en="Insulin injections">注射胰島素</h2>
-          <div class="slider"><label for="basal" data-en="Basal (uniform continuous input), units per day">基礎胰島素（全天均勻輸入）：每日單位數</label><output id="basalo"></output>
+          <div class="slider"><label for="basal" data-en="Basal insulin (units/day)">基礎胰島素（單位／日）</label><output id="basalo"></output>
             <input id="basal" type="range" min="0" max="40" step="0.5" value="0" data-decimals="1"></div>
-          <div class="slider"><label for="ratio" data-en="Rapid-acting at each meal: units per 10 g of carbohydrate">速效（每餐）：每 10 g 醣打幾單位</label><output id="ratioo"></output>
+          <div class="slider"><label for="ratio" data-en="Rapid-acting (U/10 g carbs)">速效（單位／10 g 醣）</label><output id="ratioo"></output>
             <input id="ratio" type="range" min="0" max="3" step="0.05" value="0" data-decimals="2"></div>
-          <div class="slider"><label for="lead" data-en="Inject minutes before eating">飯前注射時間（分）</label><output id="leado"></output>
+          <div class="slider"><label for="lead" data-en="Lead time (min)">飯前注射（分）</label><output id="leado"></output>
             <input id="lead" type="range" min="-30" max="60" step="5" value="0" data-decimals="0"></div>
-          <p class="hint" data-en="A negative time means injection after eating.">負值代表飯後注射。</p>
+          <p class="hint" data-en="Basal insulin is a steady input all day. Rapid-acting insulin is injected at each meal, dosed by that meal’s carbohydrate (units per 10 g). Lead time = minutes before eating; a negative time means injection after eating.">基礎胰島素是全天均勻輸入的量；速效胰島素每餐打，劑量照這一餐的醣量算（每 10 g 醣打幾單位）。飯前注射的分鐘數若是負值，代表飯後注射。</p>
         </section>
         <section class="card" data-deck="運動|Exercise" data-deck-order="4" data-section="lab1">
           <h2 data-en="Exercise">運動</h2>
@@ -224,8 +224,9 @@
             <input id="exT" type="range" min="0" max="23.5" step="0.5" value="17" data-decimals="1"></div>
           <div class="slider"><label for="exD" data-en="Duration (min)">時間長（分鐘）</label><output id="exDo"></output>
             <input id="exD" type="range" min="0" max="120" step="5" value="0" data-decimals="0"></div>
-          <div class="slider"><label for="exE" data-en="Intensity (0.3 walk · 0.6 jog · 0.9 match)">強度（0.3 散步・0.6 慢跑・0.9 球賽）</label><output id="exEo"></output>
+          <div class="slider"><label for="exE" data-en="Intensity">強度</label><output id="exEo"></output>
             <input id="exE" type="range" min="0" max="1" step="0.05" value="0.6" data-decimals="2"></div>
+          <p class="hint" data-en="Intensity: 0.3 walking · 0.6 jogging · 0.9 a match.">強度：0.3 散步・0.6 慢跑・0.9 球賽。</p>
         </section>
         <section class="card">
           <h2 data-en="Readings">讀數</h2>

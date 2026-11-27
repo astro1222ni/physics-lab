@@ -145,7 +145,7 @@
       <p data-en="Sunlight falls on a meadow; the grass stores about one percent of it, the grasshoppers get a slice of the grass, the frogs a slice of the grasshoppers… and at every step most of the energy leaves as heat. Follow the energy through a food chain, step by step: how much is eaten, how much is digested, how much becomes new body, and how much is breathed away. Build the energy pyramid — which can never stand on its head — and the pyramids of biomass and of numbers, which sometimes do. Then add a persistent poison like DDT and watch it do the opposite of energy: grow more concentrated at every step up.">陽光灑在草原上，草只存下其中大約百分之一；蚱蜢吃掉一部分草，青蛙吃掉一部分蚱蜢……每往上一步，大部分的能量都變成熱散掉了。本頁讓你一步一步追蹤能量在食物鏈中的去向：被吃掉多少、消化吸收多少、長成新的身體多少、呼吸用掉多少。再畫出能量金字塔——它永遠不會倒過來——以及生物量與個體數金字塔，它們有時候卻是倒立的。最後加入像 DDT 這種難分解的毒物，看它和能量相反：每往上一步就更濃一些。</p>
     </header>
 
-    <p class="try-hint" data-en="Try it: change “Trophic levels” from 4 to 5, then pick the level 2 grasshoppers and drag “Eaten” to see how the whole chain above them changes.">試試看：把「營養階層數」從 4 改成 5，再選第 2 階的蚱蜢、拖動「被吃掉的比例」，看上面整條食物鏈怎麼跟著改變。</p>
+    <p class="try-hint" data-en="Try it: change “Trophic levels” from 4 to 5, then pick the level 2 grasshoppers and drag “Consumption efficiency CE” to see how the whole chain above them changes.">試試看：把「營養階層數」從 4 改成 5，再選第 2 階的蚱蜢、拖動「消費效率 CE」，看上面整條食物鏈怎麼跟著改變。</p>
 
     <div class="lab ef" id="lab1">
       <div class="stage">
@@ -201,24 +201,24 @@
         </section>
         <section class="card" data-deck="生產者|Producers" data-deck-order="2">
           <h2 data-en="Producers">生產者</h2>
-          <div class="slider"><label for="sun" data-en="Sunlight I (kJ/m² per year)">日照 I（kJ/m²・年）</label><output id="suno"></output>
+          <div class="slider"><label for="sun" data-en="Sunlight I (kJ/m²·yr)">日照 I（kJ/m²・年）</label><output id="suno"></output>
             <input id="sun" type="range" min="5" max="7" step="0.01" value="6.69897"></div>
-          <div class="slider"><label for="eps" data-en="Photosynthetic efficiency ε (GPP ÷ sunlight)">光合效率 ε（GPP ÷ 日照）</label><output id="epso"></output>
+          <div class="slider"><label for="eps" data-en="Efficiency ε (GPP ÷ light)">光合效率 ε（GPP ÷ 日照）</label><output id="epso"></output>
             <input id="eps" type="range" min="0.05" max="5" step="0.01" value="1" data-decimals="2"></div>
-          <div class="slider"><label for="rp" data-en="Used by the plants’ own respiration">植物自己呼吸用掉</label><output id="rpo"></output>
+          <div class="slider"><label for="rp" data-en="Plants’ own respiration">植物自己呼吸用掉</label><output id="rpo"></output>
             <input id="rp" type="range" min="10" max="90" step="1" value="50" data-decimals="1"></div>
         </section>
         <section class="card" data-deck="各營養階層|Each trophic level" data-deck-order="3">
           <h2 data-en="Each trophic level">各營養階層</h2>
           <div class="chips lv" role="group" aria-label="選擇營養階層" data-en-aria-label="Choose a trophic level" id="lvChips"></div>
           <div id="consumerSliders">
-            <div class="slider"><label for="ce" data-en="Eaten (consumption efficiency CE)">被吃掉的比例（消費效率 CE）</label><output id="ceo"></output>
+            <div class="slider"><label for="ce" data-en="Consumption efficiency CE">消費效率 CE</label><output id="ceo"></output>
               <input id="ce" type="range" min="1" max="100" step="1" value="20" data-decimals="1"></div>
-            <div class="slider"><label for="ae" data-en="Digested and absorbed (assimilation efficiency AE)">消化吸收的比例（同化效率 AE）</label><output id="aeo"></output>
+            <div class="slider"><label for="ae" data-en="Assimilation efficiency AE">同化效率 AE</label><output id="aeo"></output>
               <input id="ae" type="range" min="5" max="95" step="1" value="40" data-decimals="1"></div>
-            <div class="slider"><label for="pe" data-en="Turned into new body (production efficiency PE)">長成新身體的比例（生產效率 PE）</label><output id="peo"></output>
+            <div class="slider"><label for="pe" data-en="Production efficiency PE">生產效率 PE</label><output id="peo"></output>
               <input id="pe" type="range" min="1" max="80" step="1" value="40" data-decimals="1"></div>
-            <p class="hint" id="ceHint" data-en-html="“Eaten” is the share of the level below’s <b>net production</b>. Warm-blooded birds and mammals burn most of what they absorb to keep warm: their PE is only 1–3%; cold-blooded animals 10–40%.">「被吃掉」是下一階<b>淨生產量</b>中被這一階吃掉的比例。溫血的鳥和哺乳類把大部分吸收的能量拿去維持體溫，生產效率只有 1–3%；冷血動物約 10–40%。</p>
+            <p class="hint" id="ceHint" data-en-html="CE: the share of the level below’s <b>net production</b> that this level eats. AE: the share of what it eats that is digested and absorbed. PE: the share of what it absorbs that turns into new body. Warm-blooded birds and mammals burn most of what they absorb to keep warm: their PE is only 1–3%; cold-blooded animals 10–40%.">CE（消費效率）：下一階<b>淨生產量</b>中被這一階吃掉的比例。AE（同化效率）：吃下去的被消化吸收的比例。PE（生產效率）：吸收的能量長成新身體的比例。溫血的鳥和哺乳類把大部分吸收的能量拿去維持體溫，生產效率只有 1–3%；冷血動物約 10–40%。</p>
           </div>
         </section>
         <section class="card" data-deck="生物量與個體數|Biomass and numbers" data-deck-order="4">
@@ -226,7 +226,7 @@
           <div class="chips lv" role="group" aria-label="選擇營養階層" data-en-aria-label="Choose a trophic level" id="biomassLvChips"></div>
           <div class="slider"><label for="pb" data-en="Turnover P/B (per year)">周轉率 P/B（每年）</label><output id="pbo"></output>
             <input id="pb" type="range" min="-2" max="3" step="0.01" value="0.39794"></div>
-          <div class="slider"><label for="ms" data-en="Mass of one individual (mg)">一個個體的質量（mg）</label><output id="mso"></output>
+          <div class="slider"><label for="ms" data-en="Mass per individual (mg)">一個個體的質量（mg）</label><output id="mso"></output>
             <input id="ms" type="range" min="-6" max="9" step="0.01" value="3"></div>
           <p class="hint" data-en="Turnover = how many times over a level replaces its standing biomass in a year. Algae: hundreds; trees: about 0.1.">周轉率 = 一年長出的量是現存量的幾倍。藻類可達數百，樹木約 0.1。</p>
           <details><summary data-en="Compare two diets at the top level">比較頂階兩群的食性</summary>
@@ -238,19 +238,19 @@
         </section>
         <section class="card" data-deck="分解者|Decomposers" data-deck-order="5">
           <h2 data-en="Decomposers">分解者</h2>
-          <div class="slider"><label for="dec" data-en="Share of detritus respired by decomposers">碎屑被分解者呼吸掉的比例</label><output id="deco"></output>
+          <div class="slider"><label for="dec" data-en="Respired by decomposers">碎屑被分解者呼吸掉的比例</label><output id="deco"></output>
             <input id="dec" type="range" min="10" max="100" step="1" value="95" data-decimals="1"></div>
-          <p class="hint" data-en="The rest builds up as soil organic matter or peat.">其餘的累積成土壤有機質或泥炭。</p>
+          <p class="hint" data-en="The share of detritus respired by decomposers. The rest builds up as soil organic matter or peat.">碎屑被分解者呼吸掉的比例；其餘的累積成土壤有機質或泥炭。</p>
         </section>
         <section class="card" data-deck="難分解的污染物|Persistent pollutant" data-deck-order="6">
           <h2 data-en="Persistent pollutant">難分解的污染物</h2>
-          <div class="slider"><label for="bcf" data-en="Producers ÷ water (bioconcentration factor)">生產者比水濃幾倍（生物濃縮係數）</label><output id="bcfo"></output>
+          <div class="slider"><label for="bcf" data-en="Bioconcentration factor">生物濃縮係數</label><output id="bcfo"></output>
             <input id="bcf" type="range" min="0" max="5" step="0.01" value="2.4771"></div>
           <div class="slider"><label for="alpha" data-en="Absorbed from food α">從食物吸收的比例 α</label><output id="alphao"></output>
             <input id="alpha" type="range" min="1" max="100" step="1" value="60" data-decimals="1"></div>
           <div class="slider"><label for="elim" data-en="Excreted or broken down e">排出或分解掉的比例 e</label><output id="elimo"></output>
             <input id="elim" type="range" min="0" max="99" step="1" value="50" data-decimals="1"></div>
-          <p class="hint" data-en="Fat-soluble, persistent chemicals such as DDT or methylmercury: large α, small e.">脂溶性、難分解的物質（如 DDT、甲基汞）：α 大、e 小。</p>
+          <p class="hint" data-en="Bioconcentration factor = how many times more concentrated the producers are than the water. Fat-soluble, persistent chemicals such as DDT or methylmercury: large α, small e.">生物濃縮係數＝生產者體內濃度是水中的幾倍。脂溶性、難分解的物質（如 DDT、甲基汞）：α 大、e 小。</p>
         </section>
       </aside>
     </div>
