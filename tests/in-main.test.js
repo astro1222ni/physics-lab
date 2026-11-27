@@ -156,6 +156,33 @@ test('compareTarget：迷你 git repo 全情境驗證', () => {
 
     const r2 = spawnSync(process.execPath, [path.resolve(__dirname, '../tools/in-main.cjs'), 'no-such-branch', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
     assert.strictEqual(r2.status, 2);
+
+    // 5. 無 NUL byte 的非法 UTF-8 二進位檔（0x80 vs 0x81）不可誤判成已上線
+    git(tmp, ['checkout', 'main']);
+    write('blob.bin', Buffer.from([0x80]));
+    git(tmp, ['add', 'blob.bin']);
+    git(tmp, ['commit', '-m', 'add bin in main']);
+
+    git(tmp, ['checkout', '-b', 'bin-feat']);
+    write('blob.bin', Buffer.from([0x81]));
+    git(tmp, ['add', 'blob.bin']);
+    git(tmp, ['commit', '-m', 'change bin in branch']);
+
+    const repBin = IM.compareTarget({ target: 'bin-feat', base: 'main', cwd: tmp });
+    assert.strictEqual(repBin.summary.inMain, 0);
+    assert.strictEqual(repBin.summary.different, 1);
+    assert.strictEqual(repBin.different[0].file, 'blob.bin');
+    assert.strictEqual(repBin.different[0].binary, true);
+
+    // 6. 已合入祖先分支（merge-base === toSha）：標記 alreadyAncestor 並印明確範圍提示
+    git(tmp, ['checkout', 'main']);
+    const oldHead = git(tmp, ['rev-parse', 'HEAD~1']);
+    git(tmp, ['branch', 'merged-old', oldHead]);
+    const repAnc = IM.compareTarget({ target: 'merged-old', base: 'main', cwd: tmp });
+    assert.strictEqual(repAnc.summary.total, 0);
+    assert.strictEqual(repAnc.alreadyAncestor, true);
+    const txtAnc = IM.formatReport(repAnc);
+    assert.ok(txtAnc.includes('明確起訖範圍'));
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

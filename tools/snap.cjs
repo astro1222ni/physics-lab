@@ -368,6 +368,17 @@ async function captureOneSize(browser, baseUrl, opts, size, root) {
   const pageErrors = [];
   try {
     await ctx.route(u => !u.href.startsWith(baseUrl), route => route.abort());
+    if (typeof ctx.routeWebSocket === 'function') {
+      await ctx.routeWebSocket('**/*', ws => {
+        try {
+          const u = new URL(ws.url());
+          const b = new URL(baseUrl);
+          if (u.hostname !== b.hostname || u.port !== b.port) ws.close();
+        } catch (e) {
+          ws.close();
+        }
+      });
+    }
     await ctx.addInitScript(({ lang, theme }) => {
       try {
         localStorage.setItem('lab-settings', JSON.stringify({ lang, theme, fs: 1 }));
@@ -638,6 +649,9 @@ function diffOneSize(beforeSnap, afterSnap) {
 }
 
 function diffSnapshots(beforeDoc, afterDoc) {
+  if (beforeDoc && beforeDoc.slug && afterDoc && afterDoc.slug && beforeDoc.slug !== afterDoc.slug) {
+    throw new Error(`快照站台不符：before 為「${beforeDoc.slug}」，after 為「${afterDoc.slug}」。`);
+  }
   const results = [];
   let totalDiffs = 0;
   let changedSizes = 0;
@@ -728,6 +742,12 @@ async function runCli(argv) {
       beforeDoc = JSON.parse(fs.readFileSync(beforeFile, 'utf8'));
     } catch (e) {
       console.error(`before 快照格式損壞：${beforeFile}`);
+      return 2;
+    }
+    if (!beforeDoc || !beforeDoc.slug || beforeDoc.slug !== parsed.slug) {
+      console.error(
+        `before 快照站台不符：${beforeFile} 記錄為「${beforeDoc && beforeDoc.slug ? beforeDoc.slug : '(未知)'}」，本次指定為「${parsed.slug}」。\n請改用獨立的 --out 目錄，或重新對 ${parsed.slug} 執行 before。`
+      );
       return 2;
     }
   }

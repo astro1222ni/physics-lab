@@ -102,12 +102,17 @@ function readBlob(commit, filePath, cwd) {
   }
 }
 
-function isBinaryBuffer(buf) {
+function isValidUtf8Text(buf) {
   const len = Math.min(buf.length, 8192);
   for (let i = 0; i < len; i++) {
-    if (buf[i] === 0) return true;
+    if (buf[i] === 0) return false;
   }
-  return false;
+  const text = buf.toString('utf8');
+  return Buffer.from(text, 'utf8').equals(buf);
+}
+
+function isBinaryBuffer(buf) {
+  return !isValidUtf8Text(buf);
 }
 
 /** 依檔頭規則移除 stamp 差異，回傳正規化後的文字（統一 LF）。 */
@@ -263,7 +268,8 @@ function resolveRange(target, baseSha, cwd) {
     if (!fromSha) throw new Error('找不到起點 commit：' + leftRef);
   }
 
-  return { fromSha, toSha };
+  const isExplicitRange = target.includes('..');
+  return { fromSha, toSha, isExplicitRange };
 }
 
 /** 讀取 fromSha..toSha 變動檔案（-z --no-renames，正確處理中文與空白路徑）。 */
@@ -358,8 +364,9 @@ function compareTarget(opts) {
   const baseSha = tryRevParse(base, cwd);
   if (!baseSha) throw new Error('找不到基準分支或 commit：' + base);
 
-  const { fromSha, toSha } = resolveRange(target, baseSha, cwd);
+  const { fromSha, toSha, isExplicitRange } = resolveRange(target, baseSha, cwd);
   const changed = listChangedFiles(fromSha, toSha, cwd);
+  const alreadyAncestor = !isExplicitRange && fromSha === toSha;
 
   const inMain = [];
   const different = [];
@@ -378,6 +385,7 @@ function compareTarget(opts) {
     baseSha,
     fromSha,
     toSha,
+    alreadyAncestor,
     summary: {
       total: changed.length,
       inMain: inMain.length,
@@ -399,7 +407,14 @@ function formatReport(report) {
   out.push(`總計 ${s.total} 檔：已上線 ${s.inMain}、不同 ${s.different}、未上線 ${s.notInMain}`);
 
   if (s.total === 0) {
-    out.push('（此範圍相對於基準沒有任何變動檔案）');
+    if (report.alreadyAncestor) {
+      const short = report.toSha.slice(0, 8);
+      out.push(
+        `（提示：${report.target} 已在 ${report.base} 的歷史中，merge-base 與分支頭皆為 ${short}，因此無法僅憑分支名得知當時改動的檔在 ${report.base} 是否又被修改。若要逐檔核對該提交現況，請改用明確起訖範圍，例如：node tools/in-main.cjs ${short}^..${short} --base ${report.base}）`
+      );
+    } else {
+      out.push('（此範圍相對於基準沒有任何變動檔案）');
+    }
     return out.join('\n');
   }
 

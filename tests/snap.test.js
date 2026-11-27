@@ -88,6 +88,34 @@ test('diffSnapshots 與 formatDiff：無差異與有差異輸出格式正確', (
   assert.ok(txtDiff.includes('主畫布雜湊 #cv：aaaaaaaaaaaa → bbbbbbbbbbbb'));
 });
 
+test('diffSnapshots 拒絕跨站比對，且 CLI 讀到別站 before 回傳結束碼 2', () => {
+  const fs = require('fs');
+  const os = require('os');
+  assert.throws(
+    () => S.diffSnapshots({ slug: 'refraction', snapshots: {} }, { slug: 'ohms-law', snapshots: {} }),
+    /站台不符/
+  );
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'snap-slug-test-'));
+  try {
+    fs.writeFileSync(
+      path.join(tmp, 'before.json'),
+      JSON.stringify({ slug: 'refraction', sizes: ['412x915'], snapshots: {} }),
+      'utf8'
+    );
+    const script = path.resolve(__dirname, '../tools/snap.cjs');
+    const r = spawnSync(process.execPath, [script, 'ohms-law', 'after', '--out', tmp], {
+      encoding: 'utf8',
+      windowsHide: true
+    });
+    assert.strictEqual(r.status, 2);
+    assert.ok(r.stderr.includes('refraction'));
+    assert.ok(r.stderr.includes('ohms-law'));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('CLI 結束碼 2：參數錯誤與缺少 before 快照', () => {
   const script = path.resolve(__dirname, '../tools/snap.cjs');
   const rBad = spawnSync(process.execPath, [script, 'refraction'], { encoding: 'utf8', windowsHide: true });
