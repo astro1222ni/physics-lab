@@ -203,7 +203,6 @@ window.LAB_BRANCH_NAMES = {"cell":{"zh":"細胞與分子","en":"Cells and Molecu
    首頁「最新上架」由 tools/build-catalog.cjs 讀這份清單，上架日取 Git 第一次新增該頁的時間，
    同一頁後來才加的單元請補 l: 'YYYY-MM-DD'。 */
 window.LAB_LEARN_UNITS = [
-  { id: 'learn-phy-5-1', subject: 'phy', branch: 'mech', chapter: '必修物理 5-1', chapterEn: 'Required Physics 5-1', zh: '功與能量的形式', en: 'Work and forms of energy', href: 'learn-phy-5-1.html', thumb: 'incline-friction' },
   { id: 'exam-114-19', subject: 'phy', branch: 'mech', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '衛星的軌道', en: 'Satellite orbits', file: 'exam-114', href: 'exam-114.html?q=19', thumb: 'kepler' },
   { id: 'exam-114-20', subject: 'phy', branch: 'thermo', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '比特幣融冰山', en: 'Melting ice with Bitcoin', file: 'exam-114', thumb: 'specific-heat' },
   { id: 'exam-114-21', subject: 'phy', branch: 'mech', chapter: '114 學測自然', chapterEn: '2025 GSAT Science', zh: '把水庫抬上玉山', en: 'Lifting a reservoir', file: 'exam-114', thumb: 'energy-coaster' },
