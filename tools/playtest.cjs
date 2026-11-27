@@ -25,6 +25,7 @@
  *   4. 數值合理性：% 在 0–100、pH 在 0–14、機率在 0–1、溫度（K）不為負、長度／質量／時間類讀數不為負
  *      （位移、速度、電荷等有正負意義的量照名稱排除；名稱看不出來的列「待人工確認」）。
  * 結果：.shots/playtest-report.json（每個問題附截圖路徑與重現方式）、截圖 .shots/playtest/、紀錄 .shots/playtest-cache.json。
+ * 可用環境變數 LAB_PLAYTEST_DIR 指定報告、截圖與紀錄的共同輸出目錄。
  * 已人工確認不是問題的項目放 tools/playtest/exclude.cjs（每一項都要寫原因）。
  *
  * 安全：擋掉所有對外連線、用 tools/mock-backend.js 假後端（絕不寫入正式 Firebase）；瀏覽器用 tools/browser.cjs
@@ -40,7 +41,7 @@ const { plain } = require('../js/settings.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const VERSION = 1; // 檢查方式有實質改變時加一，--changed 會全部重跑
-const SHOTS = path.join(ROOT, '.shots');
+const SHOTS = process.env.LAB_PLAYTEST_DIR ? path.resolve(process.env.LAB_PLAYTEST_DIR) : path.join(ROOT, '.shots');
 const SHOT_DIR = path.join(SHOTS, 'playtest');
 const REPORT = path.join(SHOTS, 'playtest-report.json');
 const CACHE = path.join(SHOTS, 'playtest-cache.json');
@@ -1013,7 +1014,7 @@ function summary(report, quiet) {
     n++; C += p.confirmed.length; P += p.pending.length;
     lines.push('  ' + slug.padEnd(26) + String(p.confirmed.length).padStart(4) + String(p.pending.length).padStart(8) + String((p.accidental || []).length).padStart(10) + (p.cached ? '  （沿用）' : ''));
   }
-  lines.push('共 ' + n + ' 個實驗：確定是問題 ' + C + '、待人工確認 ' + P + (none ? '；' + none + ' 個實驗還沒有試玩紀錄' : '') + '。報告：.shots/playtest-report.json');
+  lines.push('共 ' + n + ' 個實驗：確定是問題 ' + C + '、待人工確認 ' + P + (none ? '；' + none + ' 個實驗還沒有試玩紀錄' : '') + '。報告：' + rel(REPORT));
   return lines.join('\n');
 }
 
