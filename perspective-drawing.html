@@ -138,7 +138,8 @@
       html.labdeck-drawer .persp .stage { display:grid; grid-template-columns:minmax(120px,28%) minmax(0,1fr); grid-template-rows:auto auto min-content auto auto; align-content:start; align-items:center; gap:2px 7px; padding:2px 6px }
       html.labdeck-drawer .persp .stage>* { grid-column:1 / -1; min-width:0 }
       html.labdeck-drawer .persp .stage-bar { grid-row:1 }
-      html.labdeck-drawer .persp .stage #paper { grid-row:2; height:auto; width:min(100%,94vh); aspect-ratio:1.6 }
+      /* 11/27 主串轉站長選 A：橫放畫布寬 ≥ 視窗 45%。寬＝（螢幕高 − 上方標題列與下方讀數、按鈕列約 150 px）× 1.6，844×390 是 384×240，畫布那一塊到 377 仍在一屏內 */
+      html.labdeck-drawer .persp .stage #paper { grid-row:2; height:auto; width:min(100%,calc((100vh - 150px) * 1.6)); aspect-ratio:1.6 }
       html.labdeck-drawer .persp .stage:has(#traceBox:not([hidden])) #paper,
       html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { grid-column:2; width:100% }
       html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { width:min(100%,82vh) }
