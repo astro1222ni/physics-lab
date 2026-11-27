@@ -10,7 +10,7 @@
  *   選項：
  *     --q 114-20,115-13   只查這幾題（年度-題號）；--year 115 查該年度全部題目；--all 全部年度全部題目
  *     --sizes p412,land   只用這幾種尺寸（見下方 SIZES）
- *     --no-layout         不開瀏覽器，只查旁白；--no-audio 不查旁白；--audio-years 113,115 旁白只查這幾年
+ *     --no-layout         不開瀏覽器，只查字幕與旁白；--no-audio 不量旁白檔（字幕照查）；--audio-years 113,115 字幕與旁白只查這幾年
  *     --shots 資料夾      拼圖與每格截圖存這裡（預設 F:\測試暫存\exam-audit_<日期時間>\；用完請刪）
  *     --no-shots          不截圖　　--verbose 合格的組合也印一行
  *   結束碼：0 全部合格（「注意」不算不合格）；1 有不合格；2 參數錯誤。
@@ -24,10 +24,13 @@
  *       整頁沉浸：沒進沉浸、麵包屑沒藏、Esc 沒退出；沉浸中換題跳出沉浸或沒換到題；Esc 後還在沉浸；
  *       解題卡沉浸：卡寬 < 視窗 90%、播放列超出螢幕、Esc 沒退出；
  *       側板停靠（寬 ≥ 1240 打開側板）：側板蓋到試卷或解題卡、畫面被擠窄；
- *       旁白：缺檔、長度和表差 > 0.35 s、缺中文或英文字幕、句號重複、字幕用了 Unicode 上下標字元。
+ *       逐句走時字幕（#caption）起、中、末三句是空的或沒跟著換句；
+ *       字幕（不開瀏覽器、不受 --no-audio 影響）：缺中文或英文字幕、句號重複、用了 Unicode 上下標字元、旁白表解析不了；
+ *       旁白檔（--no-audio 只跳過這段）：缺檔、長度和表差 > 0.35 s。
  *   注意：橫放與電腦上「題目＋送出鍵」超出一屏多少 px；文字溢出容器（列前三個）；資料夾裡沒被用到的音檔。
+ *   不在這支：各年 js/exam/<年>-core.js 的物理數值（軌道、頻率比、擬合、多選給分）由 npm test 的 tests/exam-<年>-core.test.js 驗收。
  *
- * 只用 mock 後端、擋掉所有對外連線（查正式站時只放行 lab.astroni.org），不寫正式資料庫。
+ * 只用 mock 後端、擋掉所有對外連線與 WebSocket（查正式站時只放行 lab.astroni.org），不寫正式資料庫；瀏覽器靜音。
  * 瀏覽器經 tools/browser.cjs（全機排隊）。旁白長度用 VideoProc 的 ffprobe；R2 年度直接讀 audio.astroni.org。
  */
 'use strict';
@@ -76,7 +79,8 @@ function tracksOf(year) {
   const out = {}, dir = path.join(ROOT, 'js/exam', String(year));
   if (fs.existsSync(dir)) for (const f of fs.readdirSync(dir).filter(f => /^q\d+\.js$/.test(f))) {
     const s = fs.readFileSync(path.join(dir, f), 'utf8'), m = s.match(/ExamTracks\.Q(\d+)\s*=\s*(\[[\s\S]*?\]);\s*\n?\/\* tracks:end/);
-    if (m) out[m[1]] = JSON.parse(m[2]);
+    if (m) { try { out[m[1]] = JSON.parse(m[2]); } catch (e) { fail(year + ' 旁白表', f + ' 的 ExamTracks 不是嚴格 JSON（' + e.message.split('\n')[0] + '），這題沒檢查'); } }
+    else if (/ExamTracks\.Q\d+\s*=/.test(s)) fail(year + ' 旁白表', f + ' 有 ExamTracks 但找不到「/* tracks:end」尾標，這題沒檢查');
   }
   const tf = path.join(ROOT, 'js/exam', year + '-timings.js');
   if (fs.existsSync(tf)) { const w = {}; new Function('window', fs.readFileSync(tf, 'utf8'))(w); for (const [k, v] of Object.entries(w.ExamTracks || {})) { const n = k.replace(/^Q/, ''); if (!out[n]) out[n] = v; } }
@@ -96,18 +100,36 @@ function probe(src) {
     let o = ''; p.stdout.on('data', d => o += d); p.on('error', () => res(null)); p.on('close', () => { const v = parseFloat(o); res(isFinite(v) ? v : null); });
   });
 }
+// 字幕文字檢查：只讀 repo，不開瀏覽器也不必 ffprobe，--no-audio 時照跑
+function textAudit() {
+  const years = opt.audioYears || YEARS; let n = 0;
+  for (const y of years) {
+    const T = TR[y]; if (!T) { fail('字幕', '沒有這個年度：' + y); continue; }
+    const where = y + ' 字幕', seen = new Set();
+    for (const rows of Object.values(T)) for (const t of rows) {
+      n++;
+      if (seen.has(t.id)) fail(where, '句號重複 ' + t.id); seen.add(t.id);
+      if (!t.disp) fail(where, t.id + ' 缺中文字幕');
+      if (!t.en) fail(where, t.id + ' 缺英文字幕');
+      if (SUPSUB.test((t.disp || '') + (t.en || ''))) fail(where, t.id + ' 字幕用了 Unicode 上下標字元（網站禁止，改 KaTeX）');
+    }
+  }
+  console.log('字幕：' + years.join('、') + ' 年共 ' + n + ' 句');
+}
+
 async function audioAudit() {
   if (!fs.existsSync(FFPROBE)) { fail('旁白', '找不到 ffprobe：' + FFPROBE + '（可用環境變數 FFPROBE 指定）'); return; }
   const years = opt.audioYears || YEARS, jobs = [];
   for (const y of years) {
-    const T = TR[y]; if (!T) { fail('旁白', '沒有這個年度：' + y); continue; }
+    const T = TR[y]; if (!T) continue; // 沒有這個年度已在 textAudit 報過
     const where = y + ' 旁白', seen = new Set(), dir = path.join(ROOT, 'audio/study/exam-' + y);
-    for (const [q, rows] of Object.entries(T)) for (const t of rows) {
-      if (seen.has(t.id)) fail(where, '句號重複 ' + t.id); seen.add(t.id);
-      if (!t.disp || !t.en) fail(where, t.id + ' 缺' + (!t.disp ? '中文' : '英文') + '字幕');
-      if (SUPSUB.test((t.disp || '') + (t.en || ''))) fail(where, t.id + ' 字幕用了 Unicode 上下標字元（網站禁止，改 KaTeX）');
+    const localFiles = !r2Years.has(y) && !opt.site && fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    for (const rows of Object.values(T)) for (const t of rows) {
+      seen.add(t.id);
+      // 本機檔用句號前綴找（.m4a、.mp3 都算），R2 與正式站照網站實際載入的 .m4a
+      const lf = localFiles.find(f => f.replace(/\.(m4a|mp3)$/, '') === t.id);
       const src = r2Years.has(y) ? R2 + 'audio/study/exam-' + y + '/' + t.id + '.m4a'
-        : opt.site ? opt.site + 'audio/study/exam-' + y + '/' + t.id + '.m4a' : path.join(dir, t.id + '.m4a');
+        : opt.site ? opt.site + 'audio/study/exam-' + y + '/' + t.id + '.m4a' : path.join(dir, lf || t.id + '.m4a');
       jobs.push({ where, t, src, local: !/^https?:/.test(src) });
     }
     if (!r2Years.has(y) && fs.existsSync(dir)) {
@@ -132,8 +154,10 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 function serve() {
   return new Promise(r => {
     const server = http.createServer((req, res) => {
-      const p = decodeURIComponent(new URL(req.url, 'http://x').pathname), file = path.join(ROOT, p.endsWith('/') ? p + 'index.html' : p);
-      if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
+      let p; try { p = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch (e) { res.writeHead(400); res.end(); return; }
+      const file = path.join(ROOT, p.endsWith('/') ? p + 'index.html' : p), rel = path.relative(ROOT, file);
+      // 用 path.relative 驗界：G:\physics-lab-wt 這種同前綴的兄弟資料夾也擋得住
+      if (!rel || rel.startsWith('..') || path.isAbsolute(rel) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
       res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' }); fs.createReadStream(file).pipe(res);
     });
     server.listen(0, '127.0.0.1', () => r([server, 'http://127.0.0.1:' + server.address().port + '/']));
@@ -180,7 +204,9 @@ const IN = {
     const out = new Set(), H = document.documentElement.scrollHeight, step = Math.max(120, Math.round(innerHeight * 0.4));
     const sel = 'button,a,input,select,label,[role=button],#point-label,.katex,img,canvas,p,li,h1,h2,h3,strong';
     for (let y = 0; y <= H; y += step) {
-      scrollTo(0, y); await new Promise(r => setTimeout(r, 260)); // 等側標籤縮放動畫（.2s）做完
+      // 等 2 幀讓捲動事件與 slimCheck 觸發，側標籤有縮放動畫（.2s）在跑才等它做完：不縮的捲動步只花約 32 ms，電腦忙、掉幀也不會量到一半
+      scrollTo(0, y); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const anims = edge.getAnimations({ subtree: true }); if (anims.length) await Promise.all(anims.map(a => a.finished.catch(() => {})));
       const e = edge.getBoundingClientRect();
       for (const el of document.querySelectorAll(sel)) {
         if (edge.contains(el) || el.closest('#study-side,#edge,.lab-share,.fb-panel,dialog,[hidden],.ms-panel')) continue;
@@ -233,18 +259,24 @@ async function answerAndExplain(page) {
 
 async function layoutAudit() {
   const { launch } = require(path.join(ROOT, 'tools/browser.cjs'));
-  let server = null, base = opt.site;
+  let server = null, browser = null, base = opt.site;
+  // 中途拋錯或逾時也一定關掉每個視窗、瀏覽器（釋放全機排隊位子）與本機伺服器
+  try {
   if (!base) [server, base] = await serve();
   const origin = new URL(base).origin, nc = opt.site ? '&nc=' + Date.now() : '';
   const stamp = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
   const shotDir = opt.shots ? (opt.shotDir || (fs.existsSync('F:/') ? 'F:/測試暫存/exam-audit_' + stamp : path.join(os.tmpdir(), 'exam-audit_' + stamp))) : null;
   if (shotDir) fs.mkdirSync(shotDir, { recursive: true });
-  const browser = await launch(), tiles = [];
+  browser = await launch({ args: ['--mute-audio'] }); // 逐句走會播旁白：一律靜音（有視窗時也不會突然出聲）
+  const tiles = [];
   let combos = 0;
   for (const [sk, S] of sizes) {
     for (const sideOpen of S.w >= 1240 ? [false, true] : [false]) {
       const ctx = await browser.newContext({ viewport: { width: S.w, height: S.h }, colorScheme: S.scheme, deviceScaleFactor: 1, hasTouch: S.mobile, locale: 'zh-TW' });
+      try {
       await ctx.route(u => new URL(u.href).origin !== origin, r => r.abort());
+      if (!ctx.routeWebSocket) throw new Error('這個 Playwright 版本不能攔 WebSocket，請更新');
+      await ctx.routeWebSocket(u => new URL(u.href).origin.replace(/^ws/, 'http') !== origin, ws => ws.close());
       await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') });
       await ctx.addInitScript(o => { if (!sessionStorage.getItem('ea-seeded')) { sessionStorage.setItem('ea-seeded', '1'); localStorage.setItem('lab-settings', JSON.stringify({ lang: 'zh-Hant', theme: 'auto', fs: 1, sound: false })); localStorage.setItem('lab-welcome-v1', 'skip'); localStorage.setItem('exam-side-open', o.side ? '1' : '0'); } }, { side: sideOpen });
       const page = await ctx.newPage(); let errs = [], miss = [];
@@ -296,10 +328,20 @@ async function layoutAudit() {
             const ed = await page.evaluate(IN.edge); if (ed.length) fail(tag, '側標籤蓋到 ' + ed.slice(0, 4).join('、') + (ed.length > 4 ? ' 等 ' + ed.length + ' 處' : ''));
             // 逐句走完（只在手機直放，或只量一種尺寸時）
             if (sk === sizes[0][0]) {
+              const cap = () => page.evaluate(() => { const c = document.getElementById('caption'); return c ? c.innerText.trim() : null; });
               await page.evaluate(() => { const s = document.getElementById('sentence'); s.value = 0; s.dispatchEvent(new Event('change')); }); await page.waitForTimeout(300);
-              let steps = 0; for (let i = 0; i < 120; i++) { const ok = await page.evaluate(() => { const n = document.getElementById('next'); if (!n || n.disabled) return false; n.click(); return true; }); if (!ok) break; steps++; await page.waitForTimeout(90); }
+              // 抽查起、中、末三句的字幕：要有字、而且跟著換句（下拉選單到了、字幕卻壞成空白或卡住也要抓到）
+              const mid = Math.floor((so.sentences - 1) / 2), caps = [[0, await cap()]];
+              let steps = 0; for (let i = 0; i < so.sentences + 5; i++) { const ok = await page.evaluate(() => { const n = document.getElementById('next'); if (!n || n.disabled) return false; n.click(); return true; }); if (!ok) break; steps++; await page.waitForTimeout(90); if (steps === mid && mid > 0) caps.push([mid, await cap()]); }
               const at = await page.evaluate(() => +document.getElementById('sentence').value);
               if (at !== so.sentences - 1) fail(tag, '按「下一句」' + steps + ' 次停在第 ' + (at + 1) + ' 句（共 ' + so.sentences + ' 句）');
+              if (so.sentences > 1) caps.push([at, await cap()]);
+              if (caps[0][1] === null) fail(tag, '找不到字幕 #caption');
+              else {
+                for (const [k, t] of caps) if (!t) fail(tag, '第 ' + (k + 1) + ' 句字幕是空的');
+                const texts = caps.map(c => c[1]).filter(Boolean);
+                if (texts.length > 1 && new Set(texts).size < texts.length) fail(tag, '逐句走時字幕沒跟著換句（第 ' + caps.map(c => c[0] + 1).join('、') + ' 句字幕有相同的）');
+              }
             }
             // 解題卡沉浸
             await page.evaluate(() => document.getElementById('workpad').scrollIntoView({ block: 'start' }));
@@ -341,24 +383,31 @@ async function layoutAudit() {
           if (+st.q !== to) fail(tag, 'Esc 退出後回到第 ' + st.q + ' 題（應留在第 ' + to + ' 題）');
         }
       }
-      await ctx.close();
+      } finally { await ctx.close().catch(() => {}); }
     }
   }
   // 拼圖：每種尺寸一格
   if (shotDir && tiles.length) {
-    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 }), pg = await ctx.newPage();
-    const html = '<body style="margin:0;background:#222;color:#eee;font:14px sans-serif;display:flex;flex-wrap:wrap;gap:8px;padding:8px;width:1584px">' + tiles.map(([l, f]) => '<figure style="margin:0;width:256px"><img style="width:256px;display:block" src="data:image/png;base64,' + fs.readFileSync(f).toString('base64') + '"><figcaption>' + l + '</figcaption></figure>').join('') + '</body>';
-    await pg.setContent(html); await pg.waitForTimeout(300);
-    await pg.screenshot({ path: path.join(shotDir, '拼圖.png'), fullPage: true }); await ctx.close();
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 });
+    try {
+      const pg = await ctx.newPage();
+      const html = '<body style="margin:0;background:#222;color:#eee;font:14px sans-serif;display:flex;flex-wrap:wrap;gap:8px;padding:8px;width:1584px">' + tiles.map(([l, f]) => '<figure style="margin:0;width:256px"><img style="width:256px;display:block" src="data:image/png;base64,' + fs.readFileSync(f).toString('base64') + '"><figcaption>' + l + '</figcaption></figure>').join('') + '</body>';
+      await pg.setContent(html); await pg.waitForTimeout(300);
+      await pg.screenshot({ path: path.join(shotDir, '拼圖.png'), fullPage: true });
+    } finally { await ctx.close().catch(() => {}); }
     console.log('拼圖：' + path.join(shotDir, '拼圖.png').replace(/\\/g, '/') + '（每格截圖在同一資料夾，看完請刪）');
   }
-  await browser.close(); if (server) server.close();
   console.log('版面：' + QLIST.length + ' 題 × ' + sizes.length + ' 種尺寸，共 ' + combos + ' 組（' + (opt.site || '本機') + '）');
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+    if (server) { if (server.closeAllConnections) server.closeAllConnections(); await new Promise(r => server.close(() => r())); }
+  }
 }
 
 (async () => {
   const t0 = Date.now();
   try {
+    textAudit();
     if (opt.audio) await audioAudit();
     if (opt.layout) await layoutAudit();
   } catch (e) { fail('程式', e.stack || e.message); }
