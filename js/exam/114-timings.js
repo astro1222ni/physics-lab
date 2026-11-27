@@ -83,14 +83,14 @@ window.ExamTracks = {
       "row": "solve",
       "duration": 7.802,
       "disp": "因為萬有引力提供向心力，G M m 除以 r 平方，等於 m v 平方除以 r，小 m 跟小 m 消掉就好了。",
-      "en": "Gravity provides the centripetal force: GMm/r² = mv²/r, and the small m's cancel."
+      "en": "Gravity provides the centripetal force: \\(GMm/r^{2}=mv^{2}/r\\), and the small m's cancel."
     },
     {
       "id": "Q19_22",
       "row": "solve",
       "duration": 8.418,
       "disp": "所以速率 v 等於 G M 除以 r 再開根號，加速度 a 等於 G M 除以 r 平方，都只看軌道半徑，不看衛星的質量。",
-      "en": "So the speed v = √(GM/r) and the acceleration a = GM/r². Both depend only on orbital radius, not on the satellite's mass."
+      "en": "So the speed \\(v=\\sqrt{GM/r}\\) and the acceleration \\(a=GM/r^{2}\\). Both depend only on orbital radius, not on the satellite's mass."
     },
     {
       "id": "Q19_25",
@@ -118,7 +118,7 @@ window.ExamTracks = {
       "row": "kepler",
       "duration": 11.436,
       "disp": "我上課講克卜勒第三定律的時候說過：只要是繞同一顆星的那些小星星們，T 平方分之 R 立方，都是同一個定值；地球的人造衛星，連月亮在內，全都一樣。",
-      "en": "When I teach Kepler's third law, I say: for all the small bodies orbiting the same central body, R³/T² is the same constant. Earth's satellites, the Moon included, all share one."
+      "en": "When I teach Kepler's third law, I say: for all the small bodies orbiting the same central body, \\(R^{3}/T^{2}\\) is the same constant. Earth's satellites, the Moon included, all share one."
     },
     {
       "id": "Q19_29",
@@ -189,8 +189,8 @@ window.ExamTracks = {
       "id": "Q23_09",
       "row": "wrong",
       "duration": 6.038,
-      "disp": "選 C 的人想：等速就是速度沒有變，沒有變就沒有都卜勒效應，f 等於 f\u2080。",
-      "en": "Those who chose C thought: constant speed means velocity doesn't change, so no Doppler effect, and f equals f\u2080."
+      "disp": "選 C 的人想：等速就是速度沒有變，沒有變就沒有都卜勒效應，f 等於 \\(f_0\\)。",
+      "en": "Those who chose C thought: constant speed means velocity doesn't change, so no Doppler effect, and f equals \\(f_0\\)."
     },
     {
       "id": "Q23_10",
@@ -224,22 +224,22 @@ window.ExamTracks = {
       "id": "Q23_14",
       "row": "flip",
       "duration": 5.016,
-      "disp": "加速、等速、減速，三段都在遠離，所以三段都是 f 小於 f\u2080。",
-      "en": "Speeding up, cruising, slowing down: it recedes in all three, so f is less than f\u2080 in all three."
+      "disp": "加速、等速、減速，三段都在遠離，所以三段都是 f 小於 \\(f_0\\)。",
+      "en": "Speeding up, cruising, slowing down: it recedes in all three, so f is less than \\(f_0\\) in all three."
     },
     {
       "id": "Q23_20",
       "row": "judge",
       "duration": 6.676,
-      "disp": "所以加速過程 f 小於 f\u2080，A 對、B 錯；等速過程也是 f 小於 f\u2080，D 對、C 錯。",
-      "en": "So speeding up, f is less than f\u2080: A right, B wrong. Cruising, f is also less than f\u2080: D right, C wrong."
+      "disp": "所以加速過程 f 小於 \\(f_0\\)，A 對、B 錯；等速過程也是 f 小於 \\(f_0\\)，D 對、C 錯。",
+      "en": "So speeding up, f is less than \\(f_0\\): A right, B wrong. Cruising, f is also less than \\(f_0\\): D right, C wrong."
     },
     {
       "id": "Q23_21",
       "row": "judge",
       "duration": 7.141,
-      "disp": "減速的時候，速度還是背著地球，只是變慢，f 比較接近 f\u2080，但還是比 f\u2080 小，所以 E 錯。",
-      "en": "Slowing down, it still moves away from Earth, just slower; f gets closer to f\u2080 but stays below it, so E is wrong."
+      "disp": "減速的時候，速度還是背著地球，只是變慢，f 比較接近 \\(f_0\\)，但還是比 \\(f_0\\) 小，所以 E 錯。",
+      "en": "Slowing down, it still moves away from Earth, just slower; f gets closer to \\(f_0\\) but stays below it, so E is wrong."
     },
     {
       "id": "Q23_22",
@@ -259,8 +259,8 @@ window.ExamTracks = {
       "id": "Q23_24",
       "row": "ft",
       "duration": 10.937,
-      "disp": "所以加速那段，f 越來越低；等速那段，f 停在一個比 f\u2080 低的值；減速那段，f 慢慢回升，可是一直到停下來以前，都沒有回到 f\u2080。",
-      "en": "So speeding up, f keeps falling; cruising, f holds at a value below f\u2080; slowing down, f slowly climbs back, but never reaches f\u2080 before it stops."
+      "disp": "所以加速那段，f 越來越低；等速那段，f 停在一個比 \\(f_0\\) 低的值；減速那段，f 慢慢回升，可是一直到停下來以前，都沒有回到 \\(f_0\\)。",
+      "en": "So speeding up, f keeps falling; cruising, f holds at a value below \\(f_0\\); slowing down, f slowly climbs back, but never reaches \\(f_0\\) before it stops."
     },
     {
       "id": "Q23_25",

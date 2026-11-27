@@ -144,6 +144,11 @@ html.learn-class:has(body.exam-page){scroll-behavior:auto}
 /* 右側「步驟・任務」側標籤蓋在畫面上（頁面仍滿版），靠右的題型膠囊、分享鍵讓出標籤寬度，不被蓋住；徽章不超出螢幕（11/23 站長手機截圖） */
 .exam-page{--edge-w:34px}
 @media(max-width:600px){.exam-page{--edge-w:24px}.exam-page #edge i{font-size:10px;padding:0 2px;border-radius:6px;letter-spacing:-.02em}}
+/* 側標籤和解題卡、提示框左右重疊時縮成細把手（exam.js 加 .edge-slim；11/27 exam-audit：手機上蓋到解題畫布、進度條、提示框的 ×） */
+.exam-page #edge{transition:width .2s ease}
+.exam-page #edge.edge-slim{width:7px;min-width:0;padding:0;border-width:2px 0 2px 2px;border-radius:6px 0 0 6px;overflow:hidden}
+.exam-page #edge.edge-slim>*{visibility:hidden}
+.exam-page #edge.edge-slim:before{inset:0 0 0 -6px}
 @media(max-width:1239px){.exam-page .exam-heading{padding-right:calc(var(--edge-w) + 10px)}.exam-page .exam-tools .lab-tools{padding-right:calc(var(--edge-w) + 6px)}}
 /* 頂列三鍵：沉浸、聲音（旁白開關＋聲音＋語速）、語言（11/23 站長：「沉浸模式、語言選擇、語音選擇，根本就沒有上線啊。」原本要答完、開解答、捲到解答卡最下面才找得到） */
 .exam-page .mast-tools{display:flex;align-items:center;gap:8px;flex:none;min-width:0}

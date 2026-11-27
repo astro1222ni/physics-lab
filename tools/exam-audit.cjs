@@ -180,7 +180,7 @@ const IN = {
     const out = new Set(), H = document.documentElement.scrollHeight, step = Math.max(120, Math.round(innerHeight * 0.4));
     const sel = 'button,a,input,select,label,[role=button],#point-label,.katex,img,canvas,p,li,h1,h2,h3,strong';
     for (let y = 0; y <= H; y += step) {
-      scrollTo(0, y); await new Promise(r => setTimeout(r, 40));
+      scrollTo(0, y); await new Promise(r => setTimeout(r, 260)); // 等側標籤縮放動畫（.2s）做完
       const e = edge.getBoundingClientRect();
       for (const el of document.querySelectorAll(sel)) {
         if (edge.contains(el) || el.closest('#study-side,#edge,.lab-share,.fb-panel,dialog,[hidden],.ms-panel')) continue;

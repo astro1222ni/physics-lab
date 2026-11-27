@@ -277,6 +277,13 @@
     for(const [k,pair] of Object.entries(tabNames)){const b=make('button',tr(pair));b.type='button';b.dataset.tab=k;b.setAttribute('role','tab');b.onclick=()=>setSide(k);by('side-tabs').append(b);}
     by('edge').onclick=()=>setSide(side.tab,!side.open);by('side-close').onclick=()=>setSide(side.tab,false);
     let x0=0;by('edge').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('edge').addEventListener('touchend',e=>{if(x0-e.changedTouches[0].clientX>16)setSide(side.tab,true);},{passive:true});
+    // 11/27 exam-audit 量到：手機直放、橫放時側標籤蓋到解題畫布右緣、進度條、提示框的 ×、字幕。
+    // 頁面照樣滿版不讓出空白；側標籤和解題卡（或提示框）左右重疊的時候縮成細把手，點一下、往左撥照樣打開側板，捲離解題卡就恢復
+    const edge=by('edge'),slimCheck=()=>{const e=edge.getBoundingClientRect();if(!e.height)return;
+      const full=parseFloat(getComputedStyle(document.body).getPropertyValue('--edge-w'))||34,left=innerWidth-full,hit=el=>{if(!el||el.hidden||!el.getClientRects().length)return false;const r=el.getBoundingClientRect();return r.width>0&&r.right>left+1&&r.top<e.bottom&&r.bottom>e.top;};
+      edge.classList.toggle('edge-slim',!by('explanation').hidden&&hit(by('workpad'))||[...document.querySelectorAll('.ms-near')].some(hit));};
+    let slimQ=0;const slimSoon=()=>{if(!slimQ)slimQ=requestAnimationFrame(()=>{slimQ=0;slimCheck();});};
+    addEventListener('scroll',slimSoon,{passive:true});addEventListener('resize',slimSoon);setInterval(()=>{if(!document.hidden)slimCheck();},700);slimCheck();
     by('side-header').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-x0>35)setSide(side.tab,false);},{passive:true});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&side.open)setSide(side.tab,false);});
     by('answer-fields').addEventListener('input',refreshSide);by('answer-fields').addEventListener('change',refreshSide);
