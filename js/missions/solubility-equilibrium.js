@@ -36,7 +36,7 @@
       id: 'solubility-equilibrium-4', level: 4,
       title: { zh: '同離子效應', en: 'The common-ion effect' },
       desc: { zh: '燒杯裡有氯化銀沉澱時，加入共同離子，把 [Ag<sup>+</sup>] 壓到純水中飽和時的 1/100 以下。', en: 'With silver chloride precipitate in the beaker, add a common ion until [Ag<sup>+</sup>] is below 1/100 of its value in a saturated solution in pure water.' },
-      check: function (ev) { const d = mx(ev); return !!d && d.p.AgCl > 0 && d.c.Ag <= S0_AGCL / 100; }
+      check: function (ev) { const d = mx(ev); return !!d && d.p.AgCl > 0 && d.c.Ag <= S0_AGCL / 100 && !!d.had.AgCl && d.appeared.indexOf('AgCl') < 0 && d.act !== 'water' && d.what !== 'AgCl'; }
     },
     {
       id: 'solubility-equilibrium-5', level: 5,

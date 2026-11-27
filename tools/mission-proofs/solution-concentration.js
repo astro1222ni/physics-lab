@@ -116,6 +116,15 @@ console.log('二、一般任務');
   let G = newPage();
   let d = weigh(G, 'NaCl', 0.1 * 0.1 * 58.44, 100);
   report('NaCl 0.584 g → 100 mL：' + d.C.toFixed(5) + ' M', G, ['solution-concentration-1', 'solution-concentration-2']);
+  {
+    // 反例：移入量瓶後沒定容到刻度線就直接搖勻按完成，不算任務 1
+    const Gbad = newPage();
+    bottle(Gbad, { mode: 'weigh', solid: 'NaCl', mass: 0.584, Vf: 100, target: 0.1 });
+    S.dissolve(Gbad.P); S.cool(Gbad.P); S.transfer(Gbad.P);
+    finish(Gbad);
+    if (Gbad.events.includes('solution-concentration-1')) { console.log('  ✗ 反例失敗：未定容就搖勻按完成竟通過任務 1'); bad++; }
+    else console.log('  ✓ solution-concentration-1 反例：未定容至刻度線附近不算完成任務 1');
+  }
   G = newPage();
   d = weigh(G, 'CuSO4-5H2O', 2.497, 100);
   report('CuSO4·5H2O 2.497 g → 100 mL：' + d.C.toFixed(5) + ' M（' + pc(d.eTotal) + '）', G, ['solution-concentration-3']);

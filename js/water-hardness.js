@@ -453,7 +453,7 @@
     const m = BL.mag, ly = (m[1] + m[2] + 22) * s;
     const items = [['Ca'], ['Mg'], ['Na']];
     const labels = { Ca: 'Ca2+', Mg: 'Mg2+', Na: 'Na+' };
-    g.font = '600 11px ' + FF;
+    g.font = '600 12px ' + FF;
     let wsum = 0; items.forEach(function (it) { wsum += 14 + supWidth(g, it[0], labels[it[0]]) + 10; });
     let xx = Math.max(5, Math.min(BL.Wpx - wsum - 5, m[0] * s - wsum / 2));
     items.forEach(function (it) {
@@ -478,7 +478,7 @@
   /** 離子符號：Ca 加上標 2+ */
   function supWidth(g, k, lab) { g.font = '600 11px ' + FF; const w = g.measureText(k).width; g.font = '600 8px ' + FF; return w + g.measureText(k === 'Na' ? '+' : '2+').width; }
   function drawIonLabel(g, k, x, y) {
-    g.font = '600 11px ' + FF; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.font = '600 12px ' + FF; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     g.lineJoin = 'round'; g.lineWidth = 3.5; g.strokeStyle = LD.alpha(C['canvas-bg'], 0.9);
     g.strokeText(k, x, y); g.fillStyle = C.text; g.fillText(k, x, y);
     const w = g.measureText(k).width, sup = k === 'Na' ? '+' : '2+';

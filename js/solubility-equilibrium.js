@@ -490,7 +490,7 @@
     g.stroke();
     // 刻度
     g.strokeStyle = LD.alpha(col.text, 0.45); g.lineWidth = 1;
-    g.font = fsz(10) + 'px ' + LD.FONT; g.fillStyle = LD.alpha(col.text, 0.6); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.font = fsz(12) + 'px ' + LD.FONT; g.fillStyle = LD.alpha(col.text, 0.6); g.textAlign = 'left'; g.textBaseline = 'middle';
     for (let v = 25; v <= S.V_MAX; v += 25) {
       const yy = liqY(v), big = v % 50 === 0;
       g.beginPath(); g.moveTo(x0 + G.wall + 2, yy); g.lineTo(x0 + G.wall + (big ? 16 : 9), yy); g.stroke();

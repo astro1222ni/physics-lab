@@ -185,7 +185,7 @@
         g.save();
         g.fillStyle = LD.alpha(col.accent, (p % 2 ? 0.05 : 0.025) * (col.dark ? 1.6 : 1));
         LD.roundRect(g, LY.pad + LY.axisW - 4, yt, cw - LY.pad * 2 - LY.axisW + 4, yb - yt, 8); g.fill();
-        g.fillStyle = LD.alpha(col.muted, p > Ptop ? 0.6 : 1); g.font = font(11); g.textAlign = 'right'; g.textBaseline = 'middle';
+        g.fillStyle = LD.alpha(col.muted, p > Ptop ? 0.6 : 1); g.font = font(12); g.textAlign = 'right'; g.textBaseline = 'middle';
         g.fillText(T('第 ' + p + ' 週期', 'Period ' + p), cw - LY.pad - 4, (yt + yb) / 2);
         g.restore();
         i0 = i + 1;

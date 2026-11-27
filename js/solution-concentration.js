@@ -306,13 +306,13 @@
       const txt = sigf(r.C, 4) + ' M';
       c.font = '700 12px ' + FONT;
       const tw = Math.max(c.measureText(txt).width, 46) + 14;
-      LD.roundRect(c, lx - tw / 2, ly - 16, tw, 32, 4);
+      LD.roundRect(c, lx - tw / 2, ly - 17, tw, 34, 4);
       c.fillStyle = col.dark ? '#f4f1ea' : '#fffdf6'; c.fill();
       c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 1; c.stroke();
       c.fillStyle = '#222'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(txt, lx, ly - 5);
-      c.font = '600 10px ' + FONT; c.fillStyle = '#555';
-      c.fillText(T('第 ', '#') + seq + T(' 瓶', ''), lx, ly + 8);
+      c.fillText(txt, lx, ly - 6);
+      c.font = '600 12px ' + FONT; c.fillStyle = '#555';
+      c.fillText(T('第 ', '#') + seq + T(' 瓶', ''), lx, ly + 9);
     }
     return { yMark: yM, yTop: yTop, rn: g.rn * k };
   }

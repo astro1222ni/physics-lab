@@ -425,7 +425,7 @@
     c.fillStyle = LD.mix('#b9d3a7', '#e9ffd8', fresh); c.fill();
     c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 1; c.stroke();
     c.fillStyle = '#1f3020';
-    c.font = '600 10px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.font = '600 12px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
     c.fillText('pH', x + 10, my + h / 2 + 1);
     c.font = '700 19px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace'; c.textAlign = 'right';
     c.fillText(num(r.pH, 2), x + w - 10, my + h / 2 + 1);

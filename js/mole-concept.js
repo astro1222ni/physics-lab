@@ -433,7 +433,7 @@
     g.strokeStyle = col.text; g.lineWidth = 2;
     g.beginPath(); g.moveTo(sx, sy - 5); g.lineTo(sx, sy); g.lineTo(sx + lw, sy); g.lineTo(sx + lw, sy - 5); g.stroke();
     LD.haloText(g, (L >= 1 ? num(L, 0) : num(L, 1)) + ' cm', sx + lw + 6, sy, col.text, 'left', 'alphabetic', font(12, 600));
-    LD.haloText(g, T('樣品畫成實際體積的立方體', 'Samples drawn as cubes of their real volume'), cw - pad, sy, col.muted, 'right', 'alphabetic', font(11));
+    LD.haloText(g, T('樣品畫成實際體積的立方體', 'Samples drawn as cubes of their real volume'), cw - pad, sy, col.muted, 'right', 'alphabetic', font(12));
     return { a: a, b: b };
   }
 

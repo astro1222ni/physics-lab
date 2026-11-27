@@ -1261,7 +1261,7 @@
     g.strokeStyle = alpha(C.probe, 0.9); g.lineWidth = 1.5; g.setLineDash([6, 4]);
     g.beginPath(); g.moveTo(x0, Y(Eg)); g.lineTo(x1, Y(Eg)); g.stroke();
     g.restore();
-    D.haloText(g, T('最低能量', 'lowest energy'), x1 - 2, Y(Eg) + 14, C.probe, 'right', 'alphabetic', fnt(11.5, 600));
+    D.haloText(g, T('最低能量', 'lowest energy'), x1 - 2, Y(Eg) + 14, C.probe, 'right', 'alphabetic', fnt(12, 600));
     if (pts.length > 1) {
       g.save();
       const grad = g.createLinearGradient(0, y0, 0, y1);

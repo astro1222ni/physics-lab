@@ -713,8 +713,8 @@
           LD.ball(c, x, y1 + 10 + u * (topY - y1 + r * 0.3), 2.2, col.water, { shadow: false });
         }
       }
-      if (A.narrow) LD.pill(c, T('密閉：水留在瓶內', 'Closed: the water stays'), x + w / 2 + 10, y1 + fsz(11) + 14, col.muted, 'left', fnt(11));
-      else LD.pill(c, T('密閉：水留在瓶內', 'Closed: the water stays'), x, y1 - 4, col.muted, 'center', fnt(11));
+      if (A.narrow) LD.pill(c, T('密閉：水留在瓶內', 'Closed: the water stays'), x + w / 2 + 10, y1 + fsz(12) + 14, col.muted, 'left', fnt(12));
+      else LD.pill(c, T('密閉：水留在瓶內', 'Closed: the water stays'), x, y1 - 4, col.muted, 'center', fnt(12));
     }
   }
 

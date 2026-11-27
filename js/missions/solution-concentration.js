@@ -20,7 +20,7 @@
       id: 'solution-concentration-1', level: 1,
       title: { zh: '第一瓶溶液', en: 'Your first solution' },
       desc: { zh: '配好一瓶溶液：定容、「蓋塞搖勻」，再按「完成」。', en: 'Make up a solution: fill to the mark, “Stopper & invert”, then press “Done”.' },
-      check: function (ev) { return !!md(ev); }
+      check: function (ev) { const d = md(ev); return !!d && small(d.eLevel, 0.02); }
     },
     {
       id: 'solution-concentration-2', level: 2,

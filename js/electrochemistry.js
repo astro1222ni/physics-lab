@@ -811,7 +811,7 @@
     const edge = right ? A.X1 : A.X0, inward = right ? -1 : 1;
     line(g, [[edge, y], [edge + inward * 18, y]], LD.alpha(col.muted, 0.7), 1.5);
     const labelY = Math.max(A.Y1 + 7, Math.min(A.Y0 - 7, y));
-    LD.haloText(g, label, edge + inward * 20, labelY, col.muted, right ? 'right' : 'left', 'middle', '11px ' + LD.FONT);
+    LD.haloText(g, label, edge + inward * 20, labelY, col.muted, right ? 'right' : 'left', 'middle', '12px ' + LD.FONT);
   }
   function voltmeterTargets(g, A) {
     const sign = emfNow() < 0 ? -1 : 1, prefix = sign < 0 ? '−' : '';

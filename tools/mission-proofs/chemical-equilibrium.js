@@ -141,6 +141,14 @@ freshMissions();
 let P = newPage('n2o4'); run(P);
 setV(P, 30); const w1 = run(P);
 report('n2o4 50 → 30 mL（真實時間 ' + w1.toFixed(1) + ' s）', P, ['chemical-equilibrium-1']);
+{
+  // 反例：同溫縮小體積但同時改變氮總量或惰性氣體量，不算單純密閉壓縮
+  freshMissions();
+  const Pbad = newPage('n2o4'); run(Pbad);
+  Pbad.n.Ar = (Pbad.n.Ar || 0) + 0.002; setV(Pbad, 30); run(Pbad);
+  if (Pbad.events.includes('chemical-equilibrium-1')) { console.log('  ✗ 反例失敗：加入惰性氣體 Ar 同時壓縮竟通過任務 1'); bad++; }
+  else console.log('  ✓ chemical-equilibrium-1 反例：壓縮同時加 Ar 不算密閉壓縮');
+}
 // ---------- 2. 熱水 ----------
 setT(P, 340); run(P);
 report('n2o4 298 → 340 K', P, ['chemical-equilibrium-2']);

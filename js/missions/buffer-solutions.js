@@ -33,13 +33,13 @@
     {
       id: 'buffer-solutions-3', level: 3,
       title: { zh: '配出 pH 5.00', en: 'Make pH 5.00' },
-      desc: { zh: '用醋酸＋醋酸鈉配出 pH 5.00 的緩衝溶液（誤差 0.01 以內；兩種濃度都至少 0.010 M）。', en: 'Use acetic acid + sodium acetate to make a buffer of pH 5.00 (within 0.01; both concentrations at least 0.010 M).' },
+      desc: { zh: '用醋酸＋醋酸鈉配出 pH 5.00 的緩衝溶液（顯示 5.00 ± 0.01，即原始值誤差 0.015 以內；兩種濃度都至少 0.010 M）。', en: 'Use acetic acid + sodium acetate to make a buffer of pH 5.00 (displayed 5.00 ± 0.01, i.e. within 0.015 of 5.00; both concentrations at least 0.010 M).' },
       check: function (ev) { const d = ev.data; return isM(ev) && d.sys === 'ac' && both(d) && Math.abs(d.pH - 5) <= 0.015; }
     },
     {
       id: 'buffer-solutions-4', level: 4,
       title: { zh: '細胞喜歡的 pH', en: 'The pH cells like' },
-      desc: { zh: '選對酸鹼對，配出 pH 7.40 的磷酸鹽緩衝溶液（誤差 0.01 以內；兩種濃度都至少 0.010 M）。', en: 'Choose the right pair and make a phosphate buffer of pH 7.40 (within 0.01; both concentrations at least 0.010 M).' },
+      desc: { zh: '選對酸鹼對，配出 pH 7.40 的磷酸鹽緩衝溶液（顯示 7.40 ± 0.01，即原始值誤差 0.015 以內；兩種濃度都至少 0.010 M）。', en: 'Choose the right pair and make a phosphate buffer of pH 7.40 (displayed 7.40 ± 0.01, i.e. within 0.015 of 7.40; both concentrations at least 0.010 M).' },
       check: function (ev) { const d = ev.data; return isM(ev) && d.sys === 'ph' && both(d) && Math.abs(d.pH - 7.4) <= 0.015; }
     },
     {

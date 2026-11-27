@@ -56,7 +56,8 @@ const toT = (Pg, t) => wait(Pg, 3600 * 3, Q => Q.run.t >= t);
 function take(Pg) {
   const run = Pg.run, s = Pg.snap, ref = P.snapshot(run, 0.05);
   Pg.out = true; Pg.dry = 5;
-  if (run.o.lanes.indexOf('X') >= 0 && s.dF >= 3 && !s.submerged) Pg.xs.ran = true;
+  const hasStd = run.o.lanes.some(l => l && l !== 'none' && l !== 'X');
+  if (run.o.lanes.indexOf('X') >= 0 && hasStd && s.dF >= 3 && !s.submerged) Pg.xs.ran = true;
   const d = {
     paper: Pg.paper, t: run.t, dF: s.dF, ranOff: s.ranOff, submerged: s.submerged, lidOpenAll: run.lidOpenAll, lidClosedAll: run.lidClosedAll,
     solvent: run.o.solvent, phi: run.o.phi, spot: run.o.spot, z0: run.o.z0, zL: run.o.zL, pen: run.o.pen, penMove: s.pen ? Math.max(0, s.pen.z - run.o.z0) : 0,
@@ -202,13 +203,15 @@ report('預設三道、食鹽水、前緣 8 cm：咖啡色 ' + d.lanes[2].n + ' 
   }
   console.log('  ' + (allOk ? '✓' : '✗') + ' 未知樣品 X：' + tries + ' 個不同的 X，都把 X 與標準品點在同一張濾紙、食鹽水展開 9 cm，用 Rf 比對後第一次就答對');
   if (!allOk) bad++;
-  // 反例：沒展開就猜、第二次才對、揭曉後才答
+  // 反例：沒展開就猜、只放 X 不放標準品、第二次才對、揭曉後才答
   fresh(); Pg = newPage(); Pg.X = ['B1', 'Y5']; identify(Pg, ['B1', 'Y5']);
   const c1 = !Pg.events.includes('paper-chromatography-10');
-  fresh(); Pg = newPage(); Pg.X = ['B1', 'Y5']; set(Pg, { lanes: ['X', 'none', 'none'], solvent: 'salt' }); start(Pg); toDF(Pg, 5); take(Pg); identify(Pg, ['B1']); identify(Pg, ['B1', 'Y5']);
+  fresh(); Pg = newPage(); Pg.X = ['B1', 'Y5']; set(Pg, { lanes: ['X', 'none', 'none'], solvent: 'salt' }); start(Pg); toDF(Pg, 5); take(Pg); identify(Pg, ['B1', 'Y5']);
+  const cSolo = !Pg.events.includes('paper-chromatography-10');
+  fresh(); Pg = newPage(); Pg.X = ['B1', 'Y5']; set(Pg, { lanes: ['X', 'B1', 'none'], solvent: 'salt' }); start(Pg); toDF(Pg, 5); take(Pg); identify(Pg, ['B1']); identify(Pg, ['B1', 'Y5']);
   const c2 = !Pg.events.includes('paper-chromatography-10');
-  console.log('  ' + (c1 && c2 ? '✓' : '✗') + ' 反例：沒有展開 X 就猜對、第二次核對才答對，都不算任務 10');
-  if (!(c1 && c2)) bad++;
+  console.log('  ' + (c1 && cSolo && c2 ? '✓' : '✗') + ' 反例：沒有展開 X 就猜對、只點 X 未同紙跑標準品、第二次核對才答對，都不算任務 10');
+  if (!(c1 && cSolo && c2)) bad++;
 }
 
 fresh(); Pg = newPage();

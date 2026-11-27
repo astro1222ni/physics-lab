@@ -37,7 +37,7 @@
     {
       id: 'reaction-rate-4', level: 4,
       title: { zh: '濃度加倍，k 不變', en: 'Double the concentration, same k' },
-      desc: { zh: '同一個反應、同一溫度做兩次，只把 A（或 B）的分子數加倍：兩次各有 50 次以上的反應，量到的 k 相差不到 25 %。', en: 'Run the same reaction at the same temperature twice, doubling only the number of A (or B) molecules: with at least 50 reactions each, the two values of k agree within 25 %.' },
+      desc: { zh: '同一個反應、同一溫度、恆溫槽模式下做兩次，只把 A（或 B）的分子數加倍：兩次各有 50 次以上的反應，量到的 k 相差不到 25 %。', en: 'Run the same reaction twice at the same temperature in constant-temperature bath mode, doubling only the number of A (or B) molecules: with at least 50 reactions each, the two values of k agree within 25 %.' },
       check: function (ev) {
         if (!isT(ev)) return false;
         const rows = ev.data.runs.filter(function (r) { return !r.heat && r.fwd >= 50 && r.k > 0; });

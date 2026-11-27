@@ -691,7 +691,7 @@
     const bx = cg.x0 - 14;
     c.beginPath(); c.moveTo(bx, g.waterY); c.lineTo(bx, cg.yMen); c.moveTo(bx - 4, g.waterY); c.lineTo(bx + 4, g.waterY); c.moveTo(bx - 4, cg.yMen); c.lineTo(bx + 4, cg.yMen); c.stroke();
     c.restore();
-    LD.pill(c, 'h = ' + num(h, 1) + ' cm', bx - 4, (g.waterY + cg.yMen) / 2 + 8, col.accent, 'right', '600 ' + fsz(11).toFixed(1) + 'px ' + FONT);
+    LD.pill(c, 'h = ' + num(h, 1) + ' cm', bx - 4, (g.waterY + cg.yMen) / 2 + 8, col.accent, 'right', '600 ' + fsz(12).toFixed(1) + 'px ' + FONT);
   }
   /** 放大鏡：彎月面附近的刻度（精確），數字正著寫方便讀 */
   function drawMagnifier(c) {

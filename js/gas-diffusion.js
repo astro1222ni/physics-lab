@@ -439,7 +439,7 @@
     c.strokeStyle = LD.alpha(col.text, 0.45); c.lineWidth = 1;
     c.beginPath(); c.moveTo(L.X0, ry + 0.5); c.lineTo(L.X1, ry + 0.5); c.stroke();
     const step = Lcm > 100 ? 10 : 5, lab = Lcm > 80 ? 20 : 10;
-    c.font = '11px ' + FONT; c.fillStyle = col.muted; c.textAlign = 'center'; c.textBaseline = 'bottom';
+    c.font = '12px ' + FONT; c.fillStyle = col.muted; c.textAlign = 'center'; c.textBaseline = 'bottom';
     for (let x = 0; x <= Lcm + 1e-6; x += step) {
       const px = Math.round(xpx(x)) + 0.5, big = Math.abs(x % lab) < 1e-6 || Math.abs(x - Lcm) < 1e-6;
       c.beginPath(); c.moveTo(px, ry); c.lineTo(px, ry - (big ? 6 : 3)); c.stroke();

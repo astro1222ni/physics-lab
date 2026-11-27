@@ -290,7 +290,8 @@
     if (reducedMotion) lift = liftTarget;
     const S = snd();
     if (S) S.sweep({ from: 420, to: 760, dur: 0.22, gain: 0.08 });
-    if (state.lanes.indexOf('X') >= 0 && snap.dF >= 3 && !snap.submerged && run.o.X.join() === X.join()) xState.ran = true;
+    const hasStd = state.lanes.some(function (l) { return l && l !== 'none' && l !== 'X'; });
+    if (state.lanes.indexOf('X') >= 0 && hasStd && snap.dF >= 3 && !snap.submerged && run.o.X.join() === X.join()) xState.ran = true;
     setStatus(snap.ranOff ? '<span class="warn">' + T('溶劑前緣已經跑出濾紙上緣，量不到它真正走了多遠。', 'The solvent front ran off the top of the paper, so its true distance can no longer be measured.') + '</span>' :
       T('已取出濾紙。趁濾紙還濕、看得見前緣，按「標記溶劑前緣」。', 'Paper taken out. While it is still wet and the front is visible, press “Mark the solvent front”.'));
     if (userActed && window.LabMission) window.LabMission.emit('take', takeData());
@@ -721,7 +722,7 @@
     if (yTop <= ymax) {
       c.strokeStyle = LD.alpha(col.pos, 0.7); c.setLineDash([6, 4]); c.lineWidth = 1.2;
       c.beginPath(); c.moveTo(b.x, A.Y(yTop)); c.lineTo(b.x + b.w, A.Y(yTop)); c.stroke(); c.setLineDash([]);
-      LD.pill(c, T('濾紙上緣', 'top of paper'), b.x + 6, A.Y(yTop) - 3, col.pos, 'left', '11px ' + LD.FONT);
+      LD.pill(c, T('濾紙上緣', 'top of paper'), b.x + 6, A.Y(yTop) - 3, col.pos, 'left', '12px ' + LD.FONT);
     }
     if (!run.o.lid && state.phase !== PH.setup) {
       const si = P.sInf(run.sv), ys = sq ? si * si : si;

@@ -269,12 +269,13 @@
       LD.roundRect(g, x + 0.5, y + 0.5, w - 1, h - 1, 3); g.stroke();
       g.restore();
       g.fillStyle = col.muted; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.font = font(Math.max(6.5, Math.min(fsz(10), cell * 0.21)));
-      g.fillText(cell < 34 ? (i ? '**' : '*') : a[1], x + w / 2, y + h / 2);
+      g.font = font(fsz(12));
+      const shortMark = cell < 46;
+      g.fillText(shortMark ? (i ? '**' : '*') : a[1], x + w / 2, y + h / 2);
       const fy = rowY(9 + i) + cH / 2;
-      g.font = font(Math.max(10, Math.min(fsz(13), cell * 0.37)));
+      g.font = font(Math.max(fsz(12), Math.min(fsz(13), cell * 0.37)));
       g.fillStyle = col.text;
-      g.fillText((cell < 34 ? (i ? '** ' : '* ') : '') + a[2], colX(1) + cell, fy);
+      g.fillText((shortMark ? (i ? '** ' : '* ') : '') + a[2], colX(1) + cell, fy);
     });
     // 元素格
     for (let Z = 1; Z <= P.N; Z++) drawCell(g, Z, false);

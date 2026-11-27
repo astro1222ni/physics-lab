@@ -306,13 +306,14 @@
     drawFlaskFront(g);
     drawBeakerFront(g);
     g.setTransform(L.dpr, 0, 0, L.dpr, 0, 0);
-    for (let i = 0; i <= 50; i += 5) {
-      LD.haloText(g, String(i), (L.xb - 12) * s, (VY.y0 + i * MLPX) * s, LD.alpha(C.text, 0.85), 'right', 'middle', (i % 10 ? '' : '600 ') + '10px ' + FF);
+    const bStep = (5 * MLPX * s) >= 14 ? 5 : 10;
+    for (let i = 0; i <= 50; i += bStep) {
+      LD.haloText(g, String(i), (L.xb - 12) * s, (VY.y0 + i * MLPX) * s, LD.alpha(C.text, 0.85), 'right', 'middle', (i % 10 ? '' : '600 ') + '12px ' + FF);
     }
     const F = flaskDims();
     [100, 200].forEach(function (V) {
       const h = hPx(V), rr = rAt(h), y = F.by - h + F.k * rr * Math.sin(Math.PI * 0.62);
-      LD.haloText(g, String(V), (F.cx + rr * Math.cos(Math.PI * 0.62) + 3) * s, (y + 1) * s, LD.alpha(C.text, 0.6), 'left', 'middle', '9px ' + FF);
+      LD.haloText(g, String(V), (F.cx + rr * Math.cos(Math.PI * 0.62) + 3) * s, (y + 1) * s, LD.alpha(C.text, 0.6), 'left', 'middle', '12px ' + FF);
     });
   }
 

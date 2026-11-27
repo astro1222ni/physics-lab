@@ -88,6 +88,14 @@ report('0.001 M AgNO3 與 NaCl 各 5 滴：[Ag+] = [Cl−] = ' + e(d.c.Ag) + ' M
 freshMissions(); P = newPage();
 solid(P, 'AgCl', 10); d = soln(P, 'NaCl', 1, 1);
 report('AgCl 10 mg ＋ 1 M NaCl 1 mL：[Ag+] = ' + e(d.c.Ag) + ' M（純水 1.33e-5）', P, ['solubility-equilibrium-4']);
+{
+  // 反例：先加過量 NaCl 再加 AgNO3 一次生成沉澱（先前沒有 AgCl 沉澱），不算任務 4
+  freshMissions();
+  const Pbad = newPage();
+  soln(Pbad, 'NaCl', 1, 1); soln(Pbad, 'AgNO3', 0.1, 1);
+  if (Pbad.events.includes('solubility-equilibrium-4')) { console.log('  ✗ 反例失敗：一次配出過量 Cl− 的 AgCl 沉澱竟通過任務 4'); bad++; }
+  else console.log('  ✓ solubility-equilibrium-4 反例：尚未有沉澱就一次配過量 Cl− 不算同離子效應');
+}
 
 freshMissions(); P = newPage();
 soln(P, 'AgNO3', 0.001, 1);

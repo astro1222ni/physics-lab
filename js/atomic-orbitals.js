@@ -303,8 +303,8 @@
     for (let k = -Math.floor(state.half / step); k <= Math.floor(state.half / step); k++) {
       if (!k) continue;
       const p = toPx(k * step, 0), q = toPx(0, k * step);
-      if (p[0] > 16 && p[0] < W - 40) LD.haloText(ctx, num(k * step, step < 1 ? 1 : 0), p[0], Math.min(H - 4, c0[1] + 15), LD.alpha(col.text, 0.75), 'center', 'alphabetic', '11px ' + LD.FONT);
-      if (q[1] > 40 && q[1] < H - 10) LD.haloText(ctx, num(k * step, step < 1 ? 1 : 0), Math.max(4, c0[0] - 5), q[1] + 4, LD.alpha(col.text, 0.75), 'right', 'alphabetic', '11px ' + LD.FONT);
+      if (p[0] > 16 && p[0] < W - 40) LD.haloText(ctx, num(k * step, step < 1 ? 1 : 0), p[0], Math.min(H - 4, c0[1] + 15), LD.alpha(col.text, 0.75), 'center', 'alphabetic', '12px ' + LD.FONT);
+      if (q[1] > 40 && q[1] < H - 10) LD.haloText(ctx, num(k * step, step < 1 ? 1 : 0), Math.max(4, c0[0] - 5), q[1] + 4, LD.alpha(col.text, 0.75), 'right', 'alphabetic', '12px ' + LD.FONT);
     }
     ctx.restore();
     // 等值面的切線（實線）

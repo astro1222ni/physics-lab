@@ -703,11 +703,11 @@
       c.save();
       c.fillStyle = LD.alpha(col.iod, 0.1);
       c.fillRect(X(57), f.y0, X(Math.min(63, tE)) - X(57), f.y1 - f.y0);
-      if (tE >= 60) LD.haloText(c, '60 s', X(60) - 3, f.y1 - 8, col.muted, 'right', 'alphabetic', '11px ' + FONT);
+      if (tE >= 60) LD.haloText(c, '60 s', X(60) - 3, f.y1 - 8, col.muted, 'right', 'alphabetic', '12px ' + FONT);
       c.restore();
     }
     c.strokeStyle = LD.alpha(col.text, 0.08); c.lineWidth = 1;
-    c.fillStyle = col.muted; c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillStyle = col.muted; c.font = '500 12px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
     for (let t = 0; t <= tE + 1e-9; t += st) { const x = Math.round(X(t)) + 0.5; c.beginPath(); c.moveTo(x, f.y0); c.lineTo(x, f.y1); c.stroke(); c.fillText(num(t, st >= 1 ? 0 : Math.ceil(-Math.log10(st) - 1e-9)), x, f.y1 + 4); }
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let v = 0; v <= 1.0001; v += 0.25) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(f.x0, y); c.lineTo(f.x1, y); c.stroke(); c.fillText(num(v * 100, 0) + ' %', f.x0 - 4, y); }

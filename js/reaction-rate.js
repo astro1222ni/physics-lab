@@ -444,7 +444,7 @@
     LD.pill(ctx, h.t, 10, 24, col.text, 'left', font);
     LD.pill(ctx, h.temp, cw - 10, 24, LD.shade(h.tcol, col.dark ? 0.3 : -0.2), 'right', font);
     if (h.paused) LD.pill(ctx, T('已暫停', 'Paused'), cw / 2, 24, col.muted, 'center', font);
-    else if (h.lag) LD.haloText(ctx, h.lag, cw / 2, ch - 8, col.muted, 'center', 'alphabetic', '11px ' + LD.FONT);
+    else if (h.lag) LD.haloText(ctx, h.lag, cw / 2, ch - 8, col.muted, 'center', 'alphabetic', '12px ' + LD.FONT);
   }
 
   // ======================= 圖表 =======================

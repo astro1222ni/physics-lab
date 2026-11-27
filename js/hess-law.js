@@ -701,7 +701,7 @@
     if (lift === 0) {
       const lbl = hot ? [[T('熱水 ', 'Hot water ') + num(run.cal.Th, 1) + ' °C · ' + num(V, 0) + ' mL', 0]] :
         [['HCl ' + num(run.mix.ca, 2) + ' M · ' + num(V, 0) + ' mL', 0]];
-      richPill(g, lbl, x, by + fsz(13) * 1.25 + 4, hot ? col.hot : col.text, fsz(G.narrow ? 11.5 : 12.5), 'center', '600');
+      richPill(g, lbl, x, by + fsz(13) * 1.25 + 4, hot ? col.hot : col.text, fsz(G.narrow ? 12 : 12.5), 'center', '600');
     }
   }
   function cupLabel() {

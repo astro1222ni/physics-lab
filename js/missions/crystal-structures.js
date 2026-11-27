@@ -19,7 +19,7 @@
     {
       id: 'crystal-structures-1', level: 1,
       title: { zh: '晶胞裡有幾個原子', en: 'How many atoms in the cell?' },
-      desc: { zh: '選「面心立方」，勾「只看晶胞內的部分」，數出每個晶胞的 4 個原子。', en: 'Choose “Face-centred cubic” and tick “Only the part inside the cell” to count the 4 atoms per cell.' },
+      desc: { zh: '選「面心立方」，勾「只看晶胞內的部分」，觀察每個晶胞內的 4 個原子。', en: 'Choose “Face-centred cubic” and tick “Only the part inside the cell” to see the 4 atoms inside each cell.' },
       check: function (ev) { const d = cell(ev); return !!d && d.s === 'fcc' && d.cut; }
     },
     {

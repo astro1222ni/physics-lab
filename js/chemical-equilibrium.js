@@ -677,10 +677,14 @@
     g.strokeStyle = col.pos; g.lineWidth = 2; g.lineCap = 'round';
     g.beginPath(); g.moveTo(gx - gr * 0.12 * Math.cos(a), gy - gr * 0.12 * Math.sin(a)); g.lineTo(gx + gr * 0.7 * Math.cos(a), gy + gr * 0.7 * Math.sin(a)); g.stroke();
     g.fillStyle = col.text; g.beginPath(); g.arc(gx, gy, 2.5, 0, Math.PI * 2); g.fill();
-    g.font = fsz(9) + 'px ' + LD.FONT; g.fillStyle = col.muted; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('0', gx + gr * 0.5 * Math.cos(a0), gy + gr * 0.5 * Math.sin(a0));
-    g.fillText(num(Pmax, 0), gx + gr * 0.5 * Math.cos(a1), gy + gr * 0.5 * Math.sin(a1));
-    g.fillText('bar', gx, gy - gr * 0.38);
+    g.font = fsz(12) + 'px ' + LD.FONT; g.fillStyle = col.muted; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (gr >= 26) {
+      g.fillText('0', gx + gr * 0.56 * Math.cos(a0), gy + gr * 0.56 * Math.sin(a0));
+      g.fillText(num(Pmax, 0), gx + gr * 0.56 * Math.cos(a1), gy + gr * 0.56 * Math.sin(a1));
+      g.fillText('bar', gx, gy - gr * 0.36);
+    } else {
+      g.fillText('bar', gx, gy - gr * 0.34);
+    }
     g.restore();
     LD.pill(g, 'P = ' + sigf(P, 3) + ' bar', gx + gr + 8, gy + 4, col.text, 'left', fsz(12) + 'px ' + LD.FONT);
   }

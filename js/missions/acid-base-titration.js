@@ -28,7 +28,7 @@
     {
       id: 'acid-base-titration-2', level: 2,
       title: { zh: '讀準滴定管', en: 'Read the burette' },
-      desc: { zh: '讓滴定管的讀數停在 10.00 mL：快到的時候改成一滴一滴加。', en: 'Stop with the burette reading exactly 10.00 mL: switch to single drops as you get close.' },
+      desc: { zh: '讓滴定管的讀數停在 10.00 mL（提示：快到的時候可改成一滴一滴加）。', en: 'Stop with the burette reading exactly 10.00 mL (tip: you can switch to single drops as you get close).' },
       check: function (ev) { const d = ev.data; return isS(ev) && Math.abs(d.Vread - 10) < 1e-6; }
     },
     {

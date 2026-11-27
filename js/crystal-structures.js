@@ -666,7 +666,7 @@
       c.save(); c.strokeStyle = col.pos; c.setLineDash([6, 4]); c.lineWidth = 1.4;
       c.beginPath(); c.moveTo(L, yk); c.lineTo(R, yk); c.stroke(); c.restore();
       const kep = R - L > 520 ? T('最密堆積 74.05 %（克卜勒猜想的上限）', 'close packing 74.05 % (Kepler’s upper limit)') : T('最密堆積 74.05 %', 'close packing 74.05 %');
-      LD.haloText(c, kep, L + 8, yk - 9, col.pos, 'left', 'middle', '600 11.5px ' + FONT);
+      LD.haloText(c, kep, L + 8, yk - 9, col.pos, 'left', 'middle', '600 12px ' + FONT);
       // 每個物質一點
       const shift = { sc: 0, bcc: 0, fcc: -0.18, hcp: 0.18, nacl: 0, cscl: 0.18, zns: 0.18, diamond: -0.18 };
       CS.MAT_ORDER.forEach(function (k) {

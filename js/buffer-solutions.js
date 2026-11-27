@@ -500,7 +500,7 @@
     g.fillStyle = hg; g.fillRect(x0 + 1, y0 + 6, bw - 2, bh - 14);
     // 刻度（50～250 mL）
     g.strokeStyle = ink; g.lineWidth = 1; g.fillStyle = ink;
-    g.font = font(9.5 * Lw.fs); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.font = font(12 * Lw.fs); g.textAlign = 'left'; g.textBaseline = 'middle';
     for (let v = 50; v <= 250; v += 50) {
       const y = innerTop + fullH * (1 - v / 280);
       g.beginPath(); g.moveTo(x0 + 6, Math.round(y) + 0.5); g.lineTo(x0 + 6 + (v % 100 === 0 ? 16 : 11), Math.round(y) + 0.5); g.stroke();

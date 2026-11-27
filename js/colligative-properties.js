@@ -583,7 +583,7 @@
     ctx.restore();
     ctx.strokeStyle = LD.alpha(col.muted, 0.6); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.stroke();
     LD.haloText(ctx, T('微觀示意', 'Molecular view'), mx, my + r + 15, col.muted, 'center', 'alphabetic', '600 12px ' + FONT);
-    LD.haloText(ctx, T('溶質放大 ×' + EXAG + '，不依比例', 'solute ×' + EXAG + ', not to scale'), mx, my + r + 30, col.muted, 'center', 'alphabetic', '11px ' + FONT);
+    LD.haloText(ctx, T('溶質放大 ×' + EXAG + '，不依比例', 'solute ×' + EXAG + ', not to scale'), mx, my + r + 30, col.muted, 'center', 'alphabetic', '12px ' + FONT);
   }
 
   // ======================= 圖表 =======================

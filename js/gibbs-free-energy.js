@@ -512,7 +512,7 @@
     const sy = function (v) { return (y0 + y1) / 2 - v / Y * (y1 - y0) / 2; };
     // 縱軸刻度
     const st = niceStep(2 * Y, 5);
-    g.font = '11px ' + LD.FONT; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.font = '12px ' + LD.FONT; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let v = -Y; v <= Y + 1e-9; v += st) {
       const yy = Math.round(sy(v)) + 0.5;
       g.strokeStyle = LD.alpha(col.text, Math.abs(v) < 1e-9 ? 0.35 : 0.07); g.lineWidth = 1;

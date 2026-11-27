@@ -175,7 +175,7 @@
       LD.ball(c, lx, zy, r, rgbStr(lc));
       c.save(); c.setLineDash([5, 5]); c.strokeStyle = rgbStr(lc, 0.55); c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(lx + r, zy); c.lineTo(G.sx, zy); c.stroke(); c.restore();
-      LD.pill(c, T('燈 ', 'Lamp ') + num(state.TL, 0) + ' K', Math.max(4, lx - r), zy + r + 22, pal.muted, 'left', '600 11px ' + FONT);
+      LD.pill(c, T('燈 ', 'Lamp ') + num(state.TL, 0) + ' K', Math.max(4, lx - r), zy + r + 22, pal.muted, 'left', '600 12px ' + FONT);
     }
     // ---- 溫度色條 ----
     const tbX = bx - G.tubeR * 3.3 - 26, tbW = 10, hMax = 135;

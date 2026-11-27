@@ -275,7 +275,7 @@
     g.beginPath(); g.rect(xc, G.pt, G.pr - xc, yc - G.pt); g.fillStyle = rg; g.fill();
     g.restore();
     // ---- 格線與座標 ----
-    const fs = G.fs, f12 = '12px ' + FONT, f11 = '11px ' + FONT;
+    const fs = G.fs, f12 = '12px ' + FONT, f11 = '12px ' + FONT;
     g.save();
     g.beginPath(); g.rect(G.pl, G.pt, G.pr - G.pl, G.pb - G.pt); g.clip();
     const e0 = Math.ceil(Math.log10(s.Pmin) - 1e-9), e1 = Math.floor(Math.log10(s.Pmax) + 1e-9);

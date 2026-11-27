@@ -37,7 +37,7 @@
       check: function (ev) {
         if (!isS(ev, 'n2o4')) return false;
         const d = ev.data;
-        return some(d, function (e) { return e.T === d.T && d.V <= 0.7 * e.V + 1e-9; });
+        return some(d, function (e) { return e.T === d.T && d.V <= 0.7 * e.V + 1e-9 && near(atoms(d).N, atoms(e).N, 1e-6) && near(d.Ar || 0, e.Ar || 0, 1e-6); });
       }
     },
     {

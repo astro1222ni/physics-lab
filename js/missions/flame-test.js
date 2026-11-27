@@ -48,7 +48,7 @@
     {
       id: 'flame-test-5', level: 3,
       title: { zh: '鈉的黃線', en: 'Sodium’s yellow line' },
-      desc: { zh: '沾 NaCl，在光譜圖上用「找亮線」把游標放到鈉的黃線上（589 nm 附近，誤差 0.5 nm 以內）。', en: 'With NaCl on the wire, use “Find bright line” to put the cursor on sodium’s yellow line (near 589 nm, within 0.5 nm).' },
+      desc: { zh: '沾 NaCl，在光譜圖上用「找亮線」或手動拖曳游標，把游標放到鈉的黃線上（589 nm 附近，誤差 0.5 nm 以內）。', en: 'With NaCl on the wire, use “Find bright line” or drag the cursor onto sodium’s yellow line (near 589 nm, within 0.5 nm).' },
       check: function (ev) { const d = ms(ev); return !!d && !d.unknown && has(d, 'Na') && d.isPeak && d.near && d.near.el === 'Na' && Math.abs(d.lam - 589.29) <= 0.5 && d.sig >= 0.02; }
     },
     {

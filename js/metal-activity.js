@@ -697,12 +697,12 @@
     const tb = tu.tb;
     const y1 = g.baseY + 22, y2 = g.baseY + 38;
     const head = (tu.demo ? T('示範', 'demo') : '#' + tu.id) + ' ';
-    ctx.font = '600 11px ' + FONT;
+    ctx.font = '600 12px ' + FONT;
     const hw = ctx.measureText(head).width;
     const body = tb.metal + ' → ' + liqStr(tb.liquid);
     const bw = chemText(ctx, body, 0, 0, { px: 12, measure: true });
     let x = g.cx - (hw + bw) / 2;
-    LD.haloText(ctx, head, x, y1, col.muted, 'left', 'alphabetic', '600 11px ' + FONT);
+    LD.haloText(ctx, head, x, y1, col.muted, 'left', 'alphabetic', '600 12px ' + FONT);
     chemText(ctx, body, x + hw, y1, { px: 12 });
     const line2 = (tb.kind === 'water' ? '' : sigf(tb.c, 2) + ' M · ') + num(tb.T, 0) + ' °C' + (tb.salt ? ' · NaCl' : '');
     LD.haloText(ctx, line2, g.cx, y2, tb.T >= 50 ? col.pos : col.muted, 'center', 'alphabetic', '11px ' + FONT);

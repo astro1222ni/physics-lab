@@ -495,7 +495,7 @@
             const reachY = dy > 0 ? box.y + box.h - p[1] : p[1] - box.y;
             d = Math.max(d, Math.min((reachX + 13) / Math.max(0.001, Math.abs(dx)), (reachY + 13) / Math.max(0.001, Math.abs(dy))));
           }
-          LD.pill(ctx, String(i + 1), p[0] + Math.cos(best) * d, p[1] + Math.sin(best) * d + fsz(8), LD.c.accent, 'center', '700 ' + fsz(11) + 'px ' + LD.FONT);
+          LD.pill(ctx, String(i + 1), p[0] + Math.cos(best) * d, p[1] + Math.sin(best) * d + fsz(8), LD.c.accent, 'center', '700 ' + fsz(12) + 'px ' + LD.FONT);
         });
       }
       (an.name.cisTrans || []).forEach(function (c) {

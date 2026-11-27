@@ -751,7 +751,7 @@
     const inY = jBot - W * 0.6, outY = jTop + W * 0.6;
     LD.tube(g, function (p) { p.moveTo(jx0 + W, inY); p.lineTo(jx0 + W + 14, inY); }, col.glass, 5);
     LD.tube(g, function (p) { p.moveTo(jx0, outY); p.lineTo(jx0 - 14, outY); }, col.glass, 5);
-    const f11 = fsz(11);
+    const f11 = fsz(12);
     LD.arrow(g, jx0 + W + 30, inY, jx0 + W + 16, inY, col.B, 2);
     LD.haloText(g, T('冷水進', 'in'), jx0 + W + 33, inY, col.B, 'left', 'middle', '600 ' + f11 + 'px ' + LD.FONT);
     LD.arrow(g, jx0 - 16, outY, jx0 - 30, outY, col.B, 2);
@@ -918,7 +918,7 @@
     // K 在中間，±2 個數量級
     g.strokeStyle = col.text; g.lineWidth = 2;
     g.beginPath(); g.moveTo(cx, y - 4); g.lineTo(cx, y + h + 4); g.stroke();
-    const f11 = fsz(11);
+    const f11 = fsz(12);
     let qx = null;
     if (q === 0) qx = x0; else if (!isFinite(q) && !isNaN(q)) qx = x1; else if (isFinite(q)) qx = cx + Math.max(-1, Math.min(1, Math.log10(q / k) / 2)) * W / 2;
     if (qx != null) {
