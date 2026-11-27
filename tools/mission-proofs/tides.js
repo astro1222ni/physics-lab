@@ -249,6 +249,11 @@ const ach = {};   // 每個隱藏任務的達成例（用來證明彼此不連�
   expect('h6', highEvs({ sun: false, lat: 21, dec: 20 }, 2), false, '差 1°：月高最多 89°');
   const hs2 = highEvs({ lat: 20, dec: 20 }, 2);
   expect('h6', hs2, false, '有太陽不算，高潮時月高 ' + hs2.map(e => e.data.moonAlt.toFixed(1) + '°').join('、'));
+  // 11/27 站長「好，加 5°」：試玩種子 1、2026 把赤緯、緯度輸入成 ≈0 再關太陽就誤觸
+  const eq = highEvs({ sun: false, lat: 0, dec: 0 }, 2);
+  expect('h6', eq, false, '赤道、赤緯 0°（亂按的特例）：月高 ' + eq.map(e => e.data.moonAlt.toFixed(2) + '°').join('、') + '，但 |赤緯| < 5° 不算');
+  expect('h6', highEvs({ sun: false, lat: 4.9, dec: 4.9 }, 2), false, '緯度 = 赤緯 = 4.9°：還不到 5°');
+  expect('h6', highEvs({ sun: false, lat: -10, dec: -10 }, 2), true, '南半球：緯度 = 赤緯 = −10° 也算');
 }
 // h7 兩邊一樣大、站在同一邊
 {

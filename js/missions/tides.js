@@ -154,7 +154,9 @@
       // 只有月球時，月球在天頂（緯度 = 赤緯）那一刻正好是高潮
       id: 'tides-h6', level: 6, hidden: true,
       riddle: { zh: '抬頭正好看見她的那一刻，海也漲到最滿。', en: 'The moment you look straight up and see her, the sea is at its fullest.' },
-      check: function (ev) { return isHigh(ev) && !ev.data.sun && ev.data.moonAlt >= 89.5; }
+      // 11/27 站長：「好，加 5°」：亂按把赤緯、緯度都輸入成 ≈0 再關太陽就會碰到（赤道上月球本來就在頭頂），
+      // 加 |赤緯| ≥ 5°，要把觀測點移到月球赤緯那條緯線上才算。代號、等級不變。
+      check: function (ev) { return isHigh(ev) && !ev.data.sun && Math.abs(ev.data.dec) >= 5 && ev.data.moonAlt >= 89.5; }
     },
     {
       // 月球的引潮力恰好等於太陽的（d = (H☾/H☉)^(1/3) = 1.2962 倍，滑桿碰不到），又是大潮的位置
