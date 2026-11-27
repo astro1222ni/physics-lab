@@ -18,7 +18,7 @@ function ev(st) {
   const p = { N, a: s.a * UM, d: s.d * UM, lambda: (s.white ? 550 : s.lam) * NM, L: s.L };
   const pi = SC.patternInfo(p), mm = m => m / MM;
   const data = { mode: s.mode, N, white: s.white, lam: s.white ? NaN : s.lam, a: s.a, d: N > 1 ? s.d : NaN, L: s.L,
-    dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700), cursorPlaced: s.y !== null, cursor: s.y !== null };
+    dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, first: pi.first, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700), cursorPlaced: s.y !== null, cursor: s.y !== null };
   if (data.cursor) {
     const c = SC.pointInfo(p, s.y, s.white ? SPEC : null);
     Object.assign(data, { y: mm(s.y), theta: c.theta * 180 / Math.PI, pathD: c.pathD / NM, pathA: c.pathA / NM, pd: c.pd, pa: c.pa, I: c.I, R: c.R, G: c.G, B: c.B });
@@ -42,7 +42,7 @@ function expect(id, steps, note) {
   steps.forEach(st => { r = passing(st); });
   const ok = r.out.includes(id); if (!ok) bad++;
   const e = r.e;
-  console.log((ok ? 'OK  ' : 'FAIL ') + id.padEnd(22), note, '|', ['dy', 'W', 'k', 'nCentral', 'y400', 'y700', 'y', 'pd', 'pathD', 'I'].filter(k => e[k] !== undefined && !Number.isNaN(e[k])).map(k => k + '=' + (typeof e[k] === 'number' ? +e[k].toFixed(4) : e[k])).join(' '), '| also:', r.out.filter(x => x !== id).join(','));
+  console.log((ok ? 'OK  ' : 'FAIL ') + id.padEnd(22), note, '|', ['dy', 'W', 'k', 'first', 'nCentral', 'y400', 'y700', 'y', 'pd', 'pathD', 'I'].filter(k => e[k] !== undefined && !Number.isNaN(e[k])).map(k => k + '=' + (typeof e[k] === 'number' ? +e[k].toFixed(4) : e[k])).join(' '), '| also:', r.out.filter(x => x !== id).join(','));
 }
 function expectNot(id, steps, note) { reset(); let r; steps.forEach(st => { r = passing(st); }); const ok = !r.out.includes(id); if (!ok) bad++; console.log((ok ? 'OK  ' : 'FAIL ') + ('not ' + id).padEnd(26), note); }
 // 預設狀態（雙狹縫、550 nm、a 40、d 120、L 1）與切換模式、白光：不應完成任何任務
@@ -62,6 +62,8 @@ expectNot('slit-interference-3', [{ white: true, y: 0 }, { white: true, y: yW(60
 for (let pth = 500; pth <= 900; pth += 20) { reset(); passing({ white: true, y: 0 }); const r = passing({ white: true, y: yW(pth, 120) }); if (r.out.includes('slit-interference-3')) process.stdout.write(pth + ' '); }
 console.log(' ← 紅邊可以通過的程差（nm）');
 expect('slit-interference-4', [{ a: 30 }], 'a = 30、d = 120');
+expect('slit-interference-4', [{ a: 30, d: 40 }], 'd/a = 4/3，第一個缺級是第 4 級');
+expectNot('slit-interference-4', [{ a: 30, d: 60 }], 'd/a = 4/2，第一個缺級是第 2 級');
 expect('slit-interference-4', [{ mode: 'grating', a: 25, d: 100, N: 6 }], '光柵 a = 25、d = 100');
 expect('slit-interference-5', [{ mode: 'single', lam: 650, a: 32.5 }], 'a = 32.5 μm（打字）、L = 1');
 expect('slit-interference-5', [{ mode: 'single', lam: 650, a: 26, L: 0.8 }], 'a = 26、L = 0.80（滑桿）');

@@ -1221,7 +1221,7 @@
       src: state.src, f: freq(), Tc: state.Tc, d: state.d,
       count: an ? an.count : 0, ns: an ? an.ns.slice() : [], means: an ? an.means.slice() : [], consistent: !!(an && an.consistent),
       nReadings: an ? an.nReadings : 0, perCluster: an ? an.perCluster.slice() : [], noisy: !!(an && an.noisy),
-      v: an ? an.v : NaN, errPct: an ? an.errPct : NaN, e: an ? an.e : NaN, eTheory: C.endCorrection(radius()), lambda: an ? an.lambda : NaN,
+      v: an ? an.v : NaN, vTheory: an ? an.vTheory : NaN, errPct: an ? an.errPct : NaN, e: an ? an.e : NaN, eTheory: C.endCorrection(radius()), lambda: an ? an.lambda : NaN,
       vNaive: an ? an.vNaive : NaN, errNaivePct: an ? an.errNaivePct : NaN,
       groups: groups, fitForks: fit.nF, fitV: fit.v, fitErrPct: fit.errPct,
       records: state.records.map(function (r) { return { src: r.src, f: r.f, Tc: r.Tc, d: r.d, Lread: r.Lread, Ltrue: r.Ltrue, below: r.below, n: r.n }; })

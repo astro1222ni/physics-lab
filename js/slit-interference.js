@@ -1525,7 +1525,7 @@
       const data = {
         mode: state.mode, N: p.N, white: state.white, lam: state.white ? NaN : state.lam,
         a: state.a, d: p.N > 1 ? state.d : NaN, L: state.L,
-        dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700),
+        dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, first: pi.first, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700),
         cursor: state.cursorY !== null,
         cursorPlaced: placedCursor !== null && [state.cursorY, state.mode, state.white, state.lam, state.a, state.d, state.N, state.L].every(function (v, i) {
           return v === placedCursor[i];

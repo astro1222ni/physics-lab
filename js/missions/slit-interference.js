@@ -65,7 +65,7 @@
       id: 'slit-interference-4', level: 3,
       title: { zh: '消失的第四級', en: 'The vanishing fourth order' },
       desc: { zh: '調整縫寬與縫距，讓第 ±4 級亮紋恰好消失（第一個缺級在 ±4 級）。', en: 'Adjust the slit width and separation so that the ±4th-order bright fringes vanish exactly (the first missing order is ±4).' },
-      check: function (ev) { const d = ev.data; return setup(ev) && d.N >= 2 && d.k === 4; }
+      check: function (ev) { const d = ev.data; return setup(ev) && d.N >= 2 && d.first === 4; }
     },
     {
       id: 'slit-interference-5', level: 4,

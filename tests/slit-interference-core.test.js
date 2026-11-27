@@ -335,15 +335,25 @@ test('patternInfo：亮紋間距 λL/d、第 1 級精確位置、缺級間隔、
   close(a.y1, SC.yFromSin(550 / 120000, 1), 1e-12);
   close(a.W, SC.centralWidthExact(P2), 1e-12);
   assert.strictEqual(a.k, 3);
+  assert.strictEqual(a.first, 3);
   assert.strictEqual(a.nCentral, 5);
   close(a.y400, SC.yFromSin(400 * nm / (120 * um), 1), 1e-12);
   assert.ok(a.y700 > a.y400);
   const s = SC.patternInfo(Object.assign({}, P2, { N: 1 }));
-  assert.ok(isNaN(s.dy) && isNaN(s.y1) && isNaN(s.nCentral) && isNaN(s.y400) && s.k === 0);
+  assert.ok(isNaN(s.dy) && isNaN(s.y1) && isNaN(s.nCentral) && isNaN(s.y400) && s.k === 0 && s.first === 0);
   close(s.W, a.W, 1e-12, '中央亮帶寬度只由縫寬決定');
   // 白光光柵：第 1 級光譜展開寬度 ≈ L·Δλ/d（d = 20 μm、L = 2 m → 約 30 mm）
   const g = SC.patternInfo({ N: 10, a: 5 * um, d: 20 * um, lambda: 550 * nm, L: 2 });
   close(g.y700 - g.y400, 2 * 300 * nm / (20 * um), 2e-3);
+});
+
+test('patternInfo：縫距與縫寬比為 4/3 時，第一個缺級在第 4 級', () => {
+  const p = Object.assign({}, P2, { a: 30 * um, d: 40 * um });
+  const a = SC.patternInfo(p);
+  assert.strictEqual(a.k, 0);
+  assert.strictEqual(a.first, 4);
+  assert.strictEqual(SC.patternInfo(Object.assign({}, p, { d: 60 * um })).first, 2);
+  assert.strictEqual(SC.patternInfo(Object.assign({}, p, { a: 31.1 * um })).first, 0);
 });
 
 test('pointInfo：亮紋處程差為整數個波長、缺級處全暗；白光中央為白色', () => {

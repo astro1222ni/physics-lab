@@ -64,7 +64,7 @@ function emitAnalysis() {
     src: st.src, f: st.f, Tc: st.Tc, d: st.d,
     count: an ? an.count : 0, ns: an ? an.ns.slice() : [], means: an ? an.means.slice() : [], consistent: !!(an && an.consistent),
     nReadings: an ? an.nReadings : 0, perCluster: an ? an.perCluster.slice() : [], noisy: !!(an && an.noisy),
-    v: an ? an.v : NaN, errPct: an ? an.errPct : NaN, e: an ? an.e : NaN, eTheory: C.endCorrection(st.d / 2), lambda: an ? an.lambda : NaN,
+    v: an ? an.v : NaN, vTheory: an ? an.vTheory : NaN, errPct: an ? an.errPct : NaN, e: an ? an.e : NaN, eTheory: C.endCorrection(st.d / 2), lambda: an ? an.lambda : NaN,
     vNaive: an ? an.vNaive : NaN, errNaivePct: an ? an.errNaivePct : NaN,
     groups, fitForks: fit.nF, fitV: fit.v, fitErrPct: fit.errPct,
     records: st.records.map(r => ({ src: r.src, f: r.f, Tc: r.Tc, d: r.d, Lread: r.Lread, Ltrue: r.Ltrue, below: r.below, n: r.n }))
@@ -109,6 +109,22 @@ fresh();
 log('預設狀態：L = 40 cm 敲音叉、直接記錄（不在共鳴點）');
 strike(); setL(0.40); record(); setL(0.401); record();
 if (done.size) { console.log('  錯誤：預設操作就完成了任務', [...done].join(', ')); process.exitCode = 1; }
+
+// ---------- 相鄰級數任務的反例 ----------
+fresh(); strike();
+let skipped = measure([1, 3]);
+const adjacentMission = defs.find(m => m.id === 'resonance-tube-4');
+function expectNoAdjacent(data, note) {
+  const ok = Math.abs(data.errPct) <= 2 && !adjacentMission.check({ type: 'analysis', data }, {});
+  log('   ' + (ok ? '通過反例' : '反例失敗') + '：' + note + '，整組擬合誤差 ' + pct(data.errPct));
+  if (!ok) process.exitCode = 1;
+}
+expectNoAdjacent(skipped, '只量第 1、3 級，任務不通過');
+fresh(); st.src = 'app'; st.f = 1500; strike();
+skipped = measure([2, 5]);
+const aliasRejected = skipped.ns.join(',') === '1,2' && !adjacentMission.check({ type: 'analysis', data: skipped }, {});
+log('   ' + (aliasRejected ? '通過反例' : '反例失敗') + '：只量第 2、5 級，擬合誤判為第 1、2 級，任務仍不通過');
+if (!aliasRejected) process.exitCode = 1;
 
 // ---------- 逐一證明 ----------
 fresh(); strike();

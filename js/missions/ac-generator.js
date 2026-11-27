@@ -42,7 +42,7 @@
     {
       id: 'ac-generator-4', level: 3,
       title: { zh: '磁通量為零的那一刻', en: 'The moment the flux is zero' },
-      desc: { zh: '發電機：讓 ε_max 至少 1 V，然後把線圈停在磁通量為零的位置（θ 與 90° 或 270° 相差 2° 內）。此刻的電動勢是最大還是最小？', en: 'Generator: make ε_max at least 1 V, then stop the coil where the flux is zero (θ within 2° of 90° or 270°). Is the emf largest or smallest at this moment?' },
+      desc: { zh: '發電機：讓最大電動勢至少達到 1 V，將畫面暫停在磁通量為零的位置（角度與 90° 或 270° 相差 2° 內），讀出線圈仍在轉動時那一瞬間的電動勢。這時電動勢的大小是最大還是最小？', en: 'Generator: bring the peak emf to at least 1 V and pause the animation at zero flux (within 2° of 90° or 270°). Read the emf of the rotating coil at that instant. Is its magnitude largest or smallest?' },
       check: function (ev) {
         const d = gen(ev);
         return !!d && d.paused && d.epsMax >= 1 && (near(d.theta, 90, 2) || near(d.theta, 270, 2));

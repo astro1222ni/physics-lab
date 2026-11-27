@@ -8,7 +8,7 @@
   //   record：按「記錄」{ src, f, Tc, d, Lread 讀數, Ltrue 真正水面, below, n, noisy, clusters }
   //   analysis：數據表改變後（記錄或刪除）目前條件的分析
   //     { src, f, Tc, d, count 共鳴點數, ns, consistent, nReadings, perCluster 每個共鳴點量了幾次, noisy（全部讀數含誤差）,
-  //       v, errPct, e, eTheory, lambda, groups[各條件的分析], fitForks, fitV, fitErrPct（λ–1/f 圖）, records[全部讀數] }
+  //       v, vTheory, errPct, e, eTheory, lambda, groups[各條件的分析], fitForks, fitV, fitErrPct（λ–1/f 圖）, records[全部讀數] }
   //   guess：神秘音叉核對 { fTrue, fGuess, errPct, clusters, consistent }
   // 長度單位 m；src = 'fork'（音叉）、'app'（手機）、'mystery'（神秘音叉，分析時不知道頻率）。
   const known = function (d) { return d.src !== 'mystery'; };
@@ -38,7 +38,22 @@
       id: 'resonance-tube-4', level: 4,
       title: { zh: '測出聲速', en: 'Measure the speed of sound' },
       desc: { zh: '由相鄰共鳴點的間距求出聲速，與此室溫的理論值相差 2% 以內。', en: 'From the spacing of neighbouring resonances, get a speed of sound within 2% of the theoretical value at this temperature.' },
-      check: function (ev) { const d = ev.data; return an(ev) && known(d) && Math.abs(d.errPct) <= 2; }
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'analysis' || !known(d)) return false;
+        // 讀數表的擬合級數可能把隔級量測判成相鄰，這裡用記錄當時的共鳴級數。
+        const peaks = d.records.filter(function (r) {
+          return r.src === d.src && r.f === d.f && r.Tc === d.Tc && r.d === d.d && r.below <= 3;
+        });
+        return peaks.some(function (a) {
+          return peaks.some(function (b) {
+            if (b.n - a.n !== 1) return false;
+            const lambda = 2 * Math.abs(b.Lread - a.Lread);
+            const v = d.f * lambda;
+            return Math.abs(v - d.vTheory) <= 0.02 * d.vTheory;
+          });
+        });
+      }
     },
     {
       id: 'resonance-tube-5', level: 5,

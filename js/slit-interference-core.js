@@ -304,19 +304,28 @@
    *   y1        第 1 級亮紋的精確位置（N = 1 或 λ ≥ d 時 NaN）
    *   W         中央亮帶寬度（精確；a ≤ λ 時 Infinity）
    *   k         缺級的級數間隔（d/a 為整數時 = d/a；否則或 N = 1 時 0）
+   *   first     可出現的主極大中，第一個正缺級的級數（無缺級或 N = 1 時 0）
    *   nCentral  中央亮帶內的亮紋數（N = 1 時 NaN）
    *   y400、y700 波長 400 nm、700 nm 的第 1 級亮紋位置（白光第 1 級光譜的兩端；N = 1 時 NaN）
    */
   function patternInfo(p) {
     const multi = (p.N || 1) > 1;
-    const first = function (lam) { const s = lam / p.d; return multi && s < 1 ? yFromSin(s, p.L) : NaN; };
+    const firstPosition = function (lam) { const s = lam / p.d; return multi && s < 1 ? yFromSin(s, p.L) : NaN; };
+    let first = 0;
+    if (multi) {
+      const mMax = Math.ceil(p.d / p.lambda) - 1; // |m|λ/d < 1
+      for (let m = 1; m <= mMax; m++) {
+        if (landsOnDark(m, p.a, p.d)) { first = m; break; }
+      }
+    }
     return {
       dy: multi ? fringeSpacing(p) : NaN,
-      y1: first(p.lambda),
+      y1: firstPosition(p.lambda),
       W: centralWidthExact(p),
       k: multi ? missingOrderStep(p.d, p.a) : 0,
+      first: first,
       nCentral: multi ? fringesInCentral(p) : NaN,
-      y400: first(400e-9), y700: first(700e-9)
+      y400: firstPosition(400e-9), y700: firstPosition(700e-9)
     };
   }
 

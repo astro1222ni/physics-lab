@@ -203,7 +203,7 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="The image is calculated from the lens equation \(1/q = 1/f - 1/p\) and \(m = -q/p\).">像的位置與大小直接由成像公式 \(1/q = 1/f - 1/p\) 與 \(m = -q/p\) 計算。</li>
+        <li data-en-html="The simulation uses the paraxial formulas \(1/q = 1/f - 1/p\) and \(m = -q/p\) to find the image position and size. A tall object or one close to the lens or mirror can send rays at large angles to the axis. Aberrations can blur or distort the real image, while the simulation still draws the paraxial result.">本站用近軸成像公式 \(1/q = 1/f - 1/p\) 與 \(m = -q/p\) 計算像的位置和大小。物體很高或離透鏡、面鏡很近時，光線與主軸的夾角可能過大，實際的像會因像差而模糊或變形，本站仍畫出近軸結果。</li>
         <li data-en-html="Every ray is traced independently with the paraxial thin-element rule: a ray reaching the element at height \(y\) with slope \(u\) leaves with slope \(u' = u - y/f\) (a mirror reverses its horizontal direction). The drawn rays therefore really cross at the calculated image; the unit tests check this for all four elements.">每一條光線都用近軸薄元件的規則各自追跡：在元件上高度 \(y\)、斜率 \(u\) 的光線，出射斜率為 \(u' = u - y/f\)（面鏡則水平方向反轉）。所以畫出的光線確實交於計算出的像點，單元測試對四種元件都驗證過。</li>
         <li data-en="This is the ideal thin-lens, paraxial model used in textbooks. Real spherical mirrors and thick lenses have aberrations: rays far from the axis do not meet exactly at one point.">這是課本使用的理想薄透鏡、近軸模型。真實的球面鏡與厚透鏡有像差：離主軸很遠的光線不會剛好交於一點。</li>
         <li data-en="Distances are drawn to scale (see the 10 cm scale bar). The curvature and thickness of the lens and mirror are drawn only schematically.">距離依實際比例繪製（見「10 cm」比例尺）；透鏡與鏡面的彎曲程度與厚度只是示意。</li>

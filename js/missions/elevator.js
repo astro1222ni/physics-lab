@@ -47,7 +47,7 @@
     {
       id: 'elevator-5', level: 4,
       title: { zh: '彈簧拉長 1.8 倍', en: 'Stretch 1.8 times' },
-      desc: { zh: '讓彈簧秤的伸長量變成電梯靜止時的 1.8 倍（誤差 0.5% 內）。', en: 'Make the spring stretch 1.8 times as much as when the elevator is at rest (within 0.5%).' },
+      desc: { zh: '讓彈簧秤平衡時的伸長量變成電梯靜止時的 1.8 倍（誤差 0.5% 內）。', en: 'Make the equilibrium extension of the spring 1.8 times its extension when the elevator is at rest (within 0.5%).' },
       check: function (ev) { const d = ev.data; return ev.type === 'phase' && d.ext0 > 0 && near(d.ext / d.ext0, 1.8, 0.009); }
     },
     {
