@@ -42,8 +42,11 @@ const opt = { light: false, all: false };
 let list = null;
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
-  if (a === '--json') opt.json = argv[++i];
-  else if (a === '--shots') opt.shots = argv[++i];
+  if (a === '--json' || a === '--shots') {
+    const v = argv[++i];
+    if (!v || v.startsWith('--')) { console.error(a + ' 後面要接檔名或資料夾'); process.exit(2); }
+    opt[a.slice(2)] = v;
+  }
   else if (a === '--all') opt.all = true;
   else if (a === '--light') opt.light = true;
   else if (a === '--font') opt.font = true;
@@ -90,7 +93,8 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
   const f = path.join(ROOT, p);
-  if (!f.startsWith(ROOT)) { r.writeHead(403); r.end(); return; }
+  const rel = path.relative(ROOT, f);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) { r.writeHead(403); r.end(); return; }
   fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' }); r.end(d); });
 });
 
@@ -123,8 +127,9 @@ srv.listen(0, '127.0.0.1', async () => {
 
   async function one(m) {
     const r = { m, thumb: THUMBS.includes('"' + m + '"') || THUMBS.includes("'" + m + "'"), bad: [] };
+    let s = null;
     try {
-      let s = await open(m, 412, 780);
+      s = await open(m, 412, 780);
       r.p = await s.pg.evaluate(PORTRAIT); r.p.pitch = await s.pg.evaluate(PITCH); r.p.errs = s.errs;
       await shot(s.pg, m, '412'); await s.ctx.close();
       s = await open(m, 844, 390);
@@ -133,7 +138,7 @@ srv.listen(0, '127.0.0.1', async () => {
       s = await open(m, 1280, 800);
       r.d = { sw: await s.pg.evaluate(() => document.documentElement.scrollWidth), vw: 1280, pitch: await s.pg.evaluate(PITCH), errs: s.errs };
       await shot(s.pg, m, '1280'); await s.ctx.close();
-    } catch (e) { r.err = String(e.message).slice(0, 120); r.bad.push('無法量：' + r.err); return r; }
+    } catch (e) { r.err = String(e.message).slice(0, 120); r.bad.push('無法量：' + r.err); if (s && s.ctx) await s.ctx.close().catch(() => {}); return r; } // 出錯也關掉，不留瀏覽器分頁（11/27 複查【中】）
     const p = r.p, l = r.l, d = r.d, B = r.bad;
     // ①
     if (p.noDeck) B.push('①沒有分頁操作台（.labdeck）');
@@ -167,6 +172,9 @@ srv.listen(0, '127.0.0.1', async () => {
 
   const q = list.slice(); const N = Math.min(3, q.length);
   let done = 0;
+  const bye = async () => { try { await browser.close(); } catch (e) {} try { srv.close(); } catch (e) {} };
+  process.once('uncaughtException', async e => { console.error('✗ layout-audit 出錯：' + (e && e.stack || e)); await bye(); process.exit(2); });
+  process.once('unhandledRejection', async e => { console.error('✗ layout-audit 出錯：' + (e && e.stack || e)); await bye(); process.exit(2); });
   await Promise.all(Array.from({ length: N }, async () => {
     while (q.length) {
       const m = q.shift(); const r = await one(m); res.push(r); done++;

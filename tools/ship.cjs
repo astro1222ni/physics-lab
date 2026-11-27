@@ -80,6 +80,9 @@ function git(args, o) {
   return o.full ? r : (r.stdout || '').trim();
 }
 const lines = s => s ? s.split('\n').map(x => x.trim()).filter(Boolean) : [];
+// git status --porcelain 第 1、2 碼是狀態（可能是空白），不可 trim；檔名從第 4 碼起（11/27 Antigravity 複查【高】）
+const porcelain = () => { const r = git(['-c', 'core.quotepath=false', 'status', '--porcelain', '--untracked-files=no'], { full: true }); return (r.stdout || '').split(/\r?\n/).filter(Boolean); };
+const porcelainFile = l => { const f = l.slice(3).trim(); const i = f.indexOf(' -> '); return i >= 0 ? f.slice(i + 4) : f; };
 
 // ── 找 repo 根目錄、python ──
 cwd = git(['rev-parse', '--show-toplevel']);
@@ -103,7 +106,7 @@ function resolveStampConflicts() {
     const p = path.join(cwd, f);
     if (!fs.existsSync(p)) { bad.push(f + '（一邊刪除一邊修改）'); continue; }
     const text = fs.readFileSync(p, 'utf8');
-    const re = /^<<<<<<< [^\n]*\n([\s\S]*?)^=======\n([\s\S]*?)^>>>>>>> [^\n]*\n/gm;
+    const re = /^<<<<<<< [^\r\n]*\r?\n([\s\S]*?)^=======\r?\n([\s\S]*?)^>>>>>>> [^\r\n]*\r?\n/gm; // CRLF 檔也要解得開（11/27 複查【中】）
     let okFile = true, n = 0;
     const out = text.replace(re, (m, ours, theirs) => { n++; if (normVer(ours) !== normVer(theirs)) okFile = false; return ours; });
     if (!okFile || !n || /^(<<<<<<<|>>>>>>>) /m.test(out)) { bad.push(f); continue; }
@@ -191,9 +194,10 @@ function checks() {
 
 function fetchUrl(url) {
   return new Promise(res => {
-    https.get(url, { headers: { 'User-Agent': 'astro-lab-ship', 'Cache-Control': 'no-cache' } }, r => {
+    const req = https.get(url, { headers: { 'User-Agent': 'astro-lab-ship', 'Cache-Control': 'no-cache' }, timeout: 20000 }, r => {
       const b = []; r.on('data', c => b.push(c)); r.on('end', () => res({ status: r.statusCode, body: Buffer.concat(b) }));
     }).on('error', e => res({ status: 0, body: Buffer.from(String(e)) }));
+    req.on('timeout', () => req.destroy(new Error('連線逾時 20 秒'))); // 半開連線不可卡死外層迴圈（11/27 複查【中】）
   });
 }
 const lf = b => Buffer.from(b.toString('binary').replace(/\r\n/g, '\n'), 'binary');
@@ -276,9 +280,9 @@ function stamp8() { const d = new Date(Date.now() + 8 * 3600e3).toISOString(); r
       console.log('  ' + git(['log', '-1', '--format=%h %s']));
     }
   } else {
-    const dirty = lines(git(['status', '--porcelain', '--untracked-files=no']));
+    const dirty = porcelain();
     if (opt.add) {
-      const notMine = dirty.map(l => l.slice(3)).filter(f => !opt.add.includes(f));
+      const notMine = dirty.map(porcelainFile).filter(f => !opt.add.includes(f));
       if (lines(git(['diff', '--cached', '--name-only'])).some(f => !opt.add.includes(f))) die('暫存區已有別的檔，先處理：' + lines(git(['diff', '--cached', '--name-only'])).join('、'));
       git(['add', '--', ...opt.add]);
       git(['commit', '-q', '-m', opt.msg + '\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>']);
@@ -286,13 +290,13 @@ function stamp8() { const d = new Date(Date.now() + 8 * 3600e3).toISOString(); r
     } else if (dirty.length) {
       die('工作樹有沒 commit 的改動，先 commit 或用 --add 指名：\n  ' + dirty.join('\n  '));
     }
-    if (lines(git(['status', '--porcelain', '--untracked-files=no'])).length && !opt.add) die('工作樹不乾淨');
+    if (porcelain().length && !opt.add) die('工作樹不乾淨');
   }
 
   // ── 子串交件模式 ──
   if (opt.handoff) {
     step('接上最新 main');
-    if (lines(git(['status', '--porcelain', '--untracked-files=no'])).length) die('工作樹還有沒 commit 的改動（--add 以外的檔），交件前先處理');
+    if (porcelain().length) die('工作樹還有沒 commit 的改動（--add 以外的檔），交件前先處理');
     rebaseOntoMain();
     const { changed, deleted } = changedFiles();
     if (!changed.length && !deleted.length) die('和 main 沒有差異，沒東西可交');
