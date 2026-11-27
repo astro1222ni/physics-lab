@@ -23,6 +23,7 @@ Do NOT edit js/missions/index.js, index.html, leaderboard.html, js/missions.js, 
 - Missions must be reached by operating the experiment to a specific standard and must teach real physics; low levels easy, high levels genuinely demanding; respect slider ranges and typed precision (data-decimals).
 - Never use Unicode superscript digit characters (⁰⁴⁵⁶⁷⁸⁹⁻) in mission texts; write 10^14 style or rephrase.
 - Hidden riddles: poetic, must not state or obviously paraphrase the condition.
+- 隱藏任務只能有單純的 riddle 字串（`riddle: { zh: '…', en: '…' }`，兩個都是非空字串），不可讀共用檔私有狀態（例如 `LabMission._state`），不可用 getter 或 defineProperty 讓 riddle 在完成後換成 desc。隱藏任務的 desc 只是給證明與維護看的內部說明，不會顯示給學生。`tests/mission-hidden-riddle.test.js` 會擋。
 - Verify: all tests pass (`npm test`); Playwright with mock backend (complete ≥ 3 missions incl. a hidden one; celebration once; repeats give nothing; English mode has no CJK in mission texts; no page errors; the page otherwise behaves exactly as before).
 - Serve with `npm run serve` (or let `npm run check -- <slug>` serve itself). Never write test data to the real Firebase database — use tools/mock-backend.js. Scratch only in <系統暫存資料夾>（不要放在專案裡）
 - No git commit/push, no tools/stamp.py.

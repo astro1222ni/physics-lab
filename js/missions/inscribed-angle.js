@@ -107,28 +107,28 @@
     {
       id: 'inscribed-angle-h1', level: 3, hidden: true,
       title: { zh: '三人同高', en: 'Three of a height' },
-      desc: { zh: '圈上站著三個人，誰看另外兩個都是同樣的角度。', en: 'Three people stand on the ring, and each sees the other two under the same angle.' },
+      riddle: { zh: '圈上站著三個人，誰看另外兩個都是同樣的角度。', en: 'Three people stand on the ring, and each sees the other two under the same angle.' },
       // ∠APB = 60° 而且 PA = PB：△PAB 是正三角形（差 0.1°、|PA − PB| 不到 AB 的 0.4%）
       check: function (ev) { const d = ev.data; return ins(ev) && Math.abs(d.ins - 60) <= 0.1 && d.eqPP <= 0.004; }
     },
     {
       id: 'inscribed-angle-h2', level: 4, hidden: true,
       title: { zh: '四季一樣長', en: 'Four equal seasons' },
-      desc: { zh: '一年分成四季，每一季一樣長。', en: 'A year in four seasons, each exactly as long as the others.' },
+      riddle: { zh: '一年分成四季，每一季一樣長。', en: 'A year in four seasons, each exactly as long as the others.' },
       // 四段弧都是 90°（差 0.3° 以內）：內接正方形
       check: function (ev) { return quad(ev) && ev.data.poly4 <= 0.3; }
     },
     {
       id: 'inscribed-angle-h3', level: 5, hidden: true,
       title: { zh: '向日葵的比', en: 'The sunflower’s ratio' },
-      desc: { zh: '一位兩腰一樣長的角，頂角很尖或很鈍；它的腰和底，是向日葵與鸚鵡螺都知道的比。', en: 'Equal legs and a very sharp — or very blunt — apex; leg and base keep the ratio that sunflowers and nautilus shells know.' },
+      riddle: { zh: '一位兩腰一樣長的角，頂角很尖或很鈍；它的腰和底，是向日葵與鸚鵡螺都知道的比。', en: 'Equal legs and a very sharp — or very blunt — apex; leg and base keep the ratio that sunflowers and nautilus shells know.' },
       // 黃金三角形：PA = PB，∠APB = 36°（腰／底 = φ）或 108°（底／腰 = φ）
       check: function (ev) { const d = ev.data; return ins(ev) && (Math.abs(d.ins - 36) <= 0.1 || Math.abs(d.ins - 108) <= 0.1) && d.eqPP <= 0.004; }
     },
     {
       id: 'inscribed-angle-h4', level: 5, hidden: true,
       title: { zh: '門外與屋裡', en: 'Outside the door, inside the room' },
-      desc: { zh: '從門外走到擦過牆的那一點，和從屋子正中央走到牆，一樣遠；而且你真的擦過了牆。', en: 'From outside to the point where you graze the wall is just as far as from the middle of the room to the wall — and you really do graze it.' },
+      riddle: { zh: '從門外走到擦過牆的那一點，和從屋子正中央走到牆，一樣遠；而且你真的擦過了牆。', en: 'From outside to the point where you graze the wall is just as far as from the middle of the room to the wall — and you really do graze it.' },
       // 切線長 QT = R ⇔ OQ = √2·R（差 0.3%），而且有一條線和圓相切（差 1%）
       check: function (ev) {
         const d = ev.data;
@@ -138,7 +138,7 @@
     {
       id: 'inscribed-angle-h5', level: 6, hidden: true,
       title: { zh: '穿心而過', en: 'Straight through the heart' },
-      desc: { zh: '一條路直直穿過圓心；站在路上的人，到圓的距離剛好等於圓的半徑。回頭看兩道擦邊的視線，夾著正三角形的一角。', en: 'A road runs straight through the centre; the walker on it is exactly one radius away from the circle. Look back: the two grazing sight lines hold one corner of an equilateral triangle.' },
+      riddle: { zh: '一條路直直穿過圓心；站在路上的人，到圓的距離剛好等於圓的半徑。回頭看兩道擦邊的視線，夾著正三角形的一角。', en: 'A road runs straight through the centre; the walker on it is exactly one radius away from the circle. Look back: the two grazing sight lines hold one corner of an equilateral triangle.' },
       // 一條割線通過圓心（圓心距不到 1% R），Q 到近交點 = R（差 0.5%）⇔ OQ = 2R，兩條切線夾 60°
       check: function (ev) {
         const d = ev.data;
@@ -148,14 +148,14 @@
     {
       id: 'inscribed-angle-h6', level: 7, hidden: true,
       title: { zh: '少了一個角的星', en: 'A star missing a point' },
-      desc: { zh: '一顆五角星少了一個角，剩下的四個仍然記得自己是誰。', en: 'A five-pointed star has lost one point; the other four still remember who they are.' },
+      riddle: { zh: '一顆五角星少了一個角，剩下的四個仍然記得自己是誰。', en: 'A five-pointed star has lost one point; the other four still remember who they are.' },
       // 四個頂點都是正五邊形的頂點：四段弧都是 72° 的倍數（差 0.3° 以內）
       check: function (ev) { return quad(ev) && ev.data.poly5 <= 0.3; }
     },
     {
       id: 'inscribed-angle-h7', level: 7, hidden: true,
       title: { zh: '黃金零頭', en: 'A golden remainder' },
-      desc: { zh: '切進圓裡的那一段，和只擦過圓的那一條一樣長；留在外面的一截，就成了黃金的零頭。', en: 'The piece that cuts into the circle is as long as the line that only grazes it; the part left outside becomes a golden remainder.' },
+      riddle: { zh: '切進圓裡的那一段，和只擦過圓的那一條一樣長；留在外面的一截，就成了黃金的零頭。', en: 'The piece that cuts into the circle is as long as the line that only grazes it; the part left outside becomes a golden remainder.' },
       // Q 在圓外，某條割線的弦長 AB = 切線長 QT（差 0.05%）：QT^2 = QA·QB 與 AB = QT 推得 QB／QA = φ^2
       check: function (ev) {
         const d = ev.data;
@@ -165,21 +165,21 @@
     {
       id: 'inscribed-angle-h8', level: 8, hidden: true,
       title: { zh: '和諧的對邊', en: 'Harmonious opposites' },
-      desc: { zh: '兩組對邊各自相乘，得到一樣的數；它卻不是風箏。', en: 'Multiply each pair of opposite sides and you get the same number — yet it is no kite.' },
+      riddle: { zh: '兩組對邊各自相乘，得到一樣的數；它卻不是風箏。', en: 'Multiply each pair of opposite sides and you get the same number — yet it is no kite.' },
       // 調和四邊形 AB·CD = BC·DA（相對差 0.2%），排除箏形（相鄰邊相對差至少 3%）
       check: function (ev) { const d = ev.data; return quad(ev) && Math.abs(d.harm) <= 0.002 && d.kite >= 0.03; }
     },
     {
       id: 'inscribed-angle-h9', level: 9, hidden: true,
       title: { zh: '被抱著也抱著', en: 'Held and holding' },
-      desc: { zh: '它被一個圓抱著，自己也抱著另一個圓；它卻不是風箏。', en: 'It is held by one circle and holds another inside itself — yet it is no kite.' },
+      riddle: { zh: '它被一個圓抱著，自己也抱著另一個圓；它卻不是風箏。', en: 'It is held by one circle and holds another inside itself — yet it is no kite.' },
       // 雙心四邊形：皮托 AB + CD = BC + DA（相對差 0.05%）⇔ 有內切圓；排除箏形
       check: function (ev) { const d = ev.data; return quad(ev) && Math.abs(d.pitot) <= 0.0005 && d.kite >= 0.03; }
     },
     {
       id: 'inscribed-angle-h10', level: 10, hidden: true,
       title: { zh: '畫不出來的那位', en: 'The one that cannot be drawn' },
-      desc: { zh: '高斯證明了尺規畫不出它；它還是借了你四個角。', en: 'Gauss proved that ruler and compass cannot draw it; still, it lends you four of its corners.' },
+      riddle: { zh: '高斯證明了尺規畫不出它；它還是借了你四個角。', en: 'Gauss proved that ruler and compass cannot draw it; still, it lends you four of its corners.' },
       // 四個頂點都是正七邊形的頂點：四段弧都是 360°／7 的倍數（差 0.15° 以內，要用方向鍵微調）
       check: function (ev) { return quad(ev) && ev.data.poly7 <= 0.15; }
     }

@@ -103,21 +103,21 @@
     {
       id: 'triangle-centers-h1', level: 3, hidden: true,
       title: { zh: '整數抱著整數', en: 'Whole numbers hugging a whole number' },
-      desc: { zh: '三條整數的邊圍出一個端正的角，懷裡抱著的圓，半徑也是整數。', en: 'Three whole-number sides close around a square corner, and the circle they hug has a whole-number radius too.' },
+      riddle: { zh: '三條整數的邊圍出一個端正的角，懷裡抱著的圓，半徑也是整數。', en: 'Three whole-number sides close around a square corner, and the circle they hug has a whole-number radius too.' },
       // 整數邊直角三角形，內切圓半徑 r = (兩股和 − 斜邊)／2 也是整數（例：3、4、5，r = 1）
       check: function (ev) { const d = ev.data; return tc(ev) && right(d) && d.intSides && d.intR; }
     },
     {
       id: 'triangle-centers-h2', level: 4, hidden: true,
       title: { zh: '四心同心', en: 'Four hearts as one' },
-      desc: { zh: '四顆心擠在同一個地方，幾乎分不出誰是誰。', en: 'Four hearts crowded into one spot, almost impossible to tell apart.' },
+      riddle: { zh: '四顆心擠在同一個地方，幾乎分不出誰是誰。', en: 'Four hearts crowded into one spot, almost impossible to tell apart.' },
       // 四心彼此的距離都不到外接圓半徑的 1%（格點上沒有真正的正三角形，只能逼近）
       check: function (ev) { return tc(ev) && ev.data.spread <= 0.01; }
     },
     {
       id: 'triangle-centers-h3', level: 5, hidden: true,
       title: { zh: '並肩而行', en: 'Side by side' },
-      desc: { zh: '那條串起三顆心的線，乖乖地和一條邊並肩而行——而且沒有一個角是直角的一半。', en: 'The line that threads three hearts walks side by side with one edge — and no angle is half a right angle.' },
+      riddle: { zh: '那條串起三顆心的線，乖乖地和一條邊並肩而行——而且沒有一個角是直角的一半。', en: 'The line that threads three hearts walks side by side with one edge — and no angle is half a right angle.' },
       // 歐拉線平行一邊（與 BC 平行 ⇔ tan B tan C = 3 ⇔ 垂心把高 AD 分成 2 : 1）；格點上做得到剛好平行。
       // 含 45° 的解（tan 是 1 和 3）在格點上太常見、亂按會碰到，所以排除 45° 與 135°（例：tan 是 1.5 和 2）
       check: function (ev) { const d = ev.data; return tc(ev) && d.eulerPar <= 1e-6 && d.angs.every(function (x) { return Math.abs(x - 45) > 0.01 && Math.abs(x - 135) > 0.01; }); }
@@ -125,49 +125,49 @@
     {
       id: 'triangle-centers-h4', level: 6, hidden: true,
       title: { zh: '九點的中心', en: 'The centre of nine' },
-      desc: { zh: '穿過九個點的那個圓，它的中心恰好落在小圓的圓周上。', en: 'The circle through nine points has its centre resting exactly on the small circle.' },
+      riddle: { zh: '穿過九個點的那個圓，它的中心恰好落在小圓的圓周上。', en: 'The circle through nine points has its centre resting exactly on the small circle.' },
       // 九點圓圓心 N 在內切圓上：費爾巴哈 IN = R／2 − r = r ⇔ R = 4r（相對誤差 0.01% 以內）
       check: function (ev) { return tc(ev) && ev.data.nr <= 1e-4; }
     },
     {
       id: 'triangle-centers-h5', level: 6, hidden: true,
       title: { zh: '高的交會處', en: 'Where the heights meet' },
-      desc: { zh: '三條高的交會處，恰好坐在小圓的圓周上。', en: 'The meeting point of the three heights sits exactly on the small circle.' },
+      riddle: { zh: '三條高的交會處，恰好坐在小圓的圓周上。', en: 'The meeting point of the three heights sits exactly on the small circle.' },
       // 垂心在內切圓上：HI = r（相對誤差 0.01% 以內）
       check: function (ev) { return tc(ev) && ev.data.hr <= 1e-4; }
     },
     {
       id: 'triangle-centers-h6', level: 7, hidden: true,
       title: { zh: '永不相交', en: 'Never to meet' },
-      desc: { zh: '大圓的心與小圓的心連成一線，和一條邊永遠不會相交。', en: 'The centres of the big circle and the small one line up with an edge they will never meet.' },
+      riddle: { zh: '大圓的心與小圓的心連成一線，和一條邊永遠不會相交。', en: 'The centres of the big circle and the small one line up with an edge they will never meet.' },
       // OI 平行一邊（OI ∥ BC ⇔ R cos A = r ⇔ cos B + cos C = 1），夾角 0.004° 以內
       check: function (ev) { return tc(ev) && ev.data.oiPar <= 0.004; }
     },
     {
       id: 'triangle-centers-h7', level: 7, hidden: true,
       title: { zh: '停在小圓上', en: 'Resting on the small circle' },
-      desc: { zh: '大圓的心，恰好停在小圓的圓周上——但這裡沒有端正的角。', en: 'The big circle’s centre rests exactly on the small circle — and there is no square corner here.' },
+      riddle: { zh: '大圓的心，恰好停在小圓的圓周上——但這裡沒有端正的角。', en: 'The big circle’s centre rests exactly on the small circle — and there is no square corner here.' },
       // OI = r ⇔ R(R − 2r) = r^2 ⇔ R／r = 1 + √2（等腰直角三角形就是，所以排除直角）
       check: function (ev) { const d = ev.data; return tc(ev) && d.oir <= 1e-4 && notRight(d); }
     },
     {
       id: 'triangle-centers-h8', level: 8, hidden: true,
       title: { zh: '黃金的距離', en: 'A golden distance' },
-      desc: { zh: '大圓心走到小圓心，剛好是小圓的一條直徑那麼遠。', en: 'From the big circle’s centre to the small one’s is exactly one diameter of the small circle.' },
+      riddle: { zh: '大圓心走到小圓心，剛好是小圓的一條直徑那麼遠。', en: 'From the big circle’s centre to the small one’s is exactly one diameter of the small circle.' },
       // OI = 2r ⇔ R(R − 2r) = 4r^2 ⇔ R／r = 1 + √5 = 2φ（黃金比）
       check: function (ev) { return tc(ev) && ev.data.oi2r <= 1.5e-4; }
     },
     {
       id: 'triangle-centers-h9', level: 9, hidden: true,
       title: { zh: '在小圓心折一下', en: 'A fold at the small centre' },
-      desc: { zh: '大圓心、小圓心與一個頂點，在小圓心處折出一個端正的角；三角形本身卻沒有，最小角也至少有 10°。', en: 'The big circle’s centre, the small circle’s centre and a corner fold into a square corner at the small one — though the triangle itself has none, and its smallest angle is at least 10°.' },
+      riddle: { zh: '大圓心、小圓心與一個頂點，在小圓心處折出一個端正的角；三角形本身卻沒有，最小角也至少有 10°。', en: 'The big circle’s centre, the small circle’s centre and a corner fold into a square corner at the small one — though the triangle itself has none, and its smallest angle is at least 10°.' },
       // OI ⊥ AI ⇔ b + c = 2a（三邊成等差），不是直角、最小角 ≥ 10°，與 90° 差 0.001° 以內
       check: function (ev) { const d = ev.data; return tc(ev) && d.oiPerp <= 1e-3 && notRight(d) && d.small >= 10; }
     },
     {
       id: 'triangle-centers-h10', level: 10, hidden: true,
       title: { zh: '一根輻條', en: 'One spoke' },
-      desc: { zh: '從某個角走到高的交會處，量起來恰好是大圓的一根輻條——沒有端正的角，三個角也不全相等。', en: 'From one corner to where the heights meet is exactly one spoke of the big circle — no square corner, and not all angles equal.' },
+      riddle: { zh: '從某個角走到高的交會處，量起來恰好是大圓的一根輻條——沒有端正的角，三個角也不全相等。', en: 'From one corner to where the heights meet is exactly one spoke of the big circle — no square corner, and not all angles equal.' },
       // 頂點到垂心 = R（AH = 2R|cos A| = R ⇔ A = 60° 或 120°）。格點上沒有剛好 60° 的角，要用 √3 的好分數近似（例 265／153），
       // 相對誤差 0.003% 以內（約 0.001°）；不是直角、最大最小角差 ≥ 5°
       check: function (ev) { const d = ev.data; return tc(ev) && d.hR <= 3e-5 && notRight(d) && d.big - d.small >= 5; }
