@@ -170,7 +170,7 @@ const SOL = {
   'kepler-h2': ['sun', { v0: 33.11 }],
   'kepler-h3': ['sun', { v0: 46.28 }]
 };
-for (const m of missions) {
+for (const m of missions.filter(m => !m.hidden || Number(m.id.split('-h')[1]) <= 3)) {
   const sol = SOL[m.id];
   if (!sol) { ok = false; console.log('✗ ' + m.id.padEnd(10) + ' ' + String(m.level).padStart(2) + '★  沒有提供解'); continue; }
   const preset = sol[0], runs = sol.slice(1), bad = [];
@@ -183,6 +183,53 @@ for (const m of missions) {
   ok = ok && pass;
   console.log((pass ? '✓ ' : '✗ ') + m.id.padEnd(10) + ' ' + String(m.level).padStart(2) + '★' + (m.hidden ? '（隱藏）' : '') + '  ' +
     groups.map((g, i) => describe(runs[i], g)).join('；') + (bad.length ? '  ' + bad.join('；') : ''));
+}
+
+// ---------- 2. 新隱藏任務：實際可輸入的軌道 ----------
+const newSolutions = {
+  'kepler-h4': ['sun', { r0: 1, v0: 21.06 }],
+  'kepler-h5': ['sun', { r0: 0.9, v0: 32, alpha: 30 }, { r0: 0.9, v0: 32, alpha: -30 }],
+  'kepler-h6': ['sun', { r0: 0.7, v0: 42.37 }, { r0: 1.7, v0: 17.45 }],
+  'kepler-h7': ['sun', { M: 0.6, r0: 1.15, v0: 20, alpha: 15 }, { M: 2.4, r0: 1.15, v0: 40, alpha: 15 }],
+  'kepler-h8': ['sun', { v0: 28 }, { v0: 39.6, alpha: 45 }],
+  'kepler-h9': ['sun', { r0: 0.45, v0: 45, alpha: 10 }, { r0: 1.8, v0: 22.5, alpha: 10 }],
+  'kepler-h10': ['earth', { M: 1.25, r0: 16000, v0: 7.361, alpha: 20 },
+    { M: 1.25, r0: 16000, snap: 'esc', alpha: 20 }, { M: 1.25, r0: 16000, v0: 8.389, alpha: 20 }]
+};
+const hidden = missions.filter(m => m.hidden);
+const ids = Object.keys(newSolutions);
+const assert = require('node:assert/strict');
+
+assert.equal(hidden.length, 10);
+assert.ok(hidden.every(m => m.level >= 3 && m.level <= 10));
+assert.ok(hidden.filter(m => m.level >= 7).length >= 3);
+assert.ok(hidden.filter(m => m.level > 7).length >= 3);
+for (const [id, [preset, ...runs]] of Object.entries(newSolutions)) {
+  reset();
+  const S = session();
+  S.switchTo(preset);
+  const groups = runs.map(c => {
+    for (const [name, value] of Object.entries(c)) {
+      if (name !== 'snap') assert.ok(['typed', 'slider'].includes(uiKind(preset, name === 'alpha' ? 'al' : name, value)));
+    }
+    return S.launch(c);
+  });
+  const got = feed(groups.flat()).filter(x => hidden.some(m => m.id === x));
+  assert.deepEqual(got, [id], id + ' 隱藏任務互斥');
+  console.log('✓ ' + id + '  ' + groups.map((g, i) => describe(runs[i], g)).join('；'));
+}
+for (const [id, [preset, ...runs]] of Object.entries(SOL)) {
+  reset();
+  const S = session();
+  S.switchTo(preset);
+  assert.deepEqual(feed(runs.flatMap(c => S.launch(c))).filter(id => ids.includes(id)), [], id + ' 誤觸新任務');
+}
+reset();
+const combined = session();
+for (const preset of Object.keys(PRESETS)) {
+  combined.switchTo(preset);
+  const runs = Object.entries(SOL).filter(([id, sol]) => !id.includes('-h') && sol[0] === preset).flatMap(([, sol]) => sol.slice(1));
+  assert.deepEqual(feed(runs.flatMap(c => combined.launch(c))).filter(id => ids.includes(id)), [], '連做公開任務誤觸 ' + preset);
 }
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');

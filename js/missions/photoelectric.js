@@ -25,6 +25,14 @@
     return out;
   };
 
+  function keepHiddenReading(ev, mem, accept, match) {
+    if (ev.type === 'reset') mem.list = [];
+    if (ev.type !== 'change' || !accept(ev.data)) return false;
+    const d = ev.data;
+    return remember(mem, d).some(function (o) { return o !== d && match(o, d); });
+  }
+  const sameBeam = function (a, b) { return a.metal === b.metal && a.lambda === b.lambda && a.P === b.P; };
+
   LabMission.register('photoelectric', [
     {
       id: 'photoelectric-1', level: 1,
@@ -162,6 +170,93 @@
         const d = ev.data;
         return remember(mem, d).some(function (o) {
           return o !== d && o.metal === d.metal && Math.abs(o.lambda - d.lambda) >= 100 && Math.abs(o.P - d.P) >= 5 && rel(o.I, d.I, 0.005);
+        });
+      }
+    },
+    {
+      id: 'photoelectric-h4', level: 3, hidden: true,
+      riddle: { zh: '同一輪天色下，有扇門看不見來客。', en: 'Under the same sky, one of the doors never sees its guest.' },
+      check: function (ev) {
+        const d = ev.data, b = d.base;
+        return ev.type === 'change' && d.key === 'metal' && !!b && b.metal === 'Cs' && d.metal === 'Cu' &&
+          d.lambda >= 350 && d.lambda <= 390 && d.V >= 2 && d.P >= 25 && d.P <= 75 &&
+          b.emits && !b.zero && !d.emits && d.zero;
+      }
+    },
+    {
+      id: 'photoelectric-h5', level: 5, hidden: true,
+      riddle: { zh: '兩扇窗都黑著，只有一扇窗外亮著。', en: 'Two windows are dark; daylight lies outside only one.' },
+      check: function (ev, mem) {
+        return keepHiddenReading(ev, mem, function (d) {
+          return d.key === 'P' && d.V >= 2 && d.zero && ((d.P === 0 && d.Kmax >= 0.5) || (d.P >= 35 && d.P <= 75 && !d.emits));
+        }, function (o, d) {
+          return o.metal === d.metal && o.V === d.V && (o.P === 0) !== (d.P === 0);
+        });
+      }
+    },
+    {
+      id: 'photoelectric-h6', level: 6, hidden: true,
+      riddle: { zh: '同一道門兩面迎風，進門的人數並不對半分。', en: 'The wind blows from either side of the same gate, and the arrivals are far from even.' },
+      check: function (ev, mem) {
+        return keepHiddenReading(ev, mem, function (d) {
+          return d.key === 'V' && d.P >= 20 && d.Kmax >= 0.85 && d.Kmax <= 1.8 &&
+            !d.zero && rel(Math.abs(d.V) / d.Kmax, 0.5, 0.028);
+        }, function (o, d) {
+          return sameBeam(o, d) && o.V === -d.V && Math.abs(o.collected - d.collected) >= 0.6;
+        });
+      }
+    },
+    {
+      id: 'photoelectric-h7', level: 7, hidden: true,
+      riddle: { zh: '兩扇門收的過路錢不同，橋上的人數卻一樣。', en: 'The gates charge different tolls, yet the bridge carries the same crowd.' },
+      check: function (ev) {
+        const d = ev.data, b = d.base;
+        if (ev.type !== 'change' || d.key !== 'metal' || !b || !sat(d) || !sat(b) ||
+            d.V < 3 || d.P < 30 || d.P > 80 || !rel(d.I, b.I, 0.002)) return false;
+        const zn = d.metal === 'Zn' ? d : b, cu = zn === d ? b : d;
+        return zn.metal === 'Zn' && cu.metal === 'Cu' && rel(cu.Kmax / zn.Kmax, 0.5, 0.05);
+      }
+    },
+    {
+      id: 'photoelectric-h8', level: 8, hidden: true,
+      riddle: { zh: '樓梯的三個腳印，沿著同一個步幅留下。', en: 'Three footprints climb the stairs with the same stride.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'stop') return false;
+        const r = (d.records || []).filter(x => x.metal === d.metal && x.Pu === d.P).slice(-3);
+        if (r.length !== 3) return false;
+        const [a, b, c] = r, step = b.f - a.f, dV = b.Vs - a.Vs;
+        return c.lambda === d.lambda && a.Vs >= 0.2 && step >= 0.9e14 && step <= 1.45e14 &&
+          rel(c.f - b.f, step, 0.005) && dV > 0 && Math.abs((c.Vs - b.Vs) - dV) <= 0.015;
+      }
+    },
+    {
+      id: 'photoelectric-h9', level: 9, hidden: true,
+      riddle: { zh: '把同一封信交給兩個門房，回信露出了各自的規矩。', en: 'Give two gatekeepers the same letter; their answers reveal their own rules.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'stop' || (d.metal !== 'Na' && d.metal !== 'Zn')) return false;
+        const r = d.records || [];
+        return r.some(function (o) {
+          if (o.metal === d.metal || (o.metal !== 'Na' && o.metal !== 'Zn') ||
+              o.lambda !== d.lambda || o.Pu !== d.P) return false;
+          const na = d.metal === 'Na' ? d : o, zn = na === d ? o : d;
+          return zn.Vs >= 0.4 && zn.Vs <= 0.8 && Math.abs(na.Vs - zn.Vs - 2.02) <= 0.016;
+        });
+      }
+    },
+    {
+      id: 'photoelectric-h10', level: 10, hidden: true,
+      riddle: { zh: '兩把不同的篩子，留下的份額像是約好了。', en: 'Two different sieves let almost exactly the same share through.' },
+      check: function (ev, mem) {
+        return keepHiddenReading(ev, mem, function (d) {
+          return d.key === 'V' && d.P >= 25 && d.P <= 80 && !d.zero && d.V < 0 &&
+            rel(-d.V / d.Kmax, 0.5, 0.022) && d.collected > 0.23 && d.collected < 0.29;
+        }, function (o, d) {
+          if (o.metal !== d.metal || o.P !== d.P) return false;
+          const high = o.Kmax > d.Kmax ? o : d, low = high === d ? o : d;
+          return rel(high.Kmax, 2 * low.Kmax, 0.012) && rel(high.V, 2 * low.V, 0.012) &&
+            Math.abs(high.collected - low.collected) <= 0.006 && Math.abs(high.I / low.I - 1) > 0.1;
         });
       }
     }

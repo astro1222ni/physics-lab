@@ -55,4 +55,115 @@ log('預設狀態下的單一無關操作不會誤觸：'); const before = done.
 log('全部 ' + defs.length + ' 個任務，完成 ' + done.size + '；未完成：' + defs.filter(m => !done.has(m.id)).map(m => m.id).join(', '));
 
 mock.timers.reset();
+// ---------- 2. 新隱藏任務 ----------
+{
+  const assert = require('node:assert/strict');
+  // 與頁面一致的打字輸入範圍、精度與單位換算。
+  const inputs = { A: [50, 400, 1, 1e-4], d: [1, 10, 2, 1e-3], Vb: [1, 20, 2, 1],
+    k: [1, 100, 2, 1], f: [0, 100, 1, 0.01] };
+  function play(steps) {
+    let state = fresh();
+    const completed = new Set(), memory = new Map(defs.map(m => [m.id, {}]));
+    const readings = [];
+    const read = () => ({
+      ...K.solve({ ...state, f: state.kappa > 1 ? state.f : 0 }, state.mode,
+        state.mode === 'V' ? state.Vb : state.Qfix),
+      Vb: state.Vb, Cair: K.cAir(state.A, state.d)
+    });
+    function dispatch(type, data) {
+      for (const m of defs) {
+        if (!completed.has(m.id) && m.check({ type, data }, memory.get(m.id))) completed.add(m.id);
+      }
+    }
+    const previousEmit = LabMission.emit;
+    mock.timers.enable({ apis: ['setTimeout'] });
+    LabMission.emit = dispatch;
+    try {
+      for (const [key, value] of steps) {
+        if (key === 'reset') {
+          state = fresh();
+          dispatch('reset', {});
+          continue;
+        }
+        const base = read();
+        if (key === 'mode') {
+          assert.ok(['Q', 'V'].includes(value) && value !== state.mode);
+          // 接著電池時先等充放電結束，再斷開，保留當下的平衡電荷。
+          if (value === 'Q') state.Qfix = base.Q;
+          state.mode = value;
+        } else {
+          const [min, max, decimals, scale] = inputs[key];
+          assert.ok(value >= min && value <= max && +value.toFixed(decimals) === value, key + '=' + value);
+          state[key === 'k' ? 'kappa' : key] = value * scale;
+        }
+        const data = { ...read(), key, base };
+        dispatch('change', data);
+        readings.push(data);
+        mock.timers.tick(1000);
+      }
+      mock.timers.tick(1000);
+      return { completed, readings };
+    } finally {
+      LabMission.emit = previousEmit;
+      mock.timers.reset();
+    }
+  }
+
+  const oldSolutions = {
+    'capacitor-1': [['mode', 'Q']],
+    'capacitor-2': [['d', 4]],
+    'capacitor-3': [['f', 0], ['k', 5], ['f', 1], ['f', 100]],
+    'capacitor-4': [['mode', 'Q'], ['d', 4]],
+    'capacitor-5': [['mode', 'Q'], ['d', 4]],
+    'capacitor-6': [['A', 113], ['d', 1]],
+    'capacitor-7': [['k', 3.5], ['f', 40]],
+    'capacitor-8': [['Vb', 9.5]],
+    'capacitor-9': [['mode', 'Q'], ['d', 6]],
+    'capacitor-10': [['mode', 'Q'], ['k', 5], ['d', 10]],
+    'capacitor-11': [['Vb', 12], ['d', 5], ['A', 200], ['f', 27], ['k', 6], ['A', 100], ['f', 74]],
+    'capacitor-12': [['mode', 'Q'], ['f', 11.4], ['k', 80]],
+    'capacitor-h1': [['Vb', 20], ['k', 80], ['d', 1], ['A', 70.6]],
+    'capacitor-h2': [['mode', 'Q'], ['d', 4], ['Vb', 20], ['mode', 'V']],
+    'capacitor-h3': [['Vb', 20], ['k', 80], ['d', 1], ['A', 400], ['mode', 'Q'], ['k', 1], ['d', 10], ['A', 50]]
+  };
+  const newSolutions = {
+    'capacitor-h4': [['k', 5], ['f', 16.7]],
+    'capacitor-h5': [['d', 2.4], ['Vb', 8], ['d', 3.6], ['Vb', 12]],
+    'capacitor-h6': [['k', 3.5], ['f', 62], ['k', 6], ['f', 31]],
+    'capacitor-h7': [['A', 150], ['mode', 'Q'], ['A', 100], ['A', 225]],
+    'capacitor-h8': [['d', 3.2], ['d', 2], ['mode', 'Q'], ['d', 3.2]],
+    'capacitor-h9': [['d', 2.4], ['A', 90], ['mode', 'Q'], ['A', 225], ['d', 6]],
+    'capacitor-h10': [['k', 3.5], ['f', 60], ['A', 120], ['d', 3], ['mode', 'Q'],
+      ['k', 5], ['f', 12.5], ['A', 200], ['d', 4.5]]
+  };
+  const hidden = defs.filter(m => m.hidden);
+  const ids = Object.keys(newSolutions);
+  const newDone = completed => [...completed].filter(id => ids.includes(id));
+  try {
+    assert.equal(hidden.length, 10);
+    assert.ok(hidden.every(m => Number.isInteger(m.level) && m.level >= 3 && m.level <= 10));
+    assert.ok(hidden.filter(m => m.level > 7).length >= 3);
+    assert.deepEqual(newDone(play([]).completed), [], '載入後不操作');
+    assert.deepEqual(newDone(play([['A', 110]]).completed), [], '只改面積一次');
+    for (const [id, steps] of Object.entries(newSolutions)) {
+      const { completed, readings } = play(steps);
+      console.log(id, '操作（A: cm²、d: mm、Vb: V、k: κ、f: %）', JSON.stringify(steps),
+        '讀數', JSON.stringify(readings.map(d => ({
+          C_pF: +(d.C * 1e12).toFixed(3), Q_nC: +(d.Q * 1e9).toFixed(5),
+          V: +d.V.toFixed(3), E_V_m: +d.E.toFixed(1), U_nJ: +(d.U * 1e9).toFixed(3),
+          F_uN: d.F == null ? null : +(d.F * 1e6).toFixed(3)
+        }))));
+      assert.deepEqual([...completed].filter(x => hidden.some(m => m.id === x)), [id], id + ' 隱藏任務互斥');
+      done.add(id);
+    }
+    const combined = play(Object.values(oldSolutions).flatMap(steps => [...steps, ['reset']])).completed;
+    assert.deepEqual(newDone(combined), [], '依序完成一般任務與 h1–h3');
+    assert.deepEqual(defs.filter(m => !ids.includes(m.id) && !combined.has(m.id)).map(m => m.id), [],
+      '一般任務與 h1–h3 都必須完成');
+    console.log('✓ 共 10 個隱藏任務，等級、互斥、預設、單一操作與舊任務連做均通過');
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  }
+}
 if (done.size !== defs.length) process.exitCode = 1;

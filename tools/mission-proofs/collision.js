@@ -144,7 +144,7 @@ const SOL = {
   'collision-h2': [{ m1: 2, m2: 3, v1: 3, v2: -2, e: 0 }],
   'collision-h3': [{ m1: 10, m2: 0.5, v1: 3, v2: 0, e: 1 }]
 };
-for (const m of missions) {
+for (const m of missions.filter(m => !m.hidden || Number(m.id.split('-h')[1]) <= 3)) {
   const runs = SOL[m.id];
   if (!runs) { ok = false; console.log('✗ ' + m.id.padEnd(13) + ' ' + String(m.level).padStart(2) + '★  沒有提供解'); continue; }
   const bad = [];
@@ -171,6 +171,47 @@ for (const m of missions) {
   ok = ok && pass;
   console.log((pass ? '✓ ' : '✗ ') + c[0] + ' → 不完成 h1（完成：' + (got.join('、') || '無') + '）');
 });
+
+// ---------- 3. 新隱藏任務：各自重跑、核對所有舊任務示範 ----------
+const newSolutions = {
+  'collision-h4': [{ m1: 2, m2: 6, v1: 4, v2: -4, spring: true, k: 200 }],
+  'collision-h5': [{ m1: 2, m2: 2, v1: 1, v2: -4, e: 0.6 }],
+  'collision-h6': [{ m1: 3, m2: 5, v1: 2, v2: -2, e: 0.35 }, { m1: 3, m2: 5, v1: 2, v2: -2, e: 0.7 }],
+  'collision-h7': [{ m1: 4, m2: 2, v1: 1.5, v2: -0.5, spring: true, k: 120 },
+    { m1: 4, m2: 2, v1: 1.5, v2: -0.5, spring: true, k: 480 }],
+  'collision-h8': [{ v1: 2.5, v2: -2.5, e: 0.7 }, { v1: 5, v2: 0, e: 0.7 }],
+  'collision-h9': [{ m1: 4, m2: 4, v1: 2, v2: -2, spring: true, k: 320 },
+    { m1: 2, m2: 6, v1: 3, v2: -1, spring: true, k: 320 }],
+  'collision-h10': [{ v1: 4, v2: -1 }, { v1: 2, v2: -3 }]
+};
+const hidden = missions.filter(m => m.hidden);
+const ids = Object.keys(newSolutions);
+const assert = require('node:assert/strict');
+
+assert.equal(hidden.length, 10);
+assert.ok(hidden.every(m => m.level >= 3 && m.level <= 10));
+assert.ok(hidden.filter(m => m.level >= 7).length >= 3);
+assert.ok(hidden.filter(m => m.level > 7).length >= 3);
+for (const [id, runs] of Object.entries(newSolutions)) {
+  for (const input of runs) {
+    for (const [name, value] of Object.entries(input)) assert.ok(['typed', 'slider'].includes(uiKind(name, value)), name + '=' + value);
+  }
+  const events = runs.map(play);
+  assert.ok(events.every(Boolean), id);
+  reset();
+  const got = feed(events).filter(x => hidden.some(m => m.id === x));
+  assert.deepEqual(got, [id], id + ' 隱藏任務互斥');
+  console.log('✓ ' + id + '  ' + events.map(describe).join('；'));
+}
+for (const id of Object.keys(SOL).filter(id => !ids.includes(id))) {
+  reset();
+  assert.deepEqual(feed(SOL[id].map(play)).filter(id => ids.includes(id)), [], id + ' 誤觸新任務');
+}
+reset();
+const publicRuns = Object.entries(SOL).filter(([id]) => !id.includes('-h')).flatMap(([, runs]) => runs);
+assert.deepEqual(feed(publicRuns.map(play)).filter(id => ids.includes(id)), [], '連做公開任務誤觸');
+reset();
+assert.deepEqual(feed([]), [], '預設未播放');
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
 process.exitCode = ok ? 0 : 1;

@@ -18,6 +18,13 @@
   const remember = function (mem, d, n) { (mem.list = mem.list || []).push(d); if (mem.list.length > (n || 16)) mem.list.shift(); return mem.list; };
   const hit = function (ev) { return ev.type === 'collision'; };
 
+  function relativeEnergy(d, after) {
+    const drift = 0.5 * (d.m1 + d.m2) * d.vcm * d.vcm;
+    return (after ? d.KAfter : d.K) - drift;
+  }
+  function sameMasses(a, b) { return same(a.m1, b.m1) && same(a.m2, b.m2); }
+  function sameApproach(a, b) { return same(a.v1, b.v1) && same(a.v2, b.v2); }
+
   LabMission.register('collision', [
     {
       id: 'collision-1', level: 1,
@@ -184,6 +191,92 @@
       check: function (ev) {
         const d = ev.data;
         return hit(ev) && same(d.e, 1) && same(d.v2, 0) && d.v1 > 0 && d.v2f >= 1.9 * d.v1 - 1e-9;
+      }
+    },
+    {
+      id: 'collision-h4', level: 4, hidden: true,
+      riddle: { zh: '有一份留在路上，剩下的都被那個擁抱收走。', en: 'One share stays on the road; the embrace gathers the rest.' },
+      check: function (ev) {
+        const d = ev.data;
+        return hit(ev) && d.spring && d.v1 >= 1 && near(d.v1, -d.v2, 0.005) && near(d.Umax / d.K, 0.75, 0.004);
+      }
+    },
+    {
+      id: 'collision-h5', level: 5, hidden: true,
+      riddle: { zh: '逆風的人先等到了安靜。', en: 'The one walking into the wind finds stillness first.' },
+      check: function (ev) {
+        const d = ev.data;
+        return hit(ev) && !d.spring && same(d.m1, d.m2) && d.e >= 0.55 && d.e <= 0.75 &&
+          d.v1 >= 0.5 && d.v2 <= -2 && Math.abs(d.v2f) < 0.005;
+      }
+    },
+    {
+      id: 'collision-h6', level: 6, hidden: true,
+      riddle: { zh: '留下的東西，不守尋常的倍數。', en: 'What remains refuses to grow in ordinary steps.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!hit(ev) || d.spring || d.e < 0.3 || d.e > 0.9 || d.v1 < 1 || d.v2 > -1) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !sameMasses(o, d) || !sameApproach(o, d) || same(o.e, d.e)) return false;
+          const lo = o.e < d.e ? o : d, hi = o.e < d.e ? d : o;
+          return rel(hi.e, 2 * lo.e, 0.005) &&
+            rel(relativeEnergy(hi, true), 4 * relativeEnergy(lo, true), 0.01);
+        });
+      }
+    },
+    {
+      id: 'collision-h7', level: 7, hidden: true,
+      riddle: { zh: '手掌合得快了，送出去的東西卻沒變。', en: 'The hands close faster, yet send away the same thing.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!hit(ev) || !d.spring || d.v1 - d.v2 < 1.5) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !sameMasses(o, d) || !sameApproach(o, d)) return false;
+          const soft = o.k < d.k ? o : d, hard = o.k < d.k ? d : o;
+          return rel(hard.k, 4 * soft.k, 0.008) && rel(hard.J, soft.J, 0.005) &&
+            rel(hard.dt, soft.dt / 2, 0.005) && rel(hard.Fmax, 2 * soft.Fmax, 0.005);
+        });
+      }
+    },
+    {
+      id: 'collision-h8', level: 8, hidden: true,
+      riddle: { zh: '把整條路搬走，帶不走那一份代價。', en: 'Carry the whole road away; the cost stays behind.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!hit(ev) || d.spring || d.e < 0.3 || d.e > 0.85 || d.lost <= 0) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && sameMasses(o, d) && same(o.e, d.e) &&
+            Math.abs(d.v1 - o.v1) >= 2 && near(d.v1 - o.v1, d.v2 - o.v2, 0.005) &&
+            rel(d.lost, o.lost, 0.005) && Math.abs(d.lostFrac - o.lostFrac) >= 0.1;
+        });
+      }
+    },
+    {
+      id: 'collision-h9', level: 9, hidden: true,
+      riddle: { zh: '總重照舊，收進懷裡的卻換了分量。', en: 'The whole weighs the same, but the embrace holds a different share.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!hit(ev) || !d.spring || Math.abs(d.p) > 0.02 || d.v1 - d.v2 < 2) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !same(o.k, d.k) || !same(o.m1 + o.m2, d.m1 + d.m2) ||
+              !near(o.v1 - o.v2, d.v1 - d.v2, 0.005)) return false;
+          const even = same(o.m1, o.m2) ? o : same(d.m1, d.m2) ? d : null;
+          const uneven = even === o ? d : o;
+          return !!even && rel(uneven.Umax, 0.75 * even.Umax, 0.008);
+        });
+      }
+    },
+    {
+      id: 'collision-h10', level: 10, hidden: true,
+      riddle: { zh: '路口能替昨天走一遍回頭路。', en: 'At the meeting point, yesterday can walk home again.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!hit(ev) || d.spring || !same(d.e, 1) || same(d.m1, d.m2) ||
+            d.v1 < 0.5 || d.v2 > -0.5 || Math.abs(d.p) < 1) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && sameMasses(o, d) && near(d.v1, -o.v1f, 0.011) && near(d.v2, -o.v2f, 0.011) &&
+            near(d.v1f, -o.v1, 0.011) && near(d.v2f, -o.v2, 0.011);
+        });
       }
     }
   ]);

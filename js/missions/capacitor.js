@@ -33,6 +33,28 @@
     }
     return false;
   }
+  function clearOrRemember(ev, mem) {
+    if (ev.type === 'reset') mem.list = [];
+    return ev.type === 'change';
+  }
+  function airGapStep(d) {
+    return d.key === 'd' && d.airOnly && d.base && d.base.airOnly &&
+      d.d >= 1.5 * d.base.d && d.d <= 1.8 * d.base.d;
+  }
+  function keepReading(mem, d) {
+    const list = mem.list = mem.list || [];
+    list.push(d);
+    if (list.length > 16) list.shift();
+    return list;
+  }
+  function rememberAirField(mem, d) {
+    return keepReading(mem, d).some(function (o) {
+      if (o === d || !same(o.A, d.A)) return false;
+      const far = d.d > o.d ? d : o, close = d.d > o.d ? o : d;
+      return near(far.d, 1.5 * close.d, 0.005) && near(far.E, close.E, 0.005) &&
+        near(far.F, close.F, 0.01);
+    });
+  }
 
   LabMission.register('capacitor', [
     {
@@ -183,6 +205,86 @@
       id: 'capacitor-h3', level: 7, hidden: true,
       riddle: { zh: '小小的電池，也藏著閃電的脾氣。', en: 'Even a small battery hides the temper of lightning.' },
       check: function (ev) { const d = ev.data; return ev.type === 'change' && d.mode === 'Q' && d.V >= 1e3; }
+    },
+    {
+      id: 'capacitor-h4', level: 3, hidden: true,
+      riddle: { zh: '一道窄窗，亮得足以和整面牆分庭抗禮。', en: 'A narrow window holds its own against a whole wall.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'change' && d.key === 'f' && d.mode === 'V' && same(d.kappa, 5) &&
+          near(d.kappa * d.f, 1 - d.f, 0.005);
+      }
+    },
+    {
+      id: 'capacitor-h5', level: 4, hidden: true,
+      riddle: { zh: '兩端各往前一步，中間的密度仍舊。', en: 'Both ends take a step; the space between them keeps its measure.' },
+      check: function (ev, mem) {
+        if (!clearOrRemember(ev, mem)) return false;
+        const d = ev.data;
+        if (d.mode !== 'V' || !d.airOnly || (d.key !== 'd' && d.key !== 'Vb')) return false;
+        return rememberAirField(mem, d);
+      }
+    },
+    {
+      id: 'capacitor-h6', level: 6, hidden: true,
+      riddle: { zh: '換了布料，邊角的帳還是平的。', en: 'The cloth is different, and the account still balances at the edges.' },
+      check: function (ev, mem) {
+        if (!clearOrRemember(ev, mem)) return false;
+        const d = ev.data;
+        if (d.mode !== 'V' || (d.key !== 'k' && d.key !== 'f') ||
+            !(same(d.kappa, 3.5) || same(d.kappa, 6)) || d.f < 0.22 || d.f > 0.85) return false;
+        return keepReading(mem, d).some(function (o) {
+          return o !== d && o.kappa !== d.kappa && same(o.A, d.A) && same(o.d, d.d) &&
+            same(o.V, d.V) && near(o.Q, d.Q, 0.005);
+        });
+      }
+    },
+    {
+      id: 'capacitor-h7', level: 8, hidden: true,
+      riddle: { zh: '把帳本往兩側翻，夾在正中的那頁還在。', en: 'Turn the ledger to either side; the middle page stays put.' },
+      check: function (ev, mem) {
+        const d = track(ev, mem), s = mem.disc;
+        if (!s || !s.airOnly || d.key === 'mode') { mem.small = mem.large = false; return false; }
+        if (!d || d.key !== 'A' || d.mode !== 'Q' || !d.airOnly || !same(d.d, s.d)) return false;
+        if (near(d.F, 1.5 * s.F, 0.005) && near(d.E, 1.5 * s.E, 0.005)) mem.small = true;
+        if (near(d.F, s.F / 1.5, 0.005) && near(d.E, s.E / 1.5, 0.005)) mem.large = true;
+        return mem.small && mem.large;
+      }
+    },
+    {
+      id: 'capacitor-h8', level: 9, hidden: true,
+      riddle: { zh: '同一雙手拉開同一扇門，兩本帳卻向反方向記。', en: 'The same hand opens the same door; the two ledgers move in opposite directions.' },
+      check: function (ev, mem) {
+        if (!clearOrRemember(ev, mem)) return false;
+        const d = ev.data;
+        if (!airGapStep(d)) return false;
+        return keepReading(mem, d).some(function (o) {
+          if (o === d || o.mode === d.mode || !same(o.A, d.A) || !same(o.d, d.d) ||
+              !same(o.base.d, d.base.d) || !near(o.base.V, d.base.V, 0.003)) return false;
+          const open = d.mode === 'Q' ? d : o, closed = d.mode === 'V' ? d : o;
+          const gain = open.U - open.base.U, loss = closed.base.U - closed.U;
+          return loss > 0 && near(gain / loss, d.d / d.base.d, 0.006);
+        });
+      }
+    },
+    {
+      id: 'capacitor-h9', level: 9, hidden: true,
+      riddle: { zh: '房間變高也變寬，裝得下的仍是同一份。', en: 'The room grows taller and wider; it still holds exactly the same share.' },
+      check: function (ev, mem) {
+        const d = track(ev, mem), s = mem.disc;
+        return !!d && !!s && d.key === 'd' && d.mode === 'Q' && s.airOnly && d.airOnly &&
+          near(d.d, 2.5 * s.d, 0.005) && near(d.C, s.C, 0.004) && near(d.F, 0.4 * s.F, 0.005);
+      }
+    },
+    {
+      id: 'capacitor-h10', level: 10, hidden: true,
+      riddle: { zh: '門外早已換景，屋裡的腳步始終一樣密。', en: 'Outside the scenery changes; inside the footsteps keep their spacing.' },
+      check: function (ev, mem) {
+        const d = track(ev, mem), s = mem.disc;
+        return !!d && !!s && d.key === 'd' && d.mode === 'Q' && same(s.kappa, 3.5) &&
+          same(d.kappa, 5) && s.f > 0.2 && s.f < 0.85 && d.f > 0.06 && d.f < 0.45 &&
+          d.A >= 1.5 * s.A && near(d.d, 1.5 * s.d, 0.006) && near(d.E, s.E, 0.008);
+      }
     }
   ]);
 })();

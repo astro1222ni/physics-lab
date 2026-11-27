@@ -13,6 +13,11 @@
   const remember = function (mem, d, n) { (mem.list = mem.list || []).push(d); if (mem.list.length > (n || 16)) mem.list.shift(); return mem.list; };
   const sameM = function (a, b) { return a.preset === b.preset && Math.abs(a.M - b.M) < 1e-9; };
 
+  const same = function (a, b) { return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b), 1); };
+  const near = function (a, b, tol) { return Math.abs(a - b) <= tol * Math.abs(b); };
+  function orbitLaunch(ev) { return ev.type === 'launch' && ev.data.closed && !ev.data.crash; }
+  function safeEllipse(d) { return d.e >= 0.05 && d.e < 0.9; }
+
   LabMission.register('kepler', [
     {
       id: 'kepler-1', level: 1,
@@ -139,6 +144,94 @@
       id: 'kepler-h3', level: 8, hidden: true,
       riddle: { zh: '它來了又走，回首時，來路與去路恰成直角。', en: 'It came and went; looking back, the road in and the road out meet square.' },
       check: function (ev) { const d = ev.data; return ev.type === 'escape' && d.type === 'hyperbola' && Math.abs(d.e - Math.SQRT2) <= 0.005; }
+    },
+    {
+      id: 'kepler-h4', level: 3, hidden: true,
+      riddle: { zh: '最遠的門離中心很遠，屋子的中心卻另有其處。', en: 'The far door is far from the hearth; the house has another centre.' },
+      check: function (ev) {
+        const d = ev.data;
+        return orbitLaunch(ev) && d.preset === 'sun' && Math.abs(d.alpha) < 0.05 && d.vRel < 1 &&
+          near(d.ra / d.rp, 3, 0.005);
+      }
+    },
+    {
+      id: 'kepler-h5', level: 5, hidden: true,
+      riddle: { zh: '在鏡子的兩邊，兩道門通往一樣大的房間。', en: 'The doors on either side of the mirror open into rooms of the same size.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!orbitLaunch(ev) || !safeEllipse(d) || Math.abs(d.alpha) < 25 || Math.abs(d.alpha) > 40) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && sameM(o, d) && same(o.r0, d.r0) && same(o.v0, d.v0) &&
+            Math.abs(o.alpha + d.alpha) < 0.05 && near(o.rp, d.rp, 0.001) && near(o.ra, d.ra, 0.001);
+        });
+      }
+    },
+    {
+      id: 'kepler-h6', level: 6, hidden: true,
+      riddle: { zh: '把同一個輪廓從兩端各寫一次。', en: 'Draw the same outline once from each end.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!orbitLaunch(ev) || !safeEllipse(d) || Math.abs(d.alpha) >= 0.05) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && sameM(o, d) && (o.vRel < 1) !== (d.vRel < 1) &&
+            near(o.rp, d.rp, 0.003) && near(o.ra, d.ra, 0.003);
+        });
+      }
+    },
+    {
+      id: 'kepler-h7', level: 7, hidden: true,
+      riddle: { zh: '秤上的分量變了，天上的筆跡沒挪一寸。', en: 'The scale changes, and the sky keeps the same handwriting.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!orbitLaunch(ev) || !safeEllipse(d)) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || o.preset !== d.preset || !same(o.r0, d.r0) || !same(o.alpha, d.alpha)) return false;
+          const light = o.M < d.M ? o : d, heavy = o.M < d.M ? d : o;
+          return near(heavy.M, 4 * light.M, 0.003) && near(heavy.rp, light.rp, 0.003) &&
+            near(heavy.ra, light.ra, 0.003) && near(heavy.T, light.T / 2, 0.004);
+        });
+      }
+    },
+    {
+      id: 'kepler-h8', level: 8, hidden: true,
+      riddle: { zh: '換了一支筆，每一滴墨仍花同樣長的時間。', en: 'The pen changes; each drop of ink still takes the same time.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!orbitLaunch(ev) || !safeEllipse(d)) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && sameM(o, d) && same(o.r0, d.r0) && Math.abs(o.alpha - d.alpha) >= 20 &&
+            Math.abs(o.e - d.e) >= 0.2 && near(o.h, d.h, 0.0015);
+        });
+      }
+    },
+    {
+      id: 'kepler-h9', level: 9, hidden: true,
+      riddle: { zh: '同一幅畫放大掛起，牆上的鐘就走得更久。', en: 'Hang a larger copy of the picture and the clock takes a longer turn.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!orbitLaunch(ev) || !safeEllipse(d) || Math.abs(d.alpha) < 8) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !sameM(o, d) || !same(o.alpha, d.alpha) || Math.abs(o.e - d.e) > 0.002) return false;
+          const small = o.a < d.a ? o : d, large = o.a < d.a ? d : o;
+          return near(large.a, 4 * small.a, 0.002) && near(large.T, 8 * small.T, 0.003);
+        });
+      }
+    },
+    {
+      id: 'kepler-h10', level: 10, hidden: true,
+      riddle: { zh: '門檻兩側各放一枚砝碼，門卻沒有動。', en: 'A weight rests on each side of the threshold; the door stands still.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'launch' || d.crash || d.alpha < 15) return false;
+        const list = remember(mem, d).filter(function (o) {
+          return sameM(o, d) && same(o.r0, d.r0) && same(o.alpha, d.alpha);
+        });
+        if (d.type !== 'hyperbola' || d.vRel <= Math.SQRT2) return false;
+        const scale = d.v0 * d.v0 / (d.vRel * d.vRel);
+        if (d.energy < 0.08 * scale || d.energy > 0.2 * scale) return false;
+        const edge = list.findIndex(o => o.type === 'parabola');
+        return edge > 0 && list.slice(0, edge).some(o => o.closed && near(-o.energy, d.energy, 0.01));
+      }
     }
   ]);
 })();

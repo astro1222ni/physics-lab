@@ -4,12 +4,19 @@
   if (!window.LabMission) return;
 
   // 事件（js/doppler.js 發出）：
-  //   measure：按「暫停」時的讀數 { n 聽到幾個聲音, ratio = f′/f, fp, fp2, us, uo, lambdaFront, lambdaBack, f, v, vs, vo, M, t, ox, oy, clean }
+  //   measure：按「暫停」時的讀數 { n 聽到幾個聲音, ratio = f′/f, fp, fp2, us, uo, lambdaFront, lambdaBack, f, v, vs, vo, M, t, ox, oy, clean, run 第幾趟 }
   //   boom：音爆 { tBoom 精確時刻, theta 馬赫角（度）, M, oy, clean … }
   //   runEnd：一趟結束（波源駛離或觀察者走出畫面）{ heard, heardTime, ratioMax, ratioMin, boom, tBoom, two, minDist, clean … }
   // clean = 這一趟從 t = 0 開始後沒有搬動觀察者、也沒有改觀察者速度。
   const near = function (a, b, tol) { return a != null && Math.abs(a - b) <= tol; };
   const remember = function (mem, d, n) { (mem.list = mem.list || []).push(d); if (mem.list.length > (n || 12)) mem.list.shift(); return mem.list; };
+
+  function pausedRun(d) { return d.clean && d.n === 1 && Number.isFinite(d.ratio); }
+  function sourceStart(d) { return d.sx - d.vs * d.t; }
+  function listenerStart(d) { return d.ox - d.vo * d.t; }
+  function boomSetup(a, b) {
+    return near(sourceStart(a), sourceStart(b), 2) && near(listenerStart(a), listenerStart(b), 12);
+  }
 
   LabMission.register('doppler', [
     {
@@ -105,6 +112,95 @@
       id: 'doppler-h3', level: 3, hidden: true,
       riddle: { zh: '擦肩而過的，最響亮。', en: 'What brushes past you is the loudest.' },
       check: function (ev) { const d = ev.data; return ev.type === 'runEnd' && d.minDist < 5 && d.vs > 0; }
+    },
+    {
+      id: 'doppler-h4', level: 5, hidden: true,
+      riddle: { zh: '前後的影子擺在一起，後面的那道占了更多地方。', en: 'Lay the shadows side by side; the one behind takes up more room.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'measure' && pausedRun(d) && d.vo === 0 && d.ratio < 0.95 &&
+          d.lambdaFront > 0 && near(d.lambdaBack / d.lambdaFront, 2, 0.012);
+      }
+    },
+    {
+      id: 'doppler-h5', level: 4, hidden: true,
+      riddle: { zh: '換一個調，遠處那把尺還是同一把尺。', en: 'Change the tune; the ruler far away keeps its scale.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'measure' || !pausedRun(d) || d.vo !== 0 || d.M < 0.15 || d.M > 0.26 || d.ratio > 0.9) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !near(o.v, d.v, 0.01) || !near(o.vs, d.vs, 0.01) ||
+              !near(o.ox, d.ox, 4) || !near(o.oy, d.oy, 4) || !near(sourceStart(o), sourceStart(d), 2)) return false;
+          const hi = o.f > d.f ? o : d, lo = o.f > d.f ? d : o;
+          return near(hi.f / lo.f, 2, 0.008) && near(hi.ratio, lo.ratio, 0.006);
+        });
+      }
+    },
+    {
+      id: 'doppler-h6', level: 6, hidden: true,
+      riddle: { zh: '兩雙鞋走得一樣快，耳邊的帳卻有兩種算法。', en: 'Two pairs of shoes move equally fast, but the ear keeps two different accounts.' },
+      check: function (ev) {
+        const d = ev.data;
+        return ev.type === 'measure' && pausedRun(d) && d.vo < 0 && Math.abs(d.oy) <= 20 &&
+          near(d.M, 0.25, 0.004) && near(d.vo / d.v, -0.25, 0.004) && near(d.ratio, 5 / 3, 0.008);
+      }
+    },
+    {
+      id: 'doppler-h7', level: 7, hidden: true,
+      riddle: { zh: '時鐘換了步伐，折痕卻留在原來的方向。', en: 'The clock changes its pace; the fold keeps pointing the same way.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'boom' || !d.clean || d.vo !== 0 || d.M < 1.32 || d.M > 1.48 || Math.abs(d.oy) < 160) return false;
+        return remember(mem, d).some(function (o) {
+          return o !== d && boomSetup(o, d) && near(o.oy, d.oy, 5) && Math.abs(o.v - d.v) >= 100 &&
+            near(o.theta, d.theta, 0.18) && near(o.tBoom * o.v / (d.tBoom * d.v), 1, 0.015);
+        });
+      }
+    },
+    {
+      id: 'doppler-h8', level: 8, hidden: true,
+      riddle: { zh: '同一條折痕，多走一段就多欠一截時間。', en: 'The same fold travels farther and owes a little more time.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'boom' || !d.clean || d.vo !== 0 || d.M < 1.55 || d.M > 1.75 ||
+            Math.abs(d.oy) < 80 || Math.abs(d.oy) > 300) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !boomSetup(o, d) || !near(o.v, d.v, 0.01) || !near(o.vs, d.vs, 0.01)) return false;
+          const far = Math.abs(o.oy) > Math.abs(d.oy) ? o : d, close = far === o ? d : o;
+          const delay = b => b.tBoom - (b.ox - sourceStart(b)) / b.vs;
+          return near(Math.abs(far.oy / close.oy), 2, 0.08) && delay(close) > 0.1 &&
+            near(delay(far) / delay(close), Math.abs(far.oy / close.oy), 0.01);
+        });
+      }
+    },
+    {
+      id: 'doppler-h9', level: 9, hidden: true,
+      riddle: { zh: '同一段路走過門前，一頭借走的，另一頭還回來。', en: 'Pass the same doorway; one side gives back what the other borrowed.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'measure' || !pausedRun(d) || d.vs !== 0 || d.vo >= -60 ||
+            Math.abs(d.oy) < 80 || Math.abs(d.ox - d.sx) < 200) return false;
+        return remember(mem, d).some(function (o) {
+          return o.run === d.run && o.t < d.t && o.ratio > 1.13 && d.ratio < 0.87 && near(o.v, d.v, 0.01) &&
+            near(o.vo, d.vo, 0.01) && near(o.sx, d.sx, 2) && near(o.oy, d.oy, 2) &&
+            near(listenerStart(o), listenerStart(d), 2) && near(o.ox - o.sx, d.sx - d.ox, 18) &&
+            near(o.ratio + d.ratio, 2, 0.009);
+        });
+      }
+    },
+    {
+      id: 'doppler-h10', level: 10, hidden: true,
+      riddle: { zh: '折起的紙沒變，約好的碰面卻往後挪了。', en: 'The paper keeps its fold; the meeting is put off.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'boom' || !d.clean || d.vo < 0 || d.M < 1.76 || d.M > 1.88 || Math.abs(d.oy) < 160) return false;
+        return remember(mem, d).some(function (o) {
+          if (o === d || !boomSetup(o, d) || !near(o.oy, d.oy, 5) || !near(o.v, d.v, 0.01) ||
+              !near(o.vs, d.vs, 0.01) || (o.vo === 0) === (d.vo === 0)) return false;
+          const rest = d.vo === 0 ? d : o, moving = d.vo === 0 ? o : d;
+          return moving.vo >= 100 && near(moving.tBoom / rest.tBoom, d.vs / (d.vs - moving.vo), 0.018);
+        });
+      }
     }
   ]);
 })();

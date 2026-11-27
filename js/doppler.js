@@ -43,8 +43,10 @@
     hover: false,
     run: null                       // 這一趟的統計（任務模式用）：見 newRun()
   };
+  let runSeq = 0; // 第幾趟（任務用來分辨兩筆讀數是不是同一趟）
   function newRun() {
-    return { ratioMax: -Infinity, ratioMin: Infinity, heardTime: 0, boom: false, tBoom: null, two: false, minDist: Infinity, clean: true, tSrcLeave: null, tWaveDone: null };
+    runSeq += 1;
+    return { id: runSeq, ratioMax: -Infinity, ratioMin: Infinity, heardTime: 0, boom: false, tBoom: null, two: false, minDist: Infinity, clean: true, tSrcLeave: null, tWaveDone: null };
   }
   state.run = newRun();
   let view3 = null; // 目前的 3D 檢視（切回 2D 時釋放）；見最後的「3D 檢視」
@@ -1115,7 +1117,7 @@
       emit('measure', {
         n: arr.length, fp: a ? a.fp : null, ratio: a ? a.fp / state.f : null, fp2: b ? b.fp : null,
         us: a ? a.us : null, uo: a ? a.uo : null, lambdaFront: DC.wavelengthAhead(state.f, state.v, state.vs),
-        lambdaBack: DC.wavelengthBehind(state.f, state.v, state.vs), clean: state.run.clean
+        lambdaBack: DC.wavelengthBehind(state.f, state.v, state.vs), clean: state.run.clean, run: state.run.id
       });
       return;
     }
