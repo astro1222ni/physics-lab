@@ -1419,5 +1419,7 @@
     let lastW = 0;
     new ResizeObserver(function () { if (drawingWidth(cv) !== lastW) { lastW = drawingWidth(cv); resize(); } }).observe(cv.parentElement);
   } else window.addEventListener('resize', resize);
+  // 手機橫放時畫布只縮小顯示寬、繪圖寬不變，上面的觀察器不會重畫：canvas-font-floor 要放大字時會送 lab:fontfloor
+  window.addEventListener('lab:fontfloor', resize);
   resize();
 })();

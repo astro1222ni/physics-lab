@@ -22,7 +22,8 @@
  *   ⑤ 滑桿間距 ≤ 56：操作台每個分頁逐一點開，量相鄰兩根滑桿的上下距離（中間夾著按鈕、選單的那一對不算，11/21 準則：電流天平的「I₁ 反向」）；
  *      412、844、1280 三種寬度都量。
  *   ⑥（加 --font 才量）844×390 橫放時畫布上的字實際顯示高 ≥ 9 px：攔 fillText／strokeText，
- *      字級 × 目前變換倍數 × 畫布顯示寬 ÷ 繪圖寬；每張畫布只算最後 0.4 秒畫的字（11/27 試玩串的量法）。
+ *      字級 × 目前變換倍數 × 畫布顯示寬 ÷ 繪圖寬；每張畫布只算最後一次連續繪製（往回找到超過 50 ms 的空檔就停，最多 0.4 秒；
+ *      11/27 數理串：0.4 秒內先畫小字、切成橫放後又整張重畫的頁面，舊的小字已被蓋掉卻被算進去）。
  *   另外三種寬度都查左右捲動（scrollWidth > 視窗寬）。
  * 只用 mock 後端、擋掉所有對外連線，不寫正式資料庫。瀏覽器經 tools/browser.cjs（全機最多 3 組，會自動排隊）。
  */
@@ -77,7 +78,7 @@ let sc=9,scId='';[...document.querySelectorAll('.stage canvas')].filter(x=>vis(x
 const d=document.querySelector('.labdeck');if(vis(d)){const dr=d.getBoundingClientRect();out.deckRight=dr.left>=r.right-4;out.deckLeft=Math.round(dr.left)}else out.deckRight=null;return out})()`;
 const FONT_HOOK = `(()=>{const P=CanvasRenderingContext2D.prototype;const rec=window.__laFont=[];const wrap=n=>{const f=P[n];P[n]=function(t){try{if(t!=null&&String(t).trim()){const m=/(\\d*\\.?\\d+)px/.exec(this.font);if(m){let k=1;try{const T=this.getTransform();k=Math.hypot(T.a,T.b)||1}catch(e){}rec.push([this.canvas,+m[1]*k,performance.now(),String(t).slice(0,12)]);if(rec.length>6000)rec.splice(0,3000)}}}catch(e){}return f.apply(this,arguments)}};wrap('fillText');wrap('strokeText')})()`;
 const FONT = `(()=>{const R=window.__laFont||[];const by=new Map();R.forEach(r=>{if(!by.has(r[0]))by.set(r[0],[]);by.get(r[0]).push(r)});let min=99,where='';
-by.forEach((a,c)=>{if(!c||!c.isConnected||!c.offsetParent||!c.width||!c.closest('.lab')||c.closest('.labdeck-away'))return;const rc=c.getBoundingClientRect();if(rc.width<60)return;let tmax=0;a.forEach(r=>{if(r[2]>tmax)tmax=r[2]});a.forEach(r=>{if(r[2]<tmax-400)return;const e=r[1]*rc.width/c.width;if(e<min){min=e;where=(c.id||'canvas')+'「'+r[3]+'」'}})});return min<99?{min:Math.round(min*100)/100,where}:null})()`;
+by.forEach((a,c)=>{if(!c||!c.isConnected||!c.offsetParent||!c.width||!c.closest('.lab')||c.closest('.labdeck-away'))return;const rc=c.getBoundingClientRect();if(rc.width<60)return;a.sort((x,y)=>x[2]-y[2]);const tmax=a[a.length-1][2];let t0=tmax;for(let i=a.length-1;i>0&&a[i][2]-a[i-1][2]<50&&a[i-1][2]>=tmax-400;i--)t0=a[i-1][2];a.forEach(r=>{if(r[2]<t0)return;const e=r[1]*rc.width/c.width;if(e<min){min=e;where=(c.id||'canvas')+'「'+r[3]+'」'}})});return min<99?{min:Math.round(min*100)/100,where}:null})()`;
 const PITCH = `(async()=>{const vis=r=>r.offsetParent&&!r.closest('.labdeck-away,[hidden]')&&getComputedStyle(r).visibility!=='hidden';const root=document.querySelector('.labdeck')||document.querySelector('.panel')||document.body;
 const measure=()=>{const rs=[...root.querySelectorAll('input[type=range]')].filter(vis).map(r=>r.getBoundingClientRect()).sort((a,b)=>a.top-b.top);const others=[...root.querySelectorAll('button,select,input:not([type=range]),canvas,textarea')].filter(vis).map(e=>e.getBoundingClientRect());let worst=0;
  for(let i=1;i<rs.length;i++){const a=rs[i-1],b=rs[i];const d=b.top-a.top;if(d<=0||d>=200)continue;if(others.some(o=>o.top>=a.bottom-1&&o.bottom<=b.top+1))continue;if(d>worst)worst=d}return Math.round(worst)};

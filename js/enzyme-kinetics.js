@@ -992,6 +992,8 @@
     const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
+  // 手機橫放時畫布只縮小顯示寬、繪圖寬不變，上面的觀察器不會重畫：canvas-font-floor 要放大字時會送 lab:fontfloor
+  window.addEventListener('lab:fontfloor', function () { resize1(); resize2(); });
   resize1(); resize2();
   request();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lastNow = 0; request(); } });
