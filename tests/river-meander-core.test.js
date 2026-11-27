@@ -304,4 +304,20 @@ test('快照欄位', () => {
   assert.ok(s.lastCut && !s.lastCut.art);
 });
 
+
+test('寬深比控制水深與上游影響長度，河岸倍率隨位置平滑而可重現', () => {
+  const r = K.create({ W: 80, widthDepth: 40 });
+  assert.strictEqual(K.params(r).D, 2);
+  assert.strictEqual(K.params(r).alpha, 0.01);
+  const bare = K.migration(r).R1;
+  r.bankSeed = 7;
+  const varied = K.migration(r).R1;
+  for (let i = 0; i < varied.length; i++) {
+    const factor = K.bankFactor(r.x[i], r.y[i], 7);
+    assert.ok(factor >= 0.5 && factor <= 1.5);
+    assert.ok(Math.abs(varied[i] - bare[i] * factor) < 1e-10);
+  }
+  assert.notStrictEqual(K.bankFactor(100, 200, 7), K.bankFactor(100, 200, 8));
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

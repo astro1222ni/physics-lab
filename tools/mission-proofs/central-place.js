@@ -258,6 +258,9 @@ for(const [id,mode,seed,rerolls] of [['13','gradient',1,0],['14','random',2,1]])
   if(id==='13') expect('只切換分布不會誤觸 13',!firing({...e,data:{...e.data,act:'distribution'}}).includes(id));
   if(id==='14') expect('未重抽不能完成 14',!firing({...e,data:{...e.data,rerolls:0}}).includes(id));
 }
+const smallRange = snap(H({ gR: 1 }), 'param');
+expect('商品圈 1 km：無級可開且完成「這裡買不到」', smallRange.data.good.L == null && firing(smallRange).includes('2'));
+expect('商品圈恢復 30 km：可供應且不觸發缺店任務', !firing(snap(H({ gR: 30 }), 'param')).includes('2'));
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
 console.log('\n合計：' + ok + ' 項通過，' + bad + ' 項失敗');
 console.log('公開 ' + pub.length + ' 個（' + pub.reduce((a, m) => a + m.level, 0) + ' 顆星），隱藏 ' + hid.length + ' 個（' + hid.reduce((a, m) => a + 2 * m.level, 0) + ' 顆星）；7 級以上的隱藏任務 ' + hid.filter(m => m.level >= 7).length + ' 個');

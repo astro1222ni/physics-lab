@@ -56,6 +56,10 @@
   function rings(crops, m) {
     m = m == null ? 1 : m;
     const L = active(crops).map(function (o) { return { id: o.id, a: A(o.cr), b: B(o.cr, m) }; });
+    return envelope(L);
+  }
+
+  function envelope(L) {
     const out = [];
     if (!L.length) return { rings: out, frontier: 0 };
     // 起點：城市地租最高；同高時坡度較緩的贏
@@ -97,15 +101,20 @@
    * 回傳 { D（換算成陸路的距離）, dist（直線距離）, usesRiver, land（陸路段長度）, water（河運段長度）,
    *        landing（上岸點的 x）, angle（陸路段和河的夾角，度；沒走河時為 null） }
    */
-  function route(x, y, river) {
+  function route(x, y, river, landRate = 1) {
     const dist = Math.hypot(x, y);
     const k = river && river.on ? river.k : 1;
     if (!(k < 1)) return { D: dist, dist: dist, usesRiver: false, land: dist, water: 0, landing: null, angle: null };
-    const ax = Math.abs(x), ay = Math.abs(y), sq = Math.sqrt(1 - k * k);
+    const theta = (river.direction || 0) * Math.PI / 180;
+    const along = x * Math.cos(theta) + y * Math.sin(theta);
+    const across = y * Math.cos(theta) - x * Math.sin(theta);
+    const ax = Math.abs(along), ay = Math.abs(across), sq = Math.sqrt(1 - k * k);
     const t = k * ay / sq;                // 上岸點到 (x, 0) 的水平距離
     if (ax < t) return { D: dist, dist: dist, usesRiver: false, land: dist, water: 0, landing: null, angle: null };
     const land = Math.hypot(t, ay), water = ax - t;
-    return { D: k * water + land, dist: dist, usesRiver: true, land: land, water: water, landing: Math.sign(x || 1) * water, angle: Math.acos(k) * 180 / Math.PI };
+    const D = k * water + land + (river.fee || 0) / landRate;
+    if (river.fee > 0 && D >= dist) return { D: dist, dist, usesRiver: false, land: dist, water: 0, landing: null, angle: null };
+    return { D, dist: dist, usesRiver: true, land: land, water: water, landing: Math.sign(along || 1) * water, angle: Math.acos(k) * 180 / Math.PI };
   }
   function costDist(x, y, river) { return route(x, y, river).D; }
 
@@ -139,6 +148,10 @@
     arc(phi, Math.PI - phi);
     pts.push([-tip, 0]);
     arc(Math.PI + phi, 2 * Math.PI - phi);
+    if (river.direction) {
+      const a = river.direction * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+      return pts.map(([x,y]) => [x*c-y*s, x*s+y*c]);
+    }
     return pts;
   }
 
@@ -146,11 +159,58 @@
    * 各圈的面積（平方公里）與全區總地租（元／年）。1 平方公里 = 100 公頃。
    * 總地租 = ∫ R dA，dA = 2π S r dr；每一圈的地租是直線，可以積出來。
    */
+  // Along a ray, direct and intermodal bids are straight lines. The port
+  // charge reduces the intercept of the intermodal bid by yield times fee.
+  function radialRings(crops, m, river, theta) {
+    const lines = [];
+    const unit = route(Math.cos(theta), Math.sin(theta), { ...river, fee: 0 }).D;
+    for (const { id, cr } of active(crops)) {
+      const a = A(cr), b = B(cr,m);
+      lines.push({ id, a, b });
+      if (unit < 1) lines.push({ id, a: a - cr.Y * (river.fee || 0), b: b * unit });
+    }
+    return envelope(lines);
+  }
+
+  function bidAt(crops, m, river, x, y) {
+    if (!river.on || !river.fee) {
+      const rt = route(x, y, river);
+      return { ...bestAt(crops, rt.D, m), route: rt };
+    }
+    let id = null, value = 0, bestSlope = Infinity, chosen = null;
+    for (const item of active(crops)) {
+      const rt = route(x, y, river, item.cr.f * m);
+      const bid = rent(item.cr, rt.D, m);
+      const distanceFactor = rt.usesRiver && rt.dist > 0 ? (rt.land + river.k * rt.water) / rt.dist : 1;
+      const slope = B(item.cr, m) * distanceFactor;
+      if (bid > value + 1e-9 || (id && Math.abs(bid - value) <= 1e-9 && slope < bestSlope)) {
+        id = item.id; value = bid; bestSlope = slope; chosen = rt;
+      }
+    }
+    return { id, rent: value, route: chosen || route(x,y,{ on: false }) };
+  }
+
   function totals(crops, m, river) {
     const g = rings(crops, m), S = areaFactor(river);
     let tr = 0;
     const areas = {};
     IDS.forEach(function (id) { areas[id] = 0; });
+    if (river && river.on && river.fee > 0) {
+      // Four symmetric quadrants; integrate radius analytically and angle
+      // by midpoint quadrature. Orientation cannot change the regional totals.
+      const steps = 180, angle = Math.PI / (2 * steps);
+      let farm = 0;
+      for (let i = 0; i < steps; i++) {
+        const ray = radialRings(crops, m, { ...river, direction: 0 }, (i + 0.5) * angle);
+        for (const band of ray.rings) {
+          const r = band.from, h = band.to - r;
+          const area = 4 * angle * h * (r + h/2);
+          farm += area; areas[band.id] += area;
+          tr += 400 * angle * h * (r * (band.rFrom + band.rTo)/2 + h * (band.rFrom + 2*band.rTo)/6);
+        }
+      }
+      return { ...g, areas, farm, totalRent: tr, S: g.frontier ? farm / (Math.PI*g.frontier*g.frontier) : 1 };
+    }
     g.rings.forEach(function (s) {
       const cr = crops[s.id], a = A(cr), b = B(cr, m), r0 = s.from, r1 = s.to;
       areas[s.id] += Math.PI * S * (r1 * r1 - r0 * r0);
@@ -213,14 +273,14 @@
     }
     let probe = null;
     if (set.probe) {
-      const rt = route(set.probe.x, set.probe.y, river), b = bestAt(crops, rt.D, m);
+      const b = bidAt(crops, m, river, set.probe.x, set.probe.y), rt = b.route;
       probe = { x: set.probe.x, y: set.probe.y, dist: rt.dist, D: rt.D, usesRiver: rt.usesRiver, land: rt.land, water: rt.water,
         landing: rt.landing, angle: rt.angle, id: b.id, rent: b.rent };
     }
     return {
       river: !!river.on, k: river.on ? river.k : 1, m: m, crops: cr, allOn: allOn, changedYPC: changedYPC,
       rings: t.rings, order: t.rings.map(function (s) { return s.id; }), present: present, width: width, inner: inner, outer: outer,
-      frontier: t.frontier, frontierRiver: river.on && river.k < 1 ? t.frontier / river.k : t.frontier,
+      frontier: t.frontier, frontierRiver: river.on && river.fee > 0 ? radialRings(crops,m,river,(river.direction || 0)*Math.PI/180).frontier : river.on && river.k < 1 ? t.frontier / river.k : t.frontier,
       areas: t.areas, share: share, farm: t.farm, S: t.S, totalRent: t.totalRent,
       tie3: tie3, parallel: parallel, probe: probe
     };
@@ -242,7 +302,7 @@
   return {
     IDS: IDS, DEFAULTS: DEFAULTS, LIMITS: LIMITS, clamp: clamp,
     A: A, B: B, rent: rent, rings: rings, bestAt: bestAt, route: route, costDist: costDist,
-    areaFactor: areaFactor, areaWithin: areaWithin, levelPath: levelPath, totals: totals, crossing: crossing, defaults: defaults,
+    radialRings, bidAt, areaFactor: areaFactor, areaWithin: areaWithin, levelPath: levelPath, totals: totals, crossing: crossing, defaults: defaults,
     summary: summary, TOTAL0: TOTAL0
   };
 });

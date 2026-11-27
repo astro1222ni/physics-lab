@@ -38,7 +38,7 @@
   /** 郊區（參考點）的氣溫（°C）：盛夏晴天下午 2 點最高；雲多時日夜溫差變小 */
   const rural = (h, c) => 27.5 + 4 * Math.cos(2 * Math.PI * (h - 14) / 24) * (1 - 0.6 * Math.max(0, Math.min(1, c || 0)));
   /** 都市半徑（km）：人口 ÷ 平均密度 = 面積 */
-  const radiusKm = P => Math.sqrt(P / (Math.PI * DENS));
+  const radiusKm = (P, density = DENS) => Math.sqrt(P / (Math.PI * density));
   /** 河：從西到東穿過城市南邊（格的 j 座標） */
   const riverJ = i => 49 + 4 * Math.sin(i / 11 + 0.8);
   /** 一天中的時刻係數：凌晨 2 點最強（1），下午 2 點最弱（0.3） */
@@ -52,16 +52,16 @@
    */
   function landcover(o) {
     const n = N * N, urbA = new Float32Array(n), imp = new Float32Array(n), water = new Float32Array(n), park = new Float32Array(n), anth = new Float32Array(n), S = new Float32Array(n);
-    const R = radiusKm(o.P) / CELL, w = 0.15 * R + 1, green = Math.max(0, Math.min(0.5, o.green || 0)), cool = Math.max(0, Math.min(1, o.cool || 0));
+    const R = radiusKm(o.P, o.density) / CELL, w = 0.15 * R + 1, green = Math.max(0, Math.min(0.5, o.green || 0)), cool = Math.max(0, Math.min(1, o.cool || 0));
     const parks = o.parks || [];
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const k = j * N + i, r = Math.hypot(i + 0.5 - CX, j + 0.5 - CY);
       const urb = 1 - sg((r - R) / w * 4);                 // 0（郊區）– 1（市區）
       urbA[k] = urb;
       if (Math.abs(j + 0.5 - riverJ(i)) < 1.3) { water[k] = 1; continue; }
-      let f = urb * (0.8 + 0.15 * hash(i, j, 1)) * (0.85 + 0.15 * Math.exp(-r / (0.4 * R + 1)));
+      let f = urb * (0.8 + 0.15 * hash(i, j, 1 + (o.seed || 0))) * (0.85 + 0.15 * Math.exp(-r / (0.4 * R + 1)));
       let pk = 0;
-      parks.forEach(p => { if (Math.hypot(i - p.i, j - p.j) <= PARK_R) pk = 1; });
+      parks.forEach(p => { if (Math.hypot(i - p.i, j - p.j) <= (o.parkRadius || 1) / CELL) pk = 1; });
       if (pk) { f = 0; park[k] = 1; }
       imp[k] = f * (1 - green);
       anth[k] = urb * Math.exp(-r / (0.5 * R + 1)) * (pk ? 0 : 1);
@@ -74,17 +74,28 @@
   }
 
   /** 解 λT − K∇²T + u ∂T/∂x = S（u 是風速 m/s，向東為正；西、南、北邊界 T = 0，有風時東邊界讓熱流出）。回傳 Float32Array */
-  function solve(S, wind, iters) {
+  const d = Math.SQRT1_2;
+  const winds = { W: [1, 0], NW: [d, d], N: [0, 1], NE: [-d, d],
+    E: [-1, 0], SE: [-d, -d], S: [0, -1], SW: [d, -d] };
+  function solve(S, wind, iters, direction = 'W') {
     const T = new Float32Array(N * N), u = Math.max(0, wind) * U_PER_MS;
-    const diag = LAMBDA + 4 * K_DIFF + u;                // 一階迎風差分
+    const [dx, dy] = winds[direction];
+    const ux = u * Math.abs(dx), uy = u * Math.abs(dy);
+    const sx = Math.sign(dx), sy = Math.sign(dy) * N;
+    const diag = LAMBDA + 4 * K_DIFF + ux + uy;                // 一階迎風差分
     const it = iters || 260;
     for (let s = 0; s < it; s++) {
       for (let j = 1; j < N - 1; j++) for (let i = 1; i < N - 1; i++) {
         const k = j * N + i;
-        T[k] = (S[k] + K_DIFF * (T[k - 1] + T[k + 1] + T[k - N] + T[k + N]) + u * T[k - 1]) / diag;
+        T[k] = (S[k] + K_DIFF * (T[k - 1] + T[k + 1] + T[k - N] + T[k + N]) + ux * T[k - sx] + uy * T[k - sy]) / diag;
       }
       // 東邊（下風處）的邊界：熱跟著風流出去，不在邊界上被硬壓成 0
-      if (u > 0) for (let j = 1; j < N - 1; j++) T[j * N + N - 1] = T[j * N + N - 2];
+      if (ux > 0) for (let j = 1; j < N - 1; j++) {
+        const k = j * N + (dx > 0 ? N - 1 : 0); T[k] = T[k - sx];
+      }
+      if (uy > 0) for (let i = 1; i < N - 1; i++) {
+        const k = i + (dy > 0 ? (N - 1) * N : 0); T[k] = T[k - sy];
+      }
     }
     return T;
   }
@@ -92,11 +103,11 @@
   const REF = new Map();
   const keyOf = (P, u) => Math.round(Math.log10(P) * 1000) + '|' + Math.round(Math.max(0, u) * 100);
   /** 基準城市（同樣人口與風速、沒有綠地、涼屋頂與公園）解出來的場：{ T, max, maxK }（快取） */
-  function base(P, u) {
-    const key = keyOf(P, u);
+  function base(P, u, o = {}) {
+    const key = [keyOf(P, u), o.density || DENS, o.windDir || 'W', o.seed || 0].join('|');
     let v = REF.get(key);
     if (!v) {
-      const T = solve(landcover({ P, green: 0, cool: 0, parks: [] }).S, u);
+      const T = solve(landcover({ P, density: o.density, seed: o.seed }).S, u, undefined, o.windDir);
       let max = -1e9, maxK = 0;
       for (let k = 0; k < T.length; k++) if (T[k] > max) { max = T[k]; maxK = k; }
       if (REF.size > 400) REF.clear();
@@ -115,7 +126,7 @@
   function compute(o) {
     const P = Math.max(P_MIN, Math.min(P_MAX, o.P)), u = Math.max(0, o.wind || 0), h = o.hour == null ? 2 : o.hour;
     const plain = !(o.green > 0) && !(o.cool > 0) && !(o.parks && o.parks.length);
-    const b = base(P, u), lc = landcover(Object.assign({}, o, { P })), raw = plain ? b.T : solve(lc.S, u);
+    const b = base(P, u, o), lc = landcover(Object.assign({}, o, { P })), raw = plain ? b.T : solve(lc.S, u, undefined, o.windDir);
     // 校準：基準城市的最大值 = Oke 的值 × 風、時刻、雲量的係數
     const amp = oke(P) * windFactor(u, P) * hourFactor(h) * cloudFactor(o.cloud || 0) / b.max;
     const T = new Float32Array(N * N);
@@ -146,7 +157,7 @@
         mirror: r.T[probe.j * N + mi], r: Math.hypot(km[0], km[1])
       };
     }
-    const peakParked = parks.some(p => Math.hypot((r.peakBaseK % N) - p.i, Math.floor(r.peakBaseK / N) - p.j) <= PARK_R);
+    const peakParked = parks.some(p => Math.hypot((r.peakBaseK % N) - p.i, Math.floor(r.peakBaseK / N) - p.j) <= (o.parkRadius || 1) / CELL);
     const cf = cloudFactor(o.cloud || 0);
     const maxNoCloud = cf > 1e-9 ? r.max / cf : compute(Object.assign({}, o, { cloud: 0 })).max;
     let parkCells = 0;
@@ -154,7 +165,7 @@
     return {
       P: o.P, wind: o.wind || 0, hour: o.hour, cloud: o.cloud || 0, green: o.green || 0, cool: o.cool || 0, parks: parks.length, parkArea: parkCells * CELL * CELL,
       max: r.max, maxNoCloud, center: r.center, centerNoPark, peakKm: r.peakKm, peakBaseKm: r.peakBaseKm, peakParked, area2: r.area2,
-      oke: r.oke, ucrit: r.ucrit, maxBase: r.maxBase, mitig: r.maxBase > 1e-9 ? 1 - r.max / r.maxBase : 0, rural: r.rural, R: radiusKm(o.P), probe: pr
+      oke: r.oke, ucrit: r.ucrit, maxBase: r.maxBase, mitig: r.maxBase > 1e-9 ? 1 - r.max / r.maxBase : 0, rural: r.rural, R: radiusKm(o.P, o.density), probe: pr
     };
   }
 
@@ -163,5 +174,5 @@
   /** km → 格 */
   const cellOf = (x, y) => [Math.floor(x / CELL + CX), Math.floor(y / CELL + CY)];
 
-  return { N, CELL, CX, CY, DENS, K_DIFF, LAMBDA, U_PER_MS, PARK_R, P_MIN, P_MAX, MAX_PARKS, oke, ucrit, windFactor, rural, radiusKm, riverJ, hourFactor, cloudFactor, landcover, solve, base, refMax, compute, summary, kmOf, cellOf, hash };
+  return { winds, N, CELL, CX, CY, DENS, K_DIFF, LAMBDA, U_PER_MS, PARK_R, P_MIN, P_MAX, MAX_PARKS, oke, ucrit, windFactor, rural, radiusKm, riverJ, hourFactor, cloudFactor, landcover, solve, base, refMax, compute, summary, kmOf, cellOf, hash };
 });

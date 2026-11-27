@@ -250,7 +250,7 @@
         overGroup.add(wall);
         const tl = tube(top, C['cm-prof'], 0.02); if (tl) overGroup.add(tl);
         // 視線（眼睛離地 1.6 m；在這個比例下貼著地面）
-        const eA = Math.max(P.hA, state.sea) + K.EYE, eB = Math.max(P.hB, state.sea) + K.EYE;
+        const eA = Math.max(P.hA, state.sea) + state.eyeA, eB = Math.max(P.hB, state.sea) + state.eyeB;
         const pa = [X(A[0]), X(A[1]), zOf(eA) + 0.03], pb = [X(Bp[0]), X(Bp[1]), zOf(eB) + 0.03];
         const sl = tube([pa, pb], P.visible ? C['cm-see'] : C['cm-block'], 0.012, 0.9); if (sl) overGroup.add(sl);
         [['A', A, pa], ['B', Bp, pb]].forEach(function (e) {
@@ -288,7 +288,7 @@
       sliceMat.color = col('cm-slice'); sliceEdge.material.color = col('cm-slice');
       const sk = [TR.id, state.slice, state.vexag, D.ver].join('|');
       if (sk !== sliceKey) { sliceKey = sk; buildSlice(); }
-      const ok = JSON.stringify([TR.id, state.A, state.B, state.probe, state.sea, state.vexag, D.ver, lang]);
+      const ok = JSON.stringify([TR.id, state.A, state.B, state.probe, state.sea, state.vexag, state.eyeA, state.eyeB, D.ver, lang]);
       if (ok !== overKey) { overKey = ok; buildOverlays(); }
       if (lang !== labelLang) { labelLang = lang; Object.keys(hudLast).forEach(function (k) { delete hudLast[k]; }); }
       setHud('name', B.name() + T('（最高 ', ' (highest ') + B.num(TR.max, 0) + ' m' + T('）', ')'));

@@ -8,7 +8,7 @@
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const FONT = D.FONT;
-  const NX = K.NX, NY = K.NY, N = NX * NY;
+  let NX = K.NX, NY = K.NY, N = NX * NY;
   const CLS_NAME = { water: ['河', 'river'], pond: ['池塘', 'pond'], forest: ['森林', 'forest'], town: ['城鎮', 'town'], park: ['公園', 'park'], paddy: ['稻田', 'rice paddy'], fallow: ['休耕地', 'fallow field'], sand: ['沙洲', 'sand bar'] };
   const STAGE_NAME = { flood: ['灌水準備插秧', 'flooded for planting'], young: ['剛插秧', 'just planted'], grow: ['生長中', 'growing'], ripe: ['成熟轉黃', 'ripening'], fallow: ['休耕', 'fallow'] };
   const COMP_NAME = { natural: ['真實色彩', 'natural colour'], cir: ['標準假色', 'colour infrared'], agri: ['農業組合', 'agriculture'], swir: ['短波紅外組合', 'SWIR'], custom: ['自訂組合', 'custom'] };
@@ -17,19 +17,24 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { day: $('rDay'), drought: $('rDrought'), turb: $('rTurb'), haze: $('rHaze') };
+  const el = { day: $('rDay'), drought: $('rDrought'), turb: $('rTurb'), haze: $('rHaze'), shift: $('rShift'), cloud: $('rCloud') };
   const LIM = { day: [1, 365], drought: [0, 1], turb: [0, 1], haze: [0, 0.15] };
   const clamp = function (v, a) { return Math.max(a[0], Math.min(a[1], v)); };
-  const state = { view: 'image', layer: 'rgb', comp: 'natural', rgb: [4, 3, 2], day: 70, drought: 0, turb: 0.3, haze: 0, probe: -1, playing: false, acted: false };
+  const state = { view: 'image', layer: 'rgb', comp: 'natural', rgb: [4, 3, 2], day: 70, size: 30, seed: 3, uniform: false, shift: 0, cloud: 0, drought: 0, turb: 0.3, haze: 0, probe: -1, playing: false, acted: false };
   let S = null, S0 = null, SC = null, PX = null, syncing = false;
-  const opts = function () { return { day: state.day, drought: state.drought, turb: state.turb, haze: state.haze }; };
+  const opts = function () { return { size: state.size, seed: state.seed, uniform: state.uniform, shift: state.shift, cloud: state.cloud, day: state.day, drought: state.drought, turb: state.turb, haze: state.haze }; };
+  let sceneKey;
   function recompute() {
-    S = K.scene(opts());
-    S0 = state.drought > 0 ? K.scene({ day: state.day, drought: 0, turb: state.turb, haze: state.haze }) : S;
-    // 影像的亮度範圍用「沒有霧霾」的同一張影像決定：霧霾讓整張圖變亮、變灰，才看得出來
-    SC = state.haze > 0 ? K.scene({ day: state.day, drought: state.drought, turb: state.turb, haze: 0 }) : S;
-    PX = state.probe >= 0 ? K.pixel(state.probe, opts()) : null;
-    imgKey = '';
+    const key = JSON.stringify(opts());
+    if (sceneKey !== key) {
+      S = K.scene(opts());
+      NX = S.grid.nx; NY = S.grid.ny; N = NX * NY;
+      S0 = state.drought > 0 ? K.scene(Object.assign(opts(), { drought: 0 })) : S;
+      // 影像的亮度範圍用「沒有霧霾」的同一張影像決定：霧霾讓整張圖變亮、變灰，才看得出來
+      SC = state.haze > 0 ? K.scene(Object.assign(opts(), { haze: 0 })) : S;
+      sceneKey = key; imgKey = '';
+    }
+    PX = state.probe >= 0 && !S.mask[state.probe] ? K.pixel(state.probe, opts(), S.mask) : null;
   }
 
   // ---------- 顏色與格式 ----------
@@ -83,8 +88,9 @@
     size = { w: w, h: h, dpr: dpr };
   }
   function imgView() {
-    const pad = 8, s = Math.min((size.w - 2 * pad) / NX, (size.h - 2 * pad) / NY);
-    return { s: s, x0: (size.w - NX * s) / 2, y0: (size.h - NY * s) / 2, W: NX * s, H: NY * s };
+    const width = K.NX * K.PIX / state.size, height = K.NY * K.PIX / state.size;
+    const pad = 8, s = Math.min((size.w - 2 * pad) / width, (size.h - 2 * pad) / height);
+    return { s: s, x0: (size.w - width * s) / 2, y0: (size.h - height * s) / 2, W: width * s, H: height * s };
   }
   // 影像（96 × 72 小圖，放大時不平滑）
   let off = null, imgKey = '';
@@ -92,11 +98,12 @@
     const key = state.layer + '|' + state.rgb.join(',');
     if (key === imgKey && off) return off;
     imgKey = key;
-    if (!off) { off = document.createElement('canvas'); off.width = NX; off.height = NY; }
+    if (!off || off.width !== NX || off.height !== NY) { off = document.createElement('canvas'); off.width = NX; off.height = NY; }
     const g = off.getContext('2d'), im = g.createImageData(NX, NY), d = im.data;
     if (state.layer === 'rgb') {
       const ch = state.rgb.map(function (b) { return { a: S.bands[b - 1], st: K.stretch(SC.bands[b - 1]) }; });
       for (let k = 0; k < N; k++) {
+        if (S.mask[k]) { d.set([230, 232, 240, 255], 4 * k); continue; }
         for (let c = 0; c < 3; c++) {
           const t = Math.max(0, Math.min(1, (ch[c].a[k] - ch[c].st.lo) / (ch[c].st.hi - ch[c].st.lo)));
           d[4 * k + c] = Math.round(255 * Math.pow(t, 0.95));
@@ -105,7 +112,7 @@
       }
     } else {
       const arr = state.layer === 'ndvi' ? S.ndvi : S.ndwi, R = state.layer === 'ndvi' ? NDVI_RAMP : NDWI_RAMP;
-      for (let k = 0; k < N; k++) { const c = ramp(R, arr[k]); d[4 * k] = c[0]; d[4 * k + 1] = c[1]; d[4 * k + 2] = c[2]; d[4 * k + 3] = 255; }
+      for (let k = 0; k < N; k++) { const c = S.mask[k] ? [230, 232, 240] : ramp(R, arr[k]); d[4 * k] = c[0]; d[4 * k + 1] = c[1]; d[4 * k + 2] = c[2]; d[4 * k + 3] = 255; }
     }
     g.putImageData(im, 0, 0);
     return off;
@@ -118,7 +125,7 @@
     D.roundRect(ctx, v.x0 + 2, v.y0 + 4, v.W, v.H, 6); ctx.fill();
     ctx.beginPath(); D.roundRect(ctx, v.x0, v.y0, v.W, v.H, 6); ctx.clip();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(buildImage(), v.x0, v.y0, v.W, v.H);
+    ctx.drawImage(buildImage(), v.x0, v.y0, NX * v.s, NY * v.s);
     ctx.imageSmoothingEnabled = true;
     ctx.restore();
     ctx.strokeStyle = D.alpha(C.text, 0.35); ctx.lineWidth = 1; D.roundRect(ctx, v.x0, v.y0, v.W, v.H, 6); ctx.stroke();
@@ -131,7 +138,7 @@
       ctx.moveTo(x - 3, y + v.s / 2); ctx.lineTo(x - 12, y + v.s / 2); ctx.moveTo(x + v.s + 3, y + v.s / 2); ctx.lineTo(x + v.s + 12, y + v.s / 2); ctx.stroke(); ctx.restore();
     }
     // 比例尺（500 m）與指北
-    const L = 500 / K.PIX * v.s, x = v.x0 + 10, y = v.y0 + v.H - 10;
+    const L = 500 / state.size * v.s, x = v.x0 + 10, y = v.y0 + v.H - 10;
     ctx.save();
     D.roundRect(ctx, x - 6, y - 24, L + 16, 30, 8); ctx.fillStyle = D.alpha(C.surface, 0.85); ctx.fill();
     ctx.strokeStyle = C.text; ctx.lineWidth = 2;
@@ -161,6 +168,10 @@
     ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore();
   }
   function pixelCurve(p) {
+    if (p.parts) {
+      const curves = p.parts.map(pixelCurve);
+      return l => curves.reduce((sum, f) => sum + f(l), 0);
+    }
     const q = p.param, m = p.mix;
     const fV = K.spectra.vegetation(q.vig, q.lw), fS = K.spectra.soil(q.soilM, q.sb), fW = K.spectra.water(q.turb);
     return function (l) { return m.veg * fV(l) + m.soil * fS(l) + m.water * fW(l) + m.urban * K.urban(l); };
@@ -237,7 +248,8 @@
     // 點
     const red = S.bands[K.B.red], nir = S.bands[K.B.nir];
     for (let k = 0; k < N; k += 1) {
-      ctx.fillStyle = D.alpha(CLS_COL(K.classAt(k)), 0.55);
+      if (S.mask[k]) continue;
+      ctx.fillStyle = D.alpha(CLS_COL(K.CLASS[S.cls[k]]), 0.55);
       ctx.fillRect(X(red[k]) - 1.2, Y(nir[k]) - 1.2, 2.4, 2.4);
     }
     ctx.restore();
@@ -270,14 +282,16 @@
   }
   function riceSay() {
     // 用最多稻田的階段
-    const cnt = {};
-    for (let k = 0; k < N; k++) if (K.SCENE.cls[k] === 4) { const s = K.rice(state.day, K.SCENE.shift[k], state.drought).stage; cnt[s] = (cnt[s] || 0) + 1; }
+    const cnt = S.stages;
+    if (!Object.keys(cnt).length) return T('無可用稻田像元', 'no clear paddy pixels');
     let best = 'fallow', m = -1;
     Object.keys(cnt).forEach(function (s) { if (cnt[s] > m) { m = cnt[s]; best = s; } });
     return T(STAGE_NAME[best][0], STAGE_NAME[best][1]);
   }
   function updateReadouts() {
+    setOut(el.shift, String(state.shift)); setOut(el.cloud, state.cloud + '%');
     setOut(el.day, String(state.day)); setOut(el.drought, num(state.drought, 2)); setOut(el.turb, num(state.turb, 2)); setOut(el.haze, num(state.haze, 3));
+    setText('pHint', T('點影像（或用方向鍵）讀一個 ' + state.size + ' m × ' + state.size + ' m 的像元。', 'Tap the image (or use the arrow keys) to read one ' + state.size + ' m × ' + state.size + ' m pixel.'));
     setText('rDate', dateOf(state.day));
     setText('rRice', riceSay());
     setText('mPaddy', num(S.mean.paddy, 2));
@@ -298,19 +312,21 @@
       });
       h += '<tr><th>NDVI</th><td colspan="2"><b>' + num(ix.ndvi, 2) + '</b></td></tr><tr><th>NDWI</th><td colspan="2">' + num(ix.ndwi, 2) + '</td></tr><tr><th>NDBI</th><td colspan="2">' + num(ix.ndbi, 2) + '</td></tr>';
       setHTML('pTab', h);
+    } else if (S.mask[state.probe]) {
+      $('pHint').hidden = true; setHTML('pTab', '<tr><th>' + T('雲', 'Cloud') + '</th><td>' + cloudText() + '</td></tr>');
     } else { $('pHint').hidden = false; setHTML('pTab', ''); }
     setHTML('legend', legendHTML());
     $('layerSeg').hidden = state.view !== 'image';
     $('rgbSel').hidden = state.comp !== 'custom';
     setText('cvHint', state.view === 'image' ? T('點影像（或用方向鍵）選一個像元。', 'Tap the image (or use the arrow keys) to pick a pixel.') : state.view === 'spectrum' ? T('彩色的直條是衛星的 7 個波段；圓點是這個像元在每個波段量到的值。', 'Coloured strips are the 7 bands; dots are what the satellite measures in each.') : T('每一點是一個像元。植物在左上（紅光暗、近紅外亮），水在左下，土壤與城鎮沿著斜斜的「土壤線」。', 'Each dot is a pixel. Plants sit top left (dark red, bright NIR), water bottom left, soil and town along the slanted soil line.'));
-    $('srNow').textContent = PX ? cn(PX.cls) + ' NDVI ' + num(K.indices(PX.bands).ndvi, 2) : T('稻田平均 NDVI ', 'Paddy mean NDVI ') + num(S.mean.paddy, 2);
+    $('srNow').textContent = S.mask[state.probe] ? cloudText() : PX ? cn(PX.cls) + ' NDVI ' + num(K.indices(PX.bands).ndvi, 2) : T('稻田平均 NDVI ', 'Paddy mean NDVI ') + num(S.mean.paddy, 2);
   }
 
   // =====================================================================
   // 任務事件
   // =====================================================================
   function snapshot(act) {
-    let probe = null;
+    let probe = S.mask[state.probe] ? { k: state.probe, cls: 'cloud', ndvi: null, ndwi: null, ndbi: null } : null;
     if (PX) {
       const ix = K.indices(PX.bands);
       probe = { k: state.probe, cls: PX.cls, stage: PX.stage, ndvi: ix.ndvi, ndwi: ix.ndwi, ndbi: ix.ndbi, mix: Object.assign({}, PX.mix), b: PX.bands.slice() };
@@ -343,12 +359,16 @@
   const setSl = function (inp, v) { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; };
   function loadSliders() { syncing = true; Object.keys(el).forEach(function (k) { setSl(el[k], state[k]); }); syncing = false; }
   function readSliders() {
+    state.shift = clamp(Math.round(val(el.shift)), [-30, 30]);
+    state.cloud = clamp(Math.round(val(el.cloud)), [0, 60]);
     state.day = clamp(Math.round(val(el.day)), LIM.day);
     state.drought = clamp(Math.round(val(el.drought) * 100) / 100, LIM.drought);
     state.turb = clamp(Math.round(val(el.turb) * 100) / 100, LIM.turb);
     state.haze = clamp(Math.round(val(el.haze) * 1000) / 1000, LIM.haze);
   }
+  function cloudText() { return T('雲遮蔽，無地表 NDVI', 'Cloud cover: no surface NDVI'); }
   function say() {
+    if (S.mask[state.probe]) { setStatus(cloudText()); return; }
     if (PX) {
       const ix = K.indices(PX.bands);
       setStatus(T('這個像元是' + cn(PX.cls) + '：NDVI ' + num(ix.ndvi, 2) + '。', 'This pixel is ' + cn(PX.cls) + ': NDVI ' + num(ix.ndvi, 2) + '.') + ' ' + T('稻田平均 ' + num(S.mean.paddy, 2) + '。', 'Paddies average ' + num(S.mean.paddy, 2) + '.'));
@@ -361,6 +381,20 @@
     if (e.type === 'change') say();
   }
   Object.keys(el).forEach(function (k) { el[k].addEventListener('input', sliderChanged); el[k].addEventListener('change', sliderChanged); });
+  function changeScene() {
+    acted();
+    const size = parseInt($('pixelSize').value, 10);
+    if (size !== state.size && state.probe >= 0) {
+      const x = Math.min(K.NX * K.PIX - 1, ((state.probe % NX) + 0.5) * state.size);
+      const y = Math.min(K.NY * K.PIX - 1, (Math.floor(state.probe / NX) + 0.5) * state.size);
+      state.probe = Math.floor(y / size) * K.grid({ size }).nx + Math.floor(x / size);
+    }
+    state.size = size; state.uniform = $('fieldMode').value === 'uniform';
+    state.seed = clamp(Math.round(+$('fieldSeed').value) || 3, [1, 99999]); $('fieldSeed').value = state.seed;
+    afterChange(true, 'param'); say();
+  }
+  ['fieldMode', 'fieldSeed', 'pixelSize'].forEach(id => $(id).addEventListener('change', changeScene));
+  $('newField').addEventListener('click', function () { $('fieldSeed').value = state.seed % 99999 + 1; changeScene(); });
   // 波段選單
   ['selR', 'selG', 'selB'].forEach(function (id) {
     const s = $(id);
@@ -437,7 +471,7 @@
   function local(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
   function pixFromPx(q) {
     const v = imgView(), i = Math.floor((q[0] - v.x0) / v.s), j = Math.floor((q[1] - v.y0) / v.s);
-    return i >= 0 && i < NX && j >= 0 && j < NY ? j * NX + i : -1;
+    return q[0] < v.x0 + v.W && q[1] < v.y0 + v.H && i >= 0 && i < NX && j >= 0 && j < NY ? j * NX + i : -1;
   }
   function setProbe(k, force) { if (k < 0 || k >= N) return; state.probe = k; afterChange(force, 'probe'); }
   cv.addEventListener('pointerdown', function (e) {
@@ -458,7 +492,7 @@
       name: function () { return T('選取的像元', 'Selected pixel'); },
       move: function (dx, dy, big) {
         acted();
-        const k = state.probe >= 0 ? state.probe : (36 * NX + 48), st = big ? 5 : 1;
+        const k = state.probe >= 0 ? state.probe : (Math.floor(NY / 2) * NX + Math.floor(NX / 2)), st = big ? 5 : 1;
         const i = Math.max(0, Math.min(NX - 1, k % NX + dx * st)), j = Math.max(0, Math.min(NY - 1, Math.floor(k / NX) - dy * st));
         setProbe(j * NX + i, true); say();
         return true;
@@ -470,15 +504,20 @@
   const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: function () { return { v: state.view, l: state.layer, c: state.comp, rgb: state.rgb.slice(), p: state.probe }; },
+    get: function () { return { size: state.size, seed: state.seed, uniform: state.uniform, v: state.view, l: state.layer, c: state.comp, rgb: state.rgb.slice(), p: state.probe }; },
     set: function (o) {
       if (!o) return;
+      state.size = [10, 100].includes(o.size) ? o.size : 30;
+      state.uniform = o.uniform === true; state.seed = Number.isInteger(o.seed) ? clamp(o.seed, [1, 99999]) : 3;
+      $('pixelSize').value = state.size + ' m'; $('fieldSeed').value = state.seed;
+      $('fieldMode').value = state.uniform ? 'uniform' : 'varied';
       if (['image', 'spectrum', 'scatter'].indexOf(o.v) >= 0) state.view = o.v;
       if (['rgb', 'ndvi', 'ndwi'].indexOf(o.l) >= 0) state.layer = o.l;
       if (COMP_NAME[o.c]) state.comp = o.c;
       if (Array.isArray(o.rgb) && o.rgb.length === 3 && o.rgb.every(function (b) { return b >= 1 && b <= 7; })) state.rgb = o.rgb.map(function (b) { return Math.round(b); });
       else if (state.comp !== 'custom') state.rgb = K.COMPOSITES[state.comp].slice();
-      if (isFinite(o.p) && o.p >= -1 && o.p < N) state.probe = Math.round(o.p);
+      const grid = K.grid(state);
+      if (isFinite(o.p) && o.p >= -1 && o.p < grid.nx * grid.ny) state.probe = Math.round(o.p);
       readSliders(); syncSeg();
       recompute(); updateReadouts(); requestDraw();
     }
@@ -505,7 +544,7 @@
   requestDraw();
   // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
   function padPoint() {
-    const v = imgView(), k = state.probe < 0 ? 36 * NX + 48 : state.probe;
+    const v = imgView(), k = state.probe < 0 ? Math.floor(NY / 2) * NX + Math.floor(NX / 2) : state.probe;
     return [v.x0 + (k % NX + 0.5) * v.s, v.y0 + (Math.floor(k / NX) + 0.5) * v.s];
   }
   if (window.LabVPad && kb) {

@@ -74,8 +74,10 @@
     .segw.crops button:nth-child(n+3) { border-top: 1px solid var(--border); }
     .crops i, .ringtab i, .legend i.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; }
     .toggle { width: 100%; margin: 4px 0 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    #riverBtn { margin: 2px 0; }
     .toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
     .toggle .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; }
+    #riverBtn { margin: 2px 0; }
     .toggle[aria-pressed="true"] .dot { background: currentColor; }
     dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
     dl.readout dd.wide { text-align: left; margin-top: -1px; }
@@ -95,6 +97,7 @@
     @media (orientation: landscape) and (max-height: 600px) {
       #cv { max-height: calc(100dvh - 78px); }
     }
+    #cameraTools label { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; }
   </style>
   <link rel="stylesheet" href="lab-tools.css?v=202611271147">
 </head>
@@ -113,6 +116,10 @@
           <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
             <button type="button" data-view="map" aria-pressed="true" data-en="Map">平面圖</button>
             <button type="button" data-view="3d" aria-pressed="false" data-en="Rent surface (3D)" title="把每一塊地的地租畫成高度：城市最高，越遠越低" data-en-title="Draw each field's rent as height: highest at the city, lower farther out">立體地租曲面</button>
+          </div>
+          <div id="cameraTools" hidden>
+            <label><input id="panMode" type="checkbox"> <span data-en="Drag to pan">拖曳平移</span></label>
+            <button type="button" id="cameraHome" data-en="Reset view">重設視角</button>
           </div>
           <div class="zoomrow"><span data-en="Range">範圍</span>
             <div class="seg" role="group" aria-label="地圖範圍（中心到邊）" data-en-aria-label="Map range (centre to edge)" id="zoomSeg">
@@ -171,6 +178,10 @@
           <div data-share-skip><button type="button" class="toggle" id="riverBtn" aria-pressed="false"><span class="dot"></span><span data-en="River">河流</span></button></div>
           <div class="slider" id="kRow"><label for="tk" data-en="River freight (× land freight)" title="坐船運一噸一公里的運費，是陸運的幾倍" data-en-title="The cost of shipping one tonne one km by river, as a fraction of the land cost">河運費率（陸運的幾倍）</label><output></output>
             <input id="tk" type="range" min="0.05" max="1" step="0.01" value="0.4" data-decimals="3"></div>
+          <div id="riverExtras" hidden><div class="slider"><label for="riverDir" data-en="River direction (east toward north, degrees)">河流方向（從東向北，度）</label><output></output>
+            <input id="riverDir" type="range" min="0" max="180" step="1" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="portFee" data-en="Port handling fee (yuan per tonne)">河港裝卸費（元／噸）</label><output></output>
+            <input id="portFee" type="range" min="0" max="300" step="5" value="0" data-decimals="0"></div></div>
           <dl class="readout">
             <dt data-en="Along the river, rings reach" title="沿著河，每一個圈都延伸成 1/k 倍" data-en-title="Along the river every ring reaches 1/k times as far">沿河延伸</dt><dd id="rStretch">—</dd>
             <dt data-en="Farmland area" title="有河時農地面積是沒有河時的幾倍" data-en-title="Farmland with the river, compared with no river">農地面積</dt><dd id="rAreaF">—</dd>
@@ -230,7 +241,8 @@
       </table></div>
       <p data-en="The numbers in this lab are invented but keep von Thünen's proportions, so his order of rings appears with the default settings.">本實驗的數字是虛構的，但保留邱念的比例關係，所以預設值會排出他提出的順序。</p>
       <h3 data-en="A river stretches the rings">河流把圈拉長</h3>
-      <p data-en-html="If shipping by river costs only \(k\) times as much as carrying goods over land, a farmer away from the river walks to the bank and then takes a boat. The cheapest landing point makes the land route meet the river at an angle \(\theta\) with \(\cos\theta = k\) — the same rule that bends light when it enters water. Every ring stretches along the river to \(1/k\) times its width across it, and the farmland grows by a factor">如果河運的運費只有陸運的 \(k\) 倍，離河的農民會先走到岸邊再坐船。最省的上岸點，讓陸路和河的夾角 \(\theta\) 滿足 \(\cos\theta = k\)：和光從空氣射進水裡會轉彎是同一個道理。每一個圈沿河延伸成 \(1/k\) 倍，農地面積變成</p>
+      <p data-en="With a port fee, each crop chooses the cheaper of direct road transport and road plus river plus the fee per tonne. The graph and ring distances refer to the all-land direction; area shares include all directions.">每種作物分別比較直接陸運與陸河聯運的每噸總費用。裝卸費會使短程偏向陸運。地租圖與圈距採純陸運方向，面積占比則涵蓋所有方向。</p>
+      <p data-en-html="If shipping by river costs only \(k\) times as much as carrying goods over land, a farmer away from the river walks to the bank and then takes a boat. The cheapest landing point makes the land route meet the river at an angle \(\theta\) with \(\cos\theta = k\) — the same rule that bends light when it enters water. With no handling fee, every ring stretches along the river to \(1/k\) times its width across it, and the farmland grows by a factor">如果河運的運費只有陸運的 \(k\) 倍，離河的農民會先走到岸邊再坐船。最省的上岸點，讓陸路和河的夾角 \(\theta\) 滿足 \(\cos\theta = k\)：和光從空氣射進水裡會轉彎是同一個道理。裝卸費為零時，每一個圈沿河延伸成 \(1/k\) 倍，農地面積變成</p>
       <div class="formula">\[ S(k) = \frac{2}{\pi}\left(\arcsin k + \frac{\sqrt{1-k^2}}{k}\right) \]</div>
       <p data-en="times what it was without the river. Von Thünen himself drew his plain with a navigable river and a second small town, and the rings became bands along the water.">倍。邱念自己的書裡也畫了一條可以通航的河和另一座小城鎮，圈就變成順著河的帶狀。</p>
       <h3 data-en="Things to try">可以試試看</h3>
@@ -244,7 +256,7 @@
       <ul>
         <li data-en="Four kinds of land use instead of von Thünen's six (he split grain farming into three systems of different intensity).">只用四種土地利用；邱念原本有六圈（他把穀物分成三種不同集約程度的耕作制度）。</li>
         <li data-en="Prices are fixed. In reality, growing more of something lowers its price, which would shrink its ring again.">價格固定不變。真實世界裡，某種作物種得越多價格越低，圈又會縮回來。</li>
-        <li data-en="The river runs straight through the city and boats can load anywhere along the bank, at no extra charge.">河筆直穿過城市，沿岸任何地方都能上船，沒有額外的裝卸費。</li>
+        <li data-en="The river runs straight through the city and boats can load anywhere along the bank; by default there is no handling fee (set one with the port handling fee slider).">河筆直穿過城市，沿岸任何地方都能上船；預設沒有裝卸費（可用「河港裝卸費」加上）。</li>
         <li data-en="Rent is in yuan per hectare per year (1 km² = 100 hectares); the money is imaginary.">地租的單位是元／公頃・年（1 平方公里 = 100 公頃）；金額是虛構的。</li>
       </ul>
       <h3 data-en="References">參考資料</h3>

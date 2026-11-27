@@ -2,7 +2,7 @@
  * 距離、互動量、分界點、勢力範圍全部在 gravity-model-core.js（GravityCore）；這裡只負責操作、繪圖與讀數。 */
 (function () {
   'use strict';
-  const K = window.GravityCore;
+  let K = window.GravityCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -14,7 +14,7 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { b: $('gB'), pop: $('gPop') };
+  const el = { b: $('gB'), pop: $('gPop'), speed: $('carSpeed'), wait: $('hsrWait') };
   const state = { view: 'flows', mode: 'km', b: 2, from: 'txg', to: 'tpe', town: null, pop: 50, acted: false };
   let padTarget = null;
   const barrier = () => state.mode === 'hsr' && state.mountains === true;
@@ -26,7 +26,7 @@
     L = K.withTown(state.town ? { lon: state.town.lon, lat: state.town.lat, pop: state.pop } : null);
     flows = K.flowsFrom(L, idx(state.from), state.b, state.mode, barrier());
     if (state.view === 'areas') {
-      const key = barrier() + '|' + state.b + '|' + state.mode + '|' + (state.town ? state.town.lon.toFixed(4) + ',' + state.town.lat.toFixed(4) + ',' + state.pop : '');
+      const key = K.CAR + '|' + K.HSR_WAIT + '|' + barrier() + '|' + state.b + '|' + state.mode + '|' + (state.town ? state.town.lon.toFixed(4) + ',' + state.town.lat.toFixed(4) + ',' + state.pop : '');
       if (key !== arKey) { AR = K.areas(L, state.b, state.mode, 3, barrier()); arKey = key; areaImg = null; }
     }
   }
@@ -400,6 +400,7 @@
       const delta=Math.round(route.minutes-K.dist(a,b,'car'));
       setText('roadReadout',T('繞行：比直線公式多 +'+delta+' 分鐘（'+gate+'）','Drive: +'+delta+' min vs straight-line formula ('+gate+')'));
     }
+    setOut(el.speed, String(K.CAR)); setOut(el.wait, String(K.HSR_WAIT));
     setOut(el.b, num(state.b, 1)); setOut(el.pop, String(state.pop));
     const a = byId(state.from), pi = pairInfo();
     if (pi) {
@@ -471,13 +472,15 @@
   // =====================================================================
   const setSl = function (inp, v) { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; };
   function readSliders() {
+    const speed = val(el.speed), wait = val(el.wait);
+    if (speed !== K.CAR || wait !== K.HSR_WAIT) K = K.createModel(speed, wait);
     state.b = Math.max(0.5, Math.min(3, Math.round(val(el.b) * 10) / 10));
     state.pop = Math.max(1, Math.min(300, Math.round(val(el.pop))));
   }
   function sliderChanged(e) {
     if (syncing) return;
     acted(); readSliders();
-    afterChange(e.type === 'change', e.target === el.b ? 'b' : 'pop');
+    afterChange(e.type === 'change', ({ gB: 'b', gPop: 'pop', carSpeed: 'speed', hsrWait: 'wait' })[e.target.id]);
     if (e.type === 'change') say();
   }
   Object.keys(el).forEach(function (k) { el[k].addEventListener('input', sliderChanged); el[k].addEventListener('change', sliderChanged); });
@@ -598,7 +601,7 @@
     }
   });
 
-  window.__gm = { state: state, K: K, snapshot: snapshot, redraw: requestDraw, refresh: function (act) { readSliders(); syncSeg(); afterChange(true, act || 'param'); }, setFrom: setFrom };
+  window.__gm = { state: state, get K() { return K; }, snapshot: snapshot, redraw: requestDraw, refresh: function (act) { readSliders(); syncSeg(); afterChange(true, act || 'param'); }, setFrom: setFrom };
 
   readColors();
   fillSelects();

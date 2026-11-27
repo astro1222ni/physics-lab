@@ -59,6 +59,9 @@
     @media (orientation: landscape) and (max-height: 600px) {
       #cv { max-height: calc(100dvh - 78px); }
     }
+    #windDir { min-height: 44px; max-width: 100%; padding: 0 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    #densitySettings > summary { min-height: 44px; line-height: 44px; cursor: pointer; }
+    #cameraTools label { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; }
   </style>
   <link rel="stylesheet" href="lab-tools.css?v=202611271147">
 </head>
@@ -79,6 +82,10 @@
             <button type="button" data-view="surface" aria-pressed="false" data-en="3D">立體溫度</button>
             <button type="button" data-view="profile" aria-pressed="false" data-en="Profile">東西剖面</button>
             <button type="button" data-view="oke" aria-pressed="false" data-en="Population" title="熱島強度和都市人口的關係" data-en-title="How heat-island intensity depends on population">人口與強度</button>
+          </div>
+          <div id="cameraTools" hidden>
+            <label><input id="panMode" type="checkbox"> <span data-en="Drag to pan">拖曳平移</span></label>
+            <button type="button" id="cameraHome" data-en="Reset view">重設視角</button>
           </div>
         </div>
         <canvas id="cv" aria-label="都市熱島的溫度地圖；點一下放溫度計" data-en-aria-label="Temperature map of the urban heat island; tap to place a thermometer"></canvas>
@@ -111,16 +118,22 @@
           <h2 data-en="City">城市</h2>
           <div class="slider"><label for="hP" data-en="Population (10,000s)">人口（萬人）</label><output></output>
             <input id="hP" type="range" min="0" max="1000" step="1" value="686" data-decimals="1"></div>
+          <details id="densitySettings"><summary data-en="City footprint">都市範圍</summary>
+          <div class="slider"><label for="density" data-en="Population density (people per square km)">人口密度（人／平方公里）</label><output></output>
+            <input id="density" type="range" min="2000" max="20000" step="500" value="6000" data-decimals="0"></div>
+            <span id="cityRadius"></span>
+          </details>
           <p class="hint" id="parkHint"></p>
         </section>
         <section class="card">
           <h2 data-en="Weather">天氣</h2>
-          <div class="slider"><label for="hWind" data-en="West wind (m/s)">西風風速（m/s）</label><output></output>
+          <div class="slider"><label for="hWind" data-en="Wind speed (m/s)">風速（m/s）</label><output></output>
             <input id="hWind" type="range" min="0" max="10" step="0.5" value="1" data-decimals="1"></div>
           <div class="slider"><label for="hHour" data-en="Time of day">時刻</label><output></output>
             <input id="hHour" type="range" min="0" max="24" step="1" value="21" data-decimals="0"></div>
           <div class="slider"><label for="hCloud" data-en="Cloud cover (tenths)" title="0 是晴朗無雲，10 是滿天雲" data-en-title="0 is a clear sky, 10 is overcast">雲量（成）</label><output></output>
             <input id="hCloud" type="range" min="0" max="10" step="1" value="3" data-decimals="0"></div>
+          <label for="windDir" data-en="Wind from">風向（風吹來的方向）</label> <select id="windDir"><option value="W" data-en="West">西</option><option value="NW" data-en="Northwest">西北</option><option value="N" data-en="North">北</option><option value="NE" data-en="Northeast">東北</option><option value="E" data-en="East">東</option><option value="SE" data-en="Southeast">東南</option><option value="S" data-en="South">南</option><option value="SW" data-en="Southwest">西南</option></select>
         </section>
         <section class="card">
           <h2 data-en="Cooling the city">降溫對策</h2>
@@ -128,6 +141,12 @@
             <input id="hGreen" type="range" min="0" max="50" step="5" value="0" data-decimals="0"></div>
           <div class="slider"><label for="hCool" data-en="Cool roofs (%)" title="淺色、反光的屋頂，白天吸收的熱比較少" data-en-title="Light, reflective roofs absorb less heat by day">涼屋頂（%）</label><output></output>
             <input id="hCool" type="range" min="0" max="100" step="10" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="parkRadius" data-en="Park radius (km)">公園半徑（km）</label><output></output>
+            <input id="parkRadius" type="range" min="0.5" max="2" step="0.25" value="1" data-decimals="2"></div>
+          <div><span data-en="Land cover">地表配置</span>
+            <button type="button" id="originalLand" data-en="Original">照舊</button>
+            <button type="button" id="rollLand" data-en="🎲 Resample">🎲 重抽</button>
+            <span id="landSeed"></span></div>
         </section>
         <p class="sr-only" id="srNow" aria-live="polite"></p>
       </aside>
@@ -144,7 +163,7 @@
       <h3 data-en="How big is the island?">熱島有多強</h3>
       <p data-en-html="Comparing cities on clear, calm nights, T. R. Oke found that the largest urban–rural difference grows with the logarithm of the population. For European cities \[\Delta T_{\max} \approx 2.01 \log_{10} P - 4.06 \;(^\circ\mathrm{C}).\] Ten times as many people adds only about 2 °C. Wind mixes city air with country air; above a critical wind speed of about \(u_c \approx 3.4 \log_{10} P - 11.6\) m/s, the island can no longer be seen.">比較許多城市晴朗無風的夜晚，T. R. Oke 發現城鄉最大的溫差隨人口的對數增加。歐洲城市大約是 \[\Delta T_{\max} \approx 2.01 \log_{10} P - 4.06 \;(^\circ\mathrm{C})\] 人口多十倍，熱島只強大約 2 °C。風會把城裡和郊外的空氣混在一起；風速超過臨界風速，大約 \(u_c \approx 3.4 \log_{10} P - 11.6\) m/s，就看不出熱島了。</p>
       <h3 data-en="The model on this page">本頁的模型</h3>
-      <p data-en-html="Each 0.5 km cell gets a heating rate \(S\) from paved surfaces and waste heat, minus cooling by parks, green space and the river. The extra temperature \(T\) then spreads by turbulent mixing (\(K\)), is lost to the atmosphere (\(\lambda\)) and is carried east by the wind (\(u\)): \[\lambda T - K \nabla^2 T + u\,\frac{\partial T}{\partial x} = S.\] Here \(K = 1\;\text{cell}^2\), \(\lambda = 0.12\), wind advection \(0.55\;\text{cell}/(\text{m/s})\), and the park (−0.25) and water (−0.20) cooling terms are teaching calibration values in 0.5 km grid units. On the 40 km × 40 km domain, the west, south and north boundaries are fixed at countryside temperature (\(T = 0\)), while the downwind east boundary uses zero-gradient extrapolation so heat flows out with the wind. The page solves this equation, then scales the result so that the plain city matches Oke's formula, reduced for wind, cloud and the hour of the day.">每一格（0.5 km）有一個加熱量 \(S\)：來自不透水面與廢熱，減去公園、綠地和河流的降溫。多出來的溫度 \(T\) 會被亂流混開（\(K\)）、散失到大氣（\(\lambda\)）、被風往東帶（\(u\)）：\[\lambda T - K \nabla^2 T + u\,\frac{\partial T}{\partial x} = S\] 其中的擴散 \(K = 1\)（格\(^2\)）、鬆弛 \(\lambda = 0.12\)、風速換算 \(0.55\) 格/(m/s)，以及公園（−0.25）與水體（−0.20）冷源，均為以 0.5 km 格網為單位的教學校準值。在 40 km × 40 km 範圍內，西、南、北邊界固定為郊區溫度（\(T = 0\)），東邊（下風處）在有風時採外推邊界讓熱流出。頁面解這個方程，再依 Oke 的公式定出大小，並依風、雲量和時刻打折。</p>
+      <p data-en-html="Each 0.5 km cell gets a heating rate \(S\) from paved surfaces and waste heat, minus cooling by parks, green space and the river. The extra temperature \(T\) then spreads by turbulent mixing (\(K\)), is lost to the atmosphere (\(\lambda\)) and is carried downwind (\(u\)): \[\lambda T - K \nabla^2 T + \mathbf{u}\cdot\nabla T = S.\] Here \(K = 1\;\text{cell}^2\), \(\lambda = 0.12\), wind advection \(0.55\;\text{cell}/(\text{m/s})\), and the park (−0.25) and water (−0.20) cooling terms are teaching calibration values in 0.5 km grid units. On the 40 km × 40 km domain, with the default west wind, the west, south and north boundaries are fixed at countryside temperature (\(T = 0\)), while the downwind east boundary uses zero-gradient extrapolation so heat flows out with the wind. The page solves this equation, then scales the result so that the plain city matches Oke's formula, reduced for wind, cloud and the hour of the day.">每一格（0.5 km）有一個加熱量 \(S\)：來自不透水面與廢熱，減去公園、綠地和河流的降溫。多出來的溫度 \(T\) 會被亂流混開（\(K\)）、散失到大氣（\(\lambda\)）、被風帶往下風處（\(u\)）：\[\lambda T - K \nabla^2 T + \mathbf{u}\cdot\nabla T = S\] 其中的擴散 \(K = 1\)（格\(^2\)）、鬆弛 \(\lambda = 0.12\)、風速換算 \(0.55\) 格/(m/s)，以及公園（−0.25）與水體（−0.20）冷源，均為以 0.5 km 格網為單位的教學校準值。在 40 km × 40 km 範圍內，以預設西風為例，西、南、北邊界固定為郊區溫度（\(T = 0\)），東邊（下風處）在有風時採外推邊界讓熱流出。頁面解這個方程，再依 Oke 的公式定出大小，並依風、雲量和時刻打折。</p>
       <h3 data-en="Things to try">可以試試看</h3>
       <ul>
         <li data-en="Compare 2 p.m. and 2 a.m. Why is the island strongest at night, when the city is not actually being heated by the sun?">比較下午 2 點和凌晨 2 點：太陽已經下山了，熱島為什麼反而最強？</li>
@@ -153,8 +172,8 @@
       </ul>
       <h3 data-en="Simplifications">簡化</h3>
       <ul>
-        <li data-en="The city is imaginary: round, on flat land, with one river and a steady west wind. Real cities have hills, coasts, sea breezes and several centres.">城市是虛構的：圓形、平地、一條河、穩定的西風。真實的城市有山、海岸、海風和好幾個中心。</li>
-        <li data-en="The urban area grows with population at a fixed average density of 6,000 people per km².">都市的面積依人口計算，平均人口密度固定為每 km² 6,000 人。</li>
+        <li data-en="The city is imaginary: round, on flat land, with one river and a steady wind (default: from the west). Real cities have hills, coasts, sea breezes and several centres.">城市是虛構的：圓形、平地、一條河、穩定的風（預設西風）。真實的城市有山、海岸、海風和好幾個中心。</li>
+        <li data-en="The urban area grows with population at the selected density, initially 6,000 people per square km.">都市的面積依人口計算，平均人口密度預設為每平方公里 6,000 人。</li>
         <li data-en="The weakening by wind is taken as linear up to the critical wind speed, and the daily cycle and cloud effect are smooth factors, not a full energy balance.">風造成的減弱簡化成到臨界風速為止的直線；一天的變化和雲的影響是平滑的係數，不是完整的能量收支。</li>
         <li data-en="Oke's formula is an empirical fit to measurements on clear, calm nights; it describes typical cities, not any particular one, and real values scatter around it by a degree or two.">Oke 的公式是從晴朗無風夜晚的觀測整理出來的經驗式，描述的是一般的城市，不是哪一座特定的城市；真實的數值會在它上下差一、兩度。</li>
       </ul>

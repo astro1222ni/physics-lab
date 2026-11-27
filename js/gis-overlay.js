@@ -9,7 +9,7 @@
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const FONT = D.FONT;
   const NX = K.NX, NY = K.NY, CELL = K.CELL, N = NX * NY;
-  const L = K.layers();
+  let L = K.layers();
   const CR = ['slope', 'flood', 'fault', 'road', 'town'];
   const LAND_NAME = [['水域', 'water'], ['住宅', 'housing'], ['農地', 'farmland'], ['森林', 'forest'], ['保護區', 'reserve']];
   const FAC = { incinerator: ['焚化廠', 'incinerator'], school: ['學校', 'school'], solar: ['太陽能場', 'solar farm'] };
@@ -28,13 +28,13 @@
   };
   const LIM = { stage: [0, 6], slope: [0, 40], flood: [0, 3], fault: [0, 4000], road: [100, 5000], town: [0, 5000], w: [0, 5] };
   const clamp = function (v, a) { return Math.max(a[0], Math.min(a[1], v)); };
-  const state = { fac: 'incinerator', method: 'bool', view: 'map', layer: 'result', cfg: null, w: null, probe: -1, tilt: 0.55, acted: false };
+  const state = { fac: 'incinerator', method: 'bool', view: 'map', layer: 'result', cfg: null, w: null, probe: -1, tilt: 0.55, panX: 0, panY: 0, planned: false, acted: false };
   function loadPreset(f) { const p = K.preset(f); state.cfg = p; state.w = p.w; delete state.cfg.w; }
   loadPreset('incinerator');
   let B = null, W = null, FL = null, syncing = false;
   function recompute() {
-    B = K.boolean(state.cfg);
-    W = K.weighted(state.cfg, state.w);
+    B = K.boolean(state.cfg, L);
+    W = K.weighted(state.cfg, state.w, L);
     FL = K.floodStats(state.cfg.stage);
   }
 
@@ -154,7 +154,7 @@
   function layerImage(name) {
     return makeCanvas(function (k) { const c = layerColor(name, k); return [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), 255]; });
   }
-  function cfgKey() { return JSON.stringify([state.cfg, state.w, state.method, state.layer, D.dark]); }
+  function cfgKey() { return JSON.stringify([state.cfg, state.w, state.method, state.layer, state.planned, D.dark]); }
 
   // =====================================================================
   // 畫布
@@ -198,8 +198,9 @@
     ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     polyline(v, RIVER); ctx.strokeStyle = D.alpha(C['go-river'], 0.95); ctx.lineWidth = Math.max(2, v.s * 0.12); ctx.stroke();
     // 道路：外框＋路面
-    K.ROADS.forEach(function (r) { polyline(v, r); ctx.strokeStyle = C['go-roadedge']; ctx.lineWidth = Math.max(3, v.s * 0.1); ctx.stroke(); });
-    K.ROADS.forEach(function (r) { polyline(v, r); ctx.strokeStyle = C['go-road']; ctx.lineWidth = Math.max(1.6, v.s * 0.055); ctx.stroke(); });
+    const roads = state.planned ? K.ROADS.concat([K.PLANNED_ROAD]) : K.ROADS;
+    roads.forEach(function (r) { polyline(v, r); ctx.strokeStyle = C['go-roadedge']; ctx.lineWidth = Math.max(3, v.s * 0.1); ctx.stroke(); });
+    roads.forEach(function (r) { polyline(v, r); ctx.strokeStyle = C['go-road']; ctx.lineWidth = Math.max(1.6, v.s * 0.055); ctx.stroke(); });
     // 活動斷層
     polyline(v, K.FAULT); ctx.setLineDash([8, 5]); ctx.strokeStyle = C['go-fault']; ctx.lineWidth = 2.4; ctx.stroke(); ctx.setLineDash([]);
     // 海岸線
@@ -318,7 +319,7 @@
     const spanY = (Math.abs(st) * NX * CELL + Math.abs(ct) * NY * CELL) * k;
     const s = Math.min((w - 150) / spanX, (h - 34) / (spanY + (n - 1) * 0.9));
     const gap = Math.min(spanY * s * 0.75, (h - 34 - spanY * s) / (n - 1));   // 剩下的高度平均分給層與層之間
-    const cx = (w - 128) / 2 + 6, cyTop = 16 + spanY * s / 2 + Math.max(0, (h - 34 - spanY * s - (n - 1) * gap) / 2);
+    const cx = (w - 128) / 2 + 6 + state.panX, cyTop = state.panY + 16 + spanY * s / 2 + Math.max(0, (h - 34 - spanY * s - (n - 1) * gap) / 2);
     const P = function (x, y, lvl) {
       const xr = x - X0, yr = y - Y0;
       return [cx + s * (ct * xr - st * yr), cyTop + (n - 1 - lvl) * gap - s * k * (st * xr + ct * yr)];
@@ -454,6 +455,7 @@
     document.querySelectorAll('#methodSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-method') === state.method ? 'true' : 'false'); });
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-view') === state.view ? 'true' : 'false'); });
     document.querySelectorAll('#layerSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-layer') === state.layer ? 'true' : 'false'); });
+    $('cameraTools').hidden = state.view !== '3d';
     $('layerSeg').hidden = state.view !== 'map';
     $('padSlot').hidden = state.view !== 'map';
     cv.classList.toggle('rot', state.view === '3d');
@@ -489,7 +491,7 @@
     const k = state.probe;
     let probe = null;
     if (k >= 0) {
-      probe = K.inspect(k, state.cfg);
+      probe = K.inspect(k, state.cfg, L);
       probe.score = W.score[k];
       probe.ok = !!B.mask[k];
     }
@@ -599,6 +601,12 @@
     afterChange(true, 'method');
     say();
   });
+  $('plannedRoad').addEventListener('change', function () {
+    acted(); state.planned = this.checked; L = K.layers(state.planned); afterChange(true, 'road');
+  });
+  $('cameraHome').addEventListener('click', function () {
+    state.panX = state.panY = 0; state.tilt = 0.55; requestDraw();
+  });
   segClick('#viewSeg', 'data-view', function (v) {
     state.view = v;
     afterChange(true, 'view');
@@ -643,7 +651,7 @@
     acted();
     const q = local(e);
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
-    if (state.view === '3d') { drag = { mode: 'rot', x: q[0], t: state.tilt }; return; }
+    if (state.view === '3d') { drag = { mode: $('panMode').checked ? 'pan' : 'rot', x: q[0], y: q[1], px: state.panX, py: state.panY, t: state.tilt }; return; }
     drag = { mode: 'probe' };
     const k = cellFromPx(q);
     if (k >= 0) setProbe(k, 'probe', false);
@@ -651,7 +659,9 @@
   cv.addEventListener('pointermove', function (e) {
     if (!drag) return;
     const q = local(e);
-    if (drag.mode === 'rot') { state.tilt = Math.max(-1.2, Math.min(1.2, drag.t + (q[0] - drag.x) * 0.006)); requestDraw(); }
+    if (drag.mode === 'pan') {
+      state.panX = drag.px + q[0] - drag.x; state.panY = drag.py + q[1] - drag.y; requestDraw();
+    } else if (drag.mode === 'rot') { state.tilt = Math.max(-1.2, Math.min(1.2, drag.t + (q[0] - drag.x) * 0.006)); requestDraw(); }
     else { const k = cellFromPx(q); if (k >= 0 && k !== state.probe) setProbe(k, 'probe', false); }
   });
   function endDrag() {
@@ -684,10 +694,11 @@
     get: function () {
       const on = {};
       K.CRIT.forEach(function (c) { on[c] = state.cfg[c].on ? 1 : 0; });
-      return { f: state.fac, m: state.method, v: state.view, l: state.layer, on: on, land: state.cfg.land.v.slice(), p: state.probe };
+      return { planned: state.planned, f: state.fac, m: state.method, v: state.view, l: state.layer, on: on, land: state.cfg.land.v.slice(), p: state.probe };
     },
     set: function (o) {
       if (!o) return;
+      state.planned = o.planned === true; $('plannedRoad').checked = state.planned; L = K.layers(state.planned);
       if (FAC[o.f]) { state.fac = o.f; loadPreset(o.f); }
       if (o.m === 'bool' || o.m === 'weight') state.method = o.m;
       if (o.v === 'map' || o.v === '3d') state.view = o.v;

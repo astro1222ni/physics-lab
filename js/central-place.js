@@ -27,7 +27,7 @@
     k: 3, N: 3, d1: 6, show: 2, roads: false, gT: 10000, gR: 30,
     grow: { s: null, run: false },
     probe: null,
-    az: -0.5, el: 0.62, acted: false
+    panX: 0, panY: 0, az: -0.5, el: 0.62, acted: false
   };
   let S1 = null, H = null, G = null, syncing = false;
   function recompute() {
@@ -513,7 +513,7 @@
     const cy0 = 22 + (h - 56 - sc * (2 * RIM0 * se + ZT)) / 2 + sc * (RIM0 * se + ZT);
     const P = function (x, y, z) {
       const xr = x * ca - y * sa, yr = x * sa + y * ca;
-      return [w / 2 + xr * sc, cy0 - yr * sc * se - (z || 0) * sc * ce, yr];
+      return [state.panX + w / 2 + xr * sc, state.panY + cy0 - yr * sc * se - (z || 0) * sc * ce, yr];
     };
     ctx.fillStyle = C.bg; ctx.fillRect(0, 0, w, h);
     const sky = ctx.createLinearGradient(0, 0, 0, h);
@@ -746,6 +746,7 @@
     const single = state.mode === 'single';
     $('cardS').hidden = !single; $('cardH').hidden = single; $('cardG').hidden = single;
     $('playbar').hidden = !single; $('legS').hidden = !single; $('legH').hidden = single;
+    $('cameraTools').hidden = single || state.view !== '3d';
     $('viewSeg').hidden = single;
     document.querySelectorAll('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-mode') === state.mode ? 'true' : 'false'); });
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-view') === state.view ? 'true' : 'false'); });
@@ -1030,13 +1031,17 @@
         : T('最近的店 ' + km(near[0].dist) + '，超過商品圈 ' + km(state.R) + '：太遠，不買了。', 'The nearest shop is ' + km(near[0].dist) + ' away, beyond the ' + km(state.R) + ' range: too far, no purchase.'));
     }
   }
+  $('cameraHome').addEventListener('click', function () {
+    state.panX = state.panY = 0; state.az = -0.5; state.el = 0.62;
+    requestDraw();
+  });
   let drag = null;
   function local(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
   cv.addEventListener('pointerdown', function (e) {
     acted();
     const q = local(e);
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
-    if (state.mode === 'hier' && state.view === '3d') { drag = { mode: 'rot', x: q[0], y: q[1], az: state.az, el: state.el }; return; }
+    if (state.mode === 'hier' && state.view === '3d') { drag = { mode: $('panMode').checked || e.shiftKey ? 'pan' : 'rot', px: state.panX, py: state.panY, x: q[0], y: q[1], az: state.az, el: state.el }; return; }
     const v = mapView();
     drag = { mode: 'probe' };
     setProbe((q[0] - v.cx) / v.s, (v.cy - q[1]) / v.s, 'probe', false, 12);
@@ -1044,7 +1049,10 @@
   cv.addEventListener('pointermove', function (e) {
     if (!drag) return;
     const q = local(e);
-    if (drag.mode === 'rot') {
+    if (drag.mode === 'pan') {
+      state.panX = drag.px + q[0] - drag.x; state.panY = drag.py + q[1] - drag.y;
+      requestDraw();
+    } else if (drag.mode === 'rot') {
       state.az = drag.az - (q[0] - drag.x) * 0.01;
       state.el = Math.max(0.3, Math.min(1.3, drag.el + (q[1] - drag.y) * 0.006));
       requestDraw();

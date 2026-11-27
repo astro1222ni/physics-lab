@@ -214,4 +214,10 @@ test('店址從規則格子出發，按所有商店的平均累積路程等速�
   assert.deepStrictEqual(K.marketSitesAt({history:[point,point],distance:[0,0]},1/3),point);
 });
 
+
+test('商品圈半徑 1 km 時三級皆開不起來', () => {
+  assert.strictEqual(K.goodIn(100, 6, 3, 3, 10000, 1).L, null);
+  assert.strictEqual(K.goodIn(100, 6, 3, 3, 10000, 30).L, 3);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

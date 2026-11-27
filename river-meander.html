@@ -105,6 +105,8 @@
       .subviews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
       .subviews canvas { width: 100%; height: clamp(108px, 30dvh, 158px); }
     }
+    #bank { min-height: 44px; max-width: 100%; padding: 0 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    #bankSettings > summary { min-height: 44px; line-height: 44px; cursor: pointer; }
   </style>
 </head>
 <body data-en-ready>
@@ -168,9 +170,14 @@
             <input id="W" type="range" min="40" max="160" step="10" value="80" data-decimals="0"></div>
           <div class="slider"><label for="k" data-en="Bank erodibility k (m/year)" title="河岸多容易被沖走：沙質、沒有植物的河岸大，黏土或樹根盤結的河岸小" data-en-title="How easily the banks wash away: large for bare sand, small for clay or banks held by roots">河岸可侵蝕程度 k（m/年）</label><output></output>
             <input id="k" type="range" min="2" max="30" step="1" value="8" data-decimals="1"></div>
+          <details id="bankSettings"><summary data-en="Depth and bank material">水深與河岸物質</summary>
+          <div class="slider"><label for="widthDepth" data-en="Width-to-depth ratio">寬深比</label><output></output>
+            <input id="widthDepth" type="range" min="10" max="60" step="1" value="25" data-decimals="0"></div>
+          <label for="bank" data-en="Bank material">河岸物質</label> <select id="bank"><option value="uniform" data-en="Uniform">均勻</option><option value="varied" data-en="Spatially varied">隨機差異</option></select> <button id="bankRoll" type="button" hidden data-en="🎲 Resample">🎲 重抽</button>
+          </details>
           <dl class="readout">
             <dt data-en="Years gone by">經過時間</dt><dd id="rT" class="big">—</dd>
-            <dt data-en="Mean depth D (= W/25)">平均水深 D（＝W／25）</dt><dd id="rD">—</dd>
+            <dt data-en="Mean depth D">平均水深 D</dt><dd id="rD">—</dd>
           </dl>
           <p class="hint" data-en="Wider rivers make bigger bends; banks that erode faster make everything happen sooner.">河越寬，彎越大；河岸越容易沖刷，一切來得越快。</p>
         </section>
@@ -256,11 +263,11 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="The river is a centreline of points spaced about W/2 apart in a valley 8 km long and 4 km wide; water enters at the left and leaves at the right, and both ends are fixed. The valley floor is flat and uniform and the width W stays the same everywhere (depth D = W/25).">河道用一條中心線表示，線上的點相距約 W/2；河谷長 8 km、寬 4 km，水從左邊進、右邊出，兩端固定。谷底是平坦均勻的沖積平原，河寬 W 處處相同（水深 D = W/25）。</li>
+        <li data-en-html="The river is a centreline of points spaced about W/2 apart in a valley 8 km long and 4 km wide; water enters at the left and leaves at the right, and both ends are fixed. The valley floor is flat and uniform and the width W stays the same everywhere (depth = width / selected ratio, initially W/25).">河道用一條中心線表示，線上的點相距約 W/2；河谷長 8 km、寬 4 km，水從左邊進、右邊出，兩端固定。谷底是平坦均勻的沖積平原，河寬 W 處處相同（水深＝河寬 ÷ 寬深比，預設 W/25）。</li>
         <li data-en-html="Bank migration follows the linear bend-flow theory of Ikeda, Parker and Sawai as written by Howard and Knutson: the local rate is \(R_0 = k\,W C\), and the actual rate adds the influence of the bends upstream, \(R_1(s) = \Omega R_0(s) + \Gamma \dfrac{\int_0^\infty R_0(s-\xi)\,e^{-\alpha\xi}\,d\xi}{\int_0^\infty e^{-\alpha\xi}\,d\xi}\), with \(\Omega = -1\), \(\Gamma = 2.5\) and \(\alpha = 2C_f/D\) (\(C_f = 0.01\)). Each point moves sideways by \(R_1\,\Delta t\).">河岸遷移照 Ikeda、Parker 與 Sawai 的彎道水流線性理論，用 Howard 與 Knutson 的寫法：局部速率 \(R_0 = k\,W C\)，實際速率再加上游各個彎的影響，\(R_1(s) = \Omega R_0(s) + \Gamma \dfrac{\int_0^\infty R_0(s-\xi)\,e^{-\alpha\xi}\,d\xi}{\int_0^\infty e^{-\alpha\xi}\,d\xi}\)，\(\Omega = -1\)、\(\Gamma = 2.5\)、\(\alpha = 2C_f/D\)（\(C_f = 0.01\)）。每個點往側面移動 \(R_1\,\Delta t\)。</li>
         <li data-en-html="Cut-off: when two parts of the centreline more than 3 W apart along the river come closer than W, the loop between them is removed and kept as an oxbow lake (the map draws the most recent 60 loops while all lakes still under 400 years are kept in the count). The 400-year infill time is a teaching timescale (roughly lake depth ÷ annual sedimentation rate, e.g. 4 m ÷ 1 cm/yr = 400 years). A cut by people joins the narrowest neck (at most 12 W wide) around the tapped point, if the loop is at least 1.25 times as long as the neck and saves at least 3 W.">截彎：沿河道相距超過 3 W 的兩段中心線距離小於 W 時，把中間那一圈去掉、留成牛軛湖（畫面繪製最近 60 個，未滿 400 年的湖全部保留在統計中）。約 400 年淤滿成溼地是教學用的時間尺度，可粗估為「湖深 ÷ 年沉積率」（例如 4 m ÷ 1 cm/年 ＝ 400 年）。人工截彎在點到的地方附近找最窄的頸部（最寬 12 W）挖過去；那一段河道至少要是頸寬的 1.25 倍、而且至少省下 3 W。</li>
         <li data-en-html="Time steps are chosen from the deterministic migration rate so that deterministic migration moves each point by at most a tenth of the point spacing in one step (at most one year); small Gaussian perturbations are then added on top. The steps depend only on the river itself, so the same valley, settings and actions always give the same river. The edges of the valley act as walls the channel cannot cross.">時間步長依確定性遷移速率決定，讓確定性遷移每一步不超過點距的十分之一（最多一年）；另加入小幅高斯擾動模擬天然起伏。步長只由河道本身決定，所以同一條河谷、同樣的設定和操作，一定得到同樣的河。河谷兩側是河道越不過的谷壁。</li>
-        <li data-en-html="Simplifications: no floods or changing discharge, no vegetation or varied bank material, oxbow lakes do not affect the river, and the valley is not lowered or raised. Real rivers are messier, but the shapes, the cut-off cycle and the scaling with width come out the same.">簡化：沒有洪水與流量變化、沒有植物或不同的河岸物質、牛軛湖不影響河道、河谷不會抬升或下降。真實的河流複雜得多，但彎的形狀、截彎的循環、和河寬成比例的關係都一樣。</li>
+        <li data-en-html="Simplifications: no floods or changing discharge, no vegetation; bank material is uniform by default (switch to “Spatially varied” to try uneven banks), oxbow lakes do not affect the river, and the valley is not lowered or raised. Real rivers are messier, but the shapes, the cut-off cycle and the scaling with width come out the same.">簡化：沒有洪水與流量變化、沒有植物；河岸物質預設處處相同（可改成「隨機差異」試試）、牛軛湖不影響河道、河谷不會抬升或下降。真實的河流複雜得多，但彎的形狀、截彎的循環、和河寬成比例的關係都一樣。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

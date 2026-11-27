@@ -188,4 +188,15 @@ test('任務快照：欄位齊全、數值和直接計算一致', () => {
     .forEach(k => assert.ok(k in s.probe, '缺 ' + k));
 });
 
+test('雙端眼高獨立、粗網格之間的窄稜會在加密時擋住視線', () => {
+  const terrain = { h: x => 1.2 * Math.exp(-((x - 50) ** 2)) + 2 * Math.exp(-((x - 50.5) ** 2) / 0.003) };
+  const a = [0, 0], b = [100, 0], p = K.profile(terrain, a, b, 100, 0);
+  assert.ok(p.clear > 0 && p.refined.clear < 0 && !p.visible);
+  assert.strictEqual(p.refined.grazeAt, 50.5);
+  const tallA = K.profile(terrain, a, b, 100, 0, 50, 0);
+  const tallB = K.profile(terrain, b, a, 100, 0, 0, 50);
+  assert.ok(tallA.visible && Math.abs(tallA.refined.clear - tallB.refined.clear) < 1e-9);
+  assert.ok(K.profile(terrain, a, b, 100, 0, 50, 50).refined.clear > 45);
+});
+
 console.log(`  共 ${passed} 項通過`);

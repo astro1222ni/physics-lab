@@ -69,11 +69,11 @@
   // =====================================================================
   // 狀態與控制項
   // =====================================================================
-  const el = { sea: $('sea'), vexag: $('vexag'), slice: $('slice') };
+  const el = { sea: $('sea'), vexag: $('vexag'), slice: $('slice'), eyeA: $('eyeA'), eyeB: $('eyeB') };
   const DEF = { A: [100, 6500], B: [7750, 1750], probe: [4300, 5300] };
   const state = {
     preset: 'twin', iv: 50, tint: 'height', shade: true, lines: true, rivers: true,
-    sea: 0, vexag: 2, slice: 600,
+    eyeA: K.EYE, eyeB: K.EYE, sea: 0, vexag: 2, slice: 600,
     probe: DEF.probe.slice(), A: DEF.A.slice(), B: DEF.B.slice(),
     acted: false
   };
@@ -81,6 +81,8 @@
   function readSliders() {
     state.sea = Math.max(0, Math.min(1000, val(el.sea)));
     state.vexag = Math.max(1, Math.min(10, val(el.vexag)));
+    state.eyeA = Math.max(0, Math.min(50, val(el.eyeA)));
+    state.eyeB = Math.max(0, Math.min(50, val(el.eyeB)));
     state.slice = Math.max(0, Math.min(1000, val(el.slice)));
   }
   let C = {};
@@ -477,9 +479,9 @@
   let profCache = null, profKey = '';
   function prof() {
     if (!state.A || !state.B) return null;
-    const key = [TR.id, state.A, state.B, state.sea].join('|');
+    const key = [TR.id, state.A, state.B, state.sea, state.eyeA, state.eyeB].join('|');
     if (profCache && profKey === key) return profCache;
-    profCache = K.profile(TR, state.A, state.B, 400, state.sea); profKey = key;
+    profCache = K.profile(TR, state.A, state.B, 400, state.sea, state.eyeA, state.eyeB); profKey = key;
     return profCache;
   }
   function niceStep(range, n) {
@@ -499,7 +501,7 @@
     }
     const pl = 52, pr = 14, pt = 26, pb = 28;
     const aw = W - pl - pr, ah = H - pt - pb;
-    const lo = Math.min(P.minH, state.sea) - 10, hi = Math.max(P.maxH + K.EYE, state.sea) + 10;
+    const lo = Math.min(P.minH, state.sea) - 10, hi = Math.max(P.maxH + Math.max(state.eyeA, state.eyeB), state.sea) + 10;
     const V = state.vexag;
     const s = Math.min(aw / P.L, ah / (V * (hi - lo)));
     const pw = P.L * s, ph = V * (hi - lo) * s;
@@ -558,7 +560,7 @@
       c.beginPath(); c.moveTo(X(0), Y(state.slice)); c.lineTo(X(P.L), Y(state.slice)); c.stroke(); c.setLineDash([]);
     }
     // 視線：A、B 眼睛之間的直線
-    const eA = Math.max(P.hA, state.sea) + K.EYE, eB = Math.max(P.hB, state.sea) + K.EYE;
+    const eA = Math.max(P.hA, state.sea) + state.eyeA, eB = Math.max(P.hB, state.sea) + state.eyeB;
     c.lineWidth = 1.8;
     if (P.visible) {
       c.strokeStyle = C['cm-see']; c.setLineDash([6, 4]);
@@ -602,6 +604,7 @@
   // 讀數
   // =====================================================================
   function refreshOutputs() {
+    setOut(el.eyeA, num(state.eyeA, 1) + ' m'); setOut(el.eyeB, num(state.eyeB, 1) + ' m');
     setOut(el.sea, num(state.sea, state.sea % 1 ? 1 : 0) + ' m');
     setOut(el.vexag, '×' + num(state.vexag, state.vexag % 1 ? (Math.abs(state.vexag * 10 % 1) > 1e-6 ? 2 : 1) : 0));
     setOut(el.slice, num(state.slice, state.slice % 1 ? 1 : 0) + ' m');
@@ -663,9 +666,10 @@
       setHTML('rApp', state.vexag > 1 ? T('<b>' + num(app, 1) + '°</b>（垂直誇大 ' + num(state.vexag, 1) + ' 倍，比真實的 ' + num(P.maxDeg, 1) + '° 陡）', '<b>' + num(app, 1) + '°</b> (exaggerated ' + num(state.vexag, 1) + ' times — steeper than the real ' + num(P.maxDeg, 1) + '°)')
         : T('<b>' + num(app, 1) + '°</b>（真實比例，沒有誇大）', '<b>' + num(app, 1) + '°</b> (true scale, not exaggerated)'));
       setHTML('rAsc', num(P.ascent, 0) + ' m ／ ' + num(P.descent, 0) + ' m');
-      setHTML('rVis', P.visible ? T('<b>看得見</b>：視線最低處離地 ' + num(P.clear, 1) + ' m', '<b>Yes</b>: the sightline clears the ground by ' + num(P.clear, 1) + ' m')
+      setHTML('rStep', (P.visible ? T('看得見', 'Visible') : T('看不見', 'Blocked')) + ' · ' + num(P.refined.clear, 2) + ' m · ' + num(P.L / 400, 2) + ' m ／ ' + num(P.L / 4000, 2) + ' m');
+      setHTML('rVis', P.clear >= 0 ? T('<b>看得見</b>：視線最低處離地 ' + num(P.clear, 1) + ' m', '<b>Yes</b>: the sightline clears the ground by ' + num(P.clear, 1) + ' m')
         : T('<b>看不見</b>：在離 A ' + km(P.grazeAt) + ' 處被擋住（視線低了 ' + num(-P.clear, 1) + ' m）', '<b>No</b>: blocked ' + km(P.grazeAt) + ' from A (the sightline is ' + num(-P.clear, 1) + ' m too low)'));
-    } else ['rL', 'rAB', 'rAvg', 'rMaxS', 'rApp', 'rAsc', 'rVis'].forEach(function (id) { setHTML(id, '—'); });
+    } else ['rL', 'rAB', 'rAvg', 'rMaxS', 'rApp', 'rAsc', 'rVis', 'rStep'].forEach(function (id) { setHTML(id, '—'); });
   }
 
   // =====================================================================
@@ -676,7 +680,7 @@
   function setStatus(s) { $('status').innerHTML = s; }
   function snapshot() {
     return K.snapshot(TR, {
-      preset: state.preset, interval: state.iv, vexag: state.vexag, sea: state.sea, slice: state.slice,
+      eyeA: state.eyeA, eyeB: state.eyeB, preset: state.preset, interval: state.iv, vexag: state.vexag, sea: state.sea, slice: state.slice,
       layers: { tint: state.tint, shade: state.shade, lines: state.lines, rivers: state.rivers },
       view: view3 && view3.active ? '3d' : '2d',
       probe: state.probe, A: state.A, B: state.B
@@ -725,7 +729,7 @@
   [['tShade', 'shade'], ['tLines', 'lines'], ['tRivers', 'rivers']].forEach(function (p) {
     $(p[0]).addEventListener('click', function () { acted(); state[p[1]] = !state[p[1]]; refreshOutputs(); if (view3 && view3.active) view3.onLook(); afterChange(true); });
   });
-  ['sea', 'vexag', 'slice'].forEach(function (k) {
+  ['sea', 'vexag', 'slice', 'eyeA', 'eyeB'].forEach(function (k) {
     el[k].addEventListener('input', function () {
       acted(); readSliders(); if (k === 'sea') beginInteract();
       refreshOutputs(); afterChange();

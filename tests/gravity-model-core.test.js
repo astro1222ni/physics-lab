@@ -140,4 +140,18 @@ test('山脈改變高鐵接駁及東部勢力範圍；逐格驗證快取',()=>{
   for(const p of list) assert.strictEqual(p.d,K.dist(K.CITIES[p.i],K.CITIES[p.j],'hsr',true));
 });
 
+
+test('車速與高鐵等候貫穿接駁、流量、分界及格網', () => {
+  const a = K.CITIES[0], b = K.CITIES[14], slow = K.createModel(40, 10), wait = K.createModel(40, 40);
+  assert.ok(Math.abs(slow.dist(a,b,'car') - 1.5*K.dist(a,b,'car')) < 1e-8);
+  assert.ok(Math.abs(wait.dist(a,b,'hsr') - slow.dist(a,b,'hsr') - 30) < 1e-8);
+  const list = [a,b];
+  assert.notStrictEqual(slow.flowsFrom(list,0,2,'hsr')[0].T, wait.flowsFrom(list,0,2,'hsr')[0].T);
+  assert.notStrictEqual(slow.breakPoint(a,K.CITIES[4],2,'hsr').f, wait.breakPoint(a,K.CITIES[4],2,'hsr').f);
+  for (const model of [slow,wait]) {
+    const ar = model.areas(list,2,'hsr',12,true);
+    ar.grid.cells.forEach((cell,i) => assert.strictEqual(ar.k[i], model.dominant(list,cell.p,2,'hsr',true).k));
+  }
+});
+
 console.log('\n' + passed + ' 項通過');

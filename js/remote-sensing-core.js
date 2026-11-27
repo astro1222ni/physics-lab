@@ -109,9 +109,11 @@
   function rice(day, shift, drought) {
     const dr = clamp01(drought || 0);
     for (const c of CROPS) {
-      const p = c.plant + (shift || 0), h = c.harvest + (shift || 0), d = day - p;
+      const p = c.plant + (shift || 0), h = c.harvest + (shift || 0);
+      // A very early first planting can put the preceding flooded fortnight in December.
+      const d = ((day - p + 14) % 365 + 365) % 365 - 14;
       if (d >= -14 && d < 0) return { lai: 0, vigor: 0, flood: 0.9, stage: 'flood' };
-      if (d >= 0 && day < h) {
+      if (d >= 0 && d < h - p) {
         const lai = 5.2 * sg(d, 42, 9) * (1 - 0.45 * dr);
         const ripen = sg(d, h - p - 22, 6);
         const vigor = clamp01(1 - 0.75 * ripen - 0.55 * dr);
@@ -161,7 +163,14 @@
    * o = { day（1–365）, drought（0–1）, turb（河水混濁 0–1）, haze（大氣霧霾 0–0.15） }
    * 回傳 { cls, mix: { veg, soil, water, urban }, vigor, lai, bands[7]（加上大氣與雜訊後衛星看到的）, surface[7]（地表本身） }
    */
-  function pixel(k, o) {
+  function fieldShift(k, o) {
+    const seed = o.seed == null ? 3 : o.seed;
+    const field = o.uniform ? 0 : seed === 3 ? SCENE.shift[k] :
+      Math.round((hash(Math.floor((k % NX) / 6), Math.floor(k / NX / 5), seed) - 0.5) * 16);
+    return field + (o.shift || 0);
+  }
+
+  function nativePixel(k, o) {
     const i = k % NX, j = Math.floor(k / NX), c = SCENE.cls[k], dr = clamp01(o.drought || 0);
     const soilM = 0.55 * (1 - dr) + 0.05;
     let veg = 0, so = 0, wa = 0, ur = 0, vig = 0, lw = 0, lai = 0, turb = clamp01(o.turb || 0), sb = 0.35;
@@ -175,7 +184,7 @@
       case 'sand': so = 1; sb = 0.95; break;
       case 'fallow': so = 0.9; veg = 0.1; vig = 0.35; lw = 0.3; lai = 0.3; sb = Math.round((0.3 + 0.2 * hash(i, j, 8)) * 100) / 100; break;
       case 'paddy': {
-        const s = rice(o.day, SCENE.shift[k], dr);
+        const s = rice(o.day, fieldShift(k, o), dr);
         lai = s.lai; vig = s.vigor; lw = Math.max(0.2, s.vigor);
         veg = coverOf(s.lai) * SCENE.dens[k];
         wa = (1 - veg) * s.flood; so = 1 - veg - wa;
@@ -191,19 +200,102 @@
       const lc = (BANDS[b].lo + BANDS[b].hi) / 2;
       return Math.max(0, r + haze * Math.pow(480 / lc, 4) + 0.004 * (hash(i, j, 100 + b) - 0.5));
     });
-    const stage = CLASS[c] === 'paddy' ? rice(o.day, SCENE.shift[k], dr).stage : null;
+    const stage = CLASS[c] === 'paddy' ? rice(o.day, fieldShift(k, o), dr).stage : null;
     return { cls: CLASS[c], mix: { veg, soil: so, water: wa, urban: ur }, vigor: vig, lai, stage, bands, surface,
       param: { vig: Math.round(clamp01(vig) * 100) / 100, lw: Math.round(clamp01(lw) * 100) / 100, soilM: Math.round(clamp01(CLASS[c] === 'sand' ? 0.05 : soilM) * 100) / 100, sb: Math.round(sb * 100) / 100, turb: Math.round(turb * 100) / 100 } };
   }
 
+  function grid(o) {
+    const size = o.size || PIX;
+    return { size, nx: Math.ceil(NX * PIX / size), ny: Math.ceil(NY * PIX / size) };
+  }
+
+  // The native fractions occupy adjacent strips within a 30 m cell.
+  // Integrate the sensor footprint over those strips, clipping edge pixels to the valley.
+  function measuredPixel(k, o, base, keepParts) {
+    const { size, nx } = grid(o);
+    if (size === PIX) return base(k);
+    const x0 = (k % nx) * size, y0 = Math.floor(k / nx) * size;
+    const x1 = Math.min(NX * PIX, x0 + size), y1 = Math.min(NY * PIX, y0 + size);
+    const area = (x1 - x0) * (y1 - y0), classes = {}, stages = {};
+    const mix = { veg: 0, soil: 0, water: 0, urban: 0 };
+    const bands = ZERO.slice(), surface = ZERO.slice(), parts = [];
+    let lai = 0, vigor = 0;
+    for (let j = Math.floor(y0 / PIX); j < Math.ceil(y1 / PIX); j++) {
+      const height = Math.min(y1, (j + 1) * PIX) - Math.max(y0, j * PIX);
+      for (let i = Math.floor(x0 / PIX); i < Math.ceil(x1 / PIX); i++) {
+        const p = base(j * NX + i), q = p.param;
+        const width = Math.min(x1, (i + 1) * PIX) - Math.max(x0, i * PIX);
+        const weight = width * height / area;
+        classes[p.cls] = (classes[p.cls] || 0) + weight;
+        if (p.stage) stages[p.stage] = (stages[p.stage] || 0) + weight;
+        lai += weight * p.lai; vigor += weight * p.vigor;
+        let left = i * PIX;
+        const local = {};
+        for (const cover of Object.keys(mix)) {
+          const right = left + PIX * p.mix[cover];
+          const fraction = height * Math.max(0, Math.min(x1, right) - Math.max(x0, left)) / area;
+          left = right; mix[cover] += fraction; local[cover] = fraction;
+          if (!fraction) continue;
+          const endmember = cover === 'veg' ? means('v', q.vig, q.lw) : cover === 'soil' ? means('s', q.soilM, q.sb) :
+            cover === 'water' ? means('w', q.turb, 0) : means('u', 0, 0);
+          for (let b = 0; b < 7; b++) surface[b] += fraction * endmember[b];
+        }
+        if (keepParts) parts.push({ mix: local, param: q });
+        for (let b = 0; b < 7; b++) bands[b] += weight * (p.bands[b] - p.surface[b]);
+      }
+    }
+    for (let b = 0; b < 7; b++) bands[b] = Math.max(0, surface[b] + bands[b]);
+    const largest = counts => Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    const cls = largest(classes);
+    return { cls, stage: cls === 'paddy' ? largest(stages) : null, mix, vigor, lai, bands, surface, parts };
+  }
+
+  // Rank a seeded, spatially smooth field so the slider masks the stated share of pixels.
+  let cloudKey, cloudOrder;
+  function cloudMask(o, g) {
+    const n = g.nx * g.ny, mask = new Uint8Array(n);
+    if (!o.cloud) return mask;
+    const seed = o.seed == null ? 3 : o.seed, key = [g.size, seed].join('/');
+    if (key !== cloudKey) {
+      const field = new Float64Array(n);
+      for (let k = 0; k < n; k++) {
+        const x = ((k % g.nx) + 0.5) * g.size / 330, y = (Math.floor(k / g.nx) + 0.5) * g.size / 330;
+        const i = Math.floor(x), j = Math.floor(y);
+        const smooth = t => t * t * (3 - 2 * t);
+        const a = smooth(x - i), b = smooth(y - j);
+        const row = j => hash(i, j, seed + 101) * (1 - a) + hash(i + 1, j, seed + 101) * a;
+        field[k] = row(j) * (1 - b) + row(j + 1) * b;
+      }
+      cloudOrder = Array.from({ length: n }, (_, k) => k).sort((a, b) => field[b] - field[a]);
+      cloudKey = key;
+    }
+    for (let i = 0; i < Math.round(n * o.cloud / 100); i++) mask[cloudOrder[i]] = 1;
+    return mask;
+  }
+  function pixel(k, o, mask) {
+    if (o.cloud && (mask || cloudMask(o, grid(o)))[k]) return { cls: 'cloud' };
+    return measuredPixel(k, o, i => nativePixel(i, o), true);
+  }
   /** 整個場景：每一個波段一個 Float32Array，另外算 NDVI、NDWI、NDBI 與各類的平均 */
   function scene(o) {
-    const N = NX * NY, bands = BANDS.map(() => new Float32Array(N));
+    const g = grid(o), N = g.nx * g.ny, mask = cloudMask(o, g);
+    const cls = new Uint8Array(N), stages = {}, cache = [];
+    const base = g.size === PIX ? i => nativePixel(i, o) : i => cache[i] || (cache[i] = nativePixel(i, o));
+    const bands = BANDS.map(() => new Float32Array(N));
     const ndvi = new Float32Array(N), ndwi = new Float32Array(N), ndbi = new Float32Array(N);
     const sum = {};
     CLASS.forEach(c => { sum[c] = { n: 0, ndvi: 0, ndwi: 0 }; });
     for (let k = 0; k < N; k++) {
-      const p = pixel(k, o);
+      if (mask[k]) {
+        cls[k] = CLASS.length;
+        ndvi[k] = ndwi[k] = ndbi[k] = NaN;
+        for (const band of bands) band[k] = NaN;
+        continue;
+      }
+      const p = measuredPixel(k, o, base, false);
+      cls[k] = CLASS.indexOf(p.cls);
+      if (p.stage) stages[p.stage] = (stages[p.stage] || 0) + 1;
       for (let b = 0; b < 7; b++) bands[b][k] = p.bands[b];
       const x = indices(p.bands);
       ndvi[k] = x.ndvi; ndwi[k] = x.ndwi; ndbi[k] = x.ndbi;
@@ -211,12 +303,12 @@
     }
     const mean = {}, meanW = {};
     CLASS.forEach(c => { mean[c] = sum[c].n ? sum[c].ndvi / sum[c].n : null; meanW[c] = sum[c].n ? sum[c].ndwi / sum[c].n : null; });
-    return { bands, ndvi, ndwi, ndbi, mean, meanW };
+    return { bands, ndvi, ndwi, ndbi, mean, meanW, mask, cls, stages, grid: g };
   }
 
   /** 影像拉伸：下限取最暗 1% 的一半（不把暗處全部壓成黑，霧霾讓影像變亮變灰的樣子才看得出來）；上限取第 99 百分位 */
   function stretch(arr) {
-    const s = Array.from(arr).sort((a, b) => a - b), n = s.length;
+    const s = Array.from(arr).filter(Number.isFinite).sort((a, b) => a - b), n = s.length;
     const lo = 0.5 * Math.max(0, s[Math.floor(n * 0.01)]), hi = s[Math.min(n - 1, Math.floor(n * 0.99))];
     return { lo, hi: hi > lo + 1e-6 ? hi : lo + 1e-6 };
   }
@@ -226,6 +318,6 @@
 
   return {
     NX, NY, PIX, BANDS, B, CLASS, CROPS, COMPOSITES, SCENE,
-    vegetation, soil, water, urban, bandMean, means, spectra, indices, nd, rice, coverOf, riverY, classAt, pixel, scene, stretch, hash
+    vegetation, soil, water, urban, bandMean, means, spectra, indices, nd, rice, coverOf, riverY, classAt, fieldShift, grid, pixel, scene, stretch, hash
   };
 });

@@ -129,18 +129,30 @@
         </section>
         <section class="card">
           <h2 data-en="Date and conditions">日期與環境</h2>
-          <div class="slider"><label for="rDay" data-en="Day of the year" title="1 = 1 月 1 日" data-en-title="1 = 1 January">一年中的第幾天</label><output></output>
-            <input id="rDay" type="range" min="1" max="365" step="1" value="70" data-decimals="0"></div>
           <dl class="readout">
             <dt data-en="Date">日期</dt><dd id="rDate">—</dd>
             <dt data-en="The rice">稻田</dt><dd id="rRice">—</dd>
           </dl>
+          <div class="slider"><label for="rDay" data-en="Day of the year" title="1 = 1 月 1 日" data-en-title="1 = 1 January">一年中的第幾天</label><output></output>
+            <input id="rDay" type="range" min="1" max="365" step="1" value="70" data-decimals="0"></div>
           <div class="slider"><label for="rDrought" data-en="Drought (0–1)" title="缺水讓葉子的葉綠素和水分減少，土壤也變乾" data-en-title="Less chlorophyll and leaf water, drier soil">乾旱程度（0–1）</label><output></output>
             <input id="rDrought" type="range" min="0" max="1" step="0.05" value="0" data-decimals="2"></div>
           <div class="slider"><label for="rTurb" data-en="Muddy river (0–1)" title="大雨後河水帶很多泥沙" data-en-title="After heavy rain the river carries mud">河水混濁度（0–1）</label><output></output>
             <input id="rTurb" type="range" min="0" max="1" step="0.05" value="0.3" data-decimals="2"></div>
           <div class="slider"><label for="rHaze" data-en="Haze" title="大氣散射的光（藍光最多）加在每個像元上" data-en-title="Light scattered by the air (mostly blue) is added to every pixel">霧霾</label><output></output>
             <input id="rHaze" type="range" min="0" max="0.15" step="0.005" value="0" data-decimals="3"></div>
+          <details id="fieldControls"><summary data-en="Fields, clouds and pixel size">田區、雲量與像元大小</summary>
+          <div class="slider"><label for="rShift" data-en="Planting shift (days)">插秧提早／延後（天）</label><output></output>
+            <input id="rShift" type="range" min="-30" max="30" step="1" value="0"></div>
+          <div class="slider"><label for="rCloud" data-en="Cloud cover (%)">雲量（%）</label><output></output>
+            <input id="rCloud" type="range" min="0" max="60" step="1" value="0"></div>
+          <label for="fieldMode" data-en="Planting dates">插秧日</label>
+          <select id="fieldMode"><option value="varied" data-en="Vary by field">各田不同</option><option value="uniform" data-en="Same for all fields">一致</option></select>
+          <label for="fieldSeed" data-en="Seed">種子</label><input id="fieldSeed" type="number" min="1" max="99999" step="1" value="3">
+          <button type="button" id="newField" data-en="🎲 Resample">🎲 重抽</button>
+          <label for="pixelSize" data-en="Pixel size">像元大小</label>
+          <select id="pixelSize"><option data-en="10 m">10 m</option><option selected data-en="30 m">30 m</option><option data-en="100 m">100 m</option></select>
+          </details>
         </section>
         <section class="card">
           <h2 data-en="This pixel">這個像元</h2>
@@ -179,7 +191,7 @@
         <li data-en="The valley, its fields and its town are invented. The rice phenology dates and leaf-area coefficients are teaching settings based on Taiwan’s two crops a year (first crop planted around mid-February, second around early August), simplified.">河谷、田與城鎮都是虛構的。物候日期與葉面積係數是以臺灣一期、二期稻作為範例的教學設定（一期約二月中插秧、二期約八月初插秧），加以簡化。</li>
         <li data-en="The spectral curves are smooth functions shaped after typical samples in the USGS Spectral Library, not measured values. Each band uses a rectangular-response approximation (equal weight across the band), whereas real sensors have relative spectral response curves. A pixel's spectrum is a linear mix of vegetation, soil, water and urban surfaces.">光譜曲線是照 USGS 光譜庫典型樣本的形狀做成的平滑函數，不是實測值；每個波段用矩形響應近似（波段內等權平均），真實感測器有相對光譜響應曲線。一個像元的光譜是植物、土壤、水、都市四種地表的線性混合。</li>
         <li data-en-html="Haze is modelled as extra light proportional to \(1/\lambda^4\) (Rayleigh scattering) added to every band; real atmospheric correction is far more detailed.">霧霾用「和 \(1/\lambda^4\) 成正比的額外光」（瑞利散射）加在每個波段上；真正的大氣校正複雜得多。</li>
-        <li data-en="There are no clouds here. Real optical satellites cannot see through clouds, and in Taiwan’s rainy season (plum rains and typhoons) many scenes are cloudy, so far fewer images are usable than the one-every-few-days revisit suggests; radar satellites see through clouds.">這裡沒有雲。真正的光學衛星看不穿雲，臺灣的梅雨季、颱風季常常整片是雲，能用的影像比「每隔幾天經過一次」少很多；雷達衛星才看得穿雲。</li>
+        <li data-en="Set cloud cover to mask pixels in seeded patches. Cloudy pixels have no surface NDVI and are excluded from averages. Real optical satellites cannot see through clouds, and in Taiwan’s rainy season (plum rains and typhoons) many scenes are cloudy, so far fewer images are usable than the one-every-few-days revisit suggests; radar satellites see through clouds.">雲量可調整帶種子的雲斑覆蓋範圍；雲下像元標為雲，不計地表 NDVI，也不納入平均。真正的光學衛星看不穿雲，臺灣的梅雨季、颱風季常常整片是雲，能用的影像比「每隔幾天經過一次」少很多；雷達衛星才看得穿雲。</li>
       </ul>
       <h3 data-en="References">參考資料</h3>
       <ul>
@@ -189,6 +201,7 @@
         <li data-en="J. W. Rouse et al. (1974), Monitoring vegetation systems in the Great Plains with ERTS (NDVI); S. K. McFeeters (1996), International Journal of Remote Sensing 17(7) (NDWI).">J. W. Rouse 等（1974），用 ERTS 監測大平原的植物（NDVI）；S. K. McFeeters（1996），International Journal of Remote Sensing 17(7)（NDWI）。</li>
         <li data-en="All images on this page are generated by the model; no outside data are used.">本頁的影像都由頁面上的模型產生，沒有使用外部資料。</li>
       </ul>
+      <p data-en="Pixel size changes the footprint. Within each reference 30 m cell the model arranges its cover fractions in strips. Bands are averaged by overlap area before calculating indices. The 10 m strips illustrate subpixel mixing; their positions are a teaching assumption.">調整像元大小會改變地面取樣範圍。模型將原有 30 m 格內的地表依比例排成條帶，先按重疊面積平均各波段反射率，再計算指數。10 m 圖中的條帶位置是示範混合像元的教學設定。</p>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>

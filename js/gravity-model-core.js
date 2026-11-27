@@ -8,7 +8,7 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.GravityCore = factory();
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function createModel(carSpeed, waitMinutes) {
   'use strict';
 
   const R_EARTH = 6371.0;
@@ -60,8 +60,8 @@
     const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
     return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
   }
-  const ROAD = 1.3, CAR = 60;            // 道路繞行係數、平均車速（km/h）
-  const HSR_V = 200, HSR_WAIT = 25;      // 高鐵平均速度（含停站，km/h）、進出車站與等車（分鐘）
+  const ROAD = 1.3, CAR = carSpeed || 60;            // 道路繞行係數、平均車速（km/h）
+  const HSR_V = 200, HSR_WAIT = waitMinutes == null ? 25 : waitMinutes;      // 高鐵平均速度（含停站，km/h）、進出車站與等車（分鐘）
   /** 開車時間（分鐘） */
   const carMin = km => km * ROAD / CAR * 60;
   /** 兩地之間的「距離」：mode = 'km'（直線距離）、'car'（開車分鐘）、'hsr'（開車與「開車到高鐵站＋高鐵＋開車」取快的） */
@@ -227,7 +227,7 @@
       let f1 = -1, f2 = -1, best = -1;
       for (let i = 0; i < list.length; i++) {
         const c = list[i], km = haversine(c, p);
-        let d = km;
+        let d = mode === 'car' ? carMin(km) : km;
         if (barrier) {
           d = roadTime(km, approach[i], gates);
           if (mode === 'hsr' && cs[i].st.id !== cell.ns.st.id)
@@ -304,7 +304,7 @@
   }
 
   return {
-    RIDGE, NANGANG, TOUCHENG, FENGGANG, side, carRoad, roadRoute, summary,
+    createModel, RIDGE, NANGANG, TOUCHENG, FENGGANG, side, carRoad, roadRoute, summary,
     R_EARTH, CITIES, HSR, COAST, ROAD, CAR, HSR_V, HSR_WAIT, KX, KY,
     haversine, carMin, dist, nearestStation, interaction, flowsFrom, allPairs, breakFrac, breakPoint, pull, dominant, fitB,
     toXY, fromXY, inside, withTown, grid, areas

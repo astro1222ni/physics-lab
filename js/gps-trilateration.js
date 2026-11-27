@@ -18,13 +18,13 @@
   // =====================================================================
   const el = {
     tau: $('pTau'), guess: $('pGuess'), noise: $('pNoise'),
-    lat: $('sLat'), lon: $('sLon'), t: $('sT'), mask: $('sMask'), wall: $('sWall'), mp: $('sMp'), sig: $('sSig'), ctau: $('sTau')
+    lat: $('sLat'), lon: $('sLon'), t: $('sT'), mask: $('sMask'), wall: $('sWall'), dir: $('sDir'), mp: $('sMp'), sig: $('sSig'), ctau: $('sTau')
   };
   const LIM = { tau: [-40, 40], guess: [-40, 40], noise: [0, 500], lat: [-90, 90], lon: [-180, 180], t: [0, 2880], mask: [0, 40], wall: [0, 75], mp: [0, 30], sig: [0.5, 20], ctau: [-1, 1] };
   const clamp = function (v, a) { return Math.max(a[0], Math.min(a[1], v)); };
   const state = {
     mode: 'plane', view: 'globe', on: [true, true, true, false, false], rx: [17, 12], tau: 12, guess: 0, noise: 0, solved: false,
-    lat: 23.5, lon: 121, t: 0, mask: 10, wall: 0, mp: 0, sig: 3, clock: 'solve', ctau: 0.2, excl: {}, yaw: 35, pitch: 18,
+    lat: 23.5, lon: 121, t: 0, mask: 10, wall: 0, dir: 0, seed: SEED, atmosphere: false, panX: 0, panY: 0, mp: 0, sig: 3, clock: 'solve', ctau: 0.2, excl: {}, yaw: 35, pitch: 18,
     playing: false, acted: false
   };
   let P = null, S = null, syncing = false;
@@ -51,10 +51,10 @@
     };
   }
   function recomputeSky() {
-    const all = K.sky({ lat: state.lat, lon: state.lon, t: state.t, mask: state.mask, canyon: state.wall > 0 ? { w: state.wall, dir: 0 } : null });
+    const all = K.sky({ lat: state.lat, lon: state.lon, t: state.t, mask: state.mask, canyon: state.wall > 0 ? { w: state.wall, dir: state.dir } : null });
     const vis = all.filter(function (s) { return s.visible; });
     const used = vis.filter(function (s) { return !state.excl[s.id]; });
-    const sc = K.scatter(used, state.sig, NFIX, SEED, state.mp > 0 ? { m: state.mp, el: MP_EL } : null, state.clock === 'assume' ? state.ctau : undefined);
+    const sc = K.scatter(used, state.sig, NFIX, state.seed, state.mp > 0 ? { m: state.mp, el: MP_EL } : null, state.clock === 'assume' ? state.ctau : undefined, state.atmosphere);
     let maxEl = -90;
     used.forEach(function (s) { maxEl = Math.max(maxEl, s.el); });
     const dAll = vis.length >= 4 ? K.dop(K.geometry3(vis)) : null;
@@ -215,7 +215,7 @@
   }
   function globeView() {
     const R = Math.min(size.w, size.h) / 2 - 14, s = R / (K.RS * 1.04);
-    return { cx: size.w / 2, cy: size.h / 2, s: s, re: K.RE * s };
+    return { cx: size.w / 2 + state.panX, cy: size.h / 2 + state.panY, s: s, re: K.RE * s };
   }
   function proj(B, g, p) {
     return [g.cx + g.s * (p[0] * B.e[0] + p[1] * B.e[1] + p[2] * B.e[2]), g.cy - g.s * (p[0] * B.n[0] + p[1] * B.n[1] + p[2] * B.n[2]), p[0] * B.u[0] + p[1] * B.u[1] + p[2] * B.u[2]];
@@ -326,7 +326,7 @@
     if (state.wall > 0) {
       ctx.beginPath();
       for (let a = 0; a <= 360; a += 2) {
-        const lim = Math.atan(Math.tan(state.wall * DEG) * Math.abs(Math.sin(a * DEG))) / DEG, p = skyXY(v, lim, a);
+        const lim = Math.atan(Math.tan(state.wall * DEG) * Math.abs(Math.sin((a - state.dir) * DEG))) / DEG, p = skyXY(v, lim, a);
         if (a) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]);
       }
       ctx.closePath();
@@ -444,6 +444,11 @@
   function updateReadouts() {
     setOut(el.tau, num(state.tau, 1)); setOut(el.guess, num(state.guess, 2)); setOut(el.noise, grp(state.noise));
     setOut(el.lat, num(state.lat, 1)); setOut(el.lon, num(state.lon, 1)); setOut(el.t, grp(state.t));
+    $('streetRow').hidden = state.wall === 0;
+    setOut(el.dir, num(state.dir) + '°');
+    setText('seedReading', T('種子 ', 'Seed ') + state.seed);
+    $('atmReading').hidden = !state.atmosphere;
+    setText('atmReading', S.sc ? T('重複量 300 次取平均，偏移仍然在。平均位置（東、北、天）', 'The bias persists after averaging 300 fixes. Mean position (east, north, up) ') + S.sc.mean.map(v => num(v, 1)).join(' / ') + ' m' : T('可用衛星不足。', 'Too few usable satellites.'));
     setOut(el.mask, num(state.mask)); setOut(el.wall, num(state.wall)); setOut(el.mp, num(state.mp)); setOut(el.sig, num(state.sig, 1)); setOut(el.ctau, num(state.ctau, 3));
     // 平面
     const mOk = P.miss != null && P.miss < 20;
@@ -523,6 +528,7 @@
     state.lon = clamp(Math.round(val(el.lon) * 10) / 10, LIM.lon);
     state.t = clamp(Math.round(val(el.t)), LIM.t);
     state.mask = clamp(Math.round(val(el.mask)), LIM.mask);
+    state.dir = clamp(Math.round(val(el.dir)), [0, 180]);
     state.wall = clamp(Math.round(val(el.wall)), LIM.wall);
     state.mp = clamp(Math.round(val(el.mp)), LIM.mp);
     state.sig = clamp(Math.round(val(el.sig) * 10) / 10, LIM.sig);
@@ -561,7 +567,13 @@
       b.addEventListener('click', function () { acted(); apply(b.getAttribute(attr)); });
     });
   }
+  $('resample').addEventListener('click', function () { acted(); state.seed++; afterChange(true, 'sample'); });
+  $('atmMode').addEventListener('change', function () { acted(); state.atmosphere = this.value === 'fixed'; afterChange(true, 'param'); });
+  $('cameraHome').addEventListener('click', function () {
+    state.panX = state.panY = 0; state.yaw = 35; state.pitch = 18; requestDraw();
+  });
   function syncSeg() {
+    $('cameraTools').hidden = state.mode !== 'sky' || state.view !== 'globe';
     document.querySelectorAll('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === state.mode)); });
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === state.view)); });
     document.querySelectorAll('#clockSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-clock') === state.clock)); });
@@ -637,7 +649,7 @@
       const v = planeView();
       drag = { mode: 'rx' };
       moveRx((q[0] - v.x0) / v.s, (v.y0 + v.H - q[1]) / v.s + 0.3, 'drag', false);
-    } else if (state.view === 'globe') drag = { mode: 'rot', x: q[0], y: q[1], yaw: state.yaw, pitch: state.pitch };
+    } else if (state.view === 'globe') drag = { mode: $('panMode').checked ? 'pan' : 'rot', px: state.panX, py: state.panY, x: q[0], y: q[1], yaw: state.yaw, pitch: state.pitch };
     else if (state.view === 'skyplot') {
       const v = skyView();
       let best = null, bd = 24;
@@ -653,6 +665,9 @@
     if (!drag) return;
     const q = local(e);
     if (drag.mode === 'rx') { const v = planeView(); moveRx((q[0] - v.x0) / v.s, (v.y0 + v.H - q[1]) / v.s + 0.3, 'drag', false); }
+    else if (drag.mode === 'pan') {
+      state.panX = drag.px + q[0] - drag.x; state.panY = drag.py + q[1] - drag.y; requestDraw();
+    }
     else if (drag.mode === 'rot') { state.yaw = drag.yaw - (q[0] - drag.x) * 0.4; state.pitch = clamp(drag.pitch + (q[1] - drag.y) * 0.4, [-80, 80]); requestDraw(); }
   });
   function endDrag() {
@@ -682,10 +697,12 @@
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
-      return { m: state.mode, v: state.view, on: state.on.map(function (o) { return o ? 1 : 0; }), rx: state.rx.map(function (x) { return Math.round(x * 100) / 100; }), c: state.clock, x: Object.keys(state.excl).map(Number) };
+      return { seed: state.seed, atmosphere: state.atmosphere, m: state.mode, v: state.view, on: state.on.map(function (o) { return o ? 1 : 0; }), rx: state.rx.map(function (x) { return Math.round(x * 100) / 100; }), c: state.clock, x: Object.keys(state.excl).map(Number) };
     },
     set: function (o) {
       if (!o) return;
+      state.seed = Number.isSafeInteger(o.seed) && o.seed > 0 ? o.seed : SEED;
+      state.atmosphere = o.atmosphere === true; $('atmMode').value = state.atmosphere ? 'fixed' : 'noise';
       if (o.m === 'plane' || o.m === 'sky') state.mode = o.m;
       if (['globe', 'skyplot', 'fix'].indexOf(o.v) >= 0) state.view = o.v;
       if (Array.isArray(o.on) && o.on.length === 5) state.on = o.on.map(function (b) { return b === 1; });

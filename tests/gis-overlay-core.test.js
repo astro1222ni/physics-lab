@@ -147,4 +147,16 @@ test('三種設施的預設條件都找得到地，而且答案不一樣', () =>
   for (let k = 0; k < N; k++) assert.ok(!(r.incinerator.mask[k] && r.school.mask[k]));
 });
 
+test('規劃道路只改道路距離，復原後網格一致', () => {
+  const old = K.layers(), planned = K.layers(true);
+  assert.strictEqual(old.town, planned.town);
+  assert.ok(planned.road.every((r, i) => r <= old.road[i]));
+  const k = K.cellAt(11.55, 5), cfg = K.preset('school');
+  assert.ok(K.inspect(k, cfg, planned).road < K.inspect(k, cfg).road);
+  cfg.road.v = 300;
+  for (const c of K.CRIT) cfg[c].on = c === 'road';
+  assert.ok(K.boolean(cfg, planned).cells > K.boolean(cfg).cells);
+  assert.strictEqual(K.layers(false), old);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

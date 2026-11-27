@@ -16,7 +16,7 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { tfr: $('tfr'), e0: $('e0'), net: $('net'), srb: $('srb'), yr: $('yr') };
+  const el = { tfr: $('tfr'), e0: $('e0'), net: $('net'), srb: $('srb'), yr: $('yr'), ramp: $('ramp') };
   const state = {
     mode: 'ndc', tfr: 0.7, e0: 81.5, net: 0, srb: 107,
     year: START, yearF: START, past: null, cmp: 'start',
@@ -32,9 +32,15 @@
     state.net = Math.max(-100, Math.min(300, Math.round(val(el.net))));
     state.srb = Math.max(95, Math.min(125, Math.round(val(el.srb) * 10) / 10));
   }
+  function fertilityAt(i) {
+    if (state.mode === 'ndc' || (state.mode === 'custom' && val(el.ramp) > 0)) {
+      return i > 0 ? traj[i].tfr : K.DATA.asfr.tfr;
+    }
+    return state.tfr;
+  }
   function scenario() {
     if (state.mode === 'ndc') return { mode: 'ndc' };
-    return { mode: 'custom', tfr: state.tfr, e0: state.e0, net: state.mode === 'stable' ? 0 : state.net * 1000, srb: state.srb };
+    return { mode: 'custom', ramp: state.mode === 'custom' ? val(el.ramp) : 0, migAge: $('migAge').value, tfr: state.tfr, e0: state.e0, net: state.mode === 'stable' ? 0 : state.net * 1000, srb: state.srb };
   }
   /** 依目前情境重算 2025–2125 每一年的人口（設定沒變就不重算） */
   function rebuild() {
@@ -305,6 +311,7 @@
   // =====================================================================
   function updateReadouts() {
     setOut(el.tfr, num(state.tfr, 2)); setOut(el.e0, num(state.e0, 1)); setOut(el.net, num(state.net, 0)); setOut(el.srb, num(state.srb, 1));
+    setOut(el.ramp, String(val(el.ramp)));
     setOut(el.yr, String(state.year));
     if (+el.yr.value !== state.year) el.yr.value = state.year;
     const d = curInd(), p = curPop(), i = idx();
@@ -322,7 +329,7 @@
     setText('rCent', people(d.p100));
     // 這一年的出生、死亡、遷移（真實年份與起點沒有）
     const flows = !state.past && i > 0 ? p : null;
-    const tfrNow = state.past ? null : state.mode === 'ndc' ? (i > 0 ? traj[i].tfr : K.DATA.asfr.tfr) : state.tfr;
+    const tfrNow = state.past ? null : fertilityAt(i);
     setText('rTfr', tfrNow == null ? '—' : num(tfrNow, tfrNow < 1 ? 3 : 2));
     setText('rB', flows ? people(flows.births) : '—');
     setText('rD', flows ? people(flows.deaths) : '—');
@@ -355,7 +362,7 @@
     const d = curInd(), i = idx(), cmp = cmpPop(), co = cohortInfo();
     return {
       act: act || 'year', running: state.running, mode: state.mode, view: state.past ? 'past' : 'proj', real: isReal(),
-      year: dispYear(), tfr: state.mode === 'ndc' ? (i > 0 ? traj[i].tfr : K.DATA.asfr.tfr) : state.tfr,
+      year: dispYear(), tfr: fertilityAt(i),
       e0: state.e0, net: state.mode === 'custom' ? state.net : 0, srb: state.srb,
       total: d.total, total2025: BASE_TOTAL, total2050: !state.past ? inds[2050 - START].total : null, total2075: !state.past ? inds[2075 - START].total : null, dep2075: !state.past ? inds[2075 - START].dep : null, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
       depPrev: !state.past && i > 0 ? inds[i - 1].dep : null, aging: d.aging, median: d.median,
@@ -467,6 +474,7 @@
     document.querySelectorAll('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-mode') === state.mode ? 'true' : 'false'); });
     $('custom').hidden = state.mode === 'ndc';
     $('hintNdc').hidden = state.mode !== 'ndc';
+    $('rampRow').hidden = $('migRow').hidden = state.mode !== 'custom';
     $('netRow').hidden = state.mode === 'stable';
     $('hintStable').hidden = state.mode !== 'stable';
   }
@@ -487,7 +495,8 @@
     if (state.mode === 'stable') setStatus(T('穩定人口：每年' + (stableR >= 0 ? '增加 ' : '減少 ') + num(Math.abs(stableR) * 100, 2) + '%，形狀永遠不變。', 'Stable population: it ' + (stableR >= 0 ? 'grows' : 'shrinks') + ' by ' + num(Math.abs(stableR) * 100, 2) + '% a year and keeps its shape for ever.'));
     afterChange(e && e.type === 'change', 'param');
   }
-  [el.tfr, el.e0, el.net, el.srb].forEach(function (inp) { inp.addEventListener('input', paramChanged); inp.addEventListener('change', paramChanged); });
+  $('migAge').addEventListener('change', paramChanged);
+  [el.tfr, el.e0, el.net, el.srb, el.ramp].forEach(function (inp) { inp.addEventListener('input', paramChanged); inp.addEventListener('change', paramChanged); });
   document.querySelectorAll('#cmpSeg button').forEach(function (b) {
     b.addEventListener('click', function () {
       acted();
@@ -551,9 +560,10 @@
   }) : null;
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: function () { return { m: state.mode, y: state.year, c: state.cmp, b: state.cohort }; },
+    get: function () { return { m: state.mode, migAge: $('migAge').value, y: state.year, c: state.cmp, b: state.cohort }; },
     set: function (o) {
       if (!o) return;
+      if (['general', 'student', 'worker', 'retired'].includes(o.migAge)) $('migAge').value = o.migAge;
       if (['ndc', 'custom', 'stable'].indexOf(o.m) >= 0) state.mode = o.m;
       if (['none', 'start', 'ndc'].indexOf(o.c) >= 0) {
         state.cmp = o.c;

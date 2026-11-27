@@ -180,7 +180,11 @@
    * 誤差只有幾公尺到幾百公尺，用線性化 δ = (G^T G)^-1 G^T ε 就很準（單元測試和完整迭代比對過）。
    * 回傳每一次的 [東, 北, 天]（公尺）、平均、水平均方根誤差、系統偏差 bias 與 DOP。
    */
-  function scatter(sats, sigma, count, seed, mp, assumeTau) {
+  function atmosphereDelay(el) {
+    const sinEl = Math.sin(Math.max(1, el) * DEG);
+    return 3 / sinEl + 2.3 / sinEl;
+  }
+  function scatter(sats, sigma, count, seed, mp, assumeTau, atmosphere) {
     const fixed = typeof assumeTau === 'number';
     const G = fixed ? geometryFixed(sats) : geometry3(sats);
     const D = fixed ? dopFixed(sats) : dop(G);
@@ -189,7 +193,7 @@
     const R = rng(seed || 1), pts = [];
     const cb = fixed ? 1000 * C * assumeTau : 0;
     const mpOnly = sats.map(s => mp ? multipathBias(s.el, mp.m, mp.el) : 0);
-    const bias = mpOnly.map(v => v + cb);
+    const bias = mpOnly.map((v, i) => v + cb + (atmosphere ? atmosphereDelay(sats[i].el) : 0));
     let se = 0, sn = 0, su = 0, h2 = 0;
     for (let k = 0; k < count; k++) {
       const eps = sats.map((s, i) => sigma * R.n() + bias[i]);
@@ -269,7 +273,7 @@
 
   return {
     C, RE, RS, T_SID, T_ORB, INC, NSAT, PLANES, PER, ISLAND, TOWERS,
-    inverse, normalMatrix, dop, station, enuBasis, satellite, blockedBy, sky, multipathBias,
+    inverse, normalMatrix, dop, station, enuBasis, satellite, blockedBy, sky, multipathBias, atmosphereDelay,
     geometry3, geometryFixed, dopFixed, solve3, toENU, rng, scatter, TOWER_NOISE, pseudo2, geometry2, solve2, circleX, segDist, miss2
   };
 });

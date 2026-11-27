@@ -104,6 +104,7 @@
     @media (orientation: landscape) and (max-height: 600px) {
       #cv { max-height: calc(100dvh - 78px); }
     }
+    #cameraTools label { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; }
   </style>
   <link rel="stylesheet" href="lab-tools.css?v=202611271147">
 </head>
@@ -126,6 +127,10 @@
           <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg" hidden>
             <button type="button" data-view="map" aria-pressed="true" data-en="Map">平面圖</button>
             <button type="button" data-view="3d" aria-pressed="false" data-en="3D ranks" title="把中地的等級畫成高度" data-en-title="Draw each central place's rank as height">立體等級</button>
+          </div>
+          <div id="cameraTools" hidden>
+            <label><input id="panMode" type="checkbox"> <span data-en="Drag to pan">拖曳平移</span></label>
+            <button type="button" id="cameraHome" data-en="Reset view">重設視角</button>
           </div>
         </div>
         <canvas id="cv" aria-label="平原上的商店或中地與它們的市場區；點一下放一位消費者" data-en-aria-label="Shops or central places on the plain and their market areas; tap to place a shopper"></canvas>

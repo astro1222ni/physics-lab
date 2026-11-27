@@ -154,4 +154,27 @@ test('龍年出生的人比前後一年多，2010 年（虎年）比前後一年
   [1998, 2010].forEach(y => assert.ok(n(y) < n(y - 1) && n(y) < n(y + 1), String(y)));
 });
 
+
+test('遷移年齡守恆、男女各半；退休情境的扶養比高於勞動情境', () => {
+  const pop = K.basePop(), sc = Object.assign({}, K.DEFAULT, { net: 10000 });
+  const base = K.step(pop, Object.assign({}, sc, { net: 0 }));
+  const result = {};
+  for (const [profile, lo, hi] of [['student',18,24], ['worker',25,44], ['retired',60,100]]) {
+    const p = K.step(pop, Object.assign({}, sc, { migAge: profile }));
+    for (const sex of ['m','f']) for (let a = 0; a <= 100; a++) {
+      const expected = a >= lo && a <= hi ? 5000 / (hi - lo + 1) : 0;
+      assert.ok(Math.abs(p[sex][a] - base[sex][a] - expected) < 1e-8);
+    }
+    result[profile] = K.indicators(p).dep;
+  }
+  assert.ok(result.retired > result.worker);
+});
+test('總生育率線性過渡：基準年、中點、目標年與其後', () => {
+  const sc = Object.assign({}, K.DEFAULT, { tfr: 2.5, ramp: 10 });
+  for (const [n, f] of [[0,0],[5,0.5],[10,1],[30,1]]) {
+    assert.ok(Math.abs(K.paramsFor(sc, K.BASE_YEAR+n).tfr - (K.DEFAULT.tfr + (2.5-K.DEFAULT.tfr)*f)) < 1e-12);
+  }
+  assert.strictEqual(K.paramsFor(Object.assign({}, sc, { ramp: 0 }), K.BASE_YEAR).tfr, 2.5);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

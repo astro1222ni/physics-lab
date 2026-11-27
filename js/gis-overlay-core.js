@@ -27,6 +27,7 @@
     [[4.5, 7.4], [6.5, 5.2], [9.0, 3.6], [11.2, 3.0], [13.5, 2.0]],           // 往東南村莊
     [[4.5, 7.4], [4.8, 10], [5.2, 12]]                                        // 往北
   ];
+  const PLANNED_ROAD = [[9, 3.6], [9.8, 3.85], [10.55, 4.6], [11.55, 5.0], [12.1, 5.1]];
   const clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
 
   // ---------------- 地形 ----------------
@@ -66,7 +67,19 @@
 
   // ---------------- 建立全部圖層 ----------------
   let cache = null;
-  function layers() {
+  let plannedLayers;
+  function layers(planned) {
+    if (planned) {
+      if (!plannedLayers) {
+        const base = layers();
+        const road = base.road.map((distance, k) => {
+          const [x, y] = xyOf(k);
+          return Math.min(distance, 1000 * lineDist(x, y, PLANNED_ROAD));
+        });
+        plannedLayers = Object.assign({}, base, { road });
+      }
+      return plannedLayers;
+    }
     if (cache) return cache;
     const n = NX * NY;
     const L = {
@@ -183,8 +196,8 @@
   }
 
   /** 布林疊合 */
-  function boolean(cfg) {
-    const L = layers(), n = NX * NY, mask = new Uint8Array(n), fail = {};
+  function boolean(cfg, L = layers()) {
+    const n = NX * NY, mask = new Uint8Array(n), fail = {};
     CRIT.forEach(function (c) { fail[c] = 0; });
     let cnt = 0;
     for (let k = 0; k < n; k++) {
@@ -208,8 +221,8 @@
   }
 
   /** 加權疊合：適宜度 0–100 */
-  function weighted(cfg, w) {
-    const L = layers(), n = NX * NY, S = new Float64Array(n);
+  function weighted(cfg, w, L = layers()) {
+    const n = NX * NY, S = new Float64Array(n);
     const used = ['slope', 'flood', 'fault', 'road', 'town'].filter(function (c) { return (w[c] || 0) > 0; });
     const W = used.reduce(function (a, c) { return a + w[c]; }, 0);
     let best = -1, bestK = -1, hi = 0, sum = 0, valid = 0;
@@ -235,8 +248,7 @@
     return j * NX + i;
   }
   /** 一格的全部資料 */
-  function inspect(k, cfg) {
-    const L = layers();
+  function inspect(k, cfg, L = layers()) {
     const out = { k: k, x: xyOf(k)[0], y: xyOf(k)[1], z: L.z[k], slope: L.slope[k], hand: L.hand[k], depth: depthAt(L, k, cfg.stage), fault: L.fault[k], road: L.road[k], town: L.town[k], land: L.land[k], pass: {} };
     CRIT.forEach(function (c) { out.pass[c] = passes(L, k, cfg, c); });
     out.all = CRIT.every(function (c) { return out.pass[c]; });
@@ -251,7 +263,7 @@
   }
 
   return {
-    NX: NX, NY: NY, CELL: CELL, CELL_AREA: CELL_AREA, LAND: LAND, TOWN: TOWN, VILLAGE: VILLAGE, FAULT: FAULT, ROADS: ROADS, CRIT: CRIT, PRESETS: PRESETS,
+    NX: NX, NY: NY, CELL: CELL, CELL_AREA: CELL_AREA, LAND: LAND, TOWN: TOWN, VILLAGE: VILLAGE, FAULT: FAULT, ROADS: ROADS, PLANNED_ROAD: PLANNED_ROAD, CRIT: CRIT, PRESETS: PRESETS,
     riverY: riverY, riverBed: riverBed, elevation: elevation, segDist: segDist, lineDist: lineDist,
     layers: layers, preset: preset, depthAt: depthAt, passes: passes, score: score, patches: patches,
     boolean: boolean, weighted: weighted, xyOf: xyOf, cellAt: cellAt, inspect: inspect, floodStats: floodStats

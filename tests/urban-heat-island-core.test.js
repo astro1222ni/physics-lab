@@ -101,4 +101,24 @@ test('摘要：溫度計、對稱點、面積與快取一致', () => {
   const c = K.cellOf(10.25, 0.25); assert.deepStrictEqual(c, [60, 40]);
 });
 
+
+test('雙軸迎風差分：八風向的熱羽流質心皆在下風側', () => {
+  const source = new Float32Array(K.N*K.N), c = 40;
+  source[c*K.N+c] = 1;
+  for (const [direction, [dx,dy]] of Object.entries(K.winds)) {
+    const t = K.solve(source, 4, 160, direction);
+    let mx=0, my=0;
+    t.forEach((v,i) => { mx += v*(i%K.N-c); my += v*(Math.floor(i/K.N)-c); });
+    assert.ok(mx*dx + my*dy > 0 && Math.abs(mx*dy-my*dx) / t.reduce((sum,v) => sum+v,0) < 0.05);
+  }
+});
+test('密度四倍使半徑減半；公園面積隨半徑上升，地表種子可重現', () => {
+  assert.strictEqual(K.radiusKm(500000,8000), K.radiusKm(500000,2000)/2);
+  const o={P:500000, parks:[{i:34,j:30}]};
+  const count=r=>K.landcover({...o,parkRadius:r}).park.reduce((a,b)=>a+b,0);
+  assert.strictEqual(count(0.5),5); assert.strictEqual(count(2),49);
+  assert.deepStrictEqual(K.landcover(o).S,K.landcover({...o,seed:0}).S);
+  assert.notDeepStrictEqual(K.landcover(o).S,K.landcover({...o,seed:1}).S);
+});
+
 console.log('\n' + passed + ' 項通過');

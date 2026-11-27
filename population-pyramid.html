@@ -84,6 +84,7 @@
     @media (orientation: landscape) and (max-height: 600px) {
       #cv { max-height: calc(100dvh - 78px); }
     }
+    #migAge { min-height: 44px; max-width: 100%; padding: 0 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body data-en-ready>
@@ -144,12 +145,15 @@
           <div id="custom" hidden>
             <div class="slider"><label for="tfr" data-en="Total fertility rate (children per woman)" title="一位女性一生平均生幾個孩子（照今年各年齡的生育率）" data-en-title="Average number of children a woman would have at this year's birth rates for each age">總生育率（每位女性生幾個孩子）</label><output></output>
               <input id="tfr" type="range" min="0.5" max="6" step="0.05" value="0.7" data-decimals="2"></div>
+          <div id="rampRow"><div class="slider"><label for="ramp" data-en="Years from base fertility to target">從基準年生育率變到目標（年）</label><output></output>
+            <input id="ramp" type="range" min="0" max="30" step="1" value="0" data-decimals="0"></div></div>
             <div class="slider"><label for="e0" data-en="Life expectancy at birth (years)" title="男女平均的出生時平均餘命" data-en-title="Average of men's and women's life expectancy at birth">平均壽命（歲）</label><output></output>
               <input id="e0" type="range" min="30" max="95" step="0.5" value="81.5" data-decimals="1"></div>
             <div class="slider" id="netRow"><label for="net" data-en="Net migration (thousand people / year)" title="每年移入減移出；正的是淨移入" data-en-title="People moving in minus people moving out each year">淨遷入（千人／年）</label><output></output>
               <input id="net" type="range" min="-100" max="300" step="5" value="0" data-decimals="0"></div>
             <div class="slider"><label for="srb" data-en="Sex ratio at birth (boys per 100 girls)" title="每出生 100 個女嬰，同時出生幾個男嬰" data-en-title="Boys born for every 100 girls">出生性比例（每 100 女嬰的男嬰數）</label><output></output>
               <input id="srb" type="range" min="95" max="125" step="0.5" value="107" data-decimals="1"></div>
+          <div id="migRow"><label for="migAge" data-en="Migration age profile">移入者年齡</label> <select id="migAge"><option value="general" data-en="General">一般</option><option value="student" data-en="Students (18–24)">學生（18–24 歲）</option><option value="worker" data-en="Workers (25–44)">勞動（25–44 歲）</option><option value="retired" data-en="Retirees (60+)">退休（60 歲以上）</option></select></div>
             <p class="hint" id="hintStable" hidden data-en="A stable population has no migration. It keeps the same shape for ever and grows or shrinks by the same percentage every year.">穩定人口沒有遷移；它的形狀永遠不變，每年按同一個百分比增加或減少。</p>
           </div>
           <dl class="readout">
@@ -215,7 +219,7 @@
       <ul>
         <li data-en-html="\(P_a(t)\): people aged \(a\) at the end of year \(t\). \(L_a\): from a life table, the years lived at age \(a\) — the ratio \(L_{a+1}/L_a\) is the chance of reaching the next age.">\(P_a(t)\)：第 \(t\) 年年底 \(a\) 歲的人數。\(L_a\)：生命表裡在 \(a\) 歲這一年平均活過的年數；\(L_{a+1}/L_a\) 就是活到下一歲的機率。</li>
         <li data-en-html="\(B(t)\): births, from the age-specific birth rates \(f_a\) and the number of women of each age \(\bar F_a\) (average of the start and end of the year). The total fertility rate is \(\sum f_a\). Boys and girls are split by the sex ratio at birth.">\(B(t)\)：出生數，由各年齡的生育率 \(f_a\) 乘上該年齡的婦女人數 \(\bar F_a\)（年初與年底的平均）。總生育率就是 \(\sum f_a\)。男嬰女嬰照出生性比例分。</li>
-        <li data-en-html="\(M_a\): net migration. In <i>My own</i>, it is shared equally between men and women and spread over ages with a standard migration age curve (young adults move most). If net emigration would push any age–sex group below zero, that group stops at 0, so actual net outflow can be smaller than the slider setting.">\(M_a\)：淨遷入。在「自訂」裡，男女各半，年齡分布用標準的遷移年齡曲線（年輕人最常遷移）。若淨移出超過某一年齡性別組現有人數，該組人數會停在 0，因此實際淨移出可能小於滑桿設定。</li>
+        <li data-en-html="\(M_a\): net migration. In <i>My own</i>, it is shared equally between men and women and spread over ages with the selected profile: the general curve favours young adults, and the three age-group scenarios distribute migrants evenly within the group. If net emigration would push any age–sex group below zero, that group stops at 0, so actual net outflow can be smaller than the slider setting.">\(M_a\)：淨遷入。在「自訂」裡，男女各半，一般情境採標準遷移曲線（年輕人最常遷移），其餘三種情境在指定年齡組內均分。若淨移出超過某一年齡性別組現有人數，該組人數會停在 0，因此實際淨移出可能小於滑桿設定。</li>
         <li data-en-html="About 2.1 children per woman replaces the parents (a little over 2, because slightly more boys are born and some girls die before they have children). This is the <b>replacement level</b>.">每位女性平均大約生 2.1 個孩子，下一代的人數才會和父母一代一樣多（比 2 多一點，因為男嬰稍多，也有少數女孩活不到生育年齡）：這叫做替代水準。</li>
       </ul>
       <h3 data-en="Momentum">人口慣性</h3>

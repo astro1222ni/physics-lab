@@ -10,7 +10,7 @@
  *   4. 節點沿右手方向的法線移動 R1·dt（R1 > 0 往右岸移）：彎道外側（凹岸、攻擊坡）被沖蝕，內側（凸岸、滑走坡）堆積。
  *   5. 兩段不相鄰的河道中心線距離小於 CUT·W（兩岸碰在一起）就截彎取直：中間那一段離開河道，成為牛軛湖。
  *   6. 節點間距維持在 W／2 左右（太遠插點、太近刪點）；時間步長依最大遷移速率自動縮小，每步最多移動 0.1 個節點間距。
- * 水深與寬深比固定 W／D = 25，所以 α·W = 2·Cf·25 = 0.5：河寬變大，整個曲流的形狀等比例放大（曲流波長約 10–14 倍河寬）。
+ * 預設寬深比 W／D = 25，所以 α·W = 2·Cf·25 = 0.5：河寬變大，整個曲流的形狀等比例放大（曲流波長約 10–14 倍河寬）。
  * 橫剖面：彎道的河床橫向坡度 ∝ 曲率（Ikeda 等 1981，h(n) = D·(1 + A·C·n)，A = 2.89，n 往凹岸為正），
  *   所以凹岸深、凸岸淺；淺到 0 的地方就是露出水面的沙洲。
  * 亂數：用固定的種子（mulberry32），同樣的種子、同樣的操作就得到同樣的河道。
@@ -46,7 +46,7 @@
     const o = opts || {};
     const W = o.W != null ? o.W : 80, k = o.k != null ? o.k : 8, seed = o.seed != null ? o.seed : 1;
     const r = {
-      W, k, seed, t: 0, x: [], y: [], oxbows: [], oxTimes: [], hist: [], cuts: 0, artCuts: 0, nextHist: HIST_DT, rnd: rng(seed), lastCut: null, events: [],
+      W, k, seed, widthDepth: o.widthDepth || WD, bankSeed: o.bankSeed || 0, t: 0, x: [], y: [], oxbows: [], oxTimes: [], hist: [], cuts: 0, artCuts: 0, nextHist: HIST_DT, rnd: rng(seed), lastCut: null, events: [],
       // 任務用的紀錄：這條河曾經到過的最大彎曲度、兩次自然截彎的最短間隔（年）、最近一次自然截彎的時間、人工拉直的時刻
       maxSin: 1, minGap: Infinity, minGap3: Infinity, minGap4: Infinity, lastNat: null, prevNat: null, prev2Nat: null, straightAt: null
     };
@@ -67,8 +67,19 @@
   }
 
   function params(r) {
-    const D = r.W / WD;
+    const D = r.W / (r.widthDepth || WD);
     return { W: r.W, D, alpha: 2 * CF / D, k: r.k };
+  }
+
+  // Smooth interpolation of seeded bank material on a fixed valley grid.
+  function bankFactor(x, y, seed) {
+    if (!seed) return 1;
+    const gx = x / 360, gy = y / 360, i = Math.floor(gx), j = Math.floor(gy);
+    const smooth = t => t * t * (3 - 2 * t);
+    const mix = (a, b, t) => a + (b - a) * t;
+    const value = (a, b) => rng(Math.imul(a, 73856093) ^ Math.imul(b, 19349663) ^ seed)();
+    const u = smooth(gx - i), v = smooth(gy - j);
+    return 0.5 + mix(mix(value(i, j), value(i + 1, j), u), mix(value(i, j + 1), value(i + 1, j + 1), u), v);
   }
 
   // 曲率（1/m），用中央差分；兩端為 0
@@ -102,6 +113,7 @@
       }
       R1[i] = G > 0 ? OMEGA * R0[i] + GAMMA * S / G : 0;
     }
+    if (r.bankSeed) for (let i = 1; i < n - 1; i++) R1[i] *= bankFactor(x[i], y[i], r.bankSeed);
     R1[0] = 0; R1[n - 1] = 0;
     // 進出口附近逐漸減弱（平滑的 smoothstep）
     const Ls = END_W * p.W;
@@ -359,7 +371,7 @@
   }
 
   return {
-    OMEGA, GAMMA, CF, WD, A_BED, CUT, END_W, NOISE, VALLEY_L, VALLEY_H, HIST_DT, HIST_MAX, OX_MAX, FILL_YR, DT_MAX,
+    bankFactor, OMEGA, GAMMA, CF, WD, A_BED, CUT, END_W, NOISE, VALLEY_L, VALLEY_H, HIST_DT, HIST_MAX, OX_MAX, FILL_YR, DT_MAX,
     rng, create, params, curvature, migration, resample, findCut, doCut, step, advance, artificialCut,
     length, sinuosity, wavelength, nearest, crossSection, sectionInfo, snapshot
   };

@@ -262,7 +262,7 @@
    *   ascent、descent（累積爬升、下降）, minH, maxH, clear（視線離地形最小的距離，m，含地球曲率與折射）, visible, grazeAt、grazeH（最貼近處的距離與地面高度）,
    *   clearFlat（把地球當成平的時候的 clear）, landAll（全程在陸地上）, midPct（中點的坡度 %） }
    */
-  function profile(T, A, B, n, sea) {
+  function profile(T, A, B, n, sea, eyeA = EYE, eyeB = EYE) {
     n = n || 400;
     sea = sea || 0;
     const L = Math.hypot(B[0] - A[0], B[1] - A[1]);
@@ -285,7 +285,7 @@
     }
     // 通視：眼高 1.6 m（在海上時離水面 1.6 m），地形加上曲率與折射造成的「隆起」；海面以下的地面用海面高度代替
     const hA = h[0], hB = h[n];
-    const eA = Math.max(hA, sea) + EYE, eB = Math.max(hB, sea) + EYE;
+    const eA = Math.max(hA, sea) + eyeA, eB = Math.max(hB, sea) + eyeB;
     let clear = Infinity, at = 0, gi = 0, clearFlat = Infinity;
     for (let i = 1; i < n; i++) {
       const line = eA + (eB - eA) * i / n;
@@ -295,11 +295,24 @@
       if (c < clear) { clear = c; at = d[i]; gi = i; }
       if (line - ground < clearFlat) clearFlat = line - ground;
     }
+    const coarse = { clear, clearFlat, at, grazeH: h[gi] };
+    let grazeH = h[gi];
+    const start = Math.max(0, gi - 10) * 10, end = Math.min(n, gi + 10) * 10;
+    for (let j = start + 1; j < end; j++) {
+      if (j % 10 === 0) continue;
+      const t = j / (10 * n), distance = t * L;
+      const height = T.h(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t);
+      const flat = eA + (eB - eA) * t - Math.max(height, sea);
+      const gap = flat - distance * (L - distance) * (1 - K_REFR) / (2 * R_EARTH);
+      clearFlat = Math.min(clearFlat, flat);
+      if (gap < clear) { clear = gap; at = distance; grazeH = height; }
+    }
     // 剖面中點的坡度（沿著等高線走時，腳下的山坡有多陡）
     const mid = slope(T, (A[0] + B[0]) / 2, (A[1] + B[1]) / 2).pct;
     return { L: L, d: d, h: h, hA: hA, hB: hB, dh: hB - hA, avg: L > 0 ? Math.abs(hB - hA) / L * 100 : 0, maxSlope: maxS * 100, maxDeg: Math.atan(maxS) / DEG,
-      ascent: asc, descent: desc, minH: minH, maxH: maxH, clear: clear, visible: clear >= 0, grazeAt: at, grazeH: n >= 2 ? h[gi] : null,
-      clearFlat: clearFlat, landAll: landAll, midPct: mid };
+      ascent: asc, descent: desc, minH: minH, maxH: maxH, clear: coarse.clear, visible: clear >= 0, grazeAt: coarse.at, grazeH: coarse.grazeH,
+      refined: { clear, clearFlat, grazeAt: at, grazeH },
+      clearFlat: coarse.clearFlat, landAll: landAll, midPct: mid };
   }
   /** 在垂直誇大 v 倍的剖面圖上，真實坡度 deg 看起來的角度 */
   function apparentDeg(deg, v) { return Math.atan(v * Math.tan(deg * DEG)) / DEG; }
@@ -535,7 +548,7 @@
     }
     let prof = null;
     if (st.A && st.B) {
-      const P = profile(T, st.A, st.B, 400, st.sea);
+      const P = profile(T, st.A, st.B, 400, st.sea, st.eyeA, st.eyeB);
       prof = { L: r(P.L, 1), hA: r(P.hA, 2), hB: r(P.hB, 2), dh: r(P.dh, 2), avg: r(P.avg), maxSlope: r(P.maxSlope), maxDeg: r(P.maxDeg),
         appDeg: r(apparentDeg(P.maxDeg, st.vexag)), ascent: r(P.ascent, 2), descent: r(P.descent, 2), minH: r(P.minH, 2), maxH: r(P.maxH, 2),
         clear: r(P.clear, 2), clearFlat: r(P.clearFlat, 2), visible: P.visible, grazeH: r(P.grazeH, 2), grazeFrac: P.L > 0 ? r(P.grazeAt / P.L, 4) : null,

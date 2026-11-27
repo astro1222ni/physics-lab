@@ -74,6 +74,8 @@
     .layers button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
     @media (max-width: 420px) { .layers { grid-template-columns: repeat(2, 1fr); } }
     .crit { border-top: 1px solid var(--border); padding: 6px 0 4px; }
+    .labdeck .crit { padding: 1px 0; }
+    label:has(> #plannedRoad) { display: flex; align-items: center; gap: 6px; min-height: 44px; }
     .crit:first-of-type { border-top: none; }
     .crit .head { display: flex; align-items: center; gap: 8px; }
     .crit .ck { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; text-align: left; justify-content: flex-start; padding: 4px 10px; }
@@ -130,6 +132,10 @@
             <button type="button" data-view="3d" aria-pressed="false" data-en="Layer stack" title="把每一個圖層一層層疊起來" data-en-title="Stack the layers one above another">圖層疊起來</button>
           </div>
         </div>
+        <div id="cameraTools" hidden>
+            <label><input type="checkbox" id="panMode"><span data-en="Drag to pan">拖曳平移</span></label>
+            <button type="button" id="cameraHome" data-en="Reset view">重設視角</button>
+          </div>
         <canvas id="cv" aria-label="虛構縣的地圖：目前顯示的圖層與選址結果；點一格看那一格的資料" data-en-aria-label="Map of the invented county showing the current layer and the result; tap a cell to read it"></canvas>
         <div class="pad-slot view-msg" id="padSlot" data-en="Tap the map to pick a cell, or nudge it with 🎮 on the right.">點地圖選一格，或用右邊的 🎮 微調。</div>
         <div class="layers" role="group" aria-label="顯示的圖層" data-en-aria-label="Layer shown" id="layerSeg">
@@ -181,6 +187,7 @@
           </div>
           <div class="crit" data-c="road">
             <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Road within">離道路不超過</span></button><span class="fail"></span></div>
+            <label><input type="checkbox" id="plannedRoad"><span data-en="Planned road to the eastern foothills">規劃中的新道路（通往東側山腳）</span></label>
             <div class="slider"><label for="cRoad" data-en="Distance (m)">距離（公尺）</label><output></output><input id="cRoad" type="range" min="100" max="5000" step="50" value="500" data-decimals="0"></div>
             <div class="slider wt"><label for="wRoad" data-en="Weight">權重</label><output></output><input id="wRoad" type="range" min="0" max="5" step="1" value="2" data-decimals="0"></div>
           </div>

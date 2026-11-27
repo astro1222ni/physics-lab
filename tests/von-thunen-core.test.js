@@ -166,4 +166,24 @@ test('摘要：三條地租線交在同一點時偵測得到，中間那種作�
   assert.strictEqual(d0.probe.id, 'grain'); near(d0.probe.rent, 1120 - 20 * 30, 1e-9);
 });
 
+
+test('河港裝卸費依每噸運價比價，旋轉 90 度後航線、地租及面積相符', () => {
+  const river = {on:true,k:0.4,fee:30}, crops = K.defaults();
+  assert.strictEqual(K.route(2,0,river,10).usesRiver,false);
+  assert.strictEqual(K.route(20,0,river,10).D,11);
+  assert.strictEqual(K.route(2,0,river,40).usesRiver,true);
+  // Across the river, the shallower land-rent slope wins the exact boundary.
+  assert.strictEqual(K.bidAt(crops,1,river,0,19).id,'grain');
+  const rotated = {...river,direction:90};
+  for (const [x,y] of [[2,0],[12,3],[20,0],[150,1]]) {
+    const a=K.bidAt(crops,1,river,x,y), b=K.bidAt(crops,1,rotated,-y,x);
+    assert.strictEqual(a.id,b.id); assert.ok(Math.abs(a.rent-b.rent)<1e-8);
+  }
+  const free=K.totals(crops,1,{...river,fee:0}), paid=K.totals(crops,1,river);
+  assert.ok(paid.farm<free.farm && paid.totalRent<free.totalRent);
+  assert.deepStrictEqual(paid,K.totals(crops,1,rotated));
+  const dry=K.totals(crops,1,{on:false}), land=K.totals(crops,1,{...river,fee:1e6});
+  assert.ok(Math.abs(dry.totalRent-land.totalRent)<1e-5*dry.totalRent);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

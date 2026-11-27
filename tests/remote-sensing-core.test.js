@@ -135,4 +135,36 @@ test('拉伸：上限是第 99 百分位，下限是最暗 1% 的一半', () => 
   assert.ok(z.hi > z.lo);
 });
 
+test('兩期作平移、同步與種子重現', () => {
+  const k = K.SCENE.cls.findIndex(c => K.CLASS[c] === 'paddy');
+  for (const day of [70, 240]) {
+    const a = K.pixel(k, { day, shift: 15 }), b = K.pixel(k, { day: day - 15 });
+    assert.deepStrictEqual(a.bands, b.bands);
+  }
+  assert.strictEqual(K.rice(365, -38, 0).stage, 'flood');
+  assert.strictEqual(K.fieldShift(k, { uniform: true, shift: -30 }), -30);
+  assert.strictEqual(K.fieldShift(k, { seed: 3 }), K.SCENE.shift[k]);
+  assert.ok(K.SCENE.shift.some((v, i) => K.SCENE.cls[i] === 4 && K.fieldShift(i, { seed: 4 }) !== v));
+});
+test('雲斑個數與遮蔽平均，10、30、100 m 面積守恆', () => {
+  const o = { day: 80, size: 100, cloud: 60, seed: 8 };
+  const s = K.scene(o), mask = s.mask, n = mask.length;
+  assert.strictEqual(mask.reduce((a, b) => a + b), Math.round(n * 0.6));
+  assert.deepStrictEqual(mask, K.scene(o).mask);
+  assert.notDeepStrictEqual(mask, K.scene({ ...o, seed: 9 }).mask);
+  assert.strictEqual(K.pixel(mask.indexOf(1), o).cls, 'cloud');
+  const paddy = Array.from(s.ndvi).filter((v, i) => Number.isFinite(v) && K.CLASS[s.cls[i]] === 'paddy');
+  assert.ok(Math.abs(s.mean.paddy - paddy.reduce((a, b) => a + b, 0) / paddy.length) < 1e-6);
+  for (const span of [30, 100]) {
+    const coarse = K.pixel(0, { day: 70, size: span });
+    const fine = [];
+    for (let y = 0; y < span / 10; y++) for (let x = 0; x < span / 10; x++) {
+      fine.push(K.pixel(y * 288 + x, { day: 70, size: 10 }));
+    }
+    coarse.surface.forEach((v, b) => assert.ok(Math.abs(v - fine.reduce((a, p) => a + p.surface[b], 0) / fine.length) < 1e-9));
+    assert.ok(Math.abs(Object.values(coarse.mix).reduce((a, b) => a + b) - 1) < 1e-9);
+    assert.ok(fine.some(p => Math.abs(p.surface[4] - coarse.surface[4]) > 0.01));
+  }
+});
+
 console.log('\n' + passed + ' 項通過');

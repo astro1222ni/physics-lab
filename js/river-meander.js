@@ -16,20 +16,21 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { W: $('W'), k: $('k') };
+  const el = { W: $('W'), k: $('k'), widthDepth: $('widthDepth') };
   const state = {
-    seed: 1, W: 80, k: 8, spd: 25, running: false, tool: 'look',
+    seed: 1, materialSeed: 1, widthDepth: 25, W: 80, k: 8, spd: 25, running: false, tool: 'look',
     hist: true, erode: true, flow: true,
     sel: null,          // 剖面位置（河道上的點，跟著河道走）[x, y]
     ox: null,           // 點到的牛軛湖（物件）
     acted: false
   };
-  let R = K.create({ W: state.W, k: state.k, seed: state.seed });
+  let R = K.create({ W: state.W, k: state.k, seed: state.seed, widthDepth: state.widthDepth, bankSeed: $('bank').value === 'varied' ? state.materialSeed : 0 });
   let series = [[0, K.sinuosity(R)]];
   let MIG = null, migKey = '';
   let flashes = [], seenCuts = 0, lastCutMsg = 0, preview = null;
 
   function readSliders() {
+    state.widthDepth = Math.max(10, Math.min(60, val(el.widthDepth)));
     state.W = Math.max(40, Math.min(160, Math.round(val(el.W) / 10) * 10));
     state.k = Math.max(2, Math.min(30, val(el.k)));
   }
@@ -488,7 +489,7 @@
     c.fillText(T('左岸', 'left bank') + ' ← → ' + T('右岸', 'right bank'), 6, h - 3);
   }
   function drawOxXS(c, w, h, font, bold) {
-    const o = state.ox, age = R.t - o.t0, f = Math.min(1, age / K.FILL_YR), Wm = R.W, Dm = R.W / K.WD;
+    const o = state.ox, age = R.t - o.t0, f = Math.min(1, age / K.FILL_YR), Wm = R.W, Dm = K.params(R).D;
     c.fillText(T('牛軛湖的橫剖面', 'Oxbow lake cross-section'), 10, 8);
     const pl = 10, pt = 40, pb = 22, span = Wm * 2.4, hx = (w - 2 * pl) / span, bankH = 0.7 * Dm, depthMax = 1.6 * Dm;
     const vy = (h - pt - pb) / (bankH + depthMax);
@@ -589,9 +590,11 @@
   function updateReadouts() {
     const s = K.sinuosity(R), L = K.length(R), lam = K.wavelength(R), M = mig();
     setOut(el.W, num(state.W, 0));
+    $('bankRoll').hidden = !R.bankSeed;
+    setOut(el.widthDepth, num(state.widthDepth, 0));
     setOut(el.k, num(state.k, 1));
     setText('rT', num(R.t, 0) + T(' 年', ' years'));
-    setText('rD', num(R.W / K.WD, 1) + ' m');
+    setText('rD', num(K.params(R).D, 1) + ' m');
     setHTML('rSin', num(s, 3) + '<span class="chip-cls">' + sinClass(s) + '</span>');
     setText('rLen', km(L, 2));
     setText('rLam', lam ? num(lam, 0) + ' m' + T('（' + num(lam / R.W, 1) + ' 倍河寬）', ' (' + num(lam / R.W, 1) + ' W)') : T('—（彎還不明顯）', '— (bends too small yet)'));
@@ -745,7 +748,7 @@
   });
   function restart(newSeed) {
     if (newSeed) state.seed = state.seed % 999 + 1;
-    R = K.create({ W: state.W, k: state.k, seed: state.seed });
+    R = K.create({ W: state.W, k: state.k, seed: state.seed, widthDepth: state.widthDepth, bankSeed: $('bank').value === 'varied' ? state.materialSeed : 0 });
     series = [[0, K.sinuosity(R)]];
     seenCuts = 0; flashes = []; state.ox = null; state.sel = null; preview = null;
     MIG = null; layerKey = '';
@@ -764,12 +767,16 @@
     acted();
     const oldW = R.W;
     readSliders();
-    R.W = state.W; R.k = state.k;
+    R.W = state.W; R.k = state.k; R.widthDepth = state.widthDepth;
+    R.bankSeed = $('bank').value === 'varied' ? state.materialSeed : 0;
+    $('bankRoll').hidden = !R.bankSeed;
     if (R.W !== oldW) { K.resample(R); layerKey = ''; }
     MIG = null;
     afterChange(true, 'param');
   }
-  [el.W, el.k].forEach(function (inp) { inp.addEventListener('input', paramChanged); inp.addEventListener('change', paramChanged); });
+  $('bank').addEventListener('change', paramChanged);
+  $('bankRoll').addEventListener('click', function () { state.materialSeed++; paramChanged(); });
+  [el.W, el.k, el.widthDepth].forEach(function (inp) { inp.addEventListener('input', paramChanged); inp.addEventListener('change', paramChanged); });
   document.querySelectorAll('#spdSeg button').forEach(function (b) {
     b.addEventListener('click', function () {
       acted();
@@ -925,10 +932,12 @@
   // ---------- 分享：河谷、設定、圖層 ----------
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
-      return { s: state.seed, v: state.spd, h: state.hist ? 1 : 0, e: state.erode ? 1 : 0, f: state.flow ? 1 : 0 };
+      return { s: state.seed, material: $('bank').value, materialSeed: state.materialSeed, v: state.spd, h: state.hist ? 1 : 0, e: state.erode ? 1 : 0, f: state.flow ? 1 : 0 };
     },
     set: function (o) {
       if (!o) return;
+      $('bank').value = o.material === 'varied' ? 'varied' : 'uniform';
+      state.materialSeed = Math.max(1, Math.floor(+o.materialSeed || 1));
       if (isFinite(o.s) && o.s >= 1 && o.s <= 999) state.seed = Math.round(o.s);
       if (SPDS.indexOf(o.v) >= 0) {
         state.spd = o.v;
@@ -957,7 +966,7 @@
   // =====================================================================
   readColors();
   readSliders();
-  R.W = state.W; R.k = state.k;
+  R.W = state.W; R.k = state.k; R.widthDepth = state.widthDepth;
   if (state.W !== 80 || state.k !== 8) { restart(false); }
   fit();
   updateReadouts();

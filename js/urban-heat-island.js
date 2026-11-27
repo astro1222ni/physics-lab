@@ -13,16 +13,16 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { P: $('hP'), wind: $('hWind'), hour: $('hHour'), cloud: $('hCloud'), green: $('hGreen'), cool: $('hCool') };
+  const el = { P: $('hP'), wind: $('hWind'), hour: $('hHour'), cloud: $('hCloud'), green: $('hGreen'), cool: $('hCool'), density: $('density'), radius: $('parkRadius') };
   // 人口滑桿：位置 0–1000 對應 1 萬–300 萬人（對數刻度），數值單位是萬人
   const PMIN = K.P_MIN / 1e4, PMAX = K.P_MAX / 1e4;
   const toWan = function (pos) { return PMIN * Math.pow(PMAX / PMIN, pos / 1000); };
   const toPos = function (w) { return 1000 * Math.log(w / PMIN) / Math.log(PMAX / PMIN); };
   if (window.LabNum) window.LabNum.register(el.P, { toValue: toWan, toPos: toPos, min: PMIN, max: PMAX, decimals: 1 });
 
-  const state = { view: 'map', P: 5e5, wind: 1, hour: 21, cloud: 0.3, green: 0, cool: 0, parks: [], probe: null, acted: false };
+  const state = { view: 'map', seed: 0, windDir: 'W', density: 6000, parkRadius: 1, P: 5e5, wind: 1, hour: 21, cloud: 0.3, green: 0, cool: 0, parks: [], probe: null, acted: false };
   let R = null, syncing = false;
-  const opts = function () { return { P: state.P, wind: state.wind, hour: state.hour, cloud: state.cloud, green: state.green, cool: state.cool, parks: state.parks }; };
+  const opts = function () { return { P: state.P, density: state.density, windDir: state.windDir, seed: state.seed, parkRadius: state.parkRadius, wind: state.wind, hour: state.hour, cloud: state.cloud, green: state.green, cool: state.cool, parks: state.parks }; };
   function recompute() { R = K.compute(opts()); fieldImg = null; }
 
   // ---------- 顏色與格式 ----------
@@ -128,11 +128,14 @@
   }
   function drawWindBadge(x, y) {
     const w = state.wind;
-    const txt = w < 0.05 ? T('無風', 'Calm') : T('西風 ' + num(w, 1) + ' m/s', 'West wind ' + num(w, 1) + ' m/s');
+    const dir = $('windDir').selectedOptions[0];
+    const txt = w < 0.05 ? T('無風', 'Calm') : T(dir.textContent + '風', dir.dataset.en + ' wind') + ' ' + num(w, 1) + ' m/s';
     D.pill(ctx, txt, x, y, C.text, 'left', font(12, 600));
     if (w >= 0.05) {
       const L = 10 + 3.2 * w, yy = y + 12;
-      D.arrow(ctx, x + 4, yy, x + 4 + L, yy, D.alpha(C.text, 0.75), 2);
+      const [dx, dy] = K.winds[state.windDir];
+      const ax = x + 4 + (1 - dx) * L / 2;
+      D.arrow(ctx, ax, yy, ax + dx * L, yy + dy * L, D.alpha(C.text, 0.75), 2);
     }
   }
   function drawMap() {
@@ -159,12 +162,12 @@
       ctx.strokeStyle = D.alpha(D.dark ? '#ffffff' : '#2a1a14', lv % 2 ? 0.25 : 0.5); ctx.lineWidth = lv % 2 ? 0.7 : 1.2; ctx.stroke();
     }
     // 都市的邊界（土地利用一半是都市的地方）
-    const rr = K.radiusKm(state.P) / CELL;
+    const rr = K.radiusKm(state.P, state.density) / CELL;
     ctx.beginPath(); ctx.arc(v.x0 + K.CX * v.s, v.y0 + K.CY * v.s, rr * v.s, 0, 2 * Math.PI);
     ctx.setLineDash([6, 5]); ctx.strokeStyle = D.alpha(C['uh-edge'], 0.7); ctx.lineWidth = 1.4; ctx.stroke(); ctx.setLineDash([]);
     // 公園
     state.parks.forEach(function (p) {
-      const c = G(v, p.i + 0.5, p.j + 0.5), r = (K.PARK_R + 0.5) * v.s;
+      const c = G(v, p.i + 0.5, p.j + 0.5), r = (state.parkRadius / CELL + 0.5) * v.s;
       ctx.beginPath(); ctx.arc(c[0], c[1], r, 0, 2 * Math.PI);
       ctx.fillStyle = D.alpha(C['uh-park'], 0.28); ctx.fill();
       ctx.strokeStyle = C['uh-park']; ctx.lineWidth = 2; ctx.stroke();
@@ -174,18 +177,27 @@
     // 外框（西、南、北固定郊區溫度，東邊有風時下風外推用淡虛線示意）
     ctx.save();
     ctx.strokeStyle = D.alpha(C.text, 0.35); ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
-    ctx.lineTo(v.x0 + 0.5, v.y0 + 0.5);
-    ctx.lineTo(v.x0 + 0.5, v.y0 + v.M - 0.5);
-    ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
-    ctx.stroke();
-    if (state.wind > 0) ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = D.alpha(C.text, state.wind > 0 ? 0.28 : 0.35);
-    ctx.beginPath();
-    ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
-    ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
-    ctx.stroke();
+    if (state.windDir === 'W') {
+      ctx.beginPath();
+      ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
+      ctx.lineTo(v.x0 + 0.5, v.y0 + 0.5);
+      ctx.lineTo(v.x0 + 0.5, v.y0 + v.M - 0.5);
+      ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
+      ctx.stroke();
+      if (state.wind > 0) ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = D.alpha(C.text, state.wind > 0 ? 0.28 : 0.35);
+      ctx.beginPath();
+      ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
+      ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
+      ctx.stroke();
+    } else {
+      const [dx, dy] = K.winds[state.windDir];
+      const edges = [[0,0,1,0,-dy],[1,0,1,1,dx],[1,1,0,1,dy],[0,1,0,0,-dx]];
+      for (const [x0,y0,x1,y1,dot] of edges) {
+        ctx.setLineDash(state.wind > 0 && dot > 0 ? [5,4] : []);
+        ctx.beginPath(); ctx.moveTo(v.x0+x0*v.M, v.y0+y0*v.M); ctx.lineTo(v.x0+x1*v.M, v.y0+y1*v.M); ctx.stroke();
+      }
+    }
     ctx.restore();
     // 最熱點
     if (R.max > 0.05) {
@@ -251,9 +263,10 @@
 
   // ---------- 立體溫度曲面 ----------
   const ST = 2, NS = N / ST;       // 每 2 格取一點（40 × 40 個面）
-  let surfOrder = null;
+  const camera = { az: -0.5, el: 0.52, x: 0, y: 0 };
+  let surfOrder = null, cameraDrag = null;
   function surfCam() {
-    const az = -0.5, el = 0.52, ca = Math.cos(az), sa = Math.sin(az);
+    const az = camera.az, el = camera.el, ca = Math.cos(az), sa = Math.sin(az);
     const proj = function (i, j, z, s, ox, oy, hz) {
       const x = i - N / 2, y = j - N / 2;
       const xr = x * ca - y * sa, yr = x * sa + y * ca;
@@ -265,8 +278,8 @@
     const bw = Math.max.apply(null, xs) - Math.min.apply(null, xs), bh = Math.max.apply(null, ys) - Math.min.apply(null, ys);
     const s = Math.min((size.w - 20) / bw, (size.h * 0.68 - 24) / bh);
     const topRoom = Math.min(size.h - bh * s - 24, size.h * 0.55);
-    const ox = size.w / 2 - (Math.max.apply(null, xs) + Math.min.apply(null, xs)) / 2 * s;
-    const oy = topRoom + 12 - Math.min.apply(null, ys) * s;
+    const ox = camera.x + size.w / 2 - (Math.max.apply(null, xs) + Math.min.apply(null, xs)) / 2 * s;
+    const oy = camera.y + topRoom + 12 - Math.min.apply(null, ys) * s;
     const hz = 0.9 * topRoom / 10;
     return { P: function (i, j, z) { return proj(i, j, z, s, ox, oy, hz); }, ca: ca, sa: sa, s: s, hz: hz };
   }
@@ -382,7 +395,7 @@
     }
     ctx.restore();
     // 沒有對策時的曲線（虛線）
-    const amp = R.amp, B = K.base(state.P, state.wind).T;
+    const amp = R.amp, B = K.base(state.P, state.wind, opts()).T;
     const mit = state.green > 0 || state.cool > 0 || state.parks.length > 0;
     if (mit) {
       ctx.beginPath();
@@ -492,6 +505,9 @@
     return sw(rampCss(5), T('比郊區暖', 'Warmer than the countryside')) + sw(C['uh-river'], T('河', 'River')) + sw(C['uh-park'], T('公園', 'Park'), true) + sw(C['uh-edge'], T('虛線圓：都市範圍', 'Dashed circle: built-up area'), true);
   }
   function updateReadouts() {
+    setOut(el.density, String(state.density)); setOut(el.radius, num(state.parkRadius, 2));
+    setText('cityRadius', T('都市半徑 ', 'City radius ') + num(K.radiusKm(state.P, state.density), 2) + ' km');
+    setText('landSeed', T('種子 ', 'Seed ') + state.seed);
     setOut(el.P, num(state.P / 1e4, state.P < 1e5 ? 1 : 0));
     setOut(el.wind, num(state.wind, 1)); setOut(el.hour, hourText(state.hour)); setOut(el.cloud, num(10 * state.cloud, 0));
     setOut(el.green, num(100 * state.green, 0)); setOut(el.cool, num(100 * state.cool, 0));
@@ -506,7 +522,8 @@
     $('legend').innerHTML = legendHTML();
     $('parkBtn').disabled = !state.probe;
     $('clearBtn').disabled = !state.parks.length;
-    setText('parkHint', state.parks.length ? T('有效公園 ' + state.parks.length + ' / ' + K.MAX_PARKS + ' 座，實際面積 ' + num(s.parkArea, 1) + ' km²（種第 4 座時，最早的那座會被移走）。', state.parks.length + ' of ' + K.MAX_PARKS + ' parks, actual area ' + num(s.parkArea, 1) + ' km² (a fourth one replaces the oldest).') : T('先點地圖放溫度計，再在那裡種公園（直徑 2 km）。', 'Tap the map to place the thermometer, then plant a park (2 km across) there.'));
+    const diameter = 2 * state.parkRadius;
+    setText('parkHint', state.parks.length ? T('有效公園 ' + state.parks.length + ' / ' + K.MAX_PARKS + ' 座，實際面積 ' + num(s.parkArea, 1) + ' km²（種第 4 座時，最早的那座會被移走）。', state.parks.length + ' of ' + K.MAX_PARKS + ' parks, actual area ' + num(s.parkArea, 1) + ' km² (a fourth one replaces the oldest).') : T('先點地圖放溫度計，再在那裡種公園（直徑 ' + diameter + ' km）。', 'Tap the map to place the thermometer, then plant a park (' + diameter + ' km across) there.'));
     setText('cvHint', state.view === 'map' ? T('點地圖移動溫度計；方向鍵也可以（Shift 一次 2.5 km）。', 'Tap the map to move the thermometer, or use the arrow keys (Shift for 2.5 km).') : state.view === 'profile' ? T('點剖面，把溫度計放在這條東西線上。', 'Tap the profile to put the thermometer on this line.') : state.view === 'surface' ? T('高度和顏色都是比郊區高多少度。', 'Height and colour both show how much warmer than the countryside.') : T('實心點是這座城市現在的熱島強度；空心點是 Oke 公式的預測。', 'The solid dot is this city now; the hollow dot is Oke’s prediction.'));
     $('srNow').textContent = T('熱島強度 ', 'Heat-island intensity ') + dT(s.max);
   }
@@ -548,6 +565,8 @@
   // =====================================================================
   const setSl = function (inp, v) { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; };
   function readSliders() {
+    state.density = val(el.density); state.parkRadius = val(el.radius);
+    state.windDir = $('windDir').value;
     state.P = Math.round(Math.max(PMIN, Math.min(PMAX, val(el.P))) * 10) * 1e3;
     state.wind = Math.max(0, Math.min(10, Math.round(val(el.wind) * 10) / 10));
     state.hour = Math.max(0, Math.min(24, Math.round(val(el.hour))));
@@ -563,7 +582,18 @@
     if (e.type === 'change') say();
   }
   Object.keys(el).forEach(function (k) { el[k].addEventListener('input', sliderChanged); el[k].addEventListener('change', sliderChanged); });
+  $('windDir').addEventListener('change', sliderChanged);
+  function setSeed(seed) {
+    acted(); state.seed = seed; afterChange(true, 'land');
+  }
+  $('originalLand').addEventListener('click', () => setSeed(0));
+  $('rollLand').addEventListener('click', () => setSeed(state.seed + 1));
+  $('cameraHome').addEventListener('click', function () {
+    Object.assign(camera, { az: -0.5, el: 0.52, x: 0, y: 0 }); surfOrder = null; requestDraw();
+  });
   function syncSeg() {
+    $('cameraTools').hidden = state.view !== 'surface';
+    cv.style.touchAction = state.view === 'surface' ? 'none' : '';
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === state.view)); });
   }
   document.querySelectorAll('#viewSeg button').forEach(function (b) {
@@ -607,6 +637,11 @@
   cv.addEventListener('pointerdown', function (e) {
     acted();
     const q = local(e);
+    if (state.view === 'surface') {
+      cameraDrag = { id: e.pointerId, x: q[0], y: q[1], start: { ...camera }, pan: $('panMode').checked || e.shiftKey };
+      cv.setPointerCapture(e.pointerId);
+      return;
+    }
     if (state.view === 'map') {
       const v = mapView(), i = Math.floor((q[0] - v.x0) / v.s), j = Math.floor((q[1] - v.y0) / v.s);
       if (i < 0 || j < 0 || i >= N || j >= N) return;
@@ -617,6 +652,15 @@
       placeProbe(Math.floor(km / CELL + K.CX), Math.floor(K.CY), 'probe');
     }
   });
+
+  cv.addEventListener('pointermove', function (e) {
+    if (!cameraDrag || e.pointerId !== cameraDrag.id) return;
+    const q = local(e), dx = q[0] - cameraDrag.x, dy = q[1] - cameraDrag.y, start = cameraDrag.start;
+    if (cameraDrag.pan) { camera.x = start.x + dx; camera.y = start.y + dy; }
+    else { camera.az = start.az + dx * 0.01; camera.el = Math.max(0.2, Math.min(1.3, start.el + dy * 0.006)); surfOrder = null; }
+    requestDraw();
+  });
+  cv.addEventListener('lostpointercapture', () => { cameraDrag = null; });
 
   const keyControls = {
     label: T('都市熱島的溫度地圖。按 Enter 選溫度計，用方向鍵移動（Shift 一次 2.5 km）。', 'Temperature map of the heat island. Press Enter to pick the thermometer and move it with the arrow keys (Shift for 2.5 km).'),
@@ -634,9 +678,11 @@
   const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: function () { return { v: state.view, k: state.parks.map(function (p) { return [p.i, p.j]; }), t: state.probe ? [state.probe.i, state.probe.j] : null }; },
+    get: function () { return { v: state.view, seed: state.seed, dir: state.windDir, k: state.parks.map(function (p) { return [p.i, p.j]; }), t: state.probe ? [state.probe.i, state.probe.j] : null }; },
     set: function (o) {
       if (!o) return;
+      state.seed = Math.max(0, Math.floor(+o.seed || 0));
+      $('windDir').value = Object.hasOwn(K.winds, o.dir) ? o.dir : 'W';
       if (['map', 'surface', 'profile', 'oke'].indexOf(o.v) >= 0) state.view = o.v;
       const ok = function (a) { return Array.isArray(a) && a.length === 2 && a.every(function (x) { return Number.isInteger(x) && x >= 0 && x < N; }); };
       if (Array.isArray(o.k)) state.parks = o.k.filter(ok).slice(0, K.MAX_PARKS).map(function (a) { return { i: a[0], j: a[1] }; });

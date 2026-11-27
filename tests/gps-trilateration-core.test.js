@@ -144,4 +144,21 @@ test('平面的 DOP：和三維一樣由幾何決定，塔圍著接收機時比�
   assert.ok(K.dop(K.geometry2(K.TOWERS.slice(0, 3), [20, 18])).h < 3);
 });
 
+test('街道旋轉、固定延遲與散布重抽', () => {
+  assert.strictEqual(K.blockedBy(20, 0, 0, { w: 60, dir: 0 }), '');
+  assert.strictEqual(K.blockedBy(20, 0, 0, { w: 60, dir: 90 }), 'building');
+  assert.ok(Math.abs(K.atmosphereDelay(30) - 10.6) < 1e-12);
+  const sky = K.sky({ lat: 23.5, lon: 121, t: 0, mask: 10 });
+  assert.strictEqual(sky.length, 24);
+  const sats = sky.filter(s => s.visible);
+  const run = seed => K.scatter(sats, 3, 300, seed, null, undefined, true);
+  const first = run(11), next = run(12);
+  assert.deepStrictEqual(first.pts, run(11).pts);
+  assert.notDeepStrictEqual(first.pts, next.pts);
+  assert.deepStrictEqual(first.bias, next.bias);
+  assert.ok(Math.abs(first.bias[2]) > 3);
+  assert.ok(Math.abs(first.mean[2] - first.bias[2]) < 1);
+  assert.strictEqual(first.mpBiasH, 0);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗' : ''));

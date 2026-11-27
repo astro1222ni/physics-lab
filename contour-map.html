@@ -226,6 +226,10 @@
           <h2 data-en="Profile">剖面</h2>
           <div class="slider"><label for="vexag" data-en="Vertical exaggeration (×)">垂直誇大（倍）</label><output></output>
             <input id="vexag" type="range" min="1" max="10" step="0.5" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="eyeA" data-en="A eye height (m)">A 眼高（m）</label><output></output>
+            <input id="eyeA" type="range" min="0" max="50" step="0.1" value="1.6"></div>
+          <div class="slider"><label for="eyeB" data-en="B eye height (m)">B 眼高（m）</label><output></output>
+            <input id="eyeB" type="range" min="0" max="50" step="0.1" value="1.6"></div>
           <dl class="readout">
             <dt data-en="Length">長度</dt><dd id="rL">—</dd>
             <dt data-en="Heights of A → B">A → B 的高度</dt><dd id="rAB">—</dd>
@@ -233,7 +237,8 @@
             <dt data-en="Steepest part">最陡的一段</dt><dd id="rMaxS">—</dd>
             <dt class="wide" data-en="Steepest part as drawn on the profile">最陡的一段在剖面圖上看起來</dt><dd class="wide" id="rApp">—</dd>
             <dt data-en="Total climb / descent">累積爬升／下降</dt><dd id="rAsc">—</dd>
-            <dt class="wide" data-en="Can A and B see each other? (eyes 1.6 m above the ground)">A、B 看得到彼此嗎？（眼睛離地 1.6 m）</dt><dd class="wide" id="rVis">—</dd>
+            <dt class="wide" data-en="Clearance on the 400-interval profile">全線 400 段取樣的通視估計</dt><dd class="wide" id="rVis">—</dd>
+            <dt class="wide" data-en="Refined visibility and clearance · sampling steps">加密通視與餘隙・取樣步距（全線／局部）</dt><dd class="wide" id="rStep">—</dd>
           </dl>
         </section>
         <section class="card">
@@ -292,7 +297,7 @@
         <li data-en-html="The four islands are imaginary, 8 km × 8 km each. Their heights are smooth formulas (Gaussian hills, a cone with a bowl-shaped crater, a rounded ridge with V-shaped side valleys, steps for the terraces) plus a fixed fractal noise so the contours wiggle like real ones.">四座島都是虛構的，各 8 km × 8 km。高度由平滑的數學式組成（高斯形狀的山、帶碗形火山口的圓錐、頂部圓滑的山脊加 V 形支谷、海階的階梯），再加上固定的碎形雜訊，讓等高線像真的一樣彎彎曲曲。</li>
         <li data-en-html="Contours are traced on a 201 × 201 grid (40 m spacing) with the marching-squares method. Heights, slopes and profiles at the measuring point use the formula itself (slope by central differences 1 m apart), so they do not depend on the grid.">等高線在 201 × 201 的網格（間距 40 m）上用「方格行進法」描出來。量測點的高度、坡度與剖面直接用數學式計算（坡度用相距 1 m 的中央差分），和網格無關。</li>
         <li data-en-html="Rivers: depressions are filled (priority-flood), each grid cell drains to its steepest downhill neighbour of eight (D8), and a river starts where more than 0.35 km² drains through a cell; its line is then traced straight down the true slope, so it is not bent to the eight grid directions. Islands are counted with diagonal neighbours connected; at least two grid cells make an island.">河流：先把窪地填平（優先佇列填窪法），每一格的水流向八個鄰格中最陡的下坡（D8 流向），集水面積超過 0.35 km² 的地方開始畫河；河道再沿真正的坡度方向往下描，所以不會被格子限制成八個方向。島嶼數：斜角相鄰的陸地算連在一起，至少兩格才算一座島。</li>
-        <li data-en-html="Sightlines: eyes 1.6 m above the ground (above the water at sea), with the Earth’s curvature and refraction as above; the profile is sampled at 400 points.">通視：眼睛離地 1.6 m（在海上時離水面 1.6 m），地球曲率與折射照上面的公式；剖面取 400 個點。</li>
+        <li data-en-html="Sightlines: eye heights are adjustable from 0 to 50 m above ground or water (default 1.6 m), with the Earth’s curvature and refraction as above; 400 intervals, with tenfold finer sampling around the lowest clearance. A narrow ridge can still fall between samples.">通視：眼高可設為離地面或水面 0–50 m，預設 1.6 m；50 m 可模擬觀景臺，地球曲率與折射照上面的公式；剖面分成 400 段，最低餘隙附近再加密十倍；比步距窄的稜線仍可能漏判。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

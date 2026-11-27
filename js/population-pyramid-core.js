@@ -42,6 +42,12 @@
     for (let a = 0; a < N; a++) MIG[a] /= s;
   })();
 
+  // Teaching scenarios: equal weights within the selected age group.
+  function ageBand(lo, hi) {
+    return Float64Array.from(MIG, (_, a) => a >= lo && a <= hi ? 1 / (hi - lo + 1) : 0);
+  }
+  const migrationProfiles = { general: MIG, student: ageBand(18, 24), worker: ageBand(25, 44), retired: ageBand(60, 100) };
+
   // ---------- 死亡機率 ----------
   function baseQ(sex) {
     const lt = sex === 'm' ? DATA.life.qm : DATA.life.qf, nd = DATA.ndc.qx[NDC_Q_YEARS[0]][sex];
@@ -116,7 +122,10 @@
    */
   const cache = {};
   function paramsFor(sc, year) {
-    const key = sc.mode === 'ndc' ? 'ndc|' + year : ['c', sc.tfr, sc.e0, sc.net, sc.srb].join('|');
+    const ramp = sc.ramp || 0;
+    const progress = ramp ? Math.max(0, Math.min(1, (year - BASE_YEAR) / ramp)) : 1;
+    const tfr = progress === 1 ? sc.tfr : DATA.asfr.tfr + (sc.tfr - DATA.asfr.tfr) * progress;
+    const key = sc.mode === 'ndc' ? 'ndc|' + year : ['c', tfr, sc.e0, sc.net, sc.srb].join('|');
     if (cache[key]) return cache[key];
     let p;
     if (sc.mode === 'ndc') {
@@ -125,7 +134,7 @@
         net: (DATA.ndc.net[y] != null ? DATA.ndc.net[y] : 0) * 1000, qm: qm, qf: qf };
     } else {
       const mk = 'e0|' + sc.e0, mo = cache[mk] || (cache[mk] = mortalityFor(sc.e0));
-      p = { tfr: sc.tfr, srb: sc.srb, net: sc.net, qm: mo.qm, qf: mo.qf };
+      p = { tfr: tfr, srb: sc.srb, net: sc.net, qm: mo.qm, qf: mo.qf };
     }
     p.ltm = lifeTable(p.qm); p.ltf = lifeTable(p.qf);
     const keys = Object.keys(cache);
@@ -157,8 +166,9 @@
     // 遷移（男女各半）；不讓任何一格變成負的
     let moved = 0;
     if (p.net) {
+      const weights = (sc.mode === 'custom' && migrationProfiles[sc.migAge]) || MIG;
       for (let a = 0; a < N; a++) {
-        const d = p.net / 2 * MIG[a];
+        const d = p.net / 2 * weights[a];
         const nm = Math.max(0, m1[a] + d), nf = Math.max(0, f1[a] + d);
         moved += nm - m1[a] + nf - f1[a];
         m1[a] = nm; f1[a] = nf;

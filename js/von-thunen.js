@@ -18,16 +18,16 @@
   // =====================================================================
   // 狀態
   // =====================================================================
-  const el = { Y: $('cY'), p: $('cP'), c: $('cC'), f: $('cF'), m: $('tm'), k: $('tk') };
+  const el = { Y: $('cY'), p: $('cP'), c: $('cC'), f: $('cF'), m: $('tm'), k: $('tk'), direction: $('riverDir'), fee: $('portFee') };
   const state = {
-    crops: K.defaults(), sel: 'veg', m: 1, river: { on: false, k: 0.4 },
+    crops: K.defaults(), sel: 'veg', m: 1, river: { on: false, k: 0.4, direction: 0, fee: 0 },
     view: 'map', zoom: 0, probe: { x: 20, y: 24 },
-    az: -0.6, el: 0.62, acted: false
+    panX: 0, panY: 0, az: -0.6, el: 0.62, acted: false
   };
   let S = null, syncing = false;
   function recompute() { S = K.summary({ crops: state.crops, m: state.m, river: state.river, probe: state.probe }); }
   function paramsKey() {
-    return JSON.stringify([state.crops, state.m, state.river.on, state.river.k]);
+    return JSON.stringify([state.crops, state.m, state.river]);
   }
 
   // ---------- 顏色與格式 ----------
@@ -161,69 +161,91 @@
     c.fillStyle = C['vt-wild']; c.fillRect(0, 0, w, h);
     c.fillStyle = wild(); c.fillRect(0, 0, w, h);
     // 圈：由外往內塗，內圈蓋過外圈
-    for (let i = S.rings.length - 1; i >= 0; i--) {
-      const s = S.rings[i], base = col(s.id);
-      pathOf(c, v, s.to);
-      const r0 = Math.max(1, s.from * v.s), r1 = Math.max(r0 + 1, s.to * v.s);
-      const g = c.createRadialGradient(v.cx, v.cy, r0, v.cx, v.cy, r1);
-      g.addColorStop(0, D.shade(base, D.dark ? 0.06 : 0.14));
-      g.addColorStop(1, D.shade(base, D.dark ? -0.18 : -0.08));
-      c.fillStyle = g; c.fill();
-      c.fillStyle = tile(s.id); c.fill();
+    if (state.river.on && state.river.fee > 0) {
+      // Paint each radial interval from its crop-specific winning bid.
+      const n = 360, step = 2 * Math.PI / n;
+      for (let i = 0; i < n; i++) {
+        const angle = (i + 0.5) * step;
+        const ray = K.radialRings(state.crops, state.m, state.river, angle);
+        for (const band of ray.rings) {
+          c.beginPath();
+          c.arc(v.cx,v.cy,band.to*v.s,-(i+1)*step,-i*step+0.001);
+          c.arc(v.cx,v.cy,band.from*v.s,-i*step+0.001,-(i+1)*step,true);
+          c.closePath(); c.fillStyle = col(band.id); c.fill();
+          c.fillStyle = tile(band.id); c.fill();
+        }
+      }
+    } else {
+      for (let i = S.rings.length - 1; i >= 0; i--) {
+        const s = S.rings[i], base = col(s.id);
+        pathOf(c, v, s.to);
+        const r0 = Math.max(1, s.from * v.s), r1 = Math.max(r0 + 1, s.to * v.s);
+        const g = c.createRadialGradient(v.cx, v.cy, r0, v.cx, v.cy, r1);
+        g.addColorStop(0, D.shade(base, D.dark ? 0.06 : 0.14));
+        g.addColorStop(1, D.shade(base, D.dark ? -0.18 : -0.08));
+        c.fillStyle = g; c.fill();
+        c.fillStyle = tile(s.id); c.fill();
+      }
+      // 圈與圈的界線；最外緣加粗
+      c.lineJoin = 'round';
+      S.rings.forEach(function (s, i) {
+        pathOf(c, v, s.to);
+        const last = i === S.rings.length - 1;
+        c.strokeStyle = D.alpha(D.dark ? '#000000' : '#3a2f1c', last ? 0.5 : 0.32);
+        c.lineWidth = last ? 1.6 : 1;
+        if (last) c.setLineDash([5, 4]);
+        c.stroke();
+        c.setLineDash([]);
+        // 界線內側一圈細的亮邊，讓每一圈像一塊略微隆起的臺地
+        pathOf(c, v, Math.max(0, s.to - 1.2 / v.s));
+        c.strokeStyle = D.alpha('#ffffff', D.dark ? 0.08 : 0.22); c.lineWidth = 1; c.stroke();
+      });
     }
-    // 圈與圈的界線；最外緣加粗
-    c.lineJoin = 'round';
-    S.rings.forEach(function (s, i) {
-      pathOf(c, v, s.to);
-      const last = i === S.rings.length - 1;
-      c.strokeStyle = D.alpha(D.dark ? '#000000' : '#3a2f1c', last ? 0.5 : 0.32);
-      c.lineWidth = last ? 1.6 : 1;
-      if (last) c.setLineDash([5, 4]);
-      c.stroke();
-      c.setLineDash([]);
-      // 界線內側一圈細的亮邊，讓每一圈像一塊略微隆起的臺地
-      pathOf(c, v, Math.max(0, s.to - 1.2 / v.s));
-      c.strokeStyle = D.alpha('#ffffff', D.dark ? 0.08 : 0.22); c.lineWidth = 1; c.stroke();
-    });
     // 四角暈影
     const vg = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.62);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, D.dark ? 'rgba(0,0,0,0.3)' : 'rgba(40,30,10,0.10)');
     c.fillStyle = vg; c.fillRect(0, 0, w, h);
     // 河流
     if (state.river.on) {
+      c.save();
+      const span = 2*Math.hypot(w,h), left = v.cx - span/2;
+      c.translate(v.cx,v.cy); c.rotate(-state.river.direction*Math.PI/180); c.translate(-v.cx,-v.cy);
       const rw = Math.max(4, Math.min(9, w / 90));
       const g = c.createLinearGradient(0, v.cy - rw, 0, v.cy + rw);
       g.addColorStop(0, D.shade(C['vt-river'], -0.25)); g.addColorStop(0.45, D.shade(C['vt-river'], 0.25)); g.addColorStop(1, D.shade(C['vt-river'], -0.3));
       c.fillStyle = D.alpha('#000000', D.dark ? 0.35 : 0.14);
-      c.fillRect(0, v.cy - rw / 2 + 1.5, w, rw + 1);
+      c.fillRect(left, v.cy - rw / 2 + 1.5, span, rw + 1);
       c.fillStyle = g;
-      c.fillRect(0, v.cy - rw / 2, w, rw);
+      c.fillRect(left, v.cy - rw / 2, span, rw);
       c.strokeStyle = D.alpha('#ffffff', D.dark ? 0.25 : 0.55); c.lineWidth = 0.8;
       c.setLineDash([6, 10]);
-      c.beginPath(); c.moveTo(0, v.cy - rw * 0.12); c.lineTo(w, v.cy - rw * 0.12); c.stroke();
+      c.beginPath(); c.moveTo(left, v.cy - rw * 0.12); c.lineTo(left + span, v.cy - rw * 0.12); c.stroke();
       c.setLineDash([]);
+      c.restore();
     }
     // 南方的距離刻度：每一條界線離城多遠（城市正南方，運輸距離 = 直線距離）
     c.strokeStyle = D.alpha(C.text, 0.35); c.lineWidth = 1;
-    const yEnd = Math.min(h - 4, v.cy + S.frontier * v.s);
-    if (S.frontier > 0) { c.beginPath(); c.moveTo(v.cx + 0.5, v.cy + 10); c.lineTo(v.cx + 0.5, yEnd); c.stroke(); }
+    const axis = state.river.on && state.river.direction
+      ? K.radialRings(state.crops, state.m, state.river, Math.PI/2) : S;
+    const yEnd = Math.min(h - 4, v.cy + axis.frontier * v.s);
+    if (axis.frontier > 0) { c.beginPath(); c.moveTo(v.cx + 0.5, v.cy + 10); c.lineTo(v.cx + 0.5, yEnd); c.stroke(); }
     let lastY = -1e9;
-    S.rings.forEach(function (s, i) {
+    axis.rings.forEach(function (s, i) {
       const y = v.cy + s.to * v.s;
       if (y > h - 10) return;
       c.beginPath(); c.moveTo(v.cx - 4, y + 0.5); c.lineTo(v.cx + 4, y + 0.5); c.stroke();
-      if (y - lastY < 15 * Math.min(fsz(), 1.35) && i < S.rings.length - 1) return;
+      if (y - lastY < 15 * Math.min(fsz(), 1.35) && i < axis.rings.length - 1) return;
       lastY = y;
       D.haloText(c, km(s.to), v.cx + 7, y + 4, C.text, 'left', 'alphabetic', font(11));
     });
     // 圈的名稱：放在城市正北方，每一圈的中間（夠寬才寫）
-    S.rings.forEach(function (s) {
+    axis.rings.forEach(function (s) {
       const y0 = v.cy - s.from * v.s, y1 = v.cy - s.to * v.s, ym = (y0 + y1) / 2;
       if (y0 - y1 < 17 * Math.min(fsz(), 1.35) || ym < 12 || ym > v.cy - 20) return;
       D.pill(c, nm(s.id), v.cx, ym + 9 * Math.min(fsz(), 1.35), D.shade(col(s.id), D.dark ? 0.35 : -0.45), 'center', font(11, 600));
     });
     // 沿河伸出畫面時，在右邊標出延伸到哪裡
-    if (state.river.on && S.frontier > 0 && S.frontierRiver * v.s > w / 2 - 6) {
+    if (state.river.on && !state.river.direction && S.frontier > 0 && S.frontierRiver * v.s > w / 2 - 6) {
       D.pill(c, T('沿河延伸到 ', 'Along the river to ') + km(S.frontierRiver) + ' →', w - 6, v.cy - 8, D.shade(C['vt-river'], D.dark ? 0.3 : -0.35), 'right', font(11, 600));
     }
     if (!S.rings.length) D.pill(c, T('沒有任何作物划算：整片都是荒野', 'No crop pays anywhere: it is all wilderness'), w / 2, h / 2 - 22, C.text, 'center', font(12, 600));
@@ -267,12 +289,13 @@
     c.strokeStyle = D.alpha(C['vt-probe'], 0.9); c.lineWidth = 2; c.setLineDash([5, 4]);
     c.beginPath(); c.moveTo(p[0], p[1]);
     if (pr.usesRiver) {
-      const q = toS(v, pr.landing, 0);
+      const angle = state.river.direction * Math.PI / 180;
+      const q = toS(v, pr.landing * Math.cos(angle), pr.landing * Math.sin(angle));
       c.lineTo(q[0], q[1]); c.stroke(); c.setLineDash([]);
       c.strokeStyle = D.shade(C['vt-river'], D.dark ? 0.55 : 0.75); c.lineWidth = 3;
       c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(v.cx, v.cy); c.stroke();
       // 上岸的夾角：陸路段和「背向城市的河道」之間，cos θ = k
-      const rr = 16, a0 = pr.landing >= 0 ? 0 : Math.PI, a1 = Math.atan2(p[1] - q[1], p[0] - q[0]);
+      const rr = 16, a0 = (pr.landing >= 0 ? 0 : Math.PI) - angle, a1 = Math.atan2(p[1] - q[1], p[0] - q[0]);
       let da = a1 - a0;
       while (da > Math.PI) da -= 2 * Math.PI;
       while (da <= -Math.PI) da += 2 * Math.PI;
@@ -332,12 +355,12 @@
     let top = 0;
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
       const x = -H + 2 * H * i / n, y = -H + 2 * H * j / n;
-      const b = K.bestAt(state.crops, K.costDist(x, y, state.river), state.m);
+      const b = K.bidAt(state.crops, state.m, state.river, x, y);
       z[j * (n + 1) + i] = b.rent; if (b.rent > top) top = b.rent;
     }
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
       const x = -H + 2 * H * (i + 0.5) / n, y = -H + 2 * H * (j + 0.5) / n;
-      ids[j * n + i] = K.bestAt(state.crops, K.costDist(x, y, state.river), state.m).id;
+      ids[j * n + i] = K.bidAt(state.crops, state.m, state.river, x, y).id;
     }
     surf = { n: n, H: H, z: z, ids: ids, top: top };
     surfKey = key;
@@ -356,13 +379,13 @@
     pts.forEach(function (p) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
     const w = size.w, h = size.h, pad = 18;
     const sc = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad - 10) / (y1 - y0));
-    const ox = w / 2 - sc * (x0 + x1) / 2, oy = h / 2 + 6 - sc * (y0 + y1) / 2;
+    const ox = state.panX + w / 2 - sc * (x0 + x1) / 2, oy = state.panY + h / 2 + 6 - sc * (y0 + y1) / 2;
     return function (X, Y, Z) { const p = f(X, Y, Z); return [ox + sc * p[0], oy + sc * p[1], p[2]]; };
   }
   let s3Key = '', s3 = null;
   function draw3D() {
     const sf = buildSurface(), n = sf.n, P = proj3(sf);
-    const key = surfKey + '|' + state.az.toFixed(4) + '|' + state.el.toFixed(4) + '|' + size.w + 'x' + size.h + '|' + D.ver + '|' + T('z', 'e') + fsz();
+    const key = surfKey + '|' + state.panX + '|' + state.panY + '|' + state.az.toFixed(4) + '|' + state.el.toFixed(4) + '|' + size.w + 'x' + size.h + '|' + D.ver + '|' + T('z', 'e') + fsz();
     if (key !== s3Key || !s3) {
       if (!s3) s3 = document.createElement('canvas');
       s3.width = Math.round(size.w * size.dpr); s3.height = Math.round(size.h * size.dpr);
@@ -374,7 +397,7 @@
       for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) sp[j * N1 + i] = P(-1 + 2 * i / n, -1 + 2 * j / n, sf.z[j * N1 + i]);
       // 每一格是一個面；顏色交界的格子再細分成 3×3（高度照樣精確計算），交界才不會像鋸齒
       const faces = [], fine = n > 60 ? 3 : 1, cid = sf.ids, H = sf.H;
-      const at = function (X, Y) { return K.bestAt(state.crops, K.costDist(X * H, Y * H, state.river), state.m); };
+      const at = function (X, Y) { return K.bidAt(state.crops, state.m, state.river, X * H, Y * H); };
       const pushFace = function (pa, pb, pd, pe, za, zb, zd, ze, cell, id) {
         faces.push({ p: [pa, pb, pe, pd], z: [za, zb, zd, ze], cell: cell, id: id, depth: (pa[2] + pb[2] + pd[2] + pe[2]) / 4 });
       };
@@ -424,7 +447,13 @@
       if (state.river.on) {
         c.strokeStyle = D.shade(C['vt-river'], D.dark ? 0.2 : 0); c.lineWidth = 2.5; c.lineCap = 'round';
         c.beginPath();
-        for (let i = 0; i <= n; i++) { const p = sp[(n / 2) * N1 + i]; if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }
+        const angle = state.river.direction * Math.PI / 180;
+        const dx = Math.cos(angle), dy = Math.sin(angle), extent = Math.max(Math.abs(dx), Math.abs(dy));
+        for (let i = 0; i <= n; i++) {
+          const t = (2 * i / n - 1) / extent, x = t * dx, y = t * dy;
+          const p = P(x, y, at(x, y).rent);
+          if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]);
+        }
         c.stroke();
       }
       // 靠近觀看者的兩個側面（像切開的蛋糕），讓高度更明顯
@@ -561,7 +590,7 @@
     });
     // 這塊地的距離
     const pr = S.probe;
-    if (pr && pr.D <= R.xmax) {
+    if (pr && !(state.river.on && state.river.fee && pr.usesRiver) && pr.D <= R.xmax) {
       const px = X(pr.D);
       c.strokeStyle = D.alpha(C['vt-probe'], 0.85); c.lineWidth = 1.5; c.setLineDash([4, 3]);
       c.beginPath(); c.moveTo(px, g.pt); c.lineTo(px, Y(0) + 12); c.stroke(); c.setLineDash([]);
@@ -576,6 +605,7 @@
   function ringText(id) {
     const cr = S.crops[id];
     if (!cr.on) return T('沒有種', 'not grown');
+    if (S.areas[id] > 0 && !S.present[id]) return T('僅在其他方向出現，占農地 ', 'Only off the land axis, ') + num(100*S.share[id],1) + '%';
     if (!S.present[id]) return cr.A <= 0 ? T('沒出現：價格不夠付生產成本', 'none: the price does not cover the cost') : T('沒出現：每個地方都有別的作物付得更多', 'none: everywhere another crop pays more');
     return km(S.inner[id]).replace(' km', '') + '–' + km(S.outer[id]) + T('，占農地 ', ', ') + num(100 * S.share[id], 1) + T('%', '% of farmland');
   }
@@ -590,8 +620,11 @@
     setOut(el.Y, num(cr.Y, cr.Y < 1 ? 2 : 1)); setOut(el.p, grp(cr.p)); setOut(el.c, grp(cr.c)); setOut(el.f, num(cr.f, 1));
     setOut(el.m, num(state.m, 2)); setOut(el.k, num(state.river.k, 2));
     $('riverBtn').setAttribute('aria-pressed', state.river.on ? 'true' : 'false');
+    $('cameraTools').hidden = state.view !== '3d';
+    $('riverExtras').hidden = !state.river.on;
+    setOut(el.direction, String(state.river.direction)); setOut(el.fee, String(state.river.fee));
     $('kRow').hidden = !state.river.on;
-    setText('rStretch', state.river.on ? (state.river.k < 1 ? num(1 / state.river.k, 2) + T(' 倍（到 ', '× (to ') + km(S.frontierRiver) + T('）', ')') : T('1 倍：河運沒有比較便宜', '1×: shipping is no cheaper')) : T('—（沒有河）', '— (no river)'));
+    setText('rStretch', state.river.on ? (state.river.k < 1 ? num(S.frontier ? S.frontierRiver / S.frontier : 1, 2) + T(' 倍（到 ', '× (to ') + km(S.frontierRiver) + T('）', ')') : T('1 倍：河運沒有比較便宜', '1×: shipping is no cheaper')) : T('—（沒有河）', '— (no river)'));
     setText('rAreaF', state.river.on ? num(S.S, 3) + T(' 倍', '×') : T('1 倍', '1×'));
     // 這塊地
     const pr = S.probe;
@@ -607,7 +640,8 @@
       IDS.forEach(function (id) {
         const c = S.crops[id];
         if (!c.on) return;
-        const r = c.A - c.B * pr.D, best = id === pr.id;
+        const distance = state.river.on && state.river.fee ? K.route(pr.x, pr.y, state.river, c.f * state.m).D : pr.D;
+        const r = c.A - c.B * distance, best = id === pr.id;
         html += '<tr><td><span class="nm"><i style="background:var(--vt-' + id + ')"></i>' + (best ? '<b>' + nm(id) + '</b>' : nm(id)) + '</span></td><td' + (r <= 0 ? ' class="off"' : '') + '>' + (best ? '<b>' + perHa(r) + '</b>' : perHa(r)) + '</td></tr>';
       });
       setHTML('pTab', html);
@@ -619,7 +653,7 @@
     });
     IDS.forEach(function (id) {
       if (S.present[id]) return;
-      html += '<tr><td class="off"><span class="nm"><i style="background:var(--vt-' + id + ');opacity:.45"></i>' + nm(id) + '</span></td><td class="off" colspan="2">' + (S.crops[id].on ? T('沒出現', 'not on the map') : T('沒有種', 'not grown')) + '</td></tr>';
+      html += '<tr><td class="off"><span class="nm"><i style="background:var(--vt-' + id + ');opacity:.45"></i>' + nm(id) + '</span></td><td class="off" colspan="2">' + (S.share[id] > 0 ? T('僅其他方向 ', 'Off axis ') + num(100*S.share[id],1) + '%' : S.crops[id].on ? T('沒出現', 'not on the map') : T('沒有種', 'not grown')) + '</td></tr>';
     });
     setHTML('ringTab', html);
     setText('rFront', S.frontier > 0 ? km(S.frontier) + (state.river.on && state.river.k < 1 ? T('（沿河 ', ' (along the river ') + km(S.frontierRiver) + T('）', ')') : '') : T('沒有農業', 'no farming'));
@@ -671,8 +705,8 @@
   }
   function loadOtherSliders() {
     syncing = true;
-    if (window.LabNum) { LabNum.set(el.m, state.m); LabNum.set(el.k, state.river.k); }
-    else { el.m.value = state.m; el.k.value = state.river.k; }
+    if (window.LabNum) { LabNum.set(el.m, state.m); LabNum.set(el.k, state.river.k); LabNum.set(el.direction, state.river.direction); LabNum.set(el.fee, state.river.fee); }
+    else { el.m.value = state.m; el.k.value = state.river.k; el.direction.value = state.river.direction; el.fee.value = state.river.fee; }
     syncing = false;
   }
   const Lm = K.LIMITS;
@@ -692,11 +726,12 @@
     if (syncing) return;
     acted();
     state.m = K.clamp(Math.round(val(el.m) * 1000) / 1000, Lm.m[0], Lm.m[1]);
+    state.river.direction = val(el.direction); state.river.fee = val(el.fee);
     state.river.k = K.clamp(Math.round(val(el.k) * 1000) / 1000, Lm.k[0], Lm.k[1]);
     afterChange(e && e.type === 'change', 'param');
     if (e && e.type === 'change') say();
   }
-  [el.m, el.k].forEach(function (inp) { inp.addEventListener('input', transportChanged); inp.addEventListener('change', transportChanged); });
+  [el.m, el.k, el.direction, el.fee].forEach(function (inp) { inp.addEventListener('input', transportChanged); inp.addEventListener('change', transportChanged); });
   // 改完設定後，用一句話說明圈的變化
   function say() {
     if (!S.rings.length) { setStatus(T('每一種作物在城裡就已經虧本，整片平原都是荒野。', 'Every crop loses money even at the city: the whole plain is wilderness.')); return; }
@@ -744,7 +779,7 @@
   });
   $('reset').addEventListener('click', function () {
     acted();
-    state.crops = K.defaults(); state.m = 1; state.river.on = false; state.river.k = 0.4;
+    state.crops = K.defaults(); state.m = 1; state.river.on = false; state.river.k = 0.4; state.river.direction = 0; state.river.fee = 0;
     loadCropSliders(); loadOtherSliders();
     setStatus(T('回到邱念的設定：蔬菜牛奶、林木、穀物、放牧四個圈。', 'Back to von Thünen\'s settings: vegetables and dairy, forestry, grain and grazing.'));
     afterChange(true, 'reset');
@@ -762,12 +797,18 @@
     setStatus(pr.id ? T('這塊地種<b>' + nm(pr.id) + '</b>：每公頃付得起 ' + perHa(pr.rent) + '，比其他作物都多。', 'This field grows <b>' + nm(pr.id).toLowerCase() + '</b>: it can pay ' + perHa(pr.rent) + ', more than any other crop.')
       : T('這塊地太遠了，任何作物的收入都付不起運費：荒野。', 'Too far: no crop earns enough to pay the freight. Wilderness.'));
   }
+  $('cameraHome').addEventListener('click', function () {
+    state.panX = state.panY = 0; state.az = -0.6; state.el = 0.62;
+    state.zoom = 0;
+    document.querySelectorAll('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.zoom === 0)));
+    requestDraw();
+  });
   let drag = null;
   cv.addEventListener('pointerdown', function (e) {
     acted();
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
-    if (state.view === '3d') { drag = { mode: 'rot', x: x, y: y, az: state.az, el: state.el }; return; }
+    if (state.view === '3d') { drag = { mode: $('panMode').checked || e.shiftKey ? 'pan' : 'rot', px: state.panX, py: state.panY, x: x, y: y, az: state.az, el: state.el }; return; }
     const v = mapView();
     drag = { mode: 'probe' };
     setProbe((x - v.cx) / v.s, (v.cy - y) / v.s, 'probe', false);
@@ -775,7 +816,10 @@
   cv.addEventListener('pointermove', function (e) {
     if (!drag) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    if (drag.mode === 'rot') {
+    if (drag.mode === 'pan') {
+      state.panX = drag.px + x - drag.x; state.panY = drag.py + y - drag.y;
+      requestDraw();
+    } else if (drag.mode === 'rot') {
       state.az = drag.az - (x - drag.x) * 0.012;
       state.el = Math.max(0.25, Math.min(1.25, drag.el + (y - drag.y) * 0.006));
       requestDraw();
@@ -797,7 +841,8 @@
     const d = (e.clientX - r.left - g.pl) / (g.w - g.pl - g.pr) * R.xmax;
     if (d < 0 || d > R.xmax * 1.02) return;
     acted();
-    setProbe(0, Math.max(0, d), 'probe', true);
+    const angle = (state.river.on ? state.river.direction : 0) * Math.PI / 180;
+    setProbe(-Math.sin(angle)*Math.max(0,d), Math.cos(angle)*Math.max(0,d), 'probe', true);
     probeStatus();
   });
 
@@ -825,7 +870,7 @@
     get: function () {
       const c = {};
       IDS.forEach(function (id) { const q = state.crops[id]; c[id] = [q.Y, q.p, q.c, q.f, q.on ? 1 : 0]; });
-      return { c: c, m: state.m, r: state.river.on ? 1 : 0, k: state.river.k, s: state.sel, p: state.probe ? [state.probe.x, state.probe.y] : null };
+      return { c: c, m: state.m, r: state.river.on ? 1 : 0, k: state.river.k, direction: state.river.direction, fee: state.river.fee, s: state.sel, p: state.probe ? [state.probe.x, state.probe.y] : null };
     },
     set: function (o) {
       if (!o) return;
@@ -841,6 +886,7 @@
       });
       if (isFinite(o.m)) state.m = K.clamp(+o.m, Lm.m[0], Lm.m[1]);
       if (isFinite(o.k)) state.river.k = K.clamp(+o.k, Lm.k[0], Lm.k[1]);
+      state.river.direction = K.clamp(+o.direction || 0, 0, 180); state.river.fee = K.clamp(+o.fee || 0, 0, 300);
       state.river.on = o.r === 1;
       if (IDS.indexOf(o.s) >= 0) state.sel = o.s;
       if (Array.isArray(o.p) && isFinite(o.p[0]) && isFinite(o.p[1])) state.probe = { x: +o.p[0], y: +o.p[1] };
