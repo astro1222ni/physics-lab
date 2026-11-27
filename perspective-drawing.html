@@ -142,8 +142,9 @@
       html.labdeck-drawer .persp .stage #paper { grid-row:2; height:auto; width:min(100%,calc((100vh - 150px) * 1.6)); aspect-ratio:1.6 }
       html.labdeck-drawer .persp .stage:has(#traceBox:not([hidden])) #paper,
       html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { grid-column:2; width:100% }
-      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { width:min(100%,82vh) }
-      html.labdeck-drawer .persp .stage[data-compact-type]:has(#cameraBank:not([hidden])) #paper { width:min(100%,76vh) }
+      /* 11/27 試玩串複驗：3D 繪圖機多一列移動鍵，整塊要再矮一點才進一屏。寬＝（螢幕高 − 200 px）× 1.6，844×390 是 304×190 */
+      html.labdeck-drawer .persp .stage:has(#cameraBank:not([hidden])) #paper { width:min(100%,calc((100vh - 200px) * 1.6)) }
+      html.labdeck-drawer .persp .stage[data-compact-type]:has(#cameraBank:not([hidden])) #paper { width:min(100%,calc((100vh - 215px) * 1.6)) }
       html.labdeck-drawer .persp .stage[data-compact-type] #rigNav [data-m] svg { display:none }
       html.labdeck-drawer .persp .stage[data-compact-type] .seg button,
       html.labdeck-drawer .persp .stage[data-compact-type] #cameraBank button { padding:2px 5px }
