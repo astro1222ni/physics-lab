@@ -19,6 +19,15 @@
   const arms = function (p) { return [p.R1.R, p.R2.R, p.R3.R, p.Rx.R]; };
   const balanced = function (d) { return d.preset === 'wheatstone' && d.allClosed && d.Ig != null && Math.abs(d.Ig) <= 1e-4 && d.I >= 0.05; };
 
+  // 電阻與電動勢皆可輸入到小數第二位。範例刻度可精確達成比例；
+  // 相對誤差 0.1% 容許求解與微調，電路無電流時不接受 0:0。
+  const ratio = (a, b, k) => b > 1e-8 && near(a, k * b, 0.001);
+  function measured(ev, preset, id) {
+    const d = ev.data;
+    return isC(ev) && d.preset === preset && d.allClosed && d.action === 'probe' && d.probe &&
+      d.probe.across.includes(id) && ratio(Math.abs(d.probe.dV), d.parts[id].V, 1);
+  }
+
   LabMission.register('dc-circuit', [
     {
       id: 'dc-circuit-1', level: 1,
@@ -149,6 +158,88 @@
         if (d.action === 'R') mem.rMoved = true;
         return !!mem.rMoved && d.allClosed && d.Ig != null && d.Ig >= 1e-3 - 1e-9;
       }
+    },
+    {
+      id: 'dc-circuit-h4', level: 3, hidden: true,
+      riddle: { zh: '中間那階，知道整段樓梯的祕密。', en: 'The middle step knows the whole staircase.' },
+      desc: { zh: '把三個串聯燈泡的電壓依序調成 1:2:3，用探針驗證第二盞分得端電壓的三分之一。', en: 'Set three series voltage drops in the ratio 1:2:3 and probe the middle bulb to measure one third of the terminal voltage.' },
+      check: function (ev) {
+        const d = ev.data, p = d.parts;
+        return measured(ev, 'series', 'L2') && d.count === 3 && ratio(p.L2.V, p.L1.V, 2) &&
+          ratio(p.L3.V, p.L1.V, 3);
+      }
+    },
+    {
+      id: 'dc-circuit-h5', level: 5, hidden: true,
+      riddle: { zh: '三條渡船，靠岸時一樣高。', en: 'Three ferries ride level at the landing.' },
+      desc: { zh: '把三個並聯支路電流依序調成 1:2:3，跨接第三盞燈，驗證它承受完整端電壓卻分去一半總電流。', en: 'Set three parallel currents in the ratio 1:2:3. Probe the third bulb to verify full terminal voltage while it carries half the total current.' },
+      check: function (ev) {
+        const d = ev.data, p = d.parts;
+        return measured(ev, 'parallel', 'L3') && d.count === 3 && ratio(p.L2.I, p.L1.I, 2) &&
+          ratio(p.L3.I, p.L1.I, 3) && ratio(Math.abs(d.probe.dV), d.Vt, 1);
+      }
+    },
+    {
+      id: 'dc-circuit-h6', level: 6, hidden: true,
+      riddle: { zh: '玻璃出自同一窯，牆上的影子卻有深淺。', en: 'Glass from the same kiln casts shadows of different depths.' },
+      desc: { zh: '在混合電路中閉合兩個開關，讓三盞燈的電阻相等。幹路上的 L1 電流是每條支路的兩倍，功率是 L2、L3 各自的四倍。', en: 'Close both switches in the mixed circuit and give all three bulbs equal resistance. Bulb L1 carries twice the current in either branch and dissipates four times the power of each branch bulb.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (!isC(ev) || d.preset !== 'mixed' || !d.allClosed) return false;
+        const { L1, L2, L3 } = d.parts;
+        return ratio(Math.max(L1.R, L2.R, L3.R), Math.min(L1.R, L2.R, L3.R), 1) &&
+          ratio(L1.P, L2.P, 4) && ratio(L1.P, L3.P, 4);
+      }
+    },
+    {
+      id: 'dc-circuit-h7', level: 7, hidden: true,
+      riddle: { zh: '前廳和兩間後室，入夜花掉同一筆燈錢。', en: 'The front hall spends as much on light as both back rooms together.' },
+      desc: { zh: '在混合電路讓串聯燈的功率等於兩並聯燈的總功率，且兩支路功率為 2:1。', en: 'In the mixed circuit, make the series bulb dissipate as much as the two parallel bulbs together while the branches split power two to one.' },
+      check: function (ev) {
+        const d = ev.data, p = d.parts;
+        return isC(ev) && d.preset === 'mixed' && d.allClosed && ratio(p.L2.P, p.L3.P, 2) &&
+          ratio(p.L1.P, p.L2.P + p.L3.P, 1);
+      }
+    },
+    {
+      id: 'dc-circuit-h8', level: 8, hidden: true,
+      riddle: { zh: '一條河道合上，舊水痕還留在岸邊。', en: 'One channel closes and leaves a high-water mark.' },
+      desc: { zh: '用理想電池供應兩個並聯支路，斷開第二支路後，第一支路仍通電且電池電流恰為原來的四分之一。', en: 'With an ideal battery feeding two parallel branches, open the second branch and measure one quarter of the previous total current in the surviving branch.' },
+      check: function (ev) {
+        const d = ev.data, p = d.parts;
+        return isC(ev) && d.action === 'switch' && d.preset === 'parallel' && d.count === 2 && d.r === 0 &&
+          p.S1.closed && !p.S2.closed && ratio(d.I, d.prevI, 0.25) && ratio(p.L1.I, d.I, 1);
+      }
+    },
+    {
+      id: 'dc-circuit-h9', level: 9, hidden: true,
+      riddle: { zh: '兩張收據金額相同，寄件人付的代價卻不同。', en: 'Two receipts match although the sender paid different prices.' },
+      desc: { zh: '同一顆電池分別以 25% 與 75% 效率供電，驗證互為對偶的兩個負載獲得相同功率。', en: 'Use the same battery at 25% and 75% efficiency and verify equal delivered power for the two reciprocal loads.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!isC(ev) || d.preset !== 'internal' || !d.allClosed || d.r <= 0 ||
+            !(near(d.eta, 0.25, 0.001) || near(d.eta, 0.75, 0.001))) return false;
+        const old = mem.last;
+        mem.last = d;
+        return old && same(old.emf, d.emf) && same(old.r, d.r) && Math.abs(old.eta - d.eta) > 0.49 &&
+          ratio(old.Pout, d.Pout, 1);
+      }
+    },
+    {
+      id: 'dc-circuit-h10', level: 10, hidden: true,
+      riddle: { zh: '兩座橋亭同高，走過的人數卻不同。', en: 'The bridge shelters stand level but draw different crowds.' },
+      desc: { zh: '讓電橋平衡，兩中點都在端電壓的一半，同時使左、右兩側支路電流比為 3:1。', en: 'Balance the bridge with both midpoints at half terminal voltage and three times as much current in the left side as in the right.' },
+      check: function (ev) {
+        const d = ev.data, p = d.parts;
+        return isC(ev) && balanced(d) && ratio(p.R2.V, d.Vt, 0.5) && ratio(p.Rx.V, d.Vt, 0.5) &&
+          ratio(p.R1.I, p.R3.I, 3);
+      }
     }
-  ]);
+  ].map(m => {
+    if (!m.hidden || !m.desc) return m;
+    // 兩種任務面板都讀 riddle；在面板重繪時依目前帳號的完成紀錄選文。
+    const clue = m.riddle;
+    const shown = () => LabMission._state?.done?.[m.id] ? m.desc : clue;
+    return { ...m, riddle: { get zh() { return shown().zh; }, get en() { return shown().en; } } };
+  }));
 })();

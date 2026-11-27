@@ -21,6 +21,18 @@
     return ['ext', 'int'].some(function (m) { const f = fitsOf(d)[el + '|' + m]; return f && isFinite(f.R) && test(f); });
   };
 
+  // 理想讀數保留儀表內電阻，可用記錄的端電壓與支路電流分離儀表負載。
+  // 比較兩筆符合題意的紀錄；0.01 V 的電源末位對配對量預留 0.3%。
+  const proportion = (a, b, k) => b > 0 && Math.abs(a / b - k) <= 0.003 * k;
+  function compareReadings(ev, mem, accepts, match) {
+    if (!isR(ev)) return false;
+    const d = ev.data;
+    if (!d.ideal || !(d.IR > 0) || !accepts(d)) return false;
+    const old = mem.last;
+    mem.last = d;
+    return !!old && (match(old, d) || match(d, old));
+  }
+
   LabMission.register('ohms-law', [
     {
       id: 'ohms-law-1', level: 1,
@@ -157,6 +169,80 @@
         const d = ev.data;
         return ev.type === 'meter' && d && !d.burnt && d.emf >= 2 && d.box >= 1 && Math.abs(d.VV / d.emf - 0.5) <= 0.005;
       }
+    },
+    {
+      id: 'ohms-law-h4', level: 3, hidden: true,
+      riddle: { zh: '燈還亮著，帳單只寫了半頁。', en: 'The lamp still glows on half a page of the bill.' },
+      desc: { zh: '記錄小燈泡消耗額定功率一半的工作點。額定值為 2.5 V、0.30 A，半功率為 0.375 W。', en: 'Record the bulb operating at half its rated power. Its 2.5 V and 0.30 A rating gives a half-power target of 0.375 W.' },
+      check: function (ev) {
+        const d = ev.data;
+        // 電源每格 0.01 V；額定以下此處的功率末位約 0.003 W。
+        return isR(ev) && d.ideal && d.el === 'lamp' && Math.abs(d.VR * d.IR - 0.375) <= 0.0016;
+      }
+    },
+    {
+      id: 'ohms-law-h5', level: 4, hidden: true,
+      riddle: { zh: '旅人腳步加快，爐邊的帳翻了又翻。', en: 'A quicker step turns the hearth ledger over and over.' },
+      desc: { zh: '用同一組器材記錄碳膜電阻的兩個工作點，驗證元件電流加倍時，焦耳熱功率變為四倍。', en: 'Record two operating points of the carbon resistor with unchanged wiring and meter ranges. Doubling the element current quadruples its heating power.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => d.el === 'carbon',
+          (a, b) => a.m === b.m && a.fsA === b.fsA && a.fsV === b.fsV && a.box === b.box &&
+            proportion(b.IR, a.IR, 2) && proportion(b.VR * b.IR, a.VR * a.IR, 4));
+      }
+    },
+    {
+      id: 'ohms-law-h6', level: 6, hidden: true,
+      riddle: { zh: '同一隊旅人，在較長的巷子多付了一份路費。', en: 'The same procession pays a second toll on the longer street.' },
+      desc: { zh: '在銅線 a、c 記錄相同電流，驗證同線徑的線長加倍時，所需電壓加倍。', en: 'Record the same current in wires a and c. At equal diameter, doubling the length doubles the voltage required.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => ['a', 'c'].includes(d.el),
+          (a, c) => a.el === 'a' && c.el === 'c' && proportion(c.IR, a.IR, 1) && proportion(c.VR, a.VR, 2));
+      }
+    },
+    {
+      id: 'ohms-law-h7', level: 7, hidden: true,
+      riddle: { zh: '不同長的細線，在夜裡繳同一筆暖氣費。', en: 'Unequal lengths of fine wire pay the same heating bill.' },
+      desc: { zh: '讓同線徑、長度比為 1:2 的銅線 b、d 消耗相同功率，驗證長線電流為短線的 1/√2。', en: 'Dissipate equal power in wires b and d, whose lengths are in a 1:2 ratio. The longer wire carries the shorter wire’s current divided by the square root of two.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => ['b', 'd'].includes(d.el),
+          (b, d) => b.el === 'b' && d.el === 'd' && proportion(d.IR * d.VR, b.IR * b.VR, 1) &&
+            proportion(d.IR, b.IR, Math.SQRT1_2));
+      }
+    },
+    {
+      id: 'ohms-law-h8', level: 8, hidden: true,
+      riddle: { zh: '窄巷與寬街的兩頭，都在同一對山坡上。', en: 'A narrow lane and a wide street join the same two hills.' },
+      desc: { zh: '在等長銅線 a、b 兩端建立相同電壓，驗證線徑加倍時，截面積和電流都變為四倍。', en: 'Apply equal voltages across equal-length wires a and b. Doubling diameter quadruples cross-sectional area and current.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => ['a', 'b'].includes(d.el),
+          (a, b) => a.el === 'a' && b.el === 'b' && proportion(a.VR, b.VR, 1) && proportion(a.IR, b.IR, 4));
+      }
+    },
+    {
+      id: 'ohms-law-h9', level: 9, hidden: true,
+      riddle: { zh: '旁聽者換了一張椅子，悄悄少分走一些。', en: 'The listener changes seats and takes a smaller share.' },
+      desc: { zh: '用外接法量鎳鉻線 e，在相同元件電壓下切換 3 V、15 V 檔，驗證兩筆紀錄中伏特計分去的電流相差五倍。', en: 'With the ammeter outside the voltmeter branch, measure wire e at the same element voltage on the 3 V and 15 V ranges. Verify fivefold voltmeter-current loading.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => d.el === 'e' && d.m === 'ext',
+          (a, b) => a.fsV === 3 && b.fsV === 15 && a.fsA === b.fsA && proportion(a.VR, b.VR, 1) &&
+            proportion(a.I - a.IR, b.I - b.IR, 5));
+      }
+    },
+    {
+      id: 'ohms-law-h10', level: 10, hidden: true,
+      riddle: { zh: '守門人換班，帳上多出的過路費也換了。', en: 'When the gatekeeper changes, so does the unexplained toll.' },
+      desc: { zh: '用內接法量碳膜電阻，切換 5 mA 與 50 mA 檔並調回相同元件電流，驗證安培計分去的電壓相差十倍。', en: 'Measure the carbon resistor with the ammeter inside the voltmeter span. At equal element current, the 5 mA and 50 mA ranges give a tenfold difference in ammeter voltage drop.' },
+      check: function (ev, mem) {
+        return compareReadings(ev, mem, d => d.el === 'carbon' && d.m === 'int',
+          (a, b) => a.fsA === 0.005 && b.fsA === 0.05 && a.fsV === b.fsV && proportion(a.IR, b.IR, 1) &&
+            proportion(a.V - a.VR, b.V - b.VR, 10));
+      }
     }
-  ]);
+  ].map(m => {
+    if (!m.hidden || !m.desc) return m;
+    // 兩種任務面板都讀 riddle；在面板重繪時依目前帳號的完成紀錄選文。
+    const clue = m.riddle;
+    const shown = () => LabMission._state?.done?.[m.id] ? m.desc : clue;
+    return { ...m, riddle: { get zh() { return shown().zh; }, get en() { return shown().en; } } };
+  }));
 })();

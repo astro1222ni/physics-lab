@@ -24,6 +24,23 @@
   const spectro = function (ev) { const d = ev.data; return ev.type === 'region' && pureB(d) && d.theta === 90; };
   const sameShot = function (a, b) { return same(a.v, b.v) && same(a.B, b.B) && same(a.ang, b.ang) && same(a.x0, b.x0) && same(a.y0, b.y0); };
 
+  // 用第一圈的實測軸向位移和週期比較斜射；排除沿軸與平面圓的退化解。
+  function firstHelix(ev) {
+    const d = ev.data;
+    return ev.type === 'lap' && d.manualLaunch && d.n === 1 && pureB(d) && !d.region &&
+      d.r > 0.1 && Math.abs(d.zLap) > 0.1;
+  }
+  // 比較相鄰的有效觀測；兩發可交換順序。
+  function compareHelices(ev, mem, match) {
+    if (!firstHelix(ev)) return false;
+    const d = ev.data, old = mem.last;
+    mem.last = d;
+    if (!old || old.q !== d.q || old.m !== d.m || old.ang !== d.ang) return false;
+    return match(old, d) || match(d, old);
+  }
+  // 初速可打到 0.01，俯仰角可打到 0.1 度；比例比較留 0.3% 給輸入取整。
+  const scaled = (a, b) => rel(a, b, 0.003);
+
   LabMission.register('magnetic-particle', [
     {
       id: 'magnetic-particle-1', level: 1,
@@ -161,6 +178,75 @@
             (o.dx * d.dx + o.dy * d.dy) > 0.9 * o.disp * d.disp;
         });
       }
+    },
+    {
+      id: 'magnetic-particle-h4', level: 3, hidden: true,
+      riddle: { zh: '線軸上的一匝，剛好遮住自己的影子。', en: 'One turn hides its own shadow.' },
+      desc: { zh: '斜射粒子在正 z 方向前進一個軌道直徑時，橫向恰好繞一圈。', en: 'In one turn the particle advances one orbit diameter along positive z.' },
+      check: function (ev) {
+        return firstHelix(ev) && scaled(ev.data.zLap, 2 * ev.data.r);
+      }
+    },
+    {
+      id: 'magnetic-particle-h5', level: 4, hidden: true,
+      riddle: { zh: '倒著走的人，把較長的路留給影子。', en: 'Walking backwards, the traveller leaves the longer road to a shadow.' },
+      desc: { zh: '一圈後沿負 z 的位移量為圓周長的一半，平行方向動能為垂直方向動能的四分之一。', en: 'The backward pitch is half the circumference, so axial kinetic energy is one quarter of transverse kinetic energy.' },
+      check: function (ev) {
+        return firstHelix(ev) && scaled(ev.data.zLap, -Math.PI * ev.data.r);
+      }
+    },
+    {
+      id: 'magnetic-particle-h6', level: 6, hidden: true,
+      riddle: { zh: '門縫裡藏著一片蜂巢。', en: 'A sliver of honeycomb fits in the doorway.' },
+      desc: { zh: '粒子在半平面磁場中轉過 60 度，進出口相隔 2.00 cm，這段弦長等於迴旋半徑。', en: 'In the half-plane field, bend through 60 degrees with entry and exit 2.00 cm apart. This chord equals the orbit radius.' },
+      check: function (ev) {
+        const d = ev.data;
+        // 0.1 度輸入與場界積分留 0.4 度；速率末位與場界定位留 0.015 cm。
+        return spectro(ev) && d.manualLaunch && near(Math.abs(d.turnDeg), 60, 0.4) &&
+          near(Math.abs(d.exitY - d.entryY), 2, 0.015);
+      }
+    },
+    {
+      id: 'magnetic-particle-h7', level: 7, hidden: true,
+      riddle: { zh: '井口只留下同一個圓，井壁卻記得方向。', en: 'The well mouth remembers one circle, its walls two directions.' },
+      desc: { zh: '保持粒子、速率和磁場相同，以互補俯仰角各繞一圈，得到相同半徑與大小相等、方向相反的螺距。', en: 'At fixed speed and field, supplementary pitch angles give equal radii and opposite pitches.' },
+      check: function (ev, mem) {
+        return compareHelices(ev, mem, (a, b) => a.B === b.B && a.v === b.v &&
+          near(a.theta + b.theta, 180, 0.051) && scaled(a.r, b.r) && scaled(a.zLap, -b.zLap));
+      }
+    },
+    {
+      id: 'magnetic-particle-h8', level: 8, hidden: true,
+      riddle: { zh: '小小的拓印，連縱深都沒有遺漏。', en: 'Even the depth survives in the smaller print.' },
+      desc: { zh: '保持斜射初速不變，把磁場加倍，驗證半徑、螺距和週期都減半。', en: 'Double the field at the same oblique launch velocity and measure half the radius, pitch and period.' },
+      check: function (ev, mem) {
+        return compareHelices(ev, mem, (a, b) => a.v === b.v && a.theta === b.theta && b.B === 2 * a.B &&
+          scaled(a.r, 2 * b.r) && scaled(a.zLap, 2 * b.zLap) && scaled(a.tLap, 2 * b.tLap));
+      }
+    },
+    {
+      id: 'magnetic-particle-h9', level: 9, hidden: true,
+      riddle: { zh: '旅人換了步伐，舊鞋印卻一個也沒空下來。', en: 'A different pace fills every old footprint.' },
+      desc: { zh: '斜射方向不變，速率與磁場同時加倍，驗證螺旋大小不變而週期減半。', en: 'Double both speed and field without changing direction. The helix keeps its dimensions but takes half the time per turn.' },
+      check: function (ev, mem) {
+        return compareHelices(ev, mem, (a, b) => a.theta === b.theta && b.B === 2 * a.B &&
+          same(b.v, 2 * a.v) && scaled(a.r, b.r) && scaled(a.zLap, b.zLap) && scaled(a.tLap, 2 * b.tLap));
+      }
+    },
+    {
+      id: 'magnetic-particle-h10', level: 10, hidden: true,
+      riddle: { zh: '兩座旋梯通到同一扇窗，外緣卻碰不到彼此。', en: 'Two spiral stairs reach the same window, their rims far apart.' },
+      desc: { zh: '在同一磁場調整速率和俯仰角，使橫向速度加倍、軸向速度不變，量得雙倍半徑、相同螺距與週期。', en: 'Vary speed and pitch angle at fixed field to double transverse speed while preserving axial speed. Measure twice the radius at the same pitch and period.' },
+      check: function (ev, mem) {
+        return compareHelices(ev, mem, (a, b) => a.B === b.B && a.theta !== b.theta && a.v !== b.v &&
+          scaled(b.r, 2 * a.r) && scaled(a.zLap, b.zLap) && scaled(a.tLap, b.tLap));
+      }
     }
-  ]);
+  ].map(m => {
+    if (!m.hidden || !m.desc) return m;
+    // 兩種任務面板都讀 riddle；在面板重繪時依目前帳號的完成紀錄選文。
+    const clue = m.riddle;
+    const shown = () => LabMission._state?.done?.[m.id] ? m.desc : clue;
+    return { ...m, riddle: { get zh() { return shown().zh; }, get en() { return shown().en; } } };
+  }));
 })();

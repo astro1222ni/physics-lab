@@ -34,9 +34,18 @@ function reread(P) {
   };
 }
 let log = true;
+const assert = require('node:assert/strict');
+const hidden = missions.filter(m => m.hidden);
+let trialHits = null;
 const done = {};
 function fire(label, type, data) {
   const hits = missions.filter(m => !done[m.id] && m.check({ type, data }, m.mem));
+  if (trialHits) {
+    hits.filter(m => m.hidden).forEach(m => trialHits.add(m.id));
+  } else {
+    assert.deepEqual(hits.filter(m => hidden.indexOf(m) >= 3).map(m => m.id), [],
+      label + '：舊解法不可解鎖新隱藏任務');
+  }
   hits.forEach(m => { done[m.id] = label; });
   if (log) console.log(('  ' + label).padEnd(66), hits.map(m => m.id).join(', ') || '-');
   return hits;
@@ -290,6 +299,45 @@ let bestBox = 0, bestErr = 1;
 for (let b = 1; b <= 400; b++) { const s = K.bench(Object.assign(cfg(P), { Rbox: b })); const e = Math.abs(s.VV / P.emf - 0.5); if (e < bestErr) { bestErr = e; bestBox = b; } }
 set(P, { box: bestBox }, 'h3: 碳膜電阻、外接、ε=4 V、R箱=' + bestBox + ' Ω（V/ε 差 ' + (bestErr * 100).toFixed(3) + '%）');
 
+const legacyDone = { ...done };
+// 每組皆從預設器材開始。先把電源歸零，逐一切換元件、量程、接法，再調電源並按記錄。
+const cases = [
+  [[{ el: 'lamp', emf: 1.74 }], 1.76],
+  [[{ el: 'carbon', rv: 1, emf: 1.5 }, { el: 'carbon', rv: 1, emf: 3 }], 3.01],
+  [[{ el: 'a', emf: 1.04 }, { el: 'c', emf: 1.87 }], 1.88],
+  [[{ el: 'b', rv: 1, emf: 2.82 }, { el: 'd', rv: 1, emf: 3.87 }], 3.88],
+  [[{ el: 'a', emf: 1.25 }, { el: 'b', emf: 1.06 }], 1.07],
+  [[{ el: 'e', ra: 0, emf: 2.47 }, { el: 'e', ra: 0, rv: 1, emf: 2.46 }], 2.48],
+  [[{ el: 'carbon', m: 'int', ra: 0, box: 1000, emf: 4.63 },
+    { el: 'carbon', m: 'int', ra: 1, box: 1000, emf: 4.53 }], 4.55]
+];
+function trial(settings) {
+  const page = newPage();
+  missions.forEach(m => { delete done[m.id]; m.mem = {}; });
+  trialHits = new Set();
+  for (const o of settings) {
+    set(page, { emf: 0 });
+    const controls = { m: 'ext', ra: 2, rv: 0, box: 0, ...o };
+    for (const [key, value] of Object.entries(controls)) {
+      if (key !== 'emf' && page[key] !== value) set(page, { [key]: value });
+    }
+    set(page, { emf: o.emf });
+    record(page);
+  }
+  return [...trialHits];
+}
+log = false;
+cases.forEach(([settings, miss], i) => {
+  const id = 'ohms-law-h' + (i + 4);
+  console.log(id, '每組先歸零再設定並記錄', JSON.stringify(settings.map(o =>
+    ({ m: 'ext', ra: 2, rv: 0, box: 0, ...o }))));
+  assert.deepEqual(trial(settings), [id], id + ' 單獨解鎖');
+  const off = settings.map((o, j) => j === settings.length - 1 ? { ...o, emf: miss } : o);
+  assert.deepEqual(trial(off), [], id + ' 近失');
+  legacyDone[id] = JSON.stringify(settings);
+});
+missions.forEach(m => { delete done[m.id]; });
+Object.assign(done, legacyDone);
 console.log('--- 全部 ---');
 missions.forEach(m => console.log(m.id.padEnd(14), ('L' + m.level).padEnd(4), done[m.id] ? '✓ ' + done[m.id].trim() : '✗ 沒有完成'));
 if (missions.some(m => !done[m.id])) process.exitCode = 1;

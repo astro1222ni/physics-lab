@@ -22,7 +22,10 @@ function pulse(type, end, shape, v, L, w, t) {
   return { type, data: { sentByUser: true, end, shape, v, L, w, A: 3, t, tHit: tm.tHit, tStart: tm.tStart, tEnd: tm.tEnd, maxAbs: mx } };
 }
 const byId = Object.fromEntries(list.map(m => [m.id, m]));
+const assert = require('node:assert/strict');
+const legacyEvents = [];
 function run(id, evs, expect = true) {
+  legacyEvents.push(...evs);
   const m = byId[id], mem = {}; let ok = false;
   evs.forEach(e => { if (m.check(e, mem)) ok = true; });
   if (ok !== expect) process.exitCode = 1;
@@ -70,5 +73,37 @@ run('standing-waves-h3', [pulse('paused', 'free', 'sine', 0.5, 2, 0.8, tm.tHit)]
 run('standing-waves-h3', [pulse('paused', 'fixed', 'sine', 0.5, 2, 0.8, 0.1)], false);
 // 預設狀態不會意外過關：預設 f = 1.2 Hz、v = 2、L = 2、固定端
 const def = steady('fixed', 1.2, 2, 2, { t: 61 });
-list.forEach(m => { if (m.check(def, {})) console.log('FAIL 預設狀態意外過關', m.id); });
+assert.deepEqual(list.filter(m => m.check(def, {})).map(m => m.id), [], '預設狀態');
+const hidden = list.filter(m => m.hidden);
+function hiddenHits(events, missions = hidden) {
+  return missions.filter(m => {
+    const mem = {};
+    return events.some(e => m.check(e, mem));
+  }).map(m => m.id);
+}
+assert.deepEqual(hiddenHits(legacyEvents, hidden.slice(3)), [], '舊題全部正反例依序操作');
+const wave = (end, f, v, L) => steady(end, f, v, L, { skipped: true });
+const freePulse = pulse('pulseReflected', 'free', 'sine', 1.5, 1.65, 0.60);
+const cases = [
+  [[wave('free', 2, 2, 1.25)], wave('free', 2.007, 2, 1.25)],
+  [[wave('fixed', 2, 3, 1.5), wave('free', 2, 3, 1.5)], wave('free', 2.002, 3, 1.5)],
+  [[wave('fixed', 2, 2, 2), wave('fixed', 2.5, 2, 2)], wave('fixed', 2.502, 2, 2)],
+  [[wave('free', 1, 2, 1.5), wave('free', 1.667, 2, 1.5)], wave('free', 1.669, 2, 1.5)],
+  [[wave('fixed', 2, 3.2, 1.6), wave('free', 2, 3.2, 2)], wave('free', 2, 3.2, 2.01)],
+  [[wave('fixed', 2.943, 2, 1), wave('fixed', 3.057, 2, 1)], wave('fixed', 3.059, 2, 1)],
+  [[freePulse, wave('free', 2.5, 1.5, 1.65)], wave('free', 2.506, 1.5, 1.65)]
+];
+cases.forEach(([events, miss], i) => {
+  const id = 'standing-waves-h' + (i + 4);
+  console.log(id, JSON.stringify(events.map(({ type, data: { end, f, v, L, w } }) => ({ type, end, f, v, L, w }))));
+  assert.deepEqual(hiddenHits(events), [id], id + ' 單獨解鎖');
+  assert.deepEqual(hiddenHits([...events.slice(0, -1), miss]), [], id + ' 近失');
+});
+// 保持共振，只改脈寬：分開驗證模態不限與脈寬必須等於波長。
+const seventh = wave('free', 2.5, 1.5, 1.05);
+const pulseAtSeventh = w => pulse('pulseReflected', 'free', 'sine', 1.5, 1.05, w);
+assert.equal(seventh.data.m, 7);
+assert.deepEqual(hiddenHits([pulseAtSeventh(0.60), seventh]), ['standing-waves-h10']);
+assert.deepEqual(hiddenHits([pulseAtSeventh(0.59), seventh]), []);
+console.log('standing-waves-h10 自由端 m=7：L=1.05 m、v=1.50 m/s、w=0.60 m、f=2.500 Hz；w=0.59 m 近失');
 console.log('任務數', list.length, list.map(m => m.id + ':' + m.level).join(' '));

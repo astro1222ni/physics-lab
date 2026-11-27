@@ -21,7 +21,12 @@ function shoot(par, start, opt) {
   const base = () => { const h = MC.helix(par.m * MC.AMU, par.q * MC.E_CHARGE, par.v * 1e5, par.B * 1e-3, par.theta);
     return { manualLaunch: true, q: par.q, m: par.m, v: par.v, B: par.B, E: par.E, theta: par.theta, ang: par.ang, region: par.region, x0: start.x, y0: start.y, r: h.r / CM, Tus: h.T * 1e6, pitch: h.pitch / CM, vd: par.B !== 0 ? Math.abs(par.E * 1e3 / (par.B * 1e-3)) : null }; };
   const emit = (type, extra) => { const data = Object.assign(base(), extra); fired.push([type, data]);
-    missions.forEach(m => { if (done[m.id]) return; let ok = false; try { ok = !!m.check({ type, data }, m.mem); } catch (e) { console.log('ERR', m.id, e); } if (ok) { done[m.id] = true; console.log('   ✔', m.id, 'L' + m.level, type, JSON.stringify(extra, (k, v) => typeof v === 'number' ? +v.toPrecision(5) : v)); } }); };
+    missions.forEach(m => {
+      if (done[m.id] || !m.check({ type, data }, m.mem)) return;
+      done[m.id] = true;
+      console.log('   ✔', m.id, 'L' + m.level, type, JSON.stringify(extra, (k, v) => typeof v === 'number' ? +v.toPrecision(5) : v));
+    });
+  };
   const cyc = () => (par.region || par.q === 0 || par.B === 0) ? Infinity : MC.period(par.m * MC.AMU, par.q * MC.E_CHARGE, par.B * 1e-3);
   const offsets = (x, y) => { const dx = x / CM - start.x, dy = y / CM - start.y; return { dx, dy, along: dx * Math.cos(th) + dy * Math.sin(th), dev: Math.abs(-dx * Math.sin(th) + dy * Math.cos(th)) }; };
   const frame = (opt.speed || 0.5) * 1e-6 / 60; // 60 fps
@@ -74,6 +79,41 @@ if (require.main === module) {
   shoot(P({ q: 0 }), S0);                                                       // h1
   shoot(P({ theta: 0 }), S0);                                                   // h2
   shoot(P({ B: 200, v: 0, E: 20, q: -2 }), { x: 1.5, y: 7 }, { untilCycles: 2 }); // h3（與情境 drift 那發比較）
+  const assert = require('node:assert/strict');
+  const hidden = missions.filter(m => m.hidden);
+  const legacy = missions.filter(m => !m.hidden || hidden.indexOf(m) < 3);
+  assert.deepEqual(legacy.filter(m => !done[m.id]).map(m => m.id), [], '舊題均由既有解法完成');
+  const newIds = hidden.slice(3).map(m => m.id);
+  assert.deepEqual(hidden.filter(m => done[m.id]).map(m => m.id), hidden.slice(0, 3).map(m => m.id),
+    '預設、五個情境、全部一般任務與舊隱藏解法均不可解鎖新題');
+  const cases = [
+    [[{ theta: 72.3 }], { theta: 72.5 }],
+    [[{ theta: 116.6 }], { theta: 116.8 }],
+    [[{ theta: 90, B: 104, region: true, ang: -60 }], { B: 106 }],
+    [[{ theta: 35 }, { theta: 145 }], { theta: 145.2 }],
+    [[{ theta: 50, B: 80 }, { theta: 50, B: 160 }], { B: 159 }],
+    [[{ theta: 50, B: 80 }, { theta: 50, B: 160, v: 2 }], { v: 1.99 }],
+    [[{ theta: 45 }, { theta: 63.4, v: 1.58 }], { v: 1.57 }]
+  ];
+  function trial(settings) {
+    const memory = hidden.map(() => ({})), hits = new Set();
+    for (const override of settings) {
+      const par = P({ v: 1, ...override });
+      const start = par.region ? { x: 11, y: 10 } : { x: 12, y: 10 };
+      const events = shoot(par, start, par.region ? {} : { untilLaps: 1 });
+      for (const [type, data] of events) hidden.forEach((m, i) => {
+        if (m.check({ type, data }, memory[i])) hits.add(m.id);
+      });
+    }
+    return [...hits];
+  }
+  cases.forEach(([settings, miss], i) => {
+    const id = newIds[i], last = settings.length - 1;
+    console.log(id, '起點(cm) 一般 (12,10)，場區 (11,10)；逐發：', JSON.stringify(settings.map(o => P({ v: 1, ...o }))));
+    assert.deepEqual(trial(settings), [id], id + ' 單獨解鎖');
+    const off = settings.map((s, j) => j === last ? { ...s, ...miss } : s);
+    assert.deepEqual(trial(off), [], id + ' 近失 ' + JSON.stringify(miss));
+  });
   const miss = missions.filter(m => !done[m.id]).map(m => m.id);
   if (miss.length) process.exitCode = 1;
   console.log(miss.length ? 'NOT DONE: ' + miss.join(', ') : 'ALL ' + missions.length + ' missions achieved');

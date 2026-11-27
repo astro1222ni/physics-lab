@@ -5,6 +5,7 @@ const K = require(__ROOT + 'js/dc-circuit-core.js');
 let missions = [];
 global.LabMission = { register: (m, l) => { missions = l.map(x => Object.assign({ mem: {} }, x)); } }; global.window = { LabMission: global.LabMission };
 require(__ROOT + 'js/missions/dc-circuit.js');
+const assert = require('node:assert/strict');
 const done = {};
 function data(c, action, prevI, probes) {
   const s = K.solve(c), b = K.batteryReport(c, s, 0), E = c.elements[0];
@@ -15,7 +16,7 @@ function data(c, action, prevI, probes) {
   });
   const gk = K.indexOf(c, 'G');
   let probe = null;
-  if (probes) {
+  if (probes && probes[0] != null && probes[1] != null) {
     const c1 = s.cluster[probes[0]], c2 = s.cluster[probes[1]];
     const across = c.elements.filter(e => e.type !== 'wire' && ((s.cluster[e.a] === c1 && s.cluster[e.b] === c2) || (s.cluster[e.a] === c2 && s.cluster[e.b] === c1))).map(e => e.id);
     probe = { a: probes[0], b: probes[1], dV: s.floating[probes[0]] || s.floating[probes[1]] ? NaN : s.V[probes[0]] - s.V[probes[1]], across,
@@ -37,6 +38,7 @@ const curI = c => K.batteryReport(c, K.solve(c), 0).I;
 // 預設狀態（選每個情境、每個數量）不可觸發任何任務
 console.log('--- 預設狀態 ---');
 for (const p of K.PRESETS) for (const n of [2, 3]) { const c = K.preset(p, n); emit('預設 ' + p + ' ' + n, c, 'preset', NaN, c.probes); }
+assert.deepEqual(Object.keys(done), [], '所有預設情境');
 console.log('--- 解法 ---');
 let c = K.preset('single'); let pI = curI(c); set(c, { S1: { closed: false } }); emit('L1: single 斷開 S1', c, 'switch', pI);
 // h1：探針跨在斷開的開關兩端（single：S1 兩端 = 節點 3、4）
@@ -53,6 +55,53 @@ set(c, { R: 4 }); emit('L9b: internal r=2, R=4', c, 'R', NaN);
 c = set(K.preset('wheatstone'), { R1: 10, R2: 30, R3: 15, Rx: 45 }); emit('L10: wheatstone 10/30/15/45, ε=6, r=0', c, 'R', NaN);
 c = set(K.preset('single'), { R1: 2, E: { emf: 6.28, r: 0 } }); emit('h2: single ε=6.28 V, R=2 Ω → 3.14 A', c, 'emf', NaN);
 c = set(K.preset('wheatstone'), { Rx: 20 }); emit('h3: wheatstone Rx=20 (指針反向)', c, 'R', NaN);
+const hidden = missions.filter(m => m.hidden);
+assert.deepEqual(hidden.filter(m => done[m.id]).map(m => m.id), hidden.slice(0, 3).map(m => m.id),
+  '各情境預設、一般任務與舊隱藏達成例');
+function trial(preset, count, actions) {
+  const circuit = K.preset(preset, count), memory = hidden.map(() => ({})), hits = new Set();
+  let probes = circuit.probes;
+  function observe(action, prevI) {
+    const ev = { type: 'circuit', data: data(circuit, action, prevI, probes) };
+    hidden.forEach((m, i) => { if (m.check(ev, memory[i])) hits.add(m.id); });
+  }
+  observe('preset', NaN);
+  actions.forEach(([id, value]) => {
+    const prev = curI(circuit);
+    if (id === 'probe') {
+      const target = circuit.elements[K.indexOf(circuit, value)];
+      // 先點紅端時黑端清空；頁面只在第二個接點選好後回報 probe。
+      probes = [target.a, target.b];
+      observe('probe', prev);
+    } else {
+      const action = id === 'E' ? 'r' : typeof value === 'boolean' ? 'switch' : 'R';
+      set(circuit, { [id]: action === 'switch' ? { closed: value } : value });
+      observe(action, prev);
+    }
+  });
+  return [...hits];
+}
+const cases = [
+  ['series', 3, [['L1', 4], ['L2', 8], ['L3', 12], ['probe', 'L2']], 2, 12.02],
+  ['parallel', 3, [['L1', 24], ['L2', 12], ['L3', 8], ['probe', 'L3']], 2, 8.02],
+  ['mixed', 2, [['L1', 6]], 0, 6.01],
+  ['mixed', 2, [['L2', 9], ['L3', 18], ['L1', 6]], 2, 6.01],
+  ['parallel', 2, [['L1', 18], ['L2', 6], ['S2', false]], 1, 6.02],
+  ['internal', 2, [['E', { r: 3 }], ['R', 1], ['R', 9]], 2, 9.05],
+  ['wheatstone', 2, [['R2', 10], ['R3', 30], ['Rx', 30]], 2, 30.1]
+];
+cases.forEach(([preset, count, actions, pos, miss], i) => {
+  const id = 'dc-circuit-h' + (i + 4);
+  console.log(id, preset, count, JSON.stringify(actions));
+  assert.deepEqual(trial(preset, count, actions), [id], id + ' 單獨解鎖');
+  const off = actions.map(([k, v], j) => [k, j === pos ? miss : v]);
+  assert.deepEqual(trial(preset, count, off), [], id + ' 近失');
+  done[id] = JSON.stringify(actions);
+});
+for (const openSwitch of ['S1', 'S2']) {
+  assert.ok(!trial('mixed', 2, [[openSwitch, false], ['L1', 6]]).includes('dc-circuit-h6'),
+    '三燈等阻但 ' + openSwitch + ' 斷開');
+}
 console.log('--- 全部 ---');
 missions.forEach(m => console.log(m.id.padEnd(16), 'L' + m.level, done[m.id] ? '✓ ' + done[m.id] : '✗ 沒有完成'));
 // L9 不會因為拖曳滑桿而意外完成：只有放開時回報。另檢查：只有一次狀態時不會完成
