@@ -212,7 +212,7 @@ async function main(args) {
     console.log(failureLine(item, opts.steps) + tag);
   }
   const diff = comparison ? '，比上次新增 ' + comparison.added.length + '、消失 ' + comparison.removed.length : '';
-  console.log('✓ 掃了 ' + opts.slugs.length + ' 站 × ' + opts.seeds.length + ' 個種子：不合格 ' + summary.failed.length +
+  console.log((summary.failed.length ? '✗' : '✓') + ' 掃了 ' + opts.slugs.length + ' 站 × ' + opts.seeds.length + ' 個種子：不合格 ' + summary.failed.length +
     ' 項、保留 ' + summary.retained.length + ' 項、待確認 ' + summary.pending + ' 項' + diff + '（JSON：' + (path.relative(process.cwd(), opts.json) || opts.json) + '）');
   return summary.failed.length ? 1 : 0;
 }
