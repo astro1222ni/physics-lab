@@ -253,7 +253,7 @@
     ctx.beginPath(); ctx.moveTo(Math.round(W / 2) + 0.5, 8); ctx.lineTo(Math.round(W / 2) + 0.5, H - 8); ctx.stroke();
     const w = omega();
     const narrow = W < 520;
-    const fTitle = '600 ' + (narrow ? 11 : 12.5) + 'px ' + FONT;
+    const fTitle = '600 ' + (narrow ? 12 : 12.5) + 'px ' + FONT;
     D.pill(ctx, narrow ? T('從外面看', 'From outside') : T('從外面看（站在地上）', 'From outside (standing on the ground)'), L.c1[0], 24, C.text, 'center', fTitle);
     D.pill(ctx, narrow ? T('站在盤上看', 'Riding the turntable') : T('站在盤上看（跟著盤轉）', 'Riding the turntable (turning with it)'), L.c2[0], 24, C.text, 'center', fTitle);
 
@@ -314,7 +314,7 @@
           ctx.beginPath(); ctx.arc(L.c2[0], L.c2[1], rr, 0, -r.miss * K.DEG, r.miss > 0); ctx.stroke();
           ctx.restore();
           const am = r.miss * K.DEG / 2, rl = R + 20;
-          D.pill(ctx, sideWord(r.miss) + num(Math.abs(r.miss), 1) + '°', L.c2[0] + rl * Math.cos(am), L.c2[1] - rl * Math.sin(am) + 8, C['co-target'], Math.cos(am) > 0.3 ? 'left' : 'center', '600 11.5px ' + FONT);
+          D.pill(ctx, sideWord(r.miss) + num(Math.abs(r.miss), 1) + '°', L.c2[0] + rl * Math.cos(am), L.c2[1] - rl * Math.sin(am) + 8, C['co-target'], Math.cos(am) > 0.3 ? 'left' : 'center', '600 12px ' + FONT);
         }
       }
     });
@@ -346,9 +346,9 @@
     }
     // 底部：時間與慢動作
     const tNow = cur ? Math.min(cur.tau, cur.end) : 0;
-    D.haloText(ctx, T('慢動作 1/3　', 'Slow motion ×1/3   ') + 't = ' + num(tNow, 2) + ' s', 8, H - 8, C.muted, 'left', 'alphabetic', '11.5px ' + FONT);
+    D.haloText(ctx, T('慢動作 1/3　', 'Slow motion ×1/3   ') + 't = ' + num(tNow, 2) + ' s', 8, H - 8, C.muted, 'left', 'alphabetic', '12px ' + FONT);
     const rpmTxt = state.rpm > 0 ? num(state.rpm, 1) + T(' 圈／分', ' rpm') + (state.spin > 0 ? T('，逆時針', ', anticlockwise') : T('，順時針', ', clockwise')) : T('盤不轉', 'not spinning');
-    D.haloText(ctx, rpmTxt, W - 8, H - 8, C.muted, 'right', 'alphabetic', '11.5px ' + FONT);
+    D.haloText(ctx, rpmTxt, W - 8, H - 8, C.muted, 'right', 'alphabetic', '12px ' + FONT);
     if (kb && kb.focused()) {
       ctx.save(); ctx.strokeStyle = C.accent; ctx.setLineDash([5, 4]); ctx.lineWidth = 2;
       D.roundRect(ctx, L.c2[0] - R - 16, L.c2[1] - R - 16, 2 * R + 32, 2 * R + 32, 12); ctx.stroke(); ctx.restore();
@@ -428,7 +428,7 @@
       if (a[1] < 14 || a[1] > L.H - 4) return;
       if (labels === 'map' && a[3] === 'right' && (a[1] < 36 || a[1] > L.H - 54)) return;   // 讓開右上的地點標籤與右下的指北、時間
       if (F.type !== 'uniform' && i % 2 === 1 && lab.length > 6) return;
-      D.haloText(g, num(a[2], 0), a[0], a[1], D.alpha(C['co-iso'], 0.95), a[3], 'alphabetic', '10.5px ' + FONT);
+      D.haloText(g, num(a[2], 0), a[0], a[1], D.alpha(C['co-iso'], 0.95), a[3], 'alphabetic', '12px ' + FONT);
     });
     if (F.type === 'low' || F.type === 'high') {
       const big = F.type === 'low' ? T('低', 'L') : T('高', 'H');
@@ -460,7 +460,7 @@
       const sx = L.X(tr[0]), sy = L.Y(tr[1]);
       g.fillStyle = col;
       g.beginPath(); g.arc(sx, sy, 3, 0, Math.PI * 2); g.fill();
-      if (!opts.texture) D.haloText(g, latShort(p.c.P.lat), sx + 5, sy - 5, col, 'left', 'alphabetic', '600 10.5px ' + FONT);
+      if (!opts.texture) D.haloText(g, latShort(p.c.P.lat), sx + 5, sy - 5, col, 'left', 'alphabetic', '600 12px ' + FONT);
       g.restore();
       const hx = L.X(p.c.s.x), hy = L.Y(p.c.s.y);
       if (hx > -20 && hx < L.W + 20 && hy > -20 && hy < L.H + 20) {
@@ -526,13 +526,13 @@
     ctx.strokeStyle = C.text; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(bx, by - 4); ctx.lineTo(bx, by); ctx.lineTo(bx + bar, by); ctx.lineTo(bx + bar, by - 4); ctx.stroke();
     ctx.restore();
-    D.haloText(ctx, '500 km', bx + bar / 2, by - 5, C.text, 'center', 'alphabetic', '11px ' + FONT);
-    if (F.type !== 'none') D.haloText(ctx, T('等壓線每 ', 'Isobars every ') + isoStep(F, L) + ' hPa', bx, by - 22, C.muted, 'left', 'alphabetic', '11px ' + FONT);
+    D.haloText(ctx, '500 km', bx + bar / 2, by - 5, C.text, 'center', 'alphabetic', '12px ' + FONT);
+    if (F.type !== 'none') D.haloText(ctx, T('等壓線每 ', 'Isobars every ') + isoStep(F, L) + ' hPa', bx, by - 22, C.muted, 'left', 'alphabetic', '12px ' + FONT);
     const nx = W - 18, ny = H - 46;
     D.arrow(ctx, nx, ny + 24, nx, ny, C.text, 2);
-    D.haloText(ctx, T('北', 'N'), nx, ny + 38, C.text, 'center', 'alphabetic', '600 11.5px ' + FONT);
+    D.haloText(ctx, T('北', 'N'), nx, ny + 38, C.text, 'center', 'alphabetic', '600 12px ' + FONT);
     const lp = state.parcels[state.parcels.length - 1];
-    if (lp) D.haloText(ctx, 't = ' + num(lp.c.t / 3600, 1) + T(' 小時', ' h'), W - 34, H - 10, C.muted, 'right', 'alphabetic', '11.5px ' + FONT);
+    if (lp) D.haloText(ctx, 't = ' + num(lp.c.t / 3600, 1) + T(' 小時', ' h'), W - 34, H - 10, C.muted, 'right', 'alphabetic', '12px ' + FONT);
     if (!state.parcels.length) D.pill(ctx, T('點地圖，放出一團空氣', 'Tap the map to release air'), W / 2, H - 30, C.accent, 'center', '600 12.5px ' + FONT);
     if (kb && kb.focused()) {
       ctx.save(); ctx.strokeStyle = C.accent; ctx.setLineDash([5, 4]); ctx.lineWidth = 2;
@@ -564,7 +564,7 @@
     const b = state.dir0 * K.DEG;
     const u = state.v0 * Math.sin(b), v = state.v0 * Math.cos(b);
     const c = K.parcel({ lat: state.lat, k: state.k, field: fieldNow() }, x, y, u, v);
-    const p = { id: state.nextId++, c: c, trail: [x, y], nextTrail: TRAIL_EVERY, nextEmit: EMIT_EVERY, done: false, loopSaid: false, wSaid: 0, eyeSaid: false };
+    const p = { id: state.nextId++, c: c, trail: [x, y], nextTrail: TRAIL_EVERY, nextEmit: EMIT_EVERY, done: false, capped: false, maxT: MAX_T, loopSaid: false, wSaid: 0, eyeSaid: false };
     state.parcels.push(p);
     if (state.parcels.length > MAX_PARCELS) state.parcels.shift();
     state.running = true;
@@ -580,7 +580,8 @@
     const curKey = fieldKey(fieldNow());
     state.parcels.forEach(function (p) {
       if (p.done || fieldKey(p.c.P.field) !== curKey) return;
-      let left = Math.min(simDt, MAX_T - p.c.t);
+      const pMax = p.maxT || MAX_T;
+      let left = Math.min(simDt, pMax - p.c.t);
       while (left > 1e-6) {
         const h = Math.min(left, p.nextTrail - p.c.t, p.nextEmit - p.c.t);
         K.advance(p.c, h, 60);
@@ -590,13 +591,17 @@
       }
       milestones(p);
       const far = Math.abs(p.c.s.x) > 8000e3 || Math.abs(p.c.s.y) > 8000e3;
-      if (p.c.t >= MAX_T - 1e-6 || far) {
+      if (p.c.t >= pMax - 1e-6 || far) {
         p.done = true;
+        p.capped = !far;
         p.trail.push(p.c.s.x, p.c.s.y);
         parcelEvent(p);
-        if (p === state.parcels[state.parcels.length - 1])
+        if (p === state.parcels[state.parcels.length - 1]) {
+          const days = Math.round(pMax / 86400);
           setStatus(far ? T('第 ', 'Parcel #') + p.id + T(' 團空氣已經遠遠離開地圖。', ' has left the map far behind.')
-            : T('第 ', 'Parcel #') + p.id + T(' 團空氣已經模擬了 10 天。', ' has been followed for 10 days.'));
+            : T('觀測窗結束：第 ', 'Observation window ended: parcel #') + p.id + T(' 團空氣已追蹤 ' + days + ' 天（可按「延長觀測」繼續）。', ' followed for ' + days + ' days (press “Extend” to continue).'));
+        }
+        updatePlay();
       }
     });
   }
@@ -717,7 +722,30 @@
   function acted() { state.acted = true; }
   function sound() { const S = window.LabSound; return S && S.enabled() ? S : null; }
   function setStatus(s) { $('status').textContent = s; }
-  function updatePlay() { $('play').textContent = state.running ? T('暫停', 'Pause') : T('播放', 'Play'); }
+  function updatePlay() {
+    $('play').textContent = state.running ? T('暫停', 'Pause') : T('播放', 'Play');
+    const ext = $('extendBtn');
+    if (ext) ext.hidden = !(state.mode === 'earth' && state.parcels.some(function (p) { return p.done && p.capped; }));
+  }
+  if ($('extendBtn')) {
+    $('extendBtn').addEventListener('click', function () {
+      acted();
+      let extended = 0;
+      state.parcels.forEach(function (p) {
+        if (p.done && p.capped) {
+          p.maxT = (p.maxT || MAX_T) + MAX_T;
+          p.done = false;
+          p.capped = false;
+          extended++;
+        }
+      });
+      if (!extended) return;
+      state.running = true;
+      updatePlay();
+      setStatus(T('觀測窗已延長 10 天，繼續追蹤空氣軌跡。', 'Observation window extended by 10 days; tracking continues.'));
+      requestDraw();
+    });
+  }
   function updateSoundButton() {
     const on = !!(window.LabSettings && window.LabSettings.get('sound'));
     $('soundBtn').setAttribute('aria-pressed', String(on));
@@ -780,7 +808,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 點地圖 ----------
   function evPos(ev) { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }

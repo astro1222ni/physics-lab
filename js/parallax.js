@@ -149,7 +149,7 @@
     g.fillStyle = color || '#e2e8f0'; g.fillText(text, x, y);
   }
   function sTag(g, text, x, y, color, align, font) {
-    g.font = font || '700 11.5px ' + FONT;
+    g.font = font || '700 12px ' + FONT;
     const w = g.measureText(text).width + 12, h = 20;
     let bx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
     const cw = g.canvas.clientWidth || 1e4; bx = Math.max(4, Math.min(cw - 4 - w, bx));
@@ -199,16 +199,16 @@
       g.setLineDash([3, 4]); g.strokeStyle = D.alpha(C['px-star'], 0.4);
       g.beginPath(); g.moveTo(E2.x, E2.y); g.lineTo(S.x, S.y); g.stroke(); g.setLineDash([]);
       D.ball(g, E2.x, E2.y, 5, D.alpha(C['px-earth'], 0.45), { shadow: false });
-      sText(g, T('半年後', 'Half a year later'), E2.x, E2.y + 14, '#94a3b8', 'center', 'middle', '10.5px ' + FONT);
+      sText(g, T('半年後', 'Half a year later'), E2.x, E2.y + 14, '#94a3b8', 'center', 'middle', '12px ' + FONT);
       // 1 AU
       g.strokeStyle = 'rgba(226,232,240,0.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, cy); g.lineTo(E.x, E.y); g.stroke();
-      sText(g, '1 AU', (cx + E.x) / 2 + 6, (cy + E.y) / 2 - 8, '#cbd5e1', 'left', 'middle', '600 10.5px ' + FONT);
+      sText(g, '1 AU', (cx + E.x) / 2 + 6, (cy + E.y) / 2 - 8, '#cbd5e1', 'left', 'middle', '600 12px ' + FONT);
       // 2p 的角
       const a1 = Math.atan2(E.y - S.y, E.x - S.x), a2 = Math.atan2(E2.y - S.y, E2.x - S.x);
       let da = a2 - a1; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
       g.strokeStyle = C['px-path']; g.lineWidth = 1.6; g.beginPath(); g.arc(S.x, S.y, 26, a1, a1 + da, da < 0); g.stroke();
       const am = a1 + da / 2;
-      sText(g, T('2p（放大）', '2p (enlarged)'), S.x + 42 * Math.cos(am), S.y + 42 * Math.sin(am), C['px-path'], 'center', 'middle', '700 11px ' + FONT);
+      sText(g, T('2p（放大）', '2p (enlarged)'), S.x + 42 * Math.cos(am), S.y + 42 * Math.sin(am), C['px-path'], 'center', 'middle', '700 12px ' + FONT);
     }
     // 照片的日期
     if (opts.photos) state.photos.forEach(function (ph) { const q = P(ph.t); g.fillStyle = C['px-photo']; g.beginPath(); g.arc(q.x, q.y, 3, 0, Math.PI * 2); g.fill(); });
@@ -223,14 +223,14 @@
       const nameX = Math.max(b.x + margin, Math.min(b.x + b.w - margin, S.x));
       const nameY = compact ? Math.max(b.y + 47, Math.min(b.y + b.h - 10, S.y + (S.y < cy ? -15 : 15))) : S.y + (S.y < cy ? 18 : -16);
       sText(g, name, nameX, nameY, C['px-star'], 'center', 'middle', g.font);
-      sText(g, T('太陽', 'Sun'), compact ? cx - 14 : cx, compact ? cy : cy + 20, '#fde68a', compact ? 'right' : 'center', 'middle', '600 11px ' + FONT);
-      sText(g, T('地球', 'Earth'), E.x + 10, E.y - 10, '#93c5fd', 'left', 'middle', '700 11px ' + FONT);
-      sText(g, T('從北黃極往下看', 'Seen from above the ecliptic'), b.x + 10, b.y + 14, '#cbd5e1', 'left', 'middle', '600 11px ' + FONT);
+      sText(g, T('太陽', 'Sun'), compact ? cx - 14 : cx, compact ? cy : cy + 20, '#fde68a', compact ? 'right' : 'center', 'middle', '600 12px ' + FONT);
+      sText(g, T('地球', 'Earth'), E.x + 10, E.y - 10, '#93c5fd', 'left', 'middle', '700 12px ' + FONT);
+      sText(g, T('從北黃極往下看', 'Seen from above the ecliptic'), b.x + 10, b.y + 14, '#cbd5e1', 'left', 'middle', '600 12px ' + FONT);
       const distance = sig(state.d * PC.AU_PER_PC, 3);
       const distanceText = compact ? T('恆星距離 ', 'Star distance: ') + distance + ' AU'
         : T('恆星實際的距離是地球軌道半徑的 ', 'The star is really ') + distance + T(' 倍', ' times the orbit radius away');
-      sText(g, distanceText, b.x + 10, b.y + 32, '#94a3b8', 'left', 'middle', '10.5px ' + FONT);
-    } else sText(g, T('拍照的日期', 'Photo dates'), b.x + 8, b.y + 12, '#cbd5e1', 'left', 'middle', '600 10.5px ' + FONT);
+      sText(g, distanceText, b.x + 10, b.y + 32, '#94a3b8', 'left', 'middle', '12px ' + FONT);
+    } else sText(g, T('拍照的日期', 'Photo dates'), b.x + 8, b.y + 12, '#cbd5e1', 'left', 'middle', '600 12px ' + FONT);
   }
 
   // ---------------------------------------------------------------------
@@ -298,9 +298,9 @@
     const bar = nice(fs.half * 0.5), bl = bar * k;
     const bx = b.x + b.w - 14 - bl, by = b.y + b.h - 12;
     g.strokeStyle = '#e2e8f0'; g.lineWidth = 2; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + bl, by); g.moveTo(bx, by - 4); g.lineTo(bx, by + 4); g.moveTo(bx + bl, by - 4); g.lineTo(bx + bl, by + 4); g.stroke();
-    D.haloText(g, ang(bar, 2), bx + bl / 2, by - 11, C.text, 'center', 'middle', '700 11px ' + FONT);
+    D.haloText(g, ang(bar, 2), bx + bl / 2, by - 11, C.text, 'center', 'middle', '700 12px ' + FONT);
     D.haloText(g, opts.title, b.x + 6, b.y + 10, C.text, 'left', 'middle', '700 12px ' + FONT);
-    if (!opts.photos) D.haloText(g, T('← 黃經增加', '← ecliptic longitude'), b.x + 6, b.y + b.h - 12, C.muted, 'left', 'middle', '10px ' + FONT);
+    if (!opts.photos) D.haloText(g, T('← 黃經增加', '← ecliptic longitude'), b.x + 6, b.y + b.h - 12, C.muted, 'left', 'middle', '12px ' + FONT);
   }
 
   // ---------------------------------------------------------------------
@@ -320,14 +320,14 @@
     D.ball(g, A.x, A.y, 6, C['px-earth'], { shadow: false, glow: 0.4 });
     D.ball(g, B2.x, B2.y, 5, '#cbd5e1', { shadow: false, glow: 0.3 });
     D.ball(g, S.x, S.y, 6, C['px-star'], { shadow: false, glow: 0.9 });
-    sText(g, 'B = ' + sigAU(state.B), cx, yb + 16, '#e2e8f0', 'center', 'middle', '700 11.5px ' + FONT);
-    sText(g, T('觀測者 A', 'Observer A'), A.x, A.y - 14, '#93c5fd', dx < 70 ? 'right' : 'center', 'middle', '600 10.5px ' + FONT);
-    sText(g, T('觀測者 B', 'Observer B'), B2.x, B2.y - 14, '#e2e8f0', dx < 70 ? 'left' : 'center', 'middle', '600 10.5px ' + FONT);
-    sText(g, starName() + '：' + pcTxt(state.d), S.x, S.y - 16, C['px-star'], 'center', 'middle', '700 11.5px ' + FONT);
+    sText(g, 'B = ' + sigAU(state.B), cx, yb + 16, '#e2e8f0', 'center', 'middle', '700 12px ' + FONT);
+    sText(g, T('觀測者 A', 'Observer A'), A.x, A.y - 14, '#93c5fd', dx < 70 ? 'right' : 'center', 'middle', '600 12px ' + FONT);
+    sText(g, T('觀測者 B', 'Observer B'), B2.x, B2.y - 14, '#e2e8f0', dx < 70 ? 'left' : 'center', 'middle', '600 12px ' + FONT);
+    sText(g, starName() + '：' + pcTxt(state.d), S.x, S.y - 16, C['px-star'], 'center', 'middle', '700 12px ' + FONT);
     const a1 = Math.atan2(A.y - S.y, A.x - S.x), a2 = Math.atan2(B2.y - S.y, B2.x - S.x);
     if (state.baseAngle > 0) { g.strokeStyle = C['px-path']; g.lineWidth = 1.6; g.beginPath(); g.arc(S.x, S.y, 30, a2, a1); g.stroke(); }
     sText(g, 'θ = ' + ang(baselineShift(state.B)), S.x, S.y + 46, C['px-path'], 'center', 'middle', '700 12px ' + FONT);
-    sText(g, T('角度與距離都不是真實比例', 'Angles and distances not to scale'), b.x + 8, b.y + 12, '#94a3b8', 'left', 'middle', '10.5px ' + FONT);
+    sText(g, T('角度與距離都不是真實比例', 'Angles and distances not to scale'), b.x + 8, b.y + 12, '#94a3b8', 'left', 'middle', '12px ' + FONT);
   }
   function sigAU(B) { return B >= 0.1 ? sig(B, 3) + ' AU' : sig(B * PC.KM_PER_AU, 3) + ' km'; }
   /** 兩個觀測者看到的視野（固定 2 角分寬） */
@@ -342,8 +342,8 @@
     g.strokeStyle = 'rgba(148,163,184,0.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, cy - r); g.lineTo(cx, cy + r); g.stroke();
     g.restore();
     g.strokeStyle = who === 'A' ? D.alpha(C['px-earth'], 0.9) : 'rgba(203,213,225,0.8)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
-    D.haloText(g, title, cx, b.y + 8, C.text, 'center', 'middle', '700 11.5px ' + FONT);
-    if (Math.abs(dx) > r) D.haloText(g, T('恆星跑出視野了', 'The star is out of the field'), cx, cy + r * 0.5, C.text, 'center', 'middle', '600 11px ' + FONT);
+    D.haloText(g, title, cx, b.y + 8, C.text, 'center', 'middle', '700 12px ' + FONT);
+    if (Math.abs(dx) > r) D.haloText(g, T('恆星跑出視野了', 'The star is out of the field'), cx, cy + r * 0.5, C.text, 'center', 'middle', '600 12px ' + FONT);
   }
   function drawBaseline(g, W, H) {
     const narrow = W < 560 && W <= H * 1.4, run = state.run.baseline;
@@ -360,7 +360,7 @@
       baseField(g, fa, 'A', T('觀測者 A 看到的', 'Seen by A'));
       baseField(g, fb, 'B', T('觀測者 B 看到的', 'Seen by B'));
     }
-    D.haloText(g, T('望遠鏡視野寬 2 角分；背景的星遠到不會動', 'Field 2 arcmin wide; the background stars are too far to move'), (fa.x + fb.x + fb.w) / 2, H - 12, C.muted, 'center', 'middle', '10.5px ' + FONT);
+    D.haloText(g, T('望遠鏡視野寬 2 角分；背景的星遠到不會動', 'Field 2 arcmin wide; the background stars are too far to move'), (fa.x + fb.x + fb.w) / 2, H - 12, C.muted, 'center', 'middle', '12px ' + FONT);
   }
 
   // ---------------------------------------------------------------------
@@ -381,19 +381,19 @@
       fieldView(g, { x: 6, y: 6, w: W - 12, h: H - 12 }, { photos: true, flash: flash, title: '' });
       orbitView(g, ob, { small: true, photos: true });
       const f = fitNow();
-      sTag(g, INST[state.inst] ? T(INST[state.inst].zh, INST[state.inst].en) : '', W - 10, 18, INST_COL[state.inst], 'right', '700 11.5px ' + FONT);
-      sTag(g, T('照片 ', 'Photos ') + state.photos.length + (f ? '｜p = ' + angPm(f.p, f.sp) : ''), W - 10, 42, f ? C['px-fit'] : '#e2e8f0', 'right', '700 11.5px ' + FONT);
-      sTag(g, dateTxt(state.t), W - 10, 66, '#e2e8f0', 'right', '600 11px ' + FONT);
-      D.haloText(g, T('橘點：照片（圈是誤差）', 'Orange: photos (circles: errors)'), 10, H - 30, C.text, 'left', 'middle', '10.5px ' + FONT);
-      D.haloText(g, T('青線：解出來的路徑', 'Cyan: the fitted path'), 10, H - 14, C.text, 'left', 'middle', '10.5px ' + FONT);
+      sTag(g, INST[state.inst] ? T(INST[state.inst].zh, INST[state.inst].en) : '', W - 10, 18, INST_COL[state.inst], 'right', '700 12px ' + FONT);
+      sTag(g, T('照片 ', 'Photos ') + state.photos.length + (f ? '｜p = ' + angPm(f.p, f.sp) : ''), W - 10, 42, f ? C['px-fit'] : '#e2e8f0', 'right', '700 12px ' + FONT);
+      sTag(g, dateTxt(state.t), W - 10, 66, '#e2e8f0', 'right', '600 12px ' + FONT);
+      D.haloText(g, T('橘點：照片（圈是誤差）', 'Orange: photos (circles: errors)'), 10, H - 30, C.text, 'left', 'middle', '12px ' + FONT);
+      D.haloText(g, T('青線：解出來的路徑', 'Cyan: the fitted path'), 10, H - 14, C.text, 'left', 'middle', '12px ' + FONT);
     }
   }
-  function sTagDate(g, W) { sTag(g, dateTxt(state.t), W - 12, 20, '#e2e8f0', 'right', '700 11.5px ' + FONT); }
+  function sTagDate(g, W) { sTag(g, dateTxt(state.t), W - 12, 20, '#e2e8f0', 'right', '700 12px ' + FONT); }
 
   // =====================================================================
   // 下方的圖
   // =====================================================================
-  function frame0(W, H) { return { x0: 60, x1: W - 16, y0: 20, y1: H - 34 }; }
+  function frame0(W, H) { return { x0: 62, x1: W - 16, y0: 22, y1: H - 38 }; }
   function axisBox(g, Fm) { g.strokeStyle = D.alpha(C.text, 0.45); g.lineWidth = 1; g.strokeRect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); }
   function drawChart() {
     const g = gtx, W = grSize.w, H = grSize.h;
@@ -409,10 +409,10 @@
     const xx = function (t) { return Fm.x0 + t / T_MAX * (Fm.x1 - Fm.x0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
     const st = nice((y1 - y0) / 4);
-    for (let i = Math.ceil(y0 / st); i * st <= y1 + 1e-12 * st; i++) { const v = i * st, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, sig(v * unit.f, 3).replace(/^−?0$/, '0'), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); }
-    for (let yr = 0; yr <= T_MAX; yr++) { const x = xx(yr); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); if (yr < T_MAX) D.haloText(g, T('第 ' + (yr + 1) + ' 年', 'Year ' + (yr + 1)), x + 4, Fm.y1 + 12, C.muted, 'left', 'middle', '10px ' + FONT); }
-    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, ylab + '（' + unit.u + '）', 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    for (let i = Math.ceil(y0 / st); i * st <= y1 + 1e-12 * st; i++) { const v = i * st, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, sig(v * unit.f, 3).replace(/^−?0$/, '0'), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); }
+    for (let yr = 0; yr <= T_MAX; yr++) { const x = xx(yr); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); if (yr < T_MAX) D.haloText(g, T('第 ' + (yr + 1) + ' 年', 'Year ' + (yr + 1)), x + 4, Fm.y1 + 12, C.muted, 'left', 'middle', '12px ' + FONT); }
+    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, ylab + '（' + unit.u + '）', 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     return { xx: xx, yy: yy };
   }
   /** 視差位移對時間 */
@@ -431,8 +431,8 @@
     const f = PC.pfactor(state.lam, state.beta, state.t);
     D.ball(g, x, ax.yy(s.p * f.x), 4.5, C['px-x'], { shadow: false });
     D.ball(g, x, ax.yy(s.p * f.y), 4.5, C['px-y'], { shadow: false });
-    D.haloText(g, T('黃經方向 Δλ cos β', 'Longitude Δλ cos β'), Fm.x0 + 8, Fm.y0 + 10, C['px-x'], 'left', 'middle', '700 11px ' + FONT);
-    D.haloText(g, T('黃緯方向 Δβ', 'Latitude Δβ'), Fm.x0 + 8, Fm.y0 + 26, C['px-y'], 'left', 'middle', '700 11px ' + FONT);
+    D.haloText(g, T('黃經方向 Δλ cos β', 'Longitude Δλ cos β'), Fm.x0 + 8, Fm.y0 + 10, C['px-x'], 'left', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('黃緯方向 Δβ', 'Latitude Δβ'), Fm.x0 + 8, Fm.y0 + 26, C['px-y'], 'left', 'middle', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 照片的位置對時間，和解出來的曲線 */
@@ -463,7 +463,7 @@
       });
     });
     g.restore();
-    D.haloText(g, T('藍：黃經方向；紅：黃緯方向；虛線是真正的路徑', 'Blue: longitude; red: latitude; dashed: the true path'), Fm.x0 + 8, Fm.y0 + 10, C.muted, 'left', 'middle', '10.5px ' + FONT);
+    D.haloText(g, T('藍：黃經方向；紅：黃緯方向；虛線是真正的路徑', 'Blue: longitude; red: latitude; dashed: the true path'), Fm.x0 + 8, Fm.y0 + 10, C.muted, 'left', 'middle', '12px ' + FONT);
     if (!ph.length) D.haloText(g, T('還沒有照片', 'No photos yet'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.muted, 'center', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
@@ -473,19 +473,19 @@
     const xx = function (d) { return Fm.x0 + (Math.log10(d) - lx0) / (lx1 - lx0) * (Fm.x1 - Fm.x0); };
     const yy = function (p) { return Fm.y1 - (Math.log10(Math.max(1e-6, p)) - ly0) / (ly1 - ly0) * (Fm.y1 - Fm.y0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
-    [1, 10, 100, 1000, 10000].forEach(function (d) { const x = xx(d); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, String(d), x, Fm.y1 + 12, C.muted, 'center', 'middle', '10px ' + FONT); });
-    [1e-4, 1e-3, 0.01, 0.1, 1, 10, 100].forEach(function (p) { const y = yy(p); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, tickAng(p), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); });
-    D.haloText(g, T('距離（pc）', 'Distance (pc)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, T('視差', 'Parallax'), 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    [1, 10, 100, 1000, 10000].forEach(function (d) { const x = xx(d); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, String(d), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); });
+    [1e-4, 1e-3, 0.01, 0.1, 1, 10, 100].forEach(function (p) { const y = yy(p); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, tickAng(p), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); });
+    D.haloText(g, T('距離（pc）', 'Distance (pc)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, T('視差', 'Parallax'), 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     // 各儀器一張照片的誤差
     PC.INSTRUMENTS.forEach(function (ins) {
       const y = yy(ins.sigma); g.strokeStyle = D.alpha(INST_COL[ins.id], 0.8); g.setLineDash([5, 4]); g.lineWidth = ins.id === state.inst && state.mode === 'measure' ? 2.2 : 1.2;
       g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); g.setLineDash([]);
-      D.haloText(g, T(ins.zh.replace(/（.*$/, ''), ins.en.replace(/ \(.*$/, '')) + ' σ', Fm.x1 - 4, y - 7, INST_COL[ins.id], 'right', 'middle', '600 10px ' + FONT);
+      D.haloText(g, T(ins.zh.replace(/（.*$/, ''), ins.en.replace(/ \(.*$/, '')) + ' σ', Fm.x1 - 4, y - 7, INST_COL[ins.id], 'right', 'middle', '600 12px ' + FONT);
     });
     // p = 1/d
     g.strokeStyle = C['px-true']; g.lineWidth = 2.4; g.beginPath(); g.moveTo(xx(1), yy(1)); g.lineTo(xx(1e4), yy(1e-4)); g.stroke();
-    D.haloText(g, 'd = 1/p', xx(3), yy(1 / 3) - 12, C['px-true'], 'left', 'middle', '700 11px ' + FONT);
+    D.haloText(g, 'd = 1/p', xx(3), yy(1 / 3) - 12, C['px-true'], 'left', 'middle', '700 12px ' + FONT);
     PC.STARS.forEach(function (s) {
       const x = xx(1 / s.p), y = yy(s.p);
       D.ball(g, x, y, 3.2, C['px-true'], { shadow: false });
@@ -493,7 +493,7 @@
     // 目前的恆星與量到的值
     const x = xx(state.d), y = yy(1 / state.d);
     D.ball(g, x, y, 6, C['px-meas'], { shadow: false, ring: '#ffffff' });
-    D.haloText(g, starName(), x + 9, y + 12, C['px-meas'], 'left', 'middle', '700 11px ' + FONT);
+    D.haloText(g, starName(), x + 9, y + 12, C['px-meas'], 'left', 'middle', '700 12px ' + FONT);
     if (state.mode === 'measure') {
       const f = fitNow();
       if (f && f.p > 0) {
@@ -510,17 +510,17 @@
     const xx = function (B) { return Fm.x0 + (Math.log10(B) - lx0) / (lx1 - lx0) * (Fm.x1 - Fm.x0); };
     const yy = function (th) { return Fm.y1 - (Math.log10(Math.max(1e-7, th)) - ly0) / (ly1 - ly0) * (Fm.y1 - Fm.y0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
-    [1e-4, 1e-3, 0.01, 0.1, 1, 10, 100].forEach(function (B) { const x = xx(B); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); if (W >= 520 || [1e-4, 0.01, 1, 100].indexOf(B) >= 0) D.haloText(g, String(B), x, Fm.y1 + 12, C.muted, 'center', 'middle', '10px ' + FONT); });
-    [1e-6, 1e-4, 0.01, 1, 100].forEach(function (th) { const y = yy(th); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, tickAng(th), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); });
-    D.haloText(g, T('基線 B（AU）', 'Baseline B (AU)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, T('角位移 θ', 'Angular shift θ'), 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    [1e-4, 1e-3, 0.01, 0.1, 1, 10, 100].forEach(function (B) { const x = xx(B); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); if (W >= 520 || [1e-4, 0.01, 1, 100].indexOf(B) >= 0) D.haloText(g, String(B), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); });
+    [1e-6, 1e-4, 0.01, 1, 100].forEach(function (th) { const y = yy(th); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, tickAng(th), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); });
+    D.haloText(g, T('基線 B（AU）', 'Baseline B (AU)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, T('角位移 θ', 'Angular shift θ'), 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     ['eye', 'bessel', 'gaia'].forEach(function (id) {
       const y = yy(INST[id].sigma); g.strokeStyle = D.alpha(INST_COL[id], 0.8); g.setLineDash([5, 4]); g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); g.setLineDash([]);
-      D.haloText(g, T(INST[id].zh.replace(/（.*$/, ''), INST[id].en.replace(/ \(.*$/, '')), Fm.x0 + 6, y - 7, INST_COL[id], 'left', 'middle', '600 10px ' + FONT);
+      D.haloText(g, T(INST[id].zh.replace(/（.*$/, ''), INST[id].en.replace(/ \(.*$/, '')), Fm.x0 + 6, y - 7, INST_COL[id], 'left', 'middle', '600 12px ' + FONT);
     });
     if (state.baseAngle === 0) {
-      D.haloText(g, T('θ = 0，無法畫在對數軸上', 'θ = 0, outside the log scale'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.text, 'center', 'middle', '700 11px ' + FONT);
+      D.haloText(g, T('θ = 0，無法畫在對數軸上', 'θ = 0, outside the log scale'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.text, 'center', 'middle', '700 12px ' + FONT);
       axisBox(g, Fm);
       return;
     }
@@ -533,12 +533,12 @@
     });
     const x = xx(state.B), y = yy(baselineShift(state.B));
     if (y > Fm.y1) {
-      D.haloText(g, T('θ 低於圖表範圍', 'θ below chart range'), (Fm.x0 + Fm.x1) / 2, Fm.y1 - 14, C['px-meas'], 'center', 'middle', '700 11px ' + FONT);
+      D.haloText(g, T('θ 低於圖表範圍', 'θ below chart range'), (Fm.x0 + Fm.x1) / 2, Fm.y1 - 14, C['px-meas'], 'center', 'middle', '700 12px ' + FONT);
       axisBox(g, Fm);
       return;
     }
     D.ball(g, x, y, 6, C['px-meas'], { shadow: false, ring: '#ffffff' });
-    D.haloText(g, 'θ = ' + ang(baselineShift(state.B)), x + (x > Fm.x1 - 100 ? -9 : 9), y + 12, C['px-meas'], x > Fm.x1 - 100 ? 'right' : 'left', 'middle', '700 11px ' + FONT);
+    D.haloText(g, 'θ = ' + ang(baselineShift(state.B)), x + (x > Fm.x1 - 100 ? -9 : 9), y + 12, C['px-meas'], x > Fm.x1 - 100 ? 'right' : 'left', 'middle', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
 
@@ -827,7 +827,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 鍵盤 ----------
   if (window.LabKeys) {

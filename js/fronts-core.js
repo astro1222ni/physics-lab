@@ -147,8 +147,9 @@
    *   dT（結束 − 開始的氣溫）, dTd, dP, pMin, pMax, wind0, wind1, clouds（依序看到的雲的種類）, passed（鋒面線通過了）, tFront, tEndRun, capped（到 72 h 還沒走完）,
    *   max1、max3、max24（任意連續 1、3、24 小時的最大雨量）, tCloud（第一次看到鋒面雲）, snow（地面氣溫 0 °C 以下時落下的量：雪）
    */
-  function pass(f, dt) {
+  function pass(f, dt, tMax) {
     dt = dt || 0.02;
+    const lim = tMax > 0 ? tMax : T_MAX;
     const c = course(f), dir = TYPES[f.o.type].dir, U = f.o.U;
     const rec = []; let t = 0, s = c.s0, total = 0, hours = 0, peak = 0, tStart = null, tEnd = null, tFront = null;
     const clouds = []; let pMin = 1e9, pMax = -1e9;
@@ -157,7 +158,7 @@
       if (st.cloud && clouds[clouds.length - 1] !== st.cloud) clouds.push(st.cloud);
       pMin = Math.min(pMin, st.p); pMax = Math.max(pMax, st.p);
       const done = dir > 0 ? s >= c.s1 : s <= c.s1;
-      if (done || t >= T_MAX - 1e-9) break;
+      if (done || t >= lim - 1e-9) break;
       const sN = s + dir * U * dt, stN = f.station(sN), r = (st.rain + stN.rain) / 2;
       total += r * dt; if (r > 0.1) hours += dt; peak = Math.max(peak, st.rain, stN.rain);
       if (r > 0.1 && tStart == null) tStart = t;
@@ -172,7 +173,7 @@
     const maxIn = function (H) { let best = 0, j = 0; for (let i = 0; i < rec.length; i++) { while (rec[i].t - rec[j].t > H + 1e-9) j++; best = Math.max(best, cum[i] - cum[j]); } return best; };
     let tCloud = null, snow = 0; for (let i = 0; i < rec.length; i++) { if (tCloud == null && rec[i].cloud) tCloud = rec[i].t; if (i && rec[i].T <= 0 && rec[i - 1].T <= 0) snow += cum[i] - cum[i - 1]; }
     return { rec: rec, total: total, max1: maxIn(1), max3: maxIn(3), max24: maxIn(24), tCloud: tCloud, snow: snow, hours: hours, peak: peak, tStart: tStart, tEnd: tEnd, dT: b.T - a.T, dTd: b.Td - a.Td, dP: b.p - a.p, pMin: pMin, pMax: pMax,
-      wind0: a.wind, wind1: b.wind, clouds: clouds, passed: tFront != null, tFront: tFront, tEndRun: t, capped: t >= T_MAX - 1e-9 && !(dir > 0 ? s >= c.s1 : s <= c.s1), s0: c.s0, s1: c.s1 };
+      wind0: a.wind, wind1: b.wind, clouds: clouds, passed: tFront != null, tFront: tFront, tEndRun: t, capped: t >= lim - 1e-9 && !(dir > 0 ? s >= c.s1 : s <= c.s1), s0: c.s0, s1: c.s1 };
   }
 
   // ---------- Margules ----------

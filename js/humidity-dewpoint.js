@@ -161,7 +161,7 @@
     for (let t = -10; t <= 45; t++) {
       const y = yT(t), L = t % 5 === 0 ? 8 : 4, s = labelSide < 0 ? -1 : 1;
       g.beginPath(); g.moveTo(x + s * (tw / 2 + 1), y); g.lineTo(x + s * (tw / 2 + 1 + L), y); g.stroke();
-      if (t % 10 === 0) D.haloText(g, String(t).replace('-', '−'), x + s * (tw / 2 + 12), y, C.muted, s < 0 ? 'right' : 'left', 'middle', '10px ' + FONT);
+      if (t % 10 === 0) D.haloText(g, String(t).replace('-', '−'), x + s * (tw / 2 + 12), y, C.muted, s < 0 ? 'right' : 'left', 'middle', '12px ' + FONT);
     }
     return yT;
   }
@@ -196,7 +196,7 @@
       g.strokeStyle = D.alpha(C.text, 0.16); g.lineWidth = 3;
       for (let y = by + 14; y < by + bh - 8; y += 14) { g.beginPath(); g.moveTo(bx + 6, y); g.lineTo(bx + 28, y + 8); g.stroke(); g.beginPath(); g.moveTo(bx + bw - 6, y); g.lineTo(bx + bw - 28, y + 8); g.stroke(); }
       g.restore();
-      D.haloText(g, T('百葉箱：沒有風扇，空氣慢慢流過', 'Screen: no fan, the air drifts through slowly'), cx, short ? H - 13 : by + bh + 14, C.muted, 'center', 'middle', '600 11px ' + FONT);
+      D.haloText(g, T('百葉箱：沒有風扇，空氣慢慢流過', 'Screen: no fan, the air drifts through slowly'), cx, short ? H - 13 : by + bh + 14, C.muted, 'center', 'middle', '600 12px ' + FONT);
     } else {
       // 風扇：從上往下吹過兩個球
       const fy = short ? 27 : narrow ? 40 : 44, r = short ? 13 : narrow ? 18 : 22;
@@ -209,7 +209,7 @@
       g.strokeStyle = D.alpha(C['hd-air'], 0.35); g.lineWidth = 1.5; g.setLineDash([6, 8]); g.lineDashOffset = -state.t * 60;
       for (let k = -2; k <= 2; k++) { const x = cx + k * gap * 0.9; g.beginPath(); g.moveTo(x, fy + 30); g.lineTo(x + (k === 0 ? 0 : k * 6), y1 + 30); g.stroke(); }
       g.setLineDash([]);
-      D.haloText(g, T('風扇把空氣吹過溼球（每秒約 3 公尺）', 'A fan blows air past the wet bulb (about 3 m/s)'), cx, short ? H - 13 : H - 22, C.muted, 'center', 'middle', '600 11px ' + FONT);
+      D.haloText(g, T('風扇把空氣吹過溼球（每秒約 3 公尺）', 'A fan blows air past the wet bulb (about 3 m/s)'), cx, short ? H - 13 : H - 22, C.muted, 'center', 'middle', '600 12px ' + FONT);
     }
     // 水盒與燈芯
     const wy = y1 + (short ? 29 : 36);
@@ -237,7 +237,7 @@
     // 上方標籤與時鐘
     const done = run && run.done;
     tag(g, done ? T('穩定了：相對溼度 ', 'Steady: relative humidity ') + pct(HM.rhPsy(state.T, state.wet, A.p, state.type)) : run ? T('溼球變冷中…', 'Wet bulb cooling…') : T('按「開始量」把紗布弄溼', 'Press “Start reading” to wet the wick'), W - 12, 22, done ? C['hd-rh'] : C.muted, 'right');
-    if (run) { if (narrow) D.haloText(g, T('經過 ', 'Elapsed ') + mmss(run.t), W - 14, 46, C.muted, 'right', 'middle', '600 11px ' + FONT); else D.haloText(g, T('經過 ', 'Elapsed ') + mmss(run.t), 14, H - 22, C.muted, 'left', 'middle', '600 11px ' + FONT); }
+    if (run) { if (narrow) D.haloText(g, T('經過 ', 'Elapsed ') + mmss(run.t), W - 14, 46, C.muted, 'right', 'middle', '600 12px ' + FONT); else D.haloText(g, T('經過 ', 'Elapsed ') + mmss(run.t), 14, H - 22, C.muted, 'left', 'middle', '600 12px ' + FONT); }
   }
 
   // =====================================================================
@@ -308,8 +308,8 @@
     // 房間
     tag(g, T('室溫 ', 'Room ') + degC(state.T) + T('、相對溼度 ', ', RH ') + pct(state.rh), 12, 22, C['hd-air'], 'left');
     const run = state.run.cup;
-    if (c && (run || c.t > 0)) tag(g, T('經過 ', 'Elapsed ') + mmss(c.t), 12, H - 24, C.text, 'left', '600 11px ' + FONT);
-    if (!c) tag(g, T('一杯室溫的水。選冷卻的東西，按「開始冷卻」', 'A cup of water at room temperature. Choose a coolant and press “Start cooling”'), cx, H - 24, C.text, 'center', '600 11px ' + FONT);
+    if (c && (run || c.t > 0)) tag(g, T('經過 ', 'Elapsed ') + mmss(c.t), 12, H - 24, C.text, 'left', '600 12px ' + FONT);
+    if (!c) tag(g, T('一杯室溫的水。選冷卻的東西，按「開始冷卻」', 'A cup of water at room temperature. Choose a coolant and press “Start cooling”'), cx, H - 24, C.text, 'center', '600 12px ' + FONT);
   }
 
   // =====================================================================
@@ -374,7 +374,7 @@
     D.roundRect(g, bx, by, bw, bh, 10); g.fillStyle = 'rgba(8,15,35,0.72)'; g.fill(); g.strokeStyle = 'rgba(226,232,240,0.35)'; g.lineWidth = 1; g.stroke();
     const plain = function (t, x, y, col, al, font) { g.font = font; g.fillStyle = col; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(t, x, y); };
     plain(hhmm(state.h), bx + 10, by + 18, '#ffffff', 'left', '800 17px ' + FONT);
-    const ln = function (k, lab, v, col) { plain(lab, bx + 10, by + 40 + k * 17, '#cbd5e1', 'left', '600 11.5px ' + FONT); plain(v, bx + bw - 10, by + 40 + k * 17, col, 'right', '700 12px ' + FONT); };
+    const ln = function (k, lab, v, col) { plain(lab, bx + 10, by + 40 + k * 17, '#cbd5e1', 'left', '600 12px ' + FONT); plain(v, bx + bw - 10, by + 40 + k * 17, col, 'right', '700 12px ' + FONT); };
     ln(0, T('氣溫', 'Temp'), degC(s.T), '#fca5a5');
     ln(1, T('相對溼度', 'RH'), pct(s.rh), '#86efac');
     ln(2, T('露點', 'Dew point'), degC(s.Td), '#67e8f9');
@@ -394,21 +394,22 @@
     const W = Fm.x1 - Fm.x0, sx = sxF || nice((x1 - x0) / (W > 420 ? 7 : 4)), sy = nice((y1 - y0) / 5);
     const tick = function (st) { const dg = Math.max(0, -Math.floor(Math.log10(st) + 1e-9)); return function (v) { return num(v, dg); }; };
     const tx = fx || tick(sx), ty = fy || tick(sy);
-    for (let i = Math.ceil(x0 / sx - 1e-9); i * sx <= x1 + 1e-9 * sx; i++) { const v = i * sx, x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, tx(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '10px ' + FONT); }
-    for (let i = Math.ceil(y0 / sy - 1e-9); i * sy <= y1 + 1e-9 * sy; i++) { const v = i * sy, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, ty(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); }
-    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    for (let i = Math.ceil(x0 / sx - 1e-9); i * sx <= x1 + 1e-9 * sx; i++) { const v = i * sx, x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, tx(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); }
+    for (let i = Math.ceil(y0 / sy - 1e-9); i * sy <= y1 + 1e-9 * sy; i++) { const v = i * sy, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, ty(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); }
+    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     return { xx: xx, yy: yy };
   }
   /** 查表 */
   function chartTable(g, W, H) {
     const A = air(), run = state.run.psy, Tr = Math.round(state.T), dT = state.T - state.wet;
     const rows = []; for (let t = Math.max(-10, Math.min(34, Tr - 3)); rows.length < 7; t++) rows.push(t);
-    const dr = Math.round(dT), c0 = Math.max(0, Math.min(dr - 5, 30)), cols = []; for (let k = 0; k < 11; k++) cols.push(c0 + k);
+    const dr = Math.round(dT), nCols = W < 460 ? 7 : 11, half = Math.floor(nCols / 2);
+    const c0 = Math.max(0, Math.min(dr - half, 40 - nCols)), cols = []; for (let k = 0; k < nCols; k++) cols.push(c0 + k);
     const tab = HM.table(A.p, state.type, rows, cols);
     const x0 = 8, y0 = 30, cw0 = 58, cw = (W - 16 - cw0) / cols.length, rh = (H - y0 - 8) / (rows.length + 1);
-    D.haloText(g, T('相對溼度（%）查表：', 'Relative humidity (%) table: ') + num(A.p, 0) + ' hPa' + T('、', ', ') + typeName(state.type), 8, 12, C.text, 'left', 'middle', '700 11.5px ' + FONT);
-    g.font = '600 10.5px ' + FONT;
+    D.haloText(g, T('相對溼度（%）查表：', 'Relative humidity (%) table: ') + num(A.p, 0) + ' hPa' + T('、', ', ') + typeName(state.type), 8, 12, C.text, 'left', 'middle', '700 12px ' + FONT);
+    g.font = '600 12px ' + FONT;
     const showCol = run && run.done;
     for (let j = -1; j < cols.length; j++) for (let i = -1; i < rows.length; i++) {
       const x = j < 0 ? x0 : x0 + cw0 + j * cw, y = y0 + (i + 1) * rh, w = j < 0 ? cw0 : cw;
@@ -425,7 +426,7 @@
       else if (j < 0) txt = String(rows[i]).replace('-', '−') + ' °C';
       else txt = tab[i][j] == null ? '' : String(tab[i][j]);
       g.fillStyle = hiR && hiC ? C['hd-mark'] : (i < 0 || j < 0) ? C.muted : C.text;
-      g.font = (hiR && hiC ? '800 ' : i < 0 || j < 0 ? '600 ' : '500 ') + (W < 420 ? 9.5 : 11) + 'px ' + FONT;
+      g.font = (hiR && hiC ? '800 ' : i < 0 || j < 0 ? '600 ' : '500 ') + '12px ' + FONT;
       g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x + w / 2, y + rh / 2 + 0.5);
     }
   }
@@ -444,7 +445,7 @@
       g.strokeStyle = D.alpha(C['hd-rh'], 0.35); g.lineWidth = 1; g.beginPath();
       for (let t = tmin; t <= tmax + 1e-9; t += 0.25) { const x = ax.xx(t), y = ax.yy(f * HM.esw(t)); if (t > tmin) g.lineTo(x, y); else g.moveTo(x, y); }
       g.stroke();
-      D.haloText(g, num(f * 100, 0) + '%', ax.xx(tmax) - 4, ax.yy(f * HM.esw(tmax)) + 8, C['hd-rh'], 'right', 'middle', '600 9.5px ' + FONT);
+      D.haloText(g, num(f * 100, 0) + '%', ax.xx(tmax) - 4, ax.yy(f * HM.esw(tmax)) + 8, C['hd-rh'], 'right', 'middle', '600 12px ' + FONT);
     });
     // 飽和曲線（水、冰）
     g.strokeStyle = C['hd-sat']; g.lineWidth = 2.4; g.beginPath();
@@ -477,14 +478,14 @@
     }
     g.restore();
     // 標籤
-    D.haloText(g, T('飽和（水面）', 'Saturation (water)'), Fm.x0 + 8, Fm.y0 + 10, C['hd-sat'], 'left', 'middle', '700 10.5px ' + FONT);
-    if (tmin < 0) D.haloText(g, T('虛線：冰面', 'Dashed: over ice'), Fm.x0 + 8, Fm.y0 + 25, C['hd-frost'], 'left', 'middle', '700 10.5px ' + FONT);
+    D.haloText(g, T('飽和（水面）', 'Saturation (water)'), Fm.x0 + 8, Fm.y0 + 10, C['hd-sat'], 'left', 'middle', '700 12px ' + FONT);
+    if (tmin < 0) D.haloText(g, T('虛線：冰面', 'Dashed: over ice'), Fm.x0 + 8, Fm.y0 + 25, C['hd-frost'], 'left', 'middle', '700 12px ' + FONT);
     if (mode !== 'day') {
       const A = air();
-      D.haloText(g, T('空氣', 'Air'), ax.xx(state.T) - 8, ax.yy(A.e) - 12, C['hd-air'], 'right', 'middle', '700 10.5px ' + FONT);
-      D.haloText(g, T('露點 ', 'Dew point ') + degC(A.Td), ax.xx(A.Td) + 6, ax.yy(A.e) + 13, C['hd-dew'], 'left', 'middle', '700 10.5px ' + FONT);
-      if (mode === 'psy') D.haloText(g, T('溼球 ', 'Wet bulb ') + degC(A.Tw), ax.xx(A.Tw) - 6, ax.yy(HM.esw(A.Tw)) - 12, C['hd-wet'], 'right', 'middle', '700 10.5px ' + FONT);
-    } else D.haloText(g, T('橘線：一天裡空氣走的路', 'Orange: the air’s path through the day'), Fm.x1 - 6, Fm.y1 - 10, C['hd-air'], 'right', 'middle', '700 10.5px ' + FONT);
+      D.haloText(g, T('空氣', 'Air'), ax.xx(state.T) - 8, ax.yy(A.e) - 12, C['hd-air'], 'right', 'middle', '700 12px ' + FONT);
+      D.haloText(g, T('露點 ', 'Dew point ') + degC(A.Td), ax.xx(A.Td) + 6, ax.yy(A.e) + 13, C['hd-dew'], 'left', 'middle', '700 12px ' + FONT);
+      if (mode === 'psy') D.haloText(g, T('溼球 ', 'Wet bulb ') + degC(A.Tw), ax.xx(A.Tw) - 6, ax.yy(HM.esw(A.Tw)) - 12, C['hd-wet'], 'right', 'middle', '700 12px ' + FONT);
+    } else D.haloText(g, T('橘線：一天裡空氣走的路', 'Orange: the air’s path through the day'), Fm.x1 - 6, Fm.y1 - 10, C['hd-air'], 'right', 'middle', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 杯溫隨時間 */
@@ -496,7 +497,7 @@
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); g.clip();
     const hl = function (v, col, dash, lab, below, left) {
       g.strokeStyle = col; g.lineWidth = 1.4; g.setLineDash(dash); g.beginPath(); g.moveTo(Fm.x0, ax.yy(v)); g.lineTo(Fm.x1, ax.yy(v)); g.stroke(); g.setLineDash([]);
-      D.haloText(g, lab, left ? Fm.x0 + 6 : Fm.x1 - 6, ax.yy(v) + (below ? 10 : -9), col, left ? 'left' : 'right', 'middle', '700 10.5px ' + FONT);
+      D.haloText(g, lab, left ? Fm.x0 + 6 : Fm.x1 - 6, ax.yy(v) + (below ? 10 : -9), col, left ? 'left' : 'right', 'middle', '700 12px ' + FONT);
     };
     hl(state.T, D.alpha(C['hd-air'], 0.8), [2, 3], T('室溫', 'Room'), true);
     if (c) hl(HM.BATH[state.bath], D.alpha(C.muted, 0.9), [6, 4], T('冷卻的極限', 'Coolant'), true);
@@ -505,10 +506,10 @@
     if (c && c.onset) {
       const x = ax.xx(c.onset.t / 60), y = ax.yy(c.onset.T);
       D.ball(g, x, y, 6, c.onset.kind === 'frost' ? C['hd-frost'] : C['hd-dew'], { shadow: false, ring: '#ffffff' });
-      D.haloText(g, (c.onset.kind === 'frost' ? T('結霜 ', 'Frost ') : T('起霧 ', 'Mist ')) + degC(c.onset.T, 2), x + 9, y + 12, c.onset.kind === 'frost' ? C['hd-frost'] : C['hd-dew'], 'left', 'middle', '700 10.5px ' + FONT);
+      D.haloText(g, (c.onset.kind === 'frost' ? T('結霜 ', 'Frost ') : T('起霧 ', 'Mist ')) + degC(c.onset.T, 2), x + 9, y + 12, c.onset.kind === 'frost' ? C['hd-frost'] : C['hd-dew'], 'left', 'middle', '700 12px ' + FONT);
     }
     g.restore();
-    if (!show) D.haloText(g, T('露點在哪裡？看杯子什麼時候起霧', 'Where is the dew point? Watch for the mist'), Fm.x0 + 8, Fm.y0 + 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    if (!show) D.haloText(g, T('露點在哪裡？看杯子什麼時候起霧', 'Where is the dew point? Watch for the mist'), Fm.x0 + 8, Fm.y0 + 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 一天的溫度與溼度 */
@@ -529,8 +530,8 @@
     const xh = ax.xx(state.h); g.strokeStyle = D.alpha(C.text, 0.6); g.lineWidth = 1; g.beginPath(); g.moveTo(xh, Fm.y0); g.lineTo(xh, Fm.y1); g.stroke();
     const s = dayNow(); D.ball(g, xh, ax.yy(s.T), 4.5, C['hd-hot'], { shadow: false }); D.ball(g, xh, ax.yy(s.Td), 4.5, C['hd-dew'], { shadow: false }); D.ball(g, xh, yr(s.rh), 4.5, C['hd-rh'], { shadow: false });
     g.restore();
-    for (let k = 0; k <= 4; k++) D.haloText(g, (k * 25) + '%', Fm.x1 + 6, yr(k / 4), C['hd-rh'], 'left', 'middle', '10px ' + FONT);
-    D.haloText(g, T('紅：氣溫　藍：露點　綠虛線：相對溼度（右）', 'Red: temperature  Blue: dew point  Green dashed: RH (right)'), Fm.x0 + 6, Fm.y0 + 10, C.text, 'left', 'middle', '600 10px ' + FONT);
+    for (let k = 0; k <= 4; k++) D.haloText(g, (k * 25) + '%', Fm.x1 + 6, yr(k / 4), C['hd-rh'], 'left', 'middle', '12px ' + FONT);
+    D.haloText(g, T('紅：氣溫　藍：露點　綠虛線：相對溼度（右）', 'Red: temperature  Blue: dew point  Green dashed: RH (right)'), Fm.x0 + 6, Fm.y0 + 10, C.text, 'left', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
 
@@ -604,8 +605,9 @@
       const last = state.hist[state.hist.length - 1];
       if (c.t - last[0] >= 1) state.hist.push([c.t, c.T]);
       if (!had && c.onset) onset();
-      const noFog = HM.depositPoint(A.e) < bath - 0.02 && Math.abs(c.T - bath) < 0.3;
-      if (c.t >= CUP_TMAX || (c.onset && c.t - c.onset.t >= 60) || noFog) finishRun();
+      // 不在起霧後 60 s 強行切斷：先標出起霧點，再繼續降溫直到杯溫接近冷浴或達時間上限
+      const nearBath = Math.abs(c.T - bath) < 0.3;
+      if (c.t >= CUP_TMAX || nearBath) finishRun();
       updateReadouts();
     } else {
       const dh = dt * DAY_RATE;
@@ -636,6 +638,7 @@
     } else if (m === 'cup') {
       ev.runKind = 'end';
       if (!state.cup.onset) setStatus(T('杯子冷到 ', 'The cup got down to ') + degC(state.cup.T) + T('，一直沒有起霧：空氣太乾，露點比冷卻的極限還低。換更冷的東西試試。', ' and never misted: the air is too dry, its dew point is below what the coolant can reach. Try something colder.'));
+      else setStatus(T('杯溫已接近冷浴（', 'Cup temperature near coolant (') + degC(state.cup.T, 1) + T('）；初次', '); first ') + (state.cup.onset.kind === 'frost' ? T('結霜', 'frost') : T('起霧', 'mist')) + T('在 ', ' at ') + degC(state.cup.onset.T, 2) + T('。', '.'));
       if (snd) snd.tone({ freq: 523, dur: 0.15, type: 'triangle', gain: 0.04 });
     } else {
       const st = dayStats();
@@ -850,7 +853,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // =====================================================================
   // 啟動

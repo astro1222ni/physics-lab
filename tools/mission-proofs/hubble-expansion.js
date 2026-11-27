@@ -119,10 +119,10 @@ ex('h5', r && r.e, r ? '搬到 ' + f3(r.e.data.chi) + ' Mpc 外、a0 = 1 再膨�
 expect('h1 的 z 只由 χ 決定：χ ∈ [' + f3(R_HUB * Math.log(1.98)) + ', ' + f3(R_HUB * Math.log(2.02)) + '] Mpc', true);
 // 預設目標、各種 a0 都不觸發 h1、h2
 expect('預設目標在任何 a0 都不觸發 h1、h2', AS.every(a0 => { const e = expandRun(MW_POS, T0, a0); return !hits('h1', e) && !hits('h2', e); }));
-// 光到不了（a = 3 時還在路上）不算
+// 光到不了（arrived = false）不算到家，不觸發任務 1 與 h2
 const far = clickable(MW_POS, 1).find(q => chiOf(MW_POS, q) > R_HUB * Math.log(3) + 50);
 const eFar = expandRun(MW_POS, far, 1);
-expect('光在 a = 3 前到不了：不算到家、不觸發 h2', eFar.data.arrived === false && !hits('h2', eFar), 'χ = ' + f3(eFar.data.chi));
+expect('光未到家（arrived = false）：不觸發任務 1 與 h2', eFar.data.arrived === false && !hits('1', eFar) && !hits('h2', eFar), 'χ = ' + f3(eFar.data.chi));
 // 從銀河系看出去，隨便點、a0 = 1：各隱藏任務觸發的比例
 { const tg = clickable(MW_POS, 1); const cnt = {}; tg.forEach(t => fired(expandRun(MW_POS, t, 1)).forEach(id => { cnt[id] = (cnt[id] || 0) + 1; }));
   console.log('    （a0 = 1、從銀河系隨便點一個看得到的星系，共 ' + tg.length + ' 個：' + Object.keys(cnt).map(k => k + ' ' + cnt[k]).join('、') + '）');
@@ -169,6 +169,7 @@ no('h10', measureEv({ sn: reach('sn') }, 'sn', 'coma', ''), '全部量一遍（�
 // ───── 年齡 ─────
 const P = HC.PLANCK, def = ageEv(P.H0, P.Om, P.OL, 'planck');
 ex('3', Object.assign({}, def, { type: 'run' }), '預設 Planck：' + f3(def.data.age) + ' 十億年');
+no('3', Object.assign({}, ageEv(P.H0, 0.1, 1.5), { type: 'run' }), '無大霹靂反彈模型（bang = false）不應通過「從大霹靂播放」');
 const e9 = ageEv(73, 1, 0, ''); ex('9', e9, 'Ωm = 1、H0 = 73：' + f3(e9.data.age) + ' 十億年');
 no('9', ageEv(P.H0, 1, 0, 'eds'), '按「只有物質」（H0 還是 67.4）');
 no('9', ageEv(500, 1, 0, 'hubble'), '按「哈伯 1929」（H0 = 500）');

@@ -242,7 +242,7 @@
       const x = TX(q[0]);
       g.strokeStyle = D.alpha(q[1], 0.75); g.lineWidth = 1.2; g.setLineDash([4, 4]);
       g.beginPath(); g.moveTo(x, s.y + 40); g.lineTo(x, s.y + s.h - 26); g.stroke(); g.setLineDash([]);
-      D.haloText(g, q[2].split(' ')[0], x, s.y + s.h - 14, q[1], 'center', 'alphabetic', '600 10.5px ' + FONT);
+      D.haloText(g, q[2].split(' ')[0], x, s.y + s.h - 14, q[1], 'center', 'alphabetic', '600 12px ' + FONT);
     });
     g.beginPath();
     for (let i = 0; i <= 120; i++) {
@@ -260,9 +260,9 @@
     const sx = TX(st.T);
     g.beginPath(); g.moveTo(s.x + 6, sy); g.lineTo(sx, sy); g.strokeStyle = D.alpha(C.text, 0.5); g.lineWidth = 1; g.setLineDash([2, 3]); g.stroke(); g.setLineDash([]);
     D.ball(g, sx, sy, 6.5, C.accent);
-    D.pill(g, T('取樣點 ', 'Sample ') + num(st.T, 0) + ' °C', Math.min(sx + 10, s.x + s.w - 6), sy - 9, C.accent, sx + 10 > s.x + s.w - 120 ? 'right' : 'left', '700 11.5px ' + FONT);
+    D.pill(g, T('取樣點 ', 'Sample ') + num(st.T, 0) + ' °C', Math.min(sx + 10, s.x + s.w - 6), sy - 9, C.accent, sx + 10 > s.x + s.w - 120 ? 'right' : 'left', '700 12px ' + FONT);
     // 標籤
-    const f11 = '600 11px ' + FONT;
+    const f11 = '600 12px ' + FONT;
     const hostLabel = T('圍岩 ', 'Country rock ') + num(r.Tr, 0) + ' °C' + T('（深 ', ' (') + num(r.z, 1) + T(' km）', ' km deep)');
     D.pill(g, hostLabel, s.x + 8, s.y + 24, C.text, 'left', f11);
     D.haloText(g, T('岩漿', 'Magma'), s.x + 10, Y(r.a) + 16, C.text, 'left', 'middle', '700 12px ' + FONT);
@@ -413,18 +413,18 @@
     g.fillStyle = 'rgba(0,0,0,0.55)'; D.roundRect(g, bx - 8, by - 18, bl + 16, 26, 6); g.fill();
     g.strokeStyle = '#ffffff'; g.lineWidth = 2;
     g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + bl, by); g.moveTo(bx, by - 4); g.lineTo(bx, by + 4); g.moveTo(bx + bl, by - 4); g.lineTo(bx + bl, by + 4); g.stroke();
-    g.fillStyle = '#ffffff'; g.font = '600 11px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    g.fillStyle = '#ffffff'; g.font = '600 12px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     g.fillText(lenMM(bar), sc.x, by - 6);
     g.restore();
     // 說明
     const view = F >= 20 ? T('手標本', 'Hand specimen') : F >= 2 ? T('放大鏡', 'Hand lens') : T('偏光顯微鏡（正交偏光）', 'Microscope, crossed polars');
-    D.pill(g, view + T('・視野 ', ' · field ') + lenMM(F), sc.x, sc.y - sc.r - 14, C.text, 'center', '600 11.5px ' + FONT);
+    D.pill(g, view + T('・視野 ', ' · field ') + lenMM(F), sc.x, sc.y - sc.r - 14, C.text, 'center', '600 12px ' + FONT);
     const done = !run || run.done;
     const porph = r.tex === 'porphyritic' || r.tex === 'porphyry-glass';
     const lab1 = done ? rockName(r) : st.X < 0.003 ? (st.T > r.Tg ? T('還是熔體', 'Still melt') : T('玻璃', 'Glass')) : T('結晶 ', 'Crystallised ') + num(st.X * 100, 0) + ' %';
     const lab2 = done ? (porph ? T('斑晶 ', 'Phenocrysts ') + lenMM(r.Lp) + T('、石基 ', ', groundmass ') + (r.Lg > 0 ? lenMM(r.Lg) : T('玻璃', 'glass')) : texName(r.tex) + (r.L > 0 && r.glass < 0.5 ? T('・晶體 ', ' · ') + lenMM(r.L) : '')) : num(st.T, 0) + ' °C';
     D.pill(g, lab1, sc.x, sc.y + sc.r + 30, done ? C.accent : C.text, 'center', '700 13px ' + FONT);
-    D.pill(g, lab2, sc.x, sc.y + sc.r + 52, C.text, 'center', '600 11.5px ' + FONT);
+    D.pill(g, lab2, sc.x, sc.y + sc.r + 52, C.text, 'center', '600 12px ' + FONT);
   }
 
   // ---------- 斜長石：相圖與晶體 ----------
@@ -460,21 +460,21 @@
     // 座標軸
     g.strokeStyle = D.alpha(C.text, 0.6); g.lineWidth = 1;
     g.strokeRect(p.x, p.y, p.w, p.h);
-    g.fillStyle = C.muted; g.font = '11px ' + FONT; g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.fillStyle = C.muted; g.font = '12px ' + FONT; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (let Tc = 1100; Tc <= 1600; Tc += 100) g.fillText(String(Tc), p.x - 5, Y(Tc));
     g.textAlign = 'center'; g.textBaseline = 'top';
     for (let i = 0; i <= 10; i += 2) g.fillText(String(i * 10), X(i / 10), p.y + p.h + 4);
-    D.haloText(g, T('An 含量（%）', 'An content (%)'), p.x + p.w / 2, p.y + p.h + 30, C.muted, 'center', 'alphabetic', '600 11px ' + FONT);
+    D.haloText(g, T('An 含量（%）', 'An content (%)'), p.x + p.w / 2, p.y + p.h + 30, C.muted, 'center', 'alphabetic', '600 12px ' + FONT);
     g.save(); g.translate(p.x - 38, p.y + p.h / 2); g.rotate(-Math.PI / 2);
-    D.haloText(g, T('溫度（°C）', 'Temperature (°C)'), 0, 0, C.muted, 'center', 'middle', '600 11px ' + FONT); g.restore();
+    D.haloText(g, T('溫度（°C）', 'Temperature (°C)'), 0, 0, C.muted, 'center', 'middle', '600 12px ' + FONT); g.restore();
     // 區域名稱
     const f12 = '700 12px ' + FONT;
     D.haloText(g, T('熔體', 'Melt'), X(0.22), Y(1520), C['mc-liq'], 'center', 'middle', f12);
     const midY = Math.abs(Y(P.T) - Y(1395)) < 24 ? Y(1395) + (Y(P.T) > Y(1395) ? -30 : 30) : Y(1395);
-    D.haloText(g, T('熔體＋晶體', 'Melt + crystals'), X(0.55), midY, C.text, 'center', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('熔體＋晶體', 'Melt + crystals'), X(0.55), midY, C.text, 'center', 'middle', '600 12px ' + FONT);
     D.haloText(g, T('晶體（固溶體）', 'Crystals (solid solution)'), X(0.8), Y(1180), C['mc-xtl'], 'center', 'middle', f12);
-    D.pill(g, 'Ab 1118 °C', X(0) + 4, Y(1118) - 6, C['mc-ab'], 'left', '600 11px ' + FONT);
-    D.pill(g, 'An 1553 °C', X(1) - 4, Y(1553) - 6, C['mc-an'], 'right', '600 11px ' + FONT);
+    D.pill(g, 'Ab 1118 °C', X(0) + 4, Y(1118) - 6, C['mc-ab'], 'left', '600 12px ' + FONT);
+    D.pill(g, 'An 1553 °C', X(1) - 4, Y(1553) - 6, C['mc-an'], 'right', '600 12px ' + FONT);
     // 成分線與溫度線
     g.setLineDash([5, 4]); g.lineWidth = 1.4; g.strokeStyle = D.alpha(C.text, 0.6);
     g.beginPath(); g.moveTo(X(P.x0), p.y); g.lineTo(X(P.x0), p.y + p.h); g.stroke();
@@ -499,11 +499,11 @@
       g.lineWidth = 2.5; g.strokeStyle = C.accent;
       g.beginPath(); g.moveTo(X(xl), Y(P.T)); g.lineTo(X(xs), Y(P.T)); g.stroke();
       D.ball(g, X(xl), Y(P.T), 6, C['mc-liq']); D.ball(g, X(xs), Y(P.T), 6, C['mc-xtl']);
-      D.pill(g, T('熔體 ', 'Melt ') + anPct(xl), X(xl) - 6, Y(P.T) - 10, C['mc-liq'], X(xl) < p.x + 90 ? 'left' : 'right', '700 11px ' + FONT);
-      D.pill(g, T('晶體 ', 'Crystal ') + anPct(xs), X(xs) + 6, Y(P.T) + 26, C['mc-xtl'], X(xs) > p.x + p.w - 90 ? 'right' : 'left', '700 11px ' + FONT);
+      D.pill(g, T('熔體 ', 'Melt ') + anPct(xl), X(xl) - 6, Y(P.T) - 10, C['mc-liq'], X(xl) < p.x + 90 ? 'left' : 'right', '700 12px ' + FONT);
+      D.pill(g, T('晶體 ', 'Crystal ') + anPct(xs), X(xs) + 6, Y(P.T) + 26, C['mc-xtl'], X(xs) > p.x + p.w - 90 ? 'right' : 'left', '700 12px ' + FONT);
     }
     D.ball(g, X(P.x0), Y(P.T), 4.5, C.text);
-    D.pill(g, num(P.T, 0) + ' °C', p.x + p.w - 4, Y(P.T) - 4, C.accent, 'right', '700 11.5px ' + FONT);
+    D.pill(g, num(P.T, 0) + ' °C', p.x + p.w - 4, Y(P.T) - 4, C.accent, 'right', '700 12px ' + FONT);
   }
   function drawPlagCrystal(L) {
     const g = ctx, b = L.xt, P = plag();
@@ -553,13 +553,13 @@
     const lg = g.createLinearGradient(lx0, 0, lx1, 0);
     lg.addColorStop(0, anColor(0)); lg.addColorStop(1, anColor(1));
     D.roundRect(g, lx0, ly, lx1 - lx0, 10, 5); g.fillStyle = lg; g.fill();
-    g.fillStyle = C.muted; g.font = '11px ' + FONT; g.textBaseline = 'top';
+    g.fillStyle = C.muted; g.font = '12px ' + FONT; g.textBaseline = 'top';
     g.textAlign = 'left'; g.fillText(T('Ab 鈉', 'Ab (Na)'), lx0, ly + 13);
     g.textAlign = 'right'; g.fillText(T('An 鈣', 'An (Ca)'), lx1, ly + 13);
     function mark(x, label) {
       const xx = lx0 + (lx1 - lx0) * x;
       g.beginPath(); g.moveTo(xx, ly - 1); g.lineTo(xx - 5, ly - 9); g.lineTo(xx + 5, ly - 9); g.closePath(); g.fillStyle = C.text; g.fill();
-      D.haloText(g, label, xx, ly - 12, C.text, 'center', 'alphabetic', '600 10.5px ' + FONT);
+      D.haloText(g, label, xx, ly - 12, C.text, 'center', 'alphabetic', '600 12px ' + FONT);
     }
     if (fs > 0.0005) {
       if (frac) { mark(P.fr.zones[0].x, T('核心', 'core')); if (P.fr.xs != null && Math.abs(P.fr.xs - P.fr.zones[0].x) > 0.08) mark(P.T <= MC.PLAG.TAb ? 0 : P.fr.xs, T('外圈', 'rim')); }
@@ -579,7 +579,7 @@
     const ty = function (Tc) { return L.y1 - (Tc - Tlo) / (Thi - Tlo) * (L.y1 - L.y0); };
     const xy = function (X) { return L.y1 - X * (L.y1 - L.y0); };
     // 格線與刻度
-    g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1; g.fillStyle = C.muted; g.font = '10.5px ' + FONT;
+    g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1; g.fillStyle = C.muted; g.font = '12px ' + FONT;
     g.textAlign = 'center'; g.textBaseline = 'top';
     let lastX = -99;
     TIME_TICKS.forEach(function (k) {
@@ -596,7 +596,7 @@
     [[r.TL, C['mc-tl'], T('液相線：開始結晶', 'Liquidus: crystals can start')], [r.Tg, C['mc-tg'], T('玻璃轉移：再冷就凍成玻璃', 'Glass transition: melt freezes to glass')]].forEach(function (q) {
       const y = ty(q[0]); g.setLineDash([5, 4]); g.strokeStyle = D.alpha(q[1], 0.8); g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(L.x0, y); g.lineTo(L.x1, y); g.stroke(); g.setLineDash([]);
-      D.haloText(g, q[2], L.x0 + 6, y + 13, q[1], 'left', 'alphabetic', '600 10.5px ' + FONT);
+      D.haloText(g, q[2], L.x0 + 6, y + 13, q[1], 'left', 'alphabetic', '600 12px ' + FONT);
     });
     // 曲線
     const xs = r.xr * r.a, Tpath = [];
@@ -604,7 +604,7 @@
     // 凝固（或凍成玻璃）的時刻
     const xe = lx(r.tEnd);
     g.setLineDash([2, 3]); g.strokeStyle = D.alpha(C.text, 0.5); g.lineWidth = 1; g.beginPath(); g.moveTo(xe, L.y0); g.lineTo(xe, L.y1); g.stroke(); g.setLineDash([]);
-    D.pill(g, r.end === 'glass' ? T('凍成玻璃', 'glass') : T('凝固', 'solid'), xe, L.y1 - 4, C.text, xe > L.x1 - 40 ? 'right' : 'center', '600 10.5px ' + FONT);
+    D.pill(g, r.end === 'glass' ? T('凍成玻璃', 'glass') : T('凝固', 'solid'), xe, L.y1 - 4, C.text, xe > L.x1 - 40 ? 'right' : 'center', '600 12px ' + FONT);
     const hx = h.concat([{ t: t1, T: 0, X: r.X }]);
     function curve2(arr, fy, color, w) {
       g.beginPath();
@@ -621,8 +621,8 @@
       g.strokeStyle = C.accent; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, L.y0); g.lineTo(x, L.y1); g.stroke();
     }
     g.strokeStyle = D.alpha(C.text, 0.5); g.lineWidth = 1; g.strokeRect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0);
-    D.haloText(g, T('紅：取樣點的溫度（°C）', 'Red: temperature at the sample (°C)'), L.x0 + 4, 14, C['mc-T'], 'left', 'middle', '600 11px ' + FONT);
-    D.haloText(g, T('藍：已結晶的比例', 'Blue: fraction crystallised'), L.x1, 14, C['mc-X'], 'right', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('紅：取樣點的溫度（°C）', 'Red: temperature at the sample (°C)'), L.x0 + 4, 14, C['mc-T'], 'left', 'middle', '600 12px ' + FONT);
+    D.haloText(g, T('藍：已結晶的比例', 'Blue: fraction crystallised'), L.x1, 14, C['mc-X'], 'right', 'middle', '600 12px ' + FONT);
   }
   function drawIG() {
     const g = gtx, W = grSize.w, H = grSize.h, r = R(), L = chartFrame(W, H);
@@ -632,10 +632,10 @@
     let Gm = 0, Im = 0;
     for (let i = 0; i <= n; i++) { const dT = span * i / n, q = MC.rates(r.type, m.TL - dT); Gs.push(q.G); Is.push(q.I); Gm = Math.max(Gm, q.G); Im = Math.max(Im, q.I); }
     const yy = function (v) { return L.y1 - v * (L.y1 - L.y0); };
-    g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1; g.fillStyle = C.muted; g.font = '10.5px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1; g.fillStyle = C.muted; g.font = '12px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'top';
     const st = span > 400 ? 100 : 50;
     for (let dT = 0; dT <= span; dT += st) { const x = xx(dT); g.beginPath(); g.moveTo(x, L.y0); g.lineTo(x, L.y1); g.stroke(); g.fillText(String(dT), x, L.y1 + 4); }
-    D.haloText(g, T('過冷度 ΔT（°C）', 'Undercooling ΔT (°C)'), (L.x0 + L.x1) / 2, H - 4, C.muted, 'center', 'alphabetic', '600 10.5px ' + FONT);
+    D.haloText(g, T('過冷度 ΔT（°C）', 'Undercooling ΔT (°C)'), (L.x0 + L.x1) / 2, H - 4, C.muted, 'center', 'alphabetic', '600 12px ' + FONT);
     function curve(arr, mx, color) {
       g.beginPath(); arr.forEach(function (v, i) { const x = xx(span * i / n), y = yy(v / mx); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
       g.lineWidth = 4; g.strokeStyle = D.alpha(C['canvas-bg'], 0.8); g.stroke();
@@ -644,13 +644,13 @@
       return xx(span * im / n);
     }
     const gx = curve(Gs, Gm, C['mc-G']), ix = curve(Is, Im, C['mc-I']);
-    D.pill(g, T('成長 G 最快', 'Fastest growth G'), gx, yy(1) + 18, C['mc-G'], gx < L.x0 + 70 ? 'left' : 'center', '700 11px ' + FONT);
-    D.pill(g, T('成核 I 最快', 'Fastest nucleation I'), ix, yy(1) - 2, C['mc-I'], ix > L.x1 - 70 ? 'right' : 'center', '700 11px ' + FONT);
+    D.pill(g, T('成長 G 最快', 'Fastest growth G'), gx, yy(1) + 18, C['mc-G'], gx < L.x0 + 70 ? 'left' : 'center', '700 12px ' + FONT);
+    D.pill(g, T('成核 I 最快', 'Fastest nucleation I'), ix, yy(1) - 2, C['mc-I'], ix > L.x1 - 70 ? 'right' : 'center', '700 12px ' + FONT);
     if (r.dT50 != null) {
       const x = xx(Math.min(span, r.dT50));
       g.strokeStyle = C.accent; g.lineWidth = 1.6; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x, L.y0); g.lineTo(x, L.y1); g.stroke(); g.setLineDash([]);
-      D.pill(g, T('這次結晶一半時 ΔT = ', 'Half crystallised at ΔT = ') + num(r.dT50, 0) + ' °C', Math.min(L.x1, Math.max(L.x0, x + 6)), L.y1 - 8, C.accent, x > L.x1 - 150 ? 'right' : 'left', '700 11px ' + FONT);
-    } else D.pill(g, T('這次沒有結晶到一半：凍成玻璃', 'Never half crystallised: frozen to glass'), L.x1 - 4, L.y1 - 8, C.accent, 'right', '700 11px ' + FONT);
+      D.pill(g, T('這次結晶一半時 ΔT = ', 'Half crystallised at ΔT = ') + num(r.dT50, 0) + ' °C', Math.min(L.x1, Math.max(L.x0, x + 6)), L.y1 - 8, C.accent, x > L.x1 - 150 ? 'right' : 'left', '700 12px ' + FONT);
+    } else D.pill(g, T('這次沒有結晶到一半：凍成玻璃', 'Never half crystallised: frozen to glass'), L.x1 - 4, L.y1 - 8, C.accent, 'right', '700 12px ' + FONT);
     g.strokeStyle = D.alpha(C.text, 0.5); g.lineWidth = 1; g.strokeRect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0);
   }
   function drawBowen() {
@@ -661,9 +661,9 @@
     // 溫度軸
     g.strokeStyle = D.alpha(C.text, 0.4); g.lineWidth = 1;
     g.beginPath(); g.moveTo(ax, top); g.lineTo(ax, bot); g.stroke();
-    D.haloText(g, T('高溫', 'Hot'), ax, top - 10, C['mc-melt'], 'center', 'alphabetic', '700 11px ' + FONT);
-    D.haloText(g, T('約 1200 °C', '~1200 °C'), ax + 4, top + 6, C.muted, 'left', 'middle', '10px ' + FONT);
-    D.haloText(g, T('約 600 °C', '~600 °C'), ax + 4, bot - 4, C.muted, 'left', 'middle', '10px ' + FONT);
+    D.haloText(g, T('高溫', 'Hot'), ax, top - 10, C['mc-melt'], 'center', 'alphabetic', '700 12px ' + FONT);
+    D.haloText(g, T('約 1200 °C', '~1200 °C'), ax + 4, top + 6, C.muted, 'left', 'middle', '12px ' + FONT);
+    D.haloText(g, T('約 600 °C', '~600 °C'), ax + 4, bot - 4, C.muted, 'left', 'middle', '12px ' + FONT);
     // 不連續系列
     const narrow = W < 560;
     const lx = narrow ? ax + 105 : Math.max(ax + 70, W * 0.3), rx = narrow ? W - 26 : Math.min(W - 70, W * 0.72);
@@ -673,7 +673,7 @@
       D.pill(g, T(m.zh, m.en), lx, y + 9, C.text, 'center', f12);
       if (i < B.disc.length - 1) D.arrow(g, lx, y + 14, lx, y + ((bot - top - 40) / (B.disc.length - 1)) * 0.9 - 6, D.alpha(C.text, 0.55), 1.5);
     });
-    D.haloText(g, T('不連續系列', 'Discontinuous series'), lx, bot + 4, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
+    D.haloText(g, T('不連續系列', 'Discontinuous series'), lx, bot + 4, C.muted, 'center', 'middle', '600 12px ' + FONT);
     // 連續系列（斜長石）
     const by0 = top + 2, by1 = bot - 30;
     const lg = g.createLinearGradient(0, by0, 0, by1);
@@ -681,7 +681,7 @@
     D.roundRect(g, rx - 9, by0, 18, by1 - by0, 9); g.fillStyle = lg; g.fill();
     D.haloText(g, T('富鈣斜長石', 'Ca-rich plagioclase'), narrow ? rx - 16 : rx + 16, by0 + 8, C['mc-an'], narrow ? 'right' : 'left', 'middle', f12);
     D.haloText(g, T('富鈉斜長石', 'Na-rich plagioclase'), narrow ? rx - 16 : rx + 16, by1 - 8, C['mc-ab'], narrow ? 'right' : 'left', 'middle', f12);
-    D.haloText(g, T('連續系列', 'Continuous series'), narrow ? W - 8 : rx, bot + 4, C.muted, narrow ? 'right' : 'center', 'middle', '600 10.5px ' + FONT);
+    D.haloText(g, T('連續系列', 'Continuous series'), narrow ? W - 8 : rx, bot + 4, C.muted, narrow ? 'right' : 'center', 'middle', '600 12px ' + FONT);
     // 最後的礦物
     const fy = H - 22;
     D.pill(g, B.late.map(function (m) { return T(m.zh, m.en); }).join(T('、', ', ')), (lx + rx) / 2, fy + 8, C.text, 'center', f12);
@@ -693,7 +693,7 @@
     if (x != null) {
       const y = by1 - x * (by1 - by0);
       g.beginPath(); g.moveTo(rx - 14, y); g.lineTo(rx - 24, y - 6); g.lineTo(rx - 24, y + 6); g.closePath(); g.fillStyle = C.accent; g.fill();
-      D.pill(g, (narrow ? '' : T('現在長出的：', 'Growing now: ')) + anPct(x), rx - 28, y + 9, C.accent, 'right', '700 11px ' + FONT);
+      D.pill(g, (narrow ? '' : T('現在長出的：', 'Growing now: ')) + anPct(x), rx - 28, y + 9, C.accent, 'right', '700 12px ' + FONT);
     }
   }
 
@@ -971,7 +971,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 畫布：拖曳取樣點、點相圖 ----------
   let dragging = false;

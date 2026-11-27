@@ -324,15 +324,15 @@
     for (let i = 0; i <= 40; i++) { const s = Math.pow(i / 40, 2), x = px0 + uRatio(Math.max(0.002, s)) * scale, y = ys(s); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
     g.strokeStyle = C['st-flow'] === '' ? '#fff' : D.alpha('#ffffff', 0.95); g.lineWidth = 2; g.stroke();
     [0.15, 0.45, 0.8].forEach(function (s) { const x = px0 + uRatio(s) * scale; if (x > px0 + 6) D.arrow(g, px0, ys(s), x, ys(s), D.alpha('#ffffff', 0.9), 1.6); });
-    D.haloText(g, T('流速剖面', 'Velocity profile'), px0 + 2, y0 + 12, C.text, 'left', 'middle', '600 10.5px ' + FONT);
+    D.haloText(g, T('流速剖面', 'Velocity profile'), px0 + 2, y0 + 12, C.text, 'left', 'middle', '600 12px ' + FONT);
     // 標籤
     const zoneCol = { erode: C['st-erode'], transport: C['st-move'], deposit: C['st-dep'] }[b.zone];
     pillIn(g, 'U = ' + speed(state.U) + T('，', ', ') + 'h = ' + num(state.h, 1) + ' m', W - 10, y0 + 24, C.text, 'right', '700 12px ' + FONT);
     const zMsg = b.zone === 'erode' ? (b.bed === 'suspend' ? T('河床的顆粒被帶上去懸浮', 'bed grains lifted into suspension') : T('河床的顆粒滾動、跳躍', 'bed grains roll and hop'))
       : b.zone === 'transport' ? T('河床不動，上游來的繼續走', 'the bed stays, grains from upstream keep going') : T('上游來的會停下來', 'grains from upstream settle out');
     pillIn(g, zoneTxt(b.zone) + T('：', ': ') + zMsg, W - 10, y0 + 48, zoneCol, 'right', '700 12px ' + FONT);
-    pillIn(g, clsTxt(state.D) + ' ' + mmTxt(state.D) + (state.mineral !== 'quartz' ? T('（', ' (') + T(MIN[state.mineral].zh, MIN[state.mineral].en) + T('）', ')') : ''), 10, H - 10, col === '' ? C.text : C.text, 'left', '600 11.5px ' + FONT);
-    D.haloText(g, T('顆粒畫得比實際大很多', 'Grains drawn far larger than scale'), W - 10, H - 18, C.muted, 'right', 'middle', '10.5px ' + FONT);
+    pillIn(g, clsTxt(state.D) + ' ' + mmTxt(state.D) + (state.mineral !== 'quartz' ? T('（', ' (') + T(MIN[state.mineral].zh, MIN[state.mineral].en) + T('）', ')') : ''), 10, H - 10, col === '' ? C.text : C.text, 'left', '600 12px ' + FONT);
+    D.haloText(g, T('顆粒畫得比實際大很多', 'Grains drawn far larger than scale'), W - 10, H - 18, C.muted, 'right', 'middle', '12px ' + FONT);
   }
 
   // ---------------------------------------------------------------------
@@ -353,9 +353,9 @@
     const list = settleList(), run = state.run.settle;
     const t = run ? settleClock(run.done ? 1 : run.u) : 0;
     const n = list.length, x0 = 14, x1 = W - 14, cw = (x1 - x0) / n, tw = Math.min(46, cw * 0.62);
-    const yTop = 52, yBot = H - 62;
+    const yTop = 52, yBot = H - 68;
     D.haloText(g, T('水管高 1 m，水溫 ', 'Column 1 m tall, water at ') + num(state.T, 1) + ' °C', x0, 18, C.text, 'left', 'middle', '700 12px ' + FONT);
-    if (cw < 60) D.haloText(g, T('粒徑（mm）', 'Size (mm)'), x0, yBot + 47 + (run ? 0 : 14), C.muted, 'left', 'middle', '10px ' + FONT);
+    if (cw < 60) D.haloText(g, T('粒徑（mm）', 'Size (mm)'), x0, yBot + 50 + (run ? 0 : 14), C.muted, 'left', 'middle', '12px ' + FONT);
     pillIn(g, T('經過 ', 'Elapsed ') + (run ? dur(t) : '0'), x1, 30, C.text, 'right', '700 12px ' + FONT);
     list.forEach(function (p, i) {
       const cx = x0 + cw * (i + 0.5), col = grainColor(p.D, p.mineral), r = Math.min(rVis(p.D), tw / 2 - 3);
@@ -371,12 +371,12 @@
       const k = r > 6 ? 1 : r > 3 ? 3 : 5;
       for (let j = 0; j < k; j++) grainDot(g, cx + (j - (k - 1) / 2) * (r * 1.6 + 1), y + (j % 2) * r * 0.6, r, col, false);
       // 到了：顯示時間
-      if (run && f >= 1) pillIn(g, shortDur(p.t), cx, yBot - 8 - 2 * r - 6, p.mine ? C['st-mine'] : C.text, 'center', '700 10.5px ' + FONT);
-      D.haloText(g, cw < 60 && EN ? (SHORT_EN[p.id] || p.name) : p.name, cx, yBot + 16, p.mine ? C['st-mine'] : C.text, 'center', 'middle', '700 ' + (cw < 52 ? 10 : 11.5) + 'px ' + FONT);
-      D.haloText(g, cw < 60 ? sig(p.D * 1000, 2) : mmTxt(p.D), cx, yBot + 32, C.muted, 'center', 'middle', (cw < 52 ? 9.5 : 10.5) + 'px ' + FONT);
-      if (!run) D.haloText(g, shortDur(p.t), cx, yBot + 47, C.muted, 'center', 'middle', (cw < 52 ? 9.5 : 10.5) + 'px ' + FONT);
+      if (run && f >= 1) pillIn(g, shortDur(p.t), cx, yBot - 8 - 2 * r - 6, p.mine ? C['st-mine'] : C.text, 'center', '700 12px ' + FONT);
+      D.haloText(g, cw < 60 && EN ? (SHORT_EN[p.id] || p.name) : p.name, cx, yBot + 16, p.mine ? C['st-mine'] : C.text, 'center', 'middle', '700 ' + '12px ' + FONT);
+      D.haloText(g, cw < 60 ? sig(p.D * 1000, 2) : mmTxt(p.D), cx, yBot + 34, C.muted, 'center', 'middle', '12px ' + FONT);
+      if (!run) D.haloText(g, shortDur(p.t), cx, yBot + 51, C.muted, 'center', 'middle', '12px ' + FONT);
     });
-    if (!run) D.haloText(g, T('按「放下顆粒」：大顆的先到底，細的最後才到', 'Press “Drop the grains”: the big ones land first, the fine ones last'), W / 2, yTop - 12, C.muted, 'center', 'middle', '11px ' + FONT);
+    if (!run) D.haloText(g, T('按「放下顆粒」：大顆的先到底，細的最後才到', 'Press “Drop the grains”: the big ones land first, the fine ones last'), W / 2, yTop - 12, C.muted, 'center', 'middle', '12px ' + FONT);
   }
 
   // ---------------------------------------------------------------------
@@ -447,20 +447,20 @@
     // 標籤：山、海、流速
     D.haloText(g, T('山區', 'Mountains'), X(0) + 4, Lay.yTop - 40, C.text, 'left', 'middle', '700 12px ' + FONT);
     D.haloText(g, T('海', 'Sea'), W - 10, seaY - 12, C.text, 'right', 'middle', '700 12px ' + FONT);
-    pillIn(g, T('山上 ', 'Mountains ') + sig(state.U0, 3) + ' m/s', X(0) + 60, Lay.yTop - 4, C['st-flow'], 'left', '700 11.5px ' + FONT);
-    pillIn(g, T('海口 ', 'Mouth ') + sig(SC.U_SEA, 2) + ' m/s', X(1), seaY - 24, C['st-flow'], 'right', '700 11.5px ' + FONT);
+    pillIn(g, T('山上 ', 'Mountains ') + sig(state.U0, 3) + ' m/s', X(0) + 60, Lay.yTop - 4, C['st-flow'], 'left', '700 12px ' + FONT);
+    pillIn(g, T('海口 ', 'Mouth ') + sig(SC.U_SEA, 2) + ' m/s', X(1), seaY - 24, C['st-flow'], 'right', '700 12px ' + FONT);
     // 圖例（放不下就換行）
-    g.font = '600 11px ' + FONT;
+    g.font = '600 12px ' + FONT;
     let lx = 10, ly = H - 70;
     list.forEach(function (p) {
       const w = g.measureText(p.name).width + 22;
       if (lx > 10 && lx + w > W - 8) { lx = 10; ly += 20; }
       grainDot(g, lx + 6, ly, 4.5, grainColor(p.D, p.mineral), p.mine);
-      D.haloText(g, p.name, lx + 14, ly, C.text, 'left', 'middle', '600 11px ' + FONT);
+      D.haloText(g, p.name, lx + 14, ly, C.text, 'left', 'middle', '600 12px ' + FONT);
       lx += w + 6;
     });
-    if (!run) D.haloText(g, T('按「放流」：看各種顆粒停在哪裡', 'Press “Release”: see where each grain stops'), W / 2, H - 16, C.muted, 'center', 'middle', '11px ' + FONT);
-    else D.haloText(g, T('距離只是示意；顆粒畫得比實際大很多', 'Distances are schematic; grains drawn far larger than scale'), W / 2, H - 16, C.muted, 'center', 'middle', '10.5px ' + FONT);
+    if (!run) D.haloText(g, T('按「放流」：看各種顆粒停在哪裡', 'Press “Release”: see where each grain stops'), W / 2, H - 16, C.muted, 'center', 'middle', '12px ' + FONT);
+    else D.haloText(g, T('距離只是示意；顆粒畫得比實際大很多', 'Distances are schematic; grains drawn far larger than scale'), W / 2, H - 16, C.muted, 'center', 'middle', '12px ' + FONT);
   }
 
   // =====================================================================
@@ -480,10 +480,10 @@
     const xx = function (v) { return Fm.x0 + (Math.log10(v) - lx0) / (lx1 - lx0) * (Fm.x1 - Fm.x0); };
     const yy = function (v) { return Fm.y1 - (Math.log10(v) - ly0) / (ly1 - ly0) * (Fm.y1 - Fm.y0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
-    xTicks.forEach(function (v) { const x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, String(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '10px ' + FONT); });
-    yTicks.forEach(function (v) { const y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, String(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); });
-    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    xTicks.forEach(function (v) { const x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, String(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); });
+    yTicks.forEach(function (v) { const y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, String(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); });
+    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     return { xx: xx, yy: yy };
   }
   /** Hjulström–Sundborg 圖 */
@@ -528,7 +528,7 @@
     g.strokeStyle = D.alpha(zc, 0.6); g.setLineDash([3, 3]); g.lineWidth = 1;
     g.beginPath(); g.moveTo(x, Fm.y1); g.lineTo(x, y); g.stroke(); g.setLineDash([]);
     D.ball(g, x, y, 6, zc, { shadow: false, ring: '#ffffff' });
-    pillIn(g, zoneTxt(b.zone), x + 10, Math.max(Fm.y0 + 18, y - 8), zc, x > Fm.x1 - 80 ? 'right' : 'left', '700 11px ' + FONT);
+    pillIn(g, zoneTxt(b.zone), x + 10, Math.max(Fm.y0 + 18, y - 8), zc, x > Fm.x1 - 80 ? 'right' : 'left', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 沉降速度對粒徑 */
@@ -548,12 +548,12 @@
     plot(function (d) { return SC.settle(d, R, nu, 1); }, C['st-move'], 2.4);
     if (state.mineral !== 'quartz' || state.shape !== 'natural') plot(function (d) { return SC.settle(d, MIN[state.mineral].rho / rw - 1, nu, C2()); }, C['st-mine'], 1.8);
     g.restore();
-    D.haloText(g, T('史托克斯', 'Stokes'), xx(0.004), yy(SC.stokes(0.004e-3, R, nu)) - 14, C.muted, 'left', 'middle', '10.5px ' + FONT);
-    D.haloText(g, T('牛頓阻力', 'Newton drag'), xx(60), yy(SC.newton(60e-3, R, 1)) - 12, C.muted, 'right', 'middle', '10.5px ' + FONT);
+    D.haloText(g, T('史托克斯', 'Stokes'), xx(0.004), yy(SC.stokes(0.004e-3, R, nu)) - 14, C.muted, 'left', 'middle', '12px ' + FONT);
+    D.haloText(g, T('牛頓阻力', 'Newton drag'), xx(60), yy(SC.newton(60e-3, R, 1)) - 12, C.muted, 'right', 'middle', '12px ' + FONT);
     SC.SAMPLES.forEach(function (s) { const w = SC.settle(s.D, R, nu, 1); D.ball(g, xx(s.D * 1000), yy(w), 3.5, grainColor(s.D, 'quartz'), { shadow: false }); });
     const me = settle().me, x = xx(state.D * 1000), y = yy(me.w);
     D.ball(g, x, y, 6, C['st-mine'], { shadow: false, ring: '#ffffff' });
-    pillIn(g, speed(me.w), x + 10, Math.max(Fm.y0 + 18, y - 8), C['st-mine'], x > Fm.x1 - 90 ? 'right' : 'left', '700 11px ' + FONT);
+    pillIn(g, speed(me.w), x + 10, Math.max(Fm.y0 + 18, y - 8), C['st-mine'], x > Fm.x1 - 90 ? 'right' : 'left', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 沉 1 m 的時間對粒徑：0、20、40 °C */
@@ -565,7 +565,7 @@
     // 時間的參考線
     [[60, T('1 分', '1 min')], [3600, T('1 小時', '1 h')], [86400, T('1 天', '1 day')]].forEach(function (q) {
       const y = yy(q[0]); g.strokeStyle = D.alpha(C.text, 0.18); g.setLineDash([2, 4]); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); g.setLineDash([]);
-      D.haloText(g, q[1], Fm.x1 - 4, y - 7, C.muted, 'right', 'middle', '10px ' + FONT);
+      D.haloText(g, q[1], Fm.x1 - 4, y - 7, C.muted, 'right', 'middle', '12px ' + FONT);
     });
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); g.clip();
     [[0, '#2563eb'], [20, C['st-move']], [40, C['st-erode']]].forEach(function (q, k) {
@@ -575,10 +575,10 @@
       g.stroke(); g.setLineDash([]);
     });
     g.restore();
-    D.haloText(g, T('虛線：0 °C（上）與 40 °C（下）', 'Dashed: 0 °C (upper) and 40 °C (lower)'), Fm.x0 + 8, Fm.y1 - 10, C.muted, 'left', 'middle', '10.5px ' + FONT);
+    D.haloText(g, T('虛線：0 °C（上）與 40 °C（下）', 'Dashed: 0 °C (upper) and 40 °C (lower)'), Fm.x0 + 8, Fm.y1 - 10, C.muted, 'left', 'middle', '12px ' + FONT);
     const me = settle().me, x = xx(state.D * 1000), y = yy(me.t);
     D.ball(g, x, y, 6, C['st-mine'], { shadow: false, ring: '#ffffff' });
-    pillIn(g, dur(me.t), x + 10, Math.max(Fm.y0 + 18, y - 8), C['st-mine'], x > Fm.x1 - 90 ? 'right' : 'left', '700 11px ' + FONT);
+    pillIn(g, dur(me.t), x + 10, Math.max(Fm.y0 + 18, y - 8), C['st-mine'], x > Fm.x1 - 90 ? 'right' : 'left', '700 12px ' + FONT);
     axisBox(g, Fm);
   }
   /** 沿河的流速與各顆粒的沉積流速 */
@@ -588,11 +588,11 @@
     const ly0 = -2, ly1 = Math.log10(6);
     const yy = function (v) { return Fm.y1 - (Math.log10(Math.max(0.01, Math.min(6, v))) - ly0) / (ly1 - ly0) * (Fm.y1 - Fm.y0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
-    [0.01, 0.1, 1].forEach(function (v) { const y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, String(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); });
-    D.haloText(g, T('山區', 'Mountains'), Fm.x0, Fm.y1 + 12, C.muted, 'left', 'middle', '10.5px ' + FONT);
-    D.haloText(g, T('海口', 'River mouth'), Fm.x1, Fm.y1 + 12, C.muted, 'right', 'middle', '10.5px ' + FONT);
-    D.haloText(g, T('沿著河流往下游', 'Downstream along the river'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, T('流速（m/s）', 'Speed (m/s)'), 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    [0.01, 0.1, 1].forEach(function (v) { const y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, String(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); });
+    D.haloText(g, T('山區', 'Mountains'), Fm.x0, Fm.y1 + 12, C.muted, 'left', 'middle', '12px ' + FONT);
+    D.haloText(g, T('海口', 'River mouth'), Fm.x1, Fm.y1 + 12, C.muted, 'right', 'middle', '12px ' + FONT);
+    D.haloText(g, T('沿著河流往下游', 'Downstream along the river'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 27, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, T('流速（m/s）', 'Speed (m/s)'), 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); g.clip();
     list.forEach(function (p) {
       const Ud = p.st.gr.Ud, y = yy(Ud), col = grainColor(p.D, p.mineral);
@@ -604,14 +604,14 @@
     g.stroke();
     g.restore();
     const placed = [];
-    g.font = '10px ' + FONT;
+    g.font = '12px ' + FONT;
     list.forEach(function (p) {
       const st = p.st, col = grainColor(p.D, p.mineral), y = yy(st.gr.Ud) - 7, w = g.measureText(p.name).width;
       if (st.picked && st.x != null) D.ball(g, xx(st.x), yy(st.gr.Ud), p.mine ? 5.5 : 4, p.mine ? C['st-mine'] : col, { shadow: false, ring: '#ffffff' });
       let xr = Fm.x1 - 4;
       for (let k = 0; k < placed.length; k++) { const q = placed[k]; if (Math.abs(q.y - y) < 11 && xr > q.xl - 6 && xr - w < q.xr + 6) { xr = q.xl - 8; k = -1; } }
       placed.push({ y: y, xl: xr - w, xr: xr });
-      D.haloText(g, p.name, xr, y, p.mine ? C['st-mine'] : C.muted, 'right', 'middle', '10px ' + FONT);
+      D.haloText(g, p.name, xr, y, p.mine ? C['st-mine'] : C.muted, 'right', 'middle', '12px ' + FONT);
     });
     axisBox(g, Fm);
   }
@@ -861,7 +861,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 下方的 Hjulström 圖：點一下或拖曳選粒徑與流速 ----------
   let dragging = false;

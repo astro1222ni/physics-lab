@@ -69,7 +69,7 @@ test('沿岸湧升：北半球海在西邊要北風、南半球（秘魯）要�
   near(K.coastal({ lat: 37, U: 10, windFrom: 90, coast: 'W', H1: 30, days: 5 }).Moff, 0, 1e-12);
 });
 
-test('跨岸輸送與露頭預報共用半個顯示刻度的零值容差', () => {
+test('跨岸輸送保留原值計算：嚴格垂直海岸風為零，微弱正輸送仍有有限的露頭預報', () => {
   const p = { lat: -35, coast: 'E', windFrom: 90, U: 14.9, H1: 60, days: 4 };
   const c = K.coastal(p);
   assert.strictEqual(c.Moff, 0);
@@ -77,8 +77,9 @@ test('跨岸輸送與露頭預報共用半個顯示刻度的零值容差', () =>
   for (const flux of [0.0049, -0.0049, 0.0051, -0.0051]) {
     const windFrom = 90 - Math.asin(flux / c.E.M) * 180 / Math.PI;
     const s = K.coastal(Object.assign({}, p, { windFrom }));
-    near(s.Moff, Math.abs(flux) < 0.005 ? 0 : flux, 1e-12);
-    assert.strictEqual(Number.isFinite(s.tOut), flux >= 0.005);
+    near(s.Moff, flux, 1e-12);
+    assert.strictEqual(Number.isFinite(s.tOut), flux > 0);
+    if (flux > 0) near(s.tOut, p.H1 * s.Rd / flux / 86400, 1e-6);
   }
 });
 

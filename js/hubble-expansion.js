@@ -15,7 +15,7 @@
   const H_SIM = 70;                          // 等速膨脹：ȧ 固定，H = 70/a
   const R_HUB = HC.C_KMS / H_SIM;            // c/H0 = 4283 Mpc（共動）
   const VIEW = 4500;                         // 畫面半寬（真正的距離，Mpc）
-  const A_MIN = 0.4, A_MAX = 3;
+  const A_MIN = 0.4, A_MAX = 3, A_PLAY_MAX = 15;
   const A_RATE = 1 / 6;                      // 播放時 a 每秒增加多少
   const GAL = HC.boxGalaxies(7);
   const MW = 24;                             // 銀河系：格子正中央
@@ -124,7 +124,7 @@
     g.fillStyle = color || '#e2e8f0'; g.fillText(text, x, y);
   }
   function sTag(g, text, x, y, color, align, font) {
-    g.font = font || '700 11.5px ' + FONT;
+    g.font = font || '700 12px ' + FONT;
     const w = g.measureText(text).width + 12, h = 20;
     let bx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
     const cw = g.canvas.clientWidth || 1e4; bx = Math.max(4, Math.min(cw - 4 - w, bx));
@@ -238,7 +238,7 @@
     // 光
     const run = state.run.expand, tg = state.target;
     const homeTxt = same(state.home, MW_POS) ? T('家：銀河系', 'Home: the Milky Way') : T('新家', 'New home');
-    const homeFont = '700 11.5px ' + FONT;
+    const homeFont = '700 12px ' + FONT;
     let homeY = cy - 23;
     if (tg) {
       const r = rel(tg), tx = cx + r.x * a * L_BOX * s, ty = cy - r.y * a * L_BOX * s;
@@ -252,12 +252,12 @@
       }
       g.strokeStyle = C['hb-target']; g.lineWidth = 2; g.beginPath(); g.arc(tx, ty, 13, 0, Math.PI * 2); g.stroke();
       const d = a * chiOf(tg), lab = mpc(d) + '｜' + sig(H_SIM * chiOf(tg) / HC.C_KMS, 2) + ' c';
-      g.font = '700 11px ' + FONT; const lw = g.measureText(lab).width / 2 + 6;
+      g.font = '700 12px ' + FONT; const lw = g.measureText(lab).width / 2 + 6;
       const lxx = Math.min(b.x + b.w - lw, Math.max(b.x + lw, tx)), lyy = ty + 23 > b.y + b.h - 10 ? ty - 23 : ty + 23;
       g.font = homeFont;
       // 避開橫放時靠近銀河系標籤的目標星系讀數。
       if (Math.abs(lxx - cx) < lw + g.measureText(homeTxt).width / 2 && Math.abs(lyy - homeY) < 18) homeY = cy + 23;
-      sText(g, lab, lxx, lyy, C['hb-target'], 'center', 'middle', '700 11px ' + FONT);
+      sText(g, lab, lxx, lyy, C['hb-target'], 'center', 'middle', '700 12px ' + FONT);
     }
     // 家
     g.strokeStyle = C['hb-home']; g.lineWidth = 2.4; g.beginPath(); g.arc(cx, cy, 13, 0, Math.PI * 2); g.stroke();
@@ -265,18 +265,18 @@
     if (run && run.arrived && run.flash > 0) { g.fillStyle = D.alpha(C['hb-light'], 0.5 * run.flash); g.beginPath(); g.arc(cx, cy, 30 * (1.2 - run.flash * 0.2), 0, Math.PI * 2); g.fill(); }
     // 哈伯半徑的字
     const lx = cx + rh * Math.cos(-2.4), ly = cy - rh * Math.sin(-2.4);
-    if (lx > b.x + 60 && ly < b.y + b.h - 16) sText(g, T('哈伯半徑：退行速度 = 光速', 'Hubble radius: recession = light speed'), lx, ly + 12, C['hb-sphere'], 'center', 'middle', '600 10.5px ' + FONT);
+    if (lx > b.x + 60 && ly < b.y + b.h - 16) sText(g, T('哈伯半徑：退行速度 = 光速', 'Hubble radius: recession = light speed'), lx, ly + 12, C['hb-sphere'], 'center', 'middle', '600 12px ' + FONT);
     g.restore();
     // 比例尺與標籤
     const bar = 1000 * s;
     g.strokeStyle = '#e2e8f0'; g.lineWidth = 2; g.beginPath(); g.moveTo(b.x + 14, b.y + b.h - 14); g.lineTo(b.x + 14 + bar, b.y + b.h - 14); g.stroke();
-    sText(g, '1000 Mpc', b.x + 14 + bar / 2, b.y + b.h - 26, '#e2e8f0', 'center', 'middle', '600 10.5px ' + FONT);
+    sText(g, '1000 Mpc', b.x + 14 + bar / 2, b.y + b.h - 26, '#e2e8f0', 'center', 'middle', '600 12px ' + FONT);
     sTag(g, 'a = ' + num(a, 2) + T('｜H = ', '｜H = ') + sig(H_SIM / a, 3) + ' km/s/Mpc', b.x + b.w - 8, b.y + 18, '#e2e8f0', 'right');
     if (run) {
       const msg = run.arrived ? T('收到了：z = ', 'Arrived: z = ') + num(run.z, 3) : T('光在路上：波長 × ', 'Light on its way: wavelength × ') + num(state.a / run.a0, 2);
       sTag(g, msg, b.x + b.w - 8, b.y + 42, C['hb-light'], 'right');
     }
-    sText(g, T('綠色箭頭：從家裡看的退行速度', 'Green arrows: recession seen from home'), b.x + b.w - 10, b.y + b.h - 14, C['hb-arrow'], 'right', 'middle', '600 10.5px ' + FONT);
+    sText(g, T('綠色箭頭：從家裡看的退行速度', 'Green arrows: recession seen from home'), b.x + b.w - 10, b.y + b.h - 14, C['hb-arrow'], 'right', 'middle', '600 12px ' + FONT);
   }
   /** 一小段光波：stretch 是波長拉長的倍數 */
   function wavePacket(g, x, y, ux, uy, stretch) {
@@ -294,7 +294,7 @@
   }
 
   // ───── 下方的圖（膨脹） ─────
-  function frame0(W, H) { return { x0: 64, x1: W - 16, y0: 20, y1: H - 36 }; }
+  function frame0(W, H) { return { x0: 66, x1: W - 16, y0: 22, y1: H - 38 }; }
   function axisBox(g, Fm) { g.strokeStyle = D.alpha(C.text, 0.45); g.lineWidth = 1; g.strokeRect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); }
   /** 線性座標軸 */
   function axes(g, Fm, x0, x1, y0, y1, xlab, ylab, fx, fy) {
@@ -304,10 +304,10 @@
     const W = Fm.x1 - Fm.x0, sx = nice((x1 - x0) / (W > 420 ? 6 : 4)), sy = nice((y1 - y0) / 5);
     const tick = function (st) { const dg = Math.max(0, -Math.floor(Math.log10(st) + 1e-9)); return function (v) { return Math.abs(v) >= 1000 ? grp(v) : num(v, dg); }; };
     const tx = fx || tick(sx), ty = fy || tick(sy);
-    for (let i = Math.ceil(x0 / sx); i * sx <= x1 + 1e-9 * sx; i++) { const v = i * sx, x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, tx(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '10px ' + FONT); }
-    for (let i = Math.ceil(y0 / sy); i * sy <= y1 + 1e-9 * sy; i++) { const v = i * sy, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, ty(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '10px ' + FONT); }
-    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, C.muted, 'center', 'middle', '600 10.5px ' + FONT);
-    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 10.5px ' + FONT);
+    for (let i = Math.ceil(x0 / sx); i * sx <= x1 + 1e-9 * sx; i++) { const v = i * sx, x = xx(v); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, tx(v), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); }
+    for (let i = Math.ceil(y0 / sy); i * sy <= y1 + 1e-9 * sy; i++) { const v = i * sy, y = yy(v); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); D.haloText(g, ty(v), Fm.x0 - 6, y, C.muted, 'right', 'middle', '12px ' + FONT); }
+    D.haloText(g, xlab, (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    D.haloText(g, ylab, 6, 10, C.muted, 'left', 'middle', '600 12px ' + FONT);
     return { xx: xx, yy: yy };
   }
   function chartVR(g, W, H) {
@@ -322,8 +322,8 @@
     g.strokeStyle = C['hb-true']; g.lineWidth = 2.2; g.beginPath(); g.moveTo(ax.xx(0), ax.yy(0)); g.lineTo(ax.xx(rmax), ax.yy(Hn * rmax)); g.stroke();
     visible(a).forEach(function (q) { if (q.r > 1 && q.r <= rmax) D.ball(g, ax.xx(q.r), ax.yy(Hn * q.r), 3, D.alpha(C['hb-true'], 0.8), { shadow: false }); });
     g.restore();
-    D.haloText(g, T('光速 c', 'Light speed c'), Fm.x0 + 6, yc - 8, C['hb-sphere'], 'left', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, 'v = H r', ax.xx(rmax * 0.3) + 6, ax.yy(Hn * rmax * 0.3) - 10, C['hb-true'], 'right', 'middle', '700 11px ' + FONT);
+    D.haloText(g, T('光速 c', 'Light speed c'), Fm.x0 + 6, yc - 8, C['hb-sphere'], 'left', 'middle', '700 12px ' + FONT);
+    D.haloText(g, 'v = H r', ax.xx(rmax * 0.3) + 6, ax.yy(Hn * rmax * 0.3) - 10, C['hb-true'], 'right', 'middle', '700 12px ' + FONT);
     if (state.target) {
       const r = a * chiOf(state.target);
       if (r <= rmax) { D.ball(g, ax.xx(r), ax.yy(Hn * r), 6, C['hb-target'], { shadow: false, ring: '#ffffff' }); }
@@ -349,14 +349,14 @@
     path(function (aa) { return aa * chi0; }, C['hb-target'], 2.2);
     path(function (aa) { return aa * Math.max(0, chi0 - R_HUB * Math.log(aa / a0)); }, C['hb-lightc'], 2.6);
     g.restore();
-    D.haloText(g, T('粉紅：那個星系', 'Pink: the galaxy'), Fm.x1 - 6, Fm.y0 + 10, C['hb-target'], 'right', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('黃：光', 'Yellow: the light'), Fm.x1 - 6, Fm.y0 + 25, C['hb-lightc'], 'right', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('橘虛線：哈伯半徑', 'Orange dashed: Hubble radius'), Fm.x1 - 6, Fm.y0 + 40, C['hb-sphere'], 'right', 'middle', '700 10.5px ' + FONT);
+    D.haloText(g, T('粉紅：那個星系', 'Pink: the galaxy'), Fm.x1 - 6, Fm.y0 + 10, C['hb-target'], 'right', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('黃：光', 'Yellow: the light'), Fm.x1 - 6, Fm.y0 + 25, C['hb-lightc'], 'right', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('橘虛線：哈伯半徑', 'Orange dashed: Hubble radius'), Fm.x1 - 6, Fm.y0 + 40, C['hb-sphere'], 'right', 'middle', '700 12px ' + FONT);
     if (run) {
       const t = (state.a - a0) / Hg, chi = lightNow();
       D.ball(g, ax.xx(state.a * chi), ax.yy(t), 5, C['hb-lightc'], { shadow: false, ring: '#ffffff' });
     }
-    if (aEnd >= A_MAX - 1e-9 && a0 * Math.exp(chi0 / R_HUB) > A_MAX) D.haloText(g, T('到 a = 3 時光還沒到', 'Not arrived by a = 3'), (Fm.x0 + Fm.x1) / 2, Fm.y0 + 12, C.muted, 'center', 'middle', '600 11px ' + FONT);
+    if (aEnd >= A_MAX - 1e-9 && a0 * Math.exp(chi0 / R_HUB) > A_MAX) D.haloText(g, T('到 a = 3 時光還沒到', 'Not arrived by a = 3'), (Fm.x0 + Fm.x1) / 2, Fm.y0 + 12, C.muted, 'center', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
 
@@ -381,7 +381,7 @@
       galaxy(g, p.x, p.y, r, CAT[i].type, i * 13 + 5, can ? 1 : 0.4);
       const ms = measured(i);
       ms.forEach(function (m, k) { D.ball(g, p.x - (ms.length - 1) * 4 + k * 8, p.y + r * 0.7 + 7, 3, mCol(m), { shadow: false, ring: '#0b1020' }); });
-      if (CAT[i].real && r > 9) sText(g, gName(i).replace(/（.*$/, ''), p.x, p.y - r * 0.75 - 9, 'rgba(226,232,240,0.85)', 'center', 'middle', '600 10px ' + FONT);
+      if (CAT[i].real && r > 9) sText(g, gName(i).replace(/（.*$/, ''), p.x, p.y - r * 0.75 - 9, 'rgba(226,232,240,0.85)', 'center', 'middle', '600 12px ' + FONT);
     });
     const sp = galPos(state.sel, b), sr = galR(state.sel, b);
     g.strokeStyle = '#ffffff'; g.lineWidth = 1.6; g.setLineDash([4, 3]); g.beginPath(); g.arc(sp.x, sp.y, sr + 7, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
@@ -400,18 +400,18 @@
     rows.forEach(function (row) {
       for (let x = Math.floor(x0); x < x1; x++) { const l = l0 + (x - x0) / (x1 - x0) * (l1 - l0); g.fillStyle = wlRGB(l, 0.95); g.fillRect(x, row.y, 1.2, bh); }
       LINES.forEach(function (ln) { const x = xx(ln.l * (1 + row.z)); if (x < x0 || x > x1) return; g.fillStyle = 'rgba(0,0,0,0.88)'; g.fillRect(x - 1.2, row.y, 2.4, bh); });
-      if (b.w >= 500) sText(g, row.lab, b.x + 10, row.y + bh / 2, '#e2e8f0', 'left', 'middle', '600 11px ' + FONT);
-      else sText(g, row.lab, x0 + 4, row.y - 7, '#cbd5e1', 'left', 'middle', '600 10px ' + FONT);
+      if (b.w >= 500) sText(g, row.lab, b.x + 10, row.y + bh / 2, '#e2e8f0', 'left', 'middle', '600 12px ' + FONT);
+      else sText(g, row.lab, x0 + 4, row.y - 7, '#cbd5e1', 'left', 'middle', '600 12px ' + FONT);
     });
     // 對應的譜線連起來
     LINES.forEach(function (ln, k) {
       const xa = xx(ln.l), xb = xx(ln.l * (1 + z));
       g.strokeStyle = 'rgba(226,232,240,0.55)'; g.lineWidth = 1; g.beginPath(); g.moveTo(xa, rows[0].y + bh); g.lineTo(xb, rows[1].y); g.stroke();
-      if (b.w >= 500 || (k >= 2 && k % 2 === 0) || ln.n === 'Hα') sText(g, ln.n, xa, rows[0].y - 8, '#cbd5e1', 'center', 'middle', '600 10px ' + FONT);
+      if (b.w >= 500 || (k >= 2 && k % 2 === 0) || ln.n === 'Hα') sText(g, ln.n, xa, rows[0].y - 8, '#cbd5e1', 'center', 'middle', '600 12px ' + FONT);
     });
     const dHa = 656.28 * z;
-    sText(g, T('Hα 移動 ', 'Hα shifted by ') + (dHa >= 0 ? '+' : '−') + sig(Math.abs(dHa), 2) + ' nm' + T('（', ' (') + (z >= 0 ? T('紅移', 'redshift') : T('藍移', 'blueshift')) + T('）', ')'), x1, b.y + b.h - 10, '#e2e8f0', 'right', 'middle', '600 10.5px ' + FONT);
-    sText(g, '380 nm', x0, b.y + b.h - 10, '#94a3b8', 'left', 'middle', '10px ' + FONT);
+    sText(g, T('Hα 移動 ', 'Hα shifted by ') + (dHa >= 0 ? '+' : '−') + sig(Math.abs(dHa), 2) + ' nm' + T('（', ' (') + (z >= 0 ? T('紅移', 'redshift') : T('藍移', 'blueshift')) + T('）', ')'), x1, b.y + b.h - 10, '#e2e8f0', 'right', 'middle', '600 12px ' + FONT);
+    sText(g, '380 nm', x0, b.y + b.h - 10, '#94a3b8', 'left', 'middle', '12px ' + FONT);
   }
   function pts(m) { const o = state.pts[m || state.method]; return Object.keys(o).map(function (k) { return Object.assign({ i: +k }, o[k]); }); }
   function fitNow() { const p = pts(); return p.length ? HC.fitH(p) : null; }
@@ -438,9 +438,9 @@
     });
     g.restore();
     let ly = Fm.y0 + 10;
-    D.haloText(g, T('綠虛線：這個模擬宇宙（70）', 'Green dashed: this simulated universe (70)'), Fm.x0 + 8, ly, C['hb-true'], 'left', 'middle', '700 10.5px ' + FONT); ly += 15;
-    if (pts('hubble').length) { D.haloText(g, T('橘虛線：哈伯 1929（500）', 'Orange dashed: Hubble 1929 (500)'), Fm.x0 + 8, ly, C['hb-hub'], 'left', 'middle', '700 10.5px ' + FONT); ly += 15; }
-    if (f && f.n >= 2) D.haloText(g, T('青線：你量的 ', 'Cyan: yours ') + num(f.H, 1) + ' ± ' + num(f.sH, 1), Fm.x0 + 8, ly, C['hb-fit'], 'left', 'middle', '700 10.5px ' + FONT);
+    D.haloText(g, T('綠虛線：這個模擬宇宙（70）', 'Green dashed: this simulated universe (70)'), Fm.x0 + 8, ly, C['hb-true'], 'left', 'middle', '700 12px ' + FONT); ly += 15;
+    if (pts('hubble').length) { D.haloText(g, T('橘虛線：哈伯 1929（500）', 'Orange dashed: Hubble 1929 (500)'), Fm.x0 + 8, ly, C['hb-hub'], 'left', 'middle', '700 12px ' + FONT); ly += 15; }
+    if (f && f.n >= 2) D.haloText(g, T('青線：你量的 ', 'Cyan: yours ') + num(f.H, 1) + ' ± ' + num(f.sH, 1), Fm.x0 + 8, ly, C['hb-fit'], 'left', 'middle', '700 12px ' + FONT);
     if (!all.length) D.haloText(g, T('還沒有量測：點一個星系，按「量這個星系」', 'No measurements yet: tap a galaxy and press “Measure it”'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2, C.muted, 'center', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
@@ -461,7 +461,7 @@
       void e;
     });
     g.restore();
-    D.haloText(g, T('綠帶：本動速度 ±250 km/s', 'Green band: peculiar velocities ±250 km/s'), Fm.x0 + 8, Fm.y0 + 10, C['hb-true'], 'left', 'middle', '700 10.5px ' + FONT);
+    D.haloText(g, T('綠帶：本動速度 ±250 km/s', 'Green band: peculiar velocities ±250 km/s'), Fm.x0 + 8, Fm.y0 + 10, C['hb-true'], 'left', 'middle', '700 12px ' + FONT);
     if (!p.length) D.haloText(g, T('用這個方法還沒有量測', 'No measurements with this method yet'), (Fm.x0 + Fm.x1) / 2, (Fm.y0 + Fm.y1) / 2 + 20, C.muted, 'center', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
@@ -502,11 +502,11 @@
     const yy = function (a) { return Fm.y1 - a / 3 * (Fm.y1 - Fm.y0); };
     // 格線
     g.strokeStyle = 'rgba(226,232,240,0.1)'; g.lineWidth = 1;
-    for (let a = 0; a <= 3; a += 0.5) { const y = yy(a); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); sText(g, num(a, 1), Fm.x0 - 6, y, '#94a3b8', 'right', 'middle', '10px ' + FONT); }
+    for (let a = 0; a <= 3; a += 0.5) { const y = yy(a); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); sText(g, num(a, 1), Fm.x0 - 6, y, '#94a3b8', 'right', 'middle', '12px ' + FONT); }
     const st = (tr.t1 - tr.t0) > 50 ? 10 : 5;
-    for (let t = Math.ceil(tr.t0 / st) * st; t <= tr.t1; t += st) { const x = xx(t); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); sText(g, (t > 0 ? '+' : '') + (EN ? String(t) : String(t * 10)), x, Fm.y1 + 12, '#94a3b8', 'center', 'middle', '10px ' + FONT); }
-    sText(g, T('時間（億年；0 是現在）', 'Time (billion years; 0 is now)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, '#cbd5e1', 'center', 'middle', '600 10.5px ' + FONT);
-    sText(g, T('宇宙的大小 a', 'Size of the universe a'), b.x + 10, b.y + 16, '#cbd5e1', 'left', 'middle', '600 10.5px ' + FONT);
+    for (let t = Math.ceil(tr.t0 / st) * st; t <= tr.t1; t += st) { const x = xx(t); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); sText(g, (t > 0 ? '+' : '') + (EN ? String(t) : String(t * 10)), x, Fm.y1 + 12, '#94a3b8', 'center', 'middle', '12px ' + FONT); }
+    sText(g, T('時間（億年；0 是現在）', 'Time (billion years; 0 is now)'), (Fm.x0 + Fm.x1) / 2, Fm.y1 + 28, '#cbd5e1', 'center', 'middle', '600 12px ' + FONT);
+    sText(g, T('宇宙的大小 a', 'Size of the universe a'), b.x + 10, b.y + 16, '#cbd5e1', 'left', 'middle', '600 12px ' + FONT);
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0 - 4, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0 + 8); g.clip();
     // 最老的恆星、地球
     const xs = xx(-HC.OLDEST_STARS), xe = xx(-HC.EARTH_AGE), young = A.age != null && A.age < HC.OLDEST_STARS;
@@ -537,14 +537,14 @@
     }
     g.restore();
     // 標籤
-    sText(g, T('現在', 'Now'), xx(0) + 6, Fm.y0 + 8, '#ffffff', 'left', 'middle', '700 11px ' + FONT);
-    sText(g, T('最老的恆星', 'Oldest stars'), xs + 4, Fm.y0 + 26, young ? '#f87171' : '#fde68a', 'left', 'middle', '600 10px ' + FONT);
-    sText(g, T('地球誕生', 'Earth forms'), xe + 4, Fm.y0 + 42, '#7dd3fc', 'left', 'middle', '600 10px ' + FONT);
-    if (A.hist.bang != null && A.hist.bang >= tr.t0) sText(g, T('大霹靂', 'Big Bang'), xx(A.hist.bang) + 8, yy(0) - 14, '#fde047', 'left', 'middle', '700 11px ' + FONT);
-    if (A.crunch != null && A.crunch <= tr.t1) sText(g, T('大崩墜', 'Big Crunch'), xx(A.crunch) - 8, yy(0) - 14, '#f87171', 'right', 'middle', '700 11px ' + FONT);
+    sText(g, T('現在', 'Now'), xx(0) + 6, Fm.y0 + 8, '#ffffff', 'left', 'middle', '700 12px ' + FONT);
+    sText(g, T('最老的恆星', 'Oldest stars'), xs + 4, Fm.y0 + 26, young ? '#f87171' : '#fde68a', 'left', 'middle', '600 12px ' + FONT);
+    sText(g, T('地球誕生', 'Earth forms'), xe + 4, Fm.y0 + 42, '#7dd3fc', 'left', 'middle', '600 12px ' + FONT);
+    if (A.hist.bang != null && A.hist.bang >= tr.t0) sText(g, T('大霹靂', 'Big Bang'), xx(A.hist.bang) + 8, yy(0) - 14, '#fde047', 'left', 'middle', '700 12px ' + FONT);
+    if (A.crunch != null && A.crunch <= tr.t1) sText(g, T('大崩墜', 'Big Crunch'), xx(A.crunch) - 8, yy(0) - 14, '#f87171', 'right', 'middle', '700 12px ' + FONT);
     const lg = [['#7dd3fc', T('你的宇宙', 'Your universe')], ['rgba(148,163,184,0.9)', 'Planck'], ['rgba(251,146,60,0.9)', T('只有物質', 'Matter only')], ['rgba(163,230,53,0.9)', T('空的', 'Empty')]];
     let lx = b.x + b.w - 10, ly = b.y + 16;
-    for (let k = lg.length - 1; k >= 0; k--) { g.font = '700 10.5px ' + FONT; const w = g.measureText(lg[k][1]).width; sText(g, lg[k][1], lx, ly, lg[k][0], 'right', 'middle', '700 10.5px ' + FONT); lx -= w + 14; if (narrow && k === 2) { lx = b.x + b.w - 10; ly += 15; } }
+    for (let k = lg.length - 1; k >= 0; k--) { g.font = '700 12px ' + FONT; const w = g.measureText(lg[k][1]).width; sText(g, lg[k][1], lx, ly, lg[k][0], 'right', 'middle', '700 12px ' + FONT); lx -= w + 14; if (narrow && k === 2) { lx = b.x + b.w - 10; ly += 15; } }
     const msg = A.age != null ? T('年齡 ', 'Age ') + gyr(A.age) : T('沒有大霹靂：往回推會反彈', 'No Big Bang: going back, it bounces');
     sTag(g, msg, b.x + b.w - 10, b.y + (narrow ? 47 : 40), young ? C['hb-warn'] : '#fde047', 'right');
   }
@@ -569,11 +569,11 @@
     const line = function (arr, col) { g.strokeStyle = col; g.lineWidth = 2.4; g.beginPath(); let on = false; arr.forEach(function (p) { if (p.t == null) { on = false; return; } const x = ax.xx(p.om), y = ax.yy(p.t); if (on) g.lineTo(x, y); else { g.moveTo(x, y); on = true; } }); g.stroke(); };
     line(omCache.flat, C['hb-curve']); line(omCache.open, C['hb-hub']);
     g.restore();
-    D.haloText(g, T('藍：平坦（ΩΛ = 1 − Ωm）', 'Blue: flat (ΩΛ = 1 − Ωm)'), Fm.x1 - 6, Fm.y0 + 10, C['hb-curve'], 'right', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('橘：沒有暗能量（ΩΛ = 0）', 'Orange: no dark energy (ΩΛ = 0)'), Fm.x1 - 6, Fm.y0 + 25, C['hb-hub'], 'right', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('最老的恆星', 'Oldest stars'), Fm.x0 + 6, ax.yy(HC.OLDEST_STARS) - 8, '#d97706', 'left', 'middle', '600 10px ' + FONT);
-    D.haloText(g, T('地球', 'Earth'), Fm.x0 + 6, ax.yy(HC.EARTH_AGE) - 8, '#0284c7', 'left', 'middle', '600 10px ' + FONT);
-    D.haloText(g, '1/H', Fm.x1 - 6, ax.yy(tH) - 8, C.muted, 'right', 'middle', '600 10px ' + FONT);
+    D.haloText(g, T('藍：平坦（ΩΛ = 1 − Ωm）', 'Blue: flat (ΩΛ = 1 − Ωm)'), Fm.x1 - 6, Fm.y0 + 10, C['hb-curve'], 'right', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('橘：沒有暗能量（ΩΛ = 0）', 'Orange: no dark energy (ΩΛ = 0)'), Fm.x1 - 6, Fm.y0 + 25, C['hb-hub'], 'right', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('最老的恆星', 'Oldest stars'), Fm.x0 + 6, ax.yy(HC.OLDEST_STARS) - 8, '#d97706', 'left', 'middle', '600 12px ' + FONT);
+    D.haloText(g, T('地球', 'Earth'), Fm.x0 + 6, ax.yy(HC.EARTH_AGE) - 8, '#0284c7', 'left', 'middle', '600 12px ' + FONT);
+    D.haloText(g, '1/H', Fm.x1 - 6, ax.yy(tH) - 8, C.muted, 'right', 'middle', '600 12px ' + FONT);
     const A = ageModel();
     if (A.age != null && state.Om <= 3) D.ball(g, ax.xx(state.Om), ax.yy(Math.min(ymax, A.age)), 6, C['hb-target'], { shadow: false, ring: '#ffffff' });
     axisBox(g, Fm);
@@ -604,10 +604,10 @@
     g.strokeStyle = D.alpha(C.text, 0.3); g.beginPath(); g.moveTo(Fm.x0, ax.yy(0)); g.lineTo(Fm.x1, ax.yy(0)); g.stroke();
     MODELS.forEach(function (m) { if (m.Om <= OM_MAX) D.ball(g, ax.xx(m.Om), ax.yy(m.OL), 3.2, D.alpha(C.text, 0.55), { shadow: false }); });
     g.restore();
-    D.haloText(g, T('平坦', 'Flat'), ax.xx(0.35), ax.yy(0.65) - 8, C.text, 'left', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('加速 ↑／減速 ↓', 'Speeding up ↑ / slowing ↓'), ax.xx(2.95), ax.yy(1.475) + 12, C['hb-hub'], 'right', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('紅：沒有大霹靂', 'Red: no Big Bang'), Fm.x0 + 8, Fm.y0 + 10, C['hb-warn'], 'left', 'middle', '700 10.5px ' + FONT);
-    D.haloText(g, T('藍：將來會大崩墜', 'Blue: ends in a Big Crunch'), Fm.x0 + 8, Fm.y1 - 10, C['hb-curve'], 'left', 'middle', '700 10.5px ' + FONT);
+    D.haloText(g, T('平坦', 'Flat'), ax.xx(0.35), ax.yy(0.65) - 8, C.text, 'left', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('加速 ↑／減速 ↓', 'Speeding up ↑ / slowing ↓'), ax.xx(2.95), ax.yy(1.475) + 12, C['hb-hub'], 'right', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('紅：沒有大霹靂', 'Red: no Big Bang'), Fm.x0 + 8, Fm.y0 + 10, C['hb-warn'], 'left', 'middle', '700 12px ' + FONT);
+    D.haloText(g, T('藍：將來會大崩墜', 'Blue: ends in a Big Crunch'), Fm.x0 + 8, Fm.y1 - 10, C['hb-curve'], 'left', 'middle', '700 12px ' + FONT);
     D.ball(g, ax.xx(Math.min(OM_MAX, state.Om)), ax.yy(Math.max(OL_MIN, Math.min(OL_MAX, state.OL))), 6.5, C['hb-target'], { shadow: false, ring: '#ffffff' });
     axisBox(g, Fm);
   }
@@ -676,10 +676,11 @@
     const m = state.mode, run = state.run[m];
     if (m === 'expand') {
       const aArr = run.a0 * Math.exp(run.chi0 / R_HUB);
-      let a = state.a + A_RATE * dt;
-      if (a >= aArr) { a = aArr; setA(a); arrive(); return; }
-      if (a >= A_MAX) { setA(A_MAX); finishRun(); return; }
-      setA(a);
+      const stepRate = A_RATE * (state.a > A_MAX ? Math.max(1, state.a / 2) : 1);
+      let a = state.a + stepRate * dt;
+      if (a >= aArr) { a = aArr; setA(a, true); arrive(); return; }
+      if (a >= A_PLAY_MAX) { setA(A_PLAY_MAX, true); finishRun(); return; }
+      setA(a, true);
     } else if (m === 'measure') {
       run.acc += dt;
       while (run.acc >= 0.14 && run.k < run.todo.length) { run.acc -= 0.14; run.cur = run.todo[run.k]; addPoint(run.cur); run.k++; const snd = sound(); if (snd) snd.tone({ freq: 700 + 12 * run.k, dur: 0.04, type: 'triangle', gain: 0.025 }); }
@@ -690,7 +691,12 @@
       if (run.t >= 0) finishRun();
     }
   }
-  function setA(a) { state.a = Math.max(A_MIN, Math.min(A_MAX, a)); setSlider(el.scale, Math.round(state.a * 100) / 100); refreshOutputs(); updateReadouts(); }
+  function setA(a, allowAbove) {
+    const hi = allowAbove ? A_PLAY_MAX : A_MAX;
+    state.a = Math.max(A_MIN, Math.min(hi, a));
+    setSlider(el.scale, Math.round(Math.min(A_MAX, state.a) * 100) / 100);
+    refreshOutputs(); updateReadouts();
+  }
   function arrive() {
     const run = state.run.expand;
     run.arrived = true; run.flash = 1; run.z = state.a / run.a0 - 1;
@@ -706,7 +712,7 @@
     let ev = null;
     if (m === 'expand') {
       if (arrived) setStatus(T('光到家了：出發時 a = ', 'The light is home: it left at a = ') + num(run.a0, 2) + T('，到達時 a = ', ' and arrived at a = ') + num(state.a, 2) + T('，波長拉長 ', '; its wavelength stretched by ') + num(1 + run.z, 3) + T(' 倍，z = ', '×, z = ') + num(run.z, 3) + T('。出發時它離家 ', '. When it left, the galaxy was ') + mpc(run.a0 * run.chi0) + T('，現在離家 ', ' away; now it is ') + mpc(state.a * run.chi0) + T('。', '.'));
-      else { setStatus(T('宇宙已經拉長到 a = 3，光還在路上。', 'The universe has stretched to a = 3 and the light is still on its way.')); if (snd) snd.tone({ freq: 330, dur: 0.2, type: 'triangle', gain: 0.04 }); }
+      else { setStatus(T('宇宙已拉長到 a = ' + num(state.a, 1) + '，光仍在路上。', 'The universe has stretched to a = ' + num(state.a, 1) + ' and the light is still on its way.')); if (snd) snd.tone({ freq: 330, dur: 0.2, type: 'triangle', gain: 0.04 }); }
       ev = snapshot(); ev.anim = false; ev.arrived = !!arrived; ev.z = arrived ? run.z : null; ev.vEmit = run.vc;
     } else if (m === 'measure') {
       run.cur = null; state.run.measure = null;
@@ -960,7 +966,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 點畫面 ----------
   function canvasPt(ev, c) { const r = c.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }

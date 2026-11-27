@@ -96,6 +96,15 @@ test('暖鋒：雲由高到低一路來，雨小時間長；過境後變暖、�
   assert.ok(s.total > 200 && s.capped && s.hours > 30);
 });
 
+test('延長觀測上限：慢速鋒面預設 72 h 截斷，延長 tMax 後可完整通過測站', () => {
+  const slow = mk(COLD, { U: 1 });
+  const p72 = F.pass(slow);
+  assert.ok(p72.capped && !p72.passed);
+  const pExt = F.pass(slow, 0.02, 400);
+  assert.ok(pExt.passed && !pExt.capped);
+  near(pExt.tFront, 120, 0.05);
+});
+
 test('雨量分級的統計：任意 1、3、24 小時的最大雨量遞增、不超過總雨量；冷鋒的雨不到一天就下完時 24 小時 = 總雨量；地面 0 °C 以下落下的是雪', () => {
   const c = F.pass(mk(COLD));
   assert.ok(c.max1 <= c.max3 + 1e-9 && c.max3 <= c.max24 + 1e-9 && c.max24 <= c.total + 1e-9);

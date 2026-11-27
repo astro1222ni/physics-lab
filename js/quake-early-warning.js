@@ -153,7 +153,7 @@
     // 經緯線
     g.save();
     g.strokeStyle = D.alpha(C.text, D.dark ? 0.1 : 0.08); g.lineWidth = 1; g.setLineDash([3, 5]);
-    g.font = '600 10.5px ' + FONT; g.fillStyle = D.alpha(C.muted, 0.9);
+    g.font = '600 12px ' + FONT; g.fillStyle = D.alpha(C.muted, 0.9);
     for (let lon = 119; lon <= 123; lon += 1) {
       const X = M.px(QC.toXY(lon, 23.7).x); if (X < 0 || X > W) continue;
       g.beginPath(); g.moveTo(X, 0); g.lineTo(X, H); g.stroke();
@@ -245,7 +245,7 @@
           const r = leadRadius(L); if (r <= 0 || (isFinite(s.rAlert) && r > s.rAlert)) return;
           const lx = X0 + r * M.s * Math.cos(ang), ly = Y0 + r * M.s * Math.sin(ang);
           if (lx < 20 || lx > W - 20 || ly < 12 || ly > H - 12) return;
-          D.haloText(ctx, L + ' s', lx, ly, C['ew-lead'], 'center', 'middle', '700 10.5px ' + FONT);
+          D.haloText(ctx, L + ' s', lx, ly, C['ew-lead'], 'center', 'middle', '700 12px ' + FONT);
         });
       }
     }
@@ -295,7 +295,7 @@
     }
     // 震央的標籤放在星星正下方；城市標籤避開它
     const epiTxt = 'M ' + num(q.M, 1) + T('・深 ', ' · ') + num(q.h, 1) + T(' km', ' km deep');
-    ctx.font = '700 11.5px ' + FONT;
+    ctx.font = '700 12px ' + FONT;
     const ew = ctx.measureText(epiTxt).width + 12;
     const ex = Math.max(ew / 2 + 4, Math.min(W - ew / 2 - 4, X0)), eyb = Y0 + 30;
     // 城市
@@ -306,7 +306,7 @@
       ctx.beginPath(); ctx.arc(X, Y, 8, 0, Math.PI * 2); ctx.lineWidth = 2.4; ctx.strokeStyle = C.accent; ctx.stroke();
       ctx.beginPath(); ctx.arc(X, Y, 2.5, 0, Math.PI * 2); ctx.fillStyle = C.accent; ctx.fill();
       const e = siteInfo();
-      D.pill(ctx, siteName() + '  ' + cityTag(e, run, t), X + 12, Y + 5, C.accent, 'left', '700 11.5px ' + FONT);
+      D.pill(ctx, siteName() + '  ' + cityTag(e, run, t), X + 12, Y + 5, C.accent, 'left', '700 12px ' + FONT);
     }
     // 震央（星星）與深度
     ctx.save();
@@ -318,7 +318,7 @@
       ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(X0, Y0, 20, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
-    D.pill(ctx, epiTxt, ex, eyb, C['ew-epi'], 'center', '700 11.5px ' + FONT);
+    D.pill(ctx, epiTxt, ex, eyb, C['ew-epi'], 'center', '700 12px ' + FONT);
     // 左上角：時間與事件
     drawHud(s, run, t);
   }
@@ -350,7 +350,7 @@
       const tag = cityTag(e, run, t);
       const label = T(c.zh, c.en) + (tag ? '  ' + tag : '');
       // 標籤放右邊；靠右邊界或和已放的重疊時放左邊
-      ctx.font = (sel ? '700 ' : '600 ') + '11px ' + FONT;
+      ctx.font = (sel ? '700 ' : '600 ') + '12px ' + FONT;
       const w = ctx.measureText(label).width + 12;
       // 候選位置：右、左、上、下；選第一個在畫布內又不和已放的標籤重疊的
       const cx = Math.max(w / 2 + 3, Math.min(M.W - w / 2 - 3, X));
@@ -364,7 +364,7 @@
       const hits = function (b) { return placed.some(function (p) { return b[0] < p[2] && b[2] > p[0] && b[1] < p[3] && b[3] > p[1]; }); };
       let pick = cands.filter(function (k) { return inside(k.b) && !hits(k.b); })[0] || cands.filter(function (k) { return inside(k.b); })[0] || cands[0];
       placed.push(pick.b);
-      D.pill(ctx, label, pick.x, pick.yb, sel ? C.accent : (run && t < s.Ta ? C.text : col), pick.al, (sel ? '700 ' : '600 ') + '11px ' + FONT);
+      D.pill(ctx, label, pick.x, pick.yb, sel ? C.accent : (run && t < s.Ta ? C.text : col), pick.al, (sel ? '700 ' : '600 ') + '12px ' + FONT);
     });
   }
   function drawHud(s, run, t) {
@@ -411,7 +411,7 @@
     const X = function (t) { return L.x0 + (L.x1 - L.x0) * t / tMax; };
     const ym = (L.y0 + L.y1) / 2, amp = (L.y1 - L.y0) / 2 - 6;
     // 時間格線
-    g.font = '600 10.5px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'top';
+    g.font = '600 12px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'top';
     const step = tMax > 80 ? 20 : 10;
     for (let t = 0; t <= tMax; t += step) {
       g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1; g.beginPath(); g.moveTo(X(t), L.y0); g.lineTo(X(t), L.y1); g.stroke();
@@ -425,7 +425,7 @@
       const a = Math.min(tA, e.tS), b = Math.max(tA, e.tS), col = e.best > 0 ? C['ew-lead'] : C['ew-blind'];
       g.fillStyle = D.alpha(col, 0.14); g.fillRect(X(a), L.y0, X(b) - X(a), L.y1 - L.y0);
       D.arrow(g, X(tA), yb + 12, X(e.tS), yb + 12, col, 1.8, {});
-      D.pill(g, (e.best > 0 ? T('預警時間 ', 'Warning ') + num(e.best, 1) + T(' 秒', ' s') : T('盲區：晚了 ', 'Blind: late by ') + num(-e.best, 1) + T(' 秒', ' s')), Math.max(L.x0 + 60, Math.min(L.x1 - 60, (X(a) + X(b)) / 2)), yb + 6, col, 'center', '700 11.5px ' + FONT);
+      D.pill(g, (e.best > 0 ? T('預警時間 ', 'Warning ') + num(e.best, 1) + T(' 秒', ' s') : T('盲區：晚了 ', 'Blind: late by ') + num(-e.best, 1) + T(' 秒', ' s')), Math.max(L.x0 + 60, Math.min(L.x1 - 60, (X(a) + X(b)) / 2)), yb + 6, col, 'center', '700 12px ' + FONT);
     }
     // 地震紀錄
     const tEnd = run ? Math.min(run.t, tMax) : tMax;
@@ -441,7 +441,7 @@
       if (!(t >= 0) || t > tMax) return;
       g.setLineDash([4, 3]); g.strokeStyle = col; g.lineWidth = 1.6;
       g.beginPath(); g.moveTo(X(t), L.y0); g.lineTo(X(t), L.y1); g.stroke(); g.setLineDash([]);
-      D.pill(g, txt, X(t), L.y1 - 6 - row * 20, col, X(t) > W - 80 ? 'right' : X(t) < 80 ? 'left' : 'center', '700 11px ' + FONT);
+      D.pill(g, txt, X(t), L.y1 - 6 - row * 20, col, X(t) > W - 80 ? 'right' : X(t) < 80 ? 'left' : 'center', '700 12px ' + FONT);
     };
     mark(e.tP, C['ew-p'], 'P ' + num(e.tP, 1), 0);
     if (s.issue) mark(s.Ta, C['ew-alert'], T('警報 ', 'Alert ') + num(s.Ta, 1), 1);
@@ -464,7 +464,7 @@
     g.fillStyle = crust; g.fillRect(L.x0, Y(0), L.x1 - L.x0, L.y1 - Y(0));
     g.strokeStyle = C['ew-coast']; g.lineWidth = 2; g.beginPath(); g.moveTo(L.x0, Y(0)); g.lineTo(L.x1, Y(0)); g.stroke();
     // 深度刻度（左邊）與距離刻度（地表上方）
-    g.font = '600 10px ' + FONT; g.fillStyle = D.alpha(C.text, 0.7); g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.font = '600 12px ' + FONT; g.fillStyle = D.alpha(C.text, 0.7); g.textAlign = 'left'; g.textBaseline = 'middle';
     const zs = zMax > 120 ? 50 : zMax > 50 ? 20 : 10;
     for (let z = zs; z < zMax - 3; z += zs) { g.fillText(z + ' km', L.x0 + 3, Y(z)); g.strokeStyle = D.alpha(C.text, 0.12); g.beginPath(); g.moveTo(L.x0 + 30, Y(z)); g.lineTo(L.x0 + 36, Y(z)); g.stroke(); }
     // 時刻：跑動畫用目前時刻，不然用警報發布的時刻
@@ -484,18 +484,18 @@
     if (s.rb > 0) {
       g.lineWidth = 6; g.strokeStyle = D.alpha(C['ew-blind'], 0.85); g.lineCap = 'round';
       g.beginPath(); g.moveTo(X(0), Y(0) - 4); g.lineTo(X(Math.min(s.rb, dMax)), Y(0) - 4); g.stroke(); g.lineCap = 'butt';
-      D.pill(g, T('盲區 ', 'Blind zone ') + kmT(s.rb), X(Math.min(s.rb, dMax) / 2), Y(0) - 14, C['ew-blind'], 'center', '700 11px ' + FONT);
+      D.pill(g, T('盲區 ', 'Blind zone ') + kmT(s.rb), X(Math.min(s.rb, dMax) / 2), Y(0) - 14, C['ew-blind'], 'center', '700 12px ' + FONT);
     }
     // 震源與震央
     g.setLineDash([3, 3]); g.strokeStyle = D.alpha(C.text, 0.4); g.lineWidth = 1; g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(0), Y(q.h)); g.stroke(); g.setLineDash([]);
     star(g, X(0), Y(q.h), 9, C['ew-epi'], D.dark ? '#000' : '#7c4a03');
-    D.pill(g, T('震源 深 ', 'Focus, ') + num(q.h, 1) + ' km', X(0) + 13, Y(q.h) + 4, C['ew-epi'], 'left', '700 11px ' + FONT);
+    D.pill(g, T('震源 深 ', 'Focus, ') + num(q.h, 1) + ' km', X(0) + 13, Y(q.h) + 4, C['ew-epi'], 'left', '700 12px ' + FONT);
     // 選定的地方（太遠時畫在右邊緣，加箭頭與距離）
     const far = e.d > dMax, sx = far ? L.x1 - 8 : X(e.d);
     g.beginPath(); g.moveTo(sx, Y(0) - 2); g.lineTo(sx - 6, Y(0) - 13); g.lineTo(sx + 6, Y(0) - 13); g.closePath(); g.fillStyle = C.accent; g.fill();
-    D.pill(g, siteName() + (far ? ' ' + kmT(e.d) + ' →' : ''), sx, Y(0) - 30, C.accent, sx > W - 70 ? 'right' : sx < 70 ? 'left' : 'center', '700 11px ' + FONT);
+    D.pill(g, siteName() + (far ? ' ' + kmT(e.d) + ' →' : ''), sx, Y(0) - 30, C.accent, sx > W - 70 ? 'right' : sx < 70 ? 'left' : 'center', '700 12px ' + FONT);
     D.haloText(g, run ? 't = ' + num(t, 1) + T(' 秒', ' s') : T('警報發布那一刻（', 'When the alert is sent (') + sec(s.Ta) + T('）', ')'), L.x0, 14, C.text, 'left', 'middle', '700 12px ' + FONT);
-    D.haloText(g, T('藍：P 波前　紅：S 波前', 'Blue: P front   Red: S front'), L.x1 - 4, L.y1 - 10, C.text, 'right', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('藍：P 波前　紅：S 波前', 'Blue: P front   Red: S front'), L.x1 - 4, L.y1 - 10, C.text, 'right', 'middle', '600 12px ' + FONT);
   }
 
   // =====================================================================
@@ -726,7 +726,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 地圖：拖曳震央、點選地點 ----------
   let dragging = false;

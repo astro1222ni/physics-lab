@@ -694,12 +694,20 @@
     emitState(true);
   }
   el.sel.addEventListener('change', function () { acted(); pickStar(el.sel.value, 'list'); });
+  let pinSeq = 0;
   $('pinBtn').addEventListener('click', function () {
     acted();
-    if (state.pins.length >= MAX_PINS) state.pins.shift();
-    state.pins.push({ T: cur.T, R: cur.R, L: cur.L });
+    const dropped = state.pins.length >= MAX_PINS ? state.pins.shift() : null;
+    const seq = ++pinSeq;
+    const pickObj = state.pick ? starById(state.pick) : null;
+    const descZh = num(cur.T, 0) + ' K、' + plain(cur.L, 2) + ' L☉';
+    const descEn = num(cur.T, 0) + ' K, ' + plain(cur.L, 2) + ' L☉';
+    const item = { id: seq, T: cur.T, R: cur.R, L: cur.L, nameZh: pickObj ? pickObj.zh : ('#' + seq + '（' + descZh + '）'), nameEn: pickObj ? pickObj.en : ('#' + seq + ' (' + descEn + ')') };
+    state.pins.push(item);
     const S = sound(); if (S) S.tone({ freq: 784, dur: 0.07, gain: 0.08 });
-    setStatus(T('留下記號 #' + state.pins.length + '（最多 ' + MAX_PINS + ' 個）。', 'Marker #' + state.pins.length + ' placed (up to ' + MAX_PINS + ').'));
+    setStatus(dropped
+      ? T('已留下記號 #' + seq + '（' + descZh + '），並移除最舊的 ' + dropped.nameZh + '（最多保留 ' + MAX_PINS + ' 個）。', 'Placed marker #' + seq + ' (' + descEn + '), replacing oldest ' + dropped.nameEn + ' (max ' + MAX_PINS + ').')
+      : T('留下記號 #' + seq + '（' + descZh + '；最多 ' + MAX_PINS + ' 個）。', 'Marker #' + seq + ' placed (' + descEn + '; up to ' + MAX_PINS + ').'));
     requestDraw(); emit('pin', { n: state.pins.length, T: cur.T, L: cur.L, R: cur.R }); emitState(true);
   });
   $('clearBtn').addEventListener('click', function () {

@@ -27,7 +27,7 @@
       id: 'hubble-expansion-1', level: 1,
       title: { zh: '空間在拉長', en: 'Space is stretching' },
       desc: { zh: '在「膨脹的宇宙」按「膨脹」，看粉紅色星系的光一路走到家。', en: 'In “The expanding universe”, press “Expand” and follow the pink galaxy’s light all the way home.' },
-      check: function (ev) { return !!runOf(ev, 'expand'); }
+      check: function (ev) { const d = runOf(ev, 'expand'); return !!d && !!d.arrived; }
     },
     {
       id: 'hubble-expansion-2', level: 2,
@@ -39,7 +39,7 @@
       id: 'hubble-expansion-3', level: 2,
       title: { zh: '倒帶到起點', en: 'Rewind to the start' },
       desc: { zh: '在「宇宙的年齡」按「從大霹靂播放」，從開頭看到現在。', en: 'In “The age of the universe”, press “Play from the Big Bang” and watch from the beginning to now.' },
-      check: function (ev) { return !!runOf(ev, 'age'); }
+      check: function (ev) { const d = runOf(ev, 'age'); return !!d && !!d.bang; }
     },
     {
       id: 'hubble-expansion-4', level: 3,

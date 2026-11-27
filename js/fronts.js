@@ -45,7 +45,7 @@
   const state = {
     mode: 'cold', P: { cold: Object.assign({}, DEF.cold), warm: Object.assign({}, DEF.warm), stat: Object.assign({}, DEF.stat) },
     preset: { cold: 'def', warm: 'def', stat: 'def' }, chart: 'a',
-    run: null, acted: false, anim: 0
+    run: null, tCap: FC.T_MAX, acted: false, anim: 0
   };
   let quiet = 0;
   function setSlider(inp, v) { quiet++; try { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; } finally { quiet--; } }
@@ -54,10 +54,10 @@
   // ---------- 物理（設定改變才重算） ----------
   let cache = null;
   function model() {
-    const p = P(), key = state.mode + '|' + [p.Tw, p.Tdw, p.Tc, p.Tdc, p.N, p.U, p.V].join('|');
+    const p = P(), key = state.mode + '|' + state.tCap + '|' + [p.Tw, p.Tdw, p.Tc, p.Tdc, p.N, p.U, p.V].join('|');
     if (cache && cache.key === key) return cache;
     const f = FC.make({ type: state.mode, Tw: p.Tw, Tdw: p.Tdw, Tc: p.Tc, Tdc: p.Tdc, slope: 1 / p.N, U: p.U, V: p.V });
-    const ps = FC.pass(f), cum = [0], snowCum = [0];
+    const ps = FC.pass(f, 0.02, state.tCap), cum = [0], snowCum = [0];
     for (let i = 1; i < ps.rec.length; i++) {
       const d = (ps.rec[i - 1].rain + ps.rec[i].rain) / 2 * (ps.rec[i].t - ps.rec[i - 1].t);
       cum.push(cum[i - 1] + d); snowCum.push(snowCum[i - 1] + (ps.rec[i].T <= 0 && ps.rec[i - 1].T <= 0 ? d : 0));   // 和 pass() 的 snow 同一個算法
@@ -146,8 +146,8 @@
     g.fillStyle = color; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(text, bx + 7, y + 0.5);
     return { x: bx, w: w };
   }
-  function txt(g, s, x, y, color, align, font) { D.haloText(g, s, x, y, color, align || 'center', 'middle', font || '600 11px ' + FONT); }
-  function plain(g, s, x, y, color, align, font) { g.font = font || '600 11px ' + FONT; g.fillStyle = color; g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.fillText(s, x, y); }
+  function txt(g, s, x, y, color, align, font) { D.haloText(g, s, x, y, color, align || 'center', 'middle', font || '600 12px ' + FONT); }
+  function plain(g, s, x, y, color, align, font) { g.font = font || '600 12px ' + FONT; g.fillStyle = color; g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.fillText(s, x, y); }
   // 柔邊雲團（預先畫好重複用）
   const blobs = new Map();
   function blobAt(g, x, y, rx, ry, color, a) {
@@ -217,10 +217,10 @@
     // 測站
     const xs = L.px(0); g.fillStyle = C['fr-mark']; g.beginPath(); g.arc(xs, y0 + 13, 4.5, 0, Math.PI * 2); g.fill();
     g.restore();
-    txt(g, T('氣象站', 'Station'), xs, y0 + 26, C['fr-mark'], 'center', '700 10.5px ' + FONT);
+    txt(g, T('氣象站', 'Station'), xs, y0 + 26, C['fr-mark'], 'center', '700 12px ' + FONT);
     const lab = state.mode === 'stat' ? [T('北', 'N'), T('南', 'S')] : [T('西', 'W'), T('東', 'E')];
-    txt(g, lab[0], 16, y0 + 12, C.muted, 'left', '700 10.5px ' + FONT); txt(g, lab[1], W - 16, y0 + 12, C.muted, 'right', '700 10.5px ' + FONT);
-    txt(g, T('天氣圖', 'Weather map'), 30, y1 - 9, C.muted, 'left', '600 10px ' + FONT);
+    txt(g, lab[0], 16, y0 + 12, C.muted, 'left', '700 12px ' + FONT); txt(g, lab[1], W - 16, y0 + 12, C.muted, 'right', '700 12px ' + FONT);
+    txt(g, T('天氣圖', 'Weather map'), 30, y1 - 9, C.muted, 'left', '600 12px ' + FONT);
   }
 
   // ---------- 剖面 ----------
@@ -335,18 +335,19 @@
       else { const xb = Math.max(L.x0 + 10, xF + 40); D.arrow(g, xb + 20, L.yg - 14, xb + 20 + len, L.yg - 14, C['fr-cold'], 2); }
     }
     // 高度刻度
-    for (let z = 0; z <= 10000; z += 2000) txt(g, String(z / 1000), L.x0 - 6, L.pz(z), C.muted, 'right', '10px ' + FONT);
-    txt(g, 'km', L.x0 - 6, L.yTop - 10, C.muted, 'right', '600 10px ' + FONT);
-    txt(g, T('對流層頂', 'Tropopause'), L.x0 + 6, L.pz(FC.Z_TOP) - 9, C.muted, 'left', '600 10px ' + FONT);
+    for (let z = 0; z <= 10000; z += 2000) txt(g, String(z / 1000), L.x0 - 6, L.pz(z), C.muted, 'right', '12px ' + FONT);
+    txt(g, 'km', L.x0 - 6, L.yTop - 10, C.muted, 'right', '600 12px ' + FONT);
+    const yTrop = L.pz(FC.Z_TOP);
+    txt(g, T('對流層頂', 'Tropopause'), L.x0 + 6, yTrop - L.yTop < 30 ? yTrop + 12 : yTrop - 9, C.muted, 'left', '600 12px ' + FONT);
     // 氣團的名字
     const xc = side < 0 ? Math.max(L.x0 + 50, Math.min(xF - 70, L.x0 + 90)) : Math.min(L.x1 - 50, Math.max(xF + 90, L.x1 - 90));
     const xw = side < 0 ? Math.min(L.x1 - 60, Math.max(xF + 80, L.x1 - 70)) : Math.max(L.x0 + 60, Math.min(xF - 80, L.x0 + 80));
-    if (Math.abs(xc - xF) > 30) tag(g, T('冷氣團 ', 'Cold air ') + degC(P().Tc, 0), xc, L.yg - 40, C['fr-cold'], 'center', '700 11px ' + FONT);
-    if (Math.abs(xw - xF) > 30) tag(g, T('暖氣團 ', 'Warm air ') + degC(P().Tw, 0), xw, L.pz(1500), C['fr-warm'], 'center', '700 11px ' + FONT);
+    if (Math.abs(xc - xF) > 30) tag(g, T('冷氣團 ', 'Cold air ') + degC(P().Tc, 0), xc, L.yg - 40, C['fr-cold'], 'center', '700 12px ' + FONT);
+    if (Math.abs(xw - xF) > 30) tag(g, T('暖氣團 ', 'Warm air ') + degC(P().Tw, 0), xw, L.pz(1500), C['fr-warm'], 'center', '700 12px ' + FONT);
     // 坡度
     const sLab = Math.min(Math.abs(L.Xof(L.x1) - L.Xof(L.x0)) * 0.3, 4500 / (1000 * tan));
     const xl = L.px(Xf + (side > 0 ? 1 : -1) * sLab), yl = L.pz(sLab * 1000 * tan);
-    if (xl > L.x0 + 60 && xl < L.x1 - 60) txt(g, T('鋒面面 1 : ', 'Front 1 : ') + P().N, xl + (side > 0 ? 8 : -8), yl - 12, C['fr-surf'], side > 0 ? 'right' : 'left', '700 11px ' + FONT);
+    if (xl > L.x0 + 60 && xl < L.x1 - 60) txt(g, T('鋒面面 1 : ', 'Front 1 : ') + P().N, xl + (side > 0 ? 8 : -8), yl - 12, C['fr-surf'], side > 0 ? 'right' : 'left', '700 12px ' + FONT);
     // 測站
     const xs = L.px(0), st = model().f.station(sAt(tNow()));
     g.fillStyle = D.shade(C['fr-ground1'], -0.1); g.fillRect(xs - 9, L.yg - 14, 18, 14);
@@ -355,11 +356,11 @@
     const wv = bearingVec(st.wind + 180); D.arrow(g, xs + 5 - wv.x * 9, L.yg - 40, xs + 5 + wv.x * 9, L.yg - 40, C.text, 1.5);
     // 底下的距離刻度
     const span = L.Xmax - L.Xmin, sx = nice(span / (L.narrow ? 4 : 7));
-    for (let k = Math.ceil(L.Xmin / sx); k * sx <= L.Xmax; k++) { const x = L.px(k * sx); if (x > L.x0 + 8 && x < L.x1 - 8) plain(g, num(k * sx, 0), x, L.yg + 10, '#f8fafc', 'center', '600 10px ' + FONT); }
-    plain(g, T('離氣象站（km）', 'Distance from the station (km)'), L.x1 - 4, L.yg + 23, '#f8fafc', 'right', '600 10px ' + FONT);
+    for (let k = Math.ceil(L.Xmin / sx); k * sx <= L.Xmax; k++) { const x = L.px(k * sx); if (x > L.x0 + 8 && x < L.x1 - 8) plain(g, num(k * sx, 0), x, L.yg + 10, '#f8fafc', 'center', '600 12px ' + FONT); }
+    plain(g, T('離氣象站（km）', 'Distance from the station (km)'), L.x1 - 4, L.yg + 23, '#f8fafc', 'right', '600 12px ' + FONT);
     // 垂直放大
     const ve = ((L.Xmax - L.Xmin) / (L.x1 - L.x0)) / ((Z_VIEW / 1000) / (L.yg - L.yTop));
-    txt(g, T('垂直放大 ', 'Vertical exaggeration ×') + (T('', '') + Math.round(ve / 10) * 10) + T(' 倍', ''), L.x0 + 6, L.yTop + 6, C.muted, 'left', '600 10px ' + FONT);
+    txt(g, T('垂直放大 ', 'Vertical exaggeration ×') + (T('', '') + Math.round(ve / 10) * 10) + T(' 倍', ''), L.x0 + 6, L.yTop + 6, C.muted, 'left', '600 12px ' + FONT);
   }
 
   function drawMain() {
@@ -380,9 +381,9 @@
   // =====================================================================
   function axisNum(v, st) { const dg = Math.max(0, -Math.floor(Math.log10(st) + 1e-9)); return num(v, dg); }
   function chartStation(g, W, H) {
-    const m = model(), run = state.run, x0 = 44, x1 = W - 44, tEnd = m.ps.tEndRun;
+    const m = model(), run = state.run, x0 = 48, x1 = W - 48, tEnd = m.ps.tEndRun;
     const xx = function (t) { return x0 + t / tEnd * (x1 - x0); };
-    const A = { y0: 18, y1: Math.round(H * 0.52) }, B = { y0: Math.round(H * 0.52) + 22, y1: H - 30 };
+    const A = { y0: 22, y1: Math.round(H * 0.51) }, B = { y0: Math.round(H * 0.51) + 26, y1: H - 34 };
     const tCur = run ? run.t : 0, rec = m.ps.rec, n = rec.length, dt = n > 1 ? rec[1].t : 0.02, iCur = Math.min(n - 1, Math.floor(tCur / dt + 1e-9));
     // 範圍（照整段紀錄，播放時刻度不會一直跳）
     let tMin = 1e9, tMax = -1e9; rec.forEach(function (r) { tMin = Math.min(tMin, r.T, r.Td); tMax = Math.max(tMax, r.T, r.Td); });
@@ -396,18 +397,18 @@
     // 格線與刻度
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
     const sx = nice(tEnd / (W > 480 ? 8 : 4));
-    for (let t = 0; t <= tEnd + 1e-9; t += sx) { const x = xx(t); g.beginPath(); g.moveTo(x, A.y0); g.lineTo(x, B.y1); g.stroke(); txt(g, num(t, 0), x, B.y1 + 11, C.muted, 'center', '10px ' + FONT); }
-    txt(g, T('時間（小時）', 'Time (hours)'), (x0 + x1) / 2, B.y1 + 24, C.muted, 'center', '600 10.5px ' + FONT);
+    for (let t = 0; t <= tEnd + 1e-9; t += sx) { const x = xx(t); g.beginPath(); g.moveTo(x, A.y0); g.lineTo(x, B.y1); g.stroke(); txt(g, num(t, 0), x, B.y1 + 11, C.muted, 'center', '12px ' + FONT); }
+    txt(g, T('時間（小時）', 'Time (hours)'), (x0 + x1) / 2, B.y1 + 24, C.muted, 'center', '600 12px ' + FONT);
     const sy = nice((tMax - tMin) / 4);
-    for (let v = Math.ceil(tMin / sy) * sy; v <= tMax; v += sy) { const y = yA(v); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); txt(g, axisNum(v, sy), x0 - 6, y, C.muted, 'right', '10px ' + FONT); }
+    for (let v = Math.ceil(tMin / sy) * sy; v <= tMax; v += sy) { const y = yA(v); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); txt(g, axisNum(v, sy), x0 - 6, y, C.muted, 'right', '12px ' + FONT); }
     const sp = nice((pMax - pMin) / 4);
-    for (let v = Math.ceil(pMin / sp) * sp; v <= pMax; v += sp) txt(g, axisNum(v, sp), x1 + 6, yP(v), C['fr-press'], 'left', '10px ' + FONT);
+    for (let v = Math.ceil(pMin / sp) * sp; v <= pMax; v += sp) txt(g, axisNum(v, sp), x1 + 6, yP(v), C['fr-press'], 'left', '12px ' + FONT);
     const sr = nice(rMax / 3);
-    for (let v = 0; v <= rMax; v += sr) { const y = yR(v); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); txt(g, axisNum(v, sr), x0 - 6, y, C['fr-rain'], 'right', '10px ' + FONT); }
+    for (let v = 0; v <= rMax; v += sr) { const y = yR(v); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); txt(g, axisNum(v, sr), x0 - 6, y, C['fr-rain'], 'right', '12px ' + FONT); }
     const sc = nice(cMax / 3);
-    for (let v = 0; v <= cMax; v += sc) txt(g, axisNum(v, sc), x1 + 6, yC(v), C.text, 'left', '10px ' + FONT);
-    txt(g, '°C', x0 - 6, A.y0 - 9, C.muted, 'right', '600 10px ' + FONT); txt(g, 'hPa', x1 + 6, A.y0 - 9, C['fr-press'], 'left', '600 10px ' + FONT);
-    txt(g, 'mm/h', x0 - 4, B.y0 - 10, C['fr-rain'], 'right', '600 10px ' + FONT); txt(g, 'mm', x1 + 6, B.y0 - 10, C.text, 'left', '600 10px ' + FONT);
+    for (let v = 0; v <= cMax; v += sc) txt(g, axisNum(v, sc), x1 + 6, yC(v), C.text, 'left', '12px ' + FONT);
+    txt(g, '°C', x0 - 6, A.y0 - 9, C.muted, 'right', '600 12px ' + FONT); txt(g, 'hPa', x1 + 6, A.y0 - 9, C['fr-press'], 'left', '600 12px ' + FONT);
+    txt(g, 'mm/h', x0 - 4, B.y0 - 10, C['fr-rain'], 'right', '600 12px ' + FONT); txt(g, 'mm', x1 + 6, B.y0 - 10, C.text, 'left', '600 12px ' + FONT);
     g.strokeStyle = D.alpha(C.text, 0.45); g.strokeRect(x0, A.y0, x1 - x0, A.y1 - A.y0); g.strokeRect(x0, B.y0, x1 - x0, B.y1 - B.y0);
     if (!run) { txt(g, T('按「讓鋒面通過」開始記錄', 'Press “Let the front pass” to start recording'), (x0 + x1) / 2, (A.y0 + A.y1) / 2, C.muted, 'center', '600 12px ' + FONT); }
     else {
@@ -420,25 +421,25 @@
       line(function (r) { return r.p; }, C['fr-press'], 2, yP);
       line(function (r) { return r.Td; }, C['fr-td'], 2.2, yA);
       line(function (r) { return r.T; }, C['fr-warm'], 2.6, yA);
-      if (m.ps.tFront != null && m.ps.tFront <= tCur) { const x = xx(m.ps.tFront); g.strokeStyle = D.alpha(C['fr-surf'], 0.7); g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x, A.y0); g.lineTo(x, B.y1); g.stroke(); g.setLineDash([]); const lab = T('鋒面通過', 'Front passes'), fnt = '700 10.5px ' + FONT; g.font = fnt; const lw = g.measureText(lab).width, right = x + 4 + lw <= x1 - 4; txt(g, lab, right ? x + 4 : x - 4, A.y0 + 10, C['fr-surf'], right ? 'left' : 'right', fnt); }
+      if (m.ps.tFront != null && m.ps.tFront <= tCur) { const x = xx(m.ps.tFront); g.strokeStyle = D.alpha(C['fr-surf'], 0.7); g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x, A.y0); g.lineTo(x, B.y1); g.stroke(); g.setLineDash([]); const lab = T('鋒面通過', 'Front passes'), fnt = '700 12px ' + FONT; g.font = fnt; const lw = g.measureText(lab).width, right = x + 4 + lw <= x1 - 4; txt(g, lab, right ? x + 4 : x - 4, A.y0 + 10, C['fr-surf'], right ? 'left' : 'right', fnt); }
       const x = xx(tCur); g.strokeStyle = D.alpha(C.text, 0.6); g.lineWidth = 1; g.beginPath(); g.moveTo(x, A.y0); g.lineTo(x, B.y1); g.stroke();
     }
-    txt(g, T('紅：氣溫　青：露點　紫：氣壓（右）', 'Red: temperature  Cyan: dew point  Purple: pressure (right)'), x0 + 8, A.y0 - 9, C.text, 'left', '600 10px ' + FONT);
-    txt(g, T('藍柱：降雨率　線：累積雨量（右）', 'Bars: rain rate  Line: total rain (right)'), x0 + 30, B.y0 - 10, C.text, 'left', '600 10px ' + FONT);
+    txt(g, T('紅：氣溫　青：露點　紫：氣壓（右）', 'Red: temperature  Cyan: dew point  Purple: pressure (right)'), x0 + 8, A.y0 - 9, C.text, 'left', '600 12px ' + FONT);
+    txt(g, T('藍柱：降雨率　線：累積雨量（右）', 'Bars: rain rate  Line: total rain (right)'), x0 + 30, B.y0 - 10, C.text, 'left', '600 12px ' + FONT);
   }
   function chartRain(g, W, H) {
-    const m = model(), f = m.f, L = { x0: 44, x1: W - 16 }, y0 = 22, y1 = H - 34, Xf = frontX(tNow());
+    const m = model(), f = m.f, L = { x0: 48, x1: W - 16 }, y0 = 24, y1 = H - 36, Xf = frontX(tNow());
     const Xmin = -0.75 * m.wkm, Xmax = 0.25 * m.wkm;
     const xx = function (X) { return L.x0 + (X - Xmin) / (Xmax - Xmin) * (L.x1 - L.x0); };
     const rMax = Math.max(1, f.rain(0.5) * 1.2);
     const yy = function (v) { return y1 - v / rMax * (y1 - y0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
     const sx = nice((Xmax - Xmin) / (W > 480 ? 8 : 4));
-    for (let k = Math.ceil(Xmin / sx); k * sx <= Xmax; k++) { const x = xx(k * sx); g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); txt(g, num(k * sx, 0), x, y1 + 11, C.muted, 'center', '10px ' + FONT); }
+    for (let k = Math.ceil(Xmin / sx); k * sx <= Xmax; k++) { const x = xx(k * sx); g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke(); txt(g, num(k * sx, 0), x, y1 + 11, C.muted, 'center', '12px ' + FONT); }
     const sy = nice(rMax / 4);
-    for (let v = 0; v <= rMax; v += sy) { const y = yy(v); g.beginPath(); g.moveTo(L.x0, y); g.lineTo(L.x1, y); g.stroke(); txt(g, axisNum(v, sy), L.x0 - 6, y, C.muted, 'right', '10px ' + FONT); }
-    txt(g, T('離氣象站（km）', 'Distance from the station (km)'), (L.x0 + L.x1) / 2, y1 + 24, C.muted, 'center', '600 10.5px ' + FONT);
-    txt(g, T('地面的降雨率（mm/h）', 'Rain rate at the ground (mm/h)'), 6, 10, C.muted, 'left', '600 10.5px ' + FONT);
+    for (let v = 0; v <= rMax; v += sy) { const y = yy(v); g.beginPath(); g.moveTo(L.x0, y); g.lineTo(L.x1, y); g.stroke(); txt(g, axisNum(v, sy), L.x0 - 6, y, C.muted, 'right', '12px ' + FONT); }
+    txt(g, T('離氣象站（km）', 'Distance from the station (km)'), (L.x0 + L.x1) / 2, y1 + 24, C.muted, 'center', '600 12px ' + FONT);
+    txt(g, T('地面的降雨率（mm/h）', 'Rain rate at the ground (mm/h)'), 6, 10, C.muted, 'left', '600 12px ' + FONT);
     g.save(); g.beginPath(); g.rect(L.x0, y0, L.x1 - L.x0, y1 - y0); g.clip();
     g.beginPath(); g.moveTo(L.x0, y1);
     for (let x = L.x0; x <= L.x1; x += 2) { const X = Xmin + (x - L.x0) / (L.x1 - L.x0) * (Xmax - Xmin); g.lineTo(x, yy(f.rain(sOfX(X, Xf)))); }
@@ -449,11 +450,11 @@
       g.strokeStyle = C.text; g.lineWidth = 1.2; g.beginPath(); g.moveTo(a, yb); g.lineTo(b, yb); g.stroke();
       [a, b].forEach(function (x) { g.beginPath(); g.moveTo(x, yb - 5); g.lineTo(x, yb + 5); g.stroke(); });
       const lab = T('雨帶 ', 'Rain band ') + num(f.sRain, 0) + ' km' + (P().U > 0 ? T(' ÷ ', ' ÷ ') + num(P().U, 1) + ' km/h ≈ ' + hrs(f.sRain / P().U) : '');
-      txt(g, lab, Math.max(L.x0 + 80, Math.min(L.x1 - 80, (a + b) / 2)), yb + 14, C.text, 'center', '700 11px ' + FONT);
+      txt(g, lab, Math.max(L.x0 + 80, Math.min(L.x1 - 80, (a + b) / 2)), yb + 14, C.text, 'center', '700 12px ' + FONT);
     }
     const xs = xx(0); g.strokeStyle = C['fr-mark']; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(xs, y0); g.lineTo(xs, y1); g.stroke(); g.setLineDash([]);
     g.restore();
-    txt(g, T('氣象站', 'Station'), xs, y1 - 8, C['fr-mark'], 'center', '700 10.5px ' + FONT);
+    txt(g, T('氣象站', 'Station'), xs, y1 - 8, C['fr-mark'], 'center', '700 12px ' + FONT);
     g.strokeStyle = D.alpha(C.text, 0.45); g.strokeRect(L.x0, y0, L.x1 - L.x0, y1 - y0);
   }
   function drawChart() {
@@ -477,15 +478,26 @@
     if (run && run.playing) requestDraw(); else lastFrame = 0;
   }
   function sound() { const Ls = window.LabSound; return Ls && Ls.enabled() ? Ls : null; }
-  function rate() { return Math.max(1, model().ps.tEndRun / RUN_SEC); }
+  function rate() { return Math.max(1, Math.min(model().ps.tEndRun, FC.T_MAX) / RUN_SEC); }
   function startRun() {
     acted();
     const run = state.run;
     if (run && !run.done && !run.playing) { run.playing = true; updateButtons(); requestDraw(); return; }
     if (run && run.playing) return;
+    state.tCap = FC.T_MAX;
     state.run = { t: 0, playing: true, done: false, passed: false, raining: false };
     setStatus({ cold: T('冷鋒從西邊推過來……', 'The cold front is pushing in from the west…'), warm: T('暖鋒還在很遠的西邊，先注意天空的雲……', 'The warm front is still far to the west; watch the clouds in the sky first…'), stat: T('梅雨鋒面停在附近，西南氣流把水氣一直送上來……', 'The plum rain front hangs nearby while the south-westerly flow keeps feeding it moisture…') }[state.mode]);
     const snd = sound(); if (snd) snd.tone({ freq: 660, dur: 0.1, type: 'sine', gain: 0.04 });
+    updateButtons(); afterChange(true); requestDraw();
+  }
+  function extendRun() {
+    const run = state.run;
+    if (!run || !run.done || !model().ps.capped) return;
+    acted();
+    state.tCap += FC.T_MAX;
+    run.done = false;
+    run.playing = true;
+    setStatus(T('觀測窗已延長至 ' + num(state.tCap, 0) + ' 小時，繼續追蹤鋒面通過……', 'Observation window extended to ' + num(state.tCap, 0) + ' h; continuing to track the front…'));
     updateButtons(); afterChange(true); requestDraw();
   }
   function stepRun(dt) {
@@ -503,13 +515,13 @@
     updateReadouts();
   }
   function rainPeriod(ps) {
-    return ps.capped ? T('72 小時累積', '72 h accumulation') : T('整次通過累積', 'Full passage accumulation');
+    return ps.capped ? T(num(state.tCap, 0) + ' 小時累積', num(state.tCap, 0) + ' h accumulation') : T('整次通過累積', 'Full passage accumulation');
   }
   function finishRun() {
     const run = state.run, m = model(), ps = m.ps;
     run.playing = false; run.done = true; run.t = ps.tEndRun;
     const ev = snapshot(); ev.anim = false;
-    setStatus(T('紀錄完成：', 'Record complete: ') + hrs(ps.tEndRun) + T('內下了 ', ', total rain ') + num(ps.total, 1) + ' mm · ' + rainPeriod(ps) + T('（下雨 ', ' (rain for ') + hrs(ps.hours) + T('，最大 ', ', peak ') + num(ps.peak, 1) + ' mm/h' + T('）；氣溫變化 ', '); temperature change ') + degC(ps.dT) + T('、氣壓變化 ', ', pressure change ') + num(ps.dP, 1) + ' hPa' + T('。', '.') + (ps.capped ? T('（72 小時還沒走完）', ' (still not through after 72 h)') : ''));
+    setStatus(T('紀錄完成：', 'Record complete: ') + hrs(ps.tEndRun) + T('內下了 ', ', total rain ') + num(ps.total, 1) + ' mm · ' + rainPeriod(ps) + T('（下雨 ', ' (rain for ') + hrs(ps.hours) + T('，最大 ', ', peak ') + num(ps.peak, 1) + ' mm/h' + T('）；氣溫變化 ', '); temperature change ') + degC(ps.dT) + T('、氣壓變化 ', ', pressure change ') + num(ps.dP, 1) + ' hPa' + T('。', '.') + (ps.capped ? T('（' + num(state.tCap, 0) + ' 小時還沒走完，可按「延長觀測」繼續）', ' (still not through after ' + num(state.tCap, 0) + ' h; press “Extend” to continue)') : ''));
     const snd = sound(); if (snd) { snd.tone({ freq: 784, dur: 0.12, type: 'triangle', gain: 0.05 }); snd.tone({ freq: 1175, dur: 0.18, type: 'triangle', gain: 0.04, delay: 0.1 }); }
     updateButtons(); updateReadouts();
     emit('run', ev);
@@ -589,6 +601,8 @@
     const run = state.run;
     $('go').textContent = run && !run.done ? (run.playing ? T('鋒面通過中…', 'Front passing…') : T('繼續', 'Resume')) : T('讓鋒面通過', 'Let the front pass');
     $('pause').disabled = !run || run.done || !run.playing;
+    const ext = $('extend');
+    if (ext) ext.hidden = !(run && run.done && model().ps.capped);
   }
   function updateSoundButton() {
     const on = !!(window.LabSettings && window.LabSettings.get('sound'));
@@ -602,7 +616,7 @@
       const b = document.createElement('button');
       b.type = 'button'; b.setAttribute('data-p', pr.id); b.textContent = T(pr.zh, pr.en);
       b.addEventListener('click', function () {
-        acted(); state.P[state.mode] = Object.assign({}, pr.p); state.preset[state.mode] = pr.id; state.run = null;
+        acted(); state.P[state.mode] = Object.assign({}, pr.p); state.preset[state.mode] = pr.id; state.run = null; state.tCap = FC.T_MAX;
         syncSliders(); setStatus(T(pr.zh, pr.en) + T('：按「讓鋒面通過」。', ': press “Let the front pass”.'));
         refreshOutputs(); updateButtons(); afterChange(true);
       });
@@ -613,7 +627,7 @@
   // =====================================================================
   // 控制項
   // =====================================================================
-  function changed() { state.preset[state.mode] = ''; state.run = null; updateButtons(); refreshOutputs(); afterChange(); }
+  function changed() { state.preset[state.mode] = ''; state.run = null; state.tCap = FC.T_MAX; updateButtons(); refreshOutputs(); afterChange(); }
   function clampAll(src) {
     const p = P();
     if (src === 'tw' || src === 'tc') {
@@ -640,7 +654,7 @@
     b.addEventListener('click', function () {
       acted();
       if (state.run && state.run.playing) state.run.playing = false;
-      state.mode = b.getAttribute('data-mode'); state.run = null;
+      state.mode = b.getAttribute('data-mode'); state.run = null; state.tCap = FC.T_MAX;
       syncSliders(); fillPresets(); refreshOutputs(); updateButtons(); afterChange(true);
       setStatus(T('按「讓鋒面通過」，看氣象站記到什麼。', 'Press “Let the front pass” and see what the station records.'));
     });
@@ -650,8 +664,9 @@
   });
   $('go').addEventListener('click', function () { startRun(); });
   $('pause').addEventListener('click', function () { acted(); pauseRun(); });
+  if ($('extend')) $('extend').addEventListener('click', function () { extendRun(); });
   $('clear').addEventListener('click', function () {
-    acted(); state.run = null;
+    acted(); state.run = null; state.tCap = FC.T_MAX;
     setStatus(T('已清除紀錄，設定不變。', 'Records cleared; the settings are kept.'));
     updateButtons(); afterChange(true);
   });
@@ -660,7 +675,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // =====================================================================
   // 啟動
@@ -688,10 +703,10 @@
     state: state, FC: FC, snapshot: snapshot, model: model,
     set: function (o) {
       acted();
-      if (o.mode && o.mode !== state.mode) { state.mode = o.mode; state.run = null; fillPresets(); }
+      if (o.mode && o.mode !== state.mode) { state.mode = o.mode; state.run = null; state.tCap = FC.T_MAX; fillPresets(); }
       const p = P(); let ch = false;
       ['Tw', 'Tdw', 'Tc', 'Tdc', 'N', 'U', 'V'].forEach(function (k) { if (o[k] != null) { p[k] = o[k]; ch = true; } });
-      if (ch) { state.preset[state.mode] = ''; state.run = null; }
+      if (ch) { state.preset[state.mode] = ''; state.run = null; state.tCap = FC.T_MAX; }
       if (o.chart) state.chart = o.chart;
       if (o.t != null && state.run) state.run.t = o.t;
       syncSliders(); refreshOutputs(); updateButtons(); afterChange(true);

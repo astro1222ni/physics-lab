@@ -223,17 +223,17 @@
       g.restore();
     }
     // 座標軸：左邊高度（km）、右邊氣壓（hPa）
-    g.font = '11px ' + FONT;
+    g.font = '12px ' + FONT;
     g.textBaseline = 'middle';
     for (let z = 0; z <= ZVIEW; z += 1000) {
       const y = l.Y(z);
       g.textAlign = 'right';
-      D.haloText(g, num(z / 1000, 0), l.pad.l - 6, y, C.muted, 'right', 'middle', '11px ' + FONT);
+      D.haloText(g, num(z / 1000, 0), l.pad.l - 6, y, C.muted, 'right', 'middle', '12px ' + FONT);
       const p = K.envP(res.env, z) / 100;
-      D.haloText(g, num(p, 0), W - l.pad.r + 6, y, C.muted, 'left', 'middle', '11px ' + FONT);
+      D.haloText(g, num(p, 0), W - l.pad.r + 6, y, C.muted, 'left', 'middle', '12px ' + FONT);
     }
-    D.haloText(g, 'km', l.pad.l - 6, 4, C.muted, 'right', 'top', '600 11px ' + FONT);
-    D.haloText(g, 'hPa', W - l.pad.r + 6, 4, C.muted, 'left', 'top', '600 11px ' + FONT);
+    D.haloText(g, 'km', l.pad.l - 6, 4, C.muted, 'right', 'top', '600 12px ' + FONT);
+    D.haloText(g, 'hPa', W - l.pad.r + 6, 4, C.muted, 'left', 'top', '600 12px ' + FONT);
     // 雲另外畫一層，雨畫在兩層之間（雨絲在雲裡若隱若現）
     const cc = document.createElement('canvas');
     cc.width = c.width; cc.height = c.height;
@@ -451,9 +451,9 @@
     // 比例尺與高度誇大倍數（右上角）
     const ty = l.pad.t + 16;
     const exTxt = l.W < 560 ? T('高度 ×', 'Heights ×') + Math.round(l.exag) : T('高度誇大約 ', 'Heights ×') + Math.round(l.exag) + T(' 倍', '');
-    g.font = '11px ' + FONT;
+    g.font = '12px ' + FONT;
     const exW = g.measureText(exTxt).width;
-    D.haloText(g, exTxt, l.W - l.pad.r - 4, ty, C.muted, 'right', 'middle', '11px ' + FONT);
+    D.haloText(g, exTxt, l.W - l.pad.r - 4, ty, C.muted, 'right', 'middle', '12px ' + FONT);
     const sx = l.W - l.pad.r - 4 - exW - 12;
     const kmPx = l.pw / DOMAIN_KM * 20;
     if (l.W >= 560) {
@@ -461,7 +461,7 @@
     g.strokeStyle = C.muted; g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(sx - kmPx, ty); g.lineTo(sx, ty); g.moveTo(sx - kmPx, ty - 3); g.lineTo(sx - kmPx, ty + 3); g.moveTo(sx, ty - 3); g.lineTo(sx, ty + 3); g.stroke();
     g.restore();
-    D.haloText(g, '20 km', sx - kmPx - 5, ty, C.muted, 'right', 'middle', '11px ' + FONT);
+    D.haloText(g, '20 km', sx - kmPx - 5, ty, C.muted, 'right', 'middle', '12px ' + FONT);
     }
   }
 
@@ -532,10 +532,10 @@
     // 軸
     g.strokeStyle = D.alpha(C.text, 0.35); g.lineWidth = 1;
     g.beginPath(); g.moveTo(x0 + 0.5, y0); g.lineTo(x0 + 0.5, y1 + 0.5); g.lineTo(x1, y1 + 0.5); g.stroke();
-    for (let z = 0; z <= L.top; z += zStep) D.haloText(g, num(z / 1000, 0), x0 - 5, L.Y(z), C.muted, 'right', 'middle', '11px ' + FONT);
-    for (let t = L.lo; t <= L.hi; t += tStep) D.haloText(g, num(t, 0), L.X(t + TK), y1 + 5, C.muted, 'center', 'top', '11px ' + FONT);
-    D.haloText(g, T('高度（km）', 'Height (km)'), x0 - 4, 4, C.muted, 'left', 'top', '600 11px ' + FONT);
-    D.haloText(g, T('溫度（°C）', 'Temperature (°C)'), x1, L.H - 4, C.muted, 'right', 'bottom', '600 11px ' + FONT);
+    for (let z = 0; z <= L.top; z += zStep) D.haloText(g, num(z / 1000, 0), x0 - 5, L.Y(z), C.muted, 'right', 'middle', '12px ' + FONT);
+    for (let t = L.lo; t <= L.hi; t += tStep) D.haloText(g, num(t, 0), L.X(t + TK), y1 + 5, C.muted, 'center', 'top', '12px ' + FONT);
+    D.haloText(g, T('高度（km）', 'Height (km)'), x0 - 4, 4, C.muted, 'left', 'top', '600 12px ' + FONT);
+    D.haloText(g, T('溫度（°C）', 'Temperature (°C)'), x1, L.H - 4, C.muted, 'right', 'bottom', '600 12px ' + FONT);
     return c;
   }
   function polyline(g, L, arr, key, from, to, color, width, dash) {
@@ -817,7 +817,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', on);
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 測量紀錄 ----------
   const recBody = $('recBody');

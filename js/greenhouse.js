@@ -321,13 +321,19 @@
     g.fillRect(x - tw / 2 + 1.5, yT, tw - 3, y1 + 4 - yT);
     D.ball(g, x, y1 + br * 0.9, br, fill, { shadow: false });
     // 刻度：255（沒有溫室效應）、288（工業革命前）、目前的大氣溫度
-    const fs = L.narrow ? 10 : 11;
+    const fs = Math.max(12, L.narrow ? 12 : 12);
     [[255, '255'], [288, '288']].forEach(function (m) {
       const y = Math.round(tY(L, m[0])) + 0.5;
       g.strokeStyle = C.muted; g.lineWidth = 1;
       g.beginPath(); g.moveTo(x - tw / 2 - 5, y); g.lineTo(x - tw / 2 - 1, y); g.stroke();
       D.haloText(g, m[1], x - tw / 2 - 7, y, C.muted, 'right', 'middle', '500 ' + fs + 'px ' + FONT);
     });
+    // 超出 200–340 K 範圍時在溫度計對應端點畫出超出箭頭並標示真值
+    if (state.T < TMIN || state.T > TMAX) {
+      const low = state.T < TMIN;
+      const ay = low ? y1 + br * 0.1 : y0 - 2;
+      D.haloText(g, (low ? '↓ ' : '↑ ') + num(state.T, 1) + ' K', x - tw / 2 - 7, ay, fill, 'right', 'middle', '700 ' + fs + 'px ' + FONT);
+    }
     D.pill(g, num(state.T - 273.15, 1) + ' °C', L.W - 3, L.H - 6, fill, 'right', '700 ' + (fs + 1) + 'px ' + FONT);
   }
 
@@ -425,12 +431,21 @@
     }
     line(g, A, F.X, F.Y, C['gh-asr'], 2.4);
     line(g, O, F.X, F.Y, C['gh-olr'], 2.4, [7, 4]);
-    // 平衡點
-    roots.filter(function (e) { return e.T >= TMIN && e.T <= TMAX; }).forEach(function (e) {
-      const px = F.X(e.T), py = F.Y(K.asr(c.P, e.T));
-      g.lineWidth = 2; g.strokeStyle = C['gh-eq'];
-      g.fillStyle = e.stable ? C['gh-eq'] : C['canvas-bg'];
-      g.beginPath(); g.arc(px, py, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    // 平衡點（含落在 200–340 K 外的根：在軸端標真值與超出箭頭）
+    let outLeft = 0, outRight = 0;
+    roots.forEach(function (e) {
+      if (e.T >= TMIN && e.T <= TMAX) {
+        const px = F.X(e.T), py = F.Y(K.asr(c.P, e.T));
+        g.lineWidth = 2; g.strokeStyle = C['gh-eq'];
+        g.fillStyle = e.stable ? C['gh-eq'] : C['canvas-bg'];
+        g.beginPath(); g.arc(px, py, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
+      } else if (e.T < TMIN) {
+        const py = GM.t + 26 + outLeft * 20; outLeft++;
+        D.pill(g, '◀ ' + T('平衡 ', 'Eq. ') + num(e.T, 1) + ' K', GM.l + 4, py, C['gh-eq'], 'left', '600 ' + Math.max(12, F.fs) + 'px ' + FONT);
+      } else {
+        const py = GM.t + 26 + outRight * 20; outRight++;
+        D.pill(g, T('平衡 ', 'Eq. ') + num(e.T, 1) + ' K ▶', W - GM.r - 4, py, C['gh-eq'], 'right', '600 ' + Math.max(12, F.fs) + 'px ' + FONT);
+      }
     });
     // 圖例
     const lx = W < 520 ? GM.l + 8 : W - GM.r - 8, al = W < 520 ? 'left' : 'right';
@@ -442,14 +457,19 @@
   function drawBalance(g, W, H, c) {
     const F = balanceBackground(W, H, c);
     g.drawImage(balanceLayer, 0, 0, W, H);
-    // 目前的溫度
-    const px = F.X(state.T);
+    // 目前的溫度（若超出 200–340 K，夾在軸端並畫超出箭頭與真值）
+    const outLow = state.T < TMIN, outHigh = state.T > TMAX;
+    const px = F.X(Math.max(TMIN, Math.min(TMAX, state.T)));
     g.save(); g.strokeStyle = D.alpha(C.text, 0.45); g.setLineDash([3, 4]); g.lineWidth = 1;
     g.beginPath(); g.moveTo(px, GM.t); g.lineTo(px, H - GM.b); g.stroke(); g.restore();
     const ya = F.Y(c.f.absorbed), yo = F.Y(c.f.olr);
     g.strokeStyle = Math.abs(c.f.N) < EQ_N ? C['gh-eq'] : c.f.N > 0 ? C['gh-warm'] : C['gh-cold']; g.lineWidth = 3; g.lineCap = 'round';
     g.beginPath(); g.moveTo(px, ya); g.lineTo(px, yo); g.stroke();
     D.ball(g, px, ya, 4.5, C['gh-asr']); D.ball(g, px, yo, 4.5, C['gh-olr']);
+    if (outLow || outHigh) {
+      const tag = outLow ? ('◀ ' + num(state.T, 1) + ' K') : (num(state.T, 1) + ' K ▶');
+      D.pill(g, tag, outLow ? GM.l + 4 : W - GM.r - 4, H - GM.b - 8, g.strokeStyle, outLow ? 'left' : 'right', '700 ' + Math.max(12, F.fs) + 'px ' + FONT);
+    }
     if (Math.abs(c.f.N) >= EQ_N) {
       const dir = c.f.N > 0 ? 1 : -1, ym = (ya + yo) / 2;
       D.arrow(g, px + dir * 8, ym, px + dir * 34, ym, g.strokeStyle, 2.2);

@@ -22,7 +22,17 @@
   // =====================================================================
   const ids = ['lat', 'U', 'windFrom', 'Av', 'zProbe', 'H1', 'days', 'p'];
   const el = {}; ids.forEach(function (k) { el[k] = $(k); });
-  const state = { mode: 'spiral', hemi: 'N', coast: 'W', playing: false, acted: false };
+  const state = { mode: 'spiral', hemi: 'N', coast: 'W', playing: false, acted: false, daysMax: DAYS_MAX };
+  function setDaysMax(m) {
+    state.daysMax = Math.max(DAYS_MAX, Math.round(m));
+    el.days.max = String(state.daysMax);
+  }
+  function updateCoastExtendButtons() {
+    const show = state.mode === 'coast' && Cs;
+    const ext = $('extendDaysBtn'), jmp = $('jumpOutBtn');
+    if (ext) ext.hidden = !(show && (!Cs.out || P.days >= state.daysMax - 1e-6));
+    if (jmp) jmp.hidden = !(show && isFinite(Cs.tOut) && Cs.tOut > state.daysMax);
+  }
   let internal = false;
   function setRange(r, v) { internal = true; if (window.LabNum) window.LabNum.set(r, v); else r.value = String(v); internal = false; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -616,13 +626,14 @@
   function chartCoast(g, W, H, fs) {
     const gap = 54, half = (W - 46 - gap) / 2;
     const b1 = { l: 46, r: 46 + half, t: 22, b: H - 34 }, b2 = { l: 46 + half + gap, r: W - 8, t: 22, b: H - 34 };
-    const eMax = Cs.Moff * DAYS_MAX * 86400 / Cs.Rd;
+    const dMax = state.daysMax || DAYS_MAX;
+    const eMax = Cs.Moff * dMax * 86400 / Cs.Rd;
     let lo = Math.min(0, eMax), hi = Math.max(0, eMax, P.H1 * 1.2);
     const st = niceStep(hi - lo, 4); lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st;
-    const A = axes(g, b1, [0, DAYS_MAX], [lo, hi], T('天數', 'Days'), T('岸邊溫躍層抬升（m）', 'Thermocline rise at coast (m)'), fs, { sx: 5, sy: st });
+    const A = axes(g, b1, [0, dMax], [lo, hi], T('天數', 'Days'), T('岸邊溫躍層抬升（m）', 'Thermocline rise at coast (m)'), fs, { sx: niceStep(dMax, 4), sy: st });
     // 露頭門檻 η = H1
     if (P.H1 <= hi) { const y = A.Y(P.H1); g.strokeStyle = D.alpha(C.text, 0.55); g.setLineDash([5, 4]); g.beginPath(); g.moveTo(b1.l, y); g.lineTo(b1.r, y); g.stroke(); g.setLineDash([]); D.haloText(g, T('冷水露頭', 'cold water surfaces'), b1.l + 4, y - 7, C.text, 'left', 'middle', '600 ' + (fs - 1) + 'px ' + FONT); }
-    g.strokeStyle = C.accent; g.lineWidth = 2.2; g.beginPath(); g.moveTo(A.X(0), A.Y(0)); g.lineTo(A.X(DAYS_MAX), A.Y(eMax)); g.stroke();
+    g.strokeStyle = C.accent; g.lineWidth = 2.2; g.beginPath(); g.moveTo(A.X(0), A.Y(0)); g.lineTo(A.X(dMax), A.Y(eMax)); g.stroke();
     D.ball(g, A.X(P.days), A.Y(Cs.eta0), 5, C.accent);
     const B = axes(g, b2, [0, DAYS_MAX], [8, 22], T('天數', 'Days'), T('岸邊海面溫度（°C）', 'SST at the coast (°C)'), fs, { sx: 5, sy: 2 });
     g.strokeStyle = '#0ea5e9'; g.lineWidth = 2.2; g.beginPath();
@@ -780,7 +791,7 @@
     }
     lastEnso = Q.enso.state; lastOut = Cs.out; lastUp = up;
   }
-  function refreshAll() { compute(); soundCues(); refreshOutputs(); updateReadouts(); requestDraw(); }
+  function refreshAll() { compute(); soundCues(); refreshOutputs(); updateReadouts(); updateCoastExtendButtons(); requestDraw(); }
 
   // =====================================================================
   // 控制項
@@ -827,26 +838,55 @@
   });
   // 播放（沿岸湧升的天數）
   let lastT = 0;
-  function setPlayLabel() { $('playBtn').textContent = state.playing ? T('暫停', 'Pause') : T('播放', 'Play'); $('playBtn').setAttribute('aria-pressed', String(state.playing)); }
+  function setPlayLabel() {
+    $('playBtn').textContent = state.playing ? T('暫停', 'Pause') : T('播放', 'Play');
+    $('playBtn').setAttribute('aria-pressed', String(state.playing));
+    updateCoastExtendButtons();
+  }
   function stopPlay() { if (state.playing) { state.playing = false; setPlayLabel(); setRange(el.days, P.days); emitState(true); } }
   $('playBtn').addEventListener('click', function () {
     acted();
     if (state.playing) { stopPlay(); return; }
-    if (P.days >= DAYS_MAX - 1e-6) setRange(el.days, 0);
-    if (reducedMotion) { setRange(el.days, DAYS_MAX); readSliders(); refreshAll(); emitState(true); setStatus(T('已跳到第 20 天（減少動態效果）。', 'Jumped to day 20 (reduced motion).')); return; }
+    if (P.days >= state.daysMax - 1e-6) setRange(el.days, 0);
+    if (reducedMotion) { setRange(el.days, state.daysMax); readSliders(); refreshAll(); emitState(true); setStatus(T('已跳到第 ' + state.daysMax + ' 天（減少動態效果）。', 'Jumped to day ' + state.daysMax + ' (reduced motion).')); return; }
     state.playing = true; setPlayLabel(); lastT = 0; readSliders(); requestDraw();
   });
+  if ($('extendDaysBtn')) {
+    $('extendDaysBtn').addEventListener('click', function () {
+      acted();
+      setDaysMax(state.daysMax + DAYS_MAX);
+      refreshAll();
+      state.playing = true; setPlayLabel(); lastT = 0;
+      setStatus(T('觀測窗已延長至第 ' + state.daysMax + ' 天，繼續播放。', 'Observation window extended to day ' + state.daysMax + '; continuing.'));
+      requestDraw();
+    });
+  }
+  if ($('jumpOutBtn')) {
+    $('jumpOutBtn').addEventListener('click', function () {
+      acted();
+      if (!Cs || !isFinite(Cs.tOut)) return;
+      state.playing = false;
+      const target = Math.min(3650, Math.round(Cs.tOut * 10) / 10);
+      setDaysMax(Math.max(state.daysMax, Math.ceil(target * 1.1)));
+      setRange(el.days, target);
+      readSliders(); refreshAll(); setPlayLabel(); emitState(true);
+      setStatus(T('已跳到預報冷水露頭（第 ' + num(target, 1) + ' 天）。', 'Jumped to predicted cold-water outcrop (day ' + num(target, 1) + ').'));
+    });
+  }
   function stepPlay(tnow) {
     if (!state.playing) return;
     const dt = lastT ? Math.min(0.1, (tnow - lastT) / 1000) : 0; lastT = tnow;
     // 播放中直接改滑桿的值（不觸發 input／change 事件，避免每一幀都驅動分享、統計等監聽）；停下來時再同步一次
-    const d = Math.min(DAYS_MAX, P.days + dt * PLAY_RATE);
+    const rate = state.daysMax / 12;
+    const d = Math.min(state.daysMax, P.days + dt * rate);
     el.days.value = String(Math.round(d * 100) / 100); P.days = d; refreshAll();
-    if (d >= DAYS_MAX) { state.playing = false; setPlayLabel(); setRange(el.days, DAYS_MAX); readSliders(); emitState(true); }
-    else emitState();
+    if (d >= state.daysMax) {
+      state.playing = false; setRange(el.days, state.daysMax); readSliders(); setPlayLabel(); emitState(true);
+      if (!Cs.out && isFinite(Cs.tOut)) setStatus(T('觀測窗已到第 ' + state.daysMax + ' 天（預報露頭約第 ' + num(Cs.tOut, 1) + ' 天），可按「延長」或「跳到預報露頭」。', 'Reached day ' + state.daysMax + ' (predicted outcrop around day ' + num(Cs.tOut, 1) + '); press “Extend” or “Jump to outcrop”.'));
+    } else emitState();
   }
   $('clearBtn').addEventListener('click', function () {
-    acted(); state.playing = false; setPlayLabel();
+    acted(); state.playing = false; setDaysMax(DAYS_MAX); setPlayLabel();
     setRange(el.days, 0); readSliders(); refreshAll();
     setStatus(T('時間歸零（風剛開始吹）；其他設定不變。', 'Time reset to zero (the wind has just started); the other settings are unchanged.'));
     emitState(true);

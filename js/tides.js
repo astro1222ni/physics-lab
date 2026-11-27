@@ -309,7 +309,7 @@
       g.beginPath(); g.arc(l.cx + l.Ro * Math.cos(a), l.cy - l.Ro * Math.sin(a), 2, 0, TAU); g.fill();
       const ax = Math.cos(a), ay = Math.sin(a);
       const k = rr < l.Ro ? -4 : 4;
-      D.haloText(g, q[1], x + ax * k, y - ay * k, C.muted, Math.abs(ax) < 0.3 ? 'center' : ax > 0 ? 'left' : 'right', 'middle', '11px ' + FONT);
+      D.haloText(g, q[1], x + ax * k, y - ay * k, C.muted, Math.abs(ax) < 0.3 ? 'center' : ax > 0 ? 'left' : 'right', 'middle', '12px ' + FONT);
     });
 
     // ---- 隆起的方向（月球、太陽） ----
@@ -423,7 +423,7 @@
     const lr = Re * SEA + Math.max(0, etaEq(psi, psi)) * kpx + 12;
     const lab = function (dirx, diry, text) {
       const x = l.cx + dirx * lr, y = l.cy - diry * lr;
-      D.haloText(g, text, x, y, C.dark ? '#ffffff' : C.text, Math.abs(dirx) < 0.35 ? 'center' : dirx > 0 ? 'left' : 'right', 'middle', '600 11.5px ' + FONT);
+      D.haloText(g, text, x, y, C.dark ? '#ffffff' : C.text, Math.abs(dirx) < 0.35 ? 'center' : dirx > 0 ? 'left' : 'right', 'middle', '600 12px ' + FONT);
     };
     lab(-mdx, -mdy, T('對蹠點的隆起', 'Far-side bulge'));
 
@@ -487,8 +487,8 @@
       D.haloText(g, ' m/s²', bx + ref * ks + 8 + w, by + 4, C.pos, 'left', 'alphabetic', '600 12px ' + FONT);
     }
     const note = T('示意圖：隆起誇大 ' + bigText(E) + ' 倍、月球距離未依比例', 'Not to scale: bulges ×' + bigText(E) + ', Moon distance shrunk');
-    D.haloText(g, note, W - 10, H - 12, C.muted, 'right', 'alphabetic', '11.5px ' + FONT);
-    D.haloText(g, T('從北極上空往下看', 'Seen from above the North Pole'), W - 10, H - 28, C.muted, 'right', 'alphabetic', '11.5px ' + FONT);
+    D.haloText(g, note, W - 10, H - 12, C.muted, 'right', 'alphabetic', '12px ' + FONT);
+    D.haloText(g, T('從北極上空往下看', 'Seen from above the North Pole'), W - 10, H - 28, C.muted, 'right', 'alphabetic', '12px ' + FONT);
     // 鍵盤焦點
     if (kb && kb.focused()) {
       const it = kb.index() === 0 ? [l.mx, l.my, l.Rm + 9] : [sp[0], sp[1], 13];
@@ -532,7 +532,7 @@
     }
     const below = y < l.cy ? -1 : 1;
     const ty = y + below * (r + 14);
-    D.pill(g, T('月球', 'Moon') + T('・赤緯 ', ' · dec ') + signed(state.dec, 1) + '°', x, below > 0 ? ty + 8 : ty + 2, C.text, 'center', '600 11.5px ' + FONT);
+    D.pill(g, T('月球', 'Moon') + T('・赤緯 ', ' · dec ') + signed(state.dec, 1) + '°', x, below > 0 ? ty + 8 : ty + 2, C.text, 'center', '600 12px ' + FONT);
   }
 
   // =====================================================================
@@ -548,7 +548,7 @@
     const E = exaggeration(), kpx = E / K.R_EARTH * Re;
     const u = [Math.cos(psi * DEG), Math.sin(psi * DEG), 0];   // 截面的水平方向：月球的方向（投影到赤道面）
     const dirAt = function (b) { return [Math.cos(b) * u[0], Math.cos(b) * u[1], Math.sin(b)]; };
-    const F = function (px, w) { return (w || '') + px + 'px ' + FONT; };
+    const F = function (px, w) { return (w || '') + Math.max(12, px) + 'px ' + FONT; };
     // 赤道面
     g.save();
     g.setLineDash([4, 4]);
@@ -676,7 +676,7 @@
       if (x >= pad.l && x <= pad.l + pw) {
         const nm = { new: T('新月', 'new'), fq: T('上弦', '1st Q'), full: T('滿月', 'full'), lq: T('下弦', 'last Q') }[e.kind];
         D.pill(g, (e.spring ? T('大潮・', 'Spring · ') : T('小潮・', 'Neap · ')) + nm, Math.min(pad.l + pw - 2, Math.max(pad.l + 2, x)), pad.t - 2,
-          e.spring ? C['td-spring'] : C['td-neap'], x < pad.l + 50 ? 'left' : x > pad.l + pw - 50 ? 'right' : 'center', '600 11px ' + FONT);
+          e.spring ? C['td-spring'] : C['td-neap'], x < pad.l + 50 ? 'left' : x > pad.l + pw - 50 ? 'right' : 'center', '600 12px ' + FONT);
       }
     });
     // 格線
@@ -685,10 +685,10 @@
       const y = Math.round(Yp(v)) + 0.5;
       g.strokeStyle = D.alpha(C.text, Math.abs(v) < 1e-9 ? 0.32 : 0.08);
       g.beginPath(); g.moveTo(pad.l, y); g.lineTo(pad.l + pw, y); g.stroke();
-      D.haloText(g, signed(v * 100, step < 0.02 ? 1 : 0), pad.l - 6, y, C.muted, 'right', 'middle', '11px ' + FONT);
+      D.haloText(g, signed(v * 100, step < 0.02 ? 1 : 0), pad.l - 6, y, C.muted, 'right', 'middle', '12px ' + FONT);
     }
-    D.haloText(g, 'cm', pad.l - 6, pad.t - 12, C.muted, 'right', 'middle', '11px ' + FONT);
-    D.haloText(g, T('平均海面', 'mean sea level'), pad.l + 4, Yp(0) - 7, C.muted, 'left', 'middle', '10.5px ' + FONT);
+    D.haloText(g, 'cm', pad.l - 6, pad.t - 12, C.muted, 'right', 'middle', '12px ' + FONT);
+    D.haloText(g, T('平均海面', 'mean sea level'), pad.l + 4, Yp(0) - 7, C.muted, 'left', 'middle', '12px ' + FONT);
     // 時間刻度：間隔依每小時幾個像素決定，標籤不重疊、不超出畫布
     const pxH = pw / span;
     const TICKS = [3, 6, 12, 24, 48, 72, 120, 168, 240];
@@ -706,7 +706,7 @@
       g.strokeStyle = D.alpha(C.text, isDay ? 0.14 : 0.07);
       g.beginPath(); g.moveTo(x, pad.t); g.lineTo(x, pad.t + phh); g.stroke();
       const txt = isDay ? T('第 ' + Math.round(tt / 24) + ' 天', 'Day ' + Math.round(tt / 24)) : clock(tt);
-      const font = (isDay ? '600 ' : '') + '11px ' + FONT;
+      const font = (isDay ? '600 ' : '') + '12px ' + FONT;
       g.font = font;
       const tw = g.measureText(txt).width;
       if (x - tw / 2 < 4 || x + tw / 2 > W - 3 || x - tw / 2 < lastR + 6) continue;
@@ -747,7 +747,7 @@
       const x = X(m.t), y = Yp(m.h);
       g.fillStyle = C['b-ocean'];
       g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x - 4.5, y - 11); g.lineTo(x + 4.5, y - 11); g.closePath(); g.fill();
-      if (showTime && x - lastX > 44) { D.haloText(g, clock(m.t), x, y - 18, C['b-ocean'], 'center', 'middle', '600 10.5px ' + FONT); lastX = x; }
+      if (showTime && x - lastX > 44) { D.haloText(g, clock(m.t), x, y - 18, C['b-ocean'], 'center', 'middle', '600 12px ' + FONT); lastX = x; }
     });
     g.restore();
     // 現在
@@ -756,7 +756,7 @@
       g.strokeStyle = D.alpha(C.accent, 0.8); g.lineWidth = 1.4;
       g.beginPath(); g.moveTo(xn + 0.5, pad.t); g.lineTo(xn + 0.5, pad.t + phh); g.stroke();
       D.ball(g, xn, Yp(hn), 4.5, C.probe, { glow: 0 });
-      D.pill(g, cm(hn, 1), xn + (xn > pad.l + pw - 70 ? -8 : 8), Math.max(pad.t + 16, Math.min(pad.t + phh - 2, Yp(hn) - 8)), C.probe, xn > pad.l + pw - 70 ? 'right' : 'left', '600 11.5px ' + FONT);
+      D.pill(g, cm(hn, 1), xn + (xn > pad.l + pw - 70 ? -8 : 8), Math.max(pad.t + 16, Math.min(pad.t + phh - 2, Yp(hn) - 8)), C.probe, xn > pad.l + pw - 70 ? 'right' : 'left', '600 12px ' + FONT);
     }
   }
   let curveAnchor = null;   // 拖曳曲線時固定時間軸
@@ -980,7 +980,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', !window.LabSettings.get('sound'));
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
   // 跳躍
   function jump(t1, msg) {
     acted();

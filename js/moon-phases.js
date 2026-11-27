@@ -186,7 +186,7 @@
     return {
       narrow: narrow, H: H, cx: cw * 0.5, cy: narrow ? H * 0.47 : H * 0.5 + 6, R0: R0, k: k, mag: mag,
       rE: K.R_EARTH * k * mag, rM: K.R_MOON * k * mag,
-      f1: (narrow ? 11 : 12) + 'px ' + FONT, f2: '600 ' + (narrow ? 11 : 12) + 'px ' + FONT, f3: (narrow ? 10 : 11) + 'px ' + FONT
+      f1: '12px ' + FONT, f2: '600 ' + '12px ' + FONT, f3: '12px ' + FONT
     };
   }
   function resizeTop() {
@@ -981,7 +981,7 @@
     g.addColorStop(1, rgbStr(lerp3(bgc, [0, 0, 0], 0.25)));
     c.fillStyle = g;
     c.fillRect(0, 0, mw, mh);
-    const f2 = '600 12px ' + FONT, f3 = '11px ' + FONT;
+    const f2 = '600 12px ' + FONT, f3 = '12px ' + FONT;
     setHTML('moonCap', moonCapText(solarView));
     if (solarView) { drawSolarCloseup(c, sn, cx, cy, R, f2, f3); return; }
     // 月面：畫面方向固定（月球自轉軸朝上；南半球南極朝上），不隨時間旋轉；畫面正中央是次觀測點（天平動），
@@ -1040,7 +1040,7 @@
     c.beginPath(); c.moveTo(x, y + 14); c.lineTo(x, y - 6); c.stroke();
     c.beginPath(); c.moveTo(x, y - 11); c.lineTo(x - 4, y - 4); c.lineTo(x + 4, y - 4); c.closePath(); c.fill();
     c.restore();
-    nightText(c, txt, x, y + 28, '#ffffff', 'center', 'alphabetic', '600 11px ' + FONT);
+    nightText(c, txt, x, y + 28, '#ffffff', 'center', 'alphabetic', '600 12px ' + FONT);
   }
   function solarSkyColor(sn) {
     const se = sn.solar;
@@ -1121,7 +1121,7 @@
     const c = sctx, sn = snap();
     c.setTransform(sdpr, 0, 0, sdpr, 0, 0);
     D.backdrop(c, sw, sh);
-    const f2 = '600 12px ' + FONT, f3 = '11px ' + FONT;
+    const f2 = '600 12px ' + FONT, f3 = '12px ' + FONT;
     const lunarSide = Math.cos(sn.ph.dLam) < 0;
     const half = 14500;                                   // 半個畫面代表的距離（km）
     const k = Math.min(sw, sh - 30) / 2 / half;
@@ -1389,7 +1389,7 @@
     c.strokeStyle = 'rgba(255,255,255,0.13)'; c.lineWidth = 1;
     [30, 60].forEach(function (h) { const y = Math.round(Y(h * DEG)) + 0.5; c.beginPath(); c.moveTo(0, y); c.lineTo(kw, y); c.stroke(); });
     [0.25, 0.5, 0.75].forEach(function (f) { const x = Math.round(kw * f) + 0.5; c.beginPath(); c.moveTo(x, top); c.lineTo(x, yH); c.stroke(); });
-    const f3 = (narrow ? 10 : 11) + 'px ' + FONT, f2 = '600 ' + (narrow ? 11 : 12) + 'px ' + FONT;
+    const f3 = '12px ' + FONT, f2 = '600 ' + '12px ' + FONT;
     c.font = f3; c.fillStyle = 'rgba(255,255,255,0.55)'; c.textAlign = 'left'; c.textBaseline = 'middle';
     [30, 60].forEach(function (h) { c.fillText(h + '°', 4, Y(h * DEG) - 7); });
     // 今天的路徑
@@ -1959,7 +1959,7 @@
     if (window.LabSettings) window.LabSettings.set('sound', !window.LabSettings.get('sound'));
     updateSoundButton();
   });
-  window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'sound') updateSoundButton(); });
+  window.addEventListener('lab:settingschange', function (ev) { if (!ev.detail) return; if (ev.detail.name === 'sound') updateSoundButton(); else if (ev.detail.name === 'fs') requestDraw(); });
 
   // ---------- 拖曳（俯視圖） ----------
   function evPos(ev) { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
