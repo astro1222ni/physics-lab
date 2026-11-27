@@ -22,6 +22,15 @@
     return list;
   };
 
+  // 只記錄符合本題前提的觀測，讓兩次實驗可依任一順序完成。
+  function compare(mem, current, match) {
+    const list = mem.samples || (mem.samples = []);
+    const found = list.some(previous => match(previous, current));
+    list.push(current);
+    if (list.length > 24) list.shift();
+    return found;
+  }
+
   LabMission.register('atwood', [
     {
       id: 'atwood-1', level: 1,
@@ -176,6 +185,90 @@
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'jerk' && d.mode === 1 && d.slackTime >= 0.6 - EPS;
+      }
+    },
+    {
+      id: 'atwood-h4', level: 3, hidden: true,
+      riddle: { zh: "桌面悄悄收下了另一份。", en: "The table quietly took the other share." },
+      desc: { zh: "同一桌面系統從靜止滑動，在無摩擦與有摩擦兩次釋放中，後者的加速度減半。相同位移下，重力作功一半成為熱。", en: "Release the same table and hanger from rest with and without friction. Halve the acceleration so friction takes half the gravitational work." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.mode !== 2 || !d.moves || d.v0 !== 0 || d.a <= 0) return false;
+        return compare(mem, d, (p, q) => near(p.M, q.M) && near(p.m, q.m) &&
+          Math.min(p.muK, q.muK) === 0 && Math.max(p.muK, q.muK) >= 0.1 &&
+          near(2 * Math.min(p.a, q.a), Math.max(p.a, q.a), 0.006));
+      }
+    },
+    {
+      id: 'atwood-h5', level: 4, hidden: true,
+      riddle: { zh: "最後一節還在等消息。", en: "The last carriage is still waiting for word." },
+      desc: { zh: "準靜態推三塊，前兩塊都恰用盡靜摩擦，末塊尚未受推。", en: "Push three stationary blocks at the threshold where the first two exhaust their static friction while the last remains unloaded." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return ev.type === 'release' && d.mode === 3 && d.n === 3 && d.push && !d.moves &&
+          d.muS >= 0.15 && d.link[0] > 0 && d.link[1] < 0.006 &&
+          near(d.link[0], d.muS * d.m2 * G, 0.006);
+      }
+    },
+    {
+      id: 'atwood-h6', level: 5, hidden: true,
+      riddle: { zh: "長長的影子追上一隻慢鐘。", en: "A long shadow catches a slow clock." },
+      desc: { zh: "同一阿特午機由靜止從三個高度落下，使首次撞地時間等距，成 2、3、4 的比，並驗證撞地速率成同比。", en: "Release the same Atwood machine from rest at three heights. Space the first landing times in a 2:3:4 ratio and verify the same ratio for the impact speeds." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'impact' || d.mode !== 1 || d.type !== 'landB' || d.n !== 1 || d.v0 !== 0) return false;
+        const trials = keep(mem, d).filter(p => near(p.m1, d.m1) && near(p.m2, d.m2));
+        const scaled = (first, trial, k) => near(trial.h, k * k * first.h, 0.00051) &&
+          rel(trial.t, k * first.t, 0.001) && rel(trial.v, k * first.v, 0.001);
+        return trials.some(first => trials.some(mid => scaled(first, mid, 1.5)) &&
+          trials.some(last => scaled(first, last, 2)));
+      }
+    },
+    {
+      id: 'atwood-h7', level: 7, hidden: true,
+      riddle: { zh: "山腰的守門人換了一邊肩膀。", en: "Halfway up the hill the porter changes shoulders." },
+      desc: { zh: "同一斜面與木塊在兩次靜止釋放時，以等大反向的非零靜摩擦托住不同懸掛物。", en: "Balance two different hangers on the same incline with equal and opposite nonzero static friction." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.mode !== 4 || d.moves || d.theta < 10 || Math.abs(d.f) < 0.1 * d.N) return false;
+        return compare(mem, d, (p, q) => near(p.M, q.M) && near(p.theta, q.theta) &&
+          near(p.muS, q.muS) && near(p.muK, q.muK) && near(p.f, -q.f, 0.006));
+      }
+    },
+    {
+      id: 'atwood-h8', level: 8, hidden: true,
+      riddle: { zh: "換一扇門進去，帳單剛好湊齊。", en: "Enter by the other door and the two bills add up." },
+      desc: { zh: "用同一外力分別推和拉兩個不同質量的木塊。接觸力與張力分擔互補的慣性質量，兩值之和等於外力。", en: "Push and pull the same two unequal blocks. The contact force and the tension add up to the applied force." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.mode !== 3 || d.n !== 2 || !d.moves || d.a <= 0 || Math.abs(d.m1 - d.m2) < 0.2) return false;
+        return compare(mem, d, (p, q) => p.push !== q.push && near(p.m1, q.m1) && near(p.m2, q.m2) &&
+          near(p.F, q.F) && near(p.muK, q.muK) && near(p.muS, q.muS) && near(p.link[0] + q.link[0], q.F, 0.006));
+      }
+    },
+    {
+      id: 'atwood-h9', level: 4, hidden: true,
+      riddle: { zh: "鐘仍照走，梁上卻多了一份牽掛。", en: "The clock keeps time as the beam shoulders another burden." },
+      desc: { zh: "兩邊砝碼一起加倍，阿特午機加速度不變，繩張力加倍。", en: "Double both masses. The Atwood acceleration stays fixed while string tension doubles." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.mode !== 1 || !d.moves || d.a <= 0 || d.v0 !== 0) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.m1 < q.m1 ? [p, q] : [q, p];
+          return near(b.m1, 2 * a.m1, 0.00051) && near(b.m2, 2 * a.m2, 0.00051) &&
+            near(a.a, b.a, 0.005) && rel(b.T, 2 * a.T, 0.001);
+        });
+      }
+    },
+    {
+      id: 'atwood-h10', level: 10, hidden: true,
+      riddle: { zh: "山路和桌沿，各自聽見同一拍。", en: "Hillside and tabletop hear the same beat." },
+      desc: { zh: "同一木塊從無摩擦水平桌面移至斜面，加重懸掛物以補償坡向重力與新增慣性，重現原加速度。", en: "Move the same block from a frictionless table to an incline. Increase the hanger mass to recover the original acceleration." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || ![2, 4].includes(d.mode) || d.muS !== 0 || d.muK !== 0 ||
+            d.v0 !== 0 || !d.moves || d.a <= 0 || (d.mode === 4 && d.theta < 15)) return false;
+        return compare(mem, d, (p, q) => p.mode !== q.mode && near(p.M, q.M) && near(p.a, q.a, 0.003));
       }
     }
   ]);

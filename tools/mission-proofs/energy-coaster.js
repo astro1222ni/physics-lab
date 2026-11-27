@@ -51,8 +51,8 @@ function runEvents(o) {
       case 'loopTop': d = { v: ev.v, nmg: ev.nmg }; break;
       case 'loopDone': loopDone++; d = { v: ev.v, ntopMg: ev.ntopMg, nMinMg: ev.nMinMg, loops: loopDone }; break;
       case 'detach': case 'leave': d = { x: ev.x, y: ev.y, v: ev.v, inLoop: !!ev.inLoop, yRel: ev.inLoop ? ev.yRel : null, phi: ev.inLoop ? ev.phi : null }; break;
-      case 'attach': qi += 0.5 * ev.vn * ev.vn; d = { x: ev.x, y: ev.y, vn: ev.vn, flight: ev.flight, inLoop: !!ev.inLoop, yRel: ev.inLoop ? ev.yRel : null }; break;
-      case 'land': d = { x: ev.x, v: ev.v, flight: ev.flight, fromEnd: !!ev.fromEnd }; break;
+      case 'attach': qi += 0.5 * ev.vn * ev.vn; d = { x: ev.x, y: ev.y, vn: ev.vn, vt: ev.vt, flight: ev.flight, inLoop: !!ev.inLoop, yRel: ev.inLoop ? ev.yRel : null }; break;
+      case 'land': d = { x: ev.x, v: ev.v, vx: ev.vx, vy: ev.vy, flight: ev.flight, fromEnd: !!ev.fromEnd }; break;
       case 'crash': d = { x: ev.x, y: ev.y }; break;
       case 'out': d = { x: ev.x, y: ev.y, fromEnd: !!ev.fromEnd }; break;
       case 'stop': d = Object.assign({ x: ev.x, y: ev.y, slope: ev.slope, path: ev.path, hAboveLow: ev.y - tr.yLow, inLoop: !!ev.inLoop, phi: ev.inLoop ? ev.phi : null, loopDone: loopDone, bottomPassed: bottomV >= 0 }, En(ev.y, 0, s.q)); break;
@@ -75,7 +75,9 @@ function refmoveEvent(o, t, yTo) {
 }
 
 let fail = 0;
+const legacy = [];
 function expect(id, events, want, note) {
+  if (want) legacy.push(...events);
   const m = byId(id); m.mem = {};
   let ok = false;
   events.forEach(e => { if (m.check(e, m.mem)) ok = true; });
@@ -244,3 +246,46 @@ expect(2, [refmoveEvent({ preset: 'valley' }, 1.0, 4.95)], false, '只移 4.95 m
 
 console.log(fail ? '\n有 ' + fail + ' 項失敗' : '\n全部通過');
 process.exitCode = fail ? 1 : 0;
+
+const assert = require('node:assert/strict');
+function hiddenHits(events) {
+  return missions.filter(m => {
+    if (!m.hidden) return false;
+    const mem = {};
+    return events.some(event => m.check(event, mem));
+  }).map(m => m.id);
+}
+function verifyHidden(name, events, wanted) {
+  const got = hiddenHits(events);
+  assert.deepEqual(got, wanted, name);
+  console.log('✓', name, got);
+}
+function verifyLegacy(events) {
+  const hits = hiddenHits(events).filter(id => !/-h[123]$/.test(id));
+  assert.deepEqual(hits, [], '預設／既有任務範例誤觸新題');
+}
+verifyLegacy(legacy);
+const valley = (m, v0) => ({preset:'valley', x0:5, m, v0});
+const shelf = (g, mu, v0) => ({preset:'loop', x0:28, g, mu, v0});
+const jump = v0 => ({preset:'jump', x0:12, v0});
+const arch = (mode, x0) => ({preset:'loop', mode, x0});
+const impact = v0 => ({preset:'loop', mode:'free', x0:12, v0});
+const roughValley = (g, v0) => ({preset:'valley', x0:5, mu:0.1, g, v0});
+const examples = [
+  [[valley(310,2),valley(620,2)], valley(621,2)],
+  [[valley(500,-2),valley(500,2)], valley(500,2.01)],
+  [[shelf(9.8,0.1,2),shelf(9.8,0.2,2)], shelf(9.8,0.201,2)],
+  [[jump(9.90)], jump(9.92)],
+  [[arch('rail',3.62),arch('free',3.62)], arch('free',3.63)],
+  [[impact(9.45)], impact(9.44)],
+  [[roughValley(2.45,1),roughValley(9.8,2)], roughValley(9.8,2.01)]
+];
+examples.forEach(([steps, miss], i) => {
+  const id = 'energy-coaster-h' + (i + 4);
+  const events = cases => cases.flatMap(o => runEvents(o).events);
+  verifyHidden(id + ' ' + JSON.stringify(steps), events(steps), [id]);
+  verifyHidden(id + ' 近失 ' + JSON.stringify(miss), events([...steps.slice(0,-1), miss]), []);
+});
+// 即使兩車起點完全一致，圈頂向外的約束力也必須落進目標窗。
+verifyHidden('h8 同起點 x0=3.64，圈頂力偏離半個車重',
+  ['rail','free'].flatMap(mode => runEvents(arch(mode,3.64)).events), []);

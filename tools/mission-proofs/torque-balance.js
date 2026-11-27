@@ -78,7 +78,9 @@ function runSeesaw(o, edits) {
       const why = placeProblem(cfg.items, e.add[0], e.add[1], !!e.add[2]);
       if (why) throw new Error(why);
       cfg = Object.assign({}, cfg, { items: cfg.items.concat([{ id: 'i' + (nextId++), kind: e.add[0], m: K[e.add[0]].m, x: e.add[1], hang: !!e.add[2] }]) });
+      const oldOmega = st.omega, oldI = TC.sums(old, st.grounded).I;
       st = TC.seesawEdit(old, cfg, st);
+      if (oldOmega !== 0) evs.push({ type: 'loadAdded', data: snap(cfg, st, { oldI, oldOmega }) });
       if (st.rest === 'level' || st.rest === 'scale') evs.push({ type: 'balance', data: snap(cfg, st) });
     }
     const moving = st.rest ? !TC.stays(cfg, st) : true;
@@ -194,7 +196,7 @@ function describe(step, evs) {
   else s += ' → 滑倒' + (d.cause === 'climb' ? '於 d = ' + f(d.d, 3) + ' m' : '') + '（θc = ' + f(d.thetaC, 3) + '°）';
   return s;
 }
-for (const m of missions) {
+for (const m of missions.filter(m => !m.hidden || /-h[123]$/.test(m.id))) {
   const runs = SOL[m.id];
   if (!runs) { ok = false; console.log('✗ ' + m.id.padEnd(18) + ' 沒有提供解'); continue; }
   const bad = [];
@@ -233,3 +235,46 @@ for (const m of missions) {
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
 process.exitCode = ok ? 0 : 1;
+
+const assert = require('node:assert/strict');
+function hiddenHits(events) {
+  return missions.filter(m => {
+    if (!m.hidden) return false;
+    const mem = {};
+    return events.some(event => m.check(event, mem));
+  }).map(m => m.id);
+}
+function verifyHidden(name, events, wanted) {
+  const got = hiddenHits(events);
+  assert.deepEqual(got, wanted, name);
+  console.log('✓', name, got);
+}
+function verifyLegacy(events) {
+  const hits = hiddenHits(events).filter(id => !/-h[123]$/.test(id));
+  assert.deepEqual(hits, [], '預設／既有任務範例誤觸新題');
+}
+const legacy = [runSeesaw({}), runSeesaw({M:0}), runLadder({}), runLadder({}, true)];
+for (const steps of Object.values(SOL)) legacy.push(...steps.map(run));
+verifyLegacy(legacy.flat());
+
+const board = (M, p, items = []) => ['s', {M, p, items}];
+const ladder = (mp, d) => ['l', {th:55, mu:0.8, ml:15, mp, d}];
+const loaded = M => ['s', {M, p:2, items:[['w1',3]]}, [{t:0.05, add:['w1',3]}]];
+const examples = [
+  [[board(6,2,[['w2',3]]), board(6,2,[['w2',3],['w1',2]])], board(6,2,[['w2',3],['w1',2.25]])],
+  [[board(8,2),board(8,2.816)], board(8,2.818)],
+  [[ladder(0,0),ladder(15,2)], ladder(15,2.001)],
+  [[board(7,1.333)], board(7,1.335)],
+  [[ladder(40,0),ladder(40,0.75)], ladder(40,0.752)],
+  [[board(9,1.238),board(0,1.238,[['w2',3.75]])], board(0,1.24,[['w2',3.75]])],
+  [[loaded(0)], loaded(0.01)]
+];
+examples.forEach(([steps, miss], i) => {
+  const id = 'torque-balance-h' + (i + 4);
+  for (const step of [...steps, miss]) assert.deepEqual(uiCheck(step[1]), []);
+  verifyHidden(id + ' ' + JSON.stringify(steps), steps.flatMap(run), [id]);
+  verifyHidden(id + ' 近失 ' + JSON.stringify(miss), [...steps.slice(0,-1), miss].flatMap(run), []);
+});
+// 支點仍取同值，只讓等效擺長偏出容許範圍。
+verifyHidden('h9 兩次皆取 p=1.240 m',
+  [board(9,1.24), board(0,1.24,[['w2',3.75]])].flatMap(run), []);

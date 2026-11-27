@@ -167,7 +167,11 @@
     const wasBal = ss.phase === 'free' && (ss.dyn.rest === 'level' || ss.dyn.rest === 'scale');
     fn();
     if (ss.phase === 'free') {
+      const added = ss.items.length === old.items.length + 1 && !ss.dyn.rest && ss.dyn.omega !== 0;
+      const oldI = added ? TC.sums(old, ss.dyn.grounded).I : 0;
+      const oldOmega = ss.dyn.omega;
       ss.dyn = TC.seesawEdit(old, cfgNow(), ss.dyn);
+      if (added) emit('loadAdded', snapshot({ oldI, oldOmega }));
       if (ss.dyn.rest === 'level' || ss.dyn.rest === 'scale') {
         if (!wasBal) chime();
         emit('balance', snapshot());

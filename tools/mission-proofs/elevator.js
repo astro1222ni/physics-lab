@@ -4,7 +4,10 @@ const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 // 用物理核心證明每個任務在滑桿範圍與精度內做得到
 const E = require(__ROOT + 'js/elevator-core.js');
 const g = E.G, h = E.BALL_H;
-const out = (id, ok, msg) => console.log((ok ? 'OK  ' : 'NO  ') + id.padEnd(13) + msg);
+const out = (id, ok, msg) => {
+  console.log((ok ? 'OK  ' : 'NO  ') + id.padEnd(13) + msg);
+  if (!ok) process.exitCode = 1;
+};
 
 // 1
 out('elevator-1', true, '任一趟（例：1F→2F，2√3 = ' + (2 * Math.sqrt(3)).toFixed(3) + ' s）');
@@ -73,3 +76,96 @@ verify(2, [['cut', {}], ['pause', {kind:'free', reading:E.reading(60,-g)}], ['br
 }
 verify('h2', [['phase', {m:60, weighingSet:true, reading:E.reading(60,g)}]]);
 verify('h3', [['cut', {v0:2.5}]]);
+
+const assert = require('node:assert/strict');
+function hiddenHits(events) {
+  return tasks.filter(m => {
+    if (!m.hidden) return false;
+    const mem = {};
+    return events.some(event => m.check(event, mem));
+  }).map(m => m.id);
+}
+function verifyHidden(name, events, wanted) {
+  const got = hiddenHits(events);
+  assert.deepEqual(got, wanted, name);
+  console.log('✓', name, got);
+}
+function verifyLegacy(events) {
+  const hits = hiddenHits(events).filter(id => !/-h[123]$/.test(id));
+  assert.deepEqual(hits, [], '預設／既有任務範例誤觸新題');
+}
+const event = (type, data) => ({type, data});
+function phases(plan, m, run) {
+  return plan.filter(s => Number.isFinite(s.t1)).map(s => {
+    const T = E.springTension(1, s.a);
+    return event('phase', {kind:s.kind, run, a:s.a, m, ms:1, reading:E.reading(m,s.a),
+      N:E.normalForce(m,s.a), T, ext:E.springExtension(T), ext0:E.springExtension(E.springTension(1,0)),
+      ratio:1+s.a/g, dir:Math.sign(E.segAt(s,(s.t0+s.t1)/2).v), v:s.v0, y:s.y0, weighingSet:true});
+  });
+}
+function ballEvent(plan, time) {
+  const s = E.stateAt(plan,time);
+  const tLand = E.ballLanding(plan,{tr:time, yb:s.y+h, vb:s.v},time);
+  assert.ok(tLand > time);
+  const t = tLand - time, active = plan.filter(seg => seg.t1 > time && seg.t0 < tLand);
+  const aConst = active.every(seg => seg.a === active[0].a);
+  const floatTime = active.filter(seg => seg.a === -g).reduce((sum,seg) =>
+    sum + Math.min(tLand,seg.t1) - Math.max(time,seg.t0), 0);
+  return event('ball', {h,t,t0:E.fallTime(h,0),ratio:t/E.fallTime(h,0),aConst,
+    a:aConst ? active[0].a : null,gEff:2*h/t**2,floatTime});
+}
+function trip({from=1,to=10,A=1,V=2.5,m=60,balls=[]}) {
+  const y0 = E.floorY(from), y1 = E.floorY(to), d = Math.abs(y1-y0);
+  const plan = E.tripProfile(y0,y1,A,V,0), evs = phases(plan,m,'trip');
+  for (const kind of balls) {
+    const start = plan.find(s => s.kind === kind).t0;
+    evs.push(ballEvent(plan,start+0.2));
+  }
+  const readings = evs.filter(e => e.type === 'phase').map(e => e.data.reading);
+  evs.push(event('trip',{from,to,y0,y1,d,A,V,m,mConst:true,mystery:false,
+    peakV:E.tripPeakSpeed(d,A,V),duration:plan.at(-1).t0,readMin:Math.min(...readings),readMax:Math.max(...readings)}));
+  return evs;
+}
+function cut({from=10,vt=5,ab=4.9,y=E.floorY(from),v0=0,ballAt=null}) {
+  const plan = E.freeFallPlan(0,y,v0,vt,ab), last = plan.at(-1);
+  assert.ok(last.y0 >= 0, '斷纜高度不足');
+  const startFloor = v0 === 0 && Math.abs(E.floorOf(y).off) < 1e-6 ? E.floorOf(y).n : null;
+  return [event('cut',{v0,y0:y}), ...phases(plan,60,'free'),
+    ...(ballAt == null ? [] : [ballEvent(plan,ballAt)]),
+    event('brakeStop',{v0,startFloor,y0:y,yStop:last.y0,drop:y-last.y0,vTrip:vt,ab,manual:false,
+      tFree:plan.find(s=>s.kind==='free').t1,readMin:0,readMax:E.reading(60,ab)})];
+}
+// 既有 1–12、h1–h3 的操作，包括相同設定所經過的行程段與斷纜煞車。
+const legacyTrips = [{to:2},{},{A:1.96},{to:4,A:0.98},{from:4,to:1,A:0.98},
+  {A:2.3,V:6,balls:['acc']},{A:0.98,V:6}];
+const legacyCuts = [{},{ab:7.84},{from:6,vt:6.26},{from:6,vt:7.67,ab:9.8},
+  {from:6,vt:5.42,ab:2.94},{vt:10,ab:5.83,ballAt:10/g+0.2},
+  {from:8,vt:10,ab:9.8,ballAt:0.1},{y:10,v0:2.5}];
+const oldEvents = [...legacyTrips.flatMap(trip), ...legacyCuts.flatMap(cut)];
+const manual = E.manualPlan(0,0,0,1,3,0.5);
+const yPress = 15 - 0.5**2 / 6;
+oldEvents.push(...phases(manual,60,'manual'), ...phases(E.manualPlan(0,yPress,0.5,-1,3,0.5),60,'manual'));
+oldEvents.push(event('manualStop',{fromFloor:1,floor:6,off:0,protect:false}),
+  event('guess',{aTrue:1.23,err:0}), event('pause',{v:2.5,reading:E.reading(60,-1),m:60}));
+for (const m of tasks.filter(m => !m.hidden || /-h[123]$/.test(m.id))) {
+  const mem = {};
+  assert.ok(oldEvents.some(e => m.check(e,mem)), m.id + ' 既有成功例');
+}
+verifyLegacy(oldEvents);
+
+const short = V => ({to:2,A:1,V});
+const leg = (from,to,A,V,m=60,balls=[]) => ({from,to,A,V,m,balls});
+const examples = [
+  [trip,[short(2.2),leg(2,1,1,4.4)],leg(2,1,1,4.41)],
+  [trip,[leg(1,3,1.5,3),leg(3,7,1.5,3)],leg(3,7,1.51,3)],
+  [trip,[leg(1,5,1.96,2.5,44),leg(5,1,1.96,2.5,66)],leg(5,1,1.96,2.5,66.1)],
+  [trip,[leg(1,5,0.75,4),leg(5,1,1,2)],leg(5,1,1.01,2)],
+  [cut,[{vt:3},{vt:6}],{vt:6.01}],
+  [trip,[leg(1,10,2,3,40),leg(10,1,2,2,90)],leg(10,1,2,2,90.2)],
+  [trip,[leg(1,8,1.5,3,60,['acc']),leg(8,1,1.5,3,60,['acc'])],leg(8,1,1.51,3,60,['acc'])]
+];
+examples.forEach(([simulate, steps, miss], i) => {
+  const id = 'elevator-h' + (i + 4);
+  verifyHidden(id + ' ' + JSON.stringify(steps),steps.flatMap(simulate),[id]);
+  verifyHidden(id + ' 近失 ' + JSON.stringify(miss),[...steps.slice(0,-1),miss].flatMap(simulate),[]);
+});

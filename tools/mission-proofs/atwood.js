@@ -107,3 +107,51 @@ const tlh3 = C.timeline(1, P1({ m1: 1.3, m2: 0.5, h: 1 }));
 console.log('  atwood-h3 鬆弛時間 =', (tlh3.events[1].t - tlh3.events[0].t).toFixed(3), 's；預設值 =', (C.timeline(1, P1()).events[1].t - C.timeline(1, P1()).events[0].t).toFixed(3), 's');
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
 if (!ok) process.exitCode = 1;
+
+const assert = require('node:assert/strict');
+function hiddenHits(events) {
+  return missions.filter(m => {
+    if (!m.hidden) return false;
+    const mem = {};
+    return events.some(event => m.check(event, mem));
+  }).map(m => m.id);
+}
+function verifyHidden(name, events, wanted) {
+  const got = hiddenHits(events);
+  assert.deepEqual(got, wanted, name);
+  console.log('✓', name, got);
+}
+function verifyLegacy(events) {
+  const hits = hiddenHits(events).filter(id => !/-h[123]$/.test(id));
+  assert.deepEqual(hits, [], '預設／既有任務範例誤觸新題');
+}
+
+const originalRuns = [run(1, P1()), run(2, P2()), run(3, P3()), run(3, P3({push:true})), run(4, P4()), run(1, p11, {hand:0})];
+for (const [, , trials] of SOL) originalRuns.push(...trials.map(([mode, p]) => run(mode, p)));
+verifyLegacy(originalRuns.flat());
+
+const trial = (mode, parameters) => [mode, [null, P1, P2, P3, P4][mode](parameters)];
+const table = (muK) => trial(2, {m:0.6, muS:0.35, muK});
+const push = (F) => trial(3, {m:[1, 2, 1], push:true, F, muS:0.25});
+const height = (h) => trial(1, {m1:0.55, m2:0.5, h});
+const slope = (m) => trial(4, {M:2, m, theta:30, muS:0.4});
+const train = (push, F) => trial(3, {m:[0.75, 1.25], push, F});
+const masses = (m1, m2) => trial(1, {m1, m2, h:0.3});
+const smooth = (m) => trial(4, {M:1, m, theta:30, muS:0, muK:0});
+const examples = [
+  [[table(0), table(0.3)], table(0.302)],
+  [[push(7.35)], push(7.34)],
+  [[height(0.2), height(0.45), height(0.8)], height(0.799)],
+  [[slope(0.8), slope(1.2)], slope(1.199)],
+  [[train(true, 12), train(false, 12)], train(false, 12.01)],
+  [[masses(0.45, 0.35), masses(0.9, 0.7)], masses(0.901, 0.7)],
+  [[trial(2, {M:1, m:0.25, muS:0, muK:0}), smooth(0.875)], smooth(0.873)]
+];
+examples.forEach(([steps, miss], i) => {
+  const id = 'atwood-h' + (i + 4);
+  const events = list => list.flatMap(([mode, p]) => run(mode, p));
+  verifyHidden(id + ' ' + JSON.stringify(steps), events(steps), [id]);
+  verifyHidden(id + ' 近失 ' + JSON.stringify(miss), events([...steps.slice(0,-1), miss]), []);
+});
+// 預設高度與最小高度剛好相差四倍；只試這兩端不構成平方根關係的三點驗證。
+verifyHidden('只試預設與最小高度', [height(0.8), height(0.2)].flatMap(([mode,p]) => run(mode,p)), []);

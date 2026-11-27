@@ -343,7 +343,7 @@
           const lost = 0.5 * state.m * ev.vn * ev.vn;
           setStatus(T('落回軌道：垂直軌道的速度損失，', 'Back on the track: the velocity across the track is lost and ') + fmtE(lost) + T(' 變成熱能。', ' becomes heat.'));
           updateRow(T('落回軌道', 'landed on track'));
-          emit('attach', { x: ev.x, y: ev.y, vn: ev.vn, flight: ev.flight, inLoop: !!ev.inLoop, yRel: ev.inLoop ? ev.yRel : null });
+          emit('attach', { x: ev.x, y: ev.y, vn: ev.vn, vt: ev.vt, flight: ev.flight, inLoop: !!ev.inLoop, yRel: ev.inLoop ? ev.yRel : null });
           break;
         }
         case 'land': {
@@ -352,7 +352,7 @@
           fx('dust', ev.x, 0, colors.muted);
           setStatus(T('落地：x = ', 'Hit the ground at x = ') + num(ev.x, 2) + T(' m，動能全部變成熱能。', ' m; all its kinetic energy became heat.'));
           endRun(T('落地 x = ', 'ground x = ') + num(ev.x, 2) + ' m');
-          emit('land', { x: ev.x, v: ev.v, flight: ev.flight, fromEnd: !!ev.fromEnd });
+          emit('land', { x: ev.x, v: ev.v, vx: ev.vx, vy: ev.vy, flight: ev.flight, fromEnd: !!ev.fromEnd });
           break;
         }
         case 'crash': {

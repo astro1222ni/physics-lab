@@ -29,6 +29,10 @@
   const ladderKey = function (d) { return [d.theta, d.mu, d.muw, d.ml]; };
   const sameLadder = function (a, b) { return a.every(function (v, i) { return same(v, b[i]); }); };
 
+  function compare(mem, current, match) {
+    return remember(mem, 'samples', current).some(previous => previous !== current && match(previous, current));
+  }
+
   LabMission.register('torque-balance', [
     {
       id: 'torque-balance-1', level: 1,
@@ -200,6 +204,98 @@
       id: 'torque-balance-h3', level: 7, hidden: true,
       riddle: { zh: '斜倚欲眠，終不傾頹。', en: 'Leaning as if to sleep, yet it never falls.' },
       check: function (ev) { return ev.type === 'ladderStand' && ev.data.theta < 20; }
+    },
+    {
+      id: 'torque-balance-h4', level: 3, hidden: true,
+      riddle: { zh: "多來一位乘客，轉盤似乎沒察覺。", en: "One more passenger boards unnoticed by the turning plank." },
+      desc: { zh: "保持原有偏載，在支點加一個物體再水平釋放。總重增加，但一次矩與轉動慣量都不變。", en: "Add a load exactly at the pivot of an unbalanced board. Weight increases but both the first mass moment and rotational inertia stay unchanged." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.scale || d.nHang || Math.abs(d.S) < 0.1) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.n < q.n ? [p, q] : [q, p];
+          const offAxis = s => s.items.filter(i => !same(i.x, s.p)).map(i => [i.kind, i.x]);
+          return a.n >= 1 && a.n + 1 === b.n && same(a.p, b.p) && same(a.M, b.M) &&
+            JSON.stringify(offAxis(a)) === JSON.stringify(offAxis(b)) && b.W > a.W &&
+            same(a.S, b.S) && same(a.I, b.I);
+        });
+      }
+    },
+    {
+      id: 'torque-balance-h5', level: 4, hidden: true,
+      riddle: { zh: "空板挪了窩，舊帳又添半本。", en: "The empty plank moves house and adds half a ledger." },
+      desc: { zh: "同一均勻空板，先繞中心，再移軸使平行軸項 MΔx 平方占中心轉動慣量的一半。", en: "Release the same bare board about its center and an offset axis chosen so the parallel-axis contribution equals half its central inertia." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.scale || d.n !== 0 || d.M <= 0) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.I < q.I ? [p, q] : [q, p];
+          return same(a.M, b.M) && same(a.p, a.L / 2) && Math.abs(b.I / a.I - 1.5) <= 0.0008;
+        });
+      }
+    },
+    {
+      id: 'torque-balance-h6', level: 5, hidden: true,
+      riddle: { zh: "牆邊的腳印深了，梯子的脾氣依舊。", en: "The footprint deepens, but the ladder keeps its temper." },
+      desc: { zh: "比較光滑牆前的空梯與中點載重。人與梯等質量時牆推力加倍，需要的地面摩擦係數不變。", en: "Compare an empty ladder with the same ladder carrying its own mass at the midpoint. The wall reaction doubles but the required floor friction coefficient stays fixed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'ladderStand' || d.cause !== 'release' || d.rough || d.mu - d.muMin < 0.05) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.mp < q.mp ? [p, q] : [q, p];
+          return a.mp === 0 && same(b.mp, b.ml) && same(b.d, b.L / 2) && same(a.ml, b.ml) &&
+            same(a.theta, b.theta) && same(a.mu, b.mu) && same(a.muMin, b.muMin) && same(b.Nw, 2 * a.Nw);
+        });
+      }
+    },
+    {
+      id: 'torque-balance-h7', level: 7, hidden: true,
+      riddle: { zh: "木板的一端，聽見了落石的節拍。", en: "One end of the plank hears a falling stone's beat." },
+      desc: { zh: "水平釋放均勻空板，選支點使較長端的瞬時切線加速度等於 g。", en: "Place the pivot so the long end of a horizontal uniform board initially accelerates downward at g." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'release' || d.n !== 0 || d.scale || d.M <= 0 || d.I <= 0) return false;
+        const arm = Math.max(d.p, d.L - d.p);
+        return Math.abs(arm * Math.abs(d.S) / d.I - 1) <= 0.0006;
+      }
+    },
+    {
+      id: 'torque-balance-h8', level: 8, hidden: true,
+      riddle: { zh: "沿梯挪步的人，單獨付清了牆的另一半。", en: "A climber steps forward and pays the wall's other half." },
+      desc: { zh: "同一人從梯腳移到人重力矩等於梯重力矩的位置，兩次以相同角度放手，光滑牆推力加倍而地面正向力不變。", en: "Move the same person from the foot to where their weight supplies as much torque as the ladder weight. At fixed angle the wall force doubles while the floor normal stays fixed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'ladderStand' || d.cause !== 'release' || d.rough || d.mp <= 0 || d.mu - d.muMin < 0.05) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.d < q.d ? [p, q] : [q, p];
+          return a.d === 0 && b.d > 0 && same(a.ml, b.ml) && same(a.mp, b.mp) && same(a.theta, b.theta) &&
+            same(a.mu, b.mu) && same(a.Ng, b.Ng) && Math.abs(b.Nw / a.Nw - 2) <= 0.001;
+        });
+      }
+    },
+    {
+      id: 'torque-balance-h9', level: 9, hidden: true,
+      riddle: { zh: "空板和孤零零的乘客，在地面敲出同一聲。", en: "An empty plank and a lone rider strike the ground in unison." },
+      desc: { zh: "同支點的均勻空板與輕板單一點質量，調到等效擺長 I/|S| 相同，使兩者同側著地的角速率相同。", en: "Match the effective lengths of a bare uniform board and a single point load on a massless board at the same pivot. Verify equal angular speeds at first impact on the same side." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'land' || d.prevSide || d.scale || d.nHang || Math.abs(d.S) < 0.01 ||
+            !(d.M > 0 && d.n === 0 || d.M === 0 && d.n === 1)) return false;
+        return compare(mem, d, (p, q) => p.n !== q.n && same(p.p, q.p) && p.side === q.side &&
+          Math.abs(p.I / Math.abs(p.S) - q.I / Math.abs(q.S)) <= 0.001 &&
+          Math.abs(p.omegaHit - q.omegaHit) <= 0.001);
+      }
+    },
+    {
+      id: 'torque-balance-h10', level: 10, hidden: true,
+      riddle: { zh: "一位遲到的乘客，把旋律拖成了半拍。", en: "A late passenger stretches the melody into half time." },
+      desc: { zh: "在轉動中加入原先靜止的砝碼，使轉動慣量加倍，驗證角動量不變、角速率減半。", en: "Add a stationary weight to a rotating board to double its inertia. Conserve angular momentum and halve the angular speed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return ev.type === 'loadAdded' && !d.scale && d.oldI > 0 && Math.abs(d.oldOmega) > 0.03 &&
+          Math.abs(d.I / d.oldI - 2) <= 0.0005 && Math.abs(d.omega / d.oldOmega - 0.5) <= 0.0002 &&
+          Math.abs(d.I * d.omega - d.oldI * d.oldOmega) <= 1e-7;
+      }
     }
   ]);
 })();

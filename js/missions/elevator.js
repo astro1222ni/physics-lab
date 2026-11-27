@@ -16,6 +16,15 @@
   const near = function (a, b, tol) { return Math.abs(a - b) <= tol; };
   const is60 = function (m) { return Math.abs(m - 60) < 1e-9; };
 
+  // 只記錄符合本題前提的觀測，讓兩次實驗可依任一順序完成。
+  function compare(mem, current, match) {
+    const list = mem.samples || (mem.samples = []);
+    const found = list.some(previous => match(previous, current));
+    list.push(current);
+    if (list.length > 24) list.shift();
+    return found;
+  }
+
   LabMission.register('elevator', [
     {
       id: 'elevator-1', level: 1,
@@ -127,6 +136,93 @@
       id: 'elevator-h3', level: 6, hidden: true,
       riddle: { zh: '斷了線的風箏，還想往上飛。', en: 'A kite with a broken string still climbs.' },
       check: function (ev) { return ev.type === 'cut' && ev.data.v0 >= 1 - 1e-9; }
+    },
+    {
+      id: 'elevator-h4', level: 3, hidden: true,
+      riddle: { zh: "車頂那道刻痕，這一程碰不到。", en: "The mark overhead stays just out of reach." },
+      desc: { zh: "兩趟等長短程、相同加速度，把速限加倍仍碰不到舊速限，實際峰速和到站時間都不變。", en: "Double the speed limit on two equal short trips with the same acceleration. Neither reaches the lower limit and both take the same time at the same peak speed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'trip' || d.mystery || d.peakV >= d.V - 0.1) return false;
+        return compare(mem, d, (p, q) => near(p.d, q.d, 1e-6) && near(p.A, q.A, 1e-6) &&
+          near(Math.max(p.V, q.V), 2 * Math.min(p.V, q.V), 0.0051) &&
+          near(p.duration, q.duration, 0.001) && near(p.peakV, q.peakV, 0.001));
+      }
+    },
+    {
+      id: 'elevator-h5', level: 4, hidden: true,
+      riddle: { zh: "兩個尖角之間，長出了一小段屋脊。", en: "Between two pointed roofs a ridge takes shape." },
+      desc: { zh: "同 A、V，短程恰達速限即減速，再走兩倍距離，新增的路程全是巡航。", en: "At fixed acceleration and speed limit, just reach the limit on a short trip. Double the distance and cover the extra distance entirely at cruise speed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'trip' || d.mystery || !near(d.peakV, d.V, 0.005)) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.d < q.d ? [p, q] : [q, p];
+          return near(a.A, b.A, 1e-6) && near(a.V, b.V, 1e-6) && near(b.d, 2 * a.d, 0.001) &&
+            near(a.d * a.A, a.V * a.V, 0.015) && near(b.duration - a.duration, a.d / a.V, 0.005);
+        });
+      }
+    },
+    {
+      id: 'elevator-h6', level: 5, hidden: true,
+      riddle: { zh: "兩張不同的車票，留下同一枚腳印。", en: "Different tickets leave the same footprint." },
+      desc: { zh: "兩個不同質量的乘客承受等大反向加速度，量到相同的非零正向力。", en: "Use equal and opposite accelerations for two different passenger masses and obtain the same nonzero normal force." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'phase' || d.mystery || !['acc', 'dec'].includes(d.kind) || Math.abs(d.a) < 0.5) return false;
+        return compare(mem, d, (p, q) => Math.abs(p.m - q.m) >= 5 && near(p.a, -q.a, 0.001) &&
+          near(p.N, q.N, 0.12));
+      }
+    },
+    {
+      id: 'elevator-h7', level: 7, hidden: true,
+      riddle: { zh: "鐘面上重疊的，是兩幅不同的屋頂。", en: "Two different rooftops cast their shadows on the same clock." },
+      desc: { zh: "等距行程一趟為三角形速率圖，一趟有明顯等速段。改變加速度與速限，使兩趟同時長。", en: "Match the duration of two equal-distance trips, one triangular and one with a cruise plateau, using different accelerations and speed limits." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'trip' || d.mystery) return false;
+        return compare(mem, d, (p, q) => {
+          const [tri, trap] = p.peakV < p.V - 0.1 ? [p, q] : [q, p];
+          return tri.peakV < tri.V - 0.1 && near(trap.peakV, trap.V, 0.001) &&
+            trap.duration - 2 * trap.V / trap.A > 0.5 && near(tri.d, trap.d, 0.001) &&
+            near(tri.duration, trap.duration, 0.012);
+        });
+      }
+    },
+    {
+      id: 'elevator-h8', level: 8, hidden: true,
+      riddle: { zh: "鉗口晚些合上，井壁的影子長得更快。", en: "The jaws close later and the shadow on the shaft grows faster." },
+      desc: { zh: "從同層靜止斷纜兩次，固定煞車加速度，把限速器速率加倍，驗證總下降距離變四倍。", en: "Cut from rest on the same floor twice at fixed brake acceleration. Doubling the governor speed quadruples the total drop." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'brakeStop' || d.manual || d.startFloor == null || Math.abs(d.v0) > 1e-6 || d.drop <= 0) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.vTrip < q.vTrip ? [p, q] : [q, p];
+          return a.startFloor === b.startFloor && near(a.ab, b.ab, 0.001) && near(b.vTrip, 2 * a.vTrip, 0.0051) &&
+            near(b.drop, 4 * a.drop, 0.01);
+        });
+      }
+    },
+    {
+      id: 'elevator-h9', level: 6, hidden: true,
+      riddle: { zh: "兩位乘客各帶走一份，秤過卻輕重不同。", en: "Two riders take equal shares in parcels of unequal weight." },
+      desc: { zh: "不同質量乘客在巡航時具有相同動能，質量至少差五成，速率不同。", en: "Give two cruising passengers equal kinetic energy with masses differing by at least fifty percent and different speeds." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'trip' || d.mystery || !d.mConst || d.duration - 2 * d.V / d.A < 0.5) return false;
+        return compare(mem, d, (p, q) => Math.max(p.m, q.m) >= 1.5 * Math.min(p.m, q.m) &&
+          near(p.m * p.peakV ** 2, q.m * q.peakV ** 2, 0.5));
+      }
+    },
+    {
+      id: 'elevator-h10', level: 10, hidden: true,
+      riddle: { zh: "一來一往，地心藏在兩次落聲之間。", en: "Earth hides between the echoes of two falls." },
+      desc: { zh: "在等大反向的非零定加速度下各放球一次，將兩次落球反推的有效重力取平均，重建地球重力。", en: "Drop a ball during opposite constant accelerations of equal magnitude. Average the two measured effective gravities to recover terrestrial gravity." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'ball' || !d.aConst || Math.abs(d.a) < 0.5 || Math.abs(d.a) > 3 || !(d.gEff > 0)) return false;
+        return compare(mem, d, (p, q) => near(p.a, -q.a, 0.001) && near((p.gEff + q.gEff) / 2, 9.8, 0.006));
+      }
     }
   ]);
 })();

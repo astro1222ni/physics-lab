@@ -25,6 +25,10 @@
     return list;
   };
 
+  function compare(mem, current, match) {
+    return remember(mem, 'samples', current).some(previous => previous !== current && match(previous, current));
+  }
+
   LabMission.register('energy-coaster', [
     {
       id: 'energy-coaster-1', level: 1,
@@ -169,6 +173,93 @@
         const d = ev.data;
         return ev.type === 'attach' && d.flight >= 1 - 1e-9 &&
           !(d.xa != null && Math.abs(d.x - d.xa) <= d.R + 0.01 + 1e-9);
+      }
+    },
+    {
+      id: 'energy-coaster-h4', level: 3, hidden: true,
+      riddle: { zh: "輪印疊在一起，帳本卻厚了一倍。", en: "The tracks overlap, but one ledger is twice as thick." },
+      desc: { zh: "在同一無摩擦谷道以相同非零初速出發，車重加倍，首過谷底的速率不變而動能加倍。", en: "Double the mass on the same frictionless valley run with a nonzero launch speed. Compare first-bottom speeds and kinetic energies." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'bottom' || !d.first || d.preset !== 'valley' || d.mode !== 'rail' || d.mu !== 0 || d.v0 < 1) return false;
+        return compare(mem, d, (p, q) => p.sig === q.sig && p.g === q.g && p.x0 === q.x0 && p.v0 === q.v0 &&
+          Math.max(p.m, q.m) === 2 * Math.min(p.m, q.m) && near(p.v, q.v, 0.005) &&
+          near(Math.max(p.K, q.K) / Math.min(p.K, q.K), 2, 0.002));
+      }
+    },
+    {
+      id: 'energy-coaster-h5', level: 4, hidden: true,
+      riddle: { zh: "有人先回了頭，山谷卻認得同一雙鞋。", en: "One traveler turns back first. The valley recognizes both footsteps." },
+      desc: { zh: "從同點給等大反向初速，較晚抵達的一車折返後，首次經過谷底時仍與另一車等速。", en: "Start at one point with opposite initial velocities. After the uphill car turns back it first reaches the bottom later, at the same speed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'bottom' || !d.first || d.preset !== 'valley' || d.mode !== 'rail' || d.mu !== 0 || Math.abs(d.v0) < 1) return false;
+        return compare(mem, d, (p, q) => p.sig === q.sig && p.x0 === q.x0 && p.g === q.g && p.m === q.m &&
+          p.v0 === -q.v0 && near(p.v, q.v, 0.01) && Math.abs(p.t - q.t) > 0.1);
+      }
+    },
+    {
+      id: 'energy-coaster-h6', level: 5, hidden: true,
+      riddle: { zh: "同一把砂紙，換了紋路就少走一截。", en: "A change in the grain shortens the trail." },
+      desc: { zh: "水平高台上同點同初速煞停，摩擦係數加倍，滑行距離減半。", en: "Start at the same point and speed on a level shelf. Doubling kinetic friction halves the stopping distance." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'stop' || d.preset !== 'loop' || d.edited || d.x0 < 27 || d.v0 < 0.5 ||
+            d.mu <= 0 || d.x - d.x0 < 0.15 || Math.abs(d.y - d.y0) > 0.0001) return false;
+        return compare(mem, d, (p, q) => {
+          const [a, b] = p.mu < q.mu ? [p, q] : [q, p];
+          return a.sig === b.sig && a.x0 === b.x0 && a.v0 === b.v0 && a.g === b.g && a.mode === b.mode &&
+            near(b.mu, 2 * a.mu, 0.00051) && near(a.x - a.x0, 2 * (b.x - b.x0), 0.008);
+        });
+      }
+    },
+    {
+      id: 'energy-coaster-h7', level: 7, hidden: true,
+      riddle: { zh: "一封信掉在牆角，紙上還留著摺痕。", en: "A letter lands in the corner, its crease still showing." },
+      desc: { zh: "從未編輯跳台的水平末端飛出，使落地的水平與鉛直速率相等，速度朝右下方 45 度。", en: "Leave the horizontal end of the stock jump and hit the ground at 45 degrees with equal horizontal and vertical speed components." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return ev.type === 'land' && d.preset === 'jump' && !d.edited && d.fromEnd && d.v0 > 0 &&
+          d.vx > 0 && d.vy < 0 && near(d.vx, -d.vy, 0.012);
+      }
+    },
+    {
+      id: 'energy-coaster-h8', level: 8, hidden: true,
+      riddle: { zh: "同一扇拱門，一人得被拉住才過得去。", en: "Under the same arch only one traveler can be pulled through." },
+      desc: { zh: "軌道車在圈頂需向外半個車重的約束力。相同無摩擦條件換成自由車，在圈內失去接觸。", en: "Tune the captured car to require an outward half-weight force at the top. At identical settings the free car loses contact inside the loop." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (d.preset !== 'loop' || d.mu !== 0 || !(ev.type === 'loopTop' && d.mode === 'rail' && near(d.nmg, -0.5, 0.012) ||
+            ev.type === 'detach' && d.mode === 'free' && d.inLoop)) return false;
+        return compare(mem, d, (p, q) => p.mode !== q.mode && p.sig === q.sig && p.g === q.g && p.x0 === q.x0 && p.v0 === q.v0);
+      }
+    },
+    {
+      id: 'energy-coaster-h9', level: 9, hidden: true,
+      riddle: { zh: "重逢時，輪軌只留下斜來的一半。", en: "At their reunion the rails keep half of a slanting gift." },
+      desc: { zh: "從圈底入口前方近底處給自由車初速，在無摩擦圈內落回軌道，使入射速度的法向與切向分量等大，碰撞耗去一半入射動能。", en: "Launch the free car just before the loop near bottom height. Rejoin the frictionless loop with equal normal and tangential speed magnitudes so the impact dissipates half the incident kinetic energy." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        return ev.type === 'attach' && d.inLoop && d.mode === 'free' && d.v0 > 0 && d.mu === 0 &&
+          Math.abs(d.y0 - d.ya) <= 0.05 && d.x0 < d.xa && d.vn > 0.5 &&
+          near(d.vn * d.vn / (d.vn * d.vn + d.vt * d.vt), 0.5, 0.004);
+      }
+    },
+    {
+      id: 'energy-coaster-h10', level: 10, hidden: true,
+      riddle: { zh: "遠方那座谷，唱得快些，旋律卻一樣。", en: "In the distant valley the song is faster, yet the tune is the same." },
+      desc: { zh: "同一有摩擦谷道，改變重力並調初速使 v0 平方除以 g 不變。首次抵達谷底時速率依重力平方根放大，時間反比縮短，單位重量的生熱相同。", en: "On the same rough valley track scale launch speed with the square root of gravity. First-bottom speed scales the same way, travel time scales inversely and heat per unit weight stays fixed." },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'bottom' || !d.first || d.preset !== 'valley' || d.mode !== 'rail' ||
+            d.mu <= 0 || d.v0 < 0.5 || d.h0 < 1 || d.Q <= 0) return false;
+        return compare(mem, d, (p, q) => {
+          const scale = Math.sqrt(q.g / p.g);
+          return p.sig === q.sig && p.mu === q.mu && p.x0 === q.x0 && p.m === q.m &&
+            Math.max(p.g, q.g) >= 2 * Math.min(p.g, q.g) && near(p.v0 ** 2 / p.g, q.v0 ** 2 / q.g, 0.002) &&
+            near(p.v * scale, q.v, 0.01) && near(p.t / scale, q.t, 0.005) &&
+            near(p.Q / (p.m * p.g), q.Q / (q.m * q.g), 0.001);
+        });
       }
     }
   ]);
