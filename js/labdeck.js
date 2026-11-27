@@ -199,8 +199,49 @@
   }
   /* 手機橫放：主畫布太高時只把「畫布那一塊」縮窄置中，讓畫布整個放得進螢幕高度（照原比例，不變形）；
      播放列、按鈕照原寬一排排開，不跟著擠成好幾排 */
+  /* 11/27 站長選 A：手機橫放時，畫布顯示寬 ÷ 繪圖寬（字的縮放倍數）至少 0.7。
+     試玩串量到 844×390 有 13 站只剩 0.35–0.62 倍（12 px 的字剩 5–7.5 px）：頁面在橫放用固定寬度畫直立的高圖，
+     再被「高度不超過螢幕」的規則整張壓小。保底做法：
+     ① 被高度上限壓到 0.7 倍以下的畫布，放寬它的高度上限到剛好 0.7 倍（寧可捲一下，不讓字小到看不清楚）；
+     ② 左欄寬度不夠的，操作台讓出寬度（最窄 DECK_MIN）；
+     ③ 為了一屏放得下而縮窄畫布那一塊時，不可縮到 0.7 倍以下。
+     跟著顯示寬度重畫的畫布（繪圖寬≈顯示寬）不受影響。 */
+  const MIN_SCALE = 0.7, DECK_MIN = 240;
+  const DPR = function () { return window.devicePixelRatio || 1; };
+  function stageCanvases() {
+    // 一頁可能有好幾個實驗區（.lab），每一區主畫面（.stage）的畫布都要顧到；面板裡的小圖不動
+    return Array.prototype.filter.call(doc.querySelectorAll('.lab .stage canvas'), function (c) { return !c.closest('.labdeck') && c.offsetParent && c.width > 0; });
+  }
+  let liftN = 0;
+  function lift() {                        // ① 放寬高度上限
+    if (mode !== 'drawer') return false;
+    let changed = false;
+    stageCanvases().forEach(function (c) {
+      const r = c.getBoundingClientRect(); if (r.width < 60) return;
+      const lw = c.width / DPR(), lh = c.height / DPR();
+      if (r.width / lw >= MIN_SCALE - 0.005) return;
+      const mh = parseFloat(getComputedStyle(c).maxHeight);
+      const needH = Math.ceil(lh * MIN_SCALE) + 1;
+      if (isFinite(mh) && mh < needH - 1 && r.height >= mh - 2) { c.style.maxHeight = needH + 'px'; c._deckLift = true; changed = true; }
+    });
+    return changed;
+  }
+  function unlift() {
+    stageCanvases().concat(Array.prototype.slice.call(doc.querySelectorAll('canvas'))).forEach(function (c) { if (c._deckLift) { c.style.maxHeight = ''; c._deckLift = false; } });
+  }
+  function lackOf(c) {                    // 這張畫布要再寬多少 px 才到 0.7 倍（不缺回傳 0）
+    const r = c.getBoundingClientRect(); if (r.width < 60 || !c.width) return 0;
+    const lw = c.width / DPR();
+    return lw > r.width * 1.05 ? Math.max(0, MIN_SCALE * lw - r.width) : 0;
+  }
+  function deckW(px) {
+    const h = doc.documentElement;
+    if (px == null) { if (h.style.getPropertyValue('--deck-w')) h.style.removeProperty('--deck-w'); }
+    else h.style.setProperty('--deck-w', Math.round(px) + 'px');
+  }
   let fitEl = null;
-  function unfit() {
+  function unfit(keepDeck) {
+    if (!keepDeck) { deckW(null); unlift(); }
     if (!fitEl) return;
     fitEl.style.maxWidth = ''; fitEl.style.marginLeft = ''; fitEl.style.marginRight = '';
     fitEl = null; dispatchEvent(new Event('resize'));
@@ -208,23 +249,46 @@
   function fit() {
     const lab = doc.querySelector('.lab');
     if (!lab || mode !== 'drawer') { unfit(); return; }
+    if (lift() && ++liftN < 8) { dispatchEvent(new Event('resize')); fitSoon(); return; }
     const st = lab.querySelector(':scope > .stage');
     const cv = st && Array.prototype.find.call(st.querySelectorAll('canvas'), function (c) { const r = c.getBoundingClientRect(); return r.width > 150 && r.height > 80; });
     if (!cv) { unfit(); return; }
     let blk = cv;
     while (blk.parentElement && blk.parentElement !== st) blk = blk.parentElement;
-    if (fitEl && fitEl !== blk) unfit();
+    if (fitEl && fitEl !== blk) unfit(true);
+    const cvs = stageCanvases();
+    if (!blk.style.maxWidth) {                                               // ② 原寬時：左欄不夠讓字到 0.7 倍，操作台讓出寬度
+      let extra = 0;
+      cvs.forEach(function (c) {
+        const lack = lackOf(c), w = c.getBoundingClientRect().width, col = c.closest('.stage') || c.parentElement;
+        if (lack > 1 && w > 0) extra = Math.max(extra, lack * col.clientWidth / w);
+      });
+      const dk = doc.querySelector('.labdeck'), dw = dk ? dk.getBoundingClientRect().width : 0;
+      const target = Math.max(DECK_MIN, dw - extra);
+      if (extra > 2 && dw - target > 2) { deckW(target); dispatchEvent(new Event('resize')); if (++fitN < 6) fitSoon(); return; }
+    }
     if (blk._deckNoFit) return;
     const r = cv.getBoundingClientRect(), br = blk.getBoundingClientRect();
     // 先記下原寬時的畫布大小；縮窄後畫布沒有跟著變矮（高度寫死、或有最小高度）就退回原寬，不要變成又窄又高
-    if (!blk.style.maxWidth) blk._deckBase = { w: r.width, h: r.height };
+    if (!blk.style.maxWidth) {
+      // ③ 這一塊裡固定寬繪圖的畫布，縮窄後也要保持 0.7 倍：記下這一塊最窄能縮到多寬
+      let minW = 0;
+      cvs.forEach(function (c) {
+        if (!blk.contains(c)) return;
+        const cr = c.getBoundingClientRect(); if (cr.width < 60) return;
+        const lw = c.width / DPR();
+        if (lw > cr.width * 1.05) minW = Math.max(minW, br.width * MIN_SCALE * lw / cr.width);
+      });
+      blk._deckBase = { w: r.width, h: r.height, minW: Math.ceil(minW) };
+    }
     else if (blk._deckBase && r.height > blk._deckBase.h * (r.width / blk._deckBase.w) * 1.2 + 8) {
       blk._deckNoFit = true; fitEl = blk; unfit(); return;
     }
     const aspect = r.height / r.width, avail = innerHeight - 16;
     const extraW = br.width - r.width;                                       // 畫布那一塊裡、畫布以外的左右邊距
     const full = st.clientWidth - (parseFloat(getComputedStyle(st).paddingLeft) || 0) - (parseFloat(getComputedStyle(st).paddingRight) || 0);
-    const w = Math.round(Math.min(full, Math.max(full * 0.45, avail / aspect + extraW)));
+    const minW = blk._deckBase ? blk._deckBase.minW : 0;
+    const w = Math.round(Math.min(full, Math.max(full * 0.45, minW, avail / aspect + extraW)));
     const cur = parseFloat(blk.style.maxWidth) || full;
     if (Math.abs(cur - w) > 3) {
       fitEl = blk;
@@ -247,7 +311,23 @@
     addEventListener('orientationchange', function () { setTimeout(place, 250); });
     // 手機橫放時網址列收放會改變可用高度：真的換了視窗大小才重算（自己發的 resize 不重算）
     let lastWH = innerWidth + 'x' + innerHeight;
-    addEventListener('resize', function () { const k = innerWidth + 'x' + innerHeight; if (k !== lastWH) { lastWH = k; fitN = 0; if (mode === 'drawer') fitSoon(); } });
+    let lastW = innerWidth;
+    addEventListener('resize', function () {
+      const k = innerWidth + 'x' + innerHeight; if (k === lastWH) return;
+      lastWH = k; fitN = 0; liftN = 0;
+      if (innerWidth !== lastW) { lastW = innerWidth; deckW(null); unlift(); }  // 換了寬度（轉向、拉視窗）：先回原樣再重算
+      if (mode === 'drawer') fitSoon();
+    });
+    // 頁面晚一點才畫好、或換分頁／模式重畫時（畫布的 width、height 改了），重新檢查字的縮放倍數
+    if (window.MutationObserver) {
+      const mo = new MutationObserver(function (recs) {
+        if (mode !== 'drawer') return;
+        // 有些頁面每一格動畫都重設一次 width 來清畫面：數值真的變了才算
+        const moved = recs.some(function (r) { const c = r.target, k = c.width + 'x' + c.height; if (c._deckWH === k) return false; c._deckWH = k; return true; });
+        if (moved) { liftN = 0; fitSoon(); }
+      });
+      Array.prototype.forEach.call(doc.querySelectorAll('.lab'), function (lab) { mo.observe(lab, { attributes: true, subtree: true, attributeFilter: ['width', 'height'] }); });
+    }
     // 例如自學模式（html 加上 data-deck-off 指定的 class）時不用操作台，搬回原位
     if (offClass && window.MutationObserver) new MutationObserver(place).observe(doc.documentElement, { attributes: true, attributeFilter: ['class'] });
   }

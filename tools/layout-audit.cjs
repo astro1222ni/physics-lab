@@ -17,6 +17,7 @@
  *      演算法類（EXEMPT_FIRST）主鍵和畫布同屏即可，不看 firstSliderBottom。
  *   ② reach ≤ 1170：從主畫布頂到最遠「看得到的」操作控制項（同 tools/reach-audit.cjs 的算法；沒選到的分頁不算）。
  *   ③ 844×390 橫放：主畫布高 ≤ 390（一屏放得下）、操作台在畫布右邊、畫布寬 ≥ 視窗寬 45%（不是郵票）。
+ *      畫布縮放倍數 ≥ 0.7（11/27 站長選 A：顯示寬 ÷ 繪圖寬，固定寬繪圖再縮小的畫布字會變小；LA_LAND_SCALE 可調）。
  *   ④ 縮圖：js/thumbs.js 的版本表有這一站。
  *   ⑤ 滑桿間距 ≤ 56：操作台每個分頁逐一點開，量相鄰兩根滑桿的上下距離（中間夾著按鈕、選單的那一對不算，11/21 準則：電流天平的「I₁ 反向」）；
  *      412、844、1280 三種寬度都量。
@@ -28,7 +29,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const LIM = {
   dead: +(process.env.LA_DEAD || 80), first: +(process.env.LA_FIRST || 780), reach: +(process.env.LA_REACH || 1170),
-  pitch: +(process.env.LA_PITCH || 56), landH: +(process.env.LA_LAND_H || 390), landW: +(process.env.LA_LAND_W || 0.45)
+  pitch: +(process.env.LA_PITCH || 56), landH: +(process.env.LA_LAND_H || 390), landW: +(process.env.LA_LAND_W || 0.45), landScale: +(process.env.LA_LAND_SCALE || 0.7)
 };
 // 11/21 主串判定：演算法、流程類一直按的是單步／播放主鍵，第一根拉桿只在開頭設一次
 const EXEMPT_FIRST = new Set((process.env.LA_EXEMPT_FIRST || 'data-compression,packet-routing,graph-traversal,shortest-path').split(','));
@@ -69,6 +70,7 @@ const labs=[...document.querySelectorAll('.lab')].filter(vis);if(labs.length){co
 return out})()`;
 const LAND = `(()=>{const vis=e=>e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';const c=[...document.querySelectorAll('.stage canvas')].find(x=>x.offsetParent&&x.clientHeight>60)||[...document.querySelectorAll('canvas')].filter(x=>x.offsetParent&&x.clientHeight>60).sort((a,b)=>b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight)[0];
 const out={sw:document.documentElement.scrollWidth,vw:innerWidth};if(!c)return Object.assign(out,{noCanvas:true});const r=c.getBoundingClientRect();out.cw=Math.round(r.width);out.ch=Math.round(r.height);out.canvas=c.id||'canvas';
+let sc=9,scId='';[...document.querySelectorAll('.stage canvas')].filter(x=>vis(x)&&x.clientWidth>150&&x.width>0).forEach(x=>{const k=x.getBoundingClientRect().width/(x.width/(devicePixelRatio||1));if(k<sc){sc=k;scId=x.id||'canvas'}});if(sc<9){out.scale=Math.round(sc*100)/100;out.scaleCanvas=scId}
 const d=document.querySelector('.labdeck');if(vis(d)){const dr=d.getBoundingClientRect();out.deckRight=dr.left>=r.right-4;out.deckLeft=Math.round(dr.left)}else out.deckRight=null;return out})()`;
 const PITCH = `(async()=>{const vis=r=>r.offsetParent&&!r.closest('.labdeck-away,[hidden]')&&getComputedStyle(r).visibility!=='hidden';const root=document.querySelector('.labdeck')||document.querySelector('.panel')||document.body;
 const measure=()=>{const rs=[...root.querySelectorAll('input[type=range]')].filter(vis).map(r=>r.getBoundingClientRect()).sort((a,b)=>a.top-b.top);const others=[...root.querySelectorAll('button,select,input:not([type=range]),canvas,textarea')].filter(vis).map(e=>e.getBoundingClientRect());let worst=0;
@@ -140,6 +142,7 @@ srv.listen(0, '127.0.0.1', async () => {
       if (l.ch > LIM.landH) B.push('③橫放畫布高 ' + l.ch + ' px，一屏放不下');
       if (l.deckRight === false) B.push('③橫放操作台不在畫布右邊');
       if (l.cw < LIM.landW * 844) B.push('③橫放畫布只有 ' + l.cw + '×' + l.ch + '（寬 < ' + Math.round(LIM.landW * 100) + '%，像郵票）');
+      if (l.scale != null && l.scale < LIM.landScale) B.push('③橫放畫布 ' + l.scaleCanvas + ' 縮成 ' + l.scale + ' 倍（< ' + LIM.landScale + '，字會變小）');
     }
     // ④
     if (!r.thumb) B.push('④js/thumbs.js 版本表沒有這站');
@@ -158,7 +161,7 @@ srv.listen(0, '127.0.0.1', async () => {
     while (q.length) {
       const m = q.shift(); const r = await one(m); res.push(r); done++;
       if (r.bad.length) console.log('✗ ' + m + '\n    ' + r.bad.join('\n    '));
-      else if (opt.all) console.log('✓ ' + m + '（死空白 ' + r.p.deadPx + '、首拉桿 ' + r.p.firstSliderBottom + '、reach ' + r.p.reach + '、橫放 ' + r.l.cw + '×' + r.l.ch + '）');
+      else if (opt.all) console.log('✓ ' + m + '（死空白 ' + r.p.deadPx + '、首拉桿 ' + r.p.firstSliderBottom + '、reach ' + r.p.reach + '、橫放 ' + r.l.cw + '×' + r.l.ch + (r.l.scale != null ? '、' + r.l.scale + ' 倍' : '') + '）');
     }
   }));
   await browser.close(); srv.close();
