@@ -15,6 +15,7 @@ const path = require('node:path');
 const { launch } = require('./browser.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const ORIGIN = 'http://127.0.0.1';
+const USAGE = '用法：node tools/padtest.cjs <代號…> [--width 412,1280] [--dark]';
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml',
@@ -215,15 +216,24 @@ async function main({ slugs, widths, dark }) {
   return failed ? 1 : 0;
 }
 
-if (require.main === module) {
+async function cli(args) {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(USAGE + '\n以指定寬度檢查共用小鍵盤的 →、↑ 與中央格。\n' +
+      '無不合格回 0，有不合格回 1，參數錯誤回 2。');
+    return 0;
+  }
   let options;
-  try { options = argumentsFor(process.argv.slice(2)); }
+  try { options = argumentsFor(args); }
   catch (error) {
     console.error(error.message);
-    console.error('用法：node tools/padtest.cjs <代號…> [--width 412,1280] [--dark]');
-    process.exitCode = 2;
+    console.error(USAGE);
+    return 2;
   }
-  if (options) main(options).then(code => { process.exitCode = code; }).catch(error => {
+  return main(options);
+}
+
+if (require.main === module) {
+  cli(process.argv.slice(2)).then(code => { process.exitCode = code; }).catch(error => {
     console.error('無法完成小鍵盤測試：' + error.message);
     process.exitCode = 1;
   });

@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const { test } = require('node:test');
 const { testPad } = require('../tools/padtest.cjs');
 
@@ -94,4 +95,15 @@ test('元件未掛載、無法展開、方向鍵無效及頁面例外均回報�
   const error = await run({ visible: false, pageError: '頁面例外' });
   assert.deepEqual(error.reasons, ['主控台有錯誤']);
   assert.equal(error.notApplicable, undefined);
+});
+
+test('說明旗標印出用法並回傳 0', () => {
+  for (const flag of ['--help', '-h']) {
+    const help = spawnSync(process.execPath, [require.resolve('../tools/padtest.cjs'), flag], {
+      encoding: 'utf8', windowsHide: true
+    });
+    assert.equal(help.status, 0, help.stderr);
+    assert.match(help.stdout, /用法：.*--width/);
+    assert.equal(help.stderr, '');
+  }
 });

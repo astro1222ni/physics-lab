@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /*
- * 用法：node tools/lint-float-eq.cjs [代號…|--all] [--dir js] [--no-skip]
+ * 用法：node tools/lint-float-eq.cjs [代號…|--all] [--dir js] [--no-skip] [--float-only]
  * 預設依 js/catalog.js 的 d=math、s=代號挑站，掃來源目錄的同名 JS
  * 及代號-*.js（核心、控制等）；--all 遞迴掃來源目錄的所有 JS。
- * ==、!=、===、!== 的任一側若是數字常值、Math 數字常數或其簡單算式即提醒。
+ * ==、!=、===、!== 的任一側有數字常值、常數算式或明確浮點線索時提醒。
+ * --float-only 只列含非整數常值、可能回傳非整數的 Math 結果或除法結果者。
  * 預設略過 typeof、長度、索引、DOM 整數屬性、Math 整數函式及整數取餘。
  * 計數器限獨立的 i/j，或 idx/index/count 等有明確字義的名稱；取餘時也把
  * 慣用的獨立 n 視為項次。k 與大寫 I/J/K/N 不單憑名稱略過。
- * --no-skip 列出全部數字候選。字串常值比較另計數，不列逐筆。
+ * --no-skip 列出全部數字候選，和 --float-only 合用時先限縮為浮點候選。
+ * 字串常值比較另計數，不列逐筆。任一側具浮點線索時優先列出。
  * 這是詞彙層級的提醒，不推斷型別；略過註解、正規式與整段樣板字串。
  * 有提醒仍回傳 0；用法／掃描輸入錯誤回傳 2。
  */
@@ -16,6 +18,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
+const USAGE = '用法：node tools/lint-float-eq.cjs [代號…|--all] [--dir js] [--no-skip] [--float-only]';
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const NUMBER = /^(?:0[xX][\da-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:\d[\d_]*(?:\.[\d_]*)?|\.[\d_]+)(?:[eE][+-]?[\d_]+)?)$/;
 const EQUALITY = /^(?:===?|!==?)$/;
@@ -25,8 +28,11 @@ const COUNTER = /^(?:idx|index|count)$|(?:Idx|Index|Count|_(?:idx|index|count))$
 const INTEGER_MEMBER = /^(?:length|size|button|buttons|keyCode|which|nodeType|readyState|selectedIndex|tabIndex)$/;
 const INDEX_METHOD = /^(?:index|indexOf|lastIndexOf|findIndex|findLastIndex)$/;
 const INTEGER_MATH = /^(?:round|floor|ceil|trunc|sign)$/;
+const FLOAT_MATH = /^(?:abs|acos|acosh|asin|asinh|atan|atan2|atanh|cbrt|cos|cosh|exp|expm1|f16round|fround|hypot|log|log10|log1p|log2|max|min|pow|random|sin|sinh|sqrt|tan|tanh)$/;
+const SHIFT = /^(?:<<|>>|>>>)$/;
 const ARITHMETIC = /^(?:[+*/%-]|\*\*|<<|>>|>>>)$/;
 const RELATIONAL = /^(?:[<>]=?|in|instanceof)$/;
+const UNARY = /^(?:!|~|typeof|void|delete)$/;
 const VALUE_PREFIX = /^(?:return|throw|case|yield|void|typeof|delete|in|of|await)$/;
 
 function tokenize(source) {
@@ -63,7 +69,7 @@ function atom(values, index, step) {
   // 按原順序回傳直接比較的運算元，保留呼叫、屬性及中括號取值。
   let i = index;
   if (step === 1) {
-    if (values[i] === '+' || values[i] === '-' || values[i] === 'typeof') i++;
+    while (values[i] === '+' || values[i] === '-' || UNARY.test(values[i])) i++;
     if (values[i] === '(') i = groupEnd(values, i, 1);
     for (;;) {
       if (['.', '?.'].includes(values[i + 1]) && IDENTIFIER.test(values[i + 2] || '')) i += 2;
@@ -88,11 +94,14 @@ function atom(values, index, step) {
       if (['.', '?.'].includes(values[i - 1])) i -= 2;
       else break;
     }
-    const previous = values[i - 1];
-    const beforeSign = values[i - 2];
-    if (previous === 'typeof' || (['+', '-'].includes(previous) &&
-        (!beforeSign || VALUE_PREFIX.test(beforeSign) || ARITHMETIC.test(beforeSign) ||
-          /^[([{:;,=!?]$/.test(beforeSign) || EQUALITY.test(beforeSign)))) i--;
+    for (;;) {
+      const previous = values[i - 1];
+      const beforeSign = values[i - 2];
+      if (UNARY.test(previous) || (['+', '-'].includes(previous) &&
+          (!beforeSign || VALUE_PREFIX.test(beforeSign) || ARITHMETIC.test(beforeSign) ||
+            UNARY.test(beforeSign) || /^[([{:;,=!?]$/.test(beforeSign) || EQUALITY.test(beforeSign)))) i--;
+      else break;
+    }
   }
   return { start: Math.min(i, index), end: Math.max(i, index) };
 }
@@ -139,6 +148,38 @@ function numeric(values) {
   return expression() && i === values.length;
 }
 
+function floatAtom(values) {
+  while (['+', '-'].includes(values[0])) values = values.slice(1);
+  if (values[0] === '(' && groupEnd(values, 0, 1) === values.length - 1) {
+    return floatExpression(values.slice(1, -1));
+  }
+  if (values.length === 1 && NUMBER.test(values[0])) {
+    return !Number.isInteger(Number(values[0].replace(/_/g, '')));
+  }
+  if (values[0] !== 'Math' || values[1] !== '.') return false;
+  if (values.length === 3) return MATH_CONSTANT.test(values[2]);
+  return FLOAT_MATH.test(values[2]) && values[3] === '(' && groupEnd(values, 3, 1) === values.length - 1;
+}
+
+function floatExpression(values) {
+  let float = false, division = false, bigInt = false;
+  for (let start = 0; start < values.length;) {
+    const { end } = atom(values, start, 1);
+    const term = values.slice(start, end + 1);
+    float = floatAtom(term) || float;
+    const unwrapped = unwrap(['+', '-'].includes(term[0]) ? term.slice(1) : term);
+    const literal = unwrapped.length === 1 ? unwrapped[0] : '';
+    bigInt = (literal.endsWith('n') && NUMBER.test(literal.slice(0, -1))) || bigInt;
+    const op = values[end + 1];
+    if (op === undefined) return float || (division && !bigInt);
+    // 呼叫的引數、索引、位移與其他型態結果不代表運算元會產出浮點。
+    if (!ARITHMETIC.test(op) || SHIFT.test(op)) return false;
+    if (op === '/') division = true;
+    start = end + 2;
+  }
+  return false;
+}
+
 const stringLiteral = v => v.length === 1 && /^[`"']/.test(v[0]);
 
 function integerExpression(values) {
@@ -181,7 +222,8 @@ function scan(source) {
     // 相等運算前的關係式是布林值，避免將其尾端或開頭誤作數字運算元。
     if (RELATIONAL.test(values[left.start - 1]) || RELATIONAL.test(values[right.end + 1])) continue;
     const string = stringLiteral(unwrap(l)) || stringLiteral(unwrap(r));
-    if (!string && !numeric(l) && !numeric(r)) continue;
+    const float = !string && (floatExpression(l) || floatExpression(r));
+    if (!string && !float && !numeric(l) && !numeric(r)) continue;
     const offset = tokens[i].offset;
     while (nextNewline >= 0 && nextNewline < offset) {
       line++;
@@ -190,24 +232,25 @@ function scan(source) {
     const tail = tokens[right.end];
     const end = tail.offset + tail.value.length;
     findings.push({ line, snippet: source.slice(tokens[left.start].offset, end).replace(/\s+/g, ' '),
-      kind: string ? 'string' : 'number', skipped: !string && (skip(l) || skip(r)) });
+      kind: string ? 'string' : 'number', float, skipped: !string && !float && (skip(l) || skip(r)) });
   }
   return findings;
 }
 
 function argumentsFor(args) {
   const slugs = [];
-  let dir = 'js', all = false, noSkip = false;
+  let dir = 'js', all = false, noSkip = false, floatOnly = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--all') all = true;
     else if (arg === '--no-skip') noSkip = true;
+    else if (arg === '--float-only') floatOnly = true;
     else if (arg === '--dir' && args[i + 1] && !args[i + 1].startsWith('-')) dir = args[++i];
     else if (SLUG.test(arg)) slugs.push(arg);
     else throw new Error('無效參數：' + arg);
   }
   if (all && slugs.length) throw new Error('--all 與站台代號不能同時使用');
-  return { dir: path.resolve(ROOT, dir), slugs, all, noSkip };
+  return { dir: path.resolve(ROOT, dir), slugs, all, noSkip, floatOnly };
 }
 
 function sourceFiles(dir, recursive) {
@@ -221,7 +264,12 @@ function sourceFiles(dir, recursive) {
 }
 
 function main(args) {
-  const { dir, slugs, all, noSkip } = argumentsFor(args);
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(USAGE + '\n--float-only  只列非整數常值、可能產出非整數的 Math 結果或除法結果。\n' +
+      '--no-skip     列出其他數字候選（可與 --float-only 合用）。\n未指定代號時掃描數學站。');
+    return;
+  }
+  const { dir, slugs, all, noSkip, floatOnly } = argumentsFor(args);
   const sites = slugs.length || all ? slugs : JSON.parse(fs.readFileSync(path.join(ROOT, 'js/catalog.js'), 'utf8')
     .replace(/^[\s\S]*?window\.LAB_CATALOG\s*=\s*/, '').replace(/;\s*$/, ''))
     .filter(site => site.d === 'math').map(site => site.s);
@@ -240,7 +288,7 @@ function main(args) {
     const label = path.relative(ROOT, file).split(path.sep).join('/');
     for (const item of scan(fs.readFileSync(file, 'utf8'))) {
       if (item.kind === 'string') strings++;
-      else if (item.skipped && !noSkip) skipped++;
+      else if ((floatOnly && !item.float) || (item.skipped && !noSkip)) skipped++;
       else {
         hits++;
         console.log(label + ':' + item.line + '  ' + item.snippet);
@@ -254,7 +302,7 @@ if (require.main === module) {
   try { main(process.argv.slice(2)); }
   catch (error) {
     console.error(error.message);
-    console.error('用法：node tools/lint-float-eq.cjs [代號…|--all] [--dir js] [--no-skip]');
+    console.error(USAGE);
     process.exitCode = 2;
   }
 }

@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const { scan } = require('../tools/lint-float-eq.cjs');
 
 const source = [
@@ -62,3 +63,53 @@ assert.deepEqual(regression.filter(hit => hit.skipped).map(hit => hit.snippet), 
   'Math.round(v) === 0', '0 === Math.floor(v)', 'Math.sign(v) === -1', 'Math.ceil(v) === 0', 'typeof v === 0'
 ]);
 assert.deepEqual(regression.filter(hit => hit.kind === 'string').map(hit => hit.snippet), ["'1' == 1"]);
+
+const floatCases = [
+  'Math.sin(x) === Math.cos(y)',
+  'a === b + 0.1',
+  'i === 1.5',
+  'count === Math.PI',
+  'Math.PI === sampleCount',
+  'Math.max(x, y) !== value',
+  'Math.abs(x) === 1',
+  'x / y == result',
+  'x === (a + (b / c))',
+  'x === 1 / 3',
+  'k === -1e-3'
+];
+for (const expression of floatCases) {
+  const cases = scan(expression + ';');
+  assert.deepEqual(cases.map(({ snippet, kind, float, skipped }) => ({ snippet, kind, float, skipped })), [
+    { snippet: expression, kind: 'number', float: true, skipped: false }
+  ]);
+}
+for (const expression of [
+  'x === 1n / 2n', 'x === series[0.1]', 'x === f(a / b)', 'x === Math.round(0.1)',
+  'x === Math.imul(a, b)', 'x === (a / b) << 1', 'x === obj.Math.cos(y)',
+  'x === -1n / 2n', '!Math.sin(x) === false', 'value === ~Math.cos(x)'
+]) assert.deepEqual(scan(expression + ';'), [], expression);
+assert.deepEqual(scan('n === 1; i === 1; Math.round(x) === 0;').map(hit => [hit.float, hit.skipped]), [
+  [false, false], [false, true], [false, true]
+]);
+
+function cli(args) {
+  return spawnSync(process.execPath, [require.resolve('../tools/lint-float-eq.cjs'), ...args], {
+    encoding: 'utf8', windowsHide: true
+  });
+}
+
+for (const flag of ['--help', '-h']) {
+  const help = cli([flag]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /用法：.*--float-only/);
+  assert.equal(help.stderr, '');
+}
+const defaults = cli(['derivative']);
+assert.equal(defaults.status, 0, defaults.stderr);
+assert.match(defaults.stdout, /q\.a === 0/);
+for (const options of [['--float-only'], ['--float-only', '--no-skip']]) {
+  const filtered = cli(['derivative', ...options]);
+  assert.equal(filtered.status, 0, filtered.stderr);
+  assert.match(filtered.stdout, /n \/ 2 === 1/);
+  assert.doesNotMatch(filtered.stdout, /q\.a === 0/);
+}
