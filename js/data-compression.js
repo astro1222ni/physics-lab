@@ -81,16 +81,17 @@
     // 橫放時格子和遊程並排，上下各保留一列給掃描方向和播放鍵。
     if (compact) G = Math.min(G, Math.max(gridWidth, innerHeight - 152));
     const cell = Math.floor(G / Math.max(gridWidth, gridHeight));
-    G = cell * Math.max(gridWidth, gridHeight);
-    const gx = wide ? pad : Math.round((W - G) / 2), gy = top;
+    const Gw = cell * gridWidth, Gh = cell * gridHeight;
+    G = Gw;
+    const gx = wide ? pad : Math.round((W - Gw) / 2), gy = top;
     const tokW = state.rle.fmt === 'alt' ? 36 : 46, tokH = 24, gap = 5;
     let tx, ty, tw, th;
-    if (wide) { tx = gx + G + pad + 4; ty = gy; tw = W - tx - pad; th = compact ? G - 68 : G; }
-    else { tx = pad; ty = gy + G + 30; tw = W - 2 * pad; th = 5 * (tokH + gap) + 22; }
+    if (wide) { tx = gx + Gw + pad + 4; ty = gy; tw = W - tx - pad; th = compact ? Math.max(Gh, 130) - 68 : Math.max(Gh, 5 * (tokH + gap) + 22); }
+    else { tx = pad; ty = gy + Gh + 30; tw = W - 2 * pad; th = 5 * (tokH + gap) + 22; }
     const perRow = Math.max(1, Math.floor((tw + gap) / (tokW + gap)));
     const rows = Math.max(1, Math.floor((th - 22 + gap) / (tokH + gap)));
-    const barY = compact ? gy + G - 58 : (wide ? gy + G : ty + th) + 22;
-    return { kind: 'rle', compact: compact, wide: wide, pad: pad, G: G, cell: cell, gx: gx, gy: gy, tx: tx, ty: ty, tw: tw, th: th, tokW: tokW, tokH: tokH, gap: gap, perRow: perRow, rows: rows, barY: barY, H: compact ? gy + G + 10 : barY + 66 };
+    const barY = compact ? gy + Math.max(Gh, th + 68) - 58 : (wide ? Math.max(gy + Gh, ty + th) : ty + th) + 22;
+    return { kind: 'rle', compact: compact, wide: wide, pad: pad, G: Gw, Gw: Gw, Gh: Gh, cell: cell, gx: gx, gy: gy, tx: tx, ty: ty, tw: tw, th: th, tokW: tokW, tokH: tokH, gap: gap, perRow: perRow, rows: rows, barY: barY, H: compact ? Math.max(gy + Gh, barY + 58) + 10 : barY + 66 };
   }
   function layoutHuf() {
     const W = cw, narrow = W < 560, h = state.huf;
@@ -553,17 +554,17 @@
   function cellXY(i) { return { x: L.gx + (i % gridWidth) * L.cell, y: L.gy + Math.floor(i / gridWidth) * L.cell }; }
 
   function drawRle(t) {
-    const r = state.rle, s = r.sum, cell = L.cell, G = L.G;
+    const r = state.rle, s = r.sum, cell = L.cell, Gw = L.Gw, Gh = L.Gh;
     // 標題：掃描順序
     D.haloText(ctx, T('掃描順序：', 'Scan order: ') + scanName(r.scan), L.gx, L.gy - 10, C.muted, 'left', 'alphabetic', fnt(12.5, 600));
-    if (G >= 215) D.haloText(ctx, T('1 格 = 1 位元', '1 square = 1 bit'), L.gx + G, L.gy - 10, alpha(C.muted, 0.85), 'right', 'alphabetic', fnt(11.5, 500));
+    if (Gw >= 215) D.haloText(ctx, T('1 格 = 1 位元', '1 square = 1 bit'), L.gx + Gw, L.gy - 10, alpha(C.muted, 0.85), 'right', 'alphabetic', fnt(11.5, 500));
     // 面板與陰影
     ctx.save();
     ctx.shadowColor = D.shadowInk(D.dark ? 0.55 : 0.2); ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-    D.roundRect(ctx, L.gx - 5, L.gy - 5, G + 10, G + 10, 10);
+    D.roundRect(ctx, L.gx - 5, L.gy - 5, Gw + 10, Gh + 10, 10);
     ctx.fillStyle = shade(C.border, D.dark ? 0.05 : 0.35); ctx.fill();
     ctx.restore();
-    D.roundRect(ctx, L.gx - 4.5, L.gy - 4.5, G + 9, G + 9, 10);
+    D.roundRect(ctx, L.gx - 4.5, L.gy - 4.5, Gw + 9, Gh + 9, 10);
     ctx.strokeStyle = alpha(C.text, D.dark ? 0.18 : 0.14); ctx.lineWidth = 1; ctx.stroke();
     // 像素
     const ink = cellSprite('ink', cell), paper = cellSprite('paper', cell);

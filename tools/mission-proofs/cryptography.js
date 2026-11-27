@@ -25,7 +25,7 @@ class Sim {
     this.ev = [];
     this.tab = 'caesar'; this.text = K.DEFAULT_TEXT; this.textSrc = 'default'; this.sampleIdx = 0; this.prov = null;
     this.c = { k: 1, dir: 'enc', back: null };
-    this.f = { g: 0, overlay: true, chiAll: false };
+    this.f = { g: 0, overlay: true, chiAll: false, refText: '' };
     this.v = { key: 'KEY', keySrc: 'default', dir: 'enc', L: 1, col: 1, guess: [0], guessAuto: false, keyAuto: false };
     this.myst = null; this.mystPrev = { caesar: -1, vig: -1 };
     this.qrand = K.rng(seed || 20261112);
@@ -48,7 +48,7 @@ class Sim {
   }
   push(type, data) { this.ev.push({ type: type, data: data }); return this; }
   emitC(src) { return this.push('caesar', K.caesarEvent({ src: src, input: this.text, k: this.c.k, dir: this.c.dir, back: this.c.back, myst: this.myst ? this.myst.kind : '' })); }
-  emitF(src) { return this.push('freq', K.freqEvent({ src: src, input: this.text, g: this.f.g, overlay: this.f.overlay, chiAll: this.f.chiAll, myst: this.myst, prov: this.prov })); }
+  emitF(src) { const rf = this.f.refText.trim(); return this.push('freq', K.freqEvent({ src: src, input: this.text, g: this.f.g, overlay: this.f.overlay, chiAll: this.f.chiAll, ref: rf ? K.reference(rf) : undefined, customRef: !!rf, myst: this.myst, prov: this.prov })); }
   emitV(src) { return this.push('vig', K.vigEvent({ src: src, input: this.text, key: this.v.key, keySrc: this.v.keySrc, dir: this.v.dir, L: this.v.L, myst: this.myst, autoKey: !!(this.myst && this.myst.autoKey) })); }
   emitCur(src) { if (this.tab === 'caesar') this.emitC(src); else if (this.tab === 'freq') this.emitF(src); else if (this.tab === 'vig') this.emitV(src); return this; }
   // 分頁、文字
@@ -81,6 +81,7 @@ class Sim {
   // 頻率分析
   setG(g, src) { this.f.g = mod(Math.round(g), 26); return this.emitF(src || 'g'); }
   overlay(on) { this.f.overlay = on; return this.emitF('overlay'); }
+  setRef(s) { this.f.refText = s || ''; return this.emitF('ref'); }
   chiAll(on) { this.f.chiAll = on; if (on && this.myst) this.myst.chiShown = true; return this.emitF('chiAll'); }
   // 維吉尼亞
   key(s) { const k = K.keyFromShifts(K.keyShifts(s)); if (k === this.v.key && this.v.keySrc === 'typed') return this; this.v.key = k; this.v.keySrc = 'typed'; this.v.keyAuto = false; return this.emitV('key'); }
@@ -201,6 +202,8 @@ expect(5, new Sim().setK(3).swap().setK(23).ev, true, 'k = 3 加密 → 放回�
 {
   const s = solvedCaesarSim(8); const k = s.myst.k;
   expect(6, s.setTab('freq').setG(k).ev, true, '凱撒密文（k = ' + k + '）→ 頻率分析 → g = ' + k + '（χ² 最小）');
+  const sCustom = solvedCaesarSim(8);
+  expect(6, sCustom.setTab('freq').setRef(sCustom.myst.plain).setG(k).ev, false, '貼入自訂參考語料不算（題面要求用英文字母頻率）');
 }
 {
   const s = solvedCaesarSim(9); const k = s.myst.k;
@@ -285,6 +288,7 @@ expect('h7', new Sim().setTab('vig').type(otpText).key('QWXPLMZKTR'.repeat(4)).e
 expect('h7', new Sim().setTab('vig').type('Short note').key(otpKey).ev, false, '訊息太短（不到 30 個字母）');
 expect('h8', new Sim().type(K.SAMPLES[1]).setK(7).swap().setTab('freq').setG(7).ev, false, '自己打的文字裡有 E');
 expect('h8', new Sim().type(lipo).setK(7).swap().setTab('freq').setG(8).ev, false, '沒有對到 χ² 最小的位移');
+expect('h8', new Sim().type(lipo).setK(7).swap().setTab('freq').setRef(lipo).setG(7).ev, false, '貼入自己原文當自訂參考語料不算');
 expect('h9', new Sim().setTab('rsa').setP(41).setQ(47).setE(3).setM(13).enc().ev, false, 'M = 13：13³ = 2197 已經繞過 n');
 expect('h9', new Sim().setTab('rsa').setP(41).setQ(47).setE(3).setM(11).enc().ev, false, 'M = 11：沒繞圈但不是最大的那一封');
 expect('h10', new Sim().setTab('rsa').setP(47).setQ(59).setE(5).setM(920).enc().ev, false, '同樣的 p、q，e 不是 17');

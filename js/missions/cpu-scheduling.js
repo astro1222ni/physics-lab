@@ -50,14 +50,14 @@
       desc: { zh: '選「FCFS」跑到最後，讓它的平均等待時間至少 5，而且至少是 SJF 的 3 倍。', en: 'Choose “FCFS” and run to the end, with an average waiting time of at least 5 and at least 3 times that of SJF.' },
       check: function (ev) {
         const d = ev.data;
-        return isRun(ev) && d.algo === 'fcfs' && d.avgW >= 5 - EPS && d.avgW >= 3 * d.all.sjf.avgW - EPS;
+        return isRun(ev) && !d.est && d.algo === 'fcfs' && d.avgW >= 5 - EPS && d.avgW >= 3 * d.all.sjf.avgW - EPS;
       }
     },
     {
       id: 'cpu-scheduling-5', level: 4,
       title: { zh: '短工作插隊', en: 'The short job cuts in' },
       desc: { zh: '選「SRTF」跑到最後，讓它的平均等待時間比 SJF 少至少 2。', en: 'Choose “SRTF” and run to the end, with an average waiting time at least 2 less than SJF’s.' },
-      check: function (ev) { const d = ev.data; return isRun(ev) && d.algo === 'srtf' && d.all.sjf.avgW - d.avgW >= 2 - EPS; }
+      check: function (ev) { const d = ev.data; return isRun(ev) && !d.est && d.algo === 'srtf' && d.all.sjf.avgW - d.avgW >= 2 - EPS; }
     },
     {
       id: 'cpu-scheduling-6', level: 4,
@@ -110,7 +110,7 @@
       id: 'cpu-scheduling-11', level: 8,
       title: { zh: '十與五', en: 'Ten and five' },
       desc: { zh: '至少 4 個行程，讓 FCFS 的平均等待時間剛好是 10、SJF 剛好是 5，跑到最後。', en: 'With at least 4 processes, make FCFS’s average waiting time exactly 10 and SJF’s exactly 5, then run to the end.' },
-      check: function (ev) { const d = ev.data; return isRun(ev) && d.n >= 4 && same(d.all.fcfs.avgW, 10) && same(d.all.sjf.avgW, 5); }
+      check: function (ev) { const d = ev.data; return isRun(ev) && !d.est && d.n >= 4 && same(d.all.fcfs.avgW, 10) && same(d.all.sjf.avgW, 5); }
     },
 
     // ---------- 隱藏任務（只給謎語；完成時只恭喜，不說原因） ----------
@@ -155,7 +155,7 @@
       riddle: { zh: '後浪推前浪，一浪接一浪，中間不曾停歇：每一位後來的，都把台上那位推了下去。至少五浪。', en: 'Wave after wave without a pause, each pushing the one before it off the stage: every newcomer took the stage from whoever stood there. At least five waves.' },
       check: function (ev) {
         const d = ev.data;
-        return isRun(ev) && d.algo === 'srtf' && d.cs === 0 && d.n >= 5 && d.preempts === d.n - 1 && maxOf(d.arr) < minOf(d.fin) - EPS;
+        return isRun(ev) && !d.est && d.algo === 'srtf' && d.cs === 0 && d.n >= 5 && d.preempts === d.n - 1 && maxOf(d.arr) < minOf(d.fin) - EPS;
       }
     },
     {
@@ -177,7 +177,7 @@
       riddle: { zh: '傳說有一台老電腦退休那天，人們在它的佇列裡找到一個等了六年、從來沒輪到的工作。讓最早來的那一位，眼看後來的人一個接一個先走。', en: 'Legend has it that on the day an old computer was retired, people found a job in its queue that had waited six years and never run. Make the first to arrive watch everyone who came later leave before it.' },
       check: function (ev) {
         const d = ev.data;
-        if (!isRun(ev) || (d.algo !== 'srtf' && d.algo !== 'pp') || d.cs !== 0 || d.n < 6) return false;
+        if (!isRun(ev) || (d.algo !== 'srtf' && d.algo !== 'pp') || (d.algo === 'srtf' && d.est) || d.cs !== 0 || d.n < 6) return false;
         const a0 = minOf(d.arr), e = d.arr.indexOf(a0);
         let firstDone = Infinity, late = 0;
         for (let i = 0; i < d.n; i++) {
@@ -203,7 +203,7 @@
       // SJF 被打敗：到達時間不同時，非搶先的 SJF 不一定最好；優先權（不搶先）的平均等待時間比 SJF 少
       id: 'cpu-scheduling-h8', level: 8, hidden: true,
       riddle: { zh: '「最短的先走」原來不是最好的辦法：一位不看長短、只看名牌的守門人，讓大家等得更少。', en: '“Shortest first” turns out not to be the best rule: a doorkeeper who ignores length and only reads name tags makes everyone wait less.' },
-      check: function (ev) { const d = ev.data; return isRun(ev) && d.algo === 'pn' && less(d.avgW, d.all.sjf.avgW); }
+      check: function (ev) { const d = ev.data; return isRun(ev) && !d.est && d.algo === 'pn' && less(d.avgW, d.all.sjf.avgW); }
     },
     {
       // RR 走出最佳解：RR（預設規則、沒有切換成本、至少 4 個行程）至少兩次用完時間片，平均等待時間卻和 SRTF（所有排程中的最小值）一樣，
@@ -212,7 +212,7 @@
       riddle: { zh: '一位只會喊「下一位」的值日生，竟然排出了只有先知才排得出的名單——而且它真的喊過好幾次。', en: 'A monitor who can only call “Next!” came up with the line-up that only a prophet could plan — and it really did call it more than once.' },
       check: function (ev) {
         const d = ev.data;
-        return isRun(ev) && d.algo === 'rr' && d.tie === 'new' && d.cs === 0 && d.n >= 4 && d.expires >= 2 &&
+        return isRun(ev) && !d.est && d.algo === 'rr' && d.tie === 'new' && d.cs === 0 && d.n >= 4 && d.expires >= 2 &&
           same(d.avgW, d.all.srtf.avgW) && less(d.avgW, d.all.fcfs.avgW) && less(d.avgW, d.all.sjf.avgW);
       }
     },
@@ -222,7 +222,7 @@
       riddle: { zh: '六位裁判，六本規則，走了不同的路，卻宣讀了同一個判決。被告沒有兩位一樣高，而且真的有人等過。', en: 'Six judges, six rulebooks, different roads — and yet the very same verdict. No two of the accused are the same height, and someone really did wait.' },
       check: function (ev) {
         const d = ev.data;
-        if (!isRun(ev) || d.n < 5 || d.ganttKinds < 2 || !(d.avgW > EPS)) return false;
+        if (!isRun(ev) || d.est || d.n < 5 || d.ganttKinds < 2 || !(d.avgW > EPS)) return false;
         for (let i = 0; i < d.n; i++) for (let j = i + 1; j < d.n; j++) if (d.burst[i] === d.burst[j]) return false;
         return ALGOS.every(function (a) { return same(d.all[a].avgW, d.avgW); });
       }

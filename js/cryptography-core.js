@@ -351,7 +351,7 @@
     const trueShift = m && m.kind === 'caesar' ? m.k : (pv ? mod(pv.shift, 26) : -1);
     return {
       src: o.src, g: o.g, gBest: bestShift(cnt, o.ref), chi2: round(chiSquared(cnt, o.g, o.ref), 2), N: cnt.n,
-      overlay: !!o.overlay, chiAll: !!o.chiAll, myst: m ? m.kind : '', trueShift: trueShift,
+      overlay: !!o.overlay, chiAll: !!o.chiAll, customRef: !!o.customRef, myst: m ? m.kind : '', trueShift: trueShift,
       user: !!(pv && pv.user), plainIc: pv ? round(iocText(pv.plain), 4) : null, plainWords: pv ? words(pv.plain) : 0,
       plainE: pv ? counts(pv.plain).c[4] : -1, ic: round(ioc(cnt), 4)
     };

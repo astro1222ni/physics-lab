@@ -29,10 +29,10 @@ const pick = r => ({ avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, switches: r.switc
 class Sim {
   constructor() {
     this.procs = toProcs(DEFAULT_SHEET); this.seed = 0; this.sheetSrc = 'default'; this.edits = 0; this.basePre = null;
-    this.algo = 'fcfs'; this.q = 3; this.cs = 0; this.tie = 'new';
+    this.algo = 'fcfs'; this.q = 3; this.cs = 0; this.tie = 'new'; this.estimates = null;
     this.t = 0; this.atEnd = false; this.ev = []; this._res = null;
   }
-  opt() { return { q: this.q, cs: this.cs, tie: this.tie }; }
+  opt() { return { q: this.q, cs: this.cs, tie: this.tie, estimates: this.estimates }; }
   res() { return this._res || (this._res = K.schedule(this.procs, this.algo, this.opt())); }
   times() {
     const r = this.res(), set = { 0: true };
@@ -52,7 +52,7 @@ class Sim {
     ALGOS.forEach(a => { keys[K.ganttKey(A[a])] = true; });
     const scan = K.rrScan(P, { cs: this.cs, tie: this.tie });
     return {
-      src: src, algo: this.algo, q: this.q, cs: this.cs, tie: this.tie, n: P.length,
+      src: src, algo: this.algo, q: this.q, cs: this.cs, tie: this.tie, n: P.length, est: !!this.estimates,
       arr: P.map(p => p.arr), burst: P.map(p => p.burst), pri: P.map(p => p.pri), sheet: this.sheetSrc, edits: this.edits, basePre: this.basePre,
       avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, maxW: r.maxW, wait: r.wait.slice(), tat: r.tat.slice(), resp: r.resp.slice(), fin: r.fin.slice(), first: r.first.slice(),
       switches: r.switches, preempts: r.preempts, expires: r.expires, gap: r.gap, idle: r.idle, csTime: r.csTime, csShare: r.csShare, makespan: r.makespan, util: r.util,
@@ -87,6 +87,7 @@ class Sim {
   qTo(q) { this.q = q; return this.changed(); }
   csTo(c) { this.cs = c; return this.changed(); }
   tieTo(t) { this.tie = t; return this.changed(); }
+  estTo(e) { this.estimates = e; return this.changed(); }
   toEnd() { return this.finish('end'); }
   play() { if (this.atEnd) { this.t = 0; this.atEnd = false; } return this.finish('play'); }
   /** 播放到一半就被打斷 */
@@ -232,6 +233,9 @@ expect('h7', new Sim().sheet([[0, 2], [2, 2], [4, 2], [6, 2], [8, 2]]).toEnd().e
 expect('h7', new Sim().sheet([[0, 6], [2, 2], [5, 3], [6, 1]]).toEnd().ev, false, '只有四位不算');
 expect('h8', new Sim().sheet([[0, 2, 3], [0, 3, 1], [3, 1, 2], [3, 1, 2]]).algoTo('sjf').toEnd().ev, false, '同一張表選 SJF 不算');
 expect('h8', new Sim().preset('convoy').algoTo('pn').toEnd().ev, false, '24、3、3 的優先權全一樣，和 FCFS 相同、比 SJF 差');
+expect('h8', new Sim().sheet([[0, 4, 2], [0, 1, 1]]).estTo([1, 4]).algoTo('pn').toEnd().ev, false, '輸入錯誤預估值 [1, 4] 讓 SJF 變差不算打敗 SJF');
+expect('5', new Sim().sheet([[0, 10], [1, 1], [1, 1]]).estTo([1, 10, 10]).algoTo('srtf').toEnd().ev, false, '有輸入預估值時不算 SRTF 任務 5');
+expect('h9', new Sim().sheet([[0, 6], [1, 1], [1, 1], [5, 1]]).estTo([1, 6, 6, 6]).algoTo('rr').qTo(1).toEnd().ev, false, '有輸入預估值時不算 h9');
 expect('h9', new Sim().sheet([[0, 6], [1, 1], [1, 1], [5, 1]]).algoTo('rr').qTo(1).tieTo('old').toEnd().ev, false, '改成「被換下的先排」不算（要預設規則）');
 expect('h9', new Sim().sheet([[0, 6], [1, 1], [1, 1], [5, 1]]).algoTo('srtf').toEnd().ev, false, '直接選 SRTF 不算');
 expect('h10', new Sim().preset('equal').toEnd().ev, false, '五個一樣長：六種方法也一樣，但執行時間全相同不算');

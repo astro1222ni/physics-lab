@@ -831,7 +831,7 @@
     ALGOS.forEach(function (a) { keys[K.ganttKey(state.all[a])] = true; });
     const kinds = Object.keys(keys).length;
     return {
-      src: src, algo: state.algo, q: state.q, cs: state.cs, tie: state.tie, n: P.length,
+      src: src, algo: state.algo, q: state.q, cs: state.cs, tie: state.tie, n: P.length, est: !!opt().estimates,
       arr: P.map(function (p) { return p.arr; }), burst: P.map(function (p) { return p.burst; }), pri: P.map(function (p) { return p.pri; }),
       sheet: state.sheetSrc, edits: state.edits, basePre: state.handBasePP,
       avgW: r.avgW, avgT: r.avgT, avgR: r.avgR, maxW: r.maxW,

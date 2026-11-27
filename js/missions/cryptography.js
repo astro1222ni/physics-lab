@@ -56,7 +56,7 @@
       id: 'cryptography-6', level: 4,
       title: { zh: '對齊長條', en: 'Line up the bars' },
       desc: { zh: '按「來一段凱撒密文」，再按「頻率分析」；在打開「英文字母頻率」的情況下，把「猜測位移 g」調到 χ² 最小的位置。', en: 'Press “Caesar mystery”, then “Frequency analysis”; with “English letter frequencies” switched on, move “Guessed shift g” to where χ² is smallest.' },
-      check: function (ev) { const d = ev.data; return is(ev, 'freq') && d.myst === 'caesar' && d.overlay && d.N > 0 && d.g === d.gBest; }
+      check: function (ev) { const d = ev.data; return is(ev, 'freq') && d.myst === 'caesar' && d.overlay && !d.customRef && d.N > 0 && d.g === d.gBest; }
     },
     {
       id: 'cryptography-7', level: 5,
@@ -165,7 +165,7 @@
       riddle: { zh: '1939 年，有人寫完一整本小說，卻從沒用過最常見的那個字母。照他的規矩自己寫一段話鎖起來——數字母的人照樣認得出來。', en: 'In 1939 someone finished a whole novel without ever using the most common letter. Write a few lines of your own by his rule and lock them up — the letter-counter still sees through them.' },
       check: function (ev) {
         const d = ev.data;
-        return is(ev, 'freq') && d.user && d.plainE === 0 && d.N >= 60 && d.plainWords >= 10 && d.trueShift > 0 && d.g === d.trueShift && d.g === d.gBest;
+        return is(ev, 'freq') && d.user && !d.customRef && d.plainE === 0 && d.N >= 60 && d.plainWords >= 10 && d.trueShift > 0 && d.g === d.trueShift && d.g === d.gBest;
       }
     },
     {

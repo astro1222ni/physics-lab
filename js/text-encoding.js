@@ -594,9 +594,13 @@
   // 畫面更新
   // =====================================================================
   function fmtBytes(n) { return n + T(' 位元組', n === 1 ? ' byte' : ' bytes'); }
-  function updateDom() {
+  function updateU16() {
     const little = $('byteOrder').value === 'le';
-    $('u16Bytes').textContent = (little ? 'UTF-16LE: ' : 'UTF-16BE: ') + (its.length ? K.hexStr(K.utf16Bytes(its[state.sel].lone ? 0xFFFD : its[state.sel].cp, little)) : '—');
+    const it = its.length ? its[state.sel] : null;
+    $('u16Bytes').textContent = (little ? 'UTF-16LE: ' : 'UTF-16BE: ') + (it ? K.hexStr(K.utf16Bytes(it.lone ? 0xFFFD : it.cp, little)) + (it.lone ? T('（孤立代理以 U+FFFD 計）', ' (lone surrogate shown as U+FFFD)') : '') : '—');
+  }
+  function updateDom() {
+    updateU16();
     $('rN').textContent = String(its.length);
     $('rUnits').textContent = String(state.text.length);
     $('rU8').textContent = fmtBytes(sz.u8);
@@ -666,6 +670,7 @@
     if (!its.length) return;
     state.sel = (i + its.length) % its.length;
     state.glow = performance.now();
+    updateU16();
     relayout();
     const it = cur();
     const n = it.lone ? 3 : K.utf8Len(it.cp);

@@ -884,7 +884,7 @@
     emit('caesar', K.caesarEvent({ src: src, input: state.text, k: state.caesar.k, dir: state.caesar.dir, back: state.caesar.back, myst: state.myst ? state.myst.kind : '' }));
   }
   function emitFreq(src) {
-    emit('freq', K.freqEvent({ ref: cache.ref, src: src, input: state.text, g: state.freq.g, overlay: state.freq.overlay, chiAll: state.freq.chiAll, myst: state.myst, prov: state.prov }));
+    emit('freq', K.freqEvent({ ref: cache.ref, customRef: !!$('freqReference').value.trim(), src: src, input: state.text, g: state.freq.g, overlay: state.freq.overlay, chiAll: state.freq.chiAll, myst: state.myst, prov: state.prov }));
   }
   function emitVig(src) {
     emit('vig', K.vigEvent({ src: src, input: state.text, key: state.vig.key, keySrc: state.vig.keySrc, dir: state.vig.dir, L: state.vig.L, myst: state.myst, autoKey: !!(state.myst && state.myst.autoKey) }));
