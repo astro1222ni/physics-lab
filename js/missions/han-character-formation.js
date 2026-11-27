@@ -13,7 +13,7 @@
       need:ctx=>{const d=ctx.last('han-evidence');return [[d ? valid(d) : null,...requirement]];}};
   }
   function hidden(id,level,riddle,act,char,built,heard) {
-    return {id:slug+'h'+id,level,hidden:true,title:pair(...riddle),desc:pair(...riddle),
+    return {id:slug+'h'+id,level,hidden:true,riddle:pair(...riddle),
       check(e){const d=e.data;return e.type === 'han-evidence' && d?.act === act && d.char === char
         && [...built].every(c=>d.built.includes(c)) && [...heard].every(c=>d.heard.includes(c));}};
   }
