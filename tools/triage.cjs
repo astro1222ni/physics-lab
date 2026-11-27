@@ -15,7 +15,7 @@
  *
  * 結束碼：
  *   0 = 執行成功
- *   2 = 參數錯誤、無效選項或清單檔不存在
+ *   2 = 參數錯誤、無效選項或清單檔無法讀取
  */
 'use strict';
 
@@ -118,8 +118,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-function readTextSmart(filePath) {
-  const buf = fs.readFileSync(filePath);
+function decodeSmartBuffer(buf) {
   if (buf.length >= 2 && buf[0] === 0xFF && buf[1] === 0xFE) {
     return buf.slice(2).toString('utf16le');
   }
@@ -127,6 +126,13 @@ function readTextSmart(filePath) {
     return buf.slice(3).toString('utf8');
   }
   return buf.toString('utf8');
+}
+
+function readTextSmart(filePath, readFileFn) {
+  const reader = typeof readFileFn === 'function' ? readFileFn : fs.readFileSync;
+  const raw = reader(filePath);
+  if (Buffer.isBuffer(raw)) return decodeSmartBuffer(raw);
+  return String(raw);
 }
 
 function normalizeWs(s) {
@@ -182,7 +188,8 @@ function extractFileRefs(text) {
   const refs = [];
   const re = /([A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
   let m;
-  while ((m = re.exec(text)) !== null) {
+  const raw = String(text || '');
+  while ((m = re.exec(raw)) !== null) {
     refs.push({
       file: normalizeRelPath(m[1]),
       line: m[2] ? parseInt(m[2], 10) : null,
@@ -266,7 +273,10 @@ function parseReportLine(rawLine, sourceFile, lineNo, idx) {
   const advice = parts[4] || '';
   const conf = parts[5] || '';
 
-  const refs = extractFileRefs(locRaw + ' ' + desc);
+  // 明確分離位置欄檔案參照（主要來源）與描述欄檔案參照（輔助參考）
+  const locRefs = extractFileRefs(locRaw);
+  const descRefs = extractFileRefs(desc);
+  const refs = locRefs.concat(descRefs);
   const { locSnippets, descSnippets } = extractSnippets(locRaw, desc);
   const snippets = locSnippets.concat(descSnippets);
 
@@ -282,6 +292,8 @@ function parseReportLine(rawLine, sourceFile, lineNo, idx) {
     locRaw,
     advice,
     confidence: conf,
+    locRefs,
+    descRefs,
     refs,
     locSnippets,
     descSnippets,
@@ -305,26 +317,60 @@ function classifyKeyword(item) {
 }
 
 const fileCache = new Map();
-function loadSourceLines(root, relFile) {
+
+/**
+ * 安全載入來源檔：攔截 stat 與 readFileSync 的所有 I/O 例外（例如 Windows FileShare.None 鎖檔 EBUSY、權限不足 EACCES），
+ * 回傳 { ok: true, entry } 或 { ok: false, code, message }，絕不讓單一來源檔錯誤中斷整批分流。
+ */
+function loadSourceLinesSafe(root, relFile, ioOpts) {
   const full = path.join(root, relFile);
+  const customReader = ioOpts && typeof ioOpts.readFile === 'function' ? ioOpts.readFile : null;
   let stat;
   try {
     stat = fs.statSync(full);
-    if (!stat.isFile()) return null;
+    if (!stat.isFile()) {
+      fileCache.delete(full);
+      return { ok: false, code: 'EISDIR', message: '目標不是一般檔案' };
+    }
   } catch (e) {
     fileCache.delete(full);
-    return null;
+    return {
+      ok: false,
+      code: (e && e.code) || 'ENOENT',
+      message: (e && e.message) || String(e)
+    };
   }
-  const stamp = `${stat.mtimeMs}:${stat.size}`;
-  const cached = fileCache.get(full);
-  if (cached && cached.stamp === stamp) return cached;
 
-  const content = readTextSmart(full);
+  const stamp = `${stat.mtimeMs}:${stat.size}`;
+  if (!customReader) {
+    const cached = fileCache.get(full);
+    if (cached && cached.stamp === stamp) {
+      return { ok: true, entry: cached };
+    }
+  }
+
+  let content;
+  try {
+    content = readTextSmart(full, customReader);
+  } catch (e) {
+    fileCache.delete(full);
+    return {
+      ok: false,
+      code: (e && e.code) || 'EIO',
+      message: (e && e.message) || String(e)
+    };
+  }
+
   const lines = content.split(/\r?\n/);
   const normIndex = buildNormalizedIndex(content);
   const entry = { full, relFile, content, lines, normIndex, stamp };
-  fileCache.set(full, entry);
-  return entry;
+  if (!customReader) fileCache.set(full, entry);
+  return { ok: true, entry };
+}
+
+function loadSourceLines(root, relFile, ioOpts) {
+  const res = loadSourceLinesSafe(root, relFile, ioOpts);
+  return res.ok ? res.entry : null;
 }
 
 /** 找出片段在單一來源檔中的所有命中起點 1-based 行號（含單行與跨行完整命中）。 */
@@ -383,15 +429,33 @@ function searchSnippetsInFiles(snippets, loadedEntries, refLineByFile) {
   return null;
 }
 
-function probeItem(item, root, ctxRadius) {
-  const primaryRef = item.refs[0] || null;
-  const candidateFiles = [];
+function probeItem(item, root, ctxRadius, ioOpts) {
+  // 分離主要來源參照（位置欄）與輔助來源參照（描述欄）；相容未提供 locRefs 的舊物件
+  const hasExplicitLocRefs = Array.isArray(item.locRefs);
+  const locRefs = hasExplicitLocRefs ? item.locRefs : (item.refs || []);
+  const descRefs = Array.isArray(item.descRefs) ? item.descRefs : [];
+
+  const primaryRefs = locRefs.length > 0 ? locRefs : descRefs;
+  const primaryRef = primaryRefs[0] || null;
+
+  const primaryCandidateFiles = [];
   const refLineByFile = new Map();
-  for (const r of item.refs) {
-    if (!candidateFiles.includes(r.file)) candidateFiles.push(r.file);
+  for (const r of primaryRefs) {
+    if (!primaryCandidateFiles.includes(r.file)) primaryCandidateFiles.push(r.file);
     if (r.line && !refLineByFile.has(r.file)) refLineByFile.set(r.file, r.line);
   }
-  if (candidateFiles.length === 0) {
+  // 只有在位置欄確實指定檔案時，描述欄額外提到的其他檔案才獨立為輔助來源（不替代主要來源判定）
+  const descCandidateFiles = [];
+  if (locRefs.length > 0) {
+    for (const r of descRefs) {
+      if (!primaryCandidateFiles.includes(r.file) && !descCandidateFiles.includes(r.file)) {
+        descCandidateFiles.push(r.file);
+      }
+      if (r.line && !refLineByFile.has(r.file)) refLineByFile.set(r.file, r.line);
+    }
+  }
+
+  if (primaryCandidateFiles.length === 0) {
     const guesses = [
       'js/' + item.slug + '.js',
       'js/' + item.slug + '-core.js',
@@ -399,16 +463,33 @@ function probeItem(item, root, ctxRadius) {
       item.slug + '.html'
     ];
     for (const g of guesses) {
-      if (fs.existsSync(path.join(root, g))) candidateFiles.push(g);
+      if (fs.existsSync(path.join(root, g))) primaryCandidateFiles.push(g);
     }
   }
 
-  const loadedEntries = [];
+  const primaryLoaded = [];
+  const primaryByFile = new Map();
   const missingFiles = [];
-  for (const rel of candidateFiles) {
-    const src = loadSourceLines(root, rel);
-    if (src) loadedEntries.push({ rel, src });
-    else missingFiles.push(rel);
+  const readErrors = [];
+  for (const rel of primaryCandidateFiles) {
+    const res = loadSourceLinesSafe(root, rel, ioOpts);
+    if (res.ok) {
+      primaryLoaded.push({ rel, src: res.entry });
+      primaryByFile.set(rel, res.entry);
+    } else {
+      missingFiles.push(rel);
+      if (res.code && res.code !== 'ENOENT') {
+        readErrors.push({ file: rel, code: res.code, message: res.message });
+      }
+    }
+  }
+
+  const descLoaded = [];
+  for (const rel of descCandidateFiles) {
+    const res = loadSourceLinesSafe(root, rel, ioOpts);
+    if (res.ok) {
+      descLoaded.push({ rel, src: res.entry });
+    }
   }
 
   const locSnippets = Array.isArray(item.locSnippets) ? item.locSnippets : [];
@@ -417,15 +498,22 @@ function probeItem(item, root, ctxRadius) {
   const usingLocPrimary = locSnippets.length > 0;
 
   let status = STATUS.NO_SNIPPET;
-  let matchedFile = primaryRef ? primaryRef.file : (candidateFiles[0] || '');
+  let matchedFile = primaryRef ? primaryRef.file : (primaryCandidateFiles[0] || '');
   let matchedLine = primaryRef && primaryRef.line ? primaryRef.line : null;
   let matchedSnippet = primarySnippets[0] || '';
   let auxMatch = null;
 
-  if (loadedEntries.length === 0) {
+  if (primaryLoaded.length === 0) {
+    // 位置欄主要來源全部無法讀取（缺檔或被鎖檔）：主判定維持「待查（來源未讀到）」
     status = STATUS.UNREADABLE;
+    if (descLoaded.length > 0) {
+      const auxSnips = primarySnippets.length > 0 ? primarySnippets.concat(descSnippets) : descSnippets;
+      if (auxSnips.length > 0) {
+        auxMatch = searchSnippetsInFiles(auxSnips, descLoaded, refLineByFile);
+      }
+    }
   } else if (primarySnippets.length > 0) {
-    const hit = searchSnippetsInFiles(primarySnippets, loadedEntries, refLineByFile);
+    const hit = searchSnippetsInFiles(primarySnippets, primaryLoaded, refLineByFile);
     if (hit) {
       status = STATUS.PRESENT;
       matchedFile = hit.file;
@@ -433,30 +521,26 @@ function probeItem(item, root, ctxRadius) {
       matchedSnippet = hit.snippet;
     } else {
       status = STATUS.MISS;
-      // 位置欄主要片段未命中時，描述欄行內程式僅作輔助定位，不蓋過主要判定
+      // 主要片段在主要來源未命中時，僅供輔助定位，絕不蓋過主要判定
       if (usingLocPrimary && descSnippets.length > 0) {
-        auxMatch = searchSnippetsInFiles(descSnippets, loadedEntries, refLineByFile);
+        auxMatch = searchSnippetsInFiles(descSnippets, primaryLoaded, refLineByFile);
+      }
+      if (!auxMatch && descLoaded.length > 0) {
+        const auxSnips = primarySnippets.concat(descSnippets);
+        auxMatch = searchSnippetsInFiles(auxSnips, descLoaded, refLineByFile);
       }
     }
   }
 
   let contextBlock = [];
-  const ctxFile = (matchedFile && loadSourceLines(root, matchedFile))
-    ? matchedFile
-    : (auxMatch ? auxMatch.file : '');
-  const ctxCenter = (matchedFile && loadSourceLines(root, matchedFile))
-    ? (matchedLine || (auxMatch && auxMatch.file === matchedFile ? auxMatch.line : 1))
-    : (auxMatch ? auxMatch.line : 1);
-
-  if (ctxFile) {
-    const src = loadSourceLines(root, ctxFile);
-    if (src) {
-      const start = Math.max(1, ctxCenter - ctxRadius);
-      const end = Math.min(src.lines.length, ctxCenter + ctxRadius);
-      for (let ln = start; ln <= end; ln++) {
-        const mark = ln === ctxCenter ? '>' : ' ';
-        contextBlock.push(mark + String(ln).padStart(4, ' ') + ' | ' + src.lines[ln - 1]);
-      }
+  const ctxSrc = matchedFile ? primaryByFile.get(matchedFile) : null;
+  if (ctxSrc) {
+    const ctxCenter = matchedLine || (auxMatch && auxMatch.file === matchedFile ? auxMatch.line : 1);
+    const start = Math.max(1, ctxCenter - ctxRadius);
+    const end = Math.min(ctxSrc.lines.length, ctxCenter + ctxRadius);
+    for (let ln = start; ln <= end; ln++) {
+      const mark = ln === ctxCenter ? '>' : ' ';
+      contextBlock.push(mark + String(ln).padStart(4, ' ') + ' | ' + ctxSrc.lines[ln - 1]);
     }
   }
 
@@ -469,6 +553,7 @@ function probeItem(item, root, ctxRadius) {
     matchedSnippet,
     auxMatch,
     missingFiles,
+    readErrors,
     contextBlock
   };
 }
@@ -552,10 +637,12 @@ function renderBlankSheet(results, ctxRadius) {
     if (r.advice) out.push('- 原建議：' + r.advice);
     out.push('- 定位：`' + loc + '`' + (r.matchedSnippet ? ' · 片段：`' + r.matchedSnippet + '`' : ''));
     if (r.auxMatch) {
-      out.push('- 輔助定位（描述片段）：`' + r.auxMatch.file + ':' + r.auxMatch.line + '` · `' + r.auxMatch.snippet + '`');
+      out.push('- 輔助定位（描述片段／檔案）：`' + r.auxMatch.file + ':' + r.auxMatch.line + '` · `' + r.auxMatch.snippet + '`');
     }
     if (r.status === STATUS.UNREADABLE && r.missingFiles && r.missingFiles.length) {
-      out.push('- 未讀到來源：`' + r.missingFiles.join('`, `') + '`');
+      const errMap = new Map((r.readErrors || []).map(e => [e.file, e.code]));
+      const detail = r.missingFiles.map(f => errMap.has(f) ? `\`${f}\`（讀取失敗：${errMap.get(f)}）` : `\`${f}\``).join('、');
+      out.push('- 未讀到來源：' + detail);
     }
     out.push('- 核對結論：[ ] 需修　[ ] 已修　[ ] 不修（理由：＿＿＿＿）');
     if (r.contextBlock.length) {
@@ -586,7 +673,13 @@ function main(argv) {
       console.error('找不到清單檔：' + fp);
       return 2;
     }
-    const text = readTextSmart(fp);
+    let text;
+    try {
+      text = readTextSmart(fp);
+    } catch (e) {
+      console.error(`無法讀取清單檔 ${fp}：${e && e.message ? e.message : String(e)}`);
+      return 2;
+    }
     const lines = text.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
       const parsed = parseReportLine(lines[i], fp, i + 1, seq + 1);
@@ -634,6 +727,7 @@ module.exports = {
   extractFileRefs,
   extractSnippets,
   buildNormalizedIndex,
+  loadSourceLinesSafe,
   parseReportLine,
   classifyKeyword,
   probeItem,

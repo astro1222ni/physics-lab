@@ -59,6 +59,7 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
       ].join('\n') + '\n',
       'utf8'
     );
+    fs.writeFileSync(path.join(jsDir, 'locked.js'), 'const lockedFlag = oldPrefix + 2;\n', 'utf8');
 
     // 1. Windows 反斜線路徑 js\sample.js:2 應正常讀取並判「仍存在」
     const itemWin = T.parseReportLine(
@@ -109,7 +110,50 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
     assert.strictEqual(resDesc.status, T.STATUS.MISS);
     assert.ok(resDesc.auxMatch && resDesc.auxMatch.snippet === 'generic' && resDesc.auxMatch.line === 2);
 
-    // 6. CLI 實測：--by typo 回結束碼 2；--json --context 0 回 0 且只帶 1 行上下文
+    // 6. 主要來源（位置欄）缺檔時，描述欄提到的另一個存在檔案不可替它判「仍存在」，只可列入 auxMatch
+    const itemMixedSrc = T.parseReportLine(
+      '- **#6** 【中】sample｜5｜對照 `js/sample.js:2` 寫法修正｜`js/missing.js:7` `generic = oldPrefix`｜建議｜高',
+      'r.md', 6, 6
+    );
+    const resMixedSrc = T.probeItem(itemMixedSrc, tmp, 1);
+    assert.strictEqual(resMixedSrc.status, T.STATUS.UNREADABLE);
+    assert.strictEqual(resMixedSrc.matchedFile, 'js/missing.js');
+    assert.strictEqual(resMixedSrc.matchedLine, 7);
+    assert.deepStrictEqual(resMixedSrc.missingFiles, ['js/missing.js']);
+    assert.strictEqual(resMixedSrc.contextBlock.length, 0);
+    assert.deepStrictEqual(resMixedSrc.auxMatch, {
+      file: 'js/sample.js',
+      line: 2,
+      snippet: 'generic = oldPrefix'
+    });
+
+    // 7. 單一來源檔 I/O 讀取失敗（跨平台模擬 EBUSY 鎖檔）不可中斷整批分流
+    const lockedPath = path.join(jsDir, 'locked.js');
+    const busyReader = p => {
+      if (path.resolve(p) === path.resolve(lockedPath)) {
+        const err = new Error('EBUSY: resource busy or locked, open ' + p);
+        err.code = 'EBUSY';
+        throw err;
+      }
+      return fs.readFileSync(p);
+    };
+    const itemOk = T.parseReportLine(
+      '- **#7** 【中】sample｜5｜可讀來源｜`js/sample.js:2` `generic = oldPrefix`｜建議｜高',
+      'r.md', 7, 7
+    );
+    const itemLocked = T.parseReportLine(
+      '- **#8** 【高】sample｜5｜被鎖來源｜`js/locked.js:1` `lockedFlag = oldPrefix`｜建議｜高',
+      'r.md', 8, 8
+    );
+    const batch = [itemOk, itemLocked].map(it => T.probeItem(it, tmp, 0, { readFile: busyReader }));
+    assert.strictEqual(batch[0].status, T.STATUS.PRESENT);
+    assert.strictEqual(batch[0].matchedFile, 'js/sample.js');
+    assert.strictEqual(batch[1].status, T.STATUS.UNREADABLE);
+    assert.deepStrictEqual(batch[1].missingFiles, ['js/locked.js']);
+    assert.strictEqual(batch[1].readErrors.length, 1);
+    assert.strictEqual(batch[1].readErrors[0].code, 'EBUSY');
+
+    // 8. CLI 實測：--by typo 回結束碼 2；--json --context 0 回 0 且只帶 1 行上下文
     const mdFile = path.join(tmp, 'report.md');
     fs.writeFileSync(mdFile, '- **#1** 【中】sample｜5｜測試｜`js/sample.js:2` `generic = oldPrefix`｜建議｜高\n', 'utf8');
     const script = path.resolve(__dirname, '../tools/triage.cjs');
