@@ -541,7 +541,7 @@
       setHTML('rAn', q.full ? fmtH(q.an) : T('第 ', 'undefined after term ') + q.ts.length + T(' 項之後沒有定義', ''));
       setHTML('rFix', q.allFixed ? T('所有實數', 'All real numbers') : q.fixed.length ? q.fixed.map(function (o) { return fmtH(o.x); }).join('、') : T('沒有', 'none'));
       setHTML('rSlope', q.allFixed ? '1' : q.fixed.length ? q.fixed.map(function (o) { return fmtH(r6(o.slope)) + (o.stable ? T('（吸住）', ' (pulls in)') : neutral(o.slope) ? T('（斜率判準無法判定）', ' (slope test inconclusive)') : T('（推開）', ' (pushes away)')); }).join('<br>') : '—');
-      if (state.fn === 'logi') setHTML('rPer', q.period === 1 ? T('1（停在一點）', '1 (settles)') : q.period === 0 ? T('64 以內找不到（可能是混沌）', 'none up to 64 (possibly chaos)') : q.period > 0 ? q.period + T(' 點循環', '-cycle') : '—');
+      if (state.fn === 'logi') setHTML('rPer', logiBif(q) ? T('分岔點：收斂極慢', 'bifurcation point: very slow convergence') : q.period === 1 ? T('1（停在一點）', '1 (settles)') : q.period === 0 ? T('64 以內找不到（可能是混沌）', 'none up to 64 (possibly chaos)') : q.period > 0 ? q.period + T(' 點循環', '-cycle') : '—');
       let tex = ruleTex();
       if (state.fn === 'lin' && state.P.p !== 1) tex += ',\\quad L = \\frac{q}{1 - p} = ' + fmtT(q.fixed[0].x) + ',\\quad a_n = L + (a_1 - L)\\,p^{\\,n-1}';
       else if (state.fn === 'lin') tex += '\\quad(p = 1\\text{: }a_n = a_1 + (n-1)q)';
@@ -555,6 +555,10 @@
     }
     setHTML('status', statusText());
   }
+  // 邏輯斯諦在 r > 1 時若有不動點斜率剛好是 ±1（即 r = 3 的倍週期分岔點），數列以約 1/√n 的速度極慢地靠近不動點，有限步內看起來像兩點循環
+  function logiBif(q) {
+    return state.fn === 'logi' && state.P.r > 1 && q.fixed.some(function (o) { return neutral(o.slope); });
+  }
   function statusText() {
     if (state.chal) return T('灰色圈是神祕數列的前五項：相鄰兩項的差，每次都乘上同一個 p。', 'The grey rings are the first five terms of the mystery sequence: the gap between neighbouring terms is multiplied by the same p each time.');
     if (state.mode === 'fib') {
@@ -567,6 +571,12 @@
     if (state.fn === 'logi') {
       const p = q.period;
       if (state.P.r <= 1) return T('r ≤ 1：族群一代比一代少，最後走到 0。', 'r ≤ 1: each generation is smaller and the terms die out to 0.');
+      if (logiBif(q)) {
+        const fb = q.fixed.filter(function (o) { return neutral(o.slope); })[0];
+        return T('r 剛好是分岔點：不動點 ', 'r sits exactly on a bifurcation point: the fixed point ') + fmt(fb.x)
+          + T(' 的斜率是 −1，斜率判準無法判定。數列其實會靠近它，但非常慢（相鄰兩項的差大約跟 1/√n 成比例縮小），所以跑很多步之後看起來仍像在兩個值之間輪流跳。r 稍小就停在一點，稍大就變成真的兩點循環。',
+            ' has slope −1, so the slope test is inconclusive. The terms do close in on it, but very slowly (the gap between neighbouring terms shrinks roughly like 1/√n), so even after many steps they still look as if they alternate between two values. A slightly smaller r settles on the point; a slightly larger r gives a true two-cycle.');
+      }
       if (p === 1) {
         const x = q.orbit.sample;
         const fp = q.fixed.reduce(function (a, b) { return Math.abs(x - a.x) < Math.abs(x - b.x) ? a : b; });
