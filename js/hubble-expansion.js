@@ -336,7 +336,7 @@
     const run = state.run.expand, a0 = run ? run.a0 : state.a, chi0 = run ? run.chi0 : chiOf(tg);
     if (!tg || chi0 <= 0) { D.haloText(g, T('先點一個星系當目標', 'Tap a galaxy to choose a target'), W / 2, H / 2, C.muted, 'center', 'middle', '600 12px ' + FONT); return; }
     const Hg = H_SIM / HC.GYR_INV_H;                 // ȧ（每十億年）
-    const aEnd = Math.min(A_MAX, a0 * Math.exp(chi0 / R_HUB)), tEnd = (aEnd - a0) / Hg;
+    const aEnd = Math.min(A_PLAY_MAX, a0 * Math.exp(chi0 / R_HUB)), tEnd = (aEnd - a0) / Hg;
     const rmax = Math.max(aEnd * chi0, R_HUB * aEnd) * 1.05;
     const ax = axes(g, Fm, 0, rmax, 0, Math.max(0.5, tEnd * 1.05), T('離家的真正距離（Mpc）', 'Proper distance from home (Mpc)'), T('光出發後的時間（十億年）', 'Time since the light left (billion years)'));
     g.save(); g.beginPath(); g.rect(Fm.x0, Fm.y0, Fm.x1 - Fm.x0, Fm.y1 - Fm.y0); g.clip();
@@ -356,7 +356,7 @@
       const t = (state.a - a0) / Hg, chi = lightNow();
       D.ball(g, ax.xx(state.a * chi), ax.yy(t), 5, C['hb-lightc'], { shadow: false, ring: '#ffffff' });
     }
-    if (aEnd >= A_MAX - 1e-9 && a0 * Math.exp(chi0 / R_HUB) > A_MAX) D.haloText(g, T('到 a = 3 時光還沒到', 'Not arrived by a = 3'), (Fm.x0 + Fm.x1) / 2, Fm.y0 + 12, C.muted, 'center', 'middle', '600 12px ' + FONT);
+    if (aEnd >= A_PLAY_MAX - 1e-9 && a0 * Math.exp(chi0 / R_HUB) > A_PLAY_MAX) D.haloText(g, T('到 a = ' + A_PLAY_MAX + ' 時光還沒到', 'Not arrived by a = ' + A_PLAY_MAX), (Fm.x0 + Fm.x1) / 2, Fm.y0 + 12, C.muted, 'center', 'middle', '600 12px ' + FONT);
     axisBox(g, Fm);
   }
 
@@ -828,7 +828,7 @@
       setHTML('eH', sig(H_SIM / state.a, 3) + ' km/s/Mpc');
       setHTML('eHub', mpc(R_HUB * state.a));
       const run = state.run.expand, aArr = tg ? state.a * Math.exp(chi / R_HUB) : null;
-      setHTML('eZ', run && run.arrived ? 'z = ' + num(run.z, 3) + T('（已收到）', ' (received)') : tg ? (aArr <= A_MAX + 1e-9 ? T('在 a = ', 'arrives at a = ') + num(aArr, 2) + T(' 到達，z = ', ', z = ') + num(aArr / state.a - 1, 3) : T('a = 3 前到不了', 'not before a = 3')) : '—');
+      setHTML('eZ', run && run.arrived ? 'z = ' + num(run.z, 3) + T('（已收到）', ' (received)') : tg ? (aArr <= A_PLAY_MAX + 1e-9 ? T('在 a = ', 'arrives at a = ') + num(aArr, 2) + T(' 到達，z = ', ', z = ') + num(aArr / state.a - 1, 3) : T('a = ' + A_PLAY_MAX + ' 前到不了', 'not before a = ' + A_PLAY_MAX)) : '—');
       setHTML('expandHint', T('拖動 a 讓宇宙變大變小：星系本身不變大，只有它們之間的距離變大。點畫面選一個星系（粉紅），可以搬家過去，看看那裡是不是也像宇宙的中心。', 'Drag a to make the universe bigger or smaller: the galaxies themselves do not grow, only the distances between them. Tap a galaxy (pink) and move home there: does it look like the centre too?'));
       setHTML('cvHint', T('格子上的 49 個星系往四面八方重複。綠色箭頭是從「家」看出去的退行速度：越遠越快，方向都朝外。橘色虛線圈是哈伯半徑，圈外的星系退行得比光還快。按「膨脹」，看粉紅色星系發出的光怎麼一路被拉長。', 'The 49 galaxies on the grid repeat in every direction. Green arrows show the recession speed seen from home: faster the farther, all pointing outwards. The dashed orange circle is the Hubble radius; galaxies outside it recede faster than light. Press “Expand” and watch the pink galaxy’s light being stretched on its way.'));
       setHTML('chartHint', state.chart.expand === 'a'

@@ -38,7 +38,7 @@
   const Q_HEAT = Q - Q_NU;          // 變成熱與光的能量（MeV）
   const ETA = Q_HEAT / (4 * M_H * UMEV); // 氫變成氦時，質量轉成光的比例（約 0.007）
   const S0 = LSUN / (4 * Math.PI * AU * AU); // 1 AU 處的太陽常數（約 1361 W/m^2）
-  const E_CHEM = 3e7;               // 煤（含氧）燃燒的能量（J/kg，約略）
+  const E_CHEM = 3e7;               // 煤燃燒的能量（J/kg，約略）：每公斤燃料、不計氧（含氧時每公斤反應物約 8.9e6 J，結論同樣是幾千年）
   const EARTH_AGE = 4.54e9;         // 年（隕石與地球最古老礦物）
   const SUN_AGE = 4.57e9;           // 年
 

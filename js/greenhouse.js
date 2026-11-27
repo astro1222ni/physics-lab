@@ -321,7 +321,7 @@
     g.fillRect(x - tw / 2 + 1.5, yT, tw - 3, y1 + 4 - yT);
     D.ball(g, x, y1 + br * 0.9, br, fill, { shadow: false });
     // 刻度：255（沒有溫室效應）、288（工業革命前）、目前的大氣溫度
-    const fs = Math.max(12, L.narrow ? 12 : 12);
+    const fs = 12;
     [[255, '255'], [288, '288']].forEach(function (m) {
       const y = Math.round(tY(L, m[0])) + 0.5;
       g.strokeStyle = C.muted; g.lineWidth = 1;

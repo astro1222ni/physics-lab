@@ -177,14 +177,17 @@
   // =====================================================================
   const cv = $('cv'), ctx = cv.getContext('2d');
   let cw = 600, ch = 400, dpr = 1, L = null;
+  function narrowAt(w) { return w < 560 && !(window.LabDeck && window.LabDeck.mode === 'drawer'); }
   function layoutTop() {
-    const narrow = cw < 560;
+    // 手機橫放（操作台在右邊）時高度只有一屏：不用直放的高瘦版型（高 = 寬 × 1.16 會把畫布縮成郵票），改用橫的版型
+    // narrow：直放的高瘦版型；compact：寬度不到 560（直放或手機橫放），文字、圖示都用短的版本
+    const narrow = narrowAt(cw), compact = cw < 560;
     const H = narrow ? Math.round(cw * 1.16) : Math.round(Math.min(cw * 0.68, 600));
-    const R0 = Math.min(cw, H) * (narrow ? 0.29 : 0.30);
+    const R0 = Math.min(cw, H) * (narrow ? 0.29 : compact ? 0.26 : 0.30);
     const mag = state.trueScale ? 1 : (narrow ? 10 : 8);
     const k = R0 / K.A_MOON;
     return {
-      narrow: narrow, H: H, cx: cw * 0.5, cy: narrow ? H * 0.47 : H * 0.5 + 6, R0: R0, k: k, mag: mag,
+      narrow: narrow, compact: compact, H: H, cx: cw * 0.5, cy: narrow ? H * 0.47 : H * 0.5 + 6, R0: R0, k: k, mag: mag,
       rE: K.R_EARTH * k * mag, rM: K.R_MOON * k * mag,
       f1: '12px ' + FONT, f2: '600 ' + '12px ' + FONT, f3: '12px ' + FONT
     };
@@ -352,7 +355,7 @@
     c.lineWidth = 1.6;
     c.beginPath(); dn.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
     c.restore();
-    D.tube(c, function (g) { up.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); }, C.accent, L.narrow ? 3.4 : 3.8);
+    D.tube(c, function (g) { up.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); }, C.accent, L.compact ? 3.4 : 3.8);
     // 交點線
     const A = K.orbitPoint(state.el, state.t, 0), B = K.orbitPoint(state.el, state.t, Math.PI);
     const pa = scr(A.x, A.y, rot), pb = scr(B.x, B.y, rot);
@@ -414,7 +417,7 @@
     c.restore();
   }
   function drawNames(c, sn, rot, aSun) {
-    const R = L.R0 * (L.narrow ? 1.36 : 1.3), ir = L.narrow ? 6 : 7.5;
+    const R = L.R0 * (L.compact ? 1.36 : 1.3), ir = L.compact ? 6 : 7.5;
     const keys = ['new', 'waxC', 'fq', 'waxG', 'full', 'wanG', 'lq', 'wanC'];
     for (let i = 0; i < 8; i++) {
       const a = aSun + i * Math.PI / 4, u = dirXY(a);
@@ -567,7 +570,7 @@
     };
     inward(H.asc, T('升交點', 'Asc. node'), C['b-astro']);
     inward(H.desc, T('降交點', 'Desc. node'), C['b-astro']);
-    if (!L.narrow) {
+    if (!L.compact) {
       inward(H.peri, T('近地點', 'Perigee'), C.equi);
       inward(H.apo, T('遠地點', 'Apogee'), C.muted);
     }
@@ -594,25 +597,25 @@
     // 太陽方向的說明
     const aS = scrAngle(sn.s.lon, rot), us = dirXY(aS);
     const ex = L.cx + us[0] * L.R0 * 1.55, ey = L.cy + us[1] * L.R0 * 1.55;
-    const sunTxt = L.narrow ? T('陽光 →（太陽在 389 倍遠處）', 'Sunlight → (Sun 389× farther)') : T('陽光（太陽在 1.5 億 km 外，是月地距離的 389 倍）', 'Sunlight (the Sun is 150 million km away, 389× the Moon’s distance)');
-    if (state.frame === 'sun') D.pill(c, sunTxt, cw - 8, L.narrow ? ch - 32 : ch - 10, D.shade(C.equi, C.dark ? 0.2 : -0.35), 'right', f3);
+    const sunTxt = L.compact ? T('陽光 →（太陽在 389 倍遠處）', 'Sunlight → (Sun 389× farther)') : T('陽光（太陽在 1.5 億 km 外，是月地距離的 389 倍）', 'Sunlight (the Sun is 150 million km away, 389× the Moon’s distance)');
+    if (state.frame === 'sun') D.pill(c, sunTxt, cw - 8, L.compact ? ch - 32 : ch - 10, D.shade(C.equi, C.dark ? 0.2 : -0.35), 'right', f3);
     else D.pill(c, T('太陽方向', 'To the Sun'), Math.max(40, Math.min(cw - 40, ex)), Math.max(22, Math.min(ch - 8, ey)), D.shade(C.equi, C.dark ? 0.2 : -0.35), 'center', f3);
     // 比例說明
-    const scaleTxt = state.trueScale ? (L.narrow ? T('真實比例', 'True scale') : T('真實比例：地球、月球與距離都依比例', 'True scale: sizes and distances to scale'))
-      : L.narrow ? T('尺寸未按比例：大小放大 ' + L.mag + ' 倍', 'Not to scale: sizes ×' + L.mag)
+    const scaleTxt = state.trueScale ? (L.compact ? T('真實比例', 'True scale') : T('真實比例：地球、月球與距離都依比例', 'True scale: sizes and distances to scale'))
+      : L.compact ? T('尺寸未按比例：大小放大 ' + L.mag + ' 倍', 'Not to scale: sizes ×' + L.mag)
         : T('尺寸未按比例：地球、月球與影子寬度放大 ' + L.mag + ' 倍（距離依比例）', 'Not to scale: Earth, Moon and shadow widths ×' + L.mag + ' (distances to scale)');
-    D.pill(c, scaleTxt, 8, ch - (state.frame === 'sun' && !L.narrow ? 32 : 10), state.trueScale ? C.accent : C.muted, 'left', f3);
+    D.pill(c, scaleTxt, 8, ch - (state.frame === 'sun' && !L.compact ? 32 : 10), state.trueScale ? C.accent : C.muted, 'left', f3);
     // 參考方向
-    const fr = L.narrow ? (state.frame === 'sun' ? T('太陽固定在右方', 'Sun fixed on the right') : T('恆星方向固定', 'Stars fixed'))
+    const fr = L.compact ? (state.frame === 'sun' ? T('太陽固定在右方', 'Sun fixed on the right') : T('恆星方向固定', 'Stars fixed'))
       : state.frame === 'sun' ? T('太陽固定在右方（地球每天繞太陽約 1°，背景星空慢慢轉）', 'Sun fixed on the right (the stars turn about 1° a day)') : T('恆星方向固定（從黃道北極往下看）', 'Stars fixed (looking down from the ecliptic north pole)');
-    if (!L.narrow || !state.show.inset) D.pill(c, fr, cw - 8, 22, C.muted, 'right', f3);
+    if (!L.compact || !state.show.inset) D.pill(c, fr, cw - 8, 22, C.muted, 'right', f3);
     // 時間
-    D.pill(c, fmtWhen(state.t), state.show.inset ? cw - 8 : 8, state.show.inset ? (L.narrow ? 22 : 46) : 22, C.text, state.show.inset ? 'right' : 'left', f2);
+    D.pill(c, fmtWhen(state.t), state.show.inset ? cw - 8 : 8, state.show.inset ? (L.compact ? 22 : 46) : 22, C.text, state.show.inset ? 'right' : 'left', f2);
   }
 
   /** 左上角：地球繞太陽的小圖（恆星方向固定） */
   function drawInset(c, sn) {
-    const B = L.narrow ? 112 : 150, x0 = 8, y0 = 8;
+    const B = L.compact ? 112 : 150, x0 = 8, y0 = 8;
     D.roundRect(c, x0, y0, B, B, 10);
     c.fillStyle = D.alpha(C.surface, C.dark ? 0.82 : 0.88);
     c.fill();
@@ -2451,6 +2454,8 @@
   if (window.ResizeObserver) {
     const watch = function (el, fn) { let lw = 0; new ResizeObserver(function () { if (el.clientWidth !== lw) { lw = el.clientWidth; fn(); } }).observe(el); };
     watch(cv, resizeTop); watch(mcv, resizeMoon); watch(scv, resizeSec); watch(kcv, resizeSky);
+    // 操作台換擺法（直放／橫放）時寬度可能不變，照樣重排主畫布
+    window.addEventListener('resize', function () { if (cv.clientWidth && L && narrowAt(cv.clientWidth) !== L.narrow) resizeTop(); });
   } else window.addEventListener('resize', function () { resizeTop(); resizeMoon(); resizeSec(); resizeSky(); });
   resizeTop(); resizeMoon(); resizeSec(); resizeSky();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lastFrame = 0; schedule(); } });

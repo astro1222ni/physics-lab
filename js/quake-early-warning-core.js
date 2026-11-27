@@ -32,7 +32,7 @@
   /** 實際發生過的地震（中央氣象署地震報告的震央、深度；規模用地震矩規模 Mw 的約略值） */
   const QUAKES = [
     { id: 'hualien2024', zh: '2024 花蓮', en: '2024 Hualien', lon: 121.67, lat: 23.77, h: 15.5, M: 7.4, ML: 7.2, date: '2024-04-03' },
-    { id: 'chichi1999', zh: '1999 集集', en: '1999 Chi-Chi', lon: 120.82, lat: 23.85, h: 8.0, M: 7.6, ML: 7.3, date: '1999-09-21' },
+    { id: 'chichi1999', zh: '1999 集集', en: '1999 Chi-Chi', lon: 120.82, lat: 23.85, h: 8.0, M: 7.6, ML: 7.3, date: '1999-09-21' }, // Mw 採 GCMT 7.6（USGS 為 7.7）
     { id: 'meinong2016', zh: '2016 美濃', en: '2016 Meinong', lon: 120.54, lat: 22.92, h: 14.6, M: 6.4, ML: 6.6, date: '2016-02-06' },
     { id: 'chishang2022', zh: '2022 池上', en: '2022 Chishang', lon: 121.20, lat: 23.14, h: 7.8, M: 6.9, ML: 6.8, date: '2022-09-18' }
   ];
