@@ -19,7 +19,7 @@
  *   ③ 844×390 橫放：主畫布高 ≤ 390（一屏放得下）、操作台在畫布右邊、畫布寬 ≥ 視窗寬 45%（不是郵票）。
  *      畫布縮放倍數 ≥ 0.7（11/27 站長選 A：顯示寬 ÷ 繪圖寬，固定寬繪圖再縮小的畫布字會變小；LA_LAND_SCALE 可調）。
  *   ④ 縮圖：js/thumbs.js 的版本表有這一站。
- *   ⑤ 滑桿間距 ≤ 56：操作台每個分頁逐一點開，量相鄰兩根滑桿的上下距離（中間夾著按鈕、選單的那一對不算，11/21 準則：電流天平的「I₁ 反向」）；
+ *   ⑤ 滑桿間距 ≤ 56：操作台每個分頁逐一點開，量相鄰兩根滑桿的上下距離（中間夾著按鈕、選單、summary 展開標題的那一對不算，11/21 準則：電流天平的「I₁ 反向」）；
  *      412、844、1280 三種寬度都量。
  *   ⑥（加 --font 才量）844×390 橫放時畫布上的字實際顯示高 ≥ 9 px：攔 fillText／strokeText，
  *      字級 × 目前變換倍數 × 畫布顯示寬 ÷ 繪圖寬；每張畫布只算最後一次連續繪製（往回找到超過 50 ms 的空檔就停，最多 0.4 秒；
@@ -80,7 +80,7 @@ const FONT_HOOK = `(()=>{const P=CanvasRenderingContext2D.prototype;const rec=wi
 const FONT = `(()=>{const R=window.__laFont||[];const by=new Map();R.forEach(r=>{if(!by.has(r[0]))by.set(r[0],[]);by.get(r[0]).push(r)});let min=99,where='';
 by.forEach((a,c)=>{if(!c||!c.isConnected||!c.offsetParent||!c.width||!c.closest('.lab')||c.closest('.labdeck-away'))return;const rc=c.getBoundingClientRect();if(rc.width<60)return;a.sort((x,y)=>x[2]-y[2]);const tmax=a[a.length-1][2];let t0=tmax;for(let i=a.length-1;i>0&&a[i][2]-a[i-1][2]<50&&a[i-1][2]>=tmax-400;i--)t0=a[i-1][2];a.forEach(r=>{if(r[2]<t0)return;const e=r[1]*rc.width/c.width;if(e<min){min=e;where=(c.id||'canvas')+'「'+r[3]+'」'}})});return min<99?{min:Math.round(min*100)/100,where}:null})()`;
 const PITCH = `(async()=>{const vis=r=>r.offsetParent&&!r.closest('.labdeck-away,[hidden]')&&getComputedStyle(r).visibility!=='hidden';const root=document.querySelector('.labdeck')||document.querySelector('.panel')||document.body;
-const measure=()=>{const rs=[...root.querySelectorAll('input[type=range]')].filter(vis).map(r=>r.getBoundingClientRect()).sort((a,b)=>a.top-b.top);const others=[...root.querySelectorAll('button,select,input:not([type=range]),canvas,textarea')].filter(vis).map(e=>e.getBoundingClientRect());let worst=0;
+const measure=()=>{const rs=[...root.querySelectorAll('input[type=range]')].filter(vis).map(r=>r.getBoundingClientRect()).sort((a,b)=>a.top-b.top);const others=[...root.querySelectorAll('button,select,summary,input:not([type=range]),canvas,textarea')].filter(vis).map(e=>e.getBoundingClientRect());let worst=0;
  for(let i=1;i<rs.length;i++){const a=rs[i-1],b=rs[i];const d=b.top-a.top;if(d<=0||d>=200)continue;if(others.some(o=>o.top>=a.bottom-1&&o.bottom<=b.top+1))continue;if(d>worst)worst=d}return Math.round(worst)};
 const tabs=[...document.querySelectorAll('.labdeck-tabs button')].filter(b=>b.offsetParent&&!b.hidden);let best={p:measure(),tab:''};
 for(const t of tabs){t.click();await new Promise(r=>setTimeout(r,180));const p=measure();if(p>best.p)best={p,tab:t.textContent.trim().slice(0,12)}}
