@@ -34,11 +34,8 @@
       jersey: dark ? mix(teal, c.accent, .30) : teal, softball: mix(shade(c.equi, .66), shade(c.probe, .74), .22) };
   }
   const outcome = r => {
-    if (r.final && r.outcome !== 'land') {
-      if (r.final.how === 'bank-rim-in') return T('打板碰框進','Bank and rim in');
-      if (r.final.how === 'bank' && r.outcome !== 'bank') return T('打板進球','Bank shot');
-      if (r.firstContact === 'board' && !r.board && r.final.how === 'board-out') return T('打板彈出','Banked out');
-    }
+    // 11/27 全面檢查：投籃的結果一律用實體碰撞模擬的結局（和動畫同一條軌跡），舊的無框診斷只留給「若沒碰框」的讀數
+    if (r.final && r.final.how && r.outcome !== 'land') return finalLabel(r);
     return ({
       swish: T('空心進球','Swish'), bank: T('打板進球','Bank shot'), front: T('碰前框','Front rim'),
       back: T('碰後框','Back rim'), miss: r.board ? T('打板未進','Bank miss') : T('未進框','Miss'),
