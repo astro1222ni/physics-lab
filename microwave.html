@@ -236,7 +236,7 @@
           <h2 data-en="Part 3: the probe between transmitter and plate">實驗三：發射器與反射板之間的探針</h2>
           <div class="slider"><label for="probe" data-en="Probe position on the scale x (cm)">探針在尺上的刻度 x（cm）</label><output id="probeo"></output>
             <input id="probe" type="range" min="14" max="68" step="0.05" value="40" data-decimals="2"></div>
-          <div class="slider"><label for="nNodes" data-en="Count to the N-th node (N)">數到第 N 個波節（N）</label><output id="nNodeso"></output>
+          <div class="slider"><label for="nNodes" data-en="Number of node intervals (N)">跨過的波節間隔數（N）</label><output id="nNodeso"></output>
             <input id="nNodes" type="range" min="1" max="10" step="1" value="5" data-decimals="0"></div>
           <p class="hint" data-en="The transmitter’s mouth is at 10.0 cm on the scale and the plate at 70.0 cm (60 cm apart). Move the probe slowly — the needle needs a moment to settle.">發射器開口在刻度 10.0 cm、反射板在 70.0 cm（相距 60 cm）。探針要慢慢移動——指針需要一點時間才會穩定。</p>
         </section>
@@ -337,7 +337,7 @@
       <div class="formula multi">
         \[ n_1\sin\theta_1 = n_2\sin\theta_2 \] \[ n\sin A = \sin\theta_2,\quad \theta_2 = A + \delta \] \[ n = \frac{\sin(A+\delta)}{\sin A} \]
       </div>
-      <p data-en-html="<strong>Standing waves.</strong> The wave from the transmitter and the wave reflected by the plate travel in opposite directions with the same frequency. Added together they form a standing wave: nodes (minimum reading) and antinodes (maximum) stay in place. Since the field is zero at the metal surface, the plate is a node, and neighbouring nodes are half a wavelength apart. If the probe passes \(N\) nodes over a distance \(\Delta x\):"><strong>駐波</strong>：發射器發出的波與金屬板反射的波頻率相同、方向相反，疊加後形成駐波：波節（讀數最小）與波腹（讀數最大）的位置固定不動。金屬板表面的電場為零，所以板面是波節，相鄰兩波節相距半個波長。探針移動 \(\Delta x\) 經過 \(N\) 個波節，則</p>
+      <p data-en-html="<strong>Standing waves.</strong> The wave from the transmitter and the wave reflected by the plate travel in opposite directions with the same frequency. Added together they form a standing wave: nodes (minimum reading) and antinodes (maximum) stay in place. Since the field is zero at the metal surface, the plate is a node, and neighbouring nodes are half a wavelength apart. If the probe moves across \(N\) node intervals over a distance \(\Delta x\):"><strong>駐波</strong>：發射器發出的波與金屬板反射的波頻率相同、方向相反，疊加後形成駐波：波節（讀數最小）與波腹（讀數最大）的位置固定不動。金屬板表面的電場為零，所以板面是波節，相鄰兩波節相距半個波長。探針移動 \(\Delta x\) 跨過 \(N\) 個波節間隔，則</p>
       <div class="formula multi">
         \[ \Delta x = N\cdot\frac{\lambda}{2} \] \[ \lambda = \frac{2\,\Delta x}{N} \] \[ f = \frac{c}{\lambda} \]
       </div>
@@ -366,7 +366,7 @@
       <ol>
         <li data-en="Set the goniometer to 180°. Place the transmitter and the metal plate 60 cm apart, and the probe antenna (connected to the meter) half way between them.">角度計調成 180°，發射器與金屬板相距 60 cm，接上電表的探針天線放在兩者中間。</li>
         <li data-en="Move the probe slowly towards the transmitter until the reading is smallest — a node. Note this scale reading as the start.">把探針慢慢往發射器移動，找到讀數最小的位置（波節），記下刻度作為起點。</li>
-        <li data-en="Keep moving, count the nodes, and note the position of the fifth node (not counting the start).">繼續移動、數波節，記下第 5 個波節（不含起點）的刻度。</li>
+        <li data-en="Keep moving, count 5 node intervals (from the start node across 5 intervals to the end node), and note the end position.">繼續移動，從起點波節往後跨過 5 個波節間隔，記下終點波節的刻度。</li>
         <li data-en="The distance is 2.5 wavelengths: divide it by 2.5. Repeat five times.">這段距離是 2.5 個波長，除以 2.5 就是波長。重做 5 次。</li>
       </ol>
       <p><strong data-en="Part 4 — Polarization">實驗四　偏振</strong></p>
@@ -391,8 +391,8 @@
           <details><summary data-en="Answer">參考答案</summary><p data-en="Seen from the transmitter, a plate turned to 80° is only about 25 cm × cos 80° ≈ 4 cm wide — narrower than the beam. Much of the beam passes the plate’s edge and goes straight on, and the receiver, now almost in line with the transmitter, picks up this direct wave as well as the reflected one. The two add up and move the maximum.">從發射器看過去，轉到 80° 的金屬板只剩約 25 cm × cos 80° ≈ 4 cm 寬，比光束還窄。大部分的微波從板邊直接通過，而接收器這時幾乎正對著發射器，除了反射波也收到直接波，兩者疊加後最大值的位置就偏了。</p></details></li>
         <li><span data-en="Why do the readings at the nodes not drop to zero, and why are the nodes deeper close to the plate?">為什麼波節的讀數不會降到零？為什麼越靠近金屬板，波節越明顯？</span>
           <details><summary data-en="Answer">參考答案</summary><p data-en="The transmitter sends out spreading waves, so their amplitude falls with distance. The wave reaching the probe straight from the transmitter is stronger than the wave that has gone to the plate and back, so they cannot cancel completely. Close to the plate the two paths are nearly equally long and the amplitudes nearly equal, so the cancellation is almost perfect.">發射器發出的是向外擴散的波，振幅隨距離變小。直接到達探針的波比「到金屬板再回來」的波強，兩者無法完全抵消。越靠近金屬板，兩條路徑的長度越接近、振幅越接近，抵消得就越完全。</p></details></li>
-        <li><span data-en="Why measure across five nodes instead of just the distance between two neighbouring nodes?">為什麼要量 5 個波節的距離，而不是只量相鄰兩個波節的距離？</span>
-          <details><summary data-en="Answer">參考答案</summary><p data-en="Each node position has about the same reading error (a millimetre or so). Over five nodes the distance is five times longer, so the same error is five times smaller compared with the distance.">每個波節位置的讀數誤差差不多（約 1 mm）。量 5 個波節時距離長了 5 倍，同樣的誤差相對於距離就小了 5 倍。</p></details></li>
+        <li><span data-en="Why measure across five node intervals instead of just one interval between two neighbouring nodes?">為什麼要量跨過 5 個波節間隔的距離，而不是只量相鄰兩個波節的 1 個間隔？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="Each node position has about the same reading error (a millimetre or so). Over five intervals the distance is five times longer, so the same error is five times smaller compared with the distance.">每個波節位置的讀數誤差差不多（約 1 mm）。量 5 個間隔時距離長了 5 倍，同樣的誤差相對於距離就小了 5 倍。</p></details></li>
         <li><span data-en="With the second grid at 45° the reading falls to about one quarter, not one half. Why?">柵 2 轉到 45° 時，讀數只剩約四分之一，而不是一半，為什麼？</span>
           <details><summary data-en="Answer">參考答案</summary><p data-en-html="Two factors of \(\cos\theta\) act on the field: one at the grid and one at the receiving antenna, which is still vertical. The detector reads \(E^{2}\), so the reading is \(\cos^{4}45^\circ = 1/4\). Turn the receiver together with the grid and you get Malus’s \(\cos^{2}\theta\) instead.">電場被乘了兩次 \(\cos\theta\)：一次在偏極柵、一次在仍然是鉛直的接收天線。檢波器讀的是 \(E^{2}\)，所以讀數是 \(\cos^{4}45^\circ = 1/4\)。如果接收器跟著柵一起轉，就變成馬呂斯定律的 \(\cos^{2}\theta\)。</p></details></li>
         <li><span data-en="Turn the receiver through 90° so that it reads nothing. Now put one grid between the horns with its slits at 45°. What happens, and why?">把接收器轉 90°，讀數變成零。再在兩喇叭之間放一片隙縫 45° 的偏極柵，會怎樣？為什麼？</span>

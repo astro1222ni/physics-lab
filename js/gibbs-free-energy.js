@@ -756,7 +756,7 @@
     clipTo(g, A);
     const z = A.sy(0);
     g.fillStyle = LD.alpha(col.probe, col.dark ? 0.10 : 0.07); g.fillRect(A.X0, A.Y1, A.X1 - A.X0, z - A.Y1);
-    LD.haloText(g, T('K > 1（自發）', 'K > 1 (spontaneous)'), A.X1 - 6, Math.max(A.Y1 + 12, z - 8), col.probe, 'right', 'alphabetic', '600 11px ' + LD.FONT);
+    LD.haloText(g, T('K > 1（標準狀態自發）', 'K > 1 (spontaneous at Q = 1)'), A.X1 - 6, Math.max(A.Y1 + 12, z - 8), col.probe, 'right', 'alphabetic', '600 12px ' + LD.FONT);
     // 溫度範圍外（1000/T < 0.667）塗灰
     g.fillStyle = LD.alpha(col.muted, 0.08); g.fillRect(A.X0, A.Y1, A.sx(x0) - A.X0, A.Y0 - A.Y1);
     if (!isMys()) {
@@ -864,11 +864,11 @@
   }
   function renderTable() {
     const el = $('tbl');
-    let h = '<thead><tr><th>#</th><th class="l">' + T('反應', 'Reaction') + '</th><th>T<br><small>K</small></th><th>ΔH°<br><small>kJ/mol</small></th><th>ΔS°<br><small>J/(mol·K)</small></th><th>ΔG°<br><small>kJ/mol</small></th><th>K</th><th>' + T('判斷', 'Verdict') + '</th></tr></thead><tbody>';
+    let h = '<thead><tr><th>#</th><th class="l">' + T('反應', 'Reaction') + '</th><th>T<br><small>K</small></th><th>ΔH°<br><small>kJ/mol</small></th><th>ΔS°<br><small>J/(mol·K)</small></th><th>ΔG°<br><small>kJ/mol</small></th><th>K</th><th>' + T('標準狀態判斷', 'Std. verdict') + '</th></tr></thead><tbody>';
     if (!rows.length) h += '<tr class="empty"><td colspan="8">' + T('還沒有紀錄：按「記錄這一點」把目前的狀態記下來。', 'No records yet: press “Record this point” to note the current state.') + '</td></tr>';
     rows.slice(-60).forEach(function (r) {
       const hid = r.mode === 'mys' && !(mys && mys.id === r.mysId && mys.revealed) && !r.revealed;
-      const v = hid ? '?' : r.dG < -0.05 ? T('自發', 'yes') : r.dG > 0.05 ? T('不自發', 'no') : T('平衡', 'equil.');
+      const v = hid ? '?' : r.dG < -0.05 ? T('標準自發', 'std. yes') : r.dG > 0.05 ? T('標準不自發', 'std. no') : T('接近平衡', 'near equil.');
       const cls = hid ? '' : r.dG < -0.05 ? 'yes' : r.dG > 0.05 ? 'no' : '';
       h += '<tr><td>' + r.n + '</td><td class="l">' + rxNameHTML(r.rx) + (r.valid ? '' : ' <small>*</small>') + '</td><td>' + tK(r.T) + '</td><td>' + (hid ? '?' : sgn(r.dH, 2)) + '</td><td>' + (hid ? '?' : sgn(r.dS, 1)) + '</td><td>' +
         (hid ? '?' : sgn(r.dG, 2)) + '</td><td>' + kHTML(r.log10K, 3) + '</td><td class="' + cls + '">' + v + '</td></tr>';

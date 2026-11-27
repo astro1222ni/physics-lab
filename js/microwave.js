@@ -1022,7 +1022,7 @@
           '°</td><td>' + r.n.toFixed(3) + '</td><td>' + r.I.toFixed(2) + '</td></tr>';
       });
     } else if (m === 'standing') {
-      h += '<thead><tr><th>#</th>' + thc('起點 x<sub>0</sub> (cm)', 'Start x<sub>0</sub> (cm)') + thc('終點 x<sub>1</sub> (cm)', 'End x<sub>1</sub> (cm)') + thc('波節數 N', 'Nodes N') + thc('Δx (cm)', 'Δx (cm)') + thc('λ = 2Δx ／ N (cm)', 'λ = 2Δx / N (cm)') + thc('f = c ／ λ (GHz)', 'f = c / λ (GHz)') + '</tr></thead><tbody>';
+      h += '<thead><tr><th>#</th>' + thc('起點 x<sub>0</sub> (cm)', 'Start x<sub>0</sub> (cm)') + thc('終點 x<sub>1</sub> (cm)', 'End x<sub>1</sub> (cm)') + thc('間隔數 N', 'Intervals N') + thc('Δx (cm)', 'Δx (cm)') + thc('λ = 2Δx ／ N (cm)', 'λ = 2Δx / N (cm)') + thc('f = c ／ λ (GHz)', 'f = c / λ (GHz)') + '</tr></thead><tbody>';
       rows.forEach(function (r, i) {
         h += '<tr' + (i === latest && !st.pending ? ' class="latest"' : '') + '><td>' + (i + 1) + '</td><td>' + r.x0.toFixed(2) + '</td><td>' + r.x1.toFixed(2) + '</td><td>' + r.N + '</td><td>' + r.dx.toFixed(2) +
           '</td><td>' + r.lam.toFixed(3) + '</td><td>' + r.f.toFixed(2) + '</td></tr>';
@@ -1159,7 +1159,7 @@
         out.push([T('起點 x<sub>0</sub>', 'Start x<sub>0</sub>'), st.pending.x0.toFixed(2) + ' cm']);
         out.push([T('Δx = |x − x<sub>0</sub>|', 'Δx = |x − x<sub>0</sub>|'), Math.abs(st.s - st.pending.x0).toFixed(2) + ' cm']);
       }
-      out.push([T('要數到第 N 個波節', 'Count to node N'), String(st.N)]);
+      out.push([T('跨過的波節間隔數 N', 'Node intervals N'), String(st.N)]);
     } else {
       out.push({ sec: T('偏振', 'Polarization') });
       out.push([T('距離 d', 'Distance d'), st.d.toFixed(1) + ' cm']);
@@ -1196,7 +1196,7 @@
       items = [
         [T('探針放在發射器與反射板的中間（約 40 cm）。', 'Put the probe half way between the transmitter and the plate (about 40 cm).'), st.standMoved || !!st.pending || rows.length > 0],
         [T('往發射器方向慢慢移動，找到讀數最小的位置（波節），按「記錄起點」。', 'Move slowly towards the transmitter to the smallest reading (a node) and press “Record start”.'), !!st.pending || rows.length > 0],
-        [T('繼續移動並數波節，到第 N 個波節按「記錄終點」。', 'Keep moving and count the nodes; at node N press “Record end”.'), rows.length > 0],
+        [T('繼續移動，跨過 N 個波節間隔後按「記錄終點」。', 'Keep moving across N node intervals, then press “Record end”.'), rows.length > 0],
         [T('重做 5 次，平均得到波長，再算出頻率。', 'Repeat 5 times, average the wavelength and work out the frequency.'), rows.length >= 5]
       ];
     } else {
@@ -1225,7 +1225,7 @@
     }
     if (m === 'refract') return { t: T('轉動接收臂（拖曳接收器或按 ◀ ▶），找到讀數最大的位置，按「記錄」。', 'Swing the receiver arm (drag it or use ◀ ▶) to the largest reading and press “Record”.') };
     if (m === 'standing') {
-      return st.pending ? { t: T('起點已記下。繼續往同一方向移動，數到第 ', 'Start recorded. Keep moving the same way, count to node ') + st.N + T(' 個波節，按「記錄終點」。', ' and press “Record end”.') }
+      return st.pending ? { t: T('起點已記下。繼續往同一方向移動，跨過 ', 'Start recorded. Keep moving the same way across ') + st.N + T(' 個波節間隔，按「記錄終點」。', ' node intervals and press “Record end”.') }
         : { t: T('移動探針（拖曳或按 ◀ ▶），找到讀數最小的位置，按「記錄起點」。', 'Move the probe (drag it or use ◀ ▶) to the smallest reading and press “Record start”.') };
     }
     return { t: T('調整偏極柵的角度，按「記錄」。θ = 0° 的那一筆是 I0。', 'Set the grid angles and press “Record”. The row at θ = 0° is I0.') };
@@ -1310,7 +1310,7 @@
       const read = round(st.err ? st.s + (rand() * 2 - 1) * 0.03 : st.s, 2);
       if (!st.pending) {
         st.pending = { x0: read };
-        sayStatus(T('起點 x0 = ', 'Start x0 = ') + read.toFixed(2) + T(' cm 已記下。繼續往同一方向移動，數到第 ', ' cm recorded. Keep moving the same way, count to node ') + st.N + T(' 個波節，按「記錄終點」。', ' and press “Record end”.'), 7000, 'ok');
+        sayStatus(T('起點 x0 = ', 'Start x0 = ') + read.toFixed(2) + T(' cm 已記下。繼續往同一方向移動，跨過 ', ' cm recorded. Keep moving the same way across ') + st.N + T(' 個波節間隔，按「記錄終點」。', ' node intervals and press “Record end”.'), 7000, 'ok');
         flash(); dataDirty = true; panelsDirty = true; schedule();
         emit('start', { x0: read, s: st.s, err: st.err });
         return;

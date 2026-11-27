@@ -1482,7 +1482,15 @@
     let t = '';
     if (st.mode === 'xf') {
       if (st.xsrc === 'dc') {
-        if (st.dc.phase === 'on' && DC.imFinal > 20) t = T('直流電流只受一次線圈的電阻限制：穩定後 ', 'Only the primary’s copper resistance limits the DC current: it settles at ') + fq(DC.imFinal, 'A') + T('，線圈會過熱（真實的變壓器會燒毀）。', ' and the coil overheats (a real transformer would burn out).');
+        const parts = [];
+        if (st.dc.phase === 'on' && DC.imFinal > 20) parts.push(T('直流電流只受一次線圈的電阻限制：穩定後 ', 'Only the primary’s copper resistance limits the DC current: it settles at ') + fq(DC.imFinal, 'A') + T('，線圈會過熱（真實的變壓器會燒毀）。', ' and the coil overheats (a real transformer would burn out).'));
+        if (st.dc.phase !== 'idle') {
+          const bNow = Math.abs(dcNow().phi) / C.CORE.A;
+          const bFin = (DC.Lm * DC.imFinal / DC.N1) / C.CORE.A;
+          const bShow = st.dc.phase === 'on' ? Math.max(bNow, bFin) : bNow;
+          if (bShow > C.CORE.Bwarn) parts.push(T('鐵心磁通密度線性外推值 ', 'Linearly extrapolated core flux density reaches ') + sig3(bShow) + T(' T，超過 1.7 T：真實鐵心會飽和（超過門檻的數值只供參考）。', ' T, above 1.7 T: a real core would saturate (values above the threshold are illustrative only).'));
+        }
+        t = parts.join(' ');
       } else if (X.sat) t = T('鐵心磁通密度峰值 ', 'The peak flux density in the core is ') + sig3(X.Bcore) + T(' T，超過 1.7 T：真實的鐵心會飽和，理想變壓器的關係不再成立。增加一次線圈匝數或提高頻率。', ' T, above 1.7 T: a real core would saturate and the ideal relations would fail. Add primary turns or raise the frequency.');
       if (st.xsrc === 'gen' && st.comm) t = (t ? t + ' ' : '') + T('發電機接變壓器時改用滑環（換向器的脈動直流含有不會變動的成分，變壓器傳不過去）。', 'Feeding the transformer, the generator uses its slip rings (the pulsating DC from a commutator contains a steady part that a transformer cannot pass on).');
     } else if (st.mode === 'grid') {

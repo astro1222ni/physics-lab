@@ -41,7 +41,7 @@
     },
     {
       id: 'metal-activity-4', level: 3,
-      title: { zh: '不動如山', en: 'Nothing happens' },
+      title: { zh: '不動如山', en: 'No observable reaction' },
       desc: { zh: '把一種金屬放進活性比它大的金屬的離子溶液（兩者 E° 至少差 0.2 V），確認觀察不到可辨識的置換反應。', en: 'Put a metal into a solution of the ions of a more reactive metal (E° at least 0.2 V apart) and confirm that no observable displacement occurs.' },
       check: function (ev) { const r = isO(ev) && ev.data.rec; return !!r && r.disp === 'no' && r.dE <= -0.2; }
     },

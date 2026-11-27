@@ -304,10 +304,18 @@
     lg.addColorStop(0, 'rgba(255,255,255,' + (col.dark ? 0.08 : 0.22) + ')');
     lg.addColorStop(1, 'rgba(0,0,0,' + (col.dark ? 0.12 : 0.06) + ')');
     g.fillStyle = lg; g.fill();
-    if (noData && !hid) {
+    const specialMpCell = state.prop === 'mp' && (Z === 2 || Z === 6) && !hid;
+    if ((noData && !hid) || specialMpCell) {
       g.save(); g.clip();
-      g.strokeStyle = LD.alpha(col.noneInk, 0.17); g.lineWidth = 1;
+      g.strokeStyle = LD.alpha(specialMpCell ? ink : col.noneInk, specialMpCell ? 0.28 : 0.17); g.lineWidth = 1;
       for (let k = -r.h; k < r.w; k += 5) { g.beginPath(); g.moveTo(r.x + k, r.y + r.h); g.lineTo(r.x + k + r.h, r.y); g.stroke(); }
+      g.restore();
+    }
+    if (specialMpCell) {
+      g.save(); g.setLineDash([2.5, 2]); g.strokeStyle = LD.alpha(ink, 0.75); g.lineWidth = 1.2;
+      LD.roundRect(g, r.x + 1, r.y + 1, r.w - 2, r.h - 2, Math.min(3, cell * 0.1)); g.stroke();
+      g.setLineDash([]); g.fillStyle = ink; g.font = font(Math.max(8, cell * 0.28), '700');
+      g.textAlign = 'right'; g.textBaseline = 'top'; g.fillText('*', r.x + r.w - 2, r.y + 1);
       g.restore();
     }
     if (sel) {
@@ -595,7 +603,7 @@
       if (A.sx(z) - A.sx(prev) > 16) g.fillText(String(i + 1), (A.sx(prev) + x) / 2, A.Y1 + 11);
       prev = z;
     });
-    // 折線
+    // 折線（1 atm 非熔點之 He、C 斷開不連線）
     g.strokeStyle = col.accent; g.lineWidth = 1.8; g.lineJoin = 'round';
     g.beginPath();
     let pen = false;
@@ -603,9 +611,10 @@
       const v = shownVal(Z, p);
       if (v == null || (yr.log && v <= 0)) { pen = false; continue; }
       const x = A.sx(Z), y = Y(v);
+      gHits.push({ Z: Z, x: x, y: y });
+      if (p === 'mp' && (Z === 2 || Z === 6)) { pen = false; continue; }
       if (pen) g.lineTo(x, y); else g.moveTo(x, y);
       pen = true;
-      gHits.push({ Z: Z, x: x, y: y });
     }
     g.stroke();
     const narrow = gw < 480;
@@ -615,7 +624,7 @@
       const e = P.EL[Z], isNg = e.cat === 'ng', isAlk = e.cat === 'alk';
       const specialMp = p === 'mp' && (Z === 2 || Z === 6);
       if (specialMp) {
-        g.fillStyle = col['canvas-bg'];
+        g.fillStyle = col.bg;
         g.strokeStyle = isNg ? col.pos : col.accent;
         g.lineWidth = 1.8;
         g.beginPath(); g.arc(A.sx(Z), Y(v), 3.6, 0, Math.PI * 2); g.fill(); g.stroke();
@@ -644,7 +653,8 @@
     g.restore();
     $('gLegend').innerHTML = '<span>' + T('上緣的數字：週期', 'Numbers along the top: period') + '</span>' +
       '<span><i class="sp" style="background:' + col.pos + '"></i>' + T('鈍氣', 'noble gases') + '</span>' +
-      '<span><i class="sp" style="background:' + col.neg + '"></i>' + T('鹼金屬', 'alkali metals') + '</span>';
+      '<span><i class="sp" style="background:' + col.neg + '"></i>' + T('鹼金屬', 'alkali metals') + '</span>' +
+      (p === 'mp' ? '<span><i class="sp" style="background:' + col.bg + ';border:1.8px solid ' + col.accent + '"></i>' + T('非 1 atm 熔點（He 高壓、C 昇華，週期表標 *）', 'not 1 atm m.p. (He pressurized, C sublimes; marked * in table)') + '</span>' : '');
   }
   function drawBars(g, p) {
     const q = P.pos(state.Z);

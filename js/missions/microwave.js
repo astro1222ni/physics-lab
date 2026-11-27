@@ -37,7 +37,7 @@
     {
       id: 'microwave-4', level: 4,
       title: { zh: '量出波長', en: 'Measure the wavelength' },
-      desc: { zh: '實驗三：從起始波節開始，往後跨過 5 個間隔（到第 6 個波節）。記錄起點與終點，算出的波長與真正的波長相差 2% 以內。', en: 'Part 3: starting at a node, move across five intervals to the sixth node. Record both endpoints and get a wavelength within 2% of the true value.' },
+      desc: { zh: '實驗三：從起始波節開始，往後跨過 5 個波節間隔（間隔數 N = 5）。記錄起點與終點，算出的波長與真正的波長相差 2% 以內。', en: 'Part 3: starting at a node, move across 5 node intervals (N = 5). Record both endpoints and get a wavelength within 2% of the true value.' },
       check: function (ev) { const r = rec(ev, 'standing'); return !!r && r.N === 5 && rel(r.lam, r.lamTrue, 0.02); }
     },
     {
