@@ -144,147 +144,147 @@ ExamTracks.Q12=[
  {
   "id": "Q12_07",
   "row": "wrong",
-  "duration": 6.5,
+  "duration": 5.9,
   "disp": "很多人一看到動能加位能，就反射動作：力學能守恆，加起來等於 0！",
   "en": "Many people see kinetic plus potential energy and react instantly: mechanical energy is conserved, so it adds up to 0!"
  },
  {
   "id": "Q12_08",
   "row": "jokeW",
-  "duration": 6.1,
+  "duration": 5.04,
   "disp": "力學能守恆很好用，可是它不是萬用膏藥，不能哪裡痛就貼哪裡。",
   "en": "Conservation of mechanical energy is useful, but it isn't a cure-all you can stick on wherever it hurts."
  },
  {
   "id": "Q12_09",
   "row": "flip",
-  "duration": 6.7,
+  "duration": 5.61,
   "disp": "可是力學能守恆有條件：只有重力、彈力這類保守力作功的時候才成立。",
   "en": "It has a condition: it only holds when conservative forces like gravity and spring forces do the work."
  },
  {
   "id": "Q12_10",
   "row": "flip",
-  "duration": 9.9,
+  "duration": 9.52,
   "disp": "這題繩子的拉力一直往上拉，重物也一直往上走，所以拉力一直在作正功，力學能就一直增加，根本不守恆。",
   "en": "Here the cable keeps pulling up and the load keeps moving up, so the tension keeps doing positive work. Mechanical energy keeps increasing, so it isn't conserved at all."
  },
  {
   "id": "Q12_11",
   "row": "flip",
-  "duration": 7.5,
+  "duration": 6.42,
   "disp": "不然你想想看，重物從靜止升到高處，多出來的位能，總不會是它自己很上進吧？",
   "en": "Think about it: the load rises from rest to a high place. That extra potential energy didn't come from self-improvement, did it?"
  },
  {
   "id": "Q12_12",
   "row": "solveK",
-  "duration": 2.7,
+  "duration": 2.29,
   "disp": "我們先看三段的動能變化。",
   "en": "First, the change in kinetic energy over the three stages."
  },
  {
   "id": "Q12_13",
   "row": "solveK",
-  "duration": 9.1,
+  "duration": 7.74,
   "disp": "動能 K，等於 1/2 乘以質量 m，再乘以速度 v 的平方；動能的變化量，就是末動能減掉初動能。",
   "en": "Kinetic energy K equals one half times mass m times velocity v squared; the change is final kinetic energy minus initial kinetic energy."
  },
  {
   "id": "Q12_14",
   "row": "solveK",
-  "duration": 6.1,
+  "duration": 5.08,
   "disp": "甲點靜止，乙點有速度，甲到乙，動能從 0 變大，變化量是正的。",
   "en": "At rest at P1, moving at P2: from P1 to P2 the kinetic energy grows from 0, so the change is positive."
  },
  {
   "id": "Q12_15",
   "row": "solveK",
-  "duration": 4.9,
+  "duration": 4.11,
   "disp": "乙到丙等速，速度不變，動能也不變，變化量是 0。",
   "en": "From P2 to P3 the speed is constant, so kinetic energy stays the same and the change is 0."
  },
  {
   "id": "Q12_16",
   "row": "solveK",
-  "duration": 5.1,
+  "duration": 4.52,
   "disp": "丙到丁從有速度到停下來，動能減少，變化量是負的。",
   "en": "From P3 to P4 it goes from moving to stopped: kinetic energy decreases, so the change is negative."
  },
  {
   "id": "Q12_17",
   "row": "solveB",
-  "duration": 10.7,
+  "duration": 10.08,
   "disp": "因為甲和丁都是靜止，頭尾的動能都是 0，所以三段加起來的總變化量，等於丁的動能減掉甲的動能，0 減 0 等於 0。",
   "en": "Because it's at rest at both P1 and P4, kinetic energy is 0 at both ends. The total change is the kinetic energy at P4 minus at P1: 0 minus 0 is 0."
  },
  {
   "id": "Q12_18",
   "row": "solveB",
-  "duration": 5.1,
+  "duration": 4.37,
   "disp": "乙到丙那段是 0，所以甲乙加丙丁，就等於 0，B 對。",
   "en": "The P2-to-P3 stage is 0, so P1-to-P2 plus P3-to-P4 equals 0. B is right."
  },
  {
   "id": "Q12_19",
   "row": "solveB",
-  "duration": 3.9,
+  "duration": 3.28,
   "disp": "D 說三段加起來大於 0，錯，是等於 0。",
   "en": "D says the three stages add up to more than 0. Wrong: it's exactly 0."
  },
  {
   "id": "Q12_20",
   "row": "solveU",
-  "duration": 1.1,
+  "duration": 0.65,
   "disp": "位能呢？",
   "en": "What about potential energy?"
  },
  {
   "id": "Q12_21",
   "row": "solveU",
-  "duration": 7.1,
+  "duration": 6.92,
   "disp": "地表附近的重力位能 U，等於 m g h，h 是高度，所以高度越高，位能越大。",
   "en": "Near the Earth's surface, gravitational potential energy U equals mgh, where h is height, so the higher it goes, the more potential energy it has."
  },
  {
   "id": "Q12_22",
   "row": "solveU",
-  "duration": 7.5,
+  "duration": 6.38,
   "disp": "一路往上，三段的高度都在增加，位能變化都是正的，加起來當然大於 0，E 對。",
   "en": "It goes up all the way, so height increases in all three stages. Every potential energy change is positive, so the sum is surely more than 0. E is right."
  },
  {
   "id": "Q12_23",
   "row": "solveU",
-  "duration": 6.9,
+  "duration": 5.4,
   "disp": "A，甲到乙，位能增加，動能也增加，兩個正的加起來，不可能是 0，錯。",
   "en": "A: from P1 to P2, potential energy rises and kinetic energy rises too. Two positives can't add to 0. Wrong."
  },
  {
   "id": "Q12_24",
   "row": "solveU",
-  "duration": 5.5,
+  "duration": 3.67,
   "disp": "C，乙到丙，動能不變，位能增加，加起來大於 0，也錯。",
   "en": "C: from P2 to P3, kinetic energy stays the same and potential energy rises, so the sum is more than 0. Also wrong."
  },
  {
   "id": "Q12_25",
   "row": "solveU",
-  "duration": 1.5,
+  "duration": 0.7,
   "disp": "答案 B、E。",
   "en": "The answer is B and E."
  },
  {
   "id": "Q12_26",
   "row": "trick",
-  "duration": 7.9,
+  "duration": 7.3,
   "disp": "秒殺：看到靜止到靜止，先寫動能總變化等於 0；一路往上，位能總變化一定大於 0。",
   "en": "The shortcut: rest to rest, write total kinetic energy change equals 0; going up all the way, total potential energy change must be more than 0."
  },
  {
   "id": "Q12_27",
   "row": "trick",
-  "duration": 3.7,
+  "duration": 3.6,
   "disp": "這 2 句寫下來，5 個選項就判斷完了。",
   "en": "Write those 2 lines and all 5 options are settled."
  }

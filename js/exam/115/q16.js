@@ -117,56 +117,56 @@ ExamTracks.Q16=[
  {
   "id": "Q16_07",
   "row": "wrong",
-  "duration": 5.7,
+  "duration": 5.38,
   "disp": "選 A 的直覺是：電子在右邊，曲線就畫在右邊上面，往上翹。",
   "en": "The instinct behind A: the electron is on the right, so the curve goes on the upper right, bending upward."
  },
  {
   "id": "Q16_08",
   "row": "wrong",
-  "duration": 3.1,
+  "duration": 2.55,
   "disp": "可是力有方向，往右才是正的。",
   "en": "But force has direction: only rightward is positive."
  },
  {
   "id": "Q16_09",
   "row": "flip",
-  "duration": 9.5,
+  "duration": 8.34,
   "disp": "質子在原點，因為質子帶正電、電子帶負電，異性相吸，所以電子不管跑到哪裡，都被拉向原點的質子。",
   "en": "The proton sits at the origin. Proton positive, electron negative, opposites attract, so wherever the electron goes, it's pulled toward the proton at the origin."
  },
  {
   "id": "Q16_10",
   "row": "flip",
-  "duration": 4.3,
+  "duration": 3.89,
   "disp": "這個質子很黏，電子跑去哪，它都要拉回來。",
   "en": "This proton is clingy: wherever the electron runs, it pulls it back."
  },
  {
   "id": "Q16_11",
   "row": "flip",
-  "duration": 6.9,
+  "duration": 5.8,
   "disp": "電子在右邊，就被往左拉，力是負的；電子在左邊，被往右拉，力是正的。",
   "en": "Electron on the right, pulled left, force negative; electron on the left, pulled right, force positive."
  },
  {
   "id": "Q16_12",
   "row": "solve",
-  "duration": 1.1,
+  "duration": 0.82,
   "disp": "大小呢？",
   "en": "And the magnitude?"
  },
  {
   "id": "Q16_13",
   "row": "solve",
-  "duration": 10.1,
+  "duration": 9.48,
   "disp": "庫侖定律說，靜電力跟距離平方成反比，所以越靠近原點越大，靠到原點附近，衝向無限大；離遠了，趨近 0。",
   "en": "Coulomb's law says the electrostatic force goes as the inverse square of distance: bigger near the origin, shooting to infinity right next to it, and approaching 0 far away."
  },
  {
   "id": "Q16_14",
   "row": "solve",
-  "duration": 9.5,
+  "duration": 9.16,
   "disp": "所以 x 大於 0，曲線在 x 軸下面，越靠近原點越往下衝；x 小於 0，在 x 軸上面，越靠近原點越往上衝。",
   "en": "So for x greater than 0, the curve lies below the axis and plunges near the origin; for x less than 0, it lies above the axis and shoots up near the origin."
  },
@@ -180,35 +180,35 @@ ExamTracks.Q16=[
  {
   "id": "Q16_16",
   "row": "others",
-  "duration": 4.1,
+  "duration": 5.17,
   "disp": "A 剛好上下顛倒，那是把相吸畫成相斥了。",
   "en": "A is exactly upside down: it draws attraction as repulsion."
  },
  {
   "id": "Q16_17",
   "row": "others",
-  "duration": 4.7,
+  "duration": 3.89,
   "disp": "C、D 是直線，明顯不是距離平方反比關係，錯。",
   "en": "C and D are straight lines, clearly not an inverse square relation, so they are wrong."
  },
  {
   "id": "Q16_18",
   "row": "others",
-  "duration": 5.7,
+  "duration": 5.01,
   "disp": "E 兩邊都往下，表示電子不管在哪裡，都被往左拉，不合理。",
   "en": "In E both sides go down, meaning the electron is always pulled left wherever it is. That makes no sense."
  },
  {
   "id": "Q16_19",
   "row": "trick",
-  "duration": 7.7,
+  "duration": 6.82,
   "disp": "秒殺兩步：第一步，看吸引還是排斥，決定正負；第二步，看平方反比，決定形狀。",
   "en": "The two-step shortcut: step 1, attraction or repulsion sets the sign; step 2, the inverse square sets the shape."
  },
  {
   "id": "Q16_20",
   "row": "trick",
-  "duration": 6.9,
+  "duration": 6.48,
   "disp": "注意喔，平方反比是點電荷才成立；質子、電子這麼小，可以當成點電荷。",
   "en": "Careful: the inverse-square law holds for point charges; a proton and an electron are so small they count as point charges."
  }

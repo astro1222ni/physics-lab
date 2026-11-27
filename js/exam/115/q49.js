@@ -186,105 +186,105 @@ ExamTracks.Q49=[
  {
   "id": "Q49_06",
   "row": "askA",
-  "duration": 6.3,
+  "duration": 6.33,
   "disp": "第一小題：已知 \\(R_{2}\\) 的電場圖，畫出 \\(R_{3}\\)，讓疊加以後的反射最強。",
   "en": "Part 1: given the electric field graph of R2, draw R3 so the combined reflection is strongest."
  },
  {
   "id": "Q49_08",
   "row": "wrongA",
-  "duration": 6.5,
+  "duration": 4.98,
   "disp": "直覺會想：每一層都反射一點，加起來就變強嘛，隨便畫一個波就好？",
   "en": "Your instinct: every layer reflects a bit, so it adds up stronger. Draw any wave, right?"
  },
  {
   "id": "Q49_09",
   "row": "wrongA",
-  "duration": 2.3,
+  "duration": 2.18,
   "disp": "不行，波會互相抵消。",
   "en": "No. Waves can cancel each other."
  },
  {
   "id": "Q49_10",
   "row": "wrongA",
-  "duration": 5.7,
+  "duration": 5.04,
   "disp": "\\(R_{3}\\) 如果波峰對到 \\(R_{2}\\) 的波谷，就是破壞性干涉，反而變暗。",
   "en": "If R3's crests meet R2's troughs, that's destructive interference, and it gets darker."
  },
  {
   "id": "Q49_11",
   "row": "wrongA",
-  "duration": 4.3,
+  "duration": 3.82,
   "disp": "鏡子越疊越暗，晶片廠的工程師會哭給你看。",
   "en": "A mirror that dims with every layer would make the fab engineers cry."
  },
  {
   "id": "Q49_12",
   "row": "solveA",
-  "duration": 6.1,
+  "duration": 6.51,
   "disp": "要最強，就要建設性干涉，波峰對波峰，波谷對波谷，相位相同。",
   "en": "For maximum strength you need constructive interference: crest on crest, trough on trough, in phase."
  },
  {
   "id": "Q49_13",
   "row": "solveA",
-  "duration": 1.1,
+  "duration": 0.91,
   "disp": "振幅呢？",
   "en": "And the amplitude?"
  },
  {
   "id": "Q49_14",
   "row": "solveA",
-  "duration": 8.7,
+  "duration": 8.98,
   "disp": "因為 \\(R_{3}\\) 從更深的地方反射回來，一路上有被吸收、有透射出去，所以振幅要比 \\(R_{2}\\) 略小一點。",
   "en": "R3 comes back from deeper down, losing some to absorption and transmission on the way, so its amplitude should be slightly smaller than R2's."
  },
  {
   "id": "Q49_15",
   "row": "solveA",
-  "duration": 4.3,
+  "duration": 3.94,
   "disp": "評分原則就是這 2 點：相位相同，振幅略小。",
   "en": "The grading comes down to these 2 points: same phase, slightly smaller amplitude."
  },
  {
   "id": "Q49_16",
   "row": "askB",
-  "duration": 6.5,
+  "duration": 7.2,
   "disp": "第二小題：光從慢波速介質，射向快波速介質，畫出反射線和折射線。",
   "en": "Part 2: light goes from a slow medium into a fast medium. Draw the reflected and refracted rays."
  },
  {
   "id": "Q49_17",
   "row": "solveB",
-  "duration": 3.7,
+  "duration": 3.52,
   "disp": "反射，反射角等於入射角，要精確畫。",
   "en": "Reflection: the angle of reflection equals the angle of incidence. Draw it precisely."
  },
  {
   "id": "Q49_18",
   "row": "solveB",
-  "duration": 9.7,
+  "duration": 9.14,
   "disp": "折射，因為光從慢波速進到快波速，速度變快，所以折射線會偏離法線，也就是比原來的路徑更偏近界面。",
   "en": "Refraction: going from slow to fast, the light speeds up, so the refracted ray bends away from the normal, closer to the interface than the original path."
  },
  {
   "id": "Q49_19",
   "row": "solveB",
-  "duration": 7.7,
+  "duration": 8.06,
   "disp": "打個比喻，推車從泥巴地推到柏油路，先碰到柏油路的輪子先變快，車子就轉向了。",
   "en": "Picture pushing a cart from mud onto asphalt: the wheel that reaches the asphalt first speeds up first, and the cart turns."
  },
  {
   "id": "Q49_20",
   "row": "trick",
-  "duration": 3.3,
+  "duration": 2.83,
   "disp": "口訣：快的那一邊，角度比較大。",
   "en": "The rule: on the fast side, the angle is bigger."
  },
  {
   "id": "Q49_21",
   "row": "trick",
-  "duration": 7.7,
+  "duration": 7.89,
   "disp": "光在哪一邊跑得快，那一邊和法線的夾角就比較大；寫成式子，就是黑板上這一條。",
   "en": "Wherever light runs faster, the angle with the normal is bigger on that side; written as an equation, it's this line on the board."
  }

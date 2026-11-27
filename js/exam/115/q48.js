@@ -137,7 +137,7 @@ ExamTracks.Q48=[
  {
   "id": "Q48_06",
   "row": "wrong",
-  "duration": 5.7,
+  "duration": 5.68,
   "disp": "公式記不清楚的人，會寫成 h 乘以 λ，或 h 除以 λ。",
   "en": "People who half-remember the formula write h times lambda, or h over lambda."
  },
@@ -151,98 +151,98 @@ ExamTracks.Q48=[
  {
   "id": "Q48_08",
   "row": "flip",
-  "duration": 2.3,
+  "duration": 1.7,
   "disp": "能量的單位要是焦耳。",
   "en": "Energy must come out in joules."
  },
  {
   "id": "Q48_09",
   "row": "flip",
-  "duration": 7.9,
+  "duration": 8.39,
   "disp": "h 是普朗克常數，單位焦耳秒；c 是光速，單位公尺每秒；λ 是波長，單位公尺。",
   "en": "h is Planck's constant, in joule-seconds; c is the speed of light, in meters per second; lambda is wavelength, in meters."
  },
  {
   "id": "Q48_10",
   "row": "flip",
-  "duration": 6.9,
+  "duration": 6.13,
   "disp": "h 乘以 c 除以 λ，焦耳秒乘以公尺每秒，再除以公尺，剛好剩下焦耳。",
   "en": "h times c over lambda: joule-seconds times meters per second, over meters, leaves exactly joules."
  },
  {
   "id": "Q48_11",
   "row": "solve",
-  "duration": 9.1,
+  "duration": 8.49,
   "disp": "因為光子能量 E 等於 h 乘以頻率 f，頻率又等於光速除以波長，所以 E 等於 h c 除以 λ，A 對。",
   "en": "Photon energy E equals h times frequency f, and frequency is the speed of light over wavelength, so E equals hc over lambda. A is correct."
  },
  {
   "id": "Q48_12",
   "row": "solve",
-  "duration": 10.1,
+  "duration": 9.2,
   "disp": "代數字：分子是 \\(6.63\\times10^{-34}\\)，乘以 \\(3\\times10^{8}\\)；分母是 \\(13.5\\times10^{-9}\\)。",
   "en": "Plug in the numbers: the numerator is \\(6.63\\times10^{-34}\\) times \\(3\\times10^{8}\\); the denominator is \\(13.5\\times10^{-9}\\)."
  },
  {
   "id": "Q48_13",
   "row": "solve",
-  "duration": 6.9,
+  "duration": 6.88,
   "disp": "6.63×3 大約 19.9，次方相加，−34 加 8，等於−26。",
   "en": "6.63×3 is about 19.9; add the exponents, −34 plus 8, to get −26."
  },
  {
   "id": "Q48_14",
   "row": "solve",
-  "duration": 10.1,
+  "duration": 9.62,
   "disp": "19.9÷13.5 大約 1.47；\\(10^{-26}\\)÷\\(10^{-9}\\)，次方相減，等於 \\(10^{-17}\\)。",
   "en": "19.9÷13.5 is about 1.47; \\(10^{-26}\\)÷\\(10^{-9}\\), subtracting exponents, gives \\(10^{-17}\\)."
  },
  {
   "id": "Q48_15",
   "row": "solve",
-  "duration": 4.9,
+  "duration": 3.81,
   "disp": "所以 E 大約 \\(1.5\\times10^{-17}\\) 焦耳，D 對。",
   "en": "So E is about \\(1.5\\times10^{-17}\\) joules. D is correct."
  },
  {
   "id": "Q48_16",
   "row": "solve",
-  "duration": 1.5,
+  "duration": 1.19,
   "disp": "答案 A、D。",
   "en": "Answer A and D."
  },
  {
   "id": "Q48_17",
   "row": "trick",
-  "duration": 11.3,
+  "duration": 10.32,
   "disp": "用 1240 的秒殺公式檢查，一樣，能量用電子伏特、波長用奈米：1240÷13.5，大約 92 電子伏特。",
   "en": "Check with the 1240 shortcut, again energy in eV and wavelength in nm: 1240÷13.5 is about 92 eV."
  },
  {
   "id": "Q48_18",
   "row": "trick",
-  "duration": 11.5,
+  "duration": 10.59,
   "disp": "1 電子伏特是 \\(1.6\\times10^{-19}\\) 焦耳，所以再乘以 \\(1.6\\times10^{-19}\\)，就是 \\(1.5\\times10^{-17}\\) 焦耳。",
   "en": "1 eV is \\(1.6\\times10^{-19}\\) joules, so multiply by \\(1.6\\times10^{-19}\\) to get \\(1.5\\times10^{-17}\\) joules."
  },
  {
   "id": "Q48_19",
   "row": "trick",
-  "duration": 9.5,
+  "duration": 8.43,
   "disp": "E 那個 \\(10^{-44}\\)，比 365 奈米的光子還小得離譜，波長越短能量越大，用常識就刪掉了。",
   "en": "E's \\(10^{-44}\\) is absurdly smaller than even a 365 nm photon. Shorter wavelength means more energy, so common sense rules it out."
  },
  {
   "id": "Q48_20",
   "row": "trick",
-  "duration": 3.1,
+  "duration": 3.37,
   "disp": "\\(10^{-44}\\) 焦耳有多小？",
   "en": "How small is \\(10^{-44}\\) joules?"
  },
  {
   "id": "Q48_21",
   "row": "trick",
-  "duration": 4.1,
+  "duration": 3.76,
   "disp": "一隻螞蟻打個噴嚏，都比它大幾十個次方。",
   "en": "An ant's sneeze is dozens of orders of magnitude bigger."
  }

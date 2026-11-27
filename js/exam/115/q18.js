@@ -245,35 +245,35 @@ ExamTracks.Q18=[
  {
   "id": "Q18_10",
   "row": "wrong",
-  "duration": 7.1,
+  "duration": 6.44,
   "disp": "選 D 的人是這樣想的：功率乘以效率，再除以每一次的能量，就是每秒幾次。",
   "en": "People who chose D thought: power times efficiency, divided by the energy per reaction, gives reactions per second."
  },
  {
   "id": "Q18_11",
   "row": "wrong",
-  "duration": 2.5,
+  "duration": 1.46,
   "disp": "看起來很合理，對不對？",
   "en": "Looks reasonable, right?"
  },
  {
   "id": "Q18_12",
   "row": "flip",
-  "duration": 1.9,
+  "duration": 1.71,
   "disp": "可是方向搞反了。",
   "en": "But it's backwards."
  },
  {
   "id": "Q18_13",
   "row": "flip",
-  "duration": 8.3,
+  "duration": 7.63,
   "disp": "33% 是核能變成電能的效率，意思是：電功率，等於核能功率乘以 33%。",
   "en": "33% is the efficiency from nuclear to electric energy: electric power equals nuclear power times 33%."
  },
  {
   "id": "Q18_14",
   "row": "flip",
-  "duration": 3.3,
+  "duration": 2.81,
   "disp": "所以核能功率，一定比電功率大。",
   "en": "So the nuclear power must be bigger than the electric power."
  },
@@ -287,182 +287,182 @@ ExamTracks.Q18=[
  {
   "id": "Q18_16",
   "row": "flip",
-  "duration": 8.7,
+  "duration": 8.88,
   "disp": "打個比喻，榨汁機只榨得出 1/3，你要喝 300 毫升的果汁，就得準備 900 毫升份量的水果。",
   "en": "It's like a juicer that only gets 1/3 out: to drink 300 mL of juice, you need 900 mL worth of fruit."
  },
  {
   "id": "Q18_17",
   "row": "solveA",
-  "duration": 1.7,
+  "duration": 2.0,
   "disp": "A 問質量損失。",
   "en": "A asks about the mass loss."
  },
  {
   "id": "Q18_18",
   "row": "solveA",
-  "duration": 5.3,
+  "duration": 5.31,
   "disp": "質量損失，等於反應前的總質量，減掉反應後的總質量。",
   "en": "Mass loss is the total mass before the reaction minus the total mass after."
  },
  {
   "id": "Q18_19",
   "row": "solveA",
-  "duration": 6.5,
+  "duration": 5.95,
   "disp": "反應前是鈾核，加上 1 顆中子；反應後是鋇核、氪核，加上 3 顆中子。",
   "en": "Before: a uranium nucleus plus 1 neutron. After: barium and krypton nuclei plus 3 neutrons."
  },
  {
   "id": "Q18_20",
   "row": "solveA",
-  "duration": 4.5,
+  "duration": 4.11,
   "disp": "前後的中子抵消掉 1 顆，還要再減掉 2 顆中子。",
   "en": "One neutron cancels on each side, leaving 2 more neutrons to subtract."
  },
  {
   "id": "Q18_21",
   "row": "solveA",
-  "duration": 2.5,
+  "duration": 2.51,
   "disp": "A 漏了中子，所以 A 錯。",
   "en": "A forgot the neutrons, so A is wrong."
  },
  {
   "id": "Q18_22",
   "row": "solveBC",
-  "duration": 5.9,
+  "duration": 6.07,
   "disp": "B，質能互變的公式是 E 等於 m c 平方，質量乘以光速的平方。",
   "en": "B: mass-energy equivalence is E equals m c squared, mass times the speed of light squared."
  },
  {
   "id": "Q18_23",
   "row": "solveBC",
-  "duration": 4.1,
+  "duration": 3.79,
   "disp": "B 只乘了一次光速，少了平方，所以 B 錯。",
   "en": "B multiplies by the speed of light only once, missing the square, so B is wrong."
  },
  {
   "id": "Q18_24",
   "row": "solveBC",
-  "duration": 7.7,
+  "duration": 6.8,
   "disp": "C 我們來算：E 等於 \\(3.3\\times10^{-28}\\)，乘以 \\((3\\times10^{8})^{2}\\)。",
   "en": "C, let's calculate: E equals \\(3.3\\times10^{-28}\\) times (\\(3\\times10^{8}\\)) squared."
  },
  {
   "id": "Q18_25",
   "row": "solveBC",
-  "duration": 5.1,
+  "duration": 4.72,
   "disp": "\\(3\\times10^{8}\\)，平方以後是 \\(9\\times10^{16}\\)。",
   "en": "\\(3\\times10^{8}\\) squared is \\(9\\times10^{16}\\)."
  },
  {
   "id": "Q18_26",
   "row": "solveBC",
-  "duration": 9.3,
+  "duration": 9.34,
   "disp": "3.3×9 等於 29.7；\\(10^{-28}\\)×\\(10^{16}\\)，次方相加，是 \\(10^{-12}\\)。",
   "en": "3.3 times 9 is 29.7; \\(10^{-28}\\) times \\(10^{16}\\), adding the exponents, is \\(10^{-12}\\)."
  },
  {
   "id": "Q18_27",
   "row": "solveBC",
-  "duration": 9.5,
+  "duration": 9.35,
   "disp": "\\(29.7\\times10^{-12}\\)，就是 \\(2.97\\times10^{-11}\\)，大約 \\(3\\times10^{-11}\\) 焦耳。",
   "en": "\\(29.7\\times10^{-12}\\) is \\(2.97\\times10^{-11}\\), about \\(3\\times10^{-11}\\) joules."
  },
  {
   "id": "Q18_28",
   "row": "solveBC",
-  "duration": 12.9,
+  "duration": 11.47,
   "disp": "我們來驗算一下：課本說核分裂一次大約放出 2 億電子伏特，換成焦耳，大約是 \\(3.2\\times10^{-11}\\)，跟我們算的差不多，表示沒算錯。",
   "en": "Let's check: textbooks say one fission releases about 200 million electron volts, which is about \\(3.2\\times10^{-11}\\) joules. That's close to ours, so the math is right."
  },
  {
   "id": "Q18_29",
   "row": "solveBC",
-  "duration": 3.1,
+  "duration": 2.9,
   "disp": "不是 \\(10^{-8}\\)，所以 C 錯。",
   "en": "It isn't \\(10^{-8}\\), so C is wrong."
  },
  {
   "id": "Q18_32",
   "row": "solveE",
-  "duration": 1.3,
+  "duration": 1.02,
   "disp": "最後看 E。",
   "en": "Finally, E."
  },
  {
   "id": "Q18_33",
   "row": "solveE",
-  "duration": 8.1,
+  "duration": 8.03,
   "disp": "先求核能功率：電功率 \\(3\\times10^{8}\\) 瓦，除以 0.33，大約 \\(9\\times10^{8}\\) 瓦。",
   "en": "First the nuclear power: electric power \\(3\\times10^{8}\\) watts divided by 0.33, about \\(9\\times10^{8}\\) watts."
  },
  {
   "id": "Q18_34",
   "row": "solveE",
-  "duration": 6.3,
+  "duration": 6.28,
   "disp": "因為瓦特就是焦耳每秒，所以核能每秒放出 \\(9\\times10^{8}\\) 焦耳。",
   "en": "A watt is a joule per second, so the nuclear energy released each second is \\(9\\times10^{8}\\) joules."
  },
  {
   "id": "Q18_35",
   "row": "solveE",
-  "duration": 4.5,
+  "duration": 3.85,
   "disp": "每一次反應，放出 \\(3\\times10^{-11}\\) 焦耳。",
   "en": "Each reaction releases \\(3\\times10^{-11}\\) joules."
  },
  {
   "id": "Q18_36",
   "row": "solveE",
-  "duration": 1.9,
+  "duration": 1.65,
   "disp": "每秒要反應幾次？",
   "en": "How many reactions per second?"
  },
  {
   "id": "Q18_37",
   "row": "solveE",
-  "duration": 3.9,
+  "duration": 3.2,
   "disp": "就用每秒的總能量，除以每一次的能量。",
   "en": "Divide the total energy per second by the energy per reaction."
  },
  {
   "id": "Q18_38",
   "row": "solveE",
-  "duration": 8.1,
+  "duration": 7.86,
   "disp": "9÷3 等於 3；\\(10^{8}\\)÷\\(10^{-11}\\)，次方相減，8 減−11，等於 19。",
   "en": "9 divided by 3 is 3; \\(10^{8}\\) divided by \\(10^{-11}\\), subtracting exponents, 8 minus negative 11, is 19."
  },
  {
   "id": "Q18_39",
   "row": "solveE",
-  "duration": 5.1,
+  "duration": 4.9,
   "disp": "所以每秒大約 \\(3\\times10^{19}\\) 次，選項 E 是對的。",
   "en": "So about \\(3\\times10^{19}\\) reactions per second. E is right."
  },
  {
   "id": "Q18_40",
   "row": "jokeE",
-  "duration": 5.5,
+  "duration": 4.49,
   "disp": "每秒分裂 \\(3\\times10^{19}\\) 次，鈾核：我也很忙的好嗎。",
   "en": "Splitting \\(3\\times10^{19}\\) times a second. Uranium nucleus: I'm busy too, you know."
  },
  {
   "id": "Q18_41",
   "row": "trick",
-  "duration": 2.1,
+  "duration": 1.83,
   "disp": "秒殺：單位對單位。",
   "en": "The shortcut: match the units."
  },
  {
   "id": "Q18_42",
   "row": "trick",
-  "duration": 5.3,
+  "duration": 4.6,
   "disp": "每秒幾次，就是瓦特除以焦耳，因為瓦特就是焦耳每秒。",
   "en": "Reactions per second is watts divided by joules, because a watt is a joule per second."
  },
  {
   "id": "Q18_43",
   "row": "trick",
-  "duration": 5.7,
+  "duration": 5.42,
   "disp": "效率要放分子還是分母，用一句話檢查：核能一定比電能多。",
   "en": "Not sure whether the efficiency goes on top or bottom? One check: nuclear energy is always more than electric energy."
  }

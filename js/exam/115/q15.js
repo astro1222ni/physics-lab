@@ -128,70 +128,70 @@ ExamTracks.Q15=[
  {
   "id": "Q15_07",
   "row": "wrong",
-  "duration": 9.5,
+  "duration": 7.84,
   "disp": "看到電場，腦袋就浮出伏特，跟電有關的單位，湊一湊，伏特除以安培，看起來很有電的感覺，對不對？",
   "en": "You see \"electric field,\" volts pop into your head, you mix up a few electrical units, and volts per ampere sounds very electric, right?"
  },
  {
   "id": "Q15_08",
   "row": "wrong",
-  "duration": 5.5,
+  "duration": 5.49,
   "disp": "你相信了就太傻了，伏特除以安培，是電阻的單位：歐姆。",
   "en": "Fall for that and you've been fooled: volts per ampere is the unit of resistance: the ohm."
  },
  {
   "id": "Q15_09",
   "row": "solve",
-  "duration": 5.7,
+  "duration": 5.28,
   "disp": "題目第一句話就是答案：電場，是單位正電荷所受的靜電力。",
   "en": "The first sentence of the question is the answer: the electric field is the electrostatic force per unit positive charge."
  },
  {
   "id": "Q15_10",
   "row": "solve",
-  "duration": 4.9,
+  "duration": 4.5,
   "disp": "單位正電荷，就是每 1 庫侖；靜電力，單位是牛頓。",
   "en": "Per unit positive charge means per 1 coulomb; electrostatic force is measured in newtons."
  },
  {
   "id": "Q15_11",
   "row": "solve",
-  "duration": 8.1,
+  "duration": 6.43,
   "disp": "所以電場 E，等於靜電力 F 除以電量 q，力除以電量，單位就是牛頓除以庫侖，答案 B。",
   "en": "So electric field E equals electrostatic force F over charge q. Force over charge gives newtons per coulomb. Answer B."
  },
  {
   "id": "Q15_12",
   "row": "also",
-  "duration": 5.1,
+  "duration": 4.78,
   "disp": "另一個常見的寫法是伏特除以公尺，這兩個其實一樣。",
   "en": "Another common form is volts per meter; the two are actually the same."
  },
  {
   "id": "Q15_13",
   "row": "also",
-  "duration": 7.5,
+  "duration": 6.12,
   "disp": "因為伏特是焦耳除以庫侖，所以伏特除以公尺，就是焦耳除以庫侖、再除以公尺。",
   "en": "A volt is a joule per coulomb, so volts per meter is joules per coulomb, divided again by meters."
  },
  {
   "id": "Q15_14",
   "row": "also",
-  "duration": 5.5,
+  "duration": 5.78,
   "disp": "焦耳是牛頓乘以公尺，公尺上下消掉，剩下牛頓除以庫侖。",
   "en": "A joule is a newton times a meter; the meters cancel, leaving newtons per coulomb."
  },
  {
   "id": "Q15_15",
   "row": "trick",
-  "duration": 3.5,
+  "duration": 3.09,
   "disp": "秒殺：定義怎麼寫，單位就怎麼除。",
   "en": "The shortcut: however the definition is written, that's how you divide the units."
  },
  {
   "id": "Q15_16",
   "row": "trick",
-  "duration": 4.5,
+  "duration": 3.18,
   "disp": "看到「每」什麼、「單位」什麼，就除以什麼。",
   "en": "When you see \"per\" something or \"unit\" something, divide by it."
  }

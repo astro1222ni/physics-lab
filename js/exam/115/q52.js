@@ -158,112 +158,112 @@ ExamTracks.Q52=[
  {
   "id": "Q52_09",
   "row": "wrong",
-  "duration": 7.5,
+  "duration": 8.34,
   "disp": "選項 A 說，位能增加 ρ g h，ρ 是海水的密度，看起來很像公式，很多人就選了。",
   "en": "Option A says the potential energy gained is rho g h, rho being seawater's density. It looks like a formula, so many people picked it."
  },
  {
   "id": "Q52_10",
   "row": "wrong",
-  "duration": 6.3,
+  "duration": 5.16,
   "disp": "可是 ρ g h，是每 1 立方公尺的海水增加的位能，你還沒乘上體積。",
   "en": "But rho g h is the energy gained per 1 cubic meter of seawater. You haven't multiplied by volume yet."
  },
  {
   "id": "Q52_11",
   "row": "solveB",
-  "duration": 7.7,
+  "duration": 7.59,
   "disp": "因為質量等於密度乘以體積，所以位能增加 m g h，就等於 ρ 乘以 V 乘以 g 乘以 h。",
   "en": "Mass equals density times volume, so the gain, m g h, equals rho times V times g times h."
  },
  {
   "id": "Q52_12",
   "row": "solveB",
-  "duration": 7.3,
+  "duration": 6.74,
   "disp": "1000×\\(2.5\\times10^{6}\\)，乘以 10，再乘以 4，等於 \\(10^{11}\\) 焦耳。",
   "en": "1000×\\(2.5\\times10^{6}\\), times 10, times 4, equals \\(10^{11}\\) joules."
  },
  {
   "id": "Q52_13",
   "row": "solveB",
-  "duration": 3.3,
+  "duration": 2.58,
   "disp": "這是千億焦耳，不是百萬，B 錯。",
   "en": "That's 100 billion joules, not a million. B is wrong."
  },
  {
   "id": "Q52_14",
   "row": "solveC",
-  "duration": 7.9,
+  "duration": 7.5,
   "disp": "C，每天漲潮 2 次，一年是 365×2，730 次，不是 365 次，錯。",
   "en": "C: 2 rising tides a day means 365×2, or 730 a year, not 365. Wrong."
  },
  {
   "id": "Q52_15",
   "row": "solveC",
-  "duration": 5.3,
+  "duration": 5.11,
   "disp": "選 C 的同學，大概以為海水跟人一樣，一天只上一次班。",
   "en": "People who chose C must think the sea, like us, only clocks in once a day."
  },
  {
   "id": "Q52_16",
   "row": "solveD",
-  "duration": 10.5,
+  "duration": 10.09,
   "disp": "D，每次漲潮的位能 \\(10^{11}\\) 焦耳，效率 25%，乘以 0.25，變成 \\(2.5\\times10^{10}\\) 焦耳的電。",
   "en": "D: each rising tide holds \\(10^{11}\\) joules; at 25% efficiency, multiply by 0.25 to get \\(2.5\\times10^{10}\\) joules of electricity."
  },
  {
   "id": "Q52_17",
   "row": "solveD",
-  "duration": 6.7,
+  "duration": 7.19,
   "disp": "因為題目說漲潮、退潮發電量相同，所以一天是 2 次漲加 2 次退，4 次。",
   "en": "The question says rising and falling tides generate the same, so each day is 2 rises plus 2 falls, 4 times."
  },
  {
   "id": "Q52_18",
   "row": "solveD",
-  "duration": 8.9,
+  "duration": 7.62,
   "disp": "一年：\\(2.5\\times10^{10}\\)，乘以 4，乘以 365，大約 \\(3.65\\times10^{13}\\) 焦耳。",
   "en": "A year: \\(2.5\\times10^{10}\\), times 4, times 365, about \\(3.65\\times10^{13}\\) joules."
  },
  {
   "id": "Q52_19",
   "row": "solveD",
-  "duration": 10.5,
+  "duration": 11.05,
   "disp": "1 度電是 \\(3.6\\times10^{6}\\) 焦耳，所以焦耳換成度，要除以 \\(3.6\\times10^{6}\\)，大約 \\(10^{7}\\) 度，D 對。",
   "en": "1 kWh is \\(3.6\\times10^{6}\\) joules, so divide by \\(3.6\\times10^{6}\\) to convert, about \\(10^{7}\\) kWh. D is correct."
  },
  {
   "id": "Q52_20",
   "row": "solveE",
-  "duration": 7.9,
+  "duration": 8.15,
   "disp": "E，潮汐是月球和太陽的萬有引力造成的；水車帶動發電機，靠電磁感應發電，E 對。",
   "en": "E: tides come from the gravity of the Moon and Sun; the turbine drives a generator through electromagnetic induction. E is correct."
  },
  {
   "id": "Q52_21",
   "row": "solveE",
-  "duration": 1.5,
+  "duration": 1.59,
   "disp": "答案 D、E。",
   "en": "Answer D and E."
  },
  {
   "id": "Q52_22",
   "row": "trick",
-  "duration": 2.1,
+  "duration": 2.28,
   "disp": "秒殺：先抓數量級。",
   "en": "The shortcut: get the order of magnitude first."
  },
  {
   "id": "Q52_23",
   "row": "trick",
-  "duration": 9.3,
+  "duration": 7.98,
   "disp": "2.5×4 剛好是 10，所以 \\(10^{3}\\)，乘以 \\(10^{6}\\)，乘以 10，再乘以 10，等於 \\(10^{11}\\)。",
   "en": "2.5×4 is exactly 10, so \\(10^{3}\\), times \\(10^{6}\\), times 10, times 10, equals \\(10^{11}\\)."
  },
  {
   "id": "Q52_24",
   "row": "trick",
-  "duration": 4.5,
+  "duration": 4.19,
   "disp": "B 說百萬，是 \\(10^{6}\\)，一眼就差了 10 萬倍。",
   "en": "B says a million, \\(10^{6}\\), off by 100,000 times at a glance."
  }

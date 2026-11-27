@@ -199,287 +199,287 @@ ExamTracks.Q10=[
  {
   "id": "Q10_06",
   "row": "wrong",
-  "duration": 2.7,
+  "duration": 2.36,
   "disp": "選錯的人，最常選 A 或 B。",
   "en": "Those who got it wrong mostly picked A or B."
  },
  {
   "id": "Q10_07",
   "row": "wrong",
-  "duration": 4.5,
+  "duration": 4.95,
   "disp": "A 說，減速階段的加速度，是加速階段的 2 倍。",
   "en": "A says the acceleration while slowing down is twice the acceleration while speeding up."
  },
  {
   "id": "Q10_08",
   "row": "wrong",
-  "duration": 5.1,
+  "duration": 4.34,
   "disp": "直覺會想，減速那段線比較長，好像比較猛，對不對？",
   "en": "Your gut says the slowing-down line is longer, so it must be stronger, right?"
  },
  {
   "id": "Q10_09",
   "row": "wrong",
-  "duration": 2.1,
+  "duration": 1.83,
   "disp": "線比較長就比較猛？",
   "en": "A longer line means stronger?"
  },
  {
   "id": "Q10_10",
   "row": "wrong",
-  "duration": 3.9,
+  "duration": 2.86,
   "disp": "那我上課講比較久，是不是就比較厲害？",
   "en": "Then if I lecture longer, does that make me better?"
  },
  {
   "id": "Q10_11",
   "row": "flip",
-  "duration": 1.7,
+  "duration": 1.57,
   "disp": "其實剛好相反。",
   "en": "Actually, it's the other way around."
  },
  {
   "id": "Q10_12",
   "row": "flip",
-  "duration": 8.9,
+  "duration": 7.79,
   "disp": "因為加速度是速度的變化量除以時間，在 v-t 圖上就是斜率，所以要看的是陡不陡，不是長不長。",
   "en": "Acceleration is the change in velocity divided by time, which on a v-t graph is the slope. So look at how steep it is, not how long."
  },
  {
   "id": "Q10_13",
   "row": "flip",
-  "duration": 1.5,
+  "duration": 1.19,
   "disp": "斜率怎麼算？",
   "en": "How do we find the slope?"
  },
  {
   "id": "Q10_14",
   "row": "flip",
-  "duration": 6.9,
+  "duration": 6.28,
   "disp": "加速段，速度從 0 變到 10，變化量是 10；時間從 0 秒到 5 秒，經過了 5 秒。",
   "en": "Speeding up, velocity goes from 0 to 10, a change of 10; time goes from 0 to 5 seconds, so 5 seconds pass."
  },
  {
   "id": "Q10_15",
   "row": "flip",
-  "duration": 2.5,
+  "duration": 2.21,
   "disp": "10÷5，加速度是 2。",
   "en": "10 divided by 5: the acceleration is 2."
  },
  {
   "id": "Q10_16",
   "row": "flip",
-  "duration": 7.3,
+  "duration": 7.86,
   "disp": "減速段，速度從 10 降到 0，變化量是−10；時間從 10 秒到 20 秒，經過了 10 秒。",
   "en": "Slowing down, velocity drops from 10 to 0, a change of minus 10; time goes from 10 to 20 seconds, so 10 seconds pass."
  },
  {
   "id": "Q10_17",
   "row": "flip",
-  "duration": 6.9,
+  "duration": 6.99,
   "disp": "−10÷10，等於−1，負號只是表示加速度和運動方向相反，量值是 1。",
   "en": "Minus 10 divided by 10 is minus 1. The minus sign only means the acceleration points against the motion; the magnitude is 1."
  },
  {
   "id": "Q10_18",
   "row": "flip",
-  "duration": 5.1,
+  "duration": 4.71,
   "disp": "所以減速的加速度量值，反而只有加速的一半，A 錯。",
   "en": "So the slowing-down acceleration is only half of the speeding-up one. A is wrong."
  },
  {
   "id": "Q10_19",
   "row": "solveB",
-  "duration": 1.9,
+  "duration": 1.97,
   "disp": "B 問阻力作的功。",
   "en": "B asks about the work done by the resistance."
  },
  {
   "id": "Q10_20",
   "row": "solveB",
-  "duration": 7.5,
+  "duration": 6.73,
   "disp": "因為減速的時候，汽車已經失去動力，水平方向只剩下阻力，所以阻力就是合力。",
   "en": "While slowing down, the car has lost its driving force, so only the resistance acts horizontally. The resistance is the net force."
  },
  {
   "id": "Q10_21",
   "row": "solveB",
-  "duration": 4.5,
+  "duration": 4.14,
   "disp": "功能定理說：合力作的功，等於動能的變化量。",
   "en": "The work-energy theorem says the work done by the net force equals the change in kinetic energy."
  },
  {
   "id": "Q10_22",
   "row": "solveB",
-  "duration": 4.1,
+  "duration": 3.51,
   "disp": "所以阻力作的功，等於末動能減掉初動能。",
   "en": "So the work done by the resistance equals final kinetic energy minus initial kinetic energy."
  },
  {
   "id": "Q10_23",
   "row": "solveB",
-  "duration": 3.1,
+  "duration": 3.05,
   "disp": "車子最後停下來，末動能是 0。",
   "en": "The car ends up stopped, so its final kinetic energy is 0."
  },
  {
   "id": "Q10_24",
   "row": "solveB",
-  "duration": 10.3,
+  "duration": 9.09,
   "disp": "初動能是 1/2 乘以質量，乘以速度的平方：1/2×1000，乘以 \\(10^{2}\\)，等於 \\(5\\times10^{4}\\) 焦耳。",
   "en": "Initial kinetic energy is 1/2 times mass times velocity squared: 1/2 × \\(1000\\times10^{2}\\), which is \\(5\\times10^{4}\\) joules."
  },
  {
   "id": "Q10_25",
   "row": "solveB",
-  "duration": 9.7,
+  "duration": 9.03,
   "disp": "所以阻力作的功，等於 0 減掉 \\(5\\times10^{4}\\)，是−\\(5\\times10^{4}\\) 焦耳；負號表示阻力讓動能變少。",
   "en": "So the work is 0 minus \\(5\\times10^{4}\\), or −\\(5\\times10^{4}\\) joules. The minus sign means the resistance reduces the kinetic energy."
  },
  {
   "id": "Q10_26",
   "row": "solveB",
-  "duration": 4.3,
+  "duration": 3.9,
   "disp": "選項寫 \\(10^{6}\\)，差了 100 倍，所以 B 錯。",
   "en": "The option says \\(10^{6}\\), off by a factor of 100. B is wrong."
  },
  {
   "id": "Q10_27",
   "row": "solveC",
-  "duration": 1.5,
+  "duration": 1.16,
   "disp": "再來看位移。",
   "en": "Next, displacement."
  },
  {
   "id": "Q10_28",
   "row": "solveC",
-  "duration": 6.1,
+  "duration": 5.74,
   "disp": "因為速度乘以時間就是位移，所以 v-t 圖底下的面積，就是位移。",
   "en": "Velocity times time is displacement, so the area under a v-t graph is the displacement."
  },
  {
   "id": "Q10_29",
   "row": "solveC",
-  "duration": 5.1,
+  "duration": 4.92,
   "disp": "加速段是一個三角形，面積是 1/2 乘以底乘以高。",
   "en": "The speeding-up part is a triangle: its area is 1/2 times base times height."
  },
  {
   "id": "Q10_30",
   "row": "solveC",
-  "duration": 6.7,
+  "duration": 5.54,
   "disp": "底是 5 秒，高是 10 公尺每秒，1/2×5×10，等於 25 公尺。",
   "en": "The base is 5 seconds, the height 10 meters per second: 1/2 × 5 × 10 = 25 meters."
  },
  {
   "id": "Q10_31",
   "row": "solveC",
-  "duration": 6.5,
+  "duration": 6.23,
   "disp": "所以 D 說 50 公尺，錯；選 D 的同學，是忘了三角形還要乘 1/2。",
   "en": "So D's 50 meters is wrong. Those who chose D forgot the 1/2 for a triangle."
  },
  {
   "id": "Q10_32",
   "row": "solveC",
-  "duration": 7.9,
+  "duration": 7.61,
   "disp": "減速段也是三角形，底是 10 秒，高一樣是 10，1/2×10×10，等於 50 公尺。",
   "en": "The slowing-down part is also a triangle, base 10 seconds, same height 10: 1/2 × 10 × 10 = 50 meters."
  },
  {
   "id": "Q10_33",
   "row": "solveC",
-  "duration": 6.9,
+  "duration": 6.11,
   "disp": "50÷25 等於 2，減速段的位移，剛好是加速段的 2 倍，所以 C 對。",
   "en": "50 divided by 25 is 2. The slowing-down displacement is exactly twice the speeding-up one, so C is right."
  },
  {
   "id": "Q10_34",
   "row": "solveE",
-  "duration": 1.9,
+  "duration": 1.76,
   "disp": "E 問全程的位移。",
   "en": "E asks about the displacement for the whole trip."
  },
  {
   "id": "Q10_35",
   "row": "solveE",
-  "duration": 7.3,
+  "duration": 6.92,
   "disp": "中間等速段是長方形，面積是底乘以高，5 秒乘以 10 公尺每秒，等於 50 公尺。",
   "en": "The constant-speed middle part is a rectangle, base times height: 5 seconds times 10 meters per second, 50 meters."
  },
  {
   "id": "Q10_36",
   "row": "solveE",
-  "duration": 6.9,
+  "duration": 6.28,
   "disp": "全程就是三塊面積加起來：25 加 50 再加 50，等於 125 公尺。",
   "en": "The whole trip is the three areas added up: 25 + 50 + 50 = 125 meters."
  },
  {
   "id": "Q10_37",
   "row": "solveE",
-  "duration": 6.7,
+  "duration": 5.95,
   "disp": "選 E 的 200 公尺，是把整段都當成每秒 10 公尺、跑了 20 秒，所以 E 錯。",
   "en": "E's 200 meters treats the whole trip as 10 meters per second for 20 seconds, so E is wrong."
  },
  {
   "id": "Q10_38",
   "row": "solveE",
-  "duration": 1.3,
+  "duration": 0.89,
   "disp": "答案是 C。",
   "en": "The answer is C."
  },
  {
   "id": "Q10_39",
   "row": "altB",
-  "duration": 10.5,
+  "duration": 9.68,
   "disp": "回頭用另一種方法驗算 B：因為減速段是等加速度，所以阻力是固定的，f 等於 m a，1000×1，等於 1000 牛頓。",
   "en": "Now check B another way: the slowing down has constant acceleration, so the resistance is constant. f = ma = 1000 × 1 = 1000 newtons."
  },
  {
   "id": "Q10_40",
   "row": "altB",
-  "duration": 9.9,
+  "duration": 9.04,
   "disp": "減速段走了 50 公尺，阻力和位移方向相反，所以作功是−1000×50，一樣是−\\(5\\times10^{4}\\) 焦耳。",
   "en": "The car travels 50 meters while slowing down, and the resistance opposes the motion, so the work is −1000 × 50, again −\\(5\\times10^{4}\\) joules."
  },
  {
   "id": "Q10_41",
   "row": "altB",
-  "duration": 6.1,
+  "duration": 5.64,
   "disp": "兩種方法對得起來，表示沒算錯；哪一種你用得順，就用哪一種。",
   "en": "Both methods agree, so the math is right. Use whichever feels easier."
  },
  {
   "id": "Q10_44",
   "row": "trick",
-  "duration": 3.9,
+  "duration": 3.6,
   "disp": "秒殺口訣：斜率看加速度，面積看位移。",
   "en": "The shortcut: slope gives acceleration, area gives displacement."
  },
  {
   "id": "Q10_45",
   "row": "trick",
-  "duration": 5.7,
+  "duration": 6.55,
   "disp": "這題還有更快的方法：加速段和減速段，都是高 10 的三角形。",
   "en": "There's an even faster way: the speeding-up and slowing-down parts are both triangles of height 10."
  },
  {
   "id": "Q10_46",
   "row": "trick",
-  "duration": 5.9,
+  "duration": 4.4,
   "disp": "高一樣的時候，面積比就等於底的比，5 比 10，也就是 1 比 2。",
   "en": "With equal heights, the area ratio is the base ratio: 5 to 10, or 1 to 2."
  },
  {
   "id": "Q10_47",
   "row": "trick",
-  "duration": 9.5,
+  "duration": 8.71,
   "disp": "注意喔，這是捷徑，老司機要提醒你：只有兩個三角形一樣高才能抄，高不一樣還硬抄，就會開進水溝。",
   "en": "Careful, this is a shortcut, and the old driver has a warning: it only works when the two triangles have the same height. Force it otherwise and you'll end up in a ditch."
  },
  {
   "id": "Q10_48",
   "row": "jokeT",
-  "duration": 5.7,
+  "duration": 4.78,
   "disp": "就像比身高，要站在同一個地板上比，你站到椅子上，不算。",
   "en": "It's like comparing heights: you have to stand on the same floor. Standing on a chair doesn't count."
  }

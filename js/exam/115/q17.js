@@ -176,63 +176,63 @@ ExamTracks.Q17=[
  {
   "id": "Q17_07",
   "row": "wrong",
-  "duration": 6.7,
+  "duration": 6.06,
   "disp": "平均動能跟溫度成正比，那就把溫度相除嘛，121 比 133。",
   "en": "Average kinetic energy is proportional to temperature, so just divide the temperatures, 121 over 133."
  },
  {
   "id": "Q17_08",
   "row": "flip",
-  "duration": 4.1,
+  "duration": 3.74,
   "disp": "注意喔，題目說的是克氏溫度，絕對溫度。",
   "en": "Careful: the question says Kelvin temperature, absolute temperature."
  },
  {
   "id": "Q17_09",
   "row": "flip",
-  "duration": 6.3,
+  "duration": 5.83,
   "disp": "攝氏 0 度不是真的 0，分子還在動；真正的 0，在−273 度。",
   "en": "0 degrees Celsius isn't a true zero; molecules are still moving. True zero is at −273 degrees."
  },
  {
   "id": "Q17_10",
   "row": "flip",
-  "duration": 7.9,
+  "duration": 6.95,
   "disp": "而且晚上是−133 度，你拿正 133 去除，那晚上的分子，是在倒退嚕嗎？",
   "en": "Besides, night is −133 degrees. Dividing by positive 133, are the night molecules moving in reverse?"
  },
  {
   "id": "Q17_11",
   "row": "solve",
-  "duration": 11.1,
+  "duration": 10.63,
   "disp": "先換成克氏溫度：白天 121 加 273，等於 394 K；晚上−133 加 273，等於 140 K。",
   "en": "Convert to Kelvin first: day is 121 plus 273, or 394 K; night is −133 plus 273, or 140 K."
  },
  {
   "id": "Q17_12",
   "row": "solve",
-  "duration": 12.3,
+  "duration": 10.99,
   "disp": "因為平均動能跟絕對溫度成正比，所以白天的平均動能除以晚上的平均動能，就等於 394÷140，大約 2.8 倍，答案 E。",
   "en": "Since average kinetic energy is proportional to absolute temperature, day over night equals 394÷140, about 2.8 times. Answer E."
  },
  {
   "id": "Q17_13",
   "row": "solve",
-  "duration": 8.1,
+  "duration": 8.05,
   "disp": "B 那個 304 比 296，是地球的數字；你人在地球沒錯，可是這題問的是月球。",
   "en": "B's 304 over 296 uses Earth's numbers. You may be on Earth, but this question is about the Moon."
  },
  {
   "id": "Q17_14",
   "row": "trick",
-  "duration": 8.1,
+  "duration": 8.54,
   "disp": "秒殺口訣：攝氏溫度要變成克氏溫標，拿來相乘或相除之前，記得一定先加 273。",
   "en": "The shortcut: Celsius has to become Kelvin. Before you multiply or divide, always add 273 first."
  },
  {
   "id": "Q17_15",
   "row": "trick",
-  "duration": 7.9,
+  "duration": 7.7,
   "disp": "注意喔，如果只是算溫差，像白天比晚上高幾度，攝氏和克氏算出來一樣，就不用加。",
   "en": "Careful: if you only need a temperature difference, like how much hotter day is than night, Celsius and Kelvin give the same result, so no need to add."
  }

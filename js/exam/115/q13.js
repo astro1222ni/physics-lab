@@ -212,119 +212,119 @@ ExamTracks.Q13=[
  {
   "id": "Q13_08",
   "row": "wrong",
-  "duration": 3.5,
+  "duration": 3.64,
   "disp": "選 B 的人，是把靠近和遠離記反了。",
   "en": "People who chose B mixed up approaching and receding."
  },
  {
   "id": "Q13_09",
   "row": "wrong",
-  "duration": 3.9,
+  "duration": 3.48,
   "disp": "靠近的時候，波長被壓縮，還是被拉長？",
   "en": "When it approaches, is the wavelength squeezed or stretched?"
  },
  {
   "id": "Q13_10",
   "row": "wrong",
-  "duration": 1.7,
+  "duration": 1.53,
   "disp": "一緊張就搞混。",
   "en": "Under pressure, it's easy to get confused."
  },
  {
   "id": "Q13_11",
   "row": "flip",
-  "duration": 2.3,
+  "duration": 2.1,
   "disp": "用救護車記就不會錯。",
   "en": "Remember it with an ambulance and you won't get it wrong."
  },
  {
   "id": "Q13_12",
   "row": "flip",
-  "duration": 5.9,
+  "duration": 4.97,
   "disp": "救護車開過來，喔咿喔咿，聲音比較高；開走以後，聲音變低。",
   "en": "When an ambulance comes toward you, nee-naw nee-naw, the pitch is higher; after it passes, the pitch drops."
  },
  {
   "id": "Q13_13",
   "row": "flip",
-  "duration": 10.1,
+  "duration": 8.53,
   "disp": "因為救護車往前開，前面的波一個一個被擠在一起，波長變短，所以頻率變高；後面的波被拉開，頻率就變低。",
   "en": "As the ambulance drives forward, the waves ahead get squeezed together, the wavelength shortens, and the frequency rises; the waves behind get stretched, and the frequency falls."
  },
  {
   "id": "Q13_14",
   "row": "flip",
-  "duration": 9.1,
+  "duration": 8.27,
   "disp": "注意喔，你要站在路邊聽；如果你是坐在救護車上，聲音就不會變，而且我想你應該也沒有心情聽。",
   "en": "Careful: you have to be standing by the road. If you're riding in the ambulance, the pitch doesn't change, and I doubt you'd be in the mood to listen anyway."
  },
  {
   "id": "Q13_15",
   "row": "flip",
-  "duration": 6.1,
+  "duration": 5.36,
   "disp": "光也一樣，靠近，頻率變高，叫藍移；遠離，頻率變低，叫紅移。",
   "en": "Light works the same way: approaching, higher frequency, called blueshift; receding, lower frequency, called redshift."
  },
  {
   "id": "Q13_16",
   "row": "solve",
-  "duration": 10.7,
+  "duration": 9.65,
   "disp": "甲時刻，恆星正往地球跑，靠近的速度最大，所以頻率最高；乙時刻，背著地球跑，遠離的速度最大，所以頻率最低。",
   "en": "At time 1 the star runs toward Earth at top approach speed, so the frequency is highest; at time 2 it runs away at top speed, so the frequency is lowest."
  },
  {
   "id": "Q13_17",
   "row": "solve",
-  "duration": 7.1,
+  "duration": 6.66,
   "disp": "速度方向和視線垂直的時候，沒有靠近也沒有遠離，測到的就是原本的頻率。",
   "en": "When its velocity is perpendicular to the line of sight, it's neither approaching nor receding, so we measure the original frequency."
  },
  {
   "id": "Q13_18",
   "row": "solve",
-  "duration": 3.1,
+  "duration": 2.98,
   "disp": "甲到乙是半圈，剛好半個週期。",
   "en": "From time 1 to time 2 is half a turn, exactly half a period."
  },
  {
   "id": "Q13_19",
   "row": "solve",
-  "duration": 2.9,
+  "duration": 2.61,
   "disp": "甲最高、乙最低的，只有 E。",
   "en": "Only E is highest at time 1 and lowest at time 2."
  },
  {
   "id": "Q13_20",
   "row": "others",
-  "duration": 3.1,
+  "duration": 2.49,
   "disp": "B 剛好上下顛倒，就是記反了。",
   "en": "B is exactly upside down: approaching and receding swapped."
  },
  {
   "id": "Q13_21",
   "row": "others",
-  "duration": 6.5,
+  "duration": 5.92,
   "disp": "C 和 D 的週期只有一半，好像恆星轉一圈，頻率就起伏 2 次，也不對。",
   "en": "C and D have half the period, as if the frequency rose and fell twice per orbit. Also wrong."
  },
  {
   "id": "Q13_22",
   "row": "trick",
-  "duration": 4.1,
+  "duration": 3.78,
   "disp": "秒殺口訣：靠近頻率變高，遠離頻率變低。",
   "en": "The shortcut: approaching, the frequency goes up; receding, the frequency goes down."
  },
  {
   "id": "Q13_23",
   "row": "trick",
-  "duration": 11.5,
+  "duration": 10.26,
   "disp": "這也是天文學家找系外行星的方法，叫徑向速度法：行星太暗看不到，就看恆星被拉得一晃一晃，光譜線一下藍移、一下紅移。",
   "en": "This is also how astronomers find exoplanets, the radial velocity method: the planet is too dim to see, so watch the star wobble, its spectral lines shifting blue, then red."
  },
  {
   "id": "Q13_24",
   "row": "trick",
-  "duration": 6.9,
+  "duration": 6.39,
   "disp": "就像你看不到躲在窗簾後面的貓，可是窗簾一直在動，你就知道後面有貓。",
   "en": "It's like a cat hiding behind the curtain: you can't see it, but the curtain keeps moving, so you know it's there."
  }

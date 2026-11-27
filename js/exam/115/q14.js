@@ -190,196 +190,196 @@ ExamTracks.Q14=[
  {
   "id": "Q14_09",
   "row": "wrong",
-  "duration": 8.5,
+  "duration": 6.93,
   "disp": "很多人第一個想法：質子和電子的電量一樣大，質子和質子的電量也一樣大，所以甲等於丙。",
   "en": "Many people's first thought: a proton and an electron carry the same amount of charge, so do two protons, so force 1 equals force 3."
  },
  {
   "id": "Q14_10",
   "row": "wrong",
-  "duration": 2.3,
+  "duration": 1.69,
   "disp": "電量一樣，力就一樣？",
   "en": "Same charge, same force?"
  },
  {
   "id": "Q14_11",
   "row": "wrong",
-  "duration": 4.9,
+  "duration": 4.5,
   "disp": "那我跟愛因斯坦都只有一顆頭，物理怎麼差這麼多？",
   "en": "Einstein and I each have just one head, so why is our physics so different?"
  },
  {
   "id": "Q14_12",
   "row": "flip",
-  "duration": 1.9,
+  "duration": 1.36,
   "disp": "可是你忘了距離。",
   "en": "What you forgot is distance."
  },
  {
   "id": "Q14_13",
   "row": "flip",
-  "duration": 7.7,
+  "duration": 7.08,
   "disp": "甲的 2 個質子，都在原子核裡面，距離大概是原子核的大小，\\(10^{-15}\\) 公尺。",
   "en": "The 2 protons in force 1 are both in the nucleus, about one nucleus apart: \\(10^{-15}\\) meters."
  },
  {
   "id": "Q14_14",
   "row": "flip",
-  "duration": 7.7,
+  "duration": 6.98,
   "disp": "丙的電子在原子核外面，它和質子的距離，大概是原子的大小，\\(10^{-10}\\) 公尺。",
   "en": "The electron in force 3 is outside the nucleus, about one atom away from the proton: \\(10^{-10}\\) meters."
  },
  {
   "id": "Q14_15",
   "row": "flip",
-  "duration": 6.1,
+  "duration": 5.56,
   "disp": "\\(10^{-10}\\)，比 \\(10^{-15}\\) 多了 5 個次方，也就是 10 萬倍。",
   "en": "\\(10^{-10}\\) is 5 powers of ten bigger than \\(10^{-15}\\), which is 100,000 times."
  },
  {
   "id": "Q14_16",
   "row": "solve1",
-  "duration": 5.7,
+  "duration": 4.72,
   "disp": "靜電力的公式：F 等於 k 乘以 2 個電量，再除以距離的平方。",
   "en": "The electric force formula: F equals k times the 2 charges, divided by the distance squared."
  },
  {
   "id": "Q14_17",
   "row": "solve1",
-  "duration": 6.1,
+  "duration": 5.08,
   "disp": "因為甲和丙的電量一樣大，所以 2 個力的比值，只看距離的平方。",
   "en": "Forces 1 and 3 have equal charges, so their ratio depends only on the distance squared."
  },
  {
   "id": "Q14_18",
   "row": "solve1",
-  "duration": 5.5,
+  "duration": 5.49,
   "disp": "甲比丙近了 10 萬倍，平方就是 10 萬乘以 10 萬，\\(10^{10}\\)。",
   "en": "Force 1 is 100,000 times closer, and squaring that gives 100,000 × 100,000, or \\(10^{10}\\)."
  },
  {
   "id": "Q14_19",
   "row": "solve1",
-  "duration": 5.3,
+  "duration": 4.72,
   "disp": "所以甲是丙的 \\(10^{10}\\) 倍，100 億倍，甲遠遠大於丙。",
   "en": "So force 1 is \\(10^{10}\\) times force 3, ten billion times. Force 1 is far bigger than force 3."
  },
  {
   "id": "Q14_20",
   "row": "solve2",
-  "duration": 6.7,
+  "duration": 5.67,
   "disp": "再來看乙，因為中子不帶電，所以 2 個中子之間沒有靜電力，只有重力。",
   "en": "Now force 2. Neutrons have no charge, so between 2 neutrons there is no electric force, only gravity."
  },
  {
   "id": "Q14_21",
   "row": "solve2",
-  "duration": 5.9,
+  "duration": 5.53,
   "disp": "選 B 的同學，就是以為 2 個中子跟 2 個質子一樣，力也一樣大。",
   "en": "Those who chose B assumed 2 neutrons are just like 2 protons, with an equal force."
  },
  {
   "id": "Q14_22",
   "row": "solve2",
-  "duration": 10.3,
+  "duration": 9.47,
   "disp": "重力是 4 種基本交互作用裡面最弱的：同樣的 2 個粒子、同樣的距離，重力比靜電力小了大概 \\(10^{36}\\) 倍。",
   "en": "Gravity is the weakest of the 4 fundamental interactions: for the same 2 particles at the same distance, it is about \\(10^{36}\\) times weaker than the electric force."
  },
  {
   "id": "Q14_23",
   "row": "solve2",
-  "duration": 5.7,
+  "duration": 5.57,
   "disp": "這個數字不用背，你只要記得，重力比靜電力小非常非常多。",
   "en": "No need to memorize that number. Just remember that gravity is far, far weaker than the electric force."
  },
  {
   "id": "Q14_24",
   "row": "solve2",
-  "duration": 4.5,
+  "duration": 4.18,
   "disp": "所以丙雖然距離比較遠，還是比乙大很多很多。",
   "en": "So even though force 3 acts over a longer distance, it is still far bigger than force 2."
  },
  {
   "id": "Q14_25",
   "row": "solve2",
-  "duration": 3.3,
+  "duration": 2.46,
   "disp": "整理一下：甲大於丙，丙大於乙。",
   "en": "To sum up: force 1 is greater than force 3, and force 3 is greater than force 2."
  },
  {
   "id": "Q14_26",
   "row": "solve3",
-  "duration": 1.7,
+  "duration": 1.46,
   "disp": "那丁的強力呢？",
   "en": "What about force 4?"
  },
  {
   "id": "Q14_27",
   "row": "solve3",
-  "duration": 4.1,
+  "duration": 3.16,
   "disp": "2 個質子都帶正電，靜電力會把它們推開。",
   "en": "Both protons are positively charged, so the electric force pushes them apart."
  },
  {
   "id": "Q14_28",
   "row": "solve3",
-  "duration": 7.7,
+  "duration": 6.68,
   "disp": "可是它們還是被綁在原子核裡面，就是因為強力把它們拉住，所以強力一定比甲大。",
   "en": "Yet they stay bound in the nucleus because the strong force holds them, so it must be bigger than force 1."
  },
  {
   "id": "Q14_29",
   "row": "solve3",
-  "duration": 5.1,
+  "duration": 4.52,
   "disp": "可是選項 C 根本沒有放丁，它只比甲、丙、乙這 3 個。",
   "en": "But option C doesn't include force 4 at all; it only ranks forces 1, 3 and 2."
  },
  {
   "id": "Q14_30",
   "row": "solve3",
-  "duration": 6.5,
+  "duration": 5.72,
   "disp": "A 說甲等於丁，B 說甲等於乙，D 說甲等於丙，E 說丁最小，全都錯。",
   "en": "A says 1 equals 4, B says 1 equals 2, D says 1 equals 3, E says 4 is the smallest: all wrong."
  },
  {
   "id": "Q14_31",
   "row": "solve3",
-  "duration": 1.3,
+  "duration": 1.6,
   "disp": "答案是 C。",
   "en": "The answer is C."
  },
  {
   "id": "Q14_35",
   "row": "trick",
-  "duration": 4.9,
+  "duration": 3.87,
   "disp": "秒殺口訣：強、電、弱、重，強力最強，重力最弱。",
   "en": "The shortcut: strong, electric, weak, gravity. The strong force is the strongest, gravity the weakest."
  },
  {
   "id": "Q14_36",
   "row": "trick",
-  "duration": 9.7,
+  "duration": 8.86,
   "disp": "注意喔，這是在原子核那麼小的距離裡比的；強力只在原子核的範圍裡有作用，離開原子核就幾乎沒有了。",
   "en": "Careful: that ranking is at the tiny scale of a nucleus. The strong force only acts inside the nucleus and all but vanishes outside it."
  },
  {
   "id": "Q14_37",
   "row": "trick",
-  "duration": 2.9,
+  "duration": 2.6,
   "disp": "同一種力比大小，就看距離。",
   "en": "For the same kind of force, just look at the distance."
  },
  {
   "id": "Q14_38",
   "row": "jokeT",
-  "duration": 1.5,
+  "duration": 1.62,
   "disp": "重力有多弱？",
   "en": "How weak is gravity?"
  },
  {
   "id": "Q14_39",
   "row": "jokeT",
-  "duration": 5.1,
+  "duration": 4.91,
   "disp": "一塊小磁鐵，就能把迴紋針從整顆地球的手裡搶過來。",
   "en": "One small magnet can snatch a paper clip away from the entire Earth."
  }

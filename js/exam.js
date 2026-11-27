@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const {number:q,question:Q,questions,year}=ExamPaper, unit='exam-'+year+'-'+q;
+  const R2_YEARS=new Set([115]); // 旁白放 R2 的年度（113、114 換新聲線時加進來）
   const by=id=>document.getElementById(id), T=(z,e)=>LabSettings.t(z,e), tr=pair=>T(...pair);
   const make=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   const params=new URLSearchParams(location.search);
@@ -168,7 +169,9 @@
     by('explanation').hidden=false;
     if(!mounted){
       const timing={},audio={};const pages=tracks.map(row=>{
-        const speech=[subtitle(row.disp),subtitle(row.en)];timing[row.id]={dur:row.duration+.6,marks:{}};audio[row.id]=true;
+        // 11/27 新念的旁白放 R2（audio.astroni.org，路徑照網站路徑）；?v=秒數：重念後秒數會變，不會吃到一天的快取
+        const speech=[subtitle(row.disp),subtitle(row.en)];timing[row.id]={dur:row.duration+.6,marks:{}};
+        audio[row.id]=R2_YEARS.has(year)?'https://audio.astroni.org/audio/study/exam-'+year+'/'+row.id+'.m4a?v='+row.duration:true;
         return {...row,speech,caption:speech.map(s=>s.replace(Q.focus||(year===114&&focusWords[q])||/$^/,'**$&**')),title:Q.groups[row.row]};
       });
       const select=by('sentence');for(const [i,p] of pages.entries()){

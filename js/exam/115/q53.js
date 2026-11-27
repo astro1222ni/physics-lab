@@ -184,119 +184,119 @@ ExamTracks.Q53=[
  {
   "id": "Q53_07",
   "row": "askA",
-  "duration": 5.7,
+  "duration": 5.24,
   "disp": "第一小題：磁鐵還在線圈下面，正在靠近，電流是正還是負？",
   "en": "Part 1: the magnet is still below the coil, approaching. Is the current positive or negative?"
  },
  {
   "id": "Q53_08",
   "row": "wrongA",
-  "duration": 3.5,
+  "duration": 2.74,
   "disp": "直覺：照圖上的箭頭，I 大於 0 嘛。",
   "en": "Instinct: follow the arrow in the figure, so I is greater than 0."
  },
  {
   "id": "Q53_09",
   "row": "wrongA",
-  "duration": 6.9,
+  "duration": 7.06,
   "disp": "可是圖上的箭頭，只是定義哪個方向叫正，不是告訴你電流真的往那邊流。",
   "en": "But the arrow only defines which direction is called positive. It doesn't say the current really flows that way."
  },
  {
   "id": "Q53_10",
   "row": "wrongA",
-  "duration": 4.9,
+  "duration": 4.4,
   "disp": "就像路標寫往臺北，不代表你的車就一定往臺北開。",
   "en": "Just as a sign pointing to Taipei doesn't mean your car is heading to Taipei."
  },
  {
   "id": "Q53_11",
   "row": "solveA",
-  "duration": 3.3,
+  "duration": 3.64,
   "disp": "冷次定律：線圈討厭磁通量變化。",
   "en": "Lenz's law: a coil hates changes in magnetic flux."
  },
  {
   "id": "Q53_12",
   "row": "solveA",
-  "duration": 12.3,
+  "duration": 11.64,
   "disp": "N 極往上靠近，穿過線圈向上的磁力線越來越多，線圈就要產生向下的磁場來抵抗，線圈下方變成 N 極，跟磁鐵互相排斥，不讓它進來。",
   "en": "As the N pole rises, more upward field lines pass through the coil, so the coil makes a downward field to resist. Its bottom becomes an N pole, repelling the magnet and keeping it out."
  },
  {
   "id": "Q53_13",
   "row": "solveA",
-  "duration": 6.5,
+  "duration": 6.07,
   "disp": "要產生向下的磁場，電流方向剛好跟圖中的箭頭相反，所以 I 小於 0。",
   "en": "Making a downward field takes a current opposite to the arrow in the figure, so I is less than 0."
  },
  {
   "id": "Q53_14",
   "row": "solveB",
-  "duration": 5.3,
+  "duration": 4.2,
   "disp": "第二小題：電流大的那一列，是在線圈上面，還是下面？",
   "en": "Part 2: is the row with larger current above the coil or below it?"
  },
  {
   "id": "Q53_15",
   "row": "solveB",
-  "duration": 5.9,
+  "duration": 4.67,
   "disp": "因為磁鐵一路在加速，所以離開線圈的時候，比進來的時候快。",
   "en": "The magnet keeps accelerating, so it leaves the coil faster than it enters."
  },
  {
   "id": "Q53_16",
   "row": "solveB",
-  "duration": 5.5,
+  "duration": 4.73,
   "disp": "同一個距離，速度越快，磁通量變化越快，感應電流越大。",
   "en": "At the same distance, higher speed means faster flux change and more induced current."
  },
  {
   "id": "Q53_17",
   "row": "solveB",
-  "duration": 6.9,
+  "duration": 5.63,
   "disp": "所以大的那一列，4.30 那一列，是 z 大於 0，磁鐵在上面、正在離開。",
   "en": "So the larger row, the 4.30 row, is z greater than 0: the magnet is above, leaving."
  },
  {
   "id": "Q53_18",
   "row": "solveC",
-  "duration": 2.9,
+  "duration": 3.08,
   "disp": "第三小題：把 8 個點畫上去。",
   "en": "Part 3: plot the 8 points."
  },
  {
   "id": "Q53_19",
   "row": "solveC",
-  "duration": 6.9,
+  "duration": 5.52,
   "disp": "離開的時候，磁通量變少，線圈要補向上的磁場，電流反過來，I 大於 0。",
   "en": "On the way out, the flux shrinks, so the coil adds an upward field. The current reverses: I greater than 0."
  },
  {
   "id": "Q53_20",
   "row": "solveC",
-  "duration": 11.3,
+  "duration": 10.63,
   "disp": "所以 z 小於 0 的 4 個點是負的，z 大於 0 的 4 個點是正的，分布在第 1、第 3 象限；而且同一個距離，第 1 象限的點比較高。",
   "en": "So the 4 points with z less than 0 are negative and the 4 with z greater than 0 are positive, in quadrants 3 and 1; at the same distance, the quadrant 1 points are higher."
  },
  {
   "id": "Q53_21",
   "row": "trick",
-  "duration": 5.3,
+  "duration": 4.5,
   "disp": "冷次定律的口訣：來拒去留，靠近就排斥，離開就吸引。",
   "en": "The Lenz's law motto: resist the coming, hold the going. Repel what approaches, attract what leaves."
  },
  {
   "id": "Q53_22",
   "row": "trick",
-  "duration": 7.9,
+  "duration": 8.09,
   "disp": "我上課常講，冷次定律就是天下沒有白吃的午餐，你要它產生電流，就得出力氣去推。",
   "en": "As I often say in class, Lenz's law means there's no free lunch: if you want current, you must push for it."
  },
  {
   "id": "Q53_23",
   "row": "trick",
-  "duration": 8.1,
+  "duration": 7.86,
   "disp": "注意喔，來拒去留講的是線圈對磁鐵的力；要判斷電流方向，還是要回到磁通量怎麼變。",
   "en": "Careful: that motto describes the coil's force on the magnet; to find the current's direction, go back to how the flux changes."
  }

@@ -156,98 +156,98 @@ ExamTracks.Q47=[
  {
   "id": "Q47_08",
   "row": "wrong",
-  "duration": 8.3,
+  "duration": 7.28,
   "disp": "有人一看到 365 奈米，就開始用 h c 除以 λ 換算，算了半天，時間都不夠用了。",
   "en": "Some people see 365 nm and start converting with hc over lambda, and run out of time."
  },
  {
   "id": "Q47_09",
   "row": "wrong",
-  "duration": 2.7,
+  "duration": 2.28,
   "disp": "其實題目已經幫你換好了。",
   "en": "The question already did the conversion for you."
  },
  {
   "id": "Q47_10",
   "row": "wrong",
-  "duration": 5.1,
+  "duration": 5.4,
   "disp": "這就像餐廳已經把菜端上桌了，你還衝進廚房自己炒。",
   "en": "It's like the restaurant has served your dish and you run into the kitchen to cook it yourself."
  },
  {
   "id": "Q47_11",
   "row": "solve",
-  "duration": 9.5,
+  "duration": 8.32,
   "disp": "電子從高能階掉到低能階，少掉的能量，變成一顆光子跑出來，所以光子的能量，就等於兩層的能量差。",
   "en": "When an electron drops from a high level to a low one, the lost energy leaves as a photon, so the photon's energy equals the gap between the two levels."
  },
  {
   "id": "Q47_12",
   "row": "solve",
-  "duration": 6.7,
+  "duration": 6.05,
   "disp": "注意，能階都是負的，越接近 0 能量越高，所以−1.6 比−5.0 高。",
   "en": "Careful: the levels are all negative, and closer to 0 means higher energy, so −1.6 is above −5.0."
  },
  {
   "id": "Q47_13",
   "row": "solve",
-  "duration": 2.7,
+  "duration": 3.03,
   "disp": "我們要找差 3.4 的兩層。",
   "en": "We need two levels 3.4 apart."
  },
  {
   "id": "Q47_14",
   "row": "solve",
-  "duration": 2.9,
+  "duration": 2.28,
   "disp": "A，\\(E_{1}\\) 到 \\(E_{3}\\)，差 2.1。",
   "en": "A, E1 to E3: a gap of 2.1."
  },
  {
   "id": "Q47_15",
   "row": "solve",
-  "duration": 5.7,
+  "duration": 5.11,
   "disp": "B，\\(E_{1}\\) 到 \\(E_{4}\\)，−1.6 減−5.0，差 3.4，就是它。",
   "en": "B, E1 to E4: −1.6 minus −5.0 is 3.4. That's the one."
  },
  {
   "id": "Q47_16",
   "row": "solve",
-  "duration": 3.9,
+  "duration": 4.44,
   "disp": "C 差 2.5，D 差 7.9，E 差 1.3。",
   "en": "C's gap is 2.5, D's is 7.9, E's is 1.3."
  },
  {
   "id": "Q47_17",
   "row": "solve",
-  "duration": 1.1,
+  "duration": 0.81,
   "disp": "答案 B。",
   "en": "Answer B."
  },
  {
   "id": "Q47_18",
   "row": "trick",
-  "duration": 7.7,
+  "duration": 7.33,
   "disp": "送你一個秒殺公式：光子能量的電子伏特數，等於 1240 除以波長的奈米數。",
   "en": "Here's a shortcut formula: photon energy in eV equals 1240 divided by the wavelength in nanometers."
  },
  {
   "id": "Q47_19",
   "row": "trick",
-  "duration": 12.5,
+  "duration": 11.62,
   "disp": "注意喔，這個 1240，只能在能量用電子伏特、波長用奈米的時候用，它其實就是 h 乘以 c，換成這兩個單位剛好是 1240。",
   "en": "Careful: this 1240 only works with energy in eV and wavelength in nm. It's really h times c, which comes to 1240 in those units."
  },
  {
   "id": "Q47_20",
   "row": "trick",
-  "duration": 4.3,
+  "duration": 3.77,
   "disp": "1240÷365，剛好 3.4。",
   "en": "1240÷365 is exactly 3.4."
  },
  {
   "id": "Q47_21",
   "row": "trick",
-  "duration": 6.9,
+  "duration": 5.58,
   "disp": "這個 1240 很好用，建議你像背暗戀對象的生日一樣，把它背起來。",
   "en": "This 1240 is so handy, I suggest memorizing it like your crush's birthday."
  }

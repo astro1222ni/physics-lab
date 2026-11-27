@@ -149,140 +149,140 @@ ExamTracks.Q11=[
  {
   "id": "Q11_08",
   "row": "wrong",
-  "duration": 6.1,
+  "duration": 5.21,
   "disp": "選 A 的人，直覺是這樣：東西一直往上跑，那力應該一直往上吧？",
   "en": "People who chose A thought: the load keeps going up, so the force must keep pointing up, right?"
  },
  {
   "id": "Q11_09",
   "row": "wrong",
-  "duration": 2.1,
+  "duration": 1.71,
   "disp": "不然它怎麼會往上？",
   "en": "Otherwise how could it go up?"
  },
  {
   "id": "Q11_10",
   "row": "flip",
-  "duration": 6.5,
+  "duration": 5.49,
   "disp": "恭喜你，這個想法跟 2000 多年前的亞里斯多德一模一樣，很有歷史感。",
   "en": "Congratulations: that's exactly what Aristotle thought over 2000 years ago. Very historic of you."
  },
  {
   "id": "Q11_11",
   "row": "flip",
-  "duration": 5.1,
+  "duration": 3.88,
   "disp": "可是牛頓告訴我們，合力決定的是加速度，不是速度。",
   "en": "But Newton tells us the net force decides the acceleration, not the velocity."
  },
  {
   "id": "Q11_12",
   "row": "flip",
-  "duration": 5.7,
+  "duration": 5.47,
   "disp": "你搭電梯往上，快到樓層的時候，身體是不是有一點輕飄飄？",
   "en": "When you ride an elevator up, don't you feel a little floaty just before your floor?"
  },
  {
   "id": "Q11_13",
   "row": "flip",
-  "duration": 4.7,
+  "duration": 3.95,
   "disp": "那不是你練成輕功了，是電梯在減速，合力向下。",
   "en": "You haven't mastered kung fu. The elevator is slowing down, and the net force points down."
  },
  {
   "id": "Q11_14",
   "row": "solve",
-  "duration": 8.3,
+  "duration": 7.5,
   "disp": "我們先把重物的受力畫出來：繩子的張力 T 向上，重力 m g 向下，合力 F 就是 T 減掉 m g。",
   "en": "First draw the forces on the load: tension T up, gravity mg down, so the net force F is T minus mg."
  },
  {
   "id": "Q11_15",
   "row": "solve",
-  "duration": 7.3,
+  "duration": 7.02,
   "disp": "甲到乙在加速往上，速度越來越快，加速度向上，所以合力向上，T 比 m g 大。",
   "en": "From P1 to P2 it speeds up going upward: acceleration up, so net force up, and T is greater than mg."
  },
  {
   "id": "Q11_16",
   "row": "solve",
-  "duration": 5.1,
+  "duration": 4.29,
   "disp": "乙到丙等速，加速度是 0，合力也是 0，T 等於 m g。",
   "en": "From P2 to P3 the speed is constant: acceleration zero, net force zero, T equals mg."
  },
  {
   "id": "Q11_17",
   "row": "solve",
-  "duration": 7.3,
+  "duration": 6.73,
   "disp": "丙到丁在減速，往上跑卻越來越慢，加速度向下，所以合力向下，T 比 m g 小。",
   "en": "From P3 to P4 it slows down: still going up but slower, so acceleration down, net force down, and T is less than mg."
  },
  {
   "id": "Q11_18",
   "row": "judge",
-  "duration": 1.7,
+  "duration": 1.66,
   "disp": "現在來對選項。",
   "en": "Now let's check the options."
  },
  {
   "id": "Q11_19",
   "row": "judge",
-  "duration": 7.1,
+  "duration": 6.74,
   "disp": "因為 F 等於 m a，質量 m 一定是正的，所以合力和加速度一定同方向，E 對。",
   "en": "Because F equals ma and the mass m is always positive, net force and acceleration always point the same way. E is right."
  },
  {
   "id": "Q11_20",
   "row": "judge",
-  "duration": 4.7,
+  "duration": 4.31,
   "disp": "丙到丁，速度向上、合力向下，方向相反，D 對。",
   "en": "From P3 to P4, velocity up, net force down: opposite directions. D is right."
  },
  {
   "id": "Q11_21",
   "row": "judge",
-  "duration": 5.1,
+  "duration": 4.67,
   "disp": "丙到丁的位移也是向上，和合力方向相反，所以 C 錯。",
   "en": "From P3 to P4 the displacement is also up, opposite to the net force, so C is wrong."
  },
  {
   "id": "Q11_22",
   "row": "judge",
-  "duration": 6.7,
+  "duration": 5.45,
   "disp": "甲到乙合力向上，丙到丁合力向下，一個上、一個下，所以 A、B 都錯。",
   "en": "Net force is up from P1 to P2 and down from P3 to P4, one up, one down, so A and B are both wrong."
  },
  {
   "id": "Q11_23",
   "row": "judge",
-  "duration": 1.7,
+  "duration": 1.61,
   "disp": "答案是 D、E。",
   "en": "The answer is D and E."
  },
  {
   "id": "Q11_24",
   "row": "trick",
-  "duration": 4.5,
+  "duration": 4.14,
   "disp": "秒殺口訣：合力跟著加速度走，不跟著速度走。",
   "en": "The shortcut: the net force follows the acceleration, not the velocity."
  },
  {
   "id": "Q11_25",
   "row": "trick",
-  "duration": 4.9,
+  "duration": 4.09,
   "disp": "判斷加速度，只要問自己，速率在變大，還是變小？",
   "en": "To find the acceleration, just ask yourself: is the speed going up or down?"
  },
  {
   "id": "Q11_26",
   "row": "trick",
-  "duration": 4.3,
+  "duration": 4.19,
   "disp": "變大，就跟速度同向；變小，就跟速度反向。",
   "en": "Going up: same direction as the velocity. Going down: opposite to the velocity."
  },
  {
   "id": "Q11_27",
   "row": "trick",
-  "duration": 9.3,
+  "duration": 8.92,
   "disp": "注意喔，這招只能用在直線運動；如果是轉彎，加速度還有一部分指向彎道內側，就不能只看快慢了。",
   "en": "Careful: this only works for straight-line motion. On a curve, part of the acceleration points toward the inside of the bend, so speed alone won't tell you."
  }
