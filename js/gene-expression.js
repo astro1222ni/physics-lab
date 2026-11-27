@@ -500,14 +500,14 @@
       g.beginPath();
       for (let k = 0; k < 8; k++) { const t = Math.PI / 8 + k * Math.PI / 4; g.lineTo(x + Math.cos(t) * d / 2, y + Math.sin(t) * d / 2); }
       g.closePath(); g.fillStyle = col; g.fill();
-      const symbol = short || portrait;
+      const symbol = short || portrait || d * 0.34 < 9; // 「STOP」小到看不清楚時改畫「*」
       g.font = '700 ' + (symbol ? 14 : Math.round(d * 0.34)) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
       g.fillText(symbol ? '*' : 'STOP', x, y + (symbol ? 2 : 0.5));
       return;
     }
     D.ball(g, x, y, d / 2, col);
     if (opt && opt.ring) { g.beginPath(); g.arc(x, y, d / 2 + 2.5, 0, Math.PI * 2); g.strokeStyle = opt.ring; g.lineWidth = 2.2; g.stroke(); }
-    const fontSize = Math.max(short ? 11 : portrait ? 10 : 0, Math.round(d * 0.52));
+    const fontSize = Math.max(short ? 11 : portrait ? 10 : 11, Math.round(d * 0.52)); // 橫放與電腦版下限也是 11（原本 0，橫放只剩 7 px）
     g.font = '700 ' + fontSize + 'px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle';
     // 淺色珠（疏水的黃色等）配白字對比太低（試玩回報）：底色亮就改深色字
     const light = lum(col) > 0.3;

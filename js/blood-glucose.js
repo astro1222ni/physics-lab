@@ -387,7 +387,7 @@
       const x = xOf(b.t), y = P.y1 - 8;
       g.fillStyle = C['gl-bolus'];
       g.beginPath(); g.moveTo(x, y - 9); g.lineTo(x - 5, y); g.lineTo(x + 5, y); g.closePath(); g.fill();
-      small(g, num(b.u, 1) + 'U', x, y - 15, C['gl-bolus'], 'center', 'middle', 10);
+      small(g, num(b.u, 1) + 'U', x, y - 15, C['gl-bolus'], 'center', 'middle', 11);
     });
     // 留下的曲線
     g.save();
@@ -436,7 +436,7 @@
     const top = niceMax(mx * 1.1, [20, 40, 60, 80, 100, 150, 200, 300]);
     const y = function (v) { return I1 - (I1 - I0) * v / top; };
     g.strokeStyle = D.alpha(D.c.border, 0.55); g.lineWidth = 1;
-    [0, top / 2, top].forEach(function (v) { g.beginPath(); g.moveTo(P.x0, y(v)); g.lineTo(P.x1, y(v)); g.stroke(); small(g, num(v, 0), P.x0 - 5, y(v), D.c.muted, 'right', 'middle', 10); });
+    [0, top / 2, top].forEach(function (v) { g.beginPath(); g.moveTo(P.x0, y(v)); g.lineTo(P.x1, y(v)); g.stroke(); small(g, num(v, 0), P.x0 - 5, y(v), D.c.muted, 'right', 'middle', 11); });
     const grd = g.createLinearGradient(0, I0, 0, I1);
     grd.addColorStop(0, D.alpha(C['gl-ins'], 0.45)); grd.addColorStop(1, D.alpha(C['gl-ins'], 0.06));
     g.fillStyle = grd;
@@ -845,14 +845,14 @@
       [a, b].forEach(function (v) {
         g.strokeStyle = D.alpha(D.c.text, 0.45); g.lineWidth = 1; g.save(); g.setLineDash([4, 3]);
         g.beginPath(); g.moveTo(xc - w / 2 - (left ? 4 : 14), y(v)); g.lineTo(xc + w / 2 + (left ? 4 : 14), y(v)); g.stroke(); g.restore();
-        if (left) { if (v % 50) small(g, String(v), xc - w / 2 - 5, y(v), D.c.muted, 'right', 'middle', 10); }
-        else small(g, String(v), xc + w / 2 + 16, y(v), D.c.muted, 'left', 'middle', 10);
+        if (left) { if (v % 50) small(g, String(v), xc - w / 2 - 5, y(v), D.c.muted, 'right', 'middle', 11); }
+        else small(g, String(v), xc + w / 2 + 16, y(v), D.c.muted, 'left', 'middle', 11);
       });
     };
     strip(0, 100, 126, 8, true);
     strip(120, 140, 200, 8);
-    small(g, T('空腹', 'Fasting'), x(0), P.y1 - 7, D.c.muted, 'center', 'middle', 10);
-    small(g, T('2 小時', '2 h'), x(120), P.y1 - 7, D.c.muted, 'center', 'middle', 10);
+    small(g, T('空腹', 'Fasting'), x(0), P.y1 - 7, D.c.muted, 'center', 'middle', 11);
+    small(g, T('2 小時', '2 h'), x(120), P.y1 - 7, D.c.muted, 'center', 'middle', 11);
     // 曲線（到目前的時間）
     if (shownT > 0) {
       g.save(); g.beginPath(); g.rect(P.x0, P.y0 - 4, P.x1 - P.x0, P.y1 - P.y0 + 8); g.clip();
@@ -896,7 +896,7 @@
     const itop = niceMax(im * 1.1, [20, 40, 60, 80, 100, 150, 200, 300]);
     const yi = function (v) { return I1 - (I1 - I0) * v / itop; };
     g.strokeStyle = D.alpha(D.c.border, 0.5); g.lineWidth = 1;
-    [0, itop].forEach(function (v) { g.beginPath(); g.moveTo(P.x0, yi(v)); g.lineTo(P.x1, yi(v)); g.stroke(); small(g, num(v, 0), P.x0 - 5, yi(v), D.c.muted, 'right', 'middle', 10); });
+    [0, itop].forEach(function (v) { g.beginPath(); g.moveTo(P.x0, yi(v)); g.lineTo(P.x1, yi(v)); g.stroke(); small(g, num(v, 0), P.x0 - 5, yi(v), D.c.muted, 'right', 'middle', 11); });
     if (shownT > 0) {
       const grd = g.createLinearGradient(0, I0, 0, I1);
       grd.addColorStop(0, D.alpha(C['gl-ins'], 0.45)); grd.addColorStop(1, D.alpha(C['gl-ins'], 0.06));
@@ -945,13 +945,13 @@
     g.restore();
     [0.25, 0.5, 1, 2].forEach(function (c) {
       const b = Math.min(BMAX * 0.94, c / (SMIN + 0.12)), p = mapXY(b, c / b);
-      small(g, 'DI ' + c, p[0] - 2, Math.max(M.y0 + 8, p[1] - 8), D.c.muted, 'right', 'middle', 10);
+      small(g, 'DI ' + c, p[0] - 2, Math.max(M.y0 + 8, p[1] - 8), D.c.muted, 'right', 'middle', 11);
     });
     g.strokeStyle = D.alpha(D.c.border, 1); g.lineWidth = 1; D.roundRect(g, M.x0, M.y0, M.s, M.s, 6); g.stroke();
     if (st2.grid.rows < NS) small(g, T('計算中… ', 'Computing… ') + Math.round(st2.grid.rows / NS * 100) + '%', M.x0 + M.s / 2, M.y0 + M.s - 14, D.c.muted, 'center', 'middle', 11);
     // 軸
-    for (let b = 0; b <= BMAX; b += 0.5) { const p = mapXY(b, SMIN); small(g, num(b, 1), p[0], M.y0 + M.s + 10, D.c.muted, 'center', 'middle', 10); }
-    [0.1, 0.5, 1, 1.5, 2].forEach(function (s) { const p = mapXY(0, s); small(g, num(s, 1), M.x0 - 5, p[1], D.c.muted, 'right', 'middle', 10); });
+    for (let b = 0; b <= BMAX; b += 0.5) { const p = mapXY(b, SMIN); small(g, num(b, 1), p[0], M.y0 + M.s + 10, D.c.muted, 'center', 'middle', 11); }
+    [0.1, 0.5, 1, 1.5, 2].forEach(function (s) { const p = mapXY(0, s); small(g, num(s, 1), M.x0 - 5, p[1], D.c.muted, 'right', 'middle', 11); });
     small(g, T('β 細胞功能 →', 'β-cell function →'), M.x0 + M.s / 2, M.y0 + M.s + 26, D.c.text, 'center', 'middle', 11);
     g.save(); g.translate(M.x0 - 37, M.y0 + M.s / 2); g.rotate(-Math.PI / 2);
     small(g, T('胰島素敏感度 →', 'Insulin sensitivity →'), 0, 0, D.c.text, 'center', 'middle', 11);

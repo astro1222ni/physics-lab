@@ -728,7 +728,7 @@
   /** 刻度數字：依刻度間隔決定小數位數（間隔 0.5 就顯示 0.5、1.0、1.5…，不會四捨五入成重複的整數） */
   function tickFmt(v, step) { return Math.abs(v) < 1e-9 ? '0' : num(v, step >= 1 ? 0 : step >= 0.1 ? 1 : 2); }
   function axes(g, W, H, xmax, ymin, ymax, xl, yl, xfmt, yfmt) {
-    const l = 52, r = 12, t = 14, b = 30;
+    const l = 52, r = 12, t = 14, b = 34; // 下緣留 34：橫軸標題放大後不貼邊被切
     const pw = W - l - r, ph = H - t - b;
     const X = function (x) { return l + x / xmax * pw; }, Y = function (y) { return t + ph - (y - ymin) / (ymax - ymin) * ph; };
     g.fillStyle = D.alpha(C.text, C.dark ? 0.04 : 0.025); g.fillRect(l, t, pw, ph);

@@ -910,7 +910,10 @@
     small(g, s.distinct + ' / ' + s.possible, R[0] + R[2] - 10, R[1] + 14, s.total && s.distinct === s.possible ? C['cd-ok'] : D.c.muted, 'right', 'middle', 12, '700');
     const K2 = s.possible, cols = Math.pow(2, Math.ceil(st2.n / 2)), rows = K2 / cols;
     const ax = R[0] + 10, ay = R[1] + 28, aw = R[2] - 20, ah = R[3] - 36;
-    const cell = Math.max(3, Math.min(aw / cols, ah / rows, 34));
+    // 格子上限 34 px；格內字（例如 MMP）放大後（手機橫放字高下限）較寬時，上限放寬到字寬加 10 px，字才不會擠在一起
+    g.font = '11.5px ' + FONT;
+    const capCell = Math.max(34, Math.ceil(g.measureText('M'.repeat(st2.n)).width + 10));
+    const cell = Math.max(3, Math.min(aw / cols, ah / rows, capCell));
     const gx = ax + (aw - cell * cols) / 2, gy = ay + (ah - cell * rows) / 2;
     const expv = s.total / K2;
     for (let i = 0; i < K2; i++) {
