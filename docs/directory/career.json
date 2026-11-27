@@ -1,0 +1,15 @@
+{
+  "subject": "career",
+  "updated": "11/27",
+  "branches": [
+    {
+      "id": "planning", "zh": "生涯決策與管理", "en": "Career Decisions and Self-Management",
+      "chapters": [
+        { "id": "ch-career-decision", "zh": "生涯決策", "en": "Career Decision-Making",
+          "modules": ["career-decision-balance"] },
+        { "id": "ch-learning-management", "zh": "學習與時間管理", "en": "Learning and Time Management",
+          "modules": ["spaced-review"] }
+      ]
+    }
+  ]
+}

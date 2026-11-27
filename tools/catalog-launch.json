@@ -26,6 +26,14 @@
     "perspective-drawing": {
       "subject": "art",
       "path": "perspective-drawing.html"
+    },
+    "school-earthquake-evacuation": {
+      "subject": "def",
+      "path": "school-earthquake-evacuation.html"
+    },
+    "career-decision-balance": {
+      "subject": "career",
+      "path": "career-decision-balance.html"
     }
   },
   "modules": {

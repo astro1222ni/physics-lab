@@ -185,6 +185,22 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/visual-arts.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/defense-education.html</loc>
+    <lastmod>2026-11-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/defense-education.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/defense-education.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/defense-education.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/defense-education.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/career-planning.html</loc>
+    <lastmod>2026-11-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/career-planning.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/career-planning.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/career-planning.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/career-planning.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/measurement.html</loc>
     <lastmod>2026-11-27</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/measurement.html"/>
@@ -1687,5 +1703,21 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/perspective-drawing.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/perspective-drawing.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/perspective-drawing.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/school-earthquake-evacuation.html</loc>
+    <lastmod>2026-11-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/school-earthquake-evacuation.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/school-earthquake-evacuation.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/school-earthquake-evacuation.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/school-earthquake-evacuation.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/career-decision-balance.html</loc>
+    <lastmod>2026-11-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/career-decision-balance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/career-decision-balance.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/career-decision-balance.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/career-decision-balance.html"/>
   </url>
 </urlset>

@@ -8,6 +8,8 @@
 | 健康與護理（Health and Nursing） | [health.json](health.json) | [health.html](../../health.html) |
 | 體育（Physical Education） | [pe.json](pe.json) | [physical-education.html](../../physical-education.html) |
 | 美術（Visual Arts） | [art.json](art.json) | [visual-arts.html](../../visual-arts.html) |
+| 全民國防（Defense Education） | [def.json](def.json) | [defense-education.html](../../defense-education.html) |
+| 生涯規劃（Career Planning） | [career.json](career.json) | [career-planning.html](../../career-planning.html) |
 
 - 列的是**已上線＋規劃中**的全部實驗。
 - 每科自己的科目頁顯示已上線卡片；還沒有實驗的章顯示「製作中」。首頁只放科目入口、最新上架與推薦。

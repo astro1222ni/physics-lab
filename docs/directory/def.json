@@ -1,0 +1,15 @@
+{
+  "subject": "def",
+  "updated": "11/27",
+  "branches": [
+    {
+      "id": "protection", "zh": "防災與防護", "en": "Disaster Preparedness and Protection",
+      "chapters": [
+        { "id": "ch-disaster-response", "zh": "災害防救與應變", "en": "Disaster Response",
+          "modules": ["school-earthquake-evacuation"] },
+        { "id": "ch-radiation-protection", "zh": "輻射防護", "en": "Radiation Protection",
+          "modules": ["radiation-protection"] }
+      ]
+    }
+  ]
+}

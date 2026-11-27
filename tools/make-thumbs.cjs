@@ -103,7 +103,9 @@ const PREP = {
   'electrochemistry':  { click: ['#bridge'], wait: 3000 },
   'space-vectors':     { wait: 2500 },
   'population-growth': { wait: 3000 },
-  'hardy-weinberg':    { wait: 3000 }
+  'hardy-weinberg':    { wait: 3000 },
+  // 平面圖比 16:9 扁很多，置中裁會切掉兩側樓梯：先把平面圖拉成 16:9，再開始演練、截疏散途中
+  'school-earthquake-evacuation': { eval: "const m=document.getElementById('map');m.style.height=Math.round(m.clientWidth*9/16)+'px';", click: ['#startDrill'], wait: 4500, canvas: '#map' }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

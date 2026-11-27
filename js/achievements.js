@@ -64,7 +64,9 @@
     { id: 'civ', zh: '公民與社會', en: 'Civics and Society', short: '公民' },
     { id: 'health', zh: '健康與護理', en: 'Health and Nursing', short: '健護' },
     { id: 'pe', zh: '體育', en: 'Physical Education', short: '體育' },
-    { id: 'art', zh: '美術', en: 'Visual Arts', short: '美術' }
+    { id: 'art', zh: '美術', en: 'Visual Arts', short: '美術' },
+    { id: 'def', zh: '全民國防', en: 'Defense Education', short: '國防' },
+    { id: 'career', zh: '生涯規劃', en: 'Career Planning', short: '生涯' }
   ];
   // 跨科成就（cross-*）的五科：說明寫明「物理、化學、生物、地球科學、數學」，之後加的科目不改它的條件
   const CROSS5 = ['phy', 'chem', 'bio', 'earth', 'math'];
@@ -76,7 +78,8 @@
     data: 'info', algo: 'info', prog: 'info', system: 'info', network: 'info', ai: 'info',
     mapping: 'geog', gis: 'geog', climate: 'geog', landform: 'geog', population: 'geog', economy: 'geog',
     tone: 'music', tuning: 'music', harmony: 'music', instruments: 'music', rhythm: 'music', audio: 'music',
-    script: 'chn', chronology: 'hist', markets: 'civ', prevention: 'health', 'sport-skills': 'pe', 'visual-expression': 'art' };
+    script: 'chn', chronology: 'hist', markets: 'civ', prevention: 'health', 'sport-skills': 'pe', 'visual-expression': 'art',
+    protection: 'def', planning: 'career' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -291,6 +294,42 @@
         1: nm('畫室筆記', 'Studio notes'), 5: nm('畫家的手冊', 'A painter’s handbook'),
         10: nm('從窯火到畫布', 'From kiln fire to canvas'), all: nm('美術的全書', 'The whole book of visual arts')
       }
+    },
+    def: {
+      stars: { 10: nm('第一次演練', 'The first drill'), 100: nm('備好防災包', 'A go-bag packed'), 1000: nm('疏散引導員', 'Evacuation guide'), 10000: nm('防災規劃師', 'Preparedness planner'), 100000: nm('社區防災士', 'Community preparedness volunteer'), 1000000: nm('守護全校的人', 'Keeping the whole school safe') },
+      explore: {
+        1: nm('認得逃生路線', 'Knowing the way out'), 5: nm('校園防災地圖', 'A school safety map'), 10: nm('避難處所巡禮', 'A tour of the shelters'),
+        20: nm('演練日誌', 'A drill logbook'), 40: nm('防災教室的常客', 'A regular in the preparedness lab'),
+        60: nm('走遍每一條疏散路線', 'Every evacuation route walked'), all: nm('全民國防全覽', 'All of defense education')
+      },
+      full: {
+        1: nm('完成一次演練', 'One drill completed'), 3: nm('趴下、掩護、穩住', 'Drop, cover, hold on'),
+        5: nm('全班到齊', 'Everyone accounted for'), 10: nm('防災小組長', 'Preparedness team leader'),
+        20: nm('冷靜的廣播', 'A calm announcement'), 40: nm('應變計畫書', 'A response plan'),
+        60: nm('全校平安', 'The whole school safe'), all: nm('全民國防實驗全通', 'Every defense education lab mastered')
+      },
+      chapter: {
+        1: nm('防災筆記', 'Preparedness notes'), 5: nm('應變手冊', 'A response handbook'),
+        10: nm('從一間教室到一座城', 'From one classroom to a whole city'), all: nm('全民國防的全書', 'The whole book of defense education')
+      }
+    },
+    career: {
+      stars: { 10: nm('寫下第一個選項', 'Writing down the first option'), 100: nm('探索清單', 'An exploration list'), 1000: nm('權衡的眼光', 'An eye for trade-offs'), 10000: nm('生涯規劃師', 'Career planner'), 100000: nm('清楚的方向感', 'A clear sense of direction'), 1000000: nm('自己的地圖', 'A map of your own') },
+      explore: {
+        1: nm('打開生涯檔案', 'Opening the career file'), 5: nm('學群巡禮', 'A tour of study fields'), 10: nm('職場參訪', 'Workplace visits'),
+        20: nm('探索的足跡', 'Footprints of exploration'), 40: nm('十字路口的地圖', 'A map at the crossroads'),
+        60: nm('走過的每一條路', 'Every path explored'), all: nm('生涯規劃全覽', 'All of career planning')
+      },
+      full: {
+        1: nm('做出一個決定', 'Making one decision'), 3: nm('完成平衡單', 'A balance sheet completed'),
+        5: nm('看清取捨', 'Seeing the trade-offs'), 10: nm('自我管理達人', 'Master of self-management'),
+        20: nm('時間的主人', 'Master of your time'), 40: nm('穩健的選擇', 'A robust choice'),
+        60: nm('走自己的路', 'Walking your own path'), all: nm('生涯規劃實驗全通', 'Every career planning lab mastered')
+      },
+      chapter: {
+        1: nm('生涯筆記', 'Career notes'), 5: nm('探索手冊', 'An exploration handbook'),
+        10: nm('從一張平衡單到一份藍圖', 'From one balance sheet to a whole blueprint'), all: nm('生涯規劃的全書', 'The whole book of career planning')
+      }
     }
   };
   SUBJ.forEach(function (sb) {
@@ -395,6 +434,8 @@
     { id: 'branch-prevention', tier: 5, cat: 'branch', name: nm('南丁格爾的提燈', "Nightingale's lamp"), desc: nm('完成「健康促進與疾病預防」分支所有實驗的所有任務。', 'Complete every mission in Health Promotion and Disease Prevention.'), check: function (c) { return c.branchDone['prevention']; } },
     { id: 'branch-sport-skills', tier: 5, cat: 'branch', name: nm('奈史密斯的桃籃', "Naismith's peach basket"), desc: nm('完成「運動技能與原理」分支所有實驗的所有任務。', 'Complete every mission in Sports Skills and Principles.'), check: function (c) { return c.branchDone['sport-skills']; } },
     { id: 'branch-visual-expression', tier: 5, cat: 'branch', name: nm('杜勒的透視框', "Dürer's perspective frame"), desc: nm('完成「造形與視覺表現」分支所有實驗的所有任務。', 'Complete every mission in Form and Visual Expression.'), check: function (c) { return c.branchDone['visual-expression']; } },
+    { id: 'branch-protection', tier: 5, cat: 'branch', name: nm('大森房吉的地震儀', "Omori's seismograph"), desc: nm('完成「防災與防護」分支所有實驗的所有任務。', 'Complete every mission in Disaster Preparedness and Protection.'), check: function (c) { return c.branchDone['protection']; } },
+    { id: 'branch-planning', tier: 5, cat: 'branch', name: nm('富蘭克林的利弊清單', "Franklin's pros-and-cons list"), desc: nm('完成「生涯決策與管理」分支所有實驗的所有任務。', 'Complete every mission in Career Decisions and Self-Management.'), check: function (c) { return c.branchDone['planning']; } },
     // ---------- 跨科：五個科目都要有 ----------
     { id: 'cross-visit', tier: 2, cat: 'cross', name: nm('博物學家的好奇心', "A naturalist's curiosity"), desc: nm('物理、化學、生物、地球科學、數學，五科都至少玩過一種實驗。', 'Try at least one experiment in each of the five subjects.'), check: function (c) { return c.subjVisited >= 5; } },
     { id: 'cross-mission', tier: 3, cat: 'cross', name: nm('文藝復興人', 'Renaissance mind'), desc: nm('五科都至少完成一個任務。', 'Complete at least one mission in each of the five subjects.'), check: function (c) { return c.subjMission >= 5; } },

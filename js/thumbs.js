@@ -193,7 +193,9 @@
     "supply-demand": "9a5c81fc",
     "sir-epidemic": "49062e4c",
     "basketball-shot": "583fecc1",
-    "perspective-drawing": "b63c5f0c"
+    "perspective-drawing": "b63c5f0c",
+    "school-earthquake-evacuation": "aa14d97c",
+    "career-decision-balance": "f480ae6e"
   };
   /* VERSIONS-END */
 

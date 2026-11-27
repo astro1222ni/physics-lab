@@ -20,7 +20,8 @@
   // 目錄 catalog.js 的科目代號（首頁科目區塊的 id）→ 相關實驗標籤前面的科目名；物理不加
   const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'], math: ['數學', 'Mathematics'], info: ['資訊科技', 'Computer Science'], geog: ['地理', 'Geography'], music: ['音樂', 'Music'],
     chn: ['國文', 'Chinese'], hist: ['歷史', 'History'],
-    civ: ['公民與社會', 'Civics and Society'], health: ['健康與護理', 'Health and Nursing'], pe: ['體育', 'Physical Education'], art: ['美術', 'Visual Arts'] };
+    civ: ['公民與社會', 'Civics and Society'], health: ['健康與護理', 'Health and Nursing'], pe: ['體育', 'Physical Education'], art: ['美術', 'Visual Arts'],
+    def: ['全民國防', 'Defense Education'], career: ['生涯規劃', 'Career Planning'] };
   const S = window.LabSettings;
   const T = function (zh, en) { return S ? S.t(zh, en) : zh; };
   const ver = (((document.currentScript || {}).src || '').match(/\?v=\d+/) || [''])[0];

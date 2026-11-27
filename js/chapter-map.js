@@ -139,5 +139,7 @@ window.LAB_CHAPTERS = [
 {"id":"ch-market-prices","zh":"市場機能與價格管制","en":"Market Prices and Price Controls","b":"markets","m":["supply-demand"]},
 {"id":"ch-communicable-disease","zh":"傳染病防治","en":"Preventing Infectious Diseases","b":"prevention","m":["sir-epidemic"]},
 {"id":"ch-shooting-throwing","zh":"投籃與投擲動作","en":"Shooting and Throwing Techniques","b":"sport-skills","m":["basketball-shot"]},
-{"id":"ch-spatial-perspective","zh":"空間與透視","en":"Space and Perspective","b":"visual-expression","m":["perspective-drawing"]}
+{"id":"ch-spatial-perspective","zh":"空間與透視","en":"Space and Perspective","b":"visual-expression","m":["perspective-drawing"]},
+{"id":"ch-disaster-response","zh":"災害防救與應變","en":"Disaster Response","b":"protection","m":["school-earthquake-evacuation"]},
+{"id":"ch-career-decision","zh":"生涯決策","en":"Career Decision-Making","b":"planning","m":["career-decision-balance"]}
 ];

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="js/settings.js"></script>
+<title data-en="Decision Balance Sheet | Astro Ni Lab">決策平衡單｜讓倪動手⚡高中全科模擬實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="為虛構學生調整六項權重，看排名會不會翻盤，再安排二十小時的探索活動。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/career-decision-balance.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/career-decision-balance.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/career-decision-balance.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/career-decision-balance.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="決策平衡單｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="為虛構學生調整六項權重，看排名會不會翻盤，再安排二十小時的探索活動。">
+  <meta property="og:url" content="https://lab.astroni.org/career-decision-balance.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/career-decision-balance.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="決策平衡單的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"決策平衡單","alternateName":"Decision Balance Sheet","description":"為虛構學生調整六項權重，看排名會不會翻盤，再安排二十小時的探索活動。","url":"https://lab.astroni.org/career-decision-balance.html","image":"https://lab.astroni.org/img/og/career-decision-balance.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["生涯決策與管理（Career Decisions and Self-Management）","生涯決策（Career Decision-Making）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"生涯規劃","url":"https://lab.astroni.org/career-planning.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"生涯規劃","item":"https://lab.astroni.org/career-planning.html"},{"@type":"ListItem","position":4,"name":"生涯決策與管理","item":"https://lab.astroni.org/career-planning.html#planning"},{"@type":"ListItem","position":5,"name":"生涯決策","item":"https://lab.astroni.org/career-planning.html#ch-career-decision"},{"@type":"ListItem","position":6,"name":"決策平衡單","item":"https://lab.astroni.org/career-decision-balance.html"}]}</script>
+  <!-- SEO-END -->
+<link rel="stylesheet" href="lab.css"><link rel="stylesheet" href="lab-tools.css"><link rel="stylesheet" href="vendor/katex/katex.min.css">
+<style>
+.balance {--coral:var(--pos);--case:var(--coral);--case-ink:color-mix(in srgb,var(--case) 75%,var(--text));--paper:color-mix(in srgb,var(--canvas-bg) 95%,var(--equi));--rule:color-mix(in srgb,var(--text) 16%,var(--surface));--pale:color-mix(in srgb,var(--case) 7%,var(--surface));}
+.balance [hidden]{display:none!important}
+.balance .wrap{max-width:1440px;padding:17px clamp(12px,3vw,44px) 46px}
+.balance .top{margin:0 0 14px}
+.balance .crumbs{font-size:calc(13px * var(--fs));line-height:1.6}
+.balance .top h1{margin:6px 0 3px;letter-spacing:-.035em;line-height:1.22}
+.balance .top h1 span+span{font-weight:560;font-size:.68em;display:inline-block;margin-inline-start:.55em;letter-spacing:-.025em}
+.balance .top p{font-size:calc(15px * var(--fs));color:var(--muted)}
+.balance .lab{grid-template-columns:minmax(0,1fr) minmax(286px,33%);gap:14px}
+.balance .stage{min-width:0;overflow:visible;padding:0;box-shadow:0 4px 20px color-mix(in srgb,var(--text) 5%,transparent)}
+.balance .stage,.balance .card,.balance .notes{border-radius:13px}
+.balance button,.balance select{min-height:44px;font-size:calc(15px * var(--fs));font-weight:600}
+.balance button:focus-visible,.balance select:focus-visible,.balance canvas:focus-visible{outline:3px solid var(--case);outline-offset:2px}
+.balance .viewstrip{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:5px 7px;border-bottom:1px solid var(--border)}
+.balance .viewstrip button{color:var(--muted);border:0;padding:5px clamp(7px,1vw,15px);background:transparent;border-radius:7px}
+.balance .viewstrip button[aria-pressed=true]{background:var(--pale);color:var(--case-ink);box-shadow:inset 0 -2px var(--case)}
+.balance .chart-question{margin:0;padding:8px 16px;font-size:calc(16px * var(--fs));line-height:1.4;background:var(--pale)}
+.balance .viewstrip #view3d{margin-left:auto}
+.balance #board{position:relative;isolation:isolate;min-width:0}
+.balance #cv,.balance #host3{display:block;width:100%;height:clamp(305px,32vw,434px);aspect-ratio:auto;border-radius:0;background:var(--paper)}
+.balance #cv[data-mode=score],.balance #cv[data-mode=map],.balance #cv[data-mode=probe]{cursor:grab}
+.balance #cv:active{cursor:grabbing}
+.balance #host3{position:relative;overflow:hidden}.balance #host3 canvas{width:100%;height:100%;aspect-ratio:auto;display:block}
+.balance .camera{position:absolute;right:6px;top:5px;z-index:2;display:flex;gap:4px}
+.balance .camera button{font-size:calc(15px * var(--fs));padding:3px 8px;background:var(--surface)}
+.balance .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--border);background:var(--surface)}
+.balance .metric{min-width:0;padding:8px clamp(8px,1.6vw,24px);display:grid;align-content:start}
+.balance .metric+.metric{border-left:1px solid var(--border)}.balance .metric small,.balance .matrix th{font-size:calc(13px * var(--fs));color:var(--muted);font-weight:600}
+.balance .metric b{font-size:calc(22px * var(--fs));line-height:1.3;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.balance #lead{color:var(--case-ink)}.balance .metric:first-child b{font-size:calc(20px * var(--fs))}
+.balance .caption{padding:9px 14px;margin:0;font-size:calc(16px * var(--fs));font-weight:650;line-height:1.5;border-left:4px solid var(--case);background:var(--pale)}
+.balance .caption strong{color:var(--case-ink)}
+.balance .actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:8px 12px}
+.balance .actions button{padding:5px 11px}.balance button.primary{background:var(--accent);color:var(--surface)}
+.balance #soundBtn{margin-left:auto}.balance .msg{font-size:calc(14px * var(--fs));color:var(--muted);margin:0 13px 8px}.balance .msg:empty{display:none}
+.balance .card h2,.balance .notes summary{font-size:calc(17px * var(--fs));font-weight:750}.balance .card h2{margin:0 0 5px}
+.balance .short{color:var(--muted);font-size:calc(14px * var(--fs));margin:4px 0 8px;line-height:1.5}
+.balance select{font-family:inherit;max-width:100%;padding:4px 22px 4px 8px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:7px}
+.balance .choice{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 8px}
+.balance .choice label,.balance .slider[data-crit] label{font-size:calc(15px * var(--fs));font-weight:650}
+.balance .slider[data-crit]{grid-template-columns:minmax(76px,auto) minmax(55px,1fr) minmax(48px,auto);align-items:center;gap:3px 7px;margin:0;border-top:1px solid var(--border);min-height:45px}
+.balance .slider[data-crit] label{display:flex;align-items:center;gap:7px;line-height:1.2}.balance .slider[data-crit] i,.balance .key i{display:inline-block;width:.7em;height:.7em;border-radius:2px;background:var(--k);flex:0 0 auto}
+.balance .slider[data-crit] input{grid-column:auto;min-width:0;height:44px;margin:0;accent-color:var(--k)}
+.balance .slider[data-crit] output{min-width:44px;min-height:44px;display:grid;place-content:center;font-variant-numeric:tabular-nums}
+.balance .slider[data-crit] output:after{inset:0}.balance .slider[data-crit] .lab-num-wrap{min-width:0}
+.balance .actlist{display:grid;gap:5px}.balance .activity{display:grid;grid-template-columns:1fr auto;gap:0 8px;text-align:left;width:100%;padding:6px 9px;touch-action:pan-y}
+.balance .activity b{font-size:calc(15px * var(--fs))}.balance .activity small{font-size:calc(13px * var(--fs));font-weight:450;grid-column:1/-1;color:var(--muted)}.balance .activity span{color:var(--case-ink)}
+.balance .activity:disabled{opacity:.62}.balance .budget{height:8px;border-radius:8px;background:var(--border);overflow:hidden}.balance .budget i{display:block;height:100%;background:var(--case)}
+.balance #timeline{border:1px dashed var(--muted);border-radius:8px;min-height:56px;padding:6px 8px;margin:8px 0;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.balance #timeline.over{outline:3px solid var(--case)}.balance #timeline button{padding:2px 8px;font-size:calc(15px * var(--fs))}
+.balance .subactions{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.balance .subactions button{padding:5px 9px}
+.balance .matrix{width:100%;border-collapse:collapse;font-size:calc(14px * var(--fs));font-variant-numeric:tabular-nums}.balance .matrix th,.balance .matrix td{padding:6px 3px;text-align:center;border-bottom:1px solid var(--border)}
+.balance .matrix th:first-child{text-align:left}.balance .matrix td small{display:block;font-size:.9em;color:var(--muted)}
+.balance .matrix th{overflow-wrap:anywhere}.balance .axes{display:grid;gap:3px}.balance .axes label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px}.balance .map-pad button{min-width:44px}
+.balance .notes{margin-top:12px}.balance .notes summary{cursor:pointer;min-height:44px;display:list-item;align-content:center}
+.balance .notes p{max-width:82ch}.balance .notes h3{font-size:calc(16px * var(--fs))}
+.balance .guide-note{font-size:calc(15px * var(--fs))}.balance .log{padding-left:1.4em;margin:.35em 0;font-size:calc(14px * var(--fs))}
+.balance .key{display:flex;align-items:center;flex-wrap:wrap;gap:3px 13px;font-size:calc(13px * var(--fs));color:var(--muted);padding:3px 12px 6px}.balance .key span{display:inline-flex;align-items:center;gap:4px}
+.balance .labdeck-tabs button{font-size:calc(15px * var(--fs));padding:3px 8px}.balance .labside-steps{font-size:calc(15px * var(--fs))}
+@media(min-width:1240px){html.labside-docked .balance .lab{grid-template-columns:minmax(0,1fr) minmax(270px,32%)} html.labside-docked .balance .wrap{padding-inline:12px}}
+@media(max-width:880px){.balance .lab{grid-template-columns:minmax(0,1fr)}.balance .wrap{padding:10px 8px 26px}.balance .top{margin-bottom:8px}.balance .top h1{margin:3px 0}.balance .top h1 span+span{font-size:.66em}.balance #cv,.balance #host3{height:clamp(290px,74vw,380px)}.balance .actions{padding:5px 7px}.balance .card{padding:9px 12px}.balance .metric{padding:5px 8px}.balance .viewstrip{gap:1px;padding:2px 5px}.balance .viewstrip button{padding:2px 8px}.balance .caption{padding:5px 9px}}
+@media(max-width:470px){.balance .top h1 span+span{display:block;margin:3px 0 0;font-size:.70em}.balance .viewstrip button{font-size:calc(15px * var(--fs));padding:3px 6px}.balance .top p{font-size:calc(14px * var(--fs))}}
+@media(orientation:landscape) and (max-height:600px){.balance .top{margin-bottom:4px}.balance .top h1{font-size:calc(21px * var(--fs))}.balance .top p{display:none}.balance #cv,.balance #host3{height:clamp(196px,54vh,290px)}.balance .metrics .metric{padding:1px 6px}.balance .metric b,.balance .metric:first-child b{font-size:calc(20px * var(--fs))}.balance .caption{padding:3px 7px}.balance .actions{padding:2px 6px}.balance .key{padding:0 6px}.balance .wrap{padding-top:3px}}
+.balance .activity{grid-template-columns:35px 1fr auto;position:relative;padding-left:0}.balance .activity .grip{grid-row:1/3;align-self:stretch;width:44px;min-height:44px;touch-action:none;display:grid;place-items:center;cursor:grab;color:var(--muted);font-size:20px}.balance .activity small{grid-column:2/-1}.balance .card-ghost{position:fixed;z-index:99999;pointer-events:none;transform:translateX(-50%);border-radius:8px;background:var(--text);color:var(--surface);padding:6px 12px}
+.balance .next-step{padding:12px 16px;border-top:1px solid var(--border);background:linear-gradient(110deg,var(--pale),var(--surface) 65%);border-radius:0 0 13px 13px}.balance .next-step h2{font-size:calc(17px * var(--fs));margin:0}.balance .next-step p{font-size:calc(15px * var(--fs));line-height:1.55;margin:3px 0 7px;max-width:76ch}.balance .slider[data-crit] label{display:grid;grid-template-columns:auto 1fr;gap:0 6px}.balance .slider[data-crit] label i{grid-row:1/3}.balance .slider[data-crit] label small{grid-column:2;color:var(--muted);font-size:calc(12px * var(--fs));font-weight:500;line-height:1.1}
+@media(orientation:landscape) and (max-height:600px){.balance .next-step{padding:7px 12px}}
+.balance main.wrap{display:flex;flex-direction:column}.balance main.wrap>.top{order:-2}.balance main.wrap>.lab{order:-1}.balance main.wrap>.notes{order:1}.balance main.wrap>footer{order:4}
+.balance .slider[data-crit] output.lab-num{position:relative;min-height:44px!important;height:44px!important}.balance .slider[data-crit] output.lab-num::after{width:100%;height:100%;left:0;top:0;bottom:0;transform:none}
+@media(max-width:880px){
+.balance .viewstrip #view3d{margin-left:0}.balance .viewstrip{justify-content:space-between}.balance .top .crumbs{margin-bottom:0}}
+.balance #host3 canvas{height:calc(100% - 51px)}.balance #host3 .camera{left:6px;right:auto}.balance #host3 .v3nav{bottom:0;left:0;width:100%;min-height:51px;padding:3px 6px;background:var(--surface);border-top:1px solid var(--border)}
+.balance .vertex-label{position:absolute;pointer-events:none;z-index:1;transform:translate(-50%,-50%);font:650 calc(13px * var(--fs))/1.25 system-ui,sans-serif;color:var(--text);background:color-mix(in srgb,var(--surface) 94%,transparent);border:1px solid var(--rule);border-radius:4px;padding:1px 5px;white-space:nowrap}
+@media(orientation:landscape) and (max-height:600px){
+  .balance .stage{display:flex;flex-direction:column}.balance .stage>.viewstrip{order:0;justify-content:flex-start}
+.balance .viewstrip #view3d{margin-left:0}
+  .balance #board{order:1}.balance .metrics{order:2}.balance .actions{order:3}.balance .key{order:4}.balance .caption{order:5}.balance .msg{order:6}.balance .next-step{order:7}
+  .balance #cv,.balance #host3{height:clamp(154px,42vh,240px)}.balance #host3:not([hidden]){height:clamp(220px,58vh,300px)}
+  html.labdeck-drawer .balance .labdeck-tabs button{min-width:21%;flex:1 1 0;padding:3px}
+}
+.balance main.wrap>#comments{order:3}
+@media(max-width:520px) and (orientation:portrait){
+  .balance .top{display:flex;flex-direction:column}.balance .top h1{order:-1;padding-right:var(--head-reserve,144px);margin:3px 0 0}
+  .balance .top .crumbs{padding-right:0}.balance .crumbs a{padding-inline:3px}
+}
+.balance .viewstrip button,.balance .subactions button,.balance .camera button{min-width:44px}
+.balance .labdeck .slider input[type="range"]{height:44px!important}
+</style><style id="openplan-stack-1127">/* 11/27：手機直放時「探索」分頁就在畫布正下方，這顆捷徑鈕只會讓最遠控制項跑到 1796 px；直放隱藏，電腦與橫放保留 */
+html.labdeck-stack .balance #openPlan{display:none}
+</style><style id="readout-line-1121">/* 11/21：調滑桿時要盯的讀數放回畫布正下方，手機直放壓成一行精簡列（約 38 px） */
+html.labdeck-stack .metrics{margin:4px 0}
+html.labdeck-stack .metrics .metric{padding:2px 6px!important}
+html.labdeck-stack .metrics .metric small{font-size:11px!important;line-height:13px!important}
+html.labdeck-stack .metrics .metric b{font-size:16px!important;line-height:20px!important}
+</style>
+<style>#drawSeed{font:inherit;max-width:100%;min-width:0;padding:.5em;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:6px}.card details.notes summary{cursor:pointer}</style>
+<style>.next-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}</style>
+</head>
+<body class="balance" data-en-ready data-share-skip><main class="wrap"><header class="top">
+<nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;career-planning.html&quot;&gt;Career Planning&lt;/a&gt; / &lt;a href=&quot;career-planning.html#planning&quot;&gt;Career Decisions and Self-Management&lt;/a&gt; / &lt;a href=&quot;career-planning.html#ch-career-decision&quot;&gt;Career Decision-Making&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="career-planning.html">生涯規劃</a> / <a href="career-planning.html#planning">生涯決策與管理</a> / <a href="career-planning.html#ch-career-decision">生涯決策</a></nav>
+<h1><span data-en="Decision balance sheet">決策平衡單</span><span data-en="Can a small change switch the leader?">權重一動，排名會不會翻？</span></h1>
+<p><span data-en="Compare three fields for a fictional student. Where would the next hour of exploration help most?">替虛構學生比較三個學群，看看下一個小時花在哪裡最值得。</span></p></header>
+<div class="lab"><section class="stage">
+<nav class="viewstrip" aria-label="圖表檢視" data-en-aria-label="Chart views">
+<button type="button" id="view2d" data-view="score" aria-pressed="true"><span data-en="Scores">總分</span></button>
+<button type="button" id="viewProbe" data-view="probe" aria-pressed="false"><span data-en="Switches">翻盤</span></button>
+<button type="button" id="viewChance" data-view="chance" aria-pressed="false"><span data-en="Chances">機率</span></button>
+<button type="button" id="viewMap" data-view="map" aria-pressed="false"><span data-en="Map">權重圖</span></button>
+<button type="button" id="view3d" data-view="3d" aria-pressed="false"><span data-en="3D relief">3D 地形</span></button></nav>
+<h2 id="chanceTitle" class="chart-question" hidden><span data-en="Under this case’s distribution assumptions, how often does each field rank first under uniform sampling?">依本案例的分布假設，模擬中排第一的比例（均勻抽樣）</span></h2><div id="board"><canvas id="cv" tabindex="0" aria-label="三個學群的加權讀圖板" data-en-aria-label="Interactive decision chart for three fields"></canvas>
+<div id="host3" hidden><div class="camera"><button type="button" id="topCam" ><span data-en="Overhead">俯視</span></button><button type="button" id="resetCam" ><span data-en="Reset view">重設視角</span></button></div></div></div>
+<div class="metrics">
+<div class="metric"><small><span data-en="Score leader">總分第一名</span></small><b id="lead"></b></div><div class="metric"><small><span data-en="Lead in points">領先分差</span></small><b id="margin"></b></div><div class="metric"><small><span data-en="Leader win share">領先者勝出率</span></small><b id="win"></b></div></div>
+<div class="actions"><button type="button" id="record" class="primary"><span data-en="Record chart">記錄讀圖</span></button><button type="button" id="saveBase" ><span data-en="Save baseline">留作基準</span></button><button type="button" id="compare" ><span data-en="Compare baseline">比對基準</span></button><button type="button" id="soundBtn" class="sound-btn" aria-pressed="false"><span data-en="Sound">音效</span></button></div>
+<p id="viewMsg" class="msg" role="status"></p>
+<div data-deck-anchor hidden></div>
+<div id="legend" class="key"></div>
+
+<p class="caption" id="caption"></p>
+<section class="next-step"><div class="next-heading"><h2><span data-en="What is worth exploring next?">下一步值得探索什麼？</span></h2><button type="button" id="openPlan"><span data-en="View activities">查看探索活動</span></button></div><p id="nextStep"></p></section></section>
+<aside class="panel">
+<section class="card" data-deck="權重|Weights" data-deck-order="1"><h2><span data-en="What matters to this student?">這位學生在意什麼？</span></h2>
+<div class="choice"><label for="profile"><span data-en="Fictional case">虛構案例</span></label><select id="profile"><option value="0" data-en="An">小安</option><option value="1" data-en="Ting">小庭</option><option value="2" data-en="Yu">小宇</option></select></div>
+<p class="short"><span data-en="Imagine each rating improving from 1 to 5. Give more weight to the improvements that matter most.">想像每一項都從 1 分進步到 5 分。越重視這個改變，權重就給得越高。</span></p>
+<div class="slider" data-crit="0"><label for="w0"><i></i><span data-en="Interest">興趣</span></label><input id="w0" type="range" min="0" max="10" step="0.1" data-decimals="3" value="6"><output for="w0"></output></div>
+<div class="slider" data-crit="1"><label for="w1"><i></i><span data-en="Skills">能力</span></label><input id="w1" type="range" min="0" max="10" step="0.1" data-decimals="3" value="5"><output for="w1"></output></div>
+<div class="slider" data-crit="2"><label for="w2"><i></i><span data-en="Values">價值觀</span></label><input id="w2" type="range" min="0" max="10" step="0.1" data-decimals="3" value="5"><output for="w2"></output></div>
+<div class="slider" data-crit="3"><label for="w3"><i></i><span data-en="Prospects">未來發展</span></label><input id="w3" type="range" min="0" max="10" step="0.1" data-decimals="3" value="4"><output for="w3"></output></div>
+<div class="slider" data-crit="4"><label for="w4"><i></i><span data-en="Environment">學習環境</span></label><input id="w4" type="range" min="0" max="10" step="0.1" data-decimals="3" value="3"><output for="w4"></output></div>
+<div class="slider" data-crit="5"><label for="w5"><i></i><span data-en="Affordability">可負擔程度</span></label><input id="w5" type="range" min="0" max="10" step="0.1" data-decimals="3" value="3"><output for="w5"></output></div>
+<details class="notes"><summary><span data-en="My weights and fields">我的權重與比較學群</span></summary>
+<div class="subactions"><button type="button" id="evenWeights"><span data-en="Equal">平均</span></button><button type="button" id="interestWeights"><span data-en="Interest first">重興趣</span></button><button type="button" id="costWeights"><span data-en="Affordability first">重可負擔</span></button></div>
+<div class="choice"><label for="field0"><span data-en="Field 1">比較學群 1</span></label><select id="field0"></select></div>
+<div class="choice"><label for="field1"><span data-en="Field 2">比較學群 2</span></label><select id="field1"></select></div>
+<div class="choice"><label for="field2"><span data-en="Field 3">比較學群 3</span></label><select id="field2"></select></div>
+<p class="short"><span data-en="Choose three of the 18 fields. Changing fields starts a new plan. All ratings are fictional.">從十八學群選三個。換學群會重新開始探索計畫，評分都是虛構案例資料。</span></p></details>
+</section>
+<section class="card" data-deck="探索|Explore" data-deck-order="2"><h2><span data-en="Where should the time go?">把時間花在哪裡？</span></h2>
+<p class="short"><span data-en="Tap a card or drag it onto the timeline. Each card lists the ratings it helps clarify.">點活動或拖進時間軸。每張卡片列出能釐清的評分。</span></p>
+<strong id="hours"></strong><div class="budget"><i id="budgetFill"></i></div><div id="timeline" aria-label="探索時間軸" data-en-aria-label="Exploration timeline"></div><div id="activityList" class="actlist"></div>
+<div class="choice"><label for="conclusion"><span data-en="My reading of the evidence">我的判讀</span></label><select id="conclusion"><option value="open" data-en="Still undecided after exploration">探索後仍未定</option><option value="lead" data-en="Tentatively follow the score leader">暫採目前領先的學群</option></select></div>
+<div class="subactions"><button type="button" id="effect" class="primary"><span data-en="Compare exploration">比對探索前後</span></button><button type="button" id="finish" ><span data-en="Finish decision note">完成這次判讀</span></button></div><p id="effectText" class="short" aria-live="polite"></p></section>
+<section class="card" data-deck="判讀|Inspect" data-deck-order="3"><h2><span data-en="Test a switch point">檢驗翻盤距離</span></h2>
+<div class="choice"><label for="criterion"><span data-en="Criterion to test">想檢驗的考量</span></label><select id="criterion"></select></div><p id="pivotText" class="short"></p><p id="lineCases" class="short" hidden></p>
+<div class="subactions"><button type="button" id="testPivot" class="primary"><span data-en="Test criterion">檢驗判讀</span></button><button type="button" id="toPivot" ><span data-en="Go to boundary">移到交界</span></button></div>
+<h2 style="margin-top:14px"><span data-en="Corners of the weight map">權重圖的三個頂點</span></h2><div class="axes" id="axes"></div>
+<div class="subactions map-pad" id="nudges"><button type="button" data-dir="3" aria-label="向左" data-en-aria-label="Left">←</button><button type="button" data-dir="1" aria-label="向上" data-en-aria-label="Up">↑</button><button type="button" data-dir="7" aria-label="向下" data-en-aria-label="Down">↓</button><button type="button" data-dir="5" aria-label="向右" data-en-aria-label="Right">→</button></div><p class="short"><span data-en="Drag the flag or use the arrows to fine-tune. Shares outside the three criteria stay fixed.">拖旗或用方向鍵微調，三項以外的占比固定。</span></p></section>
+<section class="card" data-deck="資料|Data" data-deck-order="4"><h2><span data-en="How certain are the ratings?">這些分數有多確定？</span></h2>
+<p class="short"><span data-en="Each cell shows the estimated rating above its standard deviation σ. A larger σ means more uncertainty.">每格上方是估計分數，下方的 σ 是標準差。數值越大，評分越不確定。</span></p>
+<table class="matrix" id="matrix"></table><p id="uncertainty" class="short"></p>
+<details id="advanced" class="notes"><summary><span data-en="Advanced ratings, sampling and thresholds">進階 · 評分、抽樣與門檻</span></summary>
+<div class="choice"><label for="sigmaField"><span data-en="Field to edit">編輯哪個學群</span></label><select id="sigmaField"></select></div><div class="choice"><label for="sigmaCriterion"><span data-en="Rating to edit">編輯哪項考量</span></label><select id="sigmaCriterion"></select></div>
+<div class="slider"><label for="sigmaValue"><span data-en="Initial standard deviation σ">探索前的標準差 σ</span></label><output class="lab-num" for="sigmaValue">0.36</output><input type="range" id="sigmaValue" min="0" max="1" step="0.01" data-decimals="2" value="0.36"></div>
+<div class="choice"><label for="variation"><span data-en="Ratings across draws">每次抽到的評分</span></label><select id="variation"><option value="random" data-en="Random variation">隨機差異</option><option value="fixed" data-en="Identical ratings">一樣</option></select></div>
+<div class="choice"><label for="trials"><span data-en="Number of draws">抽樣次數</span></label><select id="trials"><option value="200">200</option><option value="2000" selected>2,000</option><option value="20000">20,000</option></select></div>
+<div class="choice"><label for="drawSeed"><span data-en="Seed">種子</span></label><input id="drawSeed" type="number" min="1" max="4294967295" step="1" value="11202026"></div>
+<div class="subactions"><button type="button" id="redraw"><span data-en="Redraw">重抽</span></button><button type="button" id="viewSampling"><span data-en="View chances">看機率圖</span></button></div>
+<div class="choice"><label for="floorCriterion"><span data-en="Criterion with a minimum">不能低於門檻的項目</span></label><select id="floorCriterion"></select></div><div class="slider"><label for="floorValue"><span data-en="Minimum acceptable rating">最低可接受分數</span></label><output class="lab-num" for="floorValue">1</output><input type="range" id="floorValue" min="1" max="5" step="0.01" data-decimals="2" value="1"></div>
+<p class="short" id="filterResult" role="status"></p>
+<p class="short"><span data-en="Missions compare three eligible fields using original deviations, random variation and at least 2,000 draws.">任務比較三個都合格的學群，採用案例原始標準差、隨機差異與至少 2,000 次抽樣。</span></p>
+<button type="button" id="restoreModel"><span data-en="Restore case model settings">還原案例的模型設定</span></button></details>
+<p class="short" id="chancePrecision" aria-live="polite"></p>
+<h2><span data-en="Decision notes">本次判讀紀錄</span></h2><ol id="log" class="log"></ol><button type="button" id="clearAll" ><span data-en="Clear all">全部清除</span></button></section>
+</aside></div>
+<details class="notes" id="model"><summary><span data-en="Model and assumptions">模型與假設</span></summary>
+<h3><span data-en="Weighted scores">加權總分</span></h3><p><span data-en="Each rating runs from 1 to 5 for this fictional student. Higher always means a better fit, including greater affordability. How much would moving a criterion from 1 to 5 matter? Express its relative weight on a 0–10 scale and divide by the total weight. Add the weighted ratings. The model assumes equal rating intervals and allows strengths to compensate for weaknesses.">每格用 1 至 5 分表示這位角色覺得有多合適。所有項目都是愈高愈合適，可負擔程度這一欄的高分表示較能負擔。把同一項從 1 分提升到 5 分有多重要？用 0 至 10 表示相對權重，再除以權重總和。每項的分數乘上占比後相加。這個模型假設各項可以相加補償，且相鄰分數的差距相等。</span> <a href="https://www.gov.uk/government/publications/green-book-supplementary-guidance-multi-criteria-decision-analysis/use-of-multi-criteria-decision-analysis-in-options-appraisal-of-economic-cases" target="_blank" rel="noopener noreferrer"><span data-en="UK government MCDA guidance, steps 4 and 5">英國政府多準則決策指引，第 4、5 步</span></a></p><div class="formula">\(w_j=\frac{u_j}{\sum_k u_k},\qquad S_i=\sum_j w_j s_{ij}\)</div>
+<h3><span data-en="How far to a reversal?">多遠會翻盤？</span></h3><p><span data-en="Change one share and keep the other shares in proportion. With that share at zero, compute the weighted average of the other ratings. Join that value to the single-criterion rating at full share. Let a be the gap at full share and b the gap at zero share. At share x the gap is xa + (1−x)b. A crossing counts when the outright leader changes across it and beats the third field. Parallel lines, persistent ties and endpoint ties are listed separately. Distance is the nearest change in percentage points. If all other weights start at zero, distribute the remainder equally among the other five.">只改一項占比，其餘各項維持原比例。把這一項的占比設成零，得到其餘項目的加權平均。從這個平均分直線連到該項獨占時的分數。令 a、b 分別是兩學群在這項獨占、占比為零時的分差。在占比 x 時，分差為 xa + (1−x)b。交會後換人領先，而且能勝過第三學群，才算首名翻轉。平行、全程同分和端點平手分別列出。從目前位置到最近交界的占比差，以百分點表示。其他權重全為零時，往回調會把剩下的占比平均分給其餘五項。</span> <a href="https://bit.csc.lsu.edu/trianta/Journal_PAPERS1/MCDM_SensitivityAnalysis_by_Triantaphyllou1.pdf" target="_blank" rel="noopener noreferrer"><span data-en="Triantaphyllou and Sánchez, ranking sensitivity">Triantaphyllou 與 Sánchez，排名敏感度</span></a></p><div class="formula">\(D(x)=xa+(1-x)b,\qquad x_*=\frac{b}{b-a}\)</div>
+<h3><span data-en="How much can a rating vary?">每次評分會有多大差異？</span></h3><p><span data-en="A ± whisker extends one standard deviation on either side of the estimate. The standard deviation σ describes uncertainty in each rating. Draw independently from a symmetric uniform distribution for each cell, always within 1 to 5. The default uses a fixed seed and 2,000 draws. Win shares count the highest scores, splitting ties equally. Comparisons reuse the same draws. To measure the gap, keep the two fields with the highest estimated totals fixed. Its standard deviation is the square root of the sum of their score variances. The shares describe variability in this fictional case.">鬚線的 ± 表示從估計值加減一個標準差。σ 是一格評分的標準差，用來表示估計的散布程度。每格獨立地從對稱均勻分布抽樣，範圍都在 1 至 5 分內。預設以相同種子抽樣 2,000 次，每次計算三組總分。勝出機率採最高分出現的次數比例，平手均分。比較前後沿用同一批抽樣。先依估計總分選出前兩名，固定這兩個學群。兩組總分的變異數相加再開根號，得到這對學群的分差標準差。這些比例只描述虛構評分的變動。</span> <a href="https://www.bipm.org/en/doi/10.59161/jcgm101-2008" target="_blank" rel="noopener noreferrer"><span data-en="JCGM 101:2008, sections 6.4.2 and 7">JCGM 101:2008，第 6.4.2 與第 7 節</span></a> <a href="https://sal.aalto.fi/publications/abstracts/plah01.html" target="_blank" rel="noopener noreferrer"><span data-en="Lahdelma and Salminen, rank acceptability">Lahdelma 與 Salminen，排名接受度</span></a></p><div class="formula">\(s_{ij}^{(m)}\sim U(\mu_{ij}-\sqrt3\,\sigma_{ij},\,\mu_{ij}+\sqrt3\,\sigma_{ij}),\qquad \sigma_{\Delta}^2=\sum_j w_j^2(\sigma_{ij}^2+\sigma_{kj}^2)\)</div>
+<h3><span data-en="How does exploration update the case?">活動在模型裡如何生效？</span></h3><p><span data-en="Each activity can be used once within 20 hours. Each cell has a fixed hidden target for the case. An activity moves the estimate toward that target and shrinks the standard deviation in its affected cells. Retained fractions multiply, so the order does not change the outcome. The profiles, ratings, hours, retained fractions, draw count and mission targets are lesson settings. Each activity lists its affected cells.">同一活動只能做一次，合計最多 20 小時。每個格子都有角色專屬的固定目標值。活動讓特定格子的估計往目標靠近，也縮小標準差。殘留比例相乘，所以交換順序得到同一結果。人物、分數、時數、殘留比例、抽樣次數與任務門檻由本站教案設定。活動卡列出各自影響的格子。</span></p><div class="formula">\(\mu'=\theta+(\mu-\theta)\prod_a r_a,\qquad \sigma'=\sigma\prod_a r_a\)</div>
+<h3><span data-en="How do I read the triangle?">三角形怎麼讀？</span></h3><p><span data-en="Each corner represents one criterion. Near a corner, more of the three-way share goes to that criterion. Moving the flag holds their combined share and the three outside shares fixed. Colour marks the leading field. Height is the gap between first and second and reaches zero at a change of leader. The three field names follow ColleGo’s 18-field classification.">三個頂點各代表一項考量。越靠近某個頂點，那一項在三者中的占比越大。移旗時，這三項合計占比固定，另外三項各自不動。色區標出領先學群，地形高度是第一、二名的分差。換色的交界上分差為零。三個學群的名稱採 ColleGo! 十八學群分類。</span> <a href="https://collego.edu.tw/highschool/collegelist" target="_blank" rel="noopener noreferrer"><span data-en="ColleGo! field guide">ColleGo! 大學選才與高中育才輔助系統</span></a> <a href="https://www.ceec.edu.tw/xmdoc/cont?sid=0K079355778709222204&amp;xsmsid=0J325537256835299426" target="_blank" rel="noopener noreferrer"><span data-en="CEEC field list">大考中心學群對照表</span></a></p>
+<h3><span data-en="Fields, thresholds and sampling precision">學群、門檻與抽樣精度</span></h3>
+<p><span data-en="Field names follow ColleGo!. Ratings and presets are fictional. Screen by the mean rating, including equality. Other strengths cannot offset a failed minimum. A sole eligible field has no runner-up. With none eligible the result stays open.">十八學群名稱取自 ColleGo!。六項評分及三組快捷權重均為教案設定。先依指定項目的平均評分篩選，等於最低分仍合格；其他優勢無法抵銷未達標的項目。只有一個學群合格時，沒有前兩名分差；全數未達標時，保留未定。</span> <a href="https://collego.edu.tw/Highschool/CollegeList">ColleGo!</a> · <a href="https://www.gov.uk/government/publications/green-book-supplementary-guidance-multi-criteria-decision-analysis/use-of-multi-criteria-decision-analysis-in-options-appraisal-of-economic-cases"><span data-en="HM Treasury, MCDA guidance §3">英國財政部，多準則決策指引第 3 節</span></a></p>
+<p><span data-en="Identical draws hold ratings at their means. Random draws sample each cell independently. A seed replays the sequence and larger runs reuse its prefix. The 1–5 scale bounds σ. Interest and skills may be overestimated together, so ignoring positive correlation understates the variance of the total.">「一樣」固定每格評分。「隨機差異」依各格的 σ 獨立抽樣。同種子可重播，增加次數沿用前一批樣本。為了讓分數落在 1 至 5 分內，σ 的上限取決於平均分離量尺兩端的距離。興趣與能力的估計誤差可能一起偏高，忽略正相關會低估同一學群總分的變異。</span> <a href="https://www.nist.gov/pml/nist-technical-note-1297/nist-tn-1297-appendix-law-propagation-uncertainty"><span data-en="NIST, covariance terms">美國國家標準暨技術研究院，共變異項</span></a></p>
+<p><span data-en="In Chances, ± is a conservative 95% margin per eligible field, clipped to 0–100%. Shared wins remain in [0,1]. Ten times as many draws reduce the margin to about 32%. This interval measures simulation precision and cannot predict individual career outcomes.">機率圖的 ± 是單一合格學群首名比例的 95% 保守抽樣誤差界，區間限於 0%–100%。平手均分，單次得分仍介於 0 與 1。次數增加十倍，誤差界縮為約 32%。這個區間衡量電腦抽樣的精度，無法預測個人的生涯結果。</span> <a href="https://nowak.ece.wisc.edu/ece901_concentration.pdf"><span data-en="University of Wisconsin, Hoeffding inequality">威斯康辛大學講義，Hoeffding 不等式</span></a></p>
+<div class="formula">\(\varepsilon=\sqrt{\ln(2/0.05)/(2N)}\)</div>
+<p><span data-en="The seed specifies where the 32-bit random sequence starts. Zero is excluded because it would repeat forever.">種子指定 32 位元亂數序列的起點。零會讓數列永遠停在零，因此從 1 開始選。</span> <a href="https://www.jstatsoft.org/article/view/v008i14">Marsaglia，Xorshift RNGs</a></p>
+<p id="retentions"></p></details>
+<p class="short"><small><span data-en="Curriculum · Career planning: Ca-V-1, decision processes and assessment tools; Ca-V-2, career reflection and adapting to change; Ba-V-3, personal traits and university fields.">課綱｜生涯規劃：涯 Ca-V-1 抉擇歷程與評估工具、涯 Ca-V-2 生涯反思與變化因應、涯 Ba-V-3 特質與大學學群。</span> <a href="https://stv.naer.edu.tw/data/course_outline/pta_18531_5238547_60214.pdf" target="_blank" rel="noopener noreferrer"><span data-en="National curriculum">綜合活動領域課程綱要</span></a></small></p>
+<footer><span data-en="Astro Ni Lab · High school interactive labs">讓倪動手 ⚡ 高中全科模擬實驗室</span></footer></main>
+<script src="vendor/katex/katex.min.js"></script><script src="vendor/katex/contrib/auto-render.min.js"></script><script src="js/math.js"></script>
+<script src="js/career-decision-balance-core.js"></script><script src="js/sound.js"></script><script src="js/numinput.js"></script><script src="js/labdeck.js"></script>
+<script src="js/drawkit.js"></script><script src="js/view3d-nav.js"></script><script src="js/vpad.js"></script><script src="js/stepguide.js"></script><script src="js/labside.js"></script>
+<script src="js/career-decision-balance.js"></script><script src="js/examples/career-decision-balance.js"></script>
+<script src="js/firebase-config.js"></script><script src="js/missions.js" data-module="career-decision-balance"></script><script src="js/missions/career-decision-balance.js"></script>
+<script src="js/stats.js" data-module="career-decision-balance"></script><script src="js/comments.js"></script>
+</body></html>
