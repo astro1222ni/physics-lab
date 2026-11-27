@@ -127,9 +127,9 @@
     g.fillText(unit, p.x1, p.y1 + 6);
     g.textAlign = 'center';
     for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) {
-      const x = xOf(v);
-      if (x > p.x1 - wl - 14) break;
-      g.fillText(fmt(v), x, p.y1 + 6);
+      const x = xOf(v), lab = fmt(v);
+      if (x + g.measureText(lab).width / 2 > p.x1 - wl - 8) break;   // 刻度字右緣離單位至少 8 px
+      g.fillText(lab, x, p.y1 + 6);
       g.strokeStyle = D.alpha(D.c.text, 0.05);
       g.beginPath(); g.moveTo(Math.round(x) + 0.5, p.y0); g.lineTo(Math.round(x) + 0.5, p.y1); g.stroke();
     }

@@ -156,9 +156,9 @@
     g.fillText(unit, p.x1, p.y1 + 6);
     g.textAlign = 'center';
     for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) {
-      const x = xOf(v);
-      if (x > p.x1 - wl - 14) break;
-      g.fillText(fmt(v), x, p.y1 + 6);
+      const x = xOf(v), lab = fmt(v);
+      if (x + g.measureText(lab).width / 2 > p.x1 - wl - 8) break;   // 刻度字右緣離單位至少 8 px
+      g.fillText(lab, x, p.y1 + 6);
       g.strokeStyle = D.alpha(D.c.text, 0.05);
       g.beginPath(); g.moveTo(Math.round(x) + 0.5, p.y0); g.lineTo(Math.round(x) + 0.5, p.y1); g.stroke();
     }
@@ -440,7 +440,10 @@
     if (cut > 12) g.fillText('A', xs - 4, ys + cut / 2);
     if (s - cut > 12) g.fillText('a', xs - 4, ys + cut + (s - cut) / 2);
     g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = D.c.muted;
-    g.fillText('p = ' + num(p, 2) + '  q = ' + num(1 - p, 2), xs, ys + s + 5);
+    // 方格下的 p、q：一行放不下（手機橫放字放大後會被畫布右緣切掉）就分兩行
+    const pq1 = 'p = ' + num(p, 2), pq2 = 'q = ' + num(1 - p, 2);
+    if (xs + g.measureText(pq1 + '  ' + pq2).width <= W1 - 6) g.fillText(pq1 + '  ' + pq2, xs, ys + s + 5);
+    else { g.fillText(pq1, xs, ys + s + 5); g.fillText(pq2, xs, ys + s + 20); }
     // 寬螢幕：方格下面的空間放三角圖的看法
     if (L1.wide) {
       let y = ys + s + 34;

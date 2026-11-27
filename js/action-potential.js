@@ -557,9 +557,9 @@
     g.fillText(lab, p.x1, p.y1 + 6);
     g.textAlign = 'center';
     for (let t = 0; t <= tMax + 1e-9; t += step) {
-      const x = xOf(t);
-      if (x > p.x1 - wl - 14) break;
-      g.fillText(num(t, step < 1 ? 1 : 0), x, p.y1 + 6);
+      const x = xOf(t), lab = num(t, step < 1 ? 1 : 0);
+      if (x + g.measureText(lab).width / 2 > p.x1 - wl - 8) break;   // 刻度字右緣離單位至少 8 px
+      g.fillText(lab, x, p.y1 + 6);
     }
   }
   function subLabel(g, base, sub, x, y, color, align) {
