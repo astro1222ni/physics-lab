@@ -24,7 +24,7 @@
       id: 'population-pyramid-1', level: 1,
       title: { zh: '走到 2050 年', en: 'On to 2050' },
       desc: { zh: '按「播放」或拖年份，看 2050 年的人口金字塔。', en: 'Press Play or drag the year to see the pyramid in 2050.' },
-      check: function (ev) { const d = P(ev); return !!d && d.view === 'proj' && d.year === 2050; }
+      check: function (ev) { const d = P(ev); return !!d && d.view === 'proj' && d.year >= 2050; }
     },
     {
       id: 'population-pyramid-2', level: 2,
@@ -66,13 +66,13 @@
       id: 'population-pyramid-8', level: 5,
       title: { zh: '人口慣性', en: 'Population momentum' },
       desc: { zh: '在「自訂」裡，總生育率設成 2.1、淨遷入 0，到 2075 年人口還是比 2025 年少。', en: 'In “My own”: Set the fertility rate to 2.1 and net migration to 0: in 2075 the population is still smaller than in 2025.' },
-      check: function (ev) { const d = P(ev); const t75 = d && d.total2075 != null ? d.total2075 : (d ? d.total : null); return !!d && d.mode === 'custom' && d.view === 'proj' && Math.abs(d.tfr - 2.1) <= 0.001 && d.net === 0 && d.year === 2075 && t75 < d.total2025; }
+      check: function (ev) { const d = P(ev); const t75 = d && d.total2075 != null ? d.total2075 : (d ? d.total : null); return !!d && d.mode === 'custom' && d.view === 'proj' && Math.abs(d.tfr - 2.1) <= 0.001 && d.net === 0 && d.year >= 2075 && t75 < d.total2025; }
     },
     {
       id: 'population-pyramid-9', level: 5,
       title: { zh: '靠移民撐住', en: 'Held up by migration' },
       desc: { zh: '在「自訂」裡，總生育率不超過 1.0，到 2075 年人口仍不少於 2025 年。', en: 'In “My own”: With a fertility rate of 1.0 or less, still have at least as many people in 2075 as in 2025.' },
-      check: function (ev) { const d = P(ev); const t75 = d && d.total2075 != null ? d.total2075 : (d ? d.total : null); return !!d && d.mode === 'custom' && d.view === 'proj' && d.tfr <= 1.0 && d.year === 2075 && t75 >= d.total2025; }
+      check: function (ev) { const d = P(ev); const t75 = d && d.total2075 != null ? d.total2075 : (d ? d.total : null); return !!d && d.mode === 'custom' && d.view === 'proj' && d.tfr <= 1.0 && d.year >= 2075 && t75 >= d.total2025; }
     },
     {
       id: 'population-pyramid-10', level: 6,
@@ -84,7 +84,7 @@
       id: 'population-pyramid-11', level: 6,
       title: { zh: '延長人口紅利', en: 'Make the dividend last' },
       desc: { zh: '在「自訂」裡，讓 2075 年的扶養比不超過 70。', en: 'In “My own”, keep the dependency ratio at 70 or below in 2075.' },
-      check: function (ev) { const d = P(ev); return !!d && d.mode === 'custom' && d.view === 'proj' && d.year === 2075 && d.dep <= 70; }
+      check: function (ev) { const d = P(ev); const d75 = d && d.dep2075 != null ? d.dep2075 : (d ? d.dep : null); return !!d && d.mode === 'custom' && d.view === 'proj' && d.year >= 2075 && d75 <= 70; }
     },
     {
       id: 'population-pyramid-12', level: 7,

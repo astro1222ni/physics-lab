@@ -357,7 +357,7 @@
       act: act || 'year', running: state.running, mode: state.mode, view: state.past ? 'past' : 'proj', real: isReal(),
       year: dispYear(), tfr: state.mode === 'ndc' ? (i > 0 ? traj[i].tfr : K.DATA.asfr.tfr) : state.tfr,
       e0: state.e0, net: state.mode === 'custom' ? state.net : 0, srb: state.srb,
-      total: d.total, total2025: BASE_TOTAL, total2050: !state.past ? inds[2050 - START].total : null, total2075: !state.past ? inds[2075 - START].total : null, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
+      total: d.total, total2025: BASE_TOTAL, total2050: !state.past ? inds[2050 - START].total : null, total2075: !state.past ? inds[2075 - START].total : null, dep2075: !state.past ? inds[2075 - START].dep : null, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
       depPrev: !state.past && i > 0 ? inds[i - 1].dep : null, aging: d.aging, median: d.median,
       sexRatio: d.sexRatio, p100: d.p100, shape: d.shape,
       cmp: state.cmp, cmpDist: cmp ? K.distance(curPop(), cmp) : null,

@@ -868,7 +868,7 @@
     const q = pt(e);
     pvTimer = setTimeout(function () {
       const g = geom(), p = toWorld(q[0], q[1], g);
-      const c = Object.assign({}, R, { x: R.x.slice(), y: R.y.slice(), oxbows: R.oxbows.slice(), events: R.events.slice(), hist: [] });
+      const c = Object.assign({}, R, { x: R.x.slice(), y: R.y.slice(), oxbows: R.oxbows.slice(), oxTimes: (R.oxTimes || []).slice(), events: R.events.slice(), hist: [] });
       const res = K.artificialCut(c, p[0], p[1]);
       preview = res ? { lx: res.ox.x, ly: res.ox.y, a: [res.ox.x[0], res.ox.y[0]], b: [res.ox.x[res.ox.x.length - 1], res.ox.y[res.ox.y.length - 1]], saved: res.saved } : null;
       requestDraw();

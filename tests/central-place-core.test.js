@@ -157,6 +157,7 @@ test('商品在哪一級賣：市場區人口 ≥ 門檻的最低一級', () => 
   assert.strictEqual(K.goodIn(100, 6, 3, 3, H[0].pop * 1.01, 30).L, 2);
   assert.strictEqual(K.goodIn(100, 6, 3, 3, H[2].pop, 30).L, 3);
   assert.strictEqual(K.goodIn(100, 6, 3, 3, H[2].pop * 1.01, 30).L, null);
+  assert.strictEqual(K.goodIn(100, 6, 3, 3, 10000, 1).L, null);
   const g = K.goodIn(100, 6, 3, 3, 9340, 10);
   near(g.fill, 9340 / H[1].pop, 1e-12); near(g.reach, 10 / H[1].far, 1e-12); near(g.coverage, K.coverage(H[1].d, 10), 1e-12);
 });

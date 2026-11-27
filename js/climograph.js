@@ -947,7 +947,7 @@
       if (state.scope === 'tw' && hits.length > 1) {
         const g = mapGeom(), p0 = g.xy(hits[0].lon, hits[0].lat);
         const close = hits.filter(function (s) { const q = g.xy(s.lon, s.lat); return Math.hypot(q[0] - p0[0], q[1] - p0[1]) <= 14; });
-        if (close.length > 1) { openPickMenu(close, e.clientX, e.clientY); return; }
+        if (close.length > 1) { e.stopPropagation(); openPickMenu(close, e.clientX, e.clientY); return; }
       }
       selectStation(hits[0].id);
       afterChange(true);

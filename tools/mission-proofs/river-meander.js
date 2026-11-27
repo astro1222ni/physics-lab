@@ -95,6 +95,16 @@ let r4;
   }
   witness('6', ev(r, { act: 'art', tool: 'cut' }), '截一個頸寬 ' + done.neck.toFixed(0) + ' m 的彎，省下 ' + done.saved.toFixed(0) + ' m');
   expect('按到截不了的地方（nocut）不算', !byId('6').check(ev(base, { act: 'nocut', tool: 'cut' })));
+  {
+    // 反例：只懸停預覽不截彎，複本有複製 oxTimes 不會汙染本體牛軛湖數
+    const rHov = runUntil({ W: 80, k: 8, seed: 1 }, q => q.t >= 301, 310);
+    const lakes0 = K.snapshot(rHov).lakes;
+    for (let i = 5; i < rHov.x.length - 5; i += 2) {
+      const c = Object.assign({}, rHov, { x: rHov.x.slice(), y: rHov.y.slice(), oxbows: rHov.oxbows.slice(), oxTimes: (rHov.oxTimes || []).slice(), events: rHov.events.slice(), hist: [] });
+      K.artificialCut(c, rHov.x[i], rHov.y[i]);
+    }
+    expect('只懸停預覽截彎不會增加本體牛軛湖數', K.snapshot(rHov).lakes === lakes0 && (rHov.oxTimes || []).length === 0);
+  }
 }
 {
   const r = runUntil({ W: 140, k: 8, seed: 1 }, q => { const l = K.wavelength(q); return K.sinuosity(q) >= 1.2 && l != null && l >= 1500; }, 3000);

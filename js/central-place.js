@@ -889,7 +889,12 @@
     state.gR = clamp(Math.round(val(el.gR) * 100) / 100, LIM.gR);
   }
   function sayHier() {
-    if (!G.L) { setStatus(T('門檻比最高一級的市場區人口還多：這種商品在這個區域沒有地方賣。', 'The threshold is bigger than the top rank\'s market: nowhere in this region sells the good.')); return; }
+    if (!G.L) {
+      const topPop = H.length ? H[H.length - 1].pop : 0;
+      if (topPop >= state.gT) setStatus(T('商品圈太小，在這個區域哪一級都開不起來。', 'The range is too small for any rank in this region to support the good.'));
+      else setStatus(T('門檻比最高一級的市場區人口還多：這種商品在這個區域沒有地方賣。', 'The threshold is bigger than the top rank\'s market: nowhere in this region sells the good.'));
+      return;
+    }
     setStatus(T('這種商品在第 ' + G.L + ' 級以上的中地賣：每個市場區有 ' + grp(G.pop) + ' 人，門檻占 ' + pct(G.fill, 0) + '。', 'Sold at rank ' + G.L + ' and up: each market area has ' + grp(G.pop) + ' people, and the threshold is ' + pct(G.fill, 0) + ' of it.'));
   }
   function sliderChanged(e) {
