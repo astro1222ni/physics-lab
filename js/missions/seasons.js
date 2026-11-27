@@ -70,7 +70,7 @@
     {
       id: 'seasons-8', level: 6,
       title: { zh: '真正的晝夜等長', en: 'Truly equal day and night' },
-      desc: { zh: '在臺北（日出日落計入大氣折射、地軸傾角用真實的 23.44°），找出白天正好 12 小時（誤差 1 分鐘以內）的日子。它在春分那天嗎？', en: 'In Taipei (with refraction at sunrise and sunset and the real 23.44° tilt), find a day whose daylight lasts exactly 12 hours (within 1 minute). Is it the equinox?' },
+      desc: { zh: '在臺北（先按暫停，日出日落計入大氣折射、地軸傾角用真實的 23.44°），找出白天正好 12 小時（誤差 1 分鐘以內）的日子。它在春分那天嗎？', en: 'In Taipei (pause first, with refraction at sunrise and sunset and the real 23.44° tilt), find a day whose daylight lasts exactly 12 hours (within 1 minute). Is it the equinox?' },
       check: function (ev) {
         const d = ev.data;
         return still(ev) && d.loc === 'taipei' && d.realTilt && d.refract && !d.polar && Math.abs(d.dayLen - 12) <= 1 / 60;

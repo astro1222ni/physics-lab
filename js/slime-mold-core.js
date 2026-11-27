@@ -36,7 +36,7 @@
   // 亂數
   // ---------------------------------------------------------------------
   function rng(seed) {
-    let a = (seed >>> 0) || 1;
+    let a = seed === 0 ? 0x6d2b79f5 : ((seed >>> 0) || 1);
     return function () {
       a = (a + 0x6D2B79F5) >>> 0;
       let t = a;
@@ -160,7 +160,8 @@
       s.weights = o.weights.slice();
       s.weightSum = s.weights.reduce((a, b) => a + b, 0);
     }
-    const r0 = rng((o.seed || 1) * 7919 + 13), noise = o.noise || 0, D0 = o.D0 || 1;
+    const sNum = o.seed == null ? 1 : o.seed;
+    const r0 = rng(sNum === 0 ? 0 : sNum * 7919 + 13), noise = o.noise || 0, D0 = o.D0 || 1;
     for (let e = 0; e < m; e++) s.D[e] = D0 * (1 + noise * (2 * r0() - 1));
     return s;
   }
@@ -393,7 +394,7 @@
    * 回傳 { W, H, g, open: Set('i,j|i2,j2') }；格子 (i, j) 的節點編號 j·W + i，座標是格子中心。
    */
   function maze(W, H, loops, seed) {
-    const rnd = rng(seed || 1), n = W * H, seen = new Uint8Array(n), open = {};
+    const rnd = rng(seed == null ? 1 : seed), n = W * H, seen = new Uint8Array(n), open = {};
     function key(a, b) { return a < b ? a + ',' + b : b + ',' + a; }
     const st = [Math.floor(rnd() * n)];
     seen[st[0]] = 1;

@@ -735,12 +735,12 @@
     G.cols.forEach(function (o, j) {
       const x = G.x0 + (j + 0.5) * G.cw, y = G.top + G.hs * (state.merge ? 0.42 : 0.5);
       drawGamete(g, x, y, rb, false, MC.gameteStr(o.a, sy), 0);
-      if (state.merge) txt(g, MC.fstr(o.p), x, G.top + G.hs - 2, { size: 10, color: LD.c.muted, align: 'center' });
+      if (state.merge) txt(g, MC.fstr(o.p), x, G.top + G.hs - 2, { size: 11.5, color: LD.c.muted, align: 'center' });
     });
     G.rows.forEach(function (o, i) {
       const x = P.x + G.hs * (state.merge ? 0.4 : 0.5), y = G.y0 + (i + 0.5) * G.ch;
       drawGamete(g, x, y, rb, true, MC.gameteStr(o.a, sy), 0);
-      if (state.merge) txt(g, MC.fstr(o.p), x, y + rb + 12, { size: 10, color: LD.c.muted, align: 'center' });
+      if (state.merge) txt(g, MC.fstr(o.p), x, y + rb + 12, { size: 11.5, color: LD.c.muted, align: 'center' });
     });
     // 命中次數（神秘模式不顯示：方格是假說，不是實際的雜交）
     let hits = null;
@@ -771,8 +771,8 @@
         txt(g, geno(zg), x + w / 2, big ? y + 6 + gs : y + h / 2, { size: gs, weight: 700, italic: true, family: SERIF, align: 'center', base: big ? 'alphabetic' : 'middle', maxW: w - 10 });
         if (big) organism(g, x + w / 2, y + h * 0.6, Math.round(Math.min(cs * 0.5, 64) / 2) * 2, phOf(pi));
         marker(g, pi, x + 10, y + 10, 3.6, col);
-        if (hits) txt(g, '×' + (hits[i + ',' + j] || 0), x + w - 6, y + h - 6, { size: 10, color: LD.c.muted, align: 'right' });
-        if (state.merge) txt(g, MC.fstr(MC.fmul(ro.p, co.p)), x + 6, y + h - 6, { size: 10, color: LD.c.muted });
+        if (hits) txt(g, '×' + (hits[i + ',' + j] || 0), x + w - 6, y + h - 6, { size: 11.5, color: LD.c.muted, align: 'right' });
+        if (state.merge) txt(g, MC.fstr(MC.fmul(ro.p, co.p)), x + 6, y + h - 6, { size: 11.5, color: LD.c.muted });
       });
     });
   }
@@ -853,8 +853,8 @@
         const f = obs[c2] / N;
         if (sw >= 46) {
           txt(g, String(obs[c2]), cx, topY - 6 - 13 * k, { size: 11.5, weight: 700, align: 'center' });
-          txt(g, pct(f), cx, topY - 5, { size: 10.5, color: LD.c.muted, align: 'center' });
-        } else txt(g, pct(f), cx, topY - 5, { size: 10, color: LD.c.muted, align: 'center', maxW: sw - 2 });
+          txt(g, pct(f), cx, topY - 5, { size: 11.5, color: LD.c.muted, align: 'center' });
+        } else txt(g, pct(f), cx, topY - 5, { size: 11.5, color: LD.c.muted, align: 'center', maxW: sw - 2 });
       }
       // 類別名稱
       const ly = plot.y + plot.h + 6;

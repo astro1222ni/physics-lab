@@ -71,7 +71,7 @@
   const TYPE_TIP = {
     normal: ['健康的人：β 細胞照血糖分泌胰島素，不用打針。', 'A healthy person: the β cells release insulin as glucose rises; no injections needed.'],
     t2: ['第二型：身體對胰島素的反應只剩三成，β 細胞也累了，只剩三成多的功能。先試試少吃一點、多動一點。', 'Type 2: the body answers insulin only about 30% as well as normal, and the tired β cells work at about a third of their capacity. Try eating a little less and moving a little more first.'],
-    t1: ['第一型：β 細胞被免疫系統破壞，完全不會分泌胰島素。現在還沒有打針——試著用長效和速效胰島素把血糖拉回來。', 'Type 1: the immune system has destroyed the β cells, so no insulin is made at all. No injections yet — use long-acting and rapid-acting insulin to bring glucose back.']
+    t1: ['第一型：β 細胞被免疫系統破壞，完全不會分泌胰島素。現在還沒有打針——試著用基礎（全天均勻輸入）和速效胰島素把血糖拉回來。', 'Type 1: the immune system has destroyed the β cells, so no insulin is made at all. No injections yet — use basal (uniform continuous) and rapid-acting insulin to bring glucose back.']
   };
   const PATS = {
     normal: { zh: '健康', en: 'Healthy', beta: 1, si: 1 },
@@ -119,7 +119,7 @@
     g.fillStyle = D.alpha(D.c.surface, D.dark ? 0.35 : 0.72); g.fill();
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
-  function small(g, s, x, y, col, align, base, size) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (g === ctx && st1.L && st1.L.short ? Math.max(11, size || 11) : size || 11) + 'px ' + FONT); }
+  function small(g, s, x, y, col, align, base, size) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (g === ctx && st1.L && st1.L.short ? Math.max(12, size || 12) : size || 12) + 'px ' + FONT); }
   function evPos(c, ev) {
     const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
     return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
@@ -274,7 +274,7 @@
   function renderRows1() {
     const tb = $('runs1');
     if (!st1.rows.length) { tb.innerHTML = ''; return; }
-    let h = '<thead><tr><th>#</th><th>' + T('這個人', 'Person') + '</th><th>' + T('早／午／晚／宵夜（g）', 'Meals (g)') + '</th><th>' + T('長效 + 速效', 'Basal + meal') + '</th><th>' + T('運動', 'Exercise') + '</th><th>' + T('平均', 'Mean') + '</th><th>TIR</th><th>' + T('最低', 'Lowest') + '</th><th>A1C</th></tr></thead><tbody>';
+    let h = '<thead><tr><th>#</th><th>' + T('這個人', 'Person') + '</th><th>' + T('早／午／晚／宵夜（g）', 'Meals (g)') + '</th><th>' + T('基礎 + 速效', 'Basal + meal') + '</th><th>' + T('運動', 'Exercise') + '</th><th>' + T('平均', 'Mean') + '</th><th>TIR</th><th>' + T('最低', 'Lowest') + '</th><th>A1C</th></tr></thead><tbody>';
     st1.rows.forEach(function (r) {
       h += '<tr><td>' + r.no + '</td><td>' + describe(r.p) + '</td><td>' + r.food + '</td><td>' + r.ins + '</td><td>' + r.ex + '</td><td>' + num(r.mean, 0) + '</td><td>' + pct(r.tir) + '</td><td class="' + (r.min < 70 ? 'dm' : 'ok') + '">' + num(r.min, 0) + '</td><td>' + num(r.a1c, 1) + '%</td></tr>';
     });
@@ -498,8 +498,8 @@
     g.fillStyle = grd; g.fill();
     g.strokeStyle = D.alpha(col, 0.8); g.lineWidth = 1.2; g.stroke();
     D.haloText(g, title, x, y - (value ? 7 : 0), D.c.text, 'center', 'middle', '600 11.5px ' + FONT);
-    if (value) D.haloText(g, value, x, y + 8, col, 'center', 'middle', '600 11px ' + FONT);
-    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', (st1.L.short ? '600 11px ' : '600 12px ') + FONT);
+    if (value) D.haloText(g, value, x, y + 8, col, 'center', 'middle', '600 12px ' + FONT);
+    if (note) D.haloText(g, note, x, y + h / 2 + 9, col, 'center', 'middle', '600 12px ' + FONT);
   }
   function wOf(gph) { return gph <= 0.05 ? 0 : Math.min(11, 1.3 + 6.5 * Math.sqrt(gph / 25)); }
   function drawBody(g, x, y, w, h, t) {
@@ -540,11 +540,11 @@
     grd.addColorStop(0, D.shade(C['gl-glu'], 0.75 - 0.5 * k)); grd.addColorStop(1, D.shade(C['gl-glu'], 0.1 - 0.35 * k));
     g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
     g.strokeStyle = zc; g.lineWidth = 3; g.stroke();
-    D.haloText(g, T('血液', 'Blood'), cx, cy - r * 0.42, D.c.text, 'center', 'middle', '600 11px ' + FONT);
+    D.haloText(g, T('血液', 'Blood'), cx, cy - r * 0.42, D.c.text, 'center', 'middle', '600 12px ' + FONT);
     D.haloText(g, num(Gv, 0), cx, cy + 1, D.c.text, 'center', 'middle', '700 ' + Math.round(Math.max(14, r * 0.45)) + 'px ' + FONT);
-    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', (st1.L.short ? '11px ' : '12px ') + FONT);
+    D.haloText(g, 'mg/dL', cx, cy + r * 0.45, D.c.muted, 'center', 'middle', '12px ' + FONT);
     // 往肌肉、腎臟的箭頭會從這裡經過：用有底色的膠囊標籤蓋在箭頭上，字不被穿過
-    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, st1.L.short ? y + h * 0.73 : cy + r + 21, C['gl-ins'], 'center', (st1.L.short ? '600 11px ' : '600 12px ') + FONT);
+    D.pill(g, T('胰島素 ', 'Insulin ') + num(Iv, 1) + ' mU/L', cx, st1.L.short ? y + h * 0.73 : cy + r + 21, C['gl-ins'], 'center', '600 12px ' + FONT);
     const gp = function (v) { return num(v, v < 10 ? 1 : 0) + ' g/h'; };
     const up = function (v) { return num(v, v < 1 ? 2 : 1) + ' U/h'; };
     node(g, pos.gut[0], pos.gut[1], nw, nh, T('腸道吸收', 'Gut'), gp(ug), C['gl-meal']);
@@ -875,7 +875,7 @@
       const v = at(d), xx = x(d), yy = Math.max(P.y0, Math.min(P.y1, y(v)));
       tube(g, xx, P.y1 - 26, C['gl-glu']);
       D.ball(g, xx, yy, 5.5, C['gl-glu'], { glow: 0.35 });
-      D.haloText(g, num(v, 0), xx + (d === 0 ? 8 : 0), yy - 13, D.c.text, d === 0 ? 'left' : 'center', 'middle', '600 11px ' + FONT);
+      D.haloText(g, num(v, 0), xx + (d === 0 ? 8 : 0), yy - 13, D.c.text, d === 0 ? 'left' : 'center', 'middle', '600 12px ' + FONT);
     });
     // 判讀標章
     if (st2.dx) {

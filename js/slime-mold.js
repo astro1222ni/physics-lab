@@ -575,7 +575,7 @@
     if (!ev.connected) return T('有城市被隔開了。', 'Some cities were cut off.');
     let s = (ev.converged ? T('穩定了：', 'Settled: ') : T('跑了很久還沒完全穩定：', 'Not fully settled: ')) +
       T('總長是最小生成樹的 ', 'length ') + num(ev.TLr, 2) + T(' 倍、平均距離 ', '× the spanning tree, mean distance ') + num(ev.MDr, 2) + T(' 倍、容錯 ', '×, fault tolerance ') + pct(ev.FT, 0) + T('。', '.');
-    if (ev.connected && ev.FT === 0) s += T('這是一棵樹：斷任何一段都會隔開城市。', ' It is a tree: any break cuts a city off.');
+    if (ev.connected && Math.abs(ev.FT) < 1e-9) s += T('這是一棵樹：斷任何一段都會隔開城市。', ' It is a tree: any break cuts a city off.');
     if (ev.beatRail) s += T('總長和平均距離都不輸臺鐵，而且一樣耐用！', ' As short and as quick as the railway, and as robust!');
     return s;
   }

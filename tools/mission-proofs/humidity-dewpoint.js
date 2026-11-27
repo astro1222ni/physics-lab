@@ -124,6 +124,8 @@ no('11', C0, '預設加冰塊（差 ' + f2(C0[0].data.err) + '）');
 { let hit = null; for (let f = 0.15; f <= 0.3 && !hit; f += 0.001) { const fr = Math.round(f * 1000) / 1000, Td = HM.dewPoint(HM.eFromRH(25, fr)); if (Td >= 0 && Td < 0.45) { const a = cupRuns(25, fr, 'ice'); if (anyHit('h1', a)) hit = a; } }
   ex('h1', hit, hit && '25 °C、' + f2(hit[0].data.rh * 100) + ' %：露點 ' + f2(hit[0].data.Td) + ' °C'); }
 no('h1', cupRuns(25, 0.05, 'ice'), '25 °C、5 %（露點 ' + f2(HM.dewPoint(HM.eFromRH(25, 0.05))) + ' °C，乾到不行，不是差一點點）');
+{ let hiTd = null; for (let f = 0.18; f <= 0.3 && !hiTd; f += 0.001) { const fr = Math.round(f * 1000) / 1000, Td = HM.dewPoint(HM.eFromRH(25, fr)); if (Td > 0.55 && Td < 0.75) hiTd = cupRuns(25, fr, 'ice'); }
+  no('h1', hiTd, '露點略高於 0.5 °C（' + f2(hiTd[0].data.Td) + ' °C）不算'); }
 no('h1', cupRuns(25, 0.6, 'cold'), '預設空氣用冷水');
 // h7：冷水只比露點低一點點
 e = find('h7', function* () { for (let f = 0.295; f <= 0.31; f += 0.001) yield cupRuns(25, Math.round(f * 1000) / 1000, 'cold'); });

@@ -912,7 +912,7 @@
   }
   /** 「前文 + 上標質量數 + 後文」，基線置中對齊 y */
   function iso(g, pre, mass, post, x, y) {
-    const font = '12px ' + FONT, sf = '10px ' + FONT;
+    const font = '12px ' + FONT, sf = '11px ' + FONT;
     g.font = font; const w1 = g.measureText(pre).width;
     g.font = sf; const w2 = g.measureText(mass).width;
     D.haloText(g, pre, x, y, D.c.muted, 'left', 'middle', font);
@@ -924,7 +924,7 @@
     const g = ctx2, R = L2.t;
     panel(g, R.x, R.y, R.w, R.h);
     title(g, T('氯化銫密度梯度離心', 'Caesium chloride density gradient'), R.x + 12, R.y + 16);
-    const sub = wrapLines(g, T('上輕下重；暗帶是 DNA（紫外光吸收）', 'Light at the top, dense at the bottom; dark bands are DNA (UV absorption)'), R.w - 24, '11px ' + FONT);
+    const sub = wrapLines(g, T('上輕下重；暗帶是 DNA（紫外光吸收）', 'Light at the top, dense at the bottom; dark bands are DNA (UV absorption)'), R.w - 24, '12px ' + FONT);
     const nSub = Math.min(2, sub.length);
     sub.slice(0, 2).forEach(function (ln, i) { small(g, ln, R.x + 12, R.y + 33 + i * 14); });
     const top = R.y + 70 + 14 * nSub, bot = R.y + R.h - 44;

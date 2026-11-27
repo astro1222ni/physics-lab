@@ -117,7 +117,7 @@
   /** 下標文字：parts = [[文字, 是否下標], …]；回傳寬度 */
   function subText(g, parts, x, y, color, size, weight, align) {
     size = size || 12; weight = weight || '';
-    const subSize = L1.short ? 11 : narrowPortrait.matches ? 10 : Math.round(size * 0.74);
+    const subSize = L1.short ? 11.5 : narrowPortrait.matches ? 11 : Math.max(11, Math.round(size * 0.78));
     const f0 = (weight ? weight + ' ' : '') + size + 'px ' + FONT;
     const f1 = (weight ? weight + ' ' : '') + subSize + 'px ' + FONT;
     let w = 0;
@@ -355,7 +355,7 @@
       g.beginPath(); g.moveTo(PL.x, yp(0.5)); g.lineTo(xp(s.P50), yp(0.5)); g.lineTo(xp(s.P50), yp(0)); g.stroke(); g.restore();
       // 左邊有空間就放在虛線左側：右側常有探針的綠色虛線（試玩：「8」壓在綠線上）
       const pLeft = xp(s.P50) - PL.x > 64;
-      subText(g, [['P', 0], ['50', 1], [' ' + num(s.P50, 1), 0]], xp(s.P50) + (pLeft ? -5 : 5), yp(0) - 12, pc, 11, '600', pLeft ? 'right' : 'left');
+      subText(g, [['P', 0], ['50', 1], [' ' + num(s.P50, 1), 0]], xp(s.P50) + (pLeft ? -5 : 5), yp(0) - 12, pc, 12, '600', pLeft ? 'right' : 'left');
     }
     // 探針
     const Pp = val(el.probe), Sp = st1.Sp;

@@ -93,24 +93,28 @@
     {
       id: 'energy-flow-h1', level: 3, hidden: true,
       title: { zh: '一張嘴也沒有', en: 'Not a single mouth' },
+      riddle: { zh: '沒有一張嘴，葉片留住的光能，最終全以熱散去。', en: 'Not a single mouth, yet every bit of sunlight captured by the leaves eventually escapes as heat.' },
       desc: { zh: '沒有一張嘴，葉片留住的光能，最終全以熱散去。', en: 'Not a single mouth, yet every bit of sunlight captured by the leaves eventually escapes as heat.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N === 1 && d.dec >= 1 - EPS; }
     },
     {
       id: 'energy-flow-h2', level: 4, hidden: true,
       title: { zh: '留給後世', en: 'Left for later ages' },
+      riddle: { zh: '這片土地留給後世的，比它還給天空的還多。', en: 'This land leaves more to the ages to come than it gives back to the sky.' },
       desc: { zh: '這片土地留給後世的，比它還給天空的還多。', en: 'This land leaves more to the ages to come than it gives back to the sky.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.store > d.heat; }
     },
     {
       id: 'energy-flow-h3', level: 5, hidden: true,
       title: { zh: '落葉底下的餐桌', en: 'The table under the leaves' },
+      riddle: { zh: '森林裡最大的一張餐桌，擺在落葉底下——不多不少，正好是所有的嘴加起來的五十倍。', en: 'The biggest table in the forest is laid under the fallen leaves — exactly fifty times all the mouths put together.' },
       desc: { zh: '森林裡最大的一張餐桌，擺在落葉底下——不多不少，正好是所有的嘴加起來的五十倍。', en: 'The biggest table in the forest is laid under the fallen leaves — exactly fifty times all the mouths put together.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N >= 2 && d.ing > 0 && Math.abs(d.D / d.ing / 50 - 1) <= 0.02 + EPS; }
     },
     {
       id: 'energy-flow-h4', level: 5, hidden: true,
       title: { zh: '綠色的世界', en: 'A green world' },
+      riddle: { zh: '世界之所以是綠的，是因為吃葉子的，一直被看守著。', en: 'The world is green because whoever eats the leaves is always being watched.' },
       desc: { zh: '世界之所以是綠的，是因為吃葉子的，一直被看守著。', en: 'The world is green because whoever eats the leaves is always being watched.' },
       check: function (ev) {
         const d = ev.data; if (!flow(ev) || d.N < 4 || !(d.ce[1] <= 0.1 + EPS)) return false;
@@ -121,6 +125,7 @@
     {
       id: 'energy-flow-h5', level: 6, hidden: true,
       title: { zh: '一粒也沒少', en: 'Not one grain lost' },
+      riddle: { zh: '一路上沒有誰剩下，也沒有誰吐出來；到了頂端，一粒也沒少。', en: 'Nobody left any behind, nobody spat any out; at the top, not one grain is missing.' },
       desc: { zh: '一路上沒有誰剩下，也沒有誰吐出來；到了頂端，一粒也沒少。', en: 'Nobody left any behind, nobody spat any out; at the top, not one grain is missing.' },
       check: function (ev) {
         const d = ev.data; if (!flow(ev) || d.N < 4) return false;
@@ -131,18 +136,21 @@
     {
       id: 'energy-flow-h6', level: 7, hidden: true,
       title: { zh: '兇猛的大型動物', en: 'Big fierce animals' },
+      riddle: { zh: '越大越兇的，越是稀少：牠獨自守著一整座山。', en: 'The bigger and fiercer, the rarer: it guards a whole mountain alone.' },
       desc: { zh: '越大越兇的，越是稀少：牠獨自守著一整座山。', en: 'The bigger and fiercer, the rarer: it guards a whole mountain alone.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N >= 3 && d.mass[d.N - 1] >= 1e5 - EPS && d.area[d.N - 1] >= 1e8; }
     },
     {
       id: 'energy-flow-h7', level: 7, hidden: true,
       title: { zh: '一天換一次衣服', en: 'A new coat every day' },
+      riddle: { zh: '天天換新衣的主人，養得起十倍重的客人。', en: 'A host who changes clothes every day can feed guests ten times as heavy.' },
       desc: { zh: '天天換新衣的主人，養得起十倍重的客人。', en: 'A host who changes clothes every day can feed guests ten times as heavy.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N >= 2 && d.view === 'biomass' && d.bio[1] >= 10 * d.bio[0] - EPS; }
     },
     {
       id: 'energy-flow-h8', level: 8, hidden: true,
       title: { zh: '沼澤裡的帳本', en: 'The ledger of a bog' },
+      riddle: { zh: '一位只活了二十七歲的年輕人，在一座會結冰的沼澤裡，第一次替能量一層一層地記帳。', en: 'A young man who lived only twenty-seven years kept the first level-by-level ledger of energy, in a bog that froze over each winter.' },
       desc: { zh: '一位只活了二十七歲的年輕人，在一座會結冰的沼澤裡，第一次替能量一層一層地記帳。', en: 'A young man who lived only twenty-seven years kept the first level-by-level ledger of energy, in a bog that froze over each winter.' },
       check: function (ev) {
         const d = ev.data;
@@ -152,6 +160,7 @@
     {
       id: 'energy-flow-h9', level: 9, hidden: true,
       title: { zh: '倒立的城堡', en: 'A castle on its head' },
+      riddle: { zh: '每一層都比下面那一層重，水卻照樣往上流得越來越少。', en: 'Every storey is heavier than the one below, and still less and less flows up through it.' },
       desc: { zh: '每一層都比下面那一層重，水卻照樣往上流得越來越少。', en: 'Every storey is heavier than the one below, and still less and less flows up through it.' },
       check: function (ev) {
         const d = ev.data; if (!flow(ev) || d.N < 4 || d.view !== 'biomass') return false;
@@ -162,6 +171,7 @@
     {
       id: 'energy-flow-h10', level: 10, hidden: true,
       title: { zh: '第六位客人', en: 'The sixth guest' },
+      riddle: { zh: '第六位客人入座時，桌上還剩一百。', en: 'When the sixth guest sits down, a hundred is still left on the table.' },
       desc: { zh: '第六位客人入座時，桌上還剩一百。', en: 'When the sixth guest sits down, a hundred is still left on the table.' },
       check: function (ev) { const d = ev.data; return flow(ev) && d.N === 6 && d.P[5] >= 100 - EPS; }
     }

@@ -626,7 +626,7 @@
       const a = xOfT(K.stageStart(st1.mode, i), L), b = xOfT(K.stageStart(st1.mode, i) + s.d, L);
       if (i % 2 === 0) { g.fillStyle = D.alpha(D.c.text, D.dark ? 0.05 : 0.035); g.fillRect(a, L.A[0] - 12, b - a, L.axisY - L.A[0] + 12); }
       const lab = T(STAGE_SHORT[s.k][0], STAGE_SHORT[s.k][1]);
-      if (b - a > 23) small(g, lab, (a + b) / 2, L.axisY + 9, D.c.muted, 'center', 'middle', b - a > 30 ? 12 : 10);
+      if (b - a > 23) small(g, lab, (a + b) / 2, L.axisY + 9, D.c.muted, 'center', 'middle', b - a > 30 ? 12 : 11.5);
     });
     // 減數分裂 I／II 的大括號標示
     if (st1.mode === 'meiosis' && w >= 420) {
@@ -650,7 +650,7 @@
     const i = Math.round(st1.tau / S.T * S.N);
     D.ball(g, xc, yOf(L.A, S.ch[i], maxCh), 4.5, C['cd-chrom'], { glow: 0.3 });
     D.ball(g, xc, yOf(L.B, S.dna[i], maxD), 4.5, C['cd-dna'], { glow: 0.3 });
-    small(g, T('追蹤左（上）方的細胞', 'Following the left (top) cell'), L.x1, L.A[0] - 13, D.c.muted, 'right', 'middle', 10);
+    small(g, T('追蹤左（上）方的細胞', 'Following the left (top) cell'), L.x1, L.A[0] - 13, D.c.muted, 'right', 'middle', 11.5);
     // 子細胞或配子
     drawStrip(g, L);
   }
@@ -660,7 +660,7 @@
     ticks().forEach(function (q) {
       const y = Math.round(yOf(R, q[0], mx)) + 0.5;
       g.beginPath(); g.moveTo(L.x0, y); g.lineTo(L.x1, y); g.strokeStyle = D.alpha(D.c.border, q[0] ? 0.55 : 0.9); g.stroke();
-      small(g, q[1], L.x0 - 9, y, D.c.muted, 'right', 'middle', 10);   // 離開軸上的圓點（半徑約 4）
+      small(g, q[1], L.x0 - 9, y, D.c.muted, 'right', 'middle', 11.5);   // 離開軸上的圓點（半徑約 4）
     });
     g.save();
     g.beginPath();
@@ -689,7 +689,7 @@
         // 格子窄時分兩行（名稱／提示），避免溢出
         const tip = T('分裂完成後出現', 'appears when division ends'), cx = x + bw / 2, cy = (y0 + y1) / 2;
         if (bw >= 200) small(g, lab + ' ' + (i + 1) + T('：', ': ') + tip, cx, cy, D.c.muted, 'center', 'middle', 12);
-        else { small(g, lab + ' ' + (i + 1), cx, cy - 8, D.c.muted, 'center', 'middle', 12, '700'); if (bw >= 70) small(g, bw < 120 ? T('完成後出現', 'pending') : tip, cx, cy + 8, D.c.muted, 'center', 'middle', 9.5); }
+        else { small(g, lab + ' ' + (i + 1), cx, cy - 8, D.c.muted, 'center', 'middle', 12, '700'); if (bw >= 70) small(g, bw < 120 ? T('完成後出現', 'pending') : tip, cx, cy + 8, D.c.muted, 'center', 'middle', 11.5); }
         if (bw < 150) { /* 窄版字已縮小 */ }
         return;
       }
@@ -707,7 +707,7 @@
       });
       const geno = st1.mode === 'meiosis' ? K.genotype(gm) : '';
       const txt = (st1.mode === 'mitosis' ? '2n = ' + gm.length : (bad ? (gm.length > st1.n ? 'n+1' : 'n−1') : 'n') + T('・', ' · ') + geno);
-      small(g, txt, x + bw / 2, y1 - 11, bad ? C['cd-bad'] : (geno && K.isRecombinant(geno) ? shade(C['cd-xo'], D.dark ? 0 : -0.25) : D.c.text), 'center', 'middle', bw < 90 ? 10 : 11.5, '600');
+      small(g, txt, x + bw / 2, y1 - 11, bad ? C['cd-bad'] : (geno && K.isRecombinant(geno) ? shade(C['cd-xo'], D.dark ? 0 : -0.25) : D.c.text), 'center', 'middle', bw < 90 ? 11.5 : 12, '600');
       if (bad) { D.roundRect(g, x + 1, y0 + 1, bw - 2, y1 - y0 - 2, 9); g.strokeStyle = C['cd-bad']; g.lineWidth = 2; g.stroke(); }
     });
   }
@@ -866,12 +866,12 @@
     for (let d = 0; d <= DMAX; d += 25) {
       const x = Math.round(X(d)) + 0.5;
       g.strokeStyle = D.alpha(D.c.border, d % 50 ? 0.35 : 0.8); g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.stroke();
-      if (d % 50 === 0) small(g, String(d), x, y1 + 10, D.c.muted, 'center', 'middle', 10);
+      if (d % 50 === 0) small(g, String(d), x, y1 + 10, D.c.muted, 'center', 'middle', 11.5);
     }
     for (let r = 0; r <= RMAX + 1e-9; r += 0.1) {
       const y = Math.round(Y(r)) + 0.5;
       g.strokeStyle = D.alpha(D.c.border, 0.6); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
-      small(g, Math.round(r * 100) + '%', x0 - 5, y, D.c.muted, 'right', 'middle', 10);
+      small(g, Math.round(r * 100) + '%', x0 - 5, y, D.c.muted, 'right', 'middle', 11.5);
     }
     small(g, T('距離 d（cM）', 'Distance d (cM)'), x1, y1 + 24, D.c.muted, 'right', 'middle', 12);
     // 50% 線
@@ -881,7 +881,7 @@
     g.strokeStyle = D.alpha(C['cd-k2'], 0.75);
     g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(RMAX * 100), Y(RMAX)); g.stroke();
     g.setLineDash([]);
-    small(g, '50%', x1 - 4, Y(0.5) - 9, D.c.muted, 'right', 'middle', 10);
+    small(g, '50%', x1 - 4, Y(0.5) - 9, D.c.muted, 'right', 'middle', 11.5);
     small(g, 'r = d', X(52), Y(0.52) - 2, C['cd-k2'], 'right', 'middle', 12, '600');
     // Haldane 曲線
     g.beginPath();
@@ -922,7 +922,7 @@
       D.roundRect(g, x + 1, y + 1, cell - 2, cell - 2, Math.min(4, cell / 4));
       g.fillStyle = v ? D.alpha(D.mix(C['cd-mat'], C['cd-pat'], key.split('').filter(function (c) { return c === 'P'; }).length / st2.n), a) : D.alpha(D.c.border, 0.35);
       g.fill();
-      if (cell >= 28 && st2.n <= 4) small(g, key, x + cell / 2, y + cell / 2, D.c.text, 'center', 'middle', 9);
+      if (cell >= 34 && st2.n <= 4) small(g, key, x + cell / 2, y + cell / 2, D.c.text, 'center', 'middle', 11.5);
     }
   }
   // 鍵盤

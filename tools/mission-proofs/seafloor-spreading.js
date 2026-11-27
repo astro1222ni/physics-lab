@@ -75,10 +75,12 @@ expect('8 右 1.3、左右一樣 也算', byId('8').check(ev({ u: 1.3 })));
 expect('8 右 1.15 看不出來', !byId('8').check(ev({ uR: 1.15, uL: 2.5 })));
 expect('8 右 1.4 超過 1.3 不算', !byId('8').check(ev({ uR: 1.4, uL: 2.5 })));
 expect('8 磁力計不在海面不算', !byId('8').check(ev({ u: 1.25, zs: 0.5 })));
+expect('8 拉回 0.85 Ma 前、海面 0.9 cm/yr 不算', !byId('8').check(ev({ uR: 0.9, uL: 2.5, zs: 0, tau: 0.85 })));
 // 9 慢速脊
 expect('9 0.95 cm/yr、深拖 1.5 km', byId('9').check(ev({ u: 0.95, zs: 1.5 })));
 expect('9 0.9 cm/yr、深拖 1.0 km', byId('9').check(ev({ u: 0.9, zs: 1.0 })));
 expect('9 海面看不出來', !byId('9').check(ev({ u: 0.95, zs: 0 })));
+expect('9 海面＋拉回 0.85 Ma 前不算', !byId('9').check(ev({ u: 0.9, zs: 0, tau: 0.85 })));
 expect('9 1.05 cm/yr 不算', !byId('9').check(ev({ u: 1.05, zs: 1.5 })));
 // 10、11
 expect('10 誤差 4%', byId('10').check({ type: 'guess', data: { u: 3, g: 3.12, err: 0.04 } }));

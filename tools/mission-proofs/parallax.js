@@ -90,6 +90,7 @@ no('3', ev({ mode: 'orbit' }, 'run'), '播放一年不算');
   const r = find('4', function* () { for (let b = 5; b >= -5; b -= 0.5) yield { o: { star: '', d: 1.302, beta: b } }; });
   ex('4', r && r.e, r && ('β ' + r.e.data.beta + '°：半短軸 ' + f3(r.e.data.ellB) + '″'));
   no('4', ev({ star: '', d: 1.302, beta: 1 }), 'β 1°');
+  { const eq1 = ev({ star: '', d: 1.302, beta: 0 }); eq1.data.ellB = 0.01 * eq1.data.ellA; no('4', eq1, '半短軸剛好 1%（非嚴格小於）'); }
   no('4', ev({ mode: 'measure', star: '', d: 1.302, beta: 0 }), '量測模式不算');
 }
 {

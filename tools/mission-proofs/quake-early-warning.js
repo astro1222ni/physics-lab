@@ -135,6 +135,7 @@ no('6', ev({ site: 'HUA' }), '沒開現地型');
   ex('11', r && r.e, r && ('間距 ' + r.o.o.spacing + ' km、' + r.o.o.n + ' 站、' + r.o.o.proc + ' s：臺中 ' + f1(r.e.data.site.lead) + ' s'));
   no('11', ev({ preset: 'chichi1999', site: 'TXG' }), '預設系統：臺中 ' + f1(ev({ preset: 'chichi1999', site: 'TXG' }).data.site.lead) + ' s');
   no('11', ev({ preset: 'chichi1999', site: 'TXG', n: 1, proc: 0 }), '1 站、0 秒（不合要求）');
+  no('11', ev({ preset: 'chichi1999', site: 'TXG', spacing: 5, n: 4, proc: 2, onsite: true }), '開著現地型不算');
 }
 // 12
 {

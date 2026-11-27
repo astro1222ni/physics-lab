@@ -58,7 +58,7 @@
     {
       id: 'faults-folds-7', level: 5,
       title: { zh: '注水引發的地震', en: 'An injection-induced earthquake' },
-      desc: { zh: '先在靜水壓（λ = 0.37）按一次「地震！」，確認斷層仍鎖住。保持應力設定，只提高孔隙壓力，等斷層可以滑動時再按一次「地震！」，比較注水前後的結果。', en: 'At hydrostatic pressure (λ = 0.37), press “Earthquake!” once to check that the fault stays locked. Keep the stresses fixed, raise only pore pressure until the fault can slip, then press “Earthquake!” again to compare the two results.' },
+      desc: { zh: '建議先在靜水壓（λ = 0.37）按一次「地震！」觀察斷層鎖住；保持在靜水壓下會鎖住的應力設定，只提高孔隙壓力，等斷層可以滑動時再按「地震！」比較前後結果。', en: 'Try pressing “Earthquake!” at hydrostatic pressure (λ = 0.37) first to see the fault stay locked; keeping stresses that stay locked at hydrostatic pressure, raise pore pressure until the fault can slip and press “Earthquake!” to compare.' },
       need: function (ctx) {
         const d = ctx.last('fault');
         if (!d) return [[null, '先在斷層模式把 λ 設為 0.37，按「地震！」。', 'In Fault mode, set λ to 0.37 and press “Earthquake!”.']];

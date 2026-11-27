@@ -61,6 +61,7 @@ console.log('greenhouse 任務證明');
 let s = jump(page({ eps: 0 }));
 expect('1 ε₀ = 0 → 平衡 ' + f2(s.T) + ' K', hits('1', s));
 expect('1 不在平衡（剛調好還沒走）不算', !hits('1', page({ eps: 0 })));
+expect('1 水氣回饋開著不算', !hits('1', jump(page({ eps: 0, wv: true }))));
 // 2 瞬間強迫
 s = page({ co2: 560 });
 expect('2 按「加倍 560」：N = ' + f2(snapshot(s).N), hits('2', s));
