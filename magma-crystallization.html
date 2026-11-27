@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:40">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Cooling Magma: Crystal Size and Bowen’s Reaction Series | Astro Ni Lab">岩漿冷卻：晶體大小與鮑文反應序列｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":5,"name":"岩石與礦物","item":"https://lab.astroni.org/earth-science.html#ch-rocks"},{"@type":"ListItem","position":6,"name":"岩漿冷卻：晶體大小與鮑文反應序列","item":"https://lab.astroni.org/magma-crystallization.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 岩漿冷卻頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -247,6 +247,13 @@
       </ul>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="The body starts at its liquidus temperature everywhere; the country rock follows a geotherm of 25 °C/km from 15 °C at the surface. The cooling path at the sample point comes from the erf solution above; along it the JMAK equations are integrated on 5000 logarithmic time steps until the rock is solid or the remaining melt passes its glass transition. The porphyritic option first cools the magma at \(3 \times 10^{-10}\ ^\circ\mathrm{C/s}\) (about 10 °C per thousand years) until the chosen fraction has crystallised. A lava flow really loses heat from its top to the air as well; here both sides are treated as rock. The microscope view is drawn from the computed size and number of crystals; shapes and interference colours are schematic.">一開始整個岩體都是液相線溫度；圍岩照每公里 25 °C 的地溫梯度（地表 15 °C）。取樣點的冷卻歷程用上面的 erf 解；沿著這條歷程，用 5000 個對數時間步積分 JMAK 方程式，直到完全凝固，或剩下的熔體降到玻璃轉移溫度。斑狀的選項先讓岩漿以每秒 \(3 \times 10^{-10}\ ^\circ\mathrm{C}\)（每千年約 10 °C）冷卻，直到長出設定比例的晶體。熔岩流其實還會從上表面散熱到空氣中，這裡把上下兩側都當成岩石。顯微鏡裡的畫面依計算出的晶體大小與數量畫出，形狀與干涉色是示意。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Rocks and Minerals (magma cooling, crystallisation and Bowen’s reaction series)">課綱對應：高中地球科學・岩石與礦物（岩漿冷卻、結晶與鮑文反應序列）</li>
+        <li data-en-html="Conductive cooling of sheet intrusions: J. C. Jaeger (1957), “The temperature in the neighborhood of a cooling intrusive sheet”, <i>American Journal of Science</i> 255, 306–318.">板狀侵入岩體的熱傳導冷卻：J. C. Jaeger（1957），〈The temperature in the neighborhood of a cooling intrusive sheet〉，<i>American Journal of Science</i> 255 卷 306–318 頁。</li>
+        <li data-en-html="Silicate melt viscosity: D. Giordano, J. K. Russell and D. B. Dingwell (2008), “Viscosity of magmatic liquids: A model”, <i>Earth and Planetary Science Letters</i> 271, 123–134; crystallisation kinetics via the Johnson–Mehl–Avrami–Kolmogorov (JMAK) model.">矽酸鹽熔體黏度：D. Giordano、J. K. Russell 與 D. B. Dingwell（2008），〈Viscosity of magmatic liquids: A model〉，<i>Earth and Planetary Science Letters</i> 271 卷 123–134 頁；結晶動力學採用 Johnson–Mehl–Avrami–Kolmogorov（JMAK）模型。</li>
+        <li data-en-html="Plagioclase phase diagram and reaction series: N. L. Bowen (1913), “The melting phenomena of the plagioclase feldspars”, <i>American Journal of Science</i> 35, 577–599; hydrous effect after H. S. Yoder, D. B. Stewart and J. R. Smith (1957).">斜長石相圖與鮑文反應序列：N. L. Bowen（1913），〈The melting phenomena of the plagioclase feldspars〉，<i>American Journal of Science</i> 35 卷 577–599 頁；含水岩漿影響見 H. S. Yoder 等（1957）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -254,24 +261,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/magma-crystallization-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/magma-crystallization-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
   <script>
     // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
     document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
       card._deckWraps = [card.parentElement];
     });
   </script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/magma-crystallization.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="magma-crystallization"></script>
-  <script src="js/missions/magma-crystallization.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="magma-crystallization"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/magma-crystallization.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="magma-crystallization"></script>
+  <script src="js/missions/magma-crystallization.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="magma-crystallization"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

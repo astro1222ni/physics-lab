@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:40">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Earthquake Early Warning and the Blind Zone | Astro Ni Lab">地震預警與盲區｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":5,"name":"地質災害","item":"https://lab.astroni.org/earth-science.html#ch-hazards"},{"@type":"ListItem","position":6,"name":"地震預警與盲區","item":"https://lab.astroni.org/quake-early-warning.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 地震預警頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -240,6 +240,12 @@
       </ul>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="The crust is uniform, so the rays are straight and the fronts are spheres; on the map each front is the circle \(\sqrt{(vt)^2 - h^2}\). The stations sit on a triangular grid over Taiwan (plus Penghu, Green Island and Orchid Island); the real network is denser in the west and sparser in the mountains. The map uses an equirectangular projection centred at 121°E, 23.7°N (distance error below 1.5%). Epicentres, depths and magnitudes of the presets are from the Central Weather Administration’s earthquake reports; the moment magnitudes are approximate.">地殼當成均勻的，射線是直線、波前是球面；地圖上的波前就是半徑 \(\sqrt{(vt)^2 - h^2}\) 的圓。地震站放在覆蓋臺灣的正三角形格點上（另加澎湖、綠島、蘭嶼）；真實的測站網西部較密、山區較疏。地圖用以東經 121°、北緯 23.7° 為中心的等距圓柱投影（距離誤差小於 1.5%）。四個真實地震的震央、深度與規模取自中央氣象署地震報告，地震矩規模是約略值。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Geologic Hazards (earthquake early warning, P and S waves)">課綱對應：高中地球科學・地質災害（地震預警、P 波與 S 波）</li>
+        <li data-en-html="Peak ground acceleration attenuation in Taiwan: T.-Y. Chang, F. Cotton and J. Angelier (2001), “Seismic attenuation and peak ground acceleration in Taiwan”, <i>Bulletin of the Seismological Society of America</i> 91, 1229–1246.">臺灣地表最大加速度衰減關係式：T.-Y. Chang、F. Cotton 與 J. Angelier（2001），〈Seismic attenuation and peak ground acceleration in Taiwan〉，<i>Bulletin of the Seismological Society of America</i> 91 卷 1229–1246 頁。</li>
+        <li data-en-html="Earthquake reports and seismic intensity scale: Central Weather Administration (Taiwan), seismic intensity scale (PGA thresholds 0.8, 2.5, 8, 25, 80 gal) and earthquake reports for 2024 Hualien, 1999 Chi-Chi, 2016 Meinong and 2022 Chishang.">地震報告與震度分級：交通部中央氣象署震度分級表（1–4 級地表加速度門檻 0.8、2.5、8、25、80 gal）及 2024 花蓮、1999 集集、2016 美濃、2022 池上地震報告。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -247,19 +253,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/earthquake-core.js?v=202611270909"></script>
-  <script src="js/quake-early-warning-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/quake-early-warning.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="quake-early-warning"></script>
-  <script src="js/missions/quake-early-warning.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="quake-early-warning"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/earthquake-core.js?v=202611270950"></script>
+  <script src="js/quake-early-warning-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/quake-early-warning.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="quake-early-warning"></script>
+  <script src="js/missions/quake-early-warning.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="quake-early-warning"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

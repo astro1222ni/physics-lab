@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:40">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Erosion, Transport and Deposition: the Hjulström Curve | Astro Ni Lab">侵蝕、搬運與沉積：Hjulström 曲線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"固體地球","item":"https://lab.astroni.org/earth-science.html#geo"},{"@type":"ListItem","position":5,"name":"地表的作用","item":"https://lab.astroni.org/earth-science.html#ch-surface"},{"@type":"ListItem","position":6,"name":"侵蝕、搬運與沉積：Hjulström 曲線","item":"https://lab.astroni.org/sediment-transport.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 侵蝕、搬運與沉積頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -244,6 +244,13 @@
       </ul>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="Water viscosity uses Bingham’s formula (CRC Handbook) and its density the formula of Tanaka et al. (2001). The bed roughness is \(k_s = 2.5D\) with the smooth-to-rough blend \(z_0 = k_s/30 + \nu/(9u_*)\). The river from the mountains to the sea uses an illustrative speed profile \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\) with a constant depth of 1 m; real rivers change depth, width and slope together. The grains in the pictures are drawn much larger than scale.">水的黏度用 Bingham 式（CRC 手冊），密度用 Tanaka 等人（2001）的式子。河床粗糙度 \(k_s = 2.5D\)，光滑到粗糙的過渡用 \(z_0 = k_s/30 + \nu/(9u_*)\)。從山到海的河流用示意的流速分布 \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\)，水深固定 1 m；真實的河流水深、寬度和坡度會一起變化。畫面上的顆粒都畫得比實際大很多。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Surface Processes (settling, erosion, transport and deposition)">課綱對應：高中地球科學・地表的作用（沉降、侵蝕、搬運與沉積）</li>
+        <li data-en-html="Universal settling velocity: R. I. Ferguson and M. Church (2004), “A simple universal equation for grain settling velocity”, <i>Journal of Sedimentary Research</i> 74, 933–937.">通用沉降速度公式：R. I. Ferguson 與 M. Church（2004），〈A simple universal equation for grain settling velocity〉，<i>Journal of Sedimentary Research</i> 74 卷 933–937 頁。</li>
+        <li data-en-html="Erosion threshold and Hjulström–Sundborg diagram: R. L. Soulsby and R. J. S. Whitehouse (1997), critical Shields parameter; F. Hjulström (1935) and Å. Sundborg (1956).">起動準則與 Hjulström–Sundborg 圖：R. L. Soulsby 與 R. J. S. Whitehouse（1997）臨界 Shields 參數；F. Hjulström（1935）與 Å. Sundborg（1956）。</li>
+        <li data-en-html="Physical properties of water: standard gravity \(g = 9.80665\ \mathrm{m/s^2}\) (SI); water density after M. Tanaka et al. (2001), <i>Metrologia</i> 38, 301–309; viscosity after Bingham (CRC Handbook of Chemistry and Physics).">水的物性與常數：標準重力加速度 \(g = 9.80665\ \mathrm{m/s^2}\)（SI 定義值）；水密度取自 M. Tanaka 等（2001），<i>Metrologia</i> 38 卷 301–309 頁；水黏度取自 Bingham 公式（CRC 物理化學手冊）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -251,24 +258,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/sediment-transport-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/sediment-transport-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
   <script>
     // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
     document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
       card._deckWraps = [card.parentElement];
     });
   </script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/sediment-transport.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="sediment-transport"></script>
-  <script src="js/missions/sediment-transport.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="sediment-transport"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/sediment-transport.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="sediment-transport"></script>
+  <script src="js/missions/sediment-transport.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="sediment-transport"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-26 08:36">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Hubble’s Law and the Age of the Universe | Astro Ni Lab">哈伯定律與宇宙年齡｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"天文","item":"https://lab.astroni.org/earth-science.html#astro"},{"@type":"ListItem","position":5,"name":"星系與宇宙","item":"https://lab.astroni.org/earth-science.html#ch-universe"},{"@type":"ListItem","position":6,"name":"哈伯定律與宇宙年齡","item":"https://lab.astroni.org/hubble-expansion.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 哈伯定律頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
     :root {
@@ -236,6 +236,13 @@
       </ul>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="Expanding universe: 49 galaxies on a jittered grid, repeated in every direction; the expansion is uniform (\(\dot a\) constant, so \(H = H_0/a\) with \(H_0 = 70\)), and the light is integrated exactly, \(d\chi/dt = c/a\). Measuring: 7 real galaxies (distances and heliocentric velocities: representative values from NED) and 21 simulated galaxies in a universe with \(H_0 = 70\) and peculiar velocities of about 250 km/s; every measurement has a repeatable random error (Cepheids 0.15 mag, supernovae 0.12 mag, Hubble’s 1929 scale 0.35 mag and 7.2 times too close). All galaxies have \(z < 0.03\), where \(v = cz\) is accurate to about 2 %. Age: the Friedmann equation with radiation \(\Omega_r = 4.18\times10^{-5}/h^2\); the age is integrated exactly and \(a(t)\) is integrated with Runge–Kutta from \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\).">膨脹的宇宙：49 個星系排在微微錯開的格子上，往四面八方重複；膨脹是等速的（\(\dot a\) 固定，所以 \(H = H_0/a\)，\(H_0 = 70\)），光的路徑精確積分 \(d\chi/dt = c/a\)。量哈伯常數：7 個真實星系（距離與日心速度用 NED 的代表值）和 21 個模擬星系，模擬的宇宙 \(H_0 = 70\)、本動速度約 250 km/s；每次量測都有可重現的亂數誤差（造父變星 0.15 星等、超新星 0.12 星等、哈伯 1929 年的尺度 0.35 星等而且近了 7.2 倍）。所有星系 \(z < 0.03\)，\(v = cz\) 的誤差約 2 % 以內。宇宙年齡：Friedmann 方程含輻射 \(\Omega_r = 4.18\times10^{-5}/h^2\)；年齡精確積分，\(a(t)\) 用 Runge–Kutta 解 \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\)。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Galaxies and the Universe (Hubble’s law and cosmic expansion)">課綱對應：高中地球科學・星系與宇宙（哈伯定律與宇宙膨脹）</li>
+        <li data-en-html="Hubble’s law and Cepheid period–luminosity relation: E. Hubble (1929), <i>Proceedings of the National Academy of Sciences</i> 15, 168–173; H. S. Leavitt and E. C. Pickering (1912), <i>Harvard College Observatory Circular</i> 173.">哈伯定律與造父變星週光關係：E. Hubble（1929），<i>Proceedings of the National Academy of Sciences</i> 15 卷 168–173 頁；H. S. Leavitt 與 E. C. Pickering（1912），<i>Harvard College Observatory Circular</i> 173 號。</li>
+        <li data-en-html="Cosmological parameters: Planck Collaboration (2020, Planck 2018 results VI), <i>Astronomy &amp; Astrophysics</i> 641, A6 (\(H_0 = 67.4\), \(\Omega_m = 0.315\), \(\Omega_\Lambda = 0.685\)); A. G. Riess et al. / SH0ES (2022), <i>ApJL</i> 934, L7 (\(H_0 = 73.0 \pm 1.0\)).">宇宙學參數：Planck Collaboration（2020，Planck 2018 結果 VI），<i>Astronomy &amp; Astrophysics</i> 641 卷 A6（\(H_0 = 67.4\)、\(\Omega_m = 0.315\)、\(\Omega_\Lambda = 0.685\)）；A. G. Riess 等／SH0ES（2022），<i>ApJL</i> 934 卷 L7（\(H_0 = 73.0 \pm 1.0\)）。</li>
+        <li data-en-html="Nearby galaxy distances and velocities: NASA/IPAC Extragalactic Database (NED) representative values.">鄰近星系距離與視向速度：NASA/IPAC 河外星系資料庫（NED）代表值。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -243,24 +250,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/hubble-expansion-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/hubble-expansion-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
   <script>
     // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
     document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
       card._deckWraps = [card.parentElement];
     });
   </script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/hubble-expansion.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="hubble-expansion"></script>
-  <script src="js/missions/hubble-expansion.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="hubble-expansion"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/hubble-expansion.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="hubble-expansion"></script>
+  <script src="js/missions/hubble-expansion.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="hubble-expansion"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

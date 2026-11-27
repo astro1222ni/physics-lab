@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:40">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stellar Parallax and the Parsec | Astro Ni Lab">恆星視差與秒差距｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"天文","item":"https://lab.astroni.org/earth-science.html#astro"},{"@type":"ListItem","position":5,"name":"天文觀測","item":"https://lab.astroni.org/earth-science.html#ch-observe"},{"@type":"ListItem","position":6,"name":"恆星視差與秒差距","item":"https://lab.astroni.org/parallax.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 恆星視差頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
     :root {
@@ -256,6 +256,13 @@
       </ul>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="The Earth’s orbit is a circle of 1 AU and the Sun moves uniformly in longitude (starting at 280.46° on 1 January). Star positions, parallaxes and proper motions are from Gaia DR3; the four bright stars (Sirius, Vega, Polaris, Betelgeuse) are too bright for Gaia, so theirs come from the 2007 Hipparcos reduction. Photo errors are random but repeatable: clearing and retaking at the same dates gives the same photos. The pictures exaggerate every angle enormously.">地球軌道當成半徑 1 AU 的圓，太陽在黃經上等速移動（1 月 1 日在 280.46°）。恆星的位置、視差與自行取自 Gaia DR3；天狼星、織女星、北極星、參宿四這四顆太亮，Gaia 量不準，改用依巴谷 2007 年重新歸算的資料。照片的誤差是亂數，但可以重現：清除後在同樣的日期重拍，會得到同樣的照片。畫面上的角度都放大了非常非常多倍。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Astronomical observation (stellar parallax and distance)">課綱對應：高中地球科學・天文觀測（視差與恆星距離）</li>
+        <li data-en-html="Astronomical unit and parsec: 1 AU = 149 597 870 700 m exactly (IAU 2012 Resolution B2); 1 pc = 648 000 / π AU (IAU 2015 Resolution B2).">天文單位與秒差距：1 AU = 149 597 870 700 m 定義值（IAU 2012 年 B2 決議）；1 pc = 648 000 / π AU（IAU 2015 年 B2 決議）。</li>
+        <li data-en-html="Stellar positions, parallaxes and proper motions: ESA Gaia Data Release 3 (Gaia DR3, 2022); bright stars Sirius, Vega, Polaris and Betelgeuse from F. van Leeuwen (2007), Hipparcos new reduction (<i>Astronomy &amp; Astrophysics</i> 474, 653–664).">恆星位置、視差與自行：歐洲太空總署 Gaia 第三次資料釋出（Gaia DR3，2022）；天狼星、織女星、北極星與參宿四取自 F. van Leeuwen（2007），Hipparcos 重新歸算資料（<i>Astronomy &amp; Astrophysics</i> 474 卷 653–664 頁）。</li>
+        <li data-en-html="Historical measurements: Friedrich Bessel (1838) on 61 Cygni; Hipparcos (1989–1993) and Gaia (from 2014); NASA New Horizons parallax experiment on Proxima Centauri and Wolf 359 (April 2020).">歷史與觀測紀錄：貝索（1838）測量天鵝座 61；依巴谷衛星（1989–1993）與 Gaia 任務（2014 起）；NASA 新視野號（2020 年 4 月）比鄰星與沃夫 359 視差觀測。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -263,24 +270,24 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/parallax-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/parallax-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
   <script>
     // 卡片進入操作台後，仍依原本的模式區塊決定是否顯示。
     document.querySelectorAll('.lab > .panel > div[id] > [data-deck]').forEach(function (card) {
       card._deckWraps = [card.parentElement];
     });
   </script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/parallax.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="parallax"></script>
-  <script src="js/missions/parallax.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="parallax"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/parallax.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="parallax"></script>
+  <script src="js/missions/parallax.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="parallax"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

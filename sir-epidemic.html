@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-26 08:36">
-  <script src="js/settings.js?v=202611270909"></script>
-  <script src="js/modegate.js?v=202611270909" data-lab="調整學校規模與防治條件｜比較各班曲線與點名簿｜到中庭看同一天的隊形" data-lab-en="Set school size and controls|Compare class curves and attendance|See the same day in the courtyard" data-learn="循步驟找出高峰｜用基準記錄比較兩個情境｜核對昨日和今日的讀數" data-learn-en="Follow the steps to find the peak|Save a reference and compare scenarios|Check yesterday’s and today’s readings"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
+  <script src="js/modegate.js?v=202611270950" data-lab="調整學校規模與防治條件｜比較各班曲線與點名簿｜到中庭看同一天的隊形" data-lab-en="Set school size and controls|Compare class curves and attendance|See the same day in the courtyard" data-learn="循步驟找出高峰｜用基準記錄比較兩個情境｜核對昨日和今日的讀數" data-learn-en="Follow the steps to find the peak|Save a reference and compare scenarios|Check yesterday’s and today’s readings"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="How Infections Spread | Astro Ni Lab">傳染病的傳播｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -31,7 +31,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     .sir .stage { min-width: 0; padding: clamp(8px,1.25vw,16px); container-type: inline-size; }
     .sir .instruments { display: grid; gap: 8px; }
@@ -232,6 +232,7 @@
       <h1 data-en="How Infections Spread">傳染病的傳播</h1>
       <p data-en="In the school, new infections are still happening. So why does the number of infectious students start to fall? Drag the day cursor to find the turning point.">校園裡還有人剛被感染，為什麼具有傳染力的人數卻開始下降？拖動日期，找出轉折的那一天。</p>
     </header>
+    <p class="try-hint" data-en="Try it: press “Play” or drag “Day shown” to find which day the infectious share peaks.">試試看：按「播放」或拖「觀察日期」，找找哪一天具傳染力人數到達高峰。</p>
     <main class="lab">
       <section class="stage">
         <div id="studyExamples" hidden></div>
@@ -276,7 +277,7 @@
           <button type="button" id="restart" data-en="Day zero">回第零天</button>
           <div class="slider" id="dayRow"><label for="day" data-en="Day shown">觀察日期</label><output id="dayo" for="day"></output><input type="range" id="day" min="0" max="180" step="1" value="0" data-decimals="0"></div>
         </div>
-        <div id="recordBar"><div class="btns capture-actions"><button type="button" id="record" class="primary" data-en="Record readings">記錄讀數</button><button type="button" id="reference" data-en="Keep as reference">保留為基準</button><button type="button" id="clearReference" data-en="Clear all">全部清除</button></div><p class="status" id="feedback" role="status"></p></div>
+        <div id="recordBar"><div class="btns capture-actions"><button type="button" id="record" class="primary" data-en="Record readings">記錄讀數</button><button type="button" id="reference" data-en="Keep as reference">保留為基準</button><button type="button" id="clearReference" data-en="Clear all">全部清除</button></div><p class="status" id="feedback" role="status" aria-live="polite"></p><p class="sr-only" id="liveReading" aria-live="polite"></p></div>
         <div data-deck-anchor></div>
         <details class="roster" open>
           <summary><span data-en="School roll call">校園點名簿</span><span class="roster-size" id="schoolTotal">全校 400 人</span></summary>
@@ -341,25 +342,30 @@
         </ul>
         <p><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10698490/" target="_blank" rel="noopener" data-en="Further reading on the SIR immunity threshold">延伸閱讀：SIR 模型的群體免疫門檻</a></p>
       </details>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Health and Nursing · Health Promotion and Disease Prevention (preventing infectious diseases)">課綱對應：高中健康與護理・健康促進與疾病預防（傳染病防治）</li>
+        <li data-en-html="Classroom area, contact mixing and epidemic threshold literature are detailed under “Data sources” above (Ministry of Education 2019; Mastrandrea et al., <i>PLOS ONE</i> 2015; <i>Mathematical Biosciences</i> 2013).">教室尺度、班際接觸比例與傳染病模型參數出處詳見上方「模型與假設」內之「資料來源」（教育部 2019 設備基準、Mastrandrea 等 2015、Mathematical Biosciences 2013）。</li>
+      </ul>
     </section>
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer>
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/sir-epidemic-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/view3d-nav.js?v=202611270909"></script>
-  <script src="js/stepguide.js?v=202611270909"></script>
-  <script src="js/labside.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="sir-epidemic"></script>
-  <script src="js/missions/sir-epidemic.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="sir-epidemic"></script>
-  <script src="js/comments.js?v=202611270909"></script>
-  <script src="js/sir-epidemic.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/sir-epidemic-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/view3d-nav.js?v=202611270950"></script>
+  <script src="js/stepguide.js?v=202611270950"></script>
+  <script src="js/labside.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="sir-epidemic"></script>
+  <script src="js/missions/sir-epidemic.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="sir-epidemic"></script>
+  <script src="js/comments.js?v=202611270950"></script>
+  <script src="js/sir-epidemic.js?v=202611270950"></script>
 </body>
 </html>

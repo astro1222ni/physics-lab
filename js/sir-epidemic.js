@@ -36,6 +36,7 @@
   let running = false, advancing = false, animation = 0, lastTime = null, playDay = 0, taps = 0;
   let room = null, viewToken = 0, rollKey = '';
   let varied=false, schoolSeed=C.DEFAULT_SEED, courtFactory=null, previousLayout='', courtLayout='';
+  let lastLive=0, liveTimer=0, liveReady=false;
   const schoolStorage='sir-epidemic/school-v1';
 
   function surface(canvas, bounds) {
@@ -390,6 +391,19 @@
       !lm._state.done[m.id] && m.check({type:'recorded',data:d},{}));
     $('record').toggleAttribute('data-ready',ready);
     updateGuide();
+    if (!running && !advancing && liveReady) announceReading();
+  }
+  function announceReading() {
+    const el=$('liveReading');
+    if (!el || !data || !result || window.LabShare?.restoring) return;
+    const msg=dayText(data.day)+' · '+T('具傳染力 ','Infectious ')+percent(data.i,2)+
+      T('（'+data.counts.i+' 人）',' ('+data.counts.i+')')+
+      ' · '+T('有效再生數 ','Effective reproduction ')+reText(data.re)+
+      ' · '+T('高峰 ','Peak ')+dayText(result.peakDay.toFixed(1));
+    const now=Date.now(), wait=1000-(now-lastLive);
+    clearTimeout(liveTimer);
+    if (wait<=0) { lastLive=now; el.textContent=msg; }
+    else liveTimer=setTimeout(()=>{ lastLive=Date.now(); el.textContent=msg; }, wait);
   }
   function refreshDay() {
     const day = Math.round(N.value($('day')));
@@ -459,7 +473,7 @@
     play.setAttribute('aria-pressed',String(running));
   }
   motion.addEventListener('change',()=>{stop();});
-  function stop() { running=false; lastTime=null; cancelAnimationFrame(animation); taps=0; syncPlay(); }
+  function stop() { const was=running; running=false; lastTime=null; cancelAnimationFrame(animation); taps=0; syncPlay(); if (was && data) announceReading(); }
   function chime() { LabSound.sweep({from:820,to:360,dur:.27,gain:.15}); }
   function tick(time) {
     if (!running) return;
@@ -640,6 +654,7 @@
   }
   LabStepGuide.define(steps.map(([id,,,zh,en])=>({target:'#'+id,hint:[zh,en],action:id==='basic'||id==='day'?'drag':'tap'})),{key:guideKey});
   setSpan(60); scenario(); soundLabel(); changed();
+  liveReady=true;
   if(!window.LAB_SHARE_HASH) try {restoreSchool(JSON.parse(localStorage.getItem(schoolStorage)));} catch {}
   if(window.LabModeGate?.studying) {
     const help=document.createElement('script');

@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:49">
-  <script src="js/settings.js?v=202611270917"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="One-, Two- and Three-Point Perspective | Astro Ni Lab">一點、兩點與三點透視｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"美術","item":"https://lab.astroni.org/visual-arts.html"},{"@type":"ListItem","position":4,"name":"造形與視覺表現","item":"https://lab.astroni.org/visual-arts.html#visual-expression"},{"@type":"ListItem","position":5,"name":"空間與透視","item":"https://lab.astroni.org/visual-arts.html#ch-spatial-perspective"},{"@type":"ListItem","position":6,"name":"一點、兩點與三點透視","item":"https://lab.astroni.org/perspective-drawing.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270917">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     .persp { --ink: var(--accent); --rule: color-mix(in srgb,var(--equi) 26%,var(--border)); }
     .persp [hidden] { display:none !important }
@@ -193,6 +193,7 @@
       <h1 data-en="One-, Two- and Three-Point Perspective">一點、兩點與三點透視</h1>
       <p data-en="Follow the two curbs into the distance. Where would they meet on paper? That meeting place is a vanishing point.">沿著街道兩旁的路緣往遠處看。在紙上延長它們，會在哪裡相遇？那個交會的位置叫作消失點。</p>
     </header>
+    <p class="try-hint" data-en="Try it: choose “Two points” or drag “Tilt down / up” and watch the eaves and “Vanishing points” change.">試試看：按「兩點」或拉「低頭／抬頭」，看看屋簷延伸線和「消失點數」怎麼變。</p>
     <main class="lab">
       <section class="stage">
         <div class="stage-bar">
@@ -289,25 +290,31 @@
         <p data-en="A and B have the same proportions. Wall height is 1.4 times base width. For each building, measure the nearest front upright that appears on the paper. Sum its exposed lengths, including portions beyond the paper edge. An occlusion label means both front uprights are hidden; an off-paper label means neither enters the sheet.">A、B 兩棟牆高都是底寬的 1.4 倍。各取出現在紙上且較靠近眼點的前牆直稜，加總未受遮擋的投影長度，含延伸到紙外的部分。兩條前稜都被前棟擋住時標示「被遮住」；都沒進入畫紙時標示「在紙外」。</p>
         <p data-en="Save a level view. Halve the studio’s size, its depth and its sideways offset from the eyelet. If it starts on the centerline, keep it there. With the same lens and bearing, the projected wall height stays the same. The wall foot can shift vertically because the eyelet stays above the ground. Moving the studio sideways alone preserves its vanishing points.">平視時保留基準，把畫室大小、街道縱深及它到眼點的橫向距離都減半。若原本就在中線上，讓它留在中線上。取景方位與視野相同時，紙上牆高會保持不變。釘環固定在地面上方，牆腳在紙上的高低仍可能改變。若只橫移畫室，同方向的邊仍指向原來的消失點。</p>
       </details>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Visual Arts · Form and Visual Expression (space and perspective)">課綱對應：高中美術・造形與視覺表現（空間與透視）</li>
+        <li data-en-html="Historical treatise and works: Albrecht Dürer, <i>Underweysung der Messung</i> (Manual of Measurement, 1525; expanded 1538), woodcuts <i>Drawing a Lute</i> (The Met), <i>Drawing a Portrait</i> (NGV) and <i>Drawing a Reclining Woman</i> (The Met), linked above.">歷史文獻與版畫：杜勒（Albrecht Dürer）《量度指南》（1525 年初版、1538 年增補版）木刻版畫〈畫魯特琴〉、〈畫肖像〉與〈畫斜倚女子〉，館藏連結見上方說明。</li>
+        <li data-en="Projection geometry: perspective camera coordinates with unit focal length f = 1 and horizontal/vertical field-of-view relations.">投影幾何模型：單位焦距 f = 1 之針孔透視投影與水平／垂直視野轉換關係。</li>
+      </ul>
     </section>
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer>
   </div>
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270917"></script>
-  <script src="js/perspective-drawing-core.js?v=202611270917"></script>
-  <script src="js/sound.js?v=202611270917"></script>
-  <script src="js/numinput.js?v=202611270917"></script>
-  <script src="js/labdeck.js?v=202611270917"></script>
-  <script src="js/drawkit.js?v=202611270917"></script>
-  <script src="js/view3d-nav.js?v=202611270917"></script>
-  <script src="js/stepguide.js?v=202611270917"></script>
-  <script src="js/labside.js?v=202611270917"></script>
-  <script src="js/perspective-drawing.js?v=202611270917"></script>
-  <script src="js/firebase-config.js?v=202611270917"></script>
-  <script src="js/missions.js?v=202611270917" data-module="perspective-drawing"></script>
-  <script src="js/missions/perspective-drawing.js?v=202611270917"></script>
-  <script src="js/stats.js?v=202611270917" data-module="perspective-drawing"></script>
-  <script src="js/comments.js?v=202611270917"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/perspective-drawing-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/view3d-nav.js?v=202611270950"></script>
+  <script src="js/stepguide.js?v=202611270950"></script>
+  <script src="js/labside.js?v=202611270950"></script>
+  <script src="js/perspective-drawing.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="perspective-drawing"></script>
+  <script src="js/missions/perspective-drawing.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="perspective-drawing"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

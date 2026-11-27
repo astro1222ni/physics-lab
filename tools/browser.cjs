@@ -121,7 +121,16 @@ async function takeSlot() {
       if (Date.now() - lastTouch > 20000) { touch(); lastTouch = Date.now(); }
       const free = slots.filter(slotFree);
       if (ahead() < free.length) {
-        for (const dir of free) { try { fs.mkdirSync(dir); slotDir = dir; break; } catch (e) { /* 被搶走了 */ } }
+        for (const dir of free) {
+          try { fs.mkdirSync(dir); slotDir = dir; break; }
+          catch (e) {
+            // 沙盒或權限不足無法寫入鎖目錄時立即報錯，避免誤判成「被搶走」而空轉 180 分鐘
+            if (e && (e.code === 'EPERM' || e.code === 'EACCES' || e.code === 'EROFS')) {
+              throw new Error('沒有權限寫入瀏覽器排隊鎖 ' + dir + '（' + e.code + '）；不可繞過排隊，請改以具備排隊鎖寫入權限的環境執行');
+            }
+            /* 被搶走了 */
+          }
+        }
       }
       if (slotDir) break;
       if (Date.now() - t0 > SLOT_GIVE_UP) throw new Error('等了 180 分鐘還拿不到瀏覽器位子（全機最多 ' + SLOT_MAX + ' 組）');

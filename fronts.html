@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-26 08:36">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Cold Fronts, Warm Fronts and the Plum Rain Front | Astro Ni Lab">冷鋒、暖鋒與梅雨鋒面｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"大氣","item":"https://lab.astroni.org/earth-science.html#atmo"},{"@type":"ListItem","position":5,"name":"天氣與颱風","item":"https://lab.astroni.org/earth-science.html#ch-weather"},{"@type":"ListItem","position":6,"name":"冷鋒、暖鋒與梅雨鋒面","item":"https://lab.astroni.org/fronts.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 鋒面頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。 */
     :root {
@@ -187,6 +187,13 @@
       <p data-en-html="The readout shows the wind shear \(\Delta v\) needed at latitude 25° (Taiwan) for your slope and temperature contrast. A steep cold front needs a large shear; in real cold fronts friction near the ground also steepens the nose.">讀數顯示在北緯 25°（臺灣）要撐住你設定的坡度和溫差，需要多大的風切 \(\Delta v\)。陡的冷鋒需要很大的風切；真實的冷鋒還有地面摩擦把鋒面的前端推得更陡。</p>
       <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="A two-dimensional cross-section with a straight frontal surface. The warm-air parcel: lifting condensation level from Bolton (1980); above it the pseudo-adiabatic lapse rate (latent heat varying with temperature) integrated to the tropopause at 10 km, with hydrostatic pressure; its equivalent potential temperature stays constant to 0.3 K. Subcloud evaporation uses the surface relative humidity of the cold air as a single value for the whole layer. The surviving fraction decreases continuously with cloud-base height times the humidity deficit, using an illustrative scale of 685 m and a twelfth-power taper. The humidity deficit is at least 0.28 to represent drier air aloft. The model does not resolve droplet sizes or vertical humidity profiles. The 2 km boundary is used only to illustrate cloud types: below it, cumulonimbus for uplift of at least 0.1 m/s, otherwise nimbostratus; 2–6 km altostratus; above 6 km cirrostratus and cirrus. The cold layer counts for the pressure up to 2.5 km thick. Temperature and dew point change across the front over about ±8 km.">二維剖面，鋒面面是平的斜面。暖空氣的氣塊：舉升凝結高度用 Bolton（1980）公式；以上照假溼絕熱減溫率（潛熱隨溫度變）積分到 10 km 的對流層頂，氣壓照靜力平衡；它的相當位溫守恆到 0.3 K。用冷氣團地面的相對溼度代表整層雲下空氣。模型把落距乘上溼度虧缺，再以 685 m 為示意尺度，讓到達地面的比例按十二次方連續減少，蒸發殆盡時形成雨幡。溼度虧缺至少取 0.28，代表上方空氣可能較乾。這項近似省略雨滴大小與垂直溼度剖面。2 km 只用來區分示意雲種：以下依上升速度畫積雨雲（至少 0.1 m/s）或雨層雲，2–6 km 為高層雲，6 km 以上為卷層雲與卷雲。氣壓的計算中，冷空氣最多算 2.5 km 厚。氣溫和露點在鋒面線前後大約 ±8 km 內換成另一個氣團的值。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Weather and Typhoons (fronts and precipitation)">課綱對應：高中地球科學・天氣與颱風（鋒面與降雨）</li>
+        <li data-en-html="Lifting condensation level and equivalent potential temperature: D. Bolton (1980), “The computation of equivalent potential temperature”, <i>Monthly Weather Review</i> 108, 1046–1053.">舉升凝結高度與相當位溫計算：D. Bolton（1980），〈The computation of equivalent potential temperature〉，<i>Monthly Weather Review</i> 108 卷 1046–1053 頁。</li>
+        <li data-en-html="Frontal slope and geostrophic wind shear: M. Margules (1906), slope of a boundary between two air masses in geostrophic balance.">鋒面斜率與地轉風切：M. Margules（1906），兩氣團交界面於地轉平衡下的斜率公式。</li>
+        <li data-en-html="Rainfall classification: Central Weather Administration (Taiwan), heavy rain and torrential rain criteria (80, 200, 350 and 500 mm in 24 h; 40 mm in 1 h; 100 mm in 3 h).">雨量分級標準：交通部中央氣象署大雨、豪雨、大豪雨與超大豪雨分級標準（24 小時 80、200、350、500 mm；1 小時 40 mm；3 小時 100 mm）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -194,18 +201,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/fronts-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/fronts.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="fronts"></script>
-  <script src="js/missions/fronts.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="fronts"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/fronts-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/fronts.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="fronts"></script>
+  <script src="js/missions/fronts.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="fronts"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

@@ -36,5 +36,7 @@ module.exports = {
   // 小樣本裡也可能「超車」：比喻
   'mendelian-inheritance': { terms: ['超車'] },
   // 播放速度旁顯示「一天 ≈ 16 秒」，是換算後的說明，不是滑桿值本身
-  seasons: { sliders: ['speed'] }
+  seasons: { sliders: ['speed'] },
+  // 手機版操作台內 #status（換了釘板…n=11／選取第 7 格…）會連帶抓到相鄰滑桿的「往右的機率」文字，導致把層數或格號誤判為機率
+  'galton-board': { readings: ['換了釘板|選取第'] }
 };

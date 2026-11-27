@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-27 08:40">
-  <script src="js/settings.js?v=202611270909"></script>
+<meta name="lab-updated" content="2026-11-27 09:50">
+  <script src="js/settings.js?v=202611270950"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Humidity and Dew Point | Astro Ni Lab">溼度與露點｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":4,"name":"大氣","item":"https://lab.astroni.org/earth-science.html#atmo"},{"@type":"ListItem","position":5,"name":"大氣中的水","item":"https://lab.astroni.org/earth-science.html#ch-atmo-water"},{"@type":"ListItem","position":6,"name":"溼度與露點","item":"https://lab.astroni.org/humidity-dewpoint.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611270909">
+  <link rel="stylesheet" href="lab.css?v=202611270950">
   <style>
     /* 溼度與露點頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。 */
     :root {
@@ -231,6 +231,13 @@
         <p><a href="https://www.weather.gov/abr/frost_fall2012" data-en="NWS paired near-ground and air observations">美國國家氣象局草面與測溫高度對照</a></p>
         <h3 data-en="How it is simulated">模擬方法</h3>
       <p data-en-html="Saturation vapour pressure over water and ice: Murphy and Koop (2005); relative humidity is taken with respect to water, as the WMO does, even below 0 °C. Wet bulb: the psychrometer equation is solved for \(T_w\) by bisection (with an ice bulb and \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\) below 0 °C); the thermometer approaches it with a time constant of 30 s (ventilated) or 150 s (screen), shown 30 times faster. Air pressure from the standard atmosphere. Cup: Newton’s law of cooling with a 60 s time constant, shown 5 times faster; a film of water becomes visible after a fixed amount of condensation, so a fast-cooling cup mists at a temperature below the true dew point. Day: the temperature follows two half cosines (minimum 05:30, maximum 14:00) and the amount of water vapour stays fixed, except that the air cannot hold more than saturation: the extra becomes dew or frost and evaporates again in the morning.">水面與冰面的飽和水氣壓：Murphy 與 Koop（2005）；相對溼度照世界氣象組織的定義，0 °C 以下也以水面為準。溼球：用二分法解乾溼計公式求 \(T_w\)（0 °C 以下溼球結冰，改用冰面與 \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\)）；溫度計以 30 秒（通風）或 150 秒（百葉箱）的時間常數趨近，畫面快 30 倍。氣壓用標準大氣。杯子：牛頓冷卻定律，時間常數 60 秒，畫面快 5 倍；杯壁凝結到一定的量才看得出水膜，所以冷得快的杯子，起霧時的杯溫比真正的露點低。一天：氣溫照兩段半餘弦（05:30 最低、14:00 最高），水氣量整天固定，只是空氣最多只能到飽和，多的變成露或霜，早上再蒸發回來。</p>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Water in the Atmosphere (relative humidity, dew point and psychrometer)">課綱對應：高中地球科學・大氣中的水（相對溼度、露點與乾溼球溫度計）</li>
+        <li data-en-html="Saturation vapour pressure over water and ice: D. M. Murphy and T. Koop (2005), “Review of the vapour pressures of ice and supercooled water for atmospheric applications”, <i>Quarterly Journal of the Royal Meteorological Society</i> 131, 1539–1565.">水面與冰面飽和水氣壓：D. M. Murphy 與 T. Koop（2005），〈Review of the vapour pressures of ice and supercooled water for atmospheric applications〉，<i>Quarterly Journal of the Royal Meteorological Society</i> 131 卷 1539–1565 頁。</li>
+        <li data-en-html="Psychrometer equation and humidity definitions: World Meteorological Organization (WMO), <i>Guide to Instruments and Methods of Observation</i> (WMO-No. 8).">乾溼計公式與相對溼度定義：世界氣象組織（WMO），《Guide to Instruments and Methods of Observation》（WMO-No. 8）。</li>
+        <li data-en-html="Near-ground grass cooling observations: <a href=&quot;https://www.weather.gov/abr/frost_fall2012&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>National Weather Service Aberdeen, Frost Observations</a>.">草面輻射冷卻觀測：<a href="https://www.weather.gov/abr/frost_fall2012" target="_blank" rel="noopener">美國國家氣象局草面與測溫高度對照</a>。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -238,18 +245,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611270909"></script>
-  <script src="js/humidity-dewpoint-core.js?v=202611270909"></script>
-  <script src="js/sound.js?v=202611270909"></script>
-  <script src="js/numinput.js?v=202611270909"></script>
-  <script src="js/labdeck.js?v=202611270909"></script>
-  <script src="js/drawkit.js?v=202611270909"></script>
-  <script src="js/keys.js?v=202611270909"></script>
-  <script src="js/humidity-dewpoint.js?v=202611270909"></script>
-  <script src="js/firebase-config.js?v=202611270909"></script>
-  <script src="js/missions.js?v=202611270909" data-module="humidity-dewpoint"></script>
-  <script src="js/missions/humidity-dewpoint.js?v=202611270909"></script>
-  <script src="js/stats.js?v=202611270909" data-module="humidity-dewpoint"></script>
-  <script src="js/comments.js?v=202611270909"></script>
+  <script src="js/math.js?v=202611270950"></script>
+  <script src="js/humidity-dewpoint-core.js?v=202611270950"></script>
+  <script src="js/sound.js?v=202611270950"></script>
+  <script src="js/numinput.js?v=202611270950"></script>
+  <script src="js/labdeck.js?v=202611270950"></script>
+  <script src="js/drawkit.js?v=202611270950"></script>
+  <script src="js/keys.js?v=202611270950"></script>
+  <script src="js/humidity-dewpoint.js?v=202611270950"></script>
+  <script src="js/firebase-config.js?v=202611270950"></script>
+  <script src="js/missions.js?v=202611270950" data-module="humidity-dewpoint"></script>
+  <script src="js/missions/humidity-dewpoint.js?v=202611270950"></script>
+  <script src="js/stats.js?v=202611270950" data-module="humidity-dewpoint"></script>
+  <script src="js/comments.js?v=202611270950"></script>
 </body>
 </html>

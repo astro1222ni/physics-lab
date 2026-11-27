@@ -13,6 +13,7 @@
   let policy = 'free', state, previous = null, records = [], guidedReading = null, lastEdit = null, refreshGuide;
   let axes, scale, gesture = null, hover = '', scene = null, version = 0;
   let priceHandle = null, ends = {}, frame = 0, crowd = [], crowdTimer = 0;
+  let lastLive = 0, liveTimer = 0;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -105,6 +106,17 @@
     refreshGuide?.();
   }
   function feedback(message) { $('feedback').textContent = message; $('feedback').hidden = !message; }
+  function announceReading() {
+    const el = $('liveReading');
+    if (!el || !state || window.LabShare?.restoring) return;
+    const msg = state.equilibriumPrice === null
+      ? T('目前沒有市場均衡，成交 0 杯。', 'No market equilibrium; 0 cups traded.')
+      : rule(policy) + ' · ' + T('掛牌 ', 'Posted ') + money(state.actualPrice) + ' · ' + T('成交 ', 'Sold ') + cups(state.traded) + ' · ' + T('無謂損失 ', 'Deadweight loss ') + money(state.loss);
+    const now = Date.now(), wait = 1000 - (now - lastLive);
+    clearTimeout(liveTimer);
+    if (wait <= 0) { lastLive = now; el.textContent = msg; }
+    else liveTimer = setTimeout(() => { lastLive = Date.now(); el.textContent = msg; }, wait);
+  }
 
   // Short, overlapping voiced murmurs and filtered breaths. The physical shortage sets the gain.
   function quiet() {
@@ -158,7 +170,7 @@
         LabSound.tone({freq, dur:.24, gain:.15});
         LabSound.tone({freq:freq * 2, dur:.09, gain:.04});
       }
-      hum(); emit('marketChanged');
+      hum(); emit('marketChanged'); announceReading();
     }
   }
 

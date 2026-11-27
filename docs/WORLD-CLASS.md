@@ -36,16 +36,16 @@
 
 ### 丙、物理正確與權威
 - [x] 補任務證明腳本：projectile、collision、kepler（11/11）
-- [ ] 每個實驗的 notes 加「參考資料」小節：課綱對應（只寫章名，不寫第幾章）、常數來源（CODATA 2022／NIST）（11/12 已做 27 頁＋6 個新實驗；其餘 14 頁背景助手正在做，規格 `docs/briefs/classroom-pass.md`）
+- [x] 每個實驗的 notes 加「參考資料」小節：課綱對應（只寫章名，不寫第幾章）、常數來源（CODATA 2022／NIST）（11/12 已做 27 頁＋6 個新實驗；2026-11-27 補齊最後 12 頁，全站 186 個已上線實驗全數完成）
 - [ ] 逐一抽查各實驗畫面讀數與公式（每次 2 個實驗，寫進紀錄）
 
 ### 丁、好上手與無障礙
 - [ ] 修 verify 提醒的觸控目標 < 44 px（每次 3–4 頁）
 - [ ] 修 verify 提醒的文字對比不足
-- [ ] 新手引導「試試看：……」（`js/classroom.js`，可關閉、只出現一次、三語）（11/12 已套用 27 頁＋6 個新實驗；其餘 14 頁進行中）
+- [x] 新手引導「試試看：……」（`js/classroom.js`，可關閉、只出現一次、三語）（11/12 已套用 27 頁＋6 個新實驗；2026-11-27 補齊最後 4 頁，全站 186 個已上線實驗全數完成）
 - [ ] 畫布拖曳物件可用鍵盤操作（`js/keys.js`）並有 `aria-label`（11/12 已套用 27 頁＋6 個新實驗；其餘進行中；`npm run check` 也檢查英文模式的 aria-label／title／placeholder／alt）
 - [ ] 尊重 `prefers-reduced-motion`：自動播放的動畫改成按播放才動
-- [ ] 重要讀數放在 `aria-live` 文字區
+- [x] 重要讀數放在 `aria-live` 文字區（2026-11-27 補齊最後 2 頁 supply-demand、sir-epidemic，全站 186 個已上線實驗全數覆蓋）
 
 ### 戊、視覺（與主工作串的批次錯開：主工作串正在做的實驗不要碰）
 - [ ] 2D 優化：其餘實驗改用 `js/drawkit.js`（照 `docs/briefs/visual-polish.md`，每次 1–2 個，對照修改前後截圖）
@@ -97,3 +97,4 @@
 
 ## 四、流程改進紀錄
 - 2026-11-11：建立 `tools/verify.cjs`（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查一次跑完，結果存 `.shots/verify-report.json`）；建立編輯中標記與每日自動優化。第一次跑就抓到電容器頁的 Unicode 下標字元（V₀，部分 Android 字型缺字），已改成 HTML 下標。
+- 2026-11-27：修正 `tools/browser.cjs` 寫入全機瀏覽器排隊鎖遭遇 `EPERM`／`EACCES`／`EROFS` 時立即明確報錯，避免誤判成位子被搶走而空轉 180 分鐘；更新 Antigravity 每週自動優化排程設定補齊 `check-pages.cjs`、`stamp.py`、`git checkout` 與非互動 `git push` 授權；於 `tools/playtest/exclude.cjs` 排除 `galton-board` 手機版 `#status` 讀數誤判。
