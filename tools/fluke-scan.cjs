@@ -6,12 +6,15 @@
  *   node tools/fluke-scan.cjs <代號>[,<代號>…] [--seeds 1112,1,7,42,2026] [--steps 150]
  *        [--min-level 3] [--min-step 25] [--compare <上次的 JSON>] [--json <輸出檔>] [--keep]
  *        [--timeout 30]
+ *   node tools/fluke-scan.cjs --hash <代號>:<任務>   印出保留清單要填的雜湊
  *   -h、--help   顯示本說明
  *   --keep       保留每個種子的試玩報告、快取及日誌
  *   --timeout    單一種子最多跑幾分鐘（預設 30），超過就停掉該種子、整批算未完成
  *
  * 隱藏任務一旦誤觸就不合格。一般任務達到最低等級且早於指定步數才列為不合格。
  * 同站同任務只計一次，有任何種子不合格就列為不合格。試玩已確認的問題也列為不合格。
+ * 已人工確認可以保留的誤觸寫在 tools/playtest/fluke-allow.cjs（每筆有原因、決定日期、雜湊），命中的改列「保留（已確認）」，
+ * 不算不合格；任務判定、提示句或任務檔共用小函式改了，雜湊對不上就自動失效、照舊列不合格。
  * 待確認項目按各站各種子的報告筆數計算。比較以站別及項目身分判斷新增與消失。
  * 預設報告為 .shots/fluke-scan.json。各種子暫存放在環境變數 LAB_TEMP_DIR；沒設時 Windows 有 F 槽
  * 就放 F:\測試暫存（不存在會自動建立），否則放系統暫存。按 Ctrl+C 或被終止時，會停掉試玩子行程並清掉暫存。
@@ -20,11 +23,14 @@
 'use strict';
 const fs = require('fs');
 const os = require('os');
+const vm = require('vm');
+const crypto = require('crypto');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const PLAYTEST = path.join(__dirname, 'playtest.cjs');
+const ALLOW = path.join(__dirname, 'playtest', 'fluke-allow.cjs');
 const DEFAULTS = { seeds: [1112, 1, 7, 42, 2026], steps: 150, minLevel: 3, minStep: 25, timeout: 30 };
 
 let liveCache;
@@ -35,6 +41,68 @@ function liveModules() {
     liveCache = new Set(w.LAB_LIVE_MODULES || []);
   }
   return liveCache;
+}
+
+// 用沙盒執行任務檔（同 tools/mission-guard.cjs），攔下 LabMission.register 的任務清單。
+function loadMissions(slug, root = ROOT) {
+  const file = path.join(root, 'js/missions', slug + '.js');
+  const src = fs.readFileSync(file, 'utf8');
+  const list = [];
+  const LabMission = { register: (id, l) => { if (id === slug) list.push(...(l || [])); }, starsOf: (level, m) => (m && m.hidden ? level * 2 : level) };
+  const sb = { LabMission, console: { log() {}, warn() {}, error() {} }, Math, JSON, Number, Object, Array, String, Boolean, Set, Map, RegExp, Date, Infinity, NaN, isFinite, isNaN, parseFloat, parseInt };
+  sb.window = sb; sb.globalThis = sb; sb.self = sb;
+  vm.runInContext(src, vm.createContext(sb), { filename: file, timeout: 3000 });
+  return { src, list };
+}
+
+// 去掉註解與多餘空白（只用來算雜湊，改說明文字不會讓保留清單失效）。
+function squash(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1').replace(/\s+/g, ' ').trim();
+}
+
+// 保留清單的雜湊：任務的判定函式、提示句、等級與隱藏與否，加上 LabMission.register 之前的共用小函式（判定常呼叫它們）。
+// 改到任何程式就失效（寧可多失效、要人重看，也不要漏）。
+function missionHash(slug, id, root = ROOT) {
+  const { src, list } = loadMissions(slug, root);
+  const m = list.find(x => x.id === id);
+  if (!m) throw new Error(slug + ' 的任務檔裡找不到任務 ' + id);
+  const at = src.indexOf('LabMission.register(');
+  const body = JSON.stringify({
+    level: m.level, hidden: m.hidden === true, riddle: m.riddle ?? null,
+    check: typeof m.check === 'function' ? squash(m.check.toString()) : null,
+    helpers: squash(at === -1 ? '' : src.slice(0, at))
+  });
+  return crypto.createHash('sha256').update(body).digest('hex').slice(0, 16);
+}
+
+// 讀保留清單，逐筆重算雜湊；對不上、缺欄位或任務不見的標上失效原因。回傳 Map：項目 key → 清單內容。
+function resolveAllow(slugs, list = require(ALLOW), root = ROOT) {
+  const out = new Map();
+  for (const slug of slugs) {
+    for (const [id, entry] of Object.entries(list[slug] || {})) {
+      const item = { reason: entry.reason, decided: entry.decided, maxSeeds: entry.maxSeeds, minStep: entry.minStep, invalid: null };
+      if (!entry.reason || !entry.decided || !entry.hash) item.invalid = '缺少原因、決定日期或雜湊';
+      else {
+        try {
+          const now = missionHash(slug, id, root);
+          if (now !== entry.hash) item.invalid = '任務判定或提示句改過（雜湊 ' + entry.hash + ' → ' + now + '），要重新確認';
+        } catch (err) {
+          item.invalid = err.message;
+        }
+      }
+      out.set(JSON.stringify(['accidental', slug, id]), item);
+    }
+  }
+  return out;
+}
+
+// 命中清單時是否仍在護欄內（命中的種子數、最早步數）；超出就回傳原因。
+function allowGuard(entry, hits) {
+  const seeds = new Set(hits.map(hit => hit.seed));
+  if (entry.maxSeeds != null && seeds.size > entry.maxSeeds) return seeds.size + ' 個種子命中，超過保留上限 ' + entry.maxSeeds + ' 個';
+  const first = Math.min(...hits.map(hit => hit.step));
+  if (entry.minStep != null && first < entry.minStep) return '第 ' + first + ' 步就命中，早於保留下限第 ' + entry.minStep + ' 步';
+  return null;
 }
 
 function tempBaseDir() {
@@ -131,7 +199,7 @@ function parseArgs(args) {
   return { ...opts, slugs: [...slugs] };
 }
 
-function summarize(runs, { minLevel, minStep } = DEFAULTS) {
+function summarize(runs, { minLevel, minStep } = DEFAULTS, allow = new Map()) {
   const missions = new Map();
   const issues = new Map();
   let pending = 0;
@@ -154,10 +222,22 @@ function summarize(runs, { minLevel, minStep } = DEFAULTS) {
   }
   const failed = [];
   const retained = [];
+  const allowed = [];
   for (const item of missions.values()) {
-    (item.hits.some(hit => hit.failed) ? failed : retained).push(item);
+    const bad = item.hits.filter(hit => hit.failed);
+    if (!bad.length) { retained.push(item); continue; }
+    // 保留清單只認誤觸（試玩確認的問題在下面照報），而且要雜湊對得上、在護欄內。
+    const entry = allow.get(item.key);
+    const why = entry && (entry.invalid || allowGuard(entry, bad));
+    if (entry && !why) {
+      item.allowed = { reason: entry.reason, decided: entry.decided };
+      allowed.push(item);
+    } else {
+      if (why) item.allowInvalid = why;
+      failed.push(item);
+    }
   }
-  return { failed: failed.concat([...issues.values()]), retained, pending };
+  return { failed: failed.concat([...issues.values()]), retained, allowed, pending };
 }
 
 function compareFailures(current, previous) {
@@ -232,7 +312,16 @@ function failureLine(item, steps) {
   const until = first.step > 0 ? ' --until=' + first.step : ' --until=1（第一次操作前）';
   const seeds = [...new Set(hits.map(hit => hit.seed))];
   return '✗ ' + item.slug + ' ' + item.id + '（' + item.level + ' 級' + (item.hidden ? '，隱藏' : '') +
-    '）：種子 ' + seeds.join('、') + ' 誤觸，最早第 ' + first.step + ' 步｜重現：' + command(first.seed) + until;
+    '）：種子 ' + seeds.join('、') + ' 誤觸，最早第 ' + first.step + ' 步｜重現：' + command(first.seed) + until +
+    (item.allowInvalid ? '（保留清單已失效：' + item.allowInvalid + '）' : '');
+}
+
+function allowedLine(item) {
+  const hits = item.hits.filter(hit => hit.failed);
+  const first = hits.reduce((a, b) => b.step < a.step ? b : a);
+  const seeds = [...new Set(hits.map(hit => hit.seed))];
+  return '◎ ' + item.slug + ' ' + item.id + ' 保留（已確認，' + item.allowed.decided + '）：種子 ' + seeds.join('、') +
+    ' 誤觸，最早第 ' + first.step + ' 步｜' + item.allowed.reason;
 }
 
 async function main(args) {
@@ -241,7 +330,15 @@ async function main(args) {
     console.log(header.split('\n').slice(2).map(line => line.replace(/^ \* ?/, '')).join('\n').trimEnd());
     return 0;
   }
+  const hashAt = args.indexOf('--hash');
+  if (hashAt !== -1) {
+    const [slug, id] = (args[hashAt + 1] || '').split(':');
+    if (!/^[a-z0-9_-]+$/.test(slug || '') || !id) throw new Error('--hash 的寫法是 <代號>:<任務>，例如 tides:tides-h2');
+    console.log(missionHash(slug, id));
+    return 0;
+  }
   const opts = parseArgs(args);
+  const allow = resolveAllow(opts.slugs);
   let previous;
   if (opts.compare) {
     previous = JSON.parse(fs.readFileSync(opts.compare, 'utf8')).summary?.failed;
@@ -263,7 +360,7 @@ async function main(args) {
     if (!opts.keep) removeTemp(temp, tempBase);
     active.temp = null;
   }
-  const summary = summarize(runs, opts);
+  const summary = summarize(runs, opts, allow);
   const comparison = previous ? compareFailures(summary.failed, previous) : null;
   const result = {
     startedAt, finishedAt: new Date().toISOString(), parameters: opts,
@@ -277,9 +374,11 @@ async function main(args) {
     const tag = comparison ? (added.has(item.key) ? '（新）' : '（上次就有）') : '';
     console.log(failureLine(item, opts.steps) + tag);
   }
+  for (const item of summary.allowed) console.log(allowedLine(item));
   const diff = comparison ? '，比上次新增 ' + comparison.added.length + '、消失 ' + comparison.removed.length : '';
   console.log((summary.failed.length ? '✗' : '✓') + ' 掃了 ' + opts.slugs.length + ' 站 × ' + opts.seeds.length + ' 個種子：不合格 ' + summary.failed.length +
-    ' 項、保留 ' + summary.retained.length + ' 項、待確認 ' + summary.pending + ' 項' + diff + '（JSON：' + (path.relative(process.cwd(), opts.json) || opts.json) + '）');
+    ' 項、保留 ' + summary.retained.length + ' 項、' +
+    (summary.allowed.length ? '已確認保留 ' + summary.allowed.length + ' 項、' : '') + '待確認 ' + summary.pending + ' 項' + diff + '（JSON：' + (path.relative(process.cwd(), opts.json) || opts.json) + '）');
   return summary.failed.length ? 1 : 0;
 }
 
@@ -292,7 +391,7 @@ function onStop(signal) {
   process.exit(130);
 }
 
-module.exports = { summarize, compareFailures, failureLine };
+module.exports = { summarize, compareFailures, failureLine, allowedLine, missionHash, resolveAllow };
 
 if (require.main === module) {
   const signals = process.platform === 'win32' ? ['SIGINT', 'SIGTERM', 'SIGBREAK'] : ['SIGINT', 'SIGTERM'];
