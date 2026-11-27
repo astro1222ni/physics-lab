@@ -238,11 +238,5 @@
             proportion(a.V - a.VR, b.V - b.VR, 10));
       }
     }
-  ].map(m => {
-    if (!m.hidden || !m.desc) return m;
-    // 兩種任務面板都讀 riddle；在面板重繪時依目前帳號的完成紀錄選文。
-    const clue = m.riddle;
-    const shown = () => LabMission._state?.done?.[m.id] ? m.desc : clue;
-    return { ...m, riddle: { get zh() { return shown().zh; }, get en() { return shown().en; } } };
-  }));
+  ]);
 })();
