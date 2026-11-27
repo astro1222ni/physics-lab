@@ -193,13 +193,82 @@ function isFileRefList(s) {
 }
 
 /**
+ * 依 CommonMark §6.1 規則切分 Markdown 行內程式碼片段（依反引號串長度精確配對）：
+ * - 支援單／雙／三／任意長度反引號包裹，內層可自由包含較短或不等長反引號（如範本字串）、單引號、雙引號。
+ * - 若內容首尾皆為空白且非全空白，依 CommonMark 規範首尾各剝除 1 個空白。
+ * - 找不到等長閉合反引號串時，依 CommonMark 將該反引號串視為普通文字。
+ * 供 extractFileRefs 與 extractBacktickSnippets 共用，確保兩者看到完全同一組切分結果。
+ */
+function tokenizeInlineCode(text) {
+  const raw = String(text || '');
+  const tokens = [];
+  let textBuf = '';
+  let i = 0;
+
+  const flushText = () => {
+    if (textBuf) {
+      tokens.push({ kind: 'text', value: textBuf });
+      textBuf = '';
+    }
+  };
+
+  while (i < raw.length) {
+    if (raw[i] !== '`') {
+      textBuf += raw[i];
+      i++;
+      continue;
+    }
+
+    // 計算開頭連續反引號串長度 n
+    let openEnd = i;
+    while (openEnd < raw.length && raw[openEnd] === '`') openEnd++;
+    const tickLen = openEnd - i;
+
+    // 往後搜尋下一個長度恰好等於 tickLen 的連續反引號串
+    let j = openEnd;
+    let closeStart = -1;
+    while (j < raw.length) {
+      if (raw[j] !== '`') {
+        j++;
+        continue;
+      }
+      let runEnd = j;
+      while (runEnd < raw.length && raw[runEnd] === '`') runEnd++;
+      if (runEnd - j === tickLen) {
+        closeStart = j;
+        break;
+      }
+      j = runEnd;
+    }
+
+    if (closeStart < 0) {
+      // 找不到等長閉合反引號：依 CommonMark 視為普通文字
+      textBuf += raw.slice(i, openEnd);
+      i = openEnd;
+      continue;
+    }
+
+    flushText();
+    let inner = raw.slice(openEnd, closeStart).replace(/\r?\n/g, ' ');
+    if (inner.length >= 2 && inner[0] === ' ' && inner[inner.length - 1] === ' ' && /[^ ]/.test(inner)) {
+      inner = inner.slice(1, -1);
+    }
+    tokens.push({ kind: 'code', ticks: tickLen, value: inner });
+    i = closeStart + tickLen;
+  }
+
+  flushText();
+  return tokens;
+}
+
+/**
  * 從單一欄位萃取獨立的檔案與行號參照（同時支援 POSIX `/` 與 Windows `\` 分隔符）：
- * - 反引號區塊若為純檔案定位（單一或清單）則解析；若為程式碼片段（如 `const SOURCE = "vendor.js"` 或 `load("vendor.js")`）則整段忽略，避免把片段中的檔名字串誤當來源檔。
+ * - 經由 tokenizeInlineCode 切分後，程式碼片段（單／雙／三反引號等）僅在整段為純檔案定位時解析，
+ *   非檔案定位的程式片段整段忽略，避免將內含的檔名字串（單／雙引號或範本字串反引號）誤當來源檔。
  * - 反引號外的裸文先剔除 URL 與單／雙引號字串常值，再解析獨立檔案定位。
  */
 function extractFileRefs(text) {
   const refs = [];
-  const raw = String(text || '');
   const refRe = /([A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
 
   const pushMatches = chunk => {
@@ -222,29 +291,25 @@ function extractFileRefs(text) {
     pushMatches(cleaned);
   };
 
-  const btRe = /`([^`]+)`/g;
-  let last = 0;
-  let bm;
-  while ((bm = btRe.exec(raw)) !== null) {
-    if (bm.index > last) scanPlain(raw.slice(last, bm.index));
-    const inner = bm[1].trim();
-    if (isFileRefList(inner)) {
-      pushMatches(inner);
+  for (const tok of tokenizeInlineCode(text)) {
+    if (tok.kind === 'text') {
+      scanPlain(tok.value);
+    } else {
+      const inner = tok.value.trim();
+      if (isFileRefList(inner)) {
+        pushMatches(inner);
+      }
     }
-    last = bm.index + bm[0].length;
   }
-  if (last < raw.length) scanPlain(raw.slice(last));
   return refs;
 }
 
 function extractBacktickSnippets(text) {
   const out = [];
   const seen = new Set();
-  const re = /`([^`]+)`/g;
-  let m;
-  const raw = String(text || '');
-  while ((m = re.exec(raw)) !== null) {
-    const s = m[1].trim();
+  for (const tok of tokenizeInlineCode(text)) {
+    if (tok.kind !== 'code') continue;
+    const s = tok.value.trim();
     if (s.length >= 3 && !isFileRefList(s) && !seen.has(s)) {
       seen.add(s);
       out.push(s);
@@ -758,6 +823,7 @@ if (require.main === module) {
 module.exports = {
   STATUS,
   parseArgs,
+  tokenizeInlineCode,
   extractFileRefs,
   extractSnippets,
   buildNormalizedIndex,

@@ -32,11 +32,33 @@ test('parseArgs：驗證合法與非法旗標、保留 --context 0', () => {
   assert.ok(T.parseArgs(['report.md', '--by']).error);
 });
 
-test('extractFileRefs：支援 POSIX /、Windows \\ 與行號，並忽略程式片段反引號中的檔名字串', () => {
-  const refs = T.extractFileRefs('js\\sample.js:2 與 `js/missions/foo.js:10-20` 及 `const SOURCE = "vendor.js"` 與 `load("other.js")`');
-  assert.strictEqual(refs.length, 2);
-  assert.deepStrictEqual(refs[0], { file: 'js/sample.js', line: 2, endLine: null });
-  assert.deepStrictEqual(refs[1], { file: 'js/missions/foo.js', line: 10, endLine: 20 });
+test('tokenizeInlineCode 與 extractFileRefs：依 CommonMark 支援單／雙／三反引號、內層引號與前後空白', () => {
+  // 單反引號＋內含雙引號與單引號＋前後空白
+  const singleText = 'js\\sample.js:2 與 `js/missions/foo.js:10-20` 及 `  load("vendor.js", \'other.js\')  `';
+  const refs1 = T.extractFileRefs(singleText);
+  assert.strictEqual(refs1.length, 2);
+  assert.deepStrictEqual(refs1[0], { file: 'js/sample.js', line: 2, endLine: null });
+  assert.deepStrictEqual(refs1[1], { file: 'js/missions/foo.js', line: 10, endLine: 20 });
+  assert.deepStrictEqual(T.extractSnippets(singleText, '').locSnippets, ["load(\"vendor.js\", 'other.js')"]);
+
+  // 雙反引號包裹內含單反引號（範本字串）與尾端空白
+  const doubleText = '`js/missing.js:7` ``const NESTED = `vendor.js` ``';
+  assert.deepStrictEqual(T.extractFileRefs(doubleText), [{ file: 'js/missing.js', line: 7, endLine: null }]);
+  assert.deepStrictEqual(T.extractSnippets(doubleText, '').locSnippets, ['const NESTED = `vendor.js`']);
+
+  // 雙反引號包裹前後保護空白且內容以反引號起訖
+  const paddedCode = '`` `vendor.js` ``';
+  assert.deepStrictEqual(T.extractFileRefs(paddedCode), []);
+  assert.deepStrictEqual(T.extractSnippets(paddedCode, '').locSnippets, ['`vendor.js`']);
+
+  // 三反引號包裹內含雙反引號、單反引號、單引號、雙引號與前後空白
+  const tripleText = '`js/missing.js:7` ```  const T = `` `vendor.js` `` + "a.js" + \'b.js\'  ```';
+  assert.deepStrictEqual(T.extractFileRefs(tripleText), [{ file: 'js/missing.js', line: 7, endLine: null }]);
+  assert.deepStrictEqual(T.extractSnippets(tripleText, '').locSnippets, ['const T = `` `vendor.js` `` + "a.js" + \'b.js\'']);
+
+  // 未閉合孤立反引號不可吞掉後續獨立檔案參照
+  const unclosed = '單獨 ` 後續提到 js/sample.js:2';
+  assert.deepStrictEqual(T.extractFileRefs(unclosed), [{ file: 'js/sample.js', line: 2, endLine: null }]);
 });
 
 test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 路徑正常命中、跨行精確定位、描述欄不蓋過位置欄', () => {
@@ -60,7 +82,7 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
       'utf8'
     );
     fs.writeFileSync(path.join(jsDir, 'locked.js'), 'const lockedFlag = oldPrefix + 2;\n', 'utf8');
-    fs.writeFileSync(path.join(tmp, 'vendor.js'), 'const SOURCE = "vendor.js";\n', 'utf8');
+    fs.writeFileSync(path.join(tmp, 'vendor.js'), 'const SOURCE = "vendor.js";\nconst NESTED = `vendor.js`;\n', 'utf8');
 
     // 1. Windows 反斜線路徑 js\sample.js:2 應正常讀取並判「仍存在」
     const itemWin = T.parseReportLine(
@@ -178,6 +200,45 @@ test('probeItem：來源讀不到判「待查（來源未讀到）」、Windows 
     assert.strictEqual(resPathLiteralRev.matchedFile, 'js/sample.js');
     assert.strictEqual(resPathLiteralRev.matchedLine, 3);
     assert.strictEqual(resPathLiteralRev.contextBlock.length, 1);
+
+    // 7d. 雙反引號包裹內含單反引號範本字串（Codex 複驗反例）：
+    //     vendor.js 存在且含 const NESTED = `vendor.js`;，但位置欄主來源 js/missing.js:7 缺檔，
+    //     必須維持「待查（來源未讀到）」且保留完整片段 const NESTED = `vendor.js`
+    const itemDoubleTick = T.parseReportLine(
+      '- **#11** 【中】sample｜5｜雙反引號範本字串｜`js/missing.js:7` ``const NESTED = `vendor.js` ``｜建議｜高',
+      'r.md', 11, 11
+    );
+    assert.deepStrictEqual(itemDoubleTick.locRefs, [{ file: 'js/missing.js', line: 7, endLine: null }]);
+    assert.deepStrictEqual(itemDoubleTick.locSnippets, ['const NESTED = `vendor.js`']);
+    const resDoubleTick = T.probeItem(itemDoubleTick, tmp, 0);
+    assert.strictEqual(resDoubleTick.status, T.STATUS.UNREADABLE);
+    assert.strictEqual(resDoubleTick.matchedFile, 'js/missing.js');
+    assert.strictEqual(resDoubleTick.matchedLine, 7);
+    assert.strictEqual(resDoubleTick.matchedSnippet, 'const NESTED = `vendor.js`');
+    assert.deepStrictEqual(resDoubleTick.missingFiles, ['js/missing.js']);
+
+    // 7e. 雙反引號包裹範本字串，且來源檔（vendor.js）本身即為位置欄指定目標時，應完整命中第 2 行
+    const itemDoubleTickHit = T.parseReportLine(
+      '- **#12** 【中】sample｜5｜雙反引號實際命中｜`vendor.js:2` ``const NESTED = `vendor.js` ``｜建議｜高',
+      'r.md', 12, 12
+    );
+    const resDoubleTickHit = T.probeItem(itemDoubleTickHit, tmp, 0);
+    assert.strictEqual(resDoubleTickHit.status, T.STATUS.PRESENT);
+    assert.strictEqual(resDoubleTickHit.matchedFile, 'vendor.js');
+    assert.strictEqual(resDoubleTickHit.matchedLine, 2);
+    assert.strictEqual(resDoubleTickHit.matchedSnippet, 'const NESTED = `vendor.js`');
+
+    // 7f. 三反引號包裹內含雙反引號與單反引號、前後空白，且描述欄指向實際檔案的反向案例
+    fs.writeFileSync(path.join(jsDir, 'triple.js'), 'const a = 1;\nconst T = `` `vendor.js` `` + \'x.js\' + "y.js";\n', 'utf8');
+    const itemTripleRev = T.parseReportLine(
+      '- **#13** 【中】sample｜5｜於 js/triple.js:2 出現｜```  const T = `` `vendor.js` `` + \'x.js\' + "y.js"  ```｜建議｜高',
+      'r.md', 13, 13
+    );
+    assert.deepStrictEqual(itemTripleRev.locRefs, []);
+    const resTripleRev = T.probeItem(itemTripleRev, tmp, 0);
+    assert.strictEqual(resTripleRev.status, T.STATUS.PRESENT);
+    assert.strictEqual(resTripleRev.matchedFile, 'js/triple.js');
+    assert.strictEqual(resTripleRev.matchedLine, 2);
 
     // 8. CLI 實測：--by typo 回結束碼 2；--json --context 0 回 0 且只帶 1 行上下文
     const mdFile = path.join(tmp, 'report.md');
