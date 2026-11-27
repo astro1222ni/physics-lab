@@ -228,7 +228,21 @@ window.LAB_LEARN_UNITS = [
   { id: 'exam-113-27', subject: 'phy', branch: 'mech', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '碰撞中的定力', en: 'A constant force in a crash', file: 'exam-113', href: 'exam-113.html?q=27', thumb: 'collision' },
   { id: 'exam-113-44', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '磁鐵穿越環圈的磁力', en: 'The force on a magnet through a loop', file: 'exam-113', href: 'exam-113.html?q=44', thumb: 'faraday' },
   { id: 'exam-113-45', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '感應電流的大小', en: 'The size of the induced current', file: 'exam-113', href: 'exam-113.html?q=45', thumb: 'faraday' },
-  { id: 'exam-113-46', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '畫出離開時的應電流', en: 'Draw the current as the magnet leaves', file: 'exam-113', href: 'exam-113.html?q=46', thumb: 'faraday' }
+  { id: 'exam-113-46', subject: 'phy', branch: 'em', chapter: '113 學測自然', chapterEn: '2024 GSAT Science', zh: '畫出離開時的應電流', en: 'Draw the current as the magnet leaves', file: 'exam-113', href: 'exam-113.html?q=46', thumb: 'faraday' },
+  { id: 'exam-115-10', subject: 'phy', branch: 'mech', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '汽車的 v-t 圖', en: 'The car’s v–t graph', file: 'exam-115', href: 'exam-115.html?q=10', thumb: 'newton-second' },
+  { id: 'exam-115-11', subject: 'phy', branch: 'mech', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '起重機吊物的合力', en: 'Net force on the crane’s load', file: 'exam-115', href: 'exam-115.html?q=11', thumb: 'elevator' },
+  { id: 'exam-115-12', subject: 'phy', branch: 'mech', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '起重機吊物的能量', en: 'Energy of the crane’s load', file: 'exam-115', href: 'exam-115.html?q=12', thumb: 'energy-coaster' },
+  { id: 'exam-115-13', subject: 'phy', branch: 'wave', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '恆星的都卜勒頻移', en: 'Doppler shift of a star', file: 'exam-115', href: 'exam-115.html?q=13', thumb: 'doppler' },
+  { id: 'exam-115-14', subject: 'phy', branch: 'modern', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '氦原子裡的四種力', en: 'Four forces in a helium atom', file: 'exam-115', href: 'exam-115.html?q=14', thumb: 'electric-field' },
+  { id: 'exam-115-15', subject: 'phy', branch: 'em', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '電場的單位', en: 'Units of electric field', file: 'exam-115', href: 'exam-115.html?q=15', thumb: 'electric-field' },
+  { id: 'exam-115-16', subject: 'phy', branch: 'em', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '電子受的庫侖力', en: 'Coulomb force on an electron', file: 'exam-115', href: 'exam-115.html?q=16', thumb: 'electric-field' },
+  { id: 'exam-115-17', subject: 'phy', branch: 'thermo', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '月球日夜的分子動能', en: 'Molecular energy on the Moon', file: 'exam-115', href: 'exam-115.html?q=17', thumb: 'ideal-gas' },
+  { id: 'exam-115-18', subject: 'phy', branch: 'modern', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '月球核電廠的分裂率', en: 'Fission rate of a lunar reactor', file: 'exam-115', href: 'exam-115.html?q=18', thumb: 'radioactive-decay' },
+  { id: 'exam-115-47', subject: 'phy', branch: 'modern', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '汞原子的 365 nm 紫外光', en: '365 nm UV from mercury', file: 'exam-115', href: 'exam-115.html?q=47', thumb: 'hydrogen-spectrum' },
+  { id: 'exam-115-48', subject: 'phy', branch: 'modern', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: 'EUV 光子的能量', en: 'Energy of an EUV photon', file: 'exam-115', href: 'exam-115.html?q=48', thumb: 'photoelectric' },
+  { id: 'exam-115-49', subject: 'phy', branch: 'wave', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '多層膜反射鏡', en: 'The multilayer mirror', file: 'exam-115', href: 'exam-115.html?q=49', thumb: 'thin-film' },
+  { id: 'exam-115-52', subject: 'phy', branch: 'mech', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '潮汐發電', en: 'Tidal power', file: 'exam-115', href: 'exam-115.html?q=52', thumb: 'tides' },
+  { id: 'exam-115-53', subject: 'phy', branch: 'em', chapter: '115 學測自然', chapterEn: '2026 GSAT Science', zh: '磁鐵穿過線圈的電流', en: 'Current from a magnet through a coil', file: 'exam-115', href: 'exam-115.html?q=53', thumb: 'faraday' }
 ];
 window.LAB_MODULE_BRANCH = {
   'learn-phy-5-1': 'mech',

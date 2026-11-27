@@ -15,7 +15,7 @@ const LANGS = [['hant', 'zh-Hant'], ['hans', 'zh-Hans'], ['en', 'en']], THEMES =
 const args = process.argv.slice(2);
 const years = args.filter(a => /^\d{3}$/.test(a)).map(Number);
 const onlyQ = ((args.find(a => a.startsWith('--q=')) || '').slice(4)).split(',').filter(Boolean);
-const YEARS = years.length ? years : [114, 113];
+const YEARS = years.length ? years : [115, 114, 113];
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.m4a': 'audio/mp4' };

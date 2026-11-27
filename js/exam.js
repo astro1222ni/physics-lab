@@ -14,6 +14,8 @@
     }
   }
   const paragraph=text=>{const p=make('p');rich(p,text);return p;};
+  // 純文字的地方（側板清單、aria-label）把 \(\mathrm{R_3}\) 這類式子攤平成 R3（115 起作答欄標籤可以寫 KaTeX）
+  const plainTex=s=>s.replace(/\\\(([\s\S]*?)\\\)/g,(m,t)=>t.replace(/\\mathrm\{([^}]*)\}/g,'$1').replace(/[_{}\\]/g,''));
   function subtitle(s){return s.replace(/([fT])\u2080/g,'\\($1_0\\)');}
   const focusWords={
     19:/任何質量|向心力|克卜勒第三定律|衛星自己的質量|軌道半徑|力學能|重力位能|加速度|週期|位能|動能|速率|any mass|centripetal force|orbital radius|mechanical energy|potential energy|acceleration|period|speed/i,
@@ -73,7 +75,7 @@
     }
     if(Q.stem)by('problem-text').append(paragraph(tr(Q.stem)));
     tr(Q.ask).split('\n').forEach(t=>by('problem-text').append(paragraph(t)));
-    if(q===49){by('opening-art').hidden=true;by('figures').hidden=false;by('figure-tabs').hidden=false;
+    if(year===114&&q===49){by('opening-art').hidden=true;by('figures').hidden=false;by('figure-tabs').hidden=false;
       by('figure-tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
         by('figures').dataset.figure=b.dataset.figure;for(const tab of by('figure-tabs').children)tab.setAttribute('aria-pressed',String(tab===b));};
       circuit();ExamScene.preview(by('printed-graph'),q);}
@@ -88,9 +90,9 @@
     });
     else if(Q.fields){
       Q.fields.forEach((f,i)=>{
-        const row=make('div');row.className='numeric-field'+(f.options?' select-field':'');const id='value-'+i,label=make('label',tr(f.label));label.htmlFor=id;
-        if(f.options){const sel=make('select');sel.id=id;[[ '',T('請選擇','Choose')],...f.options.map(o=>[o[0],tr(o[1])])].forEach(([v,t])=>{const opt=make('option',t);opt.value=v;sel.append(opt);});row.append(label,sel);}
-        else{const input=make('input');input.id=id;input.autocomplete='off';input.inputMode='decimal';const select=make('select');select.id='unit-'+i;select.setAttribute('aria-label',tr(f.label)+' '+T('單位','unit'));
+        const row=make('div');row.className='numeric-field'+(f.options?' select-field':'');const id='value-'+i,label=make('label');rich(label,tr(f.label));label.htmlFor=id;
+        if(f.options){const sel=make('select');sel.id=id;[[ '',T('請選擇','Choose')],...f.options.map(o=>[o[0],tr(o[1])])].forEach(([v,t])=>{const opt=make('option',plainTex(t));opt.value=v;sel.append(opt);});row.append(label,sel);}
+        else{const input=make('input');input.id=id;input.autocomplete='off';input.inputMode='decimal';const select=make('select');select.id='unit-'+i;select.setAttribute('aria-label',plainTex(tr(f.label))+' '+T('單位','unit'));
           [T('單位','Unit'),...f.units].forEach((u,j)=>{const opt=make('option',u);opt.value=j?u:'';select.append(opt);});row.append(label,input,select);}
         fields.append(row);});
       if(Q.fieldNote)fields.append(make('small',tr(Q.fieldNote)));
@@ -203,7 +205,7 @@
         hint:Q.key?(single?['單選題：只有一個答案','Single choice: one answer']:['多選題：每個你認為對的選項都勾','Multiple response: tick every statement you think is true']):['每一格都要填，有單位的要選單位','Fill every box and choose units where asked'],
         done:att>0||(Q.key?c>0:c===fieldCount),
         need:Q.key?[[c>0||att>0,'已勾選 '+c+' 個選項',c+' option(s) ticked']]
-          :Q.fields?Q.fields.map((f,i)=>[fieldDone(i)||att>0,f.label[0]+(f.options?'：選一項':'：數值＋單位'),f.label[1]+(f.options?': choose one':': value and unit')])
+          :Q.fields?Q.fields.map((f,i)=>[fieldDone(i)||att>0,plainTex(f.label[0])+(f.options?'：選一項':'：數值＋單位'),plainTex(f.label[1])+(f.options?': choose one':': value and unit')])
           :[[fieldDone(0)||att>0,'(a) 平衡電壓：數值＋單位','(a) Voltage: value and unit'],[fieldDone(1)||att>0,'(b) 電阻值：數值＋單位','(b) Resistance: value and unit']]},
       {goal:['送出作答','Submit'],target:'#send-answer',hint:['按「送出作答」看得分','Press Submit answer to see your score'],done:att>0,
         need:[[att>0,'已送出 '+att+' 次',att+' submission(s)']]},

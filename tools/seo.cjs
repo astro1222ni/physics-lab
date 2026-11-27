@@ -51,9 +51,10 @@ const pages = [
   // 11/21 全科模擬實驗室大廳：首頁的四大類科目區搬到這裡
   { slug: 'labs', url: SITE + 'labs.html', title: '全科模擬實驗室｜' + SITE_ZH, desc: '全科模擬實驗室：數理、人文與社會、藝能科、其他四大類，' + subjects.filter(s => labs.some(l => l.subject.id === s.id)).length + ' 科、' + labs.length + ' 個互動模擬實驗，點科目進去照課本分支與章挑實驗。', kind: 'labs' },
   // 11/27 站長決定開放 Google 搜尋收錄物理自習室與學測題解 4 頁（管理頁、龍騰密碼版、下架實驗、舊樣品仍維持 noindex）
-  { slug: 'learn', url: SITE + 'learn.html', title: '物理自習室｜' + SITE_ZH, desc: '物理自習室：課本模式（實驗自學單元）與自然科學測題解（113、114 年學測物理逐題互動動畫與倪老師講解）。', kind: 'study', ogImg: 'index' },
+  { slug: 'learn', url: SITE + 'learn.html', title: '物理自習室｜' + SITE_ZH, desc: '物理自習室：課本模式（實驗自學單元）與自然科學測題解（113、114、115 年學測物理逐題互動動畫與倪老師講解）。', kind: 'study', ogImg: 'index' },
   { slug: 'exam-113', url: SITE + 'exam-113.html', title: '113 自然科學測題解｜' + SITE_ZH, desc: '113 年學測自然科物理 12 題互動詳解（第 19–27、44–46 題）：先自行作答比對全國答對率，再看互動動畫圖解與倪老師逐句解析。', kind: 'study-unit', ogImg: 'index' },
-  { slug: 'exam-114', url: SITE + 'exam-114.html', title: '114 自然科學測題解｜' + SITE_ZH, desc: '114 年學測自然科物理 14 題互動詳解：先自行作答比對全國作答分布，再看互動動畫圖解與倪老師逐句講解。', kind: 'study-unit', ogImg: 'index' }
+  { slug: 'exam-114', url: SITE + 'exam-114.html', title: '114 自然科學測題解｜' + SITE_ZH, desc: '114 年學測自然科物理 14 題互動詳解：先自行作答比對全國作答分布，再看互動動畫圖解與倪老師逐句講解。', kind: 'study-unit', ogImg: 'index' },
+  { slug: 'exam-115', url: SITE + 'exam-115.html', title: '115 自然科學測題解｜' + SITE_ZH, desc: '115 年學測自然科物理 14 題互動詳解（第 10–18、47–49、52、53 題）：先自行作答比對全國作答分布，再看互動動畫圖解與倪老師逐句講解。', kind: 'study-unit', ogImg: 'index' }
 ].concat(subjects.map(s => {
   const own = labs.filter(l => l.subject.id === s.id), names = [...new Set(own.map(l => l.branch.zh))];
   return { slug: s.page, url: SITE + s.page + '.html', title: s.zh + '｜' + SITE_ZH,

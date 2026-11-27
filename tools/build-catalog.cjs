@@ -184,7 +184,7 @@ const commitTime = c => { if (!c) return 0; if (!(c in commitTimes)) commitTimes
 // 11/21 站長：合成卡的縮圖「要完全就是那一題的圖」，不用實驗室圖。封面用哪一題寫在這裡，沒寫就用第一題；
 // 圖是 tools/make-exam-thumbs.cjs 產生的 exam-<年>-<題>-<語言>-<深淺>.webp，data-v 用同一套內容雜湊，js/thumbs.js 依語言與深淺色換圖
 // 選圖時注意：卡片左上角會疊「自習室」標籤、左右各裁掉約 4%，挑左上角空白、字不貼邊的題目（113-21 的「眼睛」會被蓋住）
-const EXAM_COVER = { 'exam-113': 27, 'exam-114': 27 };
+const EXAM_COVER = { 'exam-113': 27, 'exam-114': 27, 'exam-115': 18 };
 const examCover = (file, g) => {
   const q = EXAM_COVER[file] || +String(g[0].id).split('-').pop(), id = file + '-' + q;
   const files = ['hant', 'hans', 'en'].flatMap(lk => ['light', 'dark'].map(t => path.join(ROOT, 'img/thumbs', `${id}-${lk}-${t}.webp`)));
