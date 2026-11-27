@@ -128,14 +128,18 @@
       riddle: { zh: '那一瞬間，彷彿背著另一個自己。', en: 'For a moment you carried a second you.' },
       check: function (ev) {
         const d = ev.data;
-        return (ev.type === 'pause' || ev.type === 'phase' && d.weighingSet) &&
-          d.m > 0 && near(d.reading / d.m, 2, 0.005 + 1e-9);
+        // 煞車段很短（vt/ab 秒），要在那一瞬間按暫停讀秤
+        return ev.type === 'pause' && d.m > 0 && near(d.reading / d.m, 2, 0.005 + 1e-9);
       }
     },
     {
       id: 'elevator-h3', level: 6, hidden: true,
       riddle: { zh: '斷了線的風箏，還想往上飛。', en: 'A kite with a broken string still climbs.' },
-      check: function (ev) { return ev.type === 'cut' && ev.data.v0 >= 1 - 1e-9; }
+      check: function (ev) {
+        // 上行中斷纜：先往上衝 v0²/2g，再落下到限速器動作、煞停；最後停的位置比斷纜處還高至少 0.5 m
+        const d = ev.data;
+        return ev.type === 'cut' && d.v0 > 0 && d.predicted - d.y0 >= 0.5 - 1e-9;
+      }
     },
     {
       id: 'elevator-h4', level: 3, hidden: true,

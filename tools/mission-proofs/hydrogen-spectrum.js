@@ -63,7 +63,9 @@ fresh(); delete done['hydrogen-spectrum-11']; reset(); [10.2, 1.889, 0.661, 0.30
 const Kneed = HC.transition(3, 2).E - HC.ionizationEnergy(3);
 reset(); fire(r3(HC.ionizationEnergy(1) + Kneed), 'gun'); tap(3); say('hydrogen-spectrum-12', '射入 ' + r3(HC.ionizationEnergy(1) + Kneed) + ' eV 游離基態（K = ' + r4(Kneed) + ' eV），再點 n = 3 → 復合光子 ' + r2(HC.recombination(r3(HC.ionizationEnergy(1) + Kneed) - HC.ionizationEnergy(1), 3).lambda) + ' nm');
 [4, 5, 6, 7].forEach(m => { const k = HC.transition(3, 2).E - HC.ionizationEnergy(m); console.log('   另解：捕獲到 n = ' + m + '，需 K = ' + r4(k) + ' eV（射入 ' + r3(HC.ionizationEnergy(1) + k) + ' eV）'); });
-reset(); tap(Infinity); fire(1.89, 'gun'); say('hydrogen-spectrum-h1', '游離後再射入任何光子（只剩質子，光子穿過）');
+const gap32 = HC.energy(3) - HC.energy(2);
+reset(); tap(Infinity); fire(1.95, 'gun'); fire(r4(gap32) + 0.006, 'gun'); if (done['hydrogen-spectrum-h1']) throw Error('h1 近失例誤觸'); console.log('   hydrogen-spectrum-h1 近失：游離後射 1.95 eV、' + r4(r4(gap32) + 0.006) + ' eV（離 Hα 超過 0.005 eV）都不成立');
+reset(); tap(Infinity); fire(r4(gap32), 'gun'); say('hydrogen-spectrum-h1', '游離後射入 Hα 的能量 ' + r4(gap32) + ' eV（本來會讓 n = 2 吸收的光子，只剩質子就穿過）');
 reset(); fire(r4(HC.energy(3) - HC.energy(1)), 'gun'); tap(1); say('hydrogen-spectrum-h2', '自己射入 12.0874 eV（1 → 3），再點 n = 1 放回同樣的光子');
 reset(); discharge(8, 3, 11); say('hydrogen-spectrum-h3', '放電管 K = 8 eV（< 10.2 eV）跑 2.5 秒以上：1000 次撞擊、0 個光子');
 console.log('舊任務達成', Object.keys(done).length, '/', list.filter(m => !/-h(?:[4-9]|10)$/.test(m.id)).length);

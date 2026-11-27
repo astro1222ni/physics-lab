@@ -143,7 +143,13 @@
     {
       id: 'hydrogen-spectrum-h1', level: 3, hidden: true,
       riddle: { zh: '主人遠行的屋子，訪客穿堂而過。', en: 'The master has gone away; the visitor walks straight through the hall.' },
-      check: function (ev) { return ev.type === 'pass' && !!ev.data.bare; }
+      check: function (ev) {
+        // 只剩質子時，射入一個「本來會被吸收」的光子（能量等於 n ≤ 3 往上到 n ≤ 7 的某個能階差，容差同吸收 0.005 eV）也直接穿過
+        const d = ev.data;
+        if (ev.type !== 'pass' || !d.bare) return false;
+        for (let a = 1; a <= 3; a++) for (let b = a + 1; b <= 7; b++) if (Math.abs(gap(a, b) - d.E) <= 0.005 + 1e-9) return true;
+        return false;
+      }
     },
     {
       id: 'hydrogen-spectrum-h2', level: 4, hidden: true,

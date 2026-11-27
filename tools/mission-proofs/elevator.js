@@ -62,9 +62,8 @@ out('elevator-1', true, '任一趟（例：1F→2F，2√3 = ' + (2 * Math.sqrt(
   const ft = Math.min(tl, tr[0].t1) - 0.1;
   out('elevator-h1', ft >= 0.3 && tr[2].y0 >= 0, `8F、vt = 10、ab = 9.8：剪斷後 0.1 s 放開，漂浮 ${ft.toFixed(3)} s，停在 ${tr[2].y0.toFixed(2)} m`); }
 // h2
-out('elevator-h2', Math.abs(E.reading(60, 9.8) / 60 - 2) < 1e-12, `ab = 9.8（最大值）：讀數 = 2 × 實重`);
-// h3：1F→10F（預設）等速 2.5 m/s 時在 y = 10 m 剪斷
-{ const y = E.predictStop(10, 2.5, 5, 4.9); out('elevator-h3', y >= 0, `上行 2.5 m/s 時於 y = 10 m 剪斷：先再上升 ${(2.5 * 2.5 / 2 / g).toFixed(3)} m，最後停在 ${y.toFixed(2)} m`); }
+out('elevator-h2', Math.abs(E.reading(60, 9.8) / 60 - 2) < 1e-12, `ab = 9.8（最大值）：煞車那一段按暫停，讀數 = 2 × 實重`);
+// h3：上行斷纜後最後停的位置要比斷纜處高至少 0.5 m（下面 verify 段印出達成例與近失例）
 
 let tasks; global.LabMission = { register: (_, list) => { tasks = list; } }; global.window = { LabMission };
 require(__ROOT + 'js/missions/elevator.js');
@@ -74,8 +73,15 @@ verify(2, [['cut', {}], ['pause', {kind:'free', reading:E.reading(60,-g)}], ['br
 { const plan = E.freeFallPlan(0, 21, 0, 10, 9.8);
   verify(2, [['cut', {}], ['brakeStop', { tFree: plan[1].t0, readMin: E.reading(60, -g) }]]);
 }
-verify('h2', [['phase', {m:60, weighingSet:true, reading:E.reading(60,g)}]]);
-verify('h3', [['cut', {v0:2.5}]]);
+verify('h2', [['pause', {m:60, kind:'brake', reading:E.reading(60,g)}]]);
+{ const m = tasks.find(x => x.id === 'elevator-h2'); if (m.check({type:'phase', data:{m:60, weighingSet:true, reading:E.reading(60,g)}}, {})) throw Error('elevator-h2 不按暫停也成立'); }
+{ const yA = E.predictStop(20, 6, 2, 9.8), yB = E.predictStop(20, 5, 3, 9.8), yC = E.predictStop(10, 2.5, 5, 4.9);
+  verify('h3', [['cut', {y0:20, v0:6, predicted:yA}]]);
+  console.log('elevator-h3 ✓ V = 6 上行時在 y = 20 m 斷纜、vt = 2、ab = 9.8：停在 ' + yA.toFixed(3) + ' m（高出 ' + (yA - 20).toFixed(3) + ' m）');
+  const m = tasks.find(x => x.id === 'elevator-h3');
+  [[yB, 'V = 5、vt = 3、ab = 9.8'], [yC, '預設 2.5 m/s、vt = 5、ab = 4.9']].forEach(([y, s], i) => { const y0 = i ? 10 : 20, v0 = i ? 2.5 : 5;
+    if (m.check({type:'cut', data:{y0, v0, predicted:y}}, {})) throw Error('elevator-h3 近失例誤觸');
+    console.log('elevator-h3 近失 ' + s + '：停在比斷纜處 ' + (y - y0).toFixed(3) + ' m，不成立'); }); }
 
 const assert = require('node:assert/strict');
 function hiddenHits(events) {
@@ -147,6 +153,9 @@ const yPress = 15 - 0.5**2 / 6;
 oldEvents.push(...phases(manual,60,'manual'), ...phases(E.manualPlan(0,yPress,0.5,-1,3,0.5),60,'manual'));
 oldEvents.push(event('manualStop',{fromFloor:1,floor:6,off:0,protect:false}),
   event('guess',{aTrue:1.23,err:0}), event('pause',{v:2.5,reading:E.reading(60,-1),m:60}));
+// 收緊後的 h2（煞車那一瞬間暫停）、h3（上行斷纜後停得比斷纜處高 0.5 m 以上）
+oldEvents.push(event('pause',{m:60,kind:'brake',v:-1,reading:E.reading(60,9.8)}),
+  event('cut',{y0:20,v0:6,vTrip:2,ab:9.8,predicted:E.predictStop(20,6,2,9.8),m:60}));
 for (const m of tasks.filter(m => !m.hidden || /-h[123]$/.test(m.id))) {
   const mem = {};
   assert.ok(oldEvents.some(e => m.check(e,mem)), m.id + ' 既有成功例');
