@@ -235,7 +235,7 @@ ExamTracks.Q49=[
  {
   "id": "Q49_14",
   "row": "solveA",
-  "duration": 8.98,
+  "duration": 8.13,
   "disp": "因為 \\(R_{3}\\) 從更深的地方反射回來，一路上有被吸收、有透射出去，所以振幅要比 \\(R_{2}\\) 略小一點。",
   "en": "R3 comes back from deeper down, losing some to absorption and transmission on the way, so its amplitude should be slightly smaller than R2's."
  },
