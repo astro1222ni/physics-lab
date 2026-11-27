@@ -65,8 +65,15 @@
     {
       id: 'tides-6', level: 4,
       title: { zh: '一高一低', en: 'One high, one low' },
-      desc: { zh: '調整月球赤緯與觀測點緯度，讓同一天相連的兩次高潮相差 20 cm 以上（日潮不等），而且兩次高潮都還在平均海面以上。', en: 'Adjust the Moon’s declination and the site’s latitude so that two high tides in a row on the same day differ by at least 20 cm (diurnal inequality), with both high tides still above mean sea level.' },
-      check: function (ev) { return paired(ev) && ev.data.gap < 20 && Math.abs(ev.data.dh) >= 0.2 && ev.data.h > 0 && ev.data.prevH > 0; }
+      desc: { zh: '先對照：把月球赤緯調到 0° 附近（±3° 以內）播放，看到相連兩次高潮差不到高的那次的一成；再調月球赤緯與觀測點緯度，讓同一天相連的兩次高潮相差 20 cm 以上（日潮不等），而且兩次高潮都還在平均海面以上。', en: 'Compare first: set the Moon’s declination near 0° (within ±3°) and play until two high tides in a row differ by less than a tenth of the higher one. Then adjust the Moon’s declination and the site’s latitude so that two high tides in a row on the same day differ by at least 20 cm (diurnal inequality), with both high tides still above mean sea level.' },
+      // 11/27 站長選 A「加對照」：原本只要把赤緯推上去（預設緯度 23.5° 正是日潮不等帶），亂按第 16 步就達成；
+      // 先要在赤緯 ≈ 0° 親眼看到兩次高潮幾乎一樣高（mem.flat），才算拉開的那一次。代號、等級不變。
+      check: function (ev, mem) {
+        if (!paired(ev) || !(ev.data.gap < 20) || !(ev.data.h > 0) || !(ev.data.prevH > 0)) return false;
+        const d = ev.data, dh = Math.abs(d.dh);
+        if (Math.abs(d.dec) <= 3 && dh < 0.1 * Math.max(d.h, d.prevH)) { mem.flat = true; return false; }
+        return !!mem.flat && dh >= 0.2;
+      }
     },
     {
       id: 'tides-7', level: 5,

@@ -112,19 +112,35 @@ expect(4, [cam('side', 15), cam('top', 25)], false, 'δ = 15° 側看、δ = 25�
 }
 // 6 一高一低
 {
+  // 11/27 站長選 A「加對照」：先在赤緯 ≈ 0° 看到兩次高潮幾乎一樣高，拉開赤緯後的那一次才算
+  const ratio = evs => evs.filter(e => e.data.dh != null).map(e => (Math.abs(e.data.dh) / Math.max(e.data.h, e.data.prevH) * 100).toFixed(1) + '%').join('、');
+  const flat = highEvs({ dec: 0 }, 1.5);
+  const flatOff = highEvs({ sun: false, dec: 0 }, 1.5);
+  expect(6, flat, false, '對照（預設緯度、有太陽、赤緯 0°）本身不算達成：差／高 ' + ratio(flat));
   const hs = highEvs({ sun: false, lat: 23.5, dec: 20 }, 2);
-  expect(6, hs, true, '關掉太陽，緯度 23.5°、赤緯 20°：相連高潮差 ' + hs.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、') + '，高潮最低 ' + cm(Math.min.apply(null, hs.map(e => e.data.h))));
+  expect(6, flatOff.concat(hs), true, '先對照（關掉太陽、赤緯 0°：差／高 ' + ratio(flatOff) + '），再把赤緯拉到 20°：相連高潮差 ' + hs.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、') + '，高潮最低 ' + cm(Math.min.apply(null, hs.map(e => e.data.h))));
   const hs2 = highEvs({ lat: 23.5, dec: 25 }, 2);
-  expect(6, hs2, true, '有太陽，緯度 23.5°、赤緯 25°：' + hs2.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、'));
-  expect('h2', hs.concat(hs2), false, '上面兩個任務 6 的達成例都不會順便完成隱藏 h2（兩次高潮都在平均海面以上）');
-  expect(6, highEvs({ sun: false, lat: 0, dec: 25 }, 2), false, '赤道上沒有日潮不等');
+  expect(6, flat.concat(hs2), true, '先對照，再有太陽、緯度 23.5°、赤緯 25°：' + hs2.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、'));
+  expect(6, hs, false, '沒先對照、直接把赤緯推到 20° 不算（原本亂按第 16 步就這樣達成）');
+  expect(6, hs2, false, '沒先對照、有太陽、赤緯 25° 也不算');
+  expect(6, highEvs({ dist: 0.575, dec: 28.6 }, 2), false, '試玩種子 1 的做法（月距拉到 0.575、赤緯拉到最大）沒先對照，不算');
+  const tilt = highEvs({ sun: false, dec: 4 }, 1.5);
+  expect(6, tilt.concat(hs), false, '對照的赤緯 4° 不在 ±3° 以內（差／高 ' + ratio(tilt) + '），不算對照');
+  const flat10 = highEvs({ dec: 10 }, 1.5);
+  expect(6, flat10.concat(hs2), false, '預設赤緯 10° 不是對照（差／高 ' + ratio(flat10) + '）');
+  expect('h2', flat.concat(hs, flatOff, hs2), false, '上面兩個任務 6 的達成例都不會順便完成隱藏 h2（兩次高潮都在平均海面以上）');
+  expect(6, flat.concat(highEvs({ sun: false, lat: 0, dec: 25 }, 2)), false, '赤道上沒有日潮不等（先對照也一樣）');
   const old = highEvs({ sun: false, lat: 30, dec: 25 }, 2);
-  expect(6, old, false, '試玩回報 C17 的做法（關掉太陽，緯度 30°、赤緯 25°）：第二次高潮 ' + cm(Math.min.apply(null, old.map(e => e.data.h))) + '，不在平均海面以上，不算');
+  expect(6, flatOff.concat(old), false, '試玩回報 C17 的做法（關掉太陽，緯度 30°、赤緯 25°）：第二次高潮 ' + cm(Math.min.apply(null, old.map(e => e.data.h))) + '，不在平均海面以上，不算');
   expect('h2', old, false, 'C17 的舊做法也不再觸發隱藏 h2');
   const standard = highEvs({ lat: 30, dec: 25 }, 4);
-  expect(6, standard.slice(0, 2), true, '緯度 30°、赤緯 25°、有太陽：連按下一次高潮兩次完成公開任務 6');
+  expect(6, flat.concat(standard.slice(0, 2)), true, '先對照，再緯度 30°、赤緯 25°、有太陽：連按下一次高潮兩次完成公開任務 6');
   expect('h2', standard, false, '公開任務 6 的標準做法，包括繼續播放四天，不觸發 h2');
-  expect(6, highEvs({ sun: false, lat: 50, dec: 25 }, 2), false, '緯度 50°：差很大，但第二次高潮在平均海面以下');
+  expect(6, flatOff.concat(highEvs({ sun: false, lat: 50, dec: 25 }, 2)), false, '緯度 50°：差很大，但第二次高潮在平均海面以下');
+  const refs = [stateEv({ dec: 0 }), stateEv({ sun: false, dec: 0 })].concat(flat, flatOff);
+  const hit = missions.filter(m => /^tides-h\d+$/.test(m.id) && (m.mem = {}, refs.some(e => m.check(e, m.mem))));
+  if (hit.length) fail++;
+  console.log((hit.length ? '  ✗ ' : '  ✓ ') + '6   對照的做法（赤緯 0°，有無太陽）不會順便完成任何隱藏任務' + (hit.length ? '：' + hit.map(m => m.id).join('、') : ''));
 }
 // 7 赤道的公平
 {

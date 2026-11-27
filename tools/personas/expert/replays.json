@@ -13426,11 +13426,14 @@
   "tides": [
     {
       "source": "11/12 公開任務",
-      "goals": {"tides-1":2,"tides-2":4,"tides-3":5,"tides-4":9,"tides-5":26,"tides-6":20,"tides-7":23,"tides-8":17,"tides-9":32,"tides-10":33,"tides-11":37},
+      "goals": {"tides-1":2,"tides-2":7,"tides-3":8,"tides-4":12,"tides-5":29,"tides-6":23,"tides-7":26,"tides-8":20,"tides-9":35,"tides-10":36,"tides-11":40},
       "actions": [
         {"op":"press","target":"#rate","key":"End"},
         {"op":"await-ui","ms":1500},
         {"op":"named","name":"暫停","role":"button","exact":true},
+        {"op":"value","target":"#deco","value":"0","editor":true,"commit":true},
+        {"op":"click","target":"#nextHigh"},
+        {"op":"click","target":"#nextHigh"},
         {"op":"value","target":"#psio","value":"0","editor":true,"commit":true},
         {"op":"value","target":"#psio","value":"90","editor":true,"commit":true},
         {"op":"value","target":"#deco","value":"25","editor":true,"commit":true},

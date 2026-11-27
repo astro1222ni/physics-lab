@@ -483,8 +483,9 @@
       D.arrow(g, bx, by, bx + ref * ks, by, C.pos, 2);
       const m = ref / Math.pow(10, Math.floor(Math.log10(ref))), e = Math.floor(Math.log10(ref));
       const base = num(m, m % 1 ? 1 : 0) + ' × 10';
-      const w = D.supText(g, base, '−' + (-e), bx + ref * ks + 8, by + 4, C.pos, '600 12px ' + FONT);
-      D.haloText(g, ' m/s²', bx + ref * ks + 8 + w, by + 4, C.pos, 'left', 'alphabetic', '600 12px ' + FONT);
+      // 13 px：上標是 0.72 倍，12 px 時只有 8.6 px，橫放版面自查要 ≥ 9 px（11/27）
+      const w = D.supText(g, base, '−' + (-e), bx + ref * ks + 8, by + 4, C.pos, '600 13px ' + FONT);
+      D.haloText(g, ' m/s²', bx + ref * ks + 8 + w, by + 4, C.pos, 'left', 'alphabetic', '600 13px ' + FONT);
     }
     const note = T('示意圖：隆起誇大 ' + bigText(E) + ' 倍、月球距離未依比例', 'Not to scale: bulges ×' + bigText(E) + ', Moon distance shrunk');
     D.haloText(g, note, W - 10, H - 12, C.muted, 'right', 'alphabetic', '12px ' + FONT);
