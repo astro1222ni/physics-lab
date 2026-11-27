@@ -3,7 +3,7 @@
  * in-main.cjs — 比對某分支或 commit 範圍改過的檔案是否已經以相同內容進了 base（預設 origin/main）。
  *
  * 起因：分支上的提交可能經由 cherry-pick、squash 或整批合併以不同的 commit 編號進入 main，
- *       只比 commit SHA 會誤判為「未合併」。本工具直接逐檔比對「分支版內容」與「base 現在的內容」。
+ *       只比 commit SHA 會誤判為「未合併」。本工具直接逐檔比對「分支版樹物件與內容」與「base 現在的樹物件與內容」。
  *
  * 用法：
  *   node tools/in-main.cjs <分支或 commit 範圍> [--base origin/main] [--json]
@@ -13,29 +13,32 @@
  *   node tools/in-main.cjs ag-bugfix-1127 --base origin/main
  *   node tools/in-main.cjs abc1234..def5678 --json
  *
- * 忽略 stamp 差異的正規化規則（對應 tools/stamp.py，只套用於文字檔；二進位檔直接比對位元組）：
+ * 忽略 stamp 差異的正規化規則（嚴格對應 tools/stamp.py，只套用於可無損解碼為 UTF-8 的文字檔）：
  *   1. 換行符統一：\r\n 統一轉為 \n。
  *   2. HTML 檔（*.html）：
  *      - 移除 <meta name="lab-updated" content="..."> 整行。
- *      - 移除站內靜態資源連結（href/src 內的 .css/.js/.webp/.png/.jpg/.jpeg/.svg/.json/.woff2）尾端的 ?v=[\w-]+ 版本號。
+ *      - 僅移除 tools/stamp.py 實際改寫的站內靜態資源（根目錄 *.css 與 js/**\/*.js）尾端的 ?v=[\w-]+ 版本號；
+ *        外站 URL（https://、http://、// 等）與非 stamp 資源之查詢字串一律保留比對。
  *   3. tools/page-updated.json：
  *      - 各頁條目僅比對頁面鍵名與內容指紋 "h"，忽略時間戳欄位 "t"。
- *   若兩邊原始位元組不同、但套用上述規則後完全一致，仍判定為「已上線」，並標記為 stampOnly。
+ *   若兩邊樹物件權限／類型相同、原始位元組不同，但套用上述規則後完全一致，仍判定為「已上線」，並標記為 stampOnly。
  *
  * 分類規則：
- *   - 已上線（inMain）：分支與 base 內容相同（含僅差 stamp），或分支已刪且 base 亦不存在。
- *   - 不同（different）：分支與 base 兩邊皆有此檔，但正規化後內容不同（文字檔印出差幾行，二進位檔印出大小）。
+ *   - 已上線（inMain）：分支與 base 的樹物件權限／類型及內容相同（含僅差 stamp），或分支已刪且 base 亦不存在。
+ *   - 不同（different）：分支與 base 兩邊皆有此檔，但權限／類型或正規化後內容不同（文字檔印出差幾行，二進位／超大檔印出大小）。
  *   - 未上線（notInMain）：分支新增／修改的檔在 base 不存在，或分支已刪的檔在 base 仍然存在。
  *
  * 結束碼：
  *   0 = 全部已上線（不同 0 且未上線 0）
  *   1 = 有不同或未上線的檔案
- *   2 = 參數錯誤或 git 參照不存在
+ *   2 = 參數錯誤、git 參照不存在或 git 物件讀取失敗
  */
 'use strict';
 
 const { execFileSync } = require('child_process');
 const path = require('path');
+
+const DEFAULT_MAX_READ_BYTES = 32 * 1024 * 1024; // 32 MiB：大於此值直接依 blob ID 與大小判定，避免超緩衝
 
 const USAGE = [
   '用法：node tools/in-main.cjs <分支或 commit 範圍> [--base origin/main] [--json]',
@@ -76,12 +79,12 @@ function parseArgs(argv) {
   return { target, base, json };
 }
 
-function runGit(args, cwd, encoding) {
+function runGit(args, cwd, encoding, maxBufferBytes) {
   return execFileSync('git', ['-c', 'core.quotepath=false'].concat(args), {
     cwd,
     encoding: encoding || 'utf8',
     windowsHide: true,
-    maxBuffer: 64 * 1024 * 1024,
+    maxBuffer: maxBufferBytes || 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe']
   });
 }
@@ -94,11 +97,44 @@ function tryRevParse(ref, cwd) {
   }
 }
 
-function readBlob(commit, filePath, cwd) {
+/**
+ * 查詢 commit 樹物件中指定路徑的 mode、type 與 oid。
+ * 路徑不存在時回 null；git 執行失敗或輸出格式異常時直接拋錯（不吞錯）。
+ */
+function getTreeEntry(commit, filePath, cwd) {
+  const raw = runGit(['ls-tree', '-z', commit, '--', filePath], cwd, 'buffer');
+  if (!raw.length) return null;
+  const first = raw.toString('utf8').split('\0')[0];
+  if (!first) return null;
+  const tab = first.indexOf('\t');
+  if (tab < 0) throw new Error(`無法解析樹物件資訊：${commit}:${filePath}`);
+  const meta = first.slice(0, tab).split(' ');
+  if (meta.length < 3) throw new Error(`無法解析樹物件欄位：${commit}:${filePath}`);
+  return {
+    mode: meta[0],
+    type: meta[1],
+    oid: meta[2],
+    path: first.slice(tab + 1)
+  };
+}
+
+/** 查詢 Git 物件大小（位元組），失敗直接拋錯。 */
+function getObjectSize(oid, cwd) {
+  const out = runGit(['cat-file', '-s', oid], cwd).trim();
+  const n = Number(out);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`無法取得物件大小：${oid}`);
+  }
+  return n;
+}
+
+/** 依 blob oid 讀取完整位元組內容，讀取失敗一律拋錯（不轉成 null）。 */
+function readBlobByOid(oid, cwd, maxBufferBytes) {
   try {
-    return runGit(['show', commit + ':' + filePath], cwd, 'buffer');
+    return runGit(['cat-file', 'blob', oid], cwd, 'buffer', maxBufferBytes);
   } catch (e) {
-    return null;
+    const msg = e && e.message ? e.message : String(e);
+    throw new Error(`讀取 Git 物件 ${oid.slice(0, 12)} 失敗：${msg}`);
   }
 }
 
@@ -115,15 +151,16 @@ function isBinaryBuffer(buf) {
   return !isValidUtf8Text(buf);
 }
 
-/** 依檔頭規則移除 stamp 差異，回傳正規化後的文字（統一 LF）。 */
+/** 依 tools/stamp.py 實際改寫規則移除 stamp 差異，回傳正規化後的文字（統一 LF）。 */
 function normalizeText(filePath, text) {
   let s = text.replace(/\r\n/g, '\n');
   const normPath = filePath.replace(/\\/g, '/');
 
   if (normPath.endsWith('.html')) {
     s = s.replace(/^[ \t]*<meta name="lab-updated" content="[^"]*">\n?/gm, '');
+    // 嚴格對應 tools/stamp.py 第 12 行：只移除站內根目錄 *.css 與 js/**/*.js 的 ?v=[\w-]+
     s = s.replace(
-      /((?:href|src)="[^"]*?\.(?:css|js|webp|png|jpg|jpeg|svg|json|woff2))\?v=[\w-]+(")/g,
+      /((?:href|src)="(?:[\w-]+\.css|js\/(?:[\w-]+\/)*[\w.-]+\.js))\?v=[\w-]+(")/g,
       '$1$2'
     );
   } else if (normPath === 'tools/page-updated.json') {
@@ -229,7 +266,7 @@ function countDiffLines(baseText, targetText) {
   return { added, deleted, diffLines: added + deleted, approx: true };
 }
 
-/** 解析 <分支或 commit 範圍> 為 { fromSha, toSha, rangeSpec }。 */
+/** 解析 <分支或 commit 範圍> 為 { fromSha, toSha, isExplicitRange }。 */
 function resolveRange(target, baseSha, cwd) {
   let leftRef = null;
   let rightRef = null;
@@ -287,36 +324,102 @@ function listChangedFiles(fromSha, toSha, cwd) {
   return files;
 }
 
-function compareFile(entry, toSha, baseSha, cwd) {
+function compareFile(entry, toSha, baseSha, cwd, opts) {
   const { status, file } = entry;
-  const targetBuf = readBlob(toSha, file, cwd);
-  const baseBuf = readBlob(baseSha, file, cwd);
+  const maxReadBytes = opts && Number.isFinite(opts.maxReadBytes) ? opts.maxReadBytes : DEFAULT_MAX_READ_BYTES;
+  const targetEntry = getTreeEntry(toSha, file, cwd);
+  const baseEntry = getTreeEntry(baseSha, file, cwd);
 
   // 分支已刪除此檔
-  if (targetBuf === null) {
-    if (baseBuf === null) {
+  if (targetEntry === null) {
+    if (baseEntry === null) {
       return { category: 'inMain', item: { file, status, stampOnly: false, reason: 'deleted-in-both' } };
     }
     return { category: 'notInMain', item: { file, status, reason: 'still-in-base' } };
   }
 
   // 分支有此檔，但 base 沒有
-  if (baseBuf === null) {
+  if (baseEntry === null) {
     return { category: 'notInMain', item: { file, status, reason: 'missing-in-base' } };
   }
 
-  // 兩邊皆有此檔：先比原始位元組
-  if (targetBuf.equals(baseBuf)) {
-    return { category: 'inMain', item: { file, status, stampOnly: false, reason: 'identical' } };
+  const modeChanged = targetEntry.mode !== baseEntry.mode || targetEntry.type !== baseEntry.type;
+  const modeMeta = modeChanged
+    ? {
+        modeChanged: true,
+        targetMode: targetEntry.mode,
+        baseMode: baseEntry.mode,
+        targetType: targetEntry.type,
+        baseType: baseEntry.type
+      }
+    : { modeChanged: false };
+
+  // 先比 Git 樹物件的 blob ID（完全一致時無須讀取檔體）
+  if (targetEntry.oid === baseEntry.oid) {
+    if (!modeChanged) {
+      return { category: 'inMain', item: { file, status, stampOnly: false, reason: 'identical' } };
+    }
+    return {
+      category: 'different',
+      item: {
+        file,
+        status,
+        ...modeMeta,
+        contentSame: true,
+        binary: false,
+        added: 0,
+        deleted: 0,
+        diffLines: 0,
+        approx: false
+      }
+    };
   }
 
-  // 二進位檔不做文字正規化
+  // 非 blob 物件（例如 submodule commit 或 tree）
+  if (targetEntry.type !== 'blob' || baseEntry.type !== 'blob') {
+    return {
+      category: 'different',
+      item: {
+        file,
+        status,
+        ...modeMeta,
+        nonBlob: true,
+        targetOid: targetEntry.oid,
+        baseOid: baseEntry.oid
+      }
+    };
+  }
+
+  // 兩邊皆為 blob 且 oid 不同：先查大小，超過安全上限直接依大小與 oid 判不同，不超緩衝
+  const targetBytes = getObjectSize(targetEntry.oid, cwd);
+  const baseBytes = getObjectSize(baseEntry.oid, cwd);
+  if (targetBytes > maxReadBytes || baseBytes > maxReadBytes) {
+    return {
+      category: 'different',
+      item: {
+        file,
+        status,
+        ...modeMeta,
+        binary: true,
+        largeBlob: true,
+        targetBytes,
+        baseBytes
+      }
+    };
+  }
+
+  const bufLimit = Math.max(64 * 1024 * 1024, maxReadBytes + 1024 * 1024);
+  const targetBuf = readBlobByOid(targetEntry.oid, cwd, bufLimit);
+  const baseBuf = readBlobByOid(baseEntry.oid, cwd, bufLimit);
+
+  // 二進位檔（含無 NUL 但非合法 UTF-8 者）不做文字正規化
   if (isBinaryBuffer(targetBuf) || isBinaryBuffer(baseBuf)) {
     return {
       category: 'different',
       item: {
         file,
         status,
+        ...modeMeta,
         binary: true,
         targetBytes: targetBuf.length,
         baseBytes: baseBuf.length
@@ -327,7 +430,24 @@ function compareFile(entry, toSha, baseSha, cwd) {
   const targetNorm = normalizeText(file, targetBuf.toString('utf8'));
   const baseNorm = normalizeText(file, baseBuf.toString('utf8'));
   if (targetNorm === baseNorm) {
-    return { category: 'inMain', item: { file, status, stampOnly: true, reason: 'stamp-only' } };
+    if (!modeChanged) {
+      return { category: 'inMain', item: { file, status, stampOnly: true, reason: 'stamp-only' } };
+    }
+    return {
+      category: 'different',
+      item: {
+        file,
+        status,
+        ...modeMeta,
+        stampOnly: true,
+        contentSame: true,
+        binary: false,
+        added: 0,
+        deleted: 0,
+        diffLines: 0,
+        approx: false
+      }
+    };
   }
 
   const diff = countDiffLines(baseNorm, targetNorm);
@@ -336,6 +456,7 @@ function compareFile(entry, toSha, baseSha, cwd) {
     item: {
       file,
       status,
+      ...modeMeta,
       binary: false,
       added: diff.added,
       deleted: diff.deleted,
@@ -373,7 +494,7 @@ function compareTarget(opts) {
   const notInMain = [];
 
   for (const entry of changed) {
-    const res = compareFile(entry, toSha, baseSha, cwd);
+    const res = compareFile(entry, toSha, baseSha, cwd, opts);
     if (res.category === 'inMain') inMain.push(res.item);
     else if (res.category === 'different') different.push(res.item);
     else notInMain.push(res.item);
@@ -396,6 +517,26 @@ function compareTarget(opts) {
     different,
     notInMain
   };
+}
+
+function formatDiffDetail(it) {
+  const parts = [];
+  if (it.modeChanged) {
+    parts.push(`權限／類型不同：目標 ${it.targetMode}，基準 ${it.baseMode}`);
+  }
+  if (it.nonBlob) {
+    parts.push(`物件不同：目標 ${it.targetOid.slice(0, 8)}，基準 ${it.baseOid.slice(0, 8)}`);
+  } else if (it.largeBlob) {
+    parts.push(`超大檔不同：目標 ${it.targetBytes} B，基準 ${it.baseBytes} B`);
+  } else if (it.binary) {
+    parts.push(`二進位不同：目標 ${it.targetBytes} B，基準 ${it.baseBytes} B`);
+  } else if (it.contentSame) {
+    parts.push(it.stampOnly ? '僅版本號／時間戳不同' : '內容相同');
+  } else {
+    const prefix = it.approx ? '約 ' : '';
+    parts.push(`差 ${prefix}${it.diffLines} 行：+${it.added} / -${it.deleted}`);
+  }
+  return parts.join('；');
 }
 
 function formatReport(report) {
@@ -434,12 +575,7 @@ function formatReport(report) {
   if (report.different.length) {
     out.push(`\n[不同（${report.different.length} 檔）]`);
     for (const it of report.different) {
-      if (it.binary) {
-        out.push(`  ≠ ${it.file}（二進位不同：目標 ${it.targetBytes} B，基準 ${it.baseBytes} B）`);
-      } else {
-        const prefix = it.approx ? '約 ' : '';
-        out.push(`  ≠ ${it.file}（差 ${prefix}${it.diffLines} 行：+${it.added} / -${it.deleted}）`);
-      }
+      out.push(`  ≠ ${it.file}（${formatDiffDetail(it)}）`);
     }
   }
 
@@ -487,7 +623,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DEFAULT_MAX_READ_BYTES,
   parseArgs,
+  getTreeEntry,
+  getObjectSize,
   normalizeText,
   countDiffLines,
   compareTarget,

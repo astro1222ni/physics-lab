@@ -29,15 +29,15 @@ test('parseArgs：正常與錯誤情況', () => {
   assert.ok(IM.parseArgs(['a', '--base']).error);
 });
 
-// 2. stamp 正規化規則
-test('normalizeText：HTML 忽略 ?v= 與 lab-updated，不影響實質內容', () => {
+// 2. stamp 正規化規則（嚴格對應 tools/stamp.py：僅站內根目錄 *.css 與 js/**/*.js，不碰外站 URL）
+test('normalizeText：HTML 只忽略站內 stamp 資源 ?v= 與 lab-updated，不忽略外站 URL 或實質內容', () => {
   const a = [
     '<!doctype html>',
     '<meta charset="utf-8">',
     '<meta name="lab-updated" content="2026-11-26 10:00">',
     '<link rel="stylesheet" href="lab.css?v=202611261000">',
     '<script src="js/missions/foo.js?v=202611261000"></script>',
-    '<img src="img/thumbs/foo.webp?v=abcd1234">',
+    '<script src="https://example.invalid/a.js?v=1"></script>',
     '<p>內容</p>'
   ].join('\r\n');
   const b = [
@@ -46,11 +46,21 @@ test('normalizeText：HTML 忽略 ?v= 與 lab-updated，不影響實質內容', 
     '<meta name="lab-updated" content="2026-11-27 19:50">',
     '<link rel="stylesheet" href="lab.css?v=202611271950">',
     '<script src="js/missions/foo.js?v=202611271950"></script>',
-    '<img src="img/thumbs/foo.webp?v=9999ffff">',
+    '<script src="https://example.invalid/a.js?v=1"></script>',
     '<p>內容</p>'
   ].join('\n');
   assert.strictEqual(IM.normalizeText('foo.html', a), IM.normalizeText('foo.html', b));
 
+  // 外站 URL 查詢版本變更不可被當成 stamp-only
+  const extChanged = b.replace('https://example.invalid/a.js?v=1', 'https://example.invalid/a.js?v=2');
+  assert.notStrictEqual(IM.normalizeText('foo.html', a), IM.normalizeText('foo.html', extChanged));
+
+  // 協定相對外站 URL 也不忽略
+  const protoRelA = '<script src="//cdn.example.invalid/lab.js?v=1"></script>\n';
+  const protoRelB = '<script src="//cdn.example.invalid/lab.js?v=2"></script>\n';
+  assert.notStrictEqual(IM.normalizeText('foo.html', protoRelA), IM.normalizeText('foo.html', protoRelB));
+
+  // 實質內容變更不可忽略
   const c = b.replace('<p>內容</p>', '<p>改了</p>');
   assert.notStrictEqual(IM.normalizeText('foo.html', a), IM.normalizeText('foo.html', c));
 });
@@ -74,7 +84,7 @@ test('countDiffLines：精確計算增刪行', () => {
   assert.strictEqual(d1.diffLines, 3);
 });
 
-// 4. 真實暫存 git repo 整合測試（涵蓋 cherry-pick/squash、stamp-only、不同、未上線、刪檔、中文檔名、結束碼）
+// 4. 真實暫存 git repo 整合測試（涵蓋 cherry-pick/squash、stamp-only、不同、未上線、刪檔、中文檔名、結束碼、權限、超大檔、外站 URL）
 test('compareTarget：迷你 git repo 全情境驗證', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'in-main-test-'));
   try {
@@ -109,8 +119,7 @@ test('compareTarget：迷你 git repo 全情境驗證', () => {
     git(tmp, ['add', '-A']);
     git(tmp, ['commit', '-m', 'feat changes']);
 
-    // 切回 main，模擬整批合併／cherry-pick：same.js、page.html（不同 stamp）、中文檔、del-both.txt 已進 main；
-    // diff.js 在 main 被改成別的版本；new-only.js 未進 main；del-branch-only.txt 仍在 main
+    // 切回 main，模擬整批合併／cherry-pick
     git(tmp, ['checkout', 'main']);
     write('same.js', 'const x = 2;\n');
     write('page.html', '<meta name="lab-updated" content="2026-11-27 19:50">\n<script src="js/a.js?v=202611271950"></script>\n<p>v2</p>\n');
@@ -135,7 +144,7 @@ test('compareTarget：迷你 git repo 全情境驗證', () => {
     assert.strictEqual(im.get('del-both.txt').reason, 'deleted-in-both');
 
     const df = byFile(rep.different);
-    assert.strictEqual(df.get('diff.js').diffLines, 3); // line2-main vs line2-feat (+1/-1) + line4 (+1)
+    assert.strictEqual(df.get('diff.js').diffLines, 3);
 
     const nm = byFile(rep.notInMain);
     assert.strictEqual(nm.get('new-only.js').reason, 'missing-in-base');
@@ -147,14 +156,15 @@ test('compareTarget：迷你 git repo 全情境驗證', () => {
     git(tmp, ['add', 'same.js']);
     git(tmp, ['commit', '-m', 'already in main']);
 
-    const r1 = spawnSync(process.execPath, [path.resolve(__dirname, '../tools/in-main.cjs'), 'feat', '--base', 'main', '--json'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
+    const script = path.resolve(__dirname, '../tools/in-main.cjs');
+    const r1 = spawnSync(process.execPath, [script, 'feat', '--base', 'main', '--json'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
     assert.strictEqual(r1.status, 1);
     assert.strictEqual(JSON.parse(r1.stdout).summary.notInMain, 2);
 
-    const r0 = spawnSync(process.execPath, [path.resolve(__dirname, '../tools/in-main.cjs'), 'feat-done', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
+    const r0 = spawnSync(process.execPath, [script, 'feat-done', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
     assert.strictEqual(r0.status, 0);
 
-    const r2 = spawnSync(process.execPath, [path.resolve(__dirname, '../tools/in-main.cjs'), 'no-such-branch', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
+    const r2 = spawnSync(process.execPath, [script, 'no-such-branch', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
     assert.strictEqual(r2.status, 2);
 
     // 5. 無 NUL byte 的非法 UTF-8 二進位檔（0x80 vs 0x81）不可誤判成已上線
@@ -183,6 +193,67 @@ test('compareTarget：迷你 git repo 全情境驗證', () => {
     assert.strictEqual(repAnc.alreadyAncestor, true);
     const txtAnc = IM.formatReport(repAnc);
     assert.ok(txtAnc.includes('明確起訖範圍'));
+
+    // 7. 執行權限變動（100644 => 100755）即使內容完全相同也不可判為已上線
+    git(tmp, ['checkout', 'main']);
+    write('run.sh', '#!/bin/sh\necho hi\n');
+    git(tmp, ['add', 'run.sh']);
+    git(tmp, ['commit', '-m', 'add run.sh 644']);
+
+    git(tmp, ['checkout', '-b', 'chmod-feat']);
+    git(tmp, ['update-index', '--chmod=+x', 'run.sh']);
+    git(tmp, ['commit', '-m', 'chmod +x run.sh']);
+
+    const repMode = IM.compareTarget({ target: 'chmod-feat', base: 'main', cwd: tmp });
+    assert.strictEqual(repMode.summary.inMain, 0);
+    assert.strictEqual(repMode.summary.different, 1);
+    assert.strictEqual(repMode.different[0].file, 'run.sh');
+    assert.strictEqual(repMode.different[0].modeChanged, true);
+    assert.strictEqual(repMode.different[0].targetMode, '100755');
+    assert.strictEqual(repMode.different[0].baseMode, '100644');
+    assert.ok(IM.formatReport(repMode).includes('100755'));
+    const rMode = spawnSync(process.execPath, [script, 'chmod-feat', '--base', 'main'], { cwd: tmp, encoding: 'utf8', windowsHide: true });
+    assert.strictEqual(rMode.status, 1);
+
+    // 8. 外站資源查詢版本變更（https://example.invalid/a.js?v=1 -> v=2）不可當成 stamp-only
+    git(tmp, ['checkout', 'main']);
+    write('ext.html', '<script src="https://example.invalid/a.js?v=1"></script>\n');
+    git(tmp, ['add', 'ext.html']);
+    git(tmp, ['commit', '-m', 'add ext.html']);
+
+    git(tmp, ['checkout', '-b', 'ext-feat']);
+    write('ext.html', '<script src="https://example.invalid/a.js?v=2"></script>\n');
+    git(tmp, ['add', 'ext.html']);
+    git(tmp, ['commit', '-m', 'bump external url version']);
+
+    const repExt = IM.compareTarget({ target: 'ext-feat', base: 'main', cwd: tmp });
+    assert.strictEqual(repExt.summary.inMain, 0);
+    assert.strictEqual(repExt.summary.different, 1);
+    assert.strictEqual(repExt.different[0].file, 'ext.html');
+    assert.strictEqual(repExt.different[0].diffLines, 2);
+
+    // 9. 超出讀取上限的大檔（以 maxReadBytes 模擬大於上限）不可誤判成 deleted-in-both
+    git(tmp, ['checkout', 'main']);
+    const bufA = Buffer.alloc(4096, 0x41);
+    write('big.bin', bufA);
+    git(tmp, ['add', 'big.bin']);
+    git(tmp, ['commit', '-m', 'add big.bin']);
+
+    git(tmp, ['checkout', '-b', 'big-feat']);
+    const bufB = Buffer.alloc(4096, 0x41);
+    bufB[0] = 0x42;
+    write('big.bin', bufB);
+    git(tmp, ['add', 'big.bin']);
+    git(tmp, ['commit', '-m', 'modify first byte of big.bin']);
+
+    const repBig = IM.compareTarget({ target: 'big-feat', base: 'main', cwd: tmp, maxReadBytes: 1024 });
+    assert.strictEqual(repBig.summary.inMain, 0);
+    assert.strictEqual(repBig.summary.different, 1);
+    assert.strictEqual(repBig.different[0].file, 'big.bin');
+    assert.strictEqual(repBig.different[0].largeBlob, true);
+    assert.strictEqual(repBig.different[0].targetBytes, 4096);
+    assert.strictEqual(repBig.different[0].baseBytes, 4096);
+    assert.ok(IM.formatReport(repBig).includes('超大檔不同'));
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

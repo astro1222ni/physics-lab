@@ -3,14 +3,19 @@
  * tools/triage.cjs — 第三方全面檢查報告與待修清單分流工具
  *
  * 用途：把外部檢查報告（如 09-全面檢查/*.md）或分流待修清單逐項解析，支援三種分法：
- *   1. --by snippet（預設）：核對程式片段是否仍存在於現行程式碼，分成「仍存在」與「片段已不存在（多半已修）」。
+ *   1. --by snippet（預設）：核對程式片段是否仍存在於現行程式碼，分成「仍存在」、
+ *      「片段未命中（待人工確認）」、「待查（來源未讀到）」與「待查（無片段）」。
  *   2. --by keyword：依關鍵字與類別分成「文字」「判定」「模型」「版面」「其他」。
- *   3. --blank：產出附前後 N 行（預設 5 行）現行程式碼的空白核對表（Markdown）。
+ *   3. --blank：產出附前後 N 行（預設 5 行，支援 0）現行程式碼的空白核對表（Markdown）。
  *   亦可加 --all 一次輸出三種視角，或 --json 輸出結構化 JSON。
  *
  * 用法：
  *   node tools/triage.cjs <清單檔...> [--by snippet|keyword] [--blank] [--all]
  *                         [--context 5] [--root <dir>] [--out <file>] [--json]
+ *
+ * 結束碼：
+ *   0 = 執行成功
+ *   2 = 參數錯誤、無效選項或清單檔不存在
  */
 'use strict';
 
@@ -18,6 +23,25 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULT_ROOT = path.resolve(__dirname, '..');
+
+const STATUS = {
+  PRESENT: '仍存在',
+  MISS: '片段未命中（待人工確認）',
+  UNREADABLE: '待查（來源未讀到）',
+  NO_SNIPPET: '待查（無片段）'
+};
+
+const HELP_TEXT = [
+  '用法：node tools/triage.cjs <清單檔...> [選項]',
+  '選項：',
+  '  --by snippet|keyword   依程式片段是否仍在（預設）或依關鍵字（文字／判定／模型／版面）分流',
+  '  --blank                輸出附前後 N 行現行程式碼的空白核對表',
+  '  --all                  同時輸出片段分流、關鍵字分類與附程式碼的空白核對表',
+  '  --context N            空白核對表前後附帶的程式碼行數（預設 5，可設為 0）',
+  '  --root DIR             比對程式碼的專案根目錄（預設為 tools 上層目錄）',
+  '  --out FILE             將輸出寫入指定檔案（UTF-8）',
+  '  --json                 輸出 JSON 結構供其他腳本串接'
+].join('\n');
 
 function parseArgs(argv) {
   const opts = {
@@ -30,33 +54,68 @@ function parseArgs(argv) {
     root: DEFAULT_ROOT,
     out: null
   };
+
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--by' && argv[i + 1]) { opts.by = argv[++i]; }
-    else if (a === '--blank') { opts.blank = true; }
-    else if (a === '--all') { opts.all = true; }
-    else if (a === '--json') { opts.json = true; }
-    else if (a === '--context' && argv[i + 1]) { opts.context = Math.max(0, parseInt(argv[++i], 10) || 5); }
-    else if (a === '--root' && argv[i + 1]) { opts.root = path.resolve(argv[++i]); }
-    else if (a === '--out' && argv[i + 1]) { opts.out = path.resolve(argv[++i]); }
-    else if (a === '-h' || a === '--help') { printHelp(); process.exit(0); }
-    else if (!a.startsWith('-')) { opts.files.push(a); }
+    if (a === '-h' || a === '--help') {
+      return { help: true };
+    } else if (a === '--blank') {
+      opts.blank = true;
+    } else if (a === '--all') {
+      opts.all = true;
+    } else if (a === '--json') {
+      opts.json = true;
+    } else if (a === '--by' || a.startsWith('--by=')) {
+      const hasEq = a.includes('=');
+      const v = hasEq ? a.slice(5) : argv[i + 1];
+      if (!hasEq) {
+        if (i + 1 >= argv.length || argv[i + 1].startsWith('-')) return { error: '--by 缺少參數值（應為 snippet 或 keyword）。' };
+        i++;
+      }
+      if (v !== 'snippet' && v !== 'keyword') {
+        return { error: `--by 僅支援 snippet 或 keyword（收到：${v}）。` };
+      }
+      opts.by = v;
+    } else if (a === '--context' || a.startsWith('--context=')) {
+      const hasEq = a.includes('=');
+      const v = hasEq ? a.slice(10) : argv[i + 1];
+      if (!hasEq) {
+        if (i + 1 >= argv.length) return { error: '--context 缺少參數值（應為非負整數）。' };
+        i++;
+      }
+      if (!/^\d+$/.test(String(v))) {
+        return { error: `--context 必須是非負整數（收到：${v}）。` };
+      }
+      opts.context = Number(v);
+    } else if (a === '--root' || a.startsWith('--root=')) {
+      const hasEq = a.includes('=');
+      const v = hasEq ? a.slice(7) : argv[i + 1];
+      if (!hasEq) {
+        if (i + 1 >= argv.length || !argv[i + 1] || argv[i + 1].startsWith('-')) return { error: '--root 缺少目錄路徑。' };
+        i++;
+      }
+      if (!v) return { error: '--root 不可為空。' };
+      opts.root = path.resolve(v);
+    } else if (a === '--out' || a.startsWith('--out=')) {
+      const hasEq = a.includes('=');
+      const v = hasEq ? a.slice(6) : argv[i + 1];
+      if (!hasEq) {
+        if (i + 1 >= argv.length || !argv[i + 1] || argv[i + 1].startsWith('-')) return { error: '--out 缺少輸出檔路徑。' };
+        i++;
+      }
+      if (!v) return { error: '--out 不可為空。' };
+      opts.out = path.resolve(v);
+    } else if (a.startsWith('-')) {
+      return { error: '不認得的選項：' + a };
+    } else {
+      opts.files.push(a);
+    }
+  }
+
+  if (!opts.files.length) {
+    return { error: '請至少提供一個清單檔。' };
   }
   return opts;
-}
-
-function printHelp() {
-  console.log([
-    '用法：node tools/triage.cjs <清單檔...> [選項]',
-    '選項：',
-    '  --by snippet|keyword   依程式片段是否仍在（預設）或依關鍵字（文字／判定／模型／版面）分流',
-    '  --blank                輸出附前後 5 行現行程式碼的空白核對表',
-    '  --all                  同時輸出片段分流、關鍵字分類與附程式碼的空白核對表',
-    '  --context N            空白核對表前後附帶的程式碼行數（預設 5）',
-    '  --root DIR             比對程式碼的專案根目錄（預設為 tools 上層目錄）',
-    '  --out FILE             將輸出寫入指定檔案（UTF-8）',
-    '  --json                 輸出 JSON 結構供其他腳本串接'
-  ].join('\n'));
 }
 
 function readTextSmart(filePath) {
@@ -71,16 +130,61 @@ function readTextSmart(filePath) {
 }
 
 function normalizeWs(s) {
-  return s.replace(/\s+/g, ' ').trim();
+  return String(s || '').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * 建立正規化空白字串與逐字元對應 1-based 原始行號索引，供跨行片段精確定位完整起始行號。
+ */
+function buildNormalizedIndex(content) {
+  const chars = [];
+  const charLines = [];
+  let line = 1;
+  let inSpace = true; // 忽略開頭空白，與 normalizeWs().trim() 一致
+
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    if (ch === '\n') {
+      line++;
+      if (!inSpace) {
+        chars.push(' ');
+        charLines.push(line - 1);
+        inSpace = true;
+      }
+      continue;
+    }
+    if (ch === '\r') continue;
+    if (/\s/.test(ch)) {
+      if (!inSpace) {
+        chars.push(' ');
+        charLines.push(line);
+        inSpace = true;
+      }
+    } else {
+      chars.push(ch);
+      charLines.push(line);
+      inSpace = false;
+    }
+  }
+  if (chars.length && chars[chars.length - 1] === ' ') {
+    chars.pop();
+    charLines.pop();
+  }
+  return { text: chars.join(''), charLines };
+}
+
+function normalizeRelPath(p) {
+  return String(p || '').replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+/** 萃取檔案與行號參照，同時支援 POSIX `/` 與 Windows `\` 分隔符。 */
 function extractFileRefs(text) {
   const refs = [];
-  const re = /([A-Za-z0-9_./-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
+  const re = /([A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css))(?::(\d+)(?:[–-](\d+))?)?/g;
   let m;
   while ((m = re.exec(text)) !== null) {
     refs.push({
-      file: m[1].replace(/\\/g, '/'),
+      file: normalizeRelPath(m[1]),
       line: m[2] ? parseInt(m[2], 10) : null,
       endLine: m[3] ? parseInt(m[3], 10) : null
     });
@@ -88,28 +192,44 @@ function extractFileRefs(text) {
   return refs;
 }
 
-function extractSnippets(locRaw, desc) {
+function isPureFileRef(s) {
+  return /^[A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css)(?::\d+(?:[–-]\d+)?)?$/.test(s);
+}
+
+function extractBacktickSnippets(text) {
   const out = [];
+  const seen = new Set();
   const re = /`([^`]+)`/g;
   let m;
-  const both = (locRaw || '') + ' ' + (desc || '');
-  while ((m = re.exec(both)) !== null) {
+  const raw = String(text || '');
+  while ((m = re.exec(raw)) !== null) {
     const s = m[1].trim();
-    if (s.length >= 3 && !/^[A-Za-z0-9_./-]+\.(js|cjs|html|css)$/.test(s)) {
+    if (s.length >= 3 && !isPureFileRef(s) && !seen.has(s)) {
+      seen.add(s);
       out.push(s);
     }
   }
-  // 備援：處理未加反引號、以全形逗號接在檔案行號後的片段（例如 物理-待修清單）
-  if (out.length === 0 && locRaw) {
+  return out;
+}
+
+/**
+ * 分離位置欄片段（locSnippets，作為主要判定證據）與描述欄片段（descSnippets，僅於無位置片段時作判定，否則作輔助定位）。
+ */
+function extractSnippets(locRaw, desc) {
+  const locSnippets = extractBacktickSnippets(locRaw);
+  // 備援：處理位置欄未加反引號、以全形逗號接在檔案行號後的片段（例如 物理-待修清單）
+  if (locSnippets.length === 0 && locRaw) {
     const idx = locRaw.lastIndexOf('，');
     if (idx >= 0) {
       const tail = locRaw.slice(idx + 1).replace(/^[（(]+|[）)]+$/g, '').trim();
-      if (tail.length >= 4 && !/^[A-Za-z0-9_./-]+\.(js|cjs|html|css)/.test(tail)) {
-        out.push(tail);
+      if (tail.length >= 4 && !/^[A-Za-z0-9_.\\/-]+\.(?:js|cjs|html|css)/.test(tail)) {
+        locSnippets.push(tail);
       }
     }
   }
-  return out;
+  const locSet = new Set(locSnippets);
+  const descSnippets = extractBacktickSnippets(desc).filter(s => !locSet.has(s));
+  return { locSnippets, descSnippets };
 }
 
 function parseReportLine(rawLine, sourceFile, lineNo, idx) {
@@ -119,7 +239,7 @@ function parseReportLine(rawLine, sourceFile, lineNo, idx) {
   // 格式一：【高】station｜5｜問題描述｜位置與片段｜建議｜把握
   // 格式二：- **#12** 【低】station｜L｜問題描述｜位置與片段｜建議｜把握
   // 格式三：- **#3** station｜M｜問題描述｜位置與片段｜建議｜把握
-  // 格式四：1. station｜1｜... 或 1. station｜1：...
+  // 格式四：1. station｜1｜...
   const clean = line.replace(/^[-*]\s+/, '').replace(/^\d+\.\s+/, '');
   const parts = clean.split('｜').map(p => p.trim());
   if (parts.length < 3) return null;
@@ -147,7 +267,8 @@ function parseReportLine(rawLine, sourceFile, lineNo, idx) {
   const conf = parts[5] || '';
 
   const refs = extractFileRefs(locRaw + ' ' + desc);
-  const snippets = extractSnippets(locRaw, desc);
+  const { locSnippets, descSnippets } = extractSnippets(locRaw, desc);
+  const snippets = locSnippets.concat(descSnippets);
 
   return {
     index: idx,
@@ -162,6 +283,8 @@ function parseReportLine(rawLine, sourceFile, lineNo, idx) {
     advice,
     confidence: conf,
     refs,
+    locSnippets,
+    descSnippets,
     snippets
   };
 }
@@ -184,23 +307,89 @@ function classifyKeyword(item) {
 const fileCache = new Map();
 function loadSourceLines(root, relFile) {
   const full = path.join(root, relFile);
-  if (fileCache.has(full)) return fileCache.get(full);
-  if (!fs.existsSync(full)) {
-    fileCache.set(full, null);
+  let stat;
+  try {
+    stat = fs.statSync(full);
+    if (!stat.isFile()) return null;
+  } catch (e) {
+    fileCache.delete(full);
     return null;
   }
+  const stamp = `${stat.mtimeMs}:${stat.size}`;
+  const cached = fileCache.get(full);
+  if (cached && cached.stamp === stamp) return cached;
+
   const content = readTextSmart(full);
   const lines = content.split(/\r?\n/);
-  const entry = { full, relFile, content, lines };
+  const normIndex = buildNormalizedIndex(content);
+  const entry = { full, relFile, content, lines, normIndex, stamp };
   fileCache.set(full, entry);
   return entry;
+}
+
+/** 找出片段在單一來源檔中的所有命中起點 1-based 行號（含單行與跨行完整命中）。 */
+function findMatchLines(src, cleanSnip, normSnip) {
+  const hits = new Set();
+  for (let i = 0; i < src.lines.length; i++) {
+    if (src.lines[i].includes(cleanSnip) || normalizeWs(src.lines[i]).includes(normSnip)) {
+      hits.add(i + 1);
+    }
+  }
+  const idx = src.normIndex;
+  let from = 0;
+  while (from <= idx.text.length - normSnip.length) {
+    const pos = idx.text.indexOf(normSnip, from);
+    if (pos < 0) break;
+    hits.add(idx.charLines[pos]);
+    from = pos + 1;
+  }
+  return Array.from(hits).sort((a, b) => a - b);
+}
+
+function pickBestLine(hitLines, targetLine) {
+  if (!hitLines.length) return -1;
+  if (!Number.isFinite(targetLine) || targetLine <= 0) return hitLines[0];
+  let best = hitLines[0];
+  let bestDist = Math.abs(best - targetLine);
+  for (let i = 1; i < hitLines.length; i++) {
+    const d = Math.abs(hitLines[i] - targetLine);
+    if (d < bestDist) {
+      best = hitLines[i];
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+function searchSnippetsInFiles(snippets, loadedEntries, refLineByFile) {
+  for (const snip of snippets) {
+    // 去掉末尾省略號（… 或 ...）以便比對截斷的程式碼片段
+    const cleanSnip = snip.replace(/[…]+$/, '').replace(/\.\.\.$/, '').trim();
+    const normSnip = normalizeWs(cleanSnip);
+    if (normSnip.length < 3) continue;
+
+    for (const { rel, src } of loadedEntries) {
+      const hitLines = findMatchLines(src, cleanSnip, normSnip);
+      if (hitLines.length) {
+        const targetLine = refLineByFile.get(rel) || null;
+        return {
+          file: rel,
+          line: pickBestLine(hitLines, targetLine),
+          snippet: snip
+        };
+      }
+    }
+  }
+  return null;
 }
 
 function probeItem(item, root, ctxRadius) {
   const primaryRef = item.refs[0] || null;
   const candidateFiles = [];
+  const refLineByFile = new Map();
   for (const r of item.refs) {
     if (!candidateFiles.includes(r.file)) candidateFiles.push(r.file);
+    if (r.line && !refLineByFile.has(r.file)) refLineByFile.set(r.file, r.line);
   }
   if (candidateFiles.length === 0) {
     const guesses = [
@@ -214,60 +403,58 @@ function probeItem(item, root, ctxRadius) {
     }
   }
 
-  let status = '待查（無片段）';
+  const loadedEntries = [];
+  const missingFiles = [];
+  for (const rel of candidateFiles) {
+    const src = loadSourceLines(root, rel);
+    if (src) loadedEntries.push({ rel, src });
+    else missingFiles.push(rel);
+  }
+
+  const locSnippets = Array.isArray(item.locSnippets) ? item.locSnippets : [];
+  const descSnippets = Array.isArray(item.descSnippets) ? item.descSnippets : [];
+  const primarySnippets = locSnippets.length > 0 ? locSnippets : (descSnippets.length > 0 ? descSnippets : (item.snippets || []));
+  const usingLocPrimary = locSnippets.length > 0;
+
+  let status = STATUS.NO_SNIPPET;
   let matchedFile = primaryRef ? primaryRef.file : (candidateFiles[0] || '');
   let matchedLine = primaryRef && primaryRef.line ? primaryRef.line : null;
-  let matchedSnippet = item.snippets[0] || '';
+  let matchedSnippet = primarySnippets[0] || '';
+  let auxMatch = null;
 
-  if (item.snippets.length > 0) {
-    let found = false;
-    for (const snip of item.snippets) {
-      // 去掉末尾省略號（… 或 ...）以便比對截斷的程式碼片段
-      const cleanSnip = snip.replace(/[…]+$/, '').replace(/\.\.\.$/, '').trim();
-      const normSnip = normalizeWs(cleanSnip);
-      if (normSnip.length < 3) continue;
-
-      for (const rel of candidateFiles) {
-        const src = loadSourceLines(root, rel);
-        if (!src) continue;
-        // 1. 精確行內包含
-        let hitLine = -1;
-        for (let i = 0; i < src.lines.length; i++) {
-          if (src.lines[i].includes(cleanSnip) || normalizeWs(src.lines[i]).includes(normSnip)) {
-            hitLine = i + 1;
-            break;
-          }
-        }
-        // 2. 跨行正規化包含
-        if (hitLine < 0 && normalizeWs(src.content).includes(normSnip)) {
-          const firstToken = normSnip.split(' ')[0];
-          for (let i = 0; i < src.lines.length; i++) {
-            if (src.lines[i].includes(firstToken)) { hitLine = i + 1; break; }
-          }
-          if (hitLine < 0) hitLine = 1;
-        }
-        if (hitLine > 0) {
-          found = true;
-          matchedFile = rel;
-          matchedLine = hitLine;
-          matchedSnippet = snip;
-          break;
-        }
+  if (loadedEntries.length === 0) {
+    status = STATUS.UNREADABLE;
+  } else if (primarySnippets.length > 0) {
+    const hit = searchSnippetsInFiles(primarySnippets, loadedEntries, refLineByFile);
+    if (hit) {
+      status = STATUS.PRESENT;
+      matchedFile = hit.file;
+      matchedLine = hit.line;
+      matchedSnippet = hit.snippet;
+    } else {
+      status = STATUS.MISS;
+      // 位置欄主要片段未命中時，描述欄行內程式僅作輔助定位，不蓋過主要判定
+      if (usingLocPrimary && descSnippets.length > 0) {
+        auxMatch = searchSnippetsInFiles(descSnippets, loadedEntries, refLineByFile);
       }
-      if (found) break;
     }
-    status = found ? '仍存在' : '片段已不存在（多半已修）';
   }
 
   let contextBlock = [];
-  if (matchedFile) {
-    const src = loadSourceLines(root, matchedFile);
+  const ctxFile = (matchedFile && loadSourceLines(root, matchedFile))
+    ? matchedFile
+    : (auxMatch ? auxMatch.file : '');
+  const ctxCenter = (matchedFile && loadSourceLines(root, matchedFile))
+    ? (matchedLine || (auxMatch && auxMatch.file === matchedFile ? auxMatch.line : 1))
+    : (auxMatch ? auxMatch.line : 1);
+
+  if (ctxFile) {
+    const src = loadSourceLines(root, ctxFile);
     if (src) {
-      const center = matchedLine || 1;
-      const start = Math.max(1, center - ctxRadius);
-      const end = Math.min(src.lines.length, center + ctxRadius);
+      const start = Math.max(1, ctxCenter - ctxRadius);
+      const end = Math.min(src.lines.length, ctxCenter + ctxRadius);
       for (let ln = start; ln <= end; ln++) {
-        const mark = ln === matchedLine ? '>' : ' ';
+        const mark = ln === ctxCenter ? '>' : ' ';
         contextBlock.push(mark + String(ln).padStart(4, ' ') + ' | ' + src.lines[ln - 1]);
       }
     }
@@ -280,18 +467,21 @@ function probeItem(item, root, ctxRadius) {
     matchedFile,
     matchedLine,
     matchedSnippet,
+    auxMatch,
+    missingFiles,
     contextBlock
   };
 }
 
 function renderSummaryBySnippet(results) {
   const groups = {
-    '仍存在': [],
-    '片段已不存在（多半已修）': [],
-    '待查（無片段）': []
+    [STATUS.PRESENT]: [],
+    [STATUS.MISS]: [],
+    [STATUS.UNREADABLE]: [],
+    [STATUS.NO_SNIPPET]: []
   };
   for (const r of results) {
-    (groups[r.status] || groups['待查（無片段）']).push(r);
+    (groups[r.status] || groups[STATUS.NO_SNIPPET]).push(r);
   }
   const out = [];
   out.push('# 第三方清單分流摘要（依程式片段核對）');
@@ -325,12 +515,12 @@ function renderSummaryByKeyword(results) {
   const out = [];
   out.push('# 第三方清單分流摘要（依關鍵字分類）');
   out.push('');
-  out.push('| 類別 | 件數 | 仍存在 | 片段已不存在 | 待查 |');
+  out.push('| 類別 | 件數 | 仍存在 | 片段未命中 | 待查 |');
   out.push('|---|---:|---:|---:|---:|');
   for (const k of order) {
     const arr = groups[k];
-    const s1 = arr.filter(x => x.status === '仍存在').length;
-    const s2 = arr.filter(x => x.status === '片段已不存在（多半已修）').length;
+    const s1 = arr.filter(x => x.status === STATUS.PRESENT).length;
+    const s2 = arr.filter(x => x.status === STATUS.MISS).length;
     const s3 = arr.length - s1 - s2;
     out.push('| ' + k + ' | ' + arr.length + ' | ' + s1 + ' | ' + s2 + ' | ' + s3 + ' |');
   }
@@ -361,6 +551,12 @@ function renderBlankSheet(results, ctxRadius) {
     out.push('- 問題：' + r.desc);
     if (r.advice) out.push('- 原建議：' + r.advice);
     out.push('- 定位：`' + loc + '`' + (r.matchedSnippet ? ' · 片段：`' + r.matchedSnippet + '`' : ''));
+    if (r.auxMatch) {
+      out.push('- 輔助定位（描述片段）：`' + r.auxMatch.file + ':' + r.auxMatch.line + '` · `' + r.auxMatch.snippet + '`');
+    }
+    if (r.status === STATUS.UNREADABLE && r.missingFiles && r.missingFiles.length) {
+      out.push('- 未讀到來源：`' + r.missingFiles.join('`, `') + '`');
+    }
     out.push('- 核對結論：[ ] 需修　[ ] 已修　[ ] 不修（理由：＿＿＿＿）');
     if (r.contextBlock.length) {
       out.push('```js');
@@ -372,15 +568,24 @@ function renderBlankSheet(results, ctxRadius) {
   return out.join('\n');
 }
 
-function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  if (!opts.files.length) {
-    printHelp();
-    process.exit(1);
+function main(argv) {
+  const opts = parseArgs(argv || process.argv.slice(2));
+  if (opts.help) {
+    console.log(HELP_TEXT);
+    return 0;
   }
+  if (opts.error) {
+    console.error('參數錯誤：' + opts.error + '\n' + HELP_TEXT);
+    return 2;
+  }
+
   const items = [];
   let seq = 0;
   for (const fp of opts.files) {
+    if (!fs.existsSync(fp)) {
+      console.error('找不到清單檔：' + fp);
+      return 2;
+    }
     const text = readTextSmart(fp);
     const lines = text.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
@@ -416,7 +621,25 @@ function main() {
   } else {
     process.stdout.write(output + '\n');
   }
+  return 0;
 }
 
-if (require.main === module) main();
-module.exports = { parseReportLine, classifyKeyword, probeItem, readTextSmart };
+if (require.main === module) {
+  process.exit(main(process.argv.slice(2)));
+}
+
+module.exports = {
+  STATUS,
+  parseArgs,
+  extractFileRefs,
+  extractSnippets,
+  buildNormalizedIndex,
+  parseReportLine,
+  classifyKeyword,
+  probeItem,
+  renderSummaryBySnippet,
+  renderSummaryByKeyword,
+  renderBlankSheet,
+  readTextSmart,
+  main
+};

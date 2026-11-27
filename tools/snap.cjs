@@ -14,19 +14,21 @@
  *   --lang zh-Hant|zh-Hans|en          語言（預設 zh-Hant）
  *   --theme auto|light|dark            主題（預設 auto：寬 >= 1000 用淺色，窄螢幕用深色）
  *   --query <k=v&...>                  附加網址查詢參數（例如 mode=lab）
- *   --wait <毫秒>                       字型就緒後等待時間（預設 450）
+ *   --wait <毫秒>                       字型就緒後最少等待時間（預設 450，並會持續等到排版與畫布尺寸連續穩定）
  *   --canvas <CSS 選擇器>              手動指定主畫布（預設自動偵測最大可見 canvas）
  *   --do <動作>                         擷取前執行的操作（可重複多次）：
  *                                        set:<selector>=<value>   設定滑桿／輸入框／下拉選單
  *                                        click:<selector>         點擊按鈕或核取方塊
  *                                        wait:<ms>                等待毫秒
  *                                        eval:<js>                於頁面執行運算式
+ *   --no-replay                        after 時不沿用 before 紀錄的 --do 操作，改測未操作原狀
+ *   --replay-eval                      明確授權 after 重播 before 中紀錄的 eval: 操作
  *   --shots                            同時輸出各尺寸 PNG 截圖至快照資料夾
  *   --headed                           有視窗模式（仍固定帶 --mute-audio）
  *   --json                             以 JSON 格式輸出結果
  *
  * 安全與測試規範：
- *   - 啟動本機 127.0.0.1 靜態伺服器，所有外部請求一律攔截（絕不寫正式 Firebase）。
+ *   - 啟動本機 127.0.0.1 靜態伺服器，所有外部 HTTP/HTTPS 與 WebSocket 連線一律攔截關閉（絕不寫正式 Firebase）。
  *   - 載入 tools/mock-backend.js 假後端，預設 localStorage.setItem('lab-welcome-v1', 'skip')。
  *   - 透過 tools/browser.cjs 啟動 Chromium（沿用全機 3 位排隊鎖、Intel 內顯、低優先權與 --mute-audio）。
  *   - 快照預設存放於 F:\測試暫存\snap\<代號>\，不污染 git 存放庫。
@@ -34,7 +36,7 @@
  * 結束碼：
  *   0 = before 成功，或 after 與 before 無差異
  *   1 = after 與 before 有差異
- *   2 = 參數錯誤、頁面不存在、找不到 before 快照或執行失敗
+ *   2 = 參數錯誤、頁面不存在、找不到 before 快照、跨站比對、未授權重播 eval、版面未穩定或執行失敗
  */
 'use strict';
 
@@ -70,7 +72,8 @@ const MIME = {
 const USAGE = [
   '用法：node tools/snap.cjs <代號> before|after [--sizes 412x915,844x390,1280x800] [--out <資料夾>]',
   '常用選項：--lang zh-Hant|zh-Hans|en  --theme auto|light|dark  --query k=v  --wait 450',
-  '          --canvas <selector>  --do set:#id=val  --do click:#btn  --shots  --headed  --json'
+  '          --canvas <selector>  --do set:#id=val  --do click:#btn  --no-replay  --replay-eval',
+  '          --shots  --headed  --json'
 ].join('\n');
 
 function parseSizes(spec) {
@@ -121,6 +124,22 @@ function parseDoAction(raw) {
   return { error: '不支援的 --do 動作（僅支援 set: / click: / wait: / eval:）：' + raw };
 }
 
+function serializeAction(act) {
+  if (!act || typeof act !== 'object') return String(act || '');
+  if (act.kind === 'set') return `set:${act.selector}=${act.value}`;
+  if (act.kind === 'click') return `click:${act.selector}`;
+  if (act.kind === 'wait') return `wait:${act.ms}`;
+  if (act.kind === 'eval') return `eval:${act.code}`;
+  return JSON.stringify(act);
+}
+
+function extractActionStrings(doc) {
+  if (!doc) return [];
+  if (Array.isArray(doc.actionsRaw) && doc.actionsRaw.length) return doc.actionsRaw.slice();
+  if (Array.isArray(doc.actions) && doc.actions.length) return doc.actions.map(serializeAction);
+  return [];
+}
+
 function defaultOutDir(slug) {
   if (process.platform === 'win32' && fs.existsSync('F:\\')) {
     return path.join('F:\\測試暫存\\snap', slug);
@@ -140,13 +159,11 @@ function parseArgs(argv) {
   let shots = false;
   let headed = false;
   let json = false;
+  let noReplay = false;
+  let replayEval = false;
   let help = false;
   const actions = [];
-
-  const needVal = (flag, i) => {
-    if (i + 1 >= argv.length) return { error: flag + ' 缺少參數值。' };
-    return { val: argv[i + 1] };
-  };
+  const actionsRaw = [];
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -158,44 +175,49 @@ function parseArgs(argv) {
       headed = true;
     } else if (a === '--json') {
       json = true;
+    } else if (a === '--no-replay') {
+      noReplay = true;
+    } else if (a === '--replay-eval') {
+      replayEval = true;
     } else if (a === '--sizes' || a.startsWith('--sizes=')) {
-      const v = a.includes('=') ? a.slice(8) : (needVal('--sizes', i).val);
+      const v = a.includes('=') ? a.slice(8) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--sizes 缺少參數值。' }; i++; }
       sizesRaw = v;
     } else if (a === '--out' || a.startsWith('--out=')) {
-      const v = a.includes('=') ? a.slice(6) : (needVal('--out', i).val);
+      const v = a.includes('=') ? a.slice(6) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--out 缺少參數值。' }; i++; }
       outDir = v;
     } else if (a === '--lang' || a.startsWith('--lang=')) {
-      const v = a.includes('=') ? a.slice(7) : (needVal('--lang', i).val);
+      const v = a.includes('=') ? a.slice(7) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--lang 缺少參數值。' }; i++; }
       if (!['zh-Hant', 'zh-Hans', 'en'].includes(v)) return { error: '--lang 僅支援 zh-Hant、zh-Hans、en：' + v };
       lang = v;
     } else if (a === '--theme' || a.startsWith('--theme=')) {
-      const v = a.includes('=') ? a.slice(8) : (needVal('--theme', i).val);
+      const v = a.includes('=') ? a.slice(8) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--theme 缺少參數值。' }; i++; }
       if (!['auto', 'light', 'dark'].includes(v)) return { error: '--theme 僅支援 auto、light、dark：' + v };
       theme = v;
     } else if (a === '--query' || a.startsWith('--query=')) {
-      const v = a.includes('=') ? a.slice(8) : (needVal('--query', i).val);
+      const v = a.includes('=') ? a.slice(8) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--query 缺少參數值。' }; i++; }
       query = v.replace(/^\?/, '');
     } else if (a === '--wait' || a.startsWith('--wait=')) {
-      const v = a.includes('=') ? a.slice(7) : (needVal('--wait', i).val);
+      const v = a.includes('=') ? a.slice(7) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--wait 缺少參數值。' }; i++; }
       const n = Number(v);
       if (!Number.isFinite(n) || n < 0 || n > 60000) return { error: '--wait 必須是 0–60000 的數字：' + v };
       waitMs = n;
     } else if (a === '--canvas' || a.startsWith('--canvas=')) {
-      const v = a.includes('=') ? a.slice(9) : (needVal('--canvas', i).val);
+      const v = a.includes('=') ? a.slice(9) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--canvas 缺少參數值。' }; i++; }
       canvasSel = v;
     } else if (a === '--do' || a.startsWith('--do=')) {
-      const v = a.includes('=') ? a.slice(5) : (needVal('--do', i).val);
+      const v = a.includes('=') ? a.slice(5) : argv[i + 1];
       if (!a.includes('=')) { if (i + 1 >= argv.length) return { error: '--do 缺少參數值。' }; i++; }
       const parsedDo = parseDoAction(v);
       if (parsedDo.error) return parsedDo;
       actions.push(parsedDo.action);
+      actionsRaw.push(v);
     } else if (a.startsWith('-')) {
       return { error: '不認得的選項：' + a };
     } else {
@@ -204,6 +226,12 @@ function parseArgs(argv) {
   }
 
   if (help) return { help: true };
+  if (noReplay && actions.length > 0) {
+    return { error: '--no-replay 與 --do 不可同時使用。' };
+  }
+  if (noReplay && replayEval) {
+    return { error: '--no-replay 與 --replay-eval 不可同時使用。' };
+  }
   if (pos.length !== 2) return { error: '必須提供 <代號> 與 before|after 兩個位置參數。' };
 
   const slug = pos[0].replace(/\.html$/i, '');
@@ -233,9 +261,53 @@ function parseArgs(argv) {
     waitMs,
     canvasSel,
     actions,
+    actionsRaw,
+    noReplay,
+    replayEval,
     shots,
     headed,
     json
+  };
+}
+
+/**
+ * 決定 after 要執行的 --do 操作條件：
+ * - 若顯式指定 --no-replay，回空陣列。
+ * - 若顯式指定 --do，採用本次指定的操作。
+ * - 若皆未指定而 before 紀錄了操作：
+ *   - 含 eval: 且未加 --replay-eval 時拒絕自動執行（回 error，CLI 結束碼 2）。
+ *   - 其餘自動重播 before 操作，避免起始狀態不同造成假改版差異。
+ */
+function resolveAfterActions(parsed, beforeDoc) {
+  const beforeActions = beforeDoc && Array.isArray(beforeDoc.actions) ? beforeDoc.actions : [];
+  const beforeActionsRaw = extractActionStrings(beforeDoc);
+
+  if (parsed.noReplay) {
+    return { actions: [], actionsRaw: [], replayedFromBefore: false };
+  }
+  if (parsed.actions && parsed.actions.length > 0) {
+    return {
+      actions: parsed.actions,
+      actionsRaw: parsed.actionsRaw && parsed.actionsRaw.length ? parsed.actionsRaw : parsed.actions.map(serializeAction),
+      replayedFromBefore: false
+    };
+  }
+  if (beforeActions.length === 0) {
+    return { actions: [], actionsRaw: [], replayedFromBefore: false };
+  }
+  const hasEval = beforeActions.some(a => a && a.kind === 'eval');
+  if (hasEval && !parsed.replayEval) {
+    return {
+      error: [
+        `before 快照紀錄了 eval: 操作（${beforeActionsRaw.join(' ; ')}），基於安全不會自動重播。`,
+        '若確認要重播，請加上 --replay-eval；若要改測未操作原狀，請加上 --no-replay；或直接傳入 --do 覆寫。'
+      ].join('\n')
+    };
+  }
+  return {
+    actions: beforeActions,
+    actionsRaw: beforeActionsRaw,
+    replayedFromBefore: true
   };
 }
 
@@ -353,6 +425,119 @@ async function runAction(page, action) {
   }
 }
 
+/**
+ * 量測目前頁面的操作台模式、舞台容器與主畫布尺寸，用於等待排版完全收斂（避免 labdeck 180 ms 多輪 fit 造成抖動）。
+ */
+async function measureLayout(page, canvasSel) {
+  return page.evaluate(sel => {
+    const SKIP = '.stats-bar, .lab-set-panel, footer, #comments, .comments, .ms-wrap, .ms-celebrate, .ach-toast, .lab-account, .labside-rail, .labside-drawer';
+    const skip = el => !el || !!el.closest(SKIP);
+
+    let cv = sel ? document.querySelector(sel) : null;
+    if (!cv) {
+      const preferred = ['#cv', '#wheelCanvas', '#scene canvas', '.stage canvas'];
+      for (const s of preferred) {
+        const cand = document.querySelector(s);
+        if (cand && cand.tagName === 'CANVAS' && !skip(cand)) {
+          const r = cand.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) { cv = cand; break; }
+        }
+      }
+    }
+    if (!cv) {
+      let bestArea = 0;
+      document.querySelectorAll('canvas').forEach(c => {
+        if (skip(c)) return;
+        const r = c.getBoundingClientRect();
+        const area = r.width * r.height;
+        if (area > bestArea) {
+          bestArea = area;
+          cv = c;
+        }
+      });
+    }
+
+    const stage = document.querySelector('.stage, #stage, .stage-wrap');
+    const stRect = stage ? stage.getBoundingClientRect() : null;
+    const cvRect = cv ? cv.getBoundingClientRect() : null;
+    const deckW = getComputedStyle(document.documentElement).getPropertyValue('--deck-w').trim() || null;
+
+    return {
+      deckMode: window.LabDeck && window.LabDeck.mode ? String(window.LabDeck.mode) : null,
+      rootClass: document.documentElement.className || '',
+      deckW,
+      stageW: stRect ? Math.round(stRect.width) : null,
+      stageH: stRect ? Math.round(stRect.height) : null,
+      hasCanvas: !!cv || document.querySelectorAll('canvas').length > 0,
+      cvSel: cv ? (cv.id ? '#' + cv.id : 'canvas') : null,
+      cvW: cv ? cv.width : null,
+      cvH: cv ? cv.height : null,
+      cvCssW: cvRect ? Math.round(cvRect.width) : null,
+      cvCssH: cvRect ? Math.round(cvRect.height) : null
+    };
+  }, canvasSel);
+}
+
+/**
+ * 等待頁面操作台模式、舞台寬高與主畫布尺寸連續穩定（跨度 >= 390 ms，涵蓋 labdeck.js 多輪 180 ms fitSoon）
+ * 並再驗證 2 幀 rAF 後仍無變動；逾時未穩定時拋出含歷次尺寸變動的診斷錯誤（CLI 回結束碼 2）。
+ */
+async function waitForStableLayout(page, canvasSel, opts) {
+  const minWaitMs = Math.max(0, Number(opts.minWaitMs) || 0);
+  const pollMs = 130;
+  const requiredSteady = 4; // 連續 4 次共跨 390 ms（> 2 倍 labdeck.js 180 ms fitSoon）
+  const timeoutMs = Math.max(5000, minWaitMs + 4000);
+  const startedAt = Date.now();
+
+  let lastSig = null;
+  let steady = 0;
+  const history = [];
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const snap = await measureLayout(page, canvasSel);
+    const sig = JSON.stringify(snap);
+    const canvasReady = !snap.hasCanvas || (snap.cvW > 0 && snap.cvH > 0 && snap.cvCssW > 0 && snap.cvCssH > 0);
+
+    if (sig !== lastSig) {
+      lastSig = sig;
+      steady = canvasReady ? 1 : 0;
+      if (history.length < 15) {
+        history.push({ t: Date.now() - startedAt, deckMode: snap.deckMode, deckW: snap.deckW, stageW: snap.stageW, cvW: snap.cvW, cvH: snap.cvH, cvCssW: snap.cvCssW, cvCssH: snap.cvCssH });
+      }
+    } else if (canvasReady) {
+      steady++;
+    }
+
+    const elapsed = Date.now() - startedAt;
+    if (steady >= requiredSteady && elapsed >= minWaitMs) {
+      // 等 2 幀 rAF 並覆核，確保不會剛好在最後一幀切尺寸
+      await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+      const confirm = await measureLayout(page, canvasSel);
+      if (JSON.stringify(confirm) === sig) {
+        return {
+          deckMode: confirm.deckMode,
+          deckW: confirm.deckW,
+          stageW: confirm.stageW,
+          stageH: confirm.stageH,
+          cvCssW: confirm.cvCssW,
+          cvCssH: confirm.cvCssH
+        };
+      }
+      lastSig = JSON.stringify(confirm);
+      steady = 1;
+      if (history.length < 15) {
+        history.push({ t: Date.now() - startedAt, deckMode: confirm.deckMode, deckW: confirm.deckW, stageW: confirm.stageW, cvW: confirm.cvW, cvH: confirm.cvH, cvCssW: confirm.cvCssW, cvCssH: confirm.cvCssH });
+      }
+    }
+
+    await page.waitForTimeout(pollMs);
+  }
+
+  throw new Error(
+    `版面與畫布尺寸於 ${timeoutMs} ms 內未收斂穩定（${opts.slug} ${opts.sizeKey}），已停止快照以避免誤報。歷次量測：${JSON.stringify(history)}`
+  );
+}
+
 async function captureOneSize(browser, baseUrl, opts, size, root) {
   const scheme = opts.theme === 'dark' ? 'dark' : opts.theme === 'light' ? 'light' : (size.width >= 1000 ? 'light' : 'dark');
   const ctx = await browser.newContext({
@@ -368,17 +553,23 @@ async function captureOneSize(browser, baseUrl, opts, size, root) {
   const pageErrors = [];
   try {
     await ctx.route(u => !u.href.startsWith(baseUrl), route => route.abort());
-    if (typeof ctx.routeWebSocket === 'function') {
-      await ctx.routeWebSocket('**/*', ws => {
-        try {
-          const u = new URL(ws.url());
-          const b = new URL(baseUrl);
-          if (u.hostname !== b.hostname || u.port !== b.port) ws.close();
-        } catch (e) {
-          ws.close();
-        }
-      });
+    if (typeof ctx.routeWebSocket !== 'function') {
+      throw new Error('目前 Playwright 環境不支援 context.routeWebSocket，無法保證封鎖外部 WebSocket 連線，已停止快照。');
     }
+    const baseParsed = new URL(baseUrl);
+    await ctx.routeWebSocket(/.*/, ws => {
+      try {
+        const u = new URL(ws.url());
+        if (u.hostname !== baseParsed.hostname || u.port !== baseParsed.port) {
+          ws.close();
+        } else {
+          ws.connectToServer();
+        }
+      } catch (e) {
+        ws.close();
+      }
+    });
+
     await ctx.addInitScript(({ lang, theme }) => {
       try {
         localStorage.setItem('lab-settings', JSON.stringify({ lang, theme, fs: 1 }));
@@ -423,17 +614,28 @@ async function captureOneSize(browser, baseUrl, opts, size, root) {
         };
       }
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      // 讓 LabDeck（若有）完整完成一次初始排版再收斂
+      if (window.LabDeck && typeof window.LabDeck.fit === 'function') {
+        try { window.LabDeck.fit(); } catch (e) { /* 忽略 */ }
+      }
       window.dispatchEvent(new Event('resize'));
     });
-    if (opts.waitMs > 0) await page.waitForTimeout(opts.waitMs);
-    await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+
+    let layout = await waitForStableLayout(page, opts.canvasSel, {
+      minWaitMs: opts.waitMs,
+      slug: opts.slug,
+      sizeKey: size.key
+    });
 
     for (const act of opts.actions || []) {
       await runAction(page, act);
     }
     if (opts.actions && opts.actions.length) {
-      await page.waitForTimeout(Math.max(250, Math.min(opts.waitMs, 800)));
-      await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+      layout = await waitForStableLayout(page, opts.canvasSel, {
+        minWaitMs: Math.max(250, Math.min(opts.waitMs, 600)),
+        slug: opts.slug,
+        sizeKey: size.key
+      });
     }
 
     // 擷取讀數、控制項、事件與主畫布
@@ -582,6 +784,7 @@ async function captureOneSize(browser, baseUrl, opts, size, root) {
     return {
       size: size.key,
       scheme,
+      layout,
       readings: raw.readings,
       controls: raw.controls,
       events,
@@ -656,7 +859,14 @@ function diffSnapshots(beforeDoc, afterDoc) {
   let totalDiffs = 0;
   let changedSizes = 0;
 
-  for (const sizeKey of Object.keys(afterDoc.snapshots)) {
+  const afterKeys = Object.keys(afterDoc.snapshots || {});
+  const afterSet = new Set(afterKeys);
+  const beforeKeys = Array.isArray(beforeDoc.sizes) && beforeDoc.sizes.length
+    ? beforeDoc.sizes
+    : Object.keys(beforeDoc.snapshots || {});
+  const skippedSizes = beforeKeys.filter(k => !afterSet.has(k));
+
+  for (const sizeKey of afterKeys) {
     const aSnap = afterDoc.snapshots[sizeKey];
     const bSnap = beforeDoc.snapshots ? beforeDoc.snapshots[sizeKey] : null;
     const diffs = diffOneSize(bSnap, aSnap);
@@ -674,18 +884,38 @@ function diffSnapshots(beforeDoc, afterDoc) {
     });
   }
 
+  const beforeActions = extractActionStrings(beforeDoc);
+  const afterActions = extractActionStrings(afterDoc);
+  const actionsMismatch = JSON.stringify(beforeActions) !== JSON.stringify(afterActions);
+
   return {
     slug: afterDoc.slug,
     changedSizes,
     totalSizes: results.length,
     totalDiffs,
     hasDiff: totalDiffs > 0,
+    skippedSizes,
+    beforeActions,
+    afterActions,
+    actionsMismatch,
+    replayedFromBefore: !!(afterDoc && afterDoc.replayedFromBefore),
     results
   };
 }
 
 function formatDiff(report) {
   const lines = [`快照比對：${report.slug}`];
+  const hasAnyActions = (report.beforeActions && report.beforeActions.length) || (report.afterActions && report.afterActions.length);
+  if (hasAnyActions) {
+    const bStr = report.beforeActions && report.beforeActions.length ? report.beforeActions.join(' ; ') : '（無）';
+    const aStr = report.afterActions && report.afterActions.length ? report.afterActions.join(' ; ') : '（無）';
+    if (report.actionsMismatch) {
+      lines.push(`⚠ 操作條件不同｜before：${bStr}｜after：${aStr}`);
+    } else {
+      lines.push(`操作條件：${aStr}${report.replayedFromBefore ? '（自動沿用 before）' : ''}`);
+    }
+  }
+
   for (const r of report.results) {
     if (!r.changed) {
       lines.push(`✓ ${r.size}：無差異（讀數 ${r.readingCount} 欄、事件 ${r.eventCount} 筆、畫布 ${r.canvasHash}）`);
@@ -696,20 +926,32 @@ function formatDiff(report) {
       }
     }
   }
+
+  const skipped = Array.isArray(report.skippedSizes) ? report.skippedSizes : [];
+  if (skipped.length) {
+    lines.push(`略過未複驗的基準尺寸（${skipped.length} 個）：${skipped.join(', ')}`);
+  }
+
+  const skipNote = skipped.length ? `（另有 ${skipped.length} 個基準尺寸未複驗：${skipped.join(', ')}）` : '';
   lines.push(
     report.hasDiff
-      ? `結果：${report.totalSizes} 個尺寸中有 ${report.changedSizes} 個有差異（共 ${report.totalDiffs} 處）。`
-      : `結果：${report.totalSizes}/${report.totalSizes} 尺寸無差異。`
+      ? `結果：${report.totalSizes} 個尺寸中有 ${report.changedSizes} 個有差異（共 ${report.totalDiffs} 處）${skipNote}。`
+      : `結果：${report.totalSizes}/${report.totalSizes} 尺寸無差異${skipNote}。`
   );
   return lines.join('\n');
 }
 
 function formatBeforeSummary(doc, outFile) {
   const lines = [`已儲存 before 快照：${doc.slug} → ${outFile}`];
+  const acts = extractActionStrings(doc);
+  if (acts.length) {
+    lines.push(`  操作條件：${acts.join(' ; ')}`);
+  }
   for (const key of Object.keys(doc.snapshots)) {
     const s = doc.snapshots[key];
     const hash = s.canvas ? s.canvas.sha256.slice(0, 12) : 'none';
-    lines.push(`  · ${key}：讀數 ${Object.keys(s.readings).length} 欄、控制項 ${Object.keys(s.controls).length} 個、事件 ${s.events.length} 筆、畫布 ${hash}`);
+    const modeNote = s.layout && s.layout.deckMode ? `、面板 ${s.layout.deckMode}` : '';
+    lines.push(`  · ${key}：讀數 ${Object.keys(s.readings).length} 欄、控制項 ${Object.keys(s.controls).length} 個、事件 ${s.events.length} 筆、畫布 ${hash}${modeNote}`);
   }
   return lines.join('\n');
 }
@@ -733,6 +975,12 @@ async function runCli(argv) {
 
   const beforeFile = path.join(parsed.outDir, 'before.json');
   let beforeDoc = null;
+  let resolvedActions = {
+    actions: parsed.actions,
+    actionsRaw: parsed.actionsRaw,
+    replayedFromBefore: false
+  };
+
   if (parsed.mode === 'after') {
     if (!fs.existsSync(beforeFile)) {
       console.error(`找不到 before 快照：${beforeFile}\n請先執行：node tools/snap.cjs ${parsed.slug} before --out "${parsed.outDir}"`);
@@ -750,6 +998,11 @@ async function runCli(argv) {
       );
       return 2;
     }
+    resolvedActions = resolveAfterActions(parsed, beforeDoc);
+    if (resolvedActions.error) {
+      console.error('操作條件錯誤：' + resolvedActions.error);
+      return 2;
+    }
   }
 
   // after 若未顯式指定尺寸／語言／主題／查詢字串，沿用 before 紀錄
@@ -763,7 +1016,9 @@ async function runCli(argv) {
     query: parsed.query !== null ? parsed.query : (beforeDoc && beforeDoc.query) || '',
     waitMs: parsed.waitMs,
     canvasSel: parsed.canvasSel || (beforeDoc && beforeDoc.canvasSel) || null,
-    actions: parsed.actions,
+    actions: resolvedActions.actions,
+    actionsRaw: resolvedActions.actionsRaw,
+    replayedFromBefore: resolvedActions.replayedFromBefore,
     shots: parsed.shots,
     headed: parsed.headed,
     json: parsed.json
@@ -787,6 +1042,9 @@ async function runCli(argv) {
       theme: effectiveOpts.theme,
       query: effectiveOpts.query,
       canvasSel: effectiveOpts.canvasSel,
+      actions: effectiveOpts.actions,
+      actionsRaw: effectiveOpts.actionsRaw,
+      replayedFromBefore: effectiveOpts.replayedFromBefore,
       createdAt: new Date().toISOString(),
       snapshots
     };
@@ -795,7 +1053,7 @@ async function runCli(argv) {
     if (effectiveOpts.mode === 'before') {
       fs.writeFileSync(beforeFile, JSON.stringify(doc, null, 2) + '\n', 'utf8');
       if (effectiveOpts.json) {
-        console.log(JSON.stringify({ mode: 'before', file: beforeFile, slug: doc.slug, sizes: doc.sizes }, null, 2));
+        console.log(JSON.stringify({ mode: 'before', file: beforeFile, slug: doc.slug, sizes: doc.sizes, actions: doc.actionsRaw }, null, 2));
       } else {
         console.log(formatBeforeSummary(doc, beforeFile));
       }
@@ -833,10 +1091,12 @@ module.exports = {
   parseSizes,
   parseDoAction,
   parseArgs,
+  resolveAfterActions,
   resolvePagePath,
   sanitizeEventData,
   diffOneSize,
   diffSnapshots,
   formatDiff,
+  formatBeforeSummary,
   defaultOutDir
 };
