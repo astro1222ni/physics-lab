@@ -20,6 +20,17 @@
       near(a.Vmin, b.Vmin, 1e-9) && near(a.r, b.r, 1e-9) && a.reverse === b.reverse;
   };
 
+  // 比較表最後兩筆才是一組，避免舊資料與不相干的新記錄配對。
+  function pair(ev, test) {
+    const rows = rowsOf(ev);
+    if (!rows || rows.length < 2) return false;
+    const a = rows[rows.length - 2], b = rows[rows.length - 1];
+    return a.gas === b.gas && test(a, b);
+  }
+  function equal(a, b, keys) { return keys.every(k => a[k] === b[k]); }
+  // 精確倍率由可直接輸入的參數給出，1e-7 只吸收核心浮點誤差。
+  function ratio(a, b, target, tol) { return b > 0 && near(a / b, target, tol == null ? 1e-7 : tol); }
+
   LabMission.register('heat-engine', [
     {
       id: 'heat-engine-1', level: 1,
@@ -139,6 +150,74 @@
       id: 'heat-engine-h3', level: 3, hidden: true,
       riddle: { zh: '不必倒轉時光，只要讓筆尖換一條路回家。', en: 'No need to turn back time; just let the pen take the other road home.' },
       check: function (ev) { const d = cyc(ev); return !!d && d.type === 'custom' && !d.reverse && d.fridge && d.crossings === 0; }
+    },
+    {
+      id: 'heat-engine-h4', level: 3, hidden: true,
+      riddle: { zh: '多添一桌客人，帳單也多了一張。', en: 'Another table of guests brings another bill.' },
+      desc: { zh: '同一奧圖循環加倍莫耳數，淨功及吸熱量均加倍。', en: 'Double the charge of an otherwise identical Otto engine and double both work and heat input.' },
+      check: (ev) => pair(ev, (a, b) => a.type === 'otto' && a.engine && b.engine &&
+        equal(a, b, ['type', 'r', 'V1', 'T1', 'T3']) && ratio(b.n, a.n, 2) &&
+        ratio(b.Wout, a.Wout, 2) && ratio(b.Qin, a.Qin, 2))
+    },
+    {
+      id: 'heat-engine-h5', level: 4, hidden: true,
+      riddle: { zh: '活塞搬了家，帳本上卻找不到搬家的日子。', en: 'The piston moved house without leaving a trace in the ledger.' },
+      desc: { zh: '卡諾循環起始體積加倍，其餘不變，等溫支的吸熱量與淨功均不變。', en: 'Double the initial volume of a Carnot engine at fixed expansion ratio and reservoir temperatures, preserving heat input and net work.' },
+      check: (ev) => pair(ev, (a, b) => a.type === 'carnot' && a.engine && b.engine &&
+        equal(a, b, ['type', 'n', 'Th', 'Tc', 'rB']) && ratio(b.VA, a.VA, 2) &&
+        ratio(b.Qin, a.Qin, 1) && ratio(b.Wout, a.Wout, 1))
+    },
+    {
+      id: 'heat-engine-h6', level: 5, hidden: true,
+      riddle: { zh: '原路回來時，兩扇門互換了收據。', en: 'On the return journey the doors exchange receipts.' },
+      desc: { zh: '同一史特林循環開回熱器，記錄正轉與逆轉，驗出吸、放熱互換且淨功變號。', en: 'Record a regenerated Stirling cycle forward and backward; heat input and rejection swap and work changes sign.' },
+      check: (ev) => pair(ev, (a, b) => a.type === 'stirling' && a.engine && b.fridge && a.regen &&
+        equal(a, b, ['type', 'n', 'Th', 'Tc', 'r', 'Vmin', 'regen']) &&
+        ratio(b.Qin, a.Qout, 1) && ratio(b.Qout, a.Qin, 1) && ratio(-b.Wout, a.Wout, 1))
+    },
+    {
+      id: 'heat-engine-h7', level: 7, hidden: true,
+      riddle: { zh: '摺痕照自己再摺一回，帳上多出一份原稿。', en: 'Fold the crease over itself and the ledger gains a second copy.' },
+      desc: { zh: '史特林引擎體積比取平方，固定溫度與物質量，驗證淨功與體積比的對數成正比。', en: 'Square the Stirling volume ratio at fixed temperatures and charge to double the logarithmic work.' },
+      check: (ev) => pair(ev, (a, b) => a.type === 'stirling' && a.engine && b.engine &&
+        equal(a, b, ['type', 'n', 'Th', 'Tc', 'Vmin', 'regen']) && ratio(b.r, a.r * a.r, 1) &&
+        ratio(b.Wout, a.Wout, 2))
+    },
+    {
+      id: 'heat-engine-h8', level: 7, hidden: true,
+      riddle: { zh: '一具引擎有兩張底片，洗出來的輪廓重合。', en: 'Two negatives of one engine develop into the same outline.' },
+      desc: { zh: '狄塞爾循環固定壓縮比及截斷比，進氣絕對溫度加倍，最高溫和淨功也加倍，效率不變。', en: 'Double the Diesel inlet temperature at fixed geometry and cutoff: peak temperature and work double at unchanged efficiency.' },
+      check: (ev) => pair(ev, (a, b) => a.type === 'diesel' && a.engine && b.engine &&
+        equal(a, b, ['type', 'n', 'r', 'rc', 'V1']) && ratio(b.T1, a.T1, 2) &&
+        ratio(b.Tmax, a.Tmax, 2) && ratio(b.Wout, a.Wout, 2) && ratio(b.eta, a.eta, 1))
+    },
+    {
+      id: 'heat-engine-h9', level: 9, hidden: true,
+      riddle: { zh: '山脊兩側的腳印一樣深，山頂還留著第三個位置。', en: 'Equal footprints flank the ridge; a third place waits at the crest.' },
+      desc: { zh: '固定布雷頓兩端溫度，記錄兩個不同壓力比的等功點，再記錄壓縮終溫為幾何平均的最大淨功點。', en: 'At fixed Brayton endpoints, record equal-work flanks, then maximum work where the compressor outlet reaches the geometric mean.' },
+      check: function (ev) {
+        const rows = rowsOf(ev);
+        if (!rows || rows.length < 3) return false;
+        const [a, b, c] = rows.slice(-3);
+        if (![a, b, c].every(d => d.type === 'brayton' && d.engine && equal(d, c, ['gas', 'n', 'T1', 'T3', 'P1']))) return false;
+        const exponent = c.gas === 'mono' ? 2 / 5 : 2 / 7;
+        // 壓力比可輸入至 0.01；三筆容許 0.2% 的取整誤差，兩側功須顯著低於頂點。
+        return a.rp < c.rp && c.rp < b.rp && ratio(a.Wout, b.Wout, 1, 0.002) &&
+          c.Wout > 1.03 * Math.max(a.Wout, b.Wout) && ratio(c.T1 * Math.pow(c.rp, exponent), Math.sqrt(c.T1 * c.T3), 1, 0.002);
+      }
+    },
+    {
+      id: 'heat-engine-h10', level: 10, hidden: true,
+      riddle: { zh: '兩支溫度計走了同一段路，爐邊卻留下不同的欠條。', en: 'Two thermometers travel equally far and leave different debts at the furnace.' },
+      desc: { zh: '同種等量氣體在奧圖與布雷頓的吸熱段等幅升溫，兩段起始溫度不同，量出吸熱比 Cp/Cv。', en: 'Match the heating spans of Otto and Brayton engines at different compressor outlet temperatures and measure the heat-capacity ratio.' },
+      check: (ev) => pair(ev, (a, b) => {
+        if (a.type !== 'otto' || b.type !== 'brayton' || !a.engine || !b.engine || a.n !== b.n) return false;
+        const gamma = a.gas === 'mono' ? 5 / 3 : 7 / 5;
+        const ta = a.T1 * Math.pow(a.r, gamma - 1), tb = b.T1 * Math.pow(b.rp, 1 - 1 / gamma);
+        // 溫度輸入至 1 K，壓力比至 0.01。
+        return Math.abs(ta - tb) >= 100 && a.T3 - ta >= 200 && near(a.T3 - ta, b.T3 - tb, 1) &&
+          ratio(b.Qin, a.Qin, gamma, 0.005);
+      })
     }
   ]);
 })();

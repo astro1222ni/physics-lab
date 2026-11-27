@@ -1698,19 +1698,20 @@
   }
 
   // ======================= 任務事件 =======================
-  function emitMeasure() {
+  function emitMeasure(onPause) {
     if (!window.LabMission || !state.interacted) return;
     const s = lastLong;
     if (!s || s.t < 60) return;
     const sps = [speciesOf(0), speciesOf(1)];
     const c = s.counts;
     const r4 = meterLong.stats(400);
-    window.LabMission.emit('measure', {
+    window.LabMission.emit(onPause ? 'sample' : 'measure', {
       mode: state.mode, epoch: state.epoch, init: state.init, sinceInit: gas.t - state.initAt, t: gas.t,
       N: s.N, nA: c[0], nB: c[1], mix: state.mix && c[1] > 0,
       spA: sps[0].id, spB: state.mix ? sps[1].id : null, mA: sps[0].m, mB: state.mix ? sps[1].m : null,
       V: s.V, Tset: state.Tset, bath: bathOn(),
       T: s.T, Terr: s.Terr, P: kPa(s.P), Perr: kPa(s.Perr), Pth: kPa(G.idealP(s.N, s.T, s.V)), window: s.t,
+      pa: kPa(s.Ps[0]), pb: kPa(s.Ps[1]), collRate: s.collRate,
       vrmsA: G.toSI.speed(s.vrms[0]), vrmsB: c[1] ? G.toSI.speed(s.vrms[1]) : null,
       keA: G.toSI.energy(s.KE[0]), keB: c[1] ? G.toSI.energy(s.KE[1]) : null,
       TA: s.Ts[0], TB: c[1] ? s.Ts[1] : null,
@@ -2044,6 +2045,7 @@
   });
   $('play').addEventListener('click', function () {
     state.running = !state.running;
+    if (!state.running) emitMeasure(true);
     updateButtons();
     setStatus('');
     if (state.running) startLoop(); else requestDraw();

@@ -45,6 +45,7 @@ class Page {
   }
   setT(T) { this.Tset = T; this.tChanges++; if (this.mode !== 'isobaric') this.g.bath.T = T; this.mark(); }
   setV(V) { this.g.piston.target = V / AREA; }
+  setN(n) { this.N = n; C.setCounts(this.g, this.counts(), this.Tset); this.epoch++; this.mS.reset(); this.mark(); }
   setSpecies(a) { this.spA = a; if (this.spB === a) this.spB = a === 2 ? 0 : 2; this.newGas(this.bath() ? this.Tset : this.T()); if (this.mode === 'adiabatic') this.setAd(); }
   setMix(on, b, frac) { this.mix = on; if (b != null) this.spB = b; if (frac != null) this.frac = frac; this.newGas(this.bath() ? this.Tset : this.T()); if (this.mode === 'adiabatic') this.setAd(); }
   setAd() { this.adStart = { T: C.temperature(this.g), V: this.g.Lx * AREA, epoch: this.epoch }; }
@@ -78,31 +79,35 @@ class Page {
     }
     return this;
   }
-  emit() {
+  emit(type = 'measure') {
     const s = this.mL.blocks.length ? this.mL.stats(1500) : null;
     if (!s || s.t < 60) return;
     const r4 = this.mL.stats(400), c = s.counts, sA = this.sp(0), sB = this.sp(1);
     const d = { mode: this.mode, epoch: this.epoch, init: this.init, sinceInit: this.g.t - this.initAt, t: this.g.t, N: s.N, nA: c[0], nB: c[1], mix: this.mix && c[1] > 0,
       spA: sA.id, spB: this.mix ? sB.id : null, mA: sA.m, mB: this.mix ? sB.m : null, V: s.V, Tset: this.Tset, bath: this.bath(), T: s.T, Terr: s.Terr,
+      pa: kPa(s.Ps[0]), pb: kPa(s.Ps[1]), collRate: s.collRate,
       P: kPa(s.P), Perr: kPa(s.Perr), window: s.t, vrmsA: C.toSI.speed(s.vrms[0]), vrmsB: c[1] ? C.toSI.speed(s.vrms[1]) : null,
       keA: C.toSI.energy(s.KE[0]), keB: c[1] ? C.toSI.energy(s.KE[1]) : null, TA: s.Ts[0], TB: c[1] ? s.Ts[1] : null,
       adStart: this.mode === 'adiabatic' && this.adStart ? Object.assign({ P: kPa(C.idealP(this.g.n, this.adStart.T, this.adStart.V)) }, this.adStart) : null,
       Wcum: C.toSI.energy(this.Wcum), Qcum: 0, Pset: this.mode === 'isobaric' ? this.Pset : null,
       keA4: C.toSI.energy(r4.KE[0]), keB4: c[1] ? C.toSI.energy(r4.KE[1]) : null, modeTime: Object.assign({}, this.modeTime), tChanges: this.tChanges };
     this.last = d;
-    missions.forEach(m => { if (!this.done[m.id] && m.check({ type: 'measure', data: d }, m.mem)) { this.done[m.id] = true; this.log.push(m.id + ' @ ' + d.t.toFixed(0) + ' ps'); } });
+    missions.forEach(m => { if (!this.done[m.id] && m.check({ type, data: d }, m.mem)) { this.done[m.id] = true; this.log.push(m.id + ' @ ' + d.t.toFixed(0) + ' ps'); } });
   }
   until(fn, max) { let t = 0; while (!fn() && t < (max || 20000)) { this.run(20); t += 20; } return t; }
   moveTo(V) { this.setV(V); this.until(() => Math.abs(this.g.Lx * AREA - V) < 1e-4); return this; }
-  info(tag) { const d = this.last; console.log('   ', tag, d ? `mode=${d.mode} V=${d.V.toFixed(0)} T=${d.T.toFixed(1)} P=${d.P.toFixed(2)} vrms=${d.vrmsA.toFixed(1)} win=${d.window.toFixed(0)}` : '-'); }
+  info(tag) { this.emit('sample'); const d = this.last; console.log('   ', tag, d ? `mode=${d.mode} V=${d.V.toFixed(0)} T=${d.T.toFixed(1)} P=${d.P.toFixed(2)} vrms=${d.vrmsA.toFixed(1)} win=${d.window.toFixed(0)}` : '-'); }
 }
 function fresh() { missions.forEach(m => m.mem = {}); }
-function report(p, ids) { if (ids.some(id => !p.done[id])) process.exitCode = 1; console.log('  done:', ids.map(id => id + (p.done[id] ? ' ✓' : ' ✗')).join('  ')); }
+const assert = require('node:assert/strict');
+const hidden = p => Object.keys(p.done).filter(k => /-h\d+$/.test(k));
+const added = id => /-h(?:[4-9]|10)$/.test(id);
+function report(p, ids) { p.emit('sample'); assert.deepEqual(hidden(p).filter(added), []); if (ids.some(id => !p.done[id])) process.exitCode = 1; console.log('  done:', ids.map(id => id + (p.done[id] ? ' ✓' : ' ✗')).join('  ')); }
 
 const T0 = Date.now();
 let p;
 console.log('預設狀態（只播放，不操作）');
-fresh(); p = new Page(101); p.run(3000); console.log('  任務觸發：', p.log.length ? p.log : '無');
+fresh(); p = new Page(101); p.run(3000); p.emit('sample'); assert.deepEqual(Object.keys(p.done), []); console.log('  任務觸發：', p.log.length ? p.log : '無');
 
 console.log('任務 1：等溫壓縮到 4000 nm³'); fresh(); p = new Page(102); p.moveTo(4000).run(400); p.info('after'); report(p, ['ideal-gas-1']);
 console.log('任務 2：恆溫槽 80 K'); fresh(); p = new Page(103); p.setT(80); p.run(800); p.info('after'); report(p, ['ideal-gas-2']);
@@ -140,4 +145,42 @@ if (process.env.DBG) {
 console.log('隱藏 h1：273.2 K、7478 nm³'); fresh(); p = new Page(114); p.setT(273.2); p.moveTo(7478).run(2000); p.info('STP'); report(p, ['ideal-gas-h1']);
 console.log('隱藏 h2：4000 → 12000 絕熱膨脹'); fresh(); p = new Page(115); p.moveTo(4000).run(300); p.setMode('adiabatic'); p.moveTo(12000).run(200); p.info('cold'); console.log('    T/T0 =', (p.last.T / p.adStart.T).toFixed(3)); report(p, ['ideal-gas-h2']);
 console.log('隱藏 h3：氙 50 K'); fresh(); p = new Page(116); p.setSpecies(4); p.setT(50); p.run(2500); p.info('Xe 50'); report(p, ['ideal-gas-h3']);
+// 穩定後按暫停取樣；送出與頁面相同的量測欄位，也完整檢查過程中所有定期事件。
+const sample = p => {
+  p.run(1800); p.emit('sample');
+  const d = p.last;
+  console.log('  暫停取樣', d.mode, d.spA, d.spB || '', 'N=', d.N, 'B%=', p.mix ? p.frac : 0, 'Tset=', d.Tset, 'V=', d.V.toFixed(0));
+};
+const cases = [
+  ['純 He 300 K，(N,V)=(100,5000) → (200,10000)', (p, miss) => {
+    p.setN(100); p.moveTo(5000); sample(p); p.setN(200); p.moveTo(miss ? 9990 : 10000); sample(p);
+  }],
+  ['等容 He/Ar，N=160、B=25% → N=200、B=40%', (p, miss) => {
+    p.setMode('isochoric'); p.setN(160); p.setMix(true, 2, 25); sample(p);
+    p.setN(200); p.setMix(true, 2, miss ? 41 : 40); sample(p);
+  }],
+  ['等容 Ne/Kr，N=103、B=19%', (p, miss) => {
+    p.setMode('isochoric'); p.setSpecies(1); p.setN(103); p.setMix(true, 3, miss ? 20 : 19); sample(p);
+  }],
+  ['等容 He/Ar，N=200、B=76%', (p, miss) => {
+    p.setMode('isochoric'); p.setMix(true, 2, miss ? 75 : 76); sample(p);
+  }],
+  ['等容純 He 180 → 720 K', (p, miss) => {
+    p.setMode('isochoric'); p.setT(180); sample(p); p.setT(miss ? 719.5 : 720); sample(p);
+  }],
+  ['等容純 He (N,T)=(100,640) → (200,320)', (p, miss) => {
+    p.setMode('isochoric'); p.setN(100); p.setT(640); sample(p); p.setN(miss ? 199 : 200); p.setT(320); sample(p);
+  }],
+  ['純 He 300 K 等溫，4500 → 6750 → 10125 nm³', (p, miss) => {
+    for (const v of [4500, 6750, miss ? 10135 : 10125]) { p.moveTo(v); sample(p); }
+  }]
+];
+for (const [i, [setting, demo]] of cases.entries()) {
+  const id = 'ideal-gas-h' + (i + 4);
+  for (const miss of [false, true]) {
+    fresh(); p = new Page(140 + i); demo(p, miss);
+    console.log(id, miss ? '近失' : '達成', setting, p.log);
+    assert.deepEqual(hidden(p), miss ? [] : [id]);
+  }
+}
 console.log('總時間', ((Date.now() - T0) / 1000).toFixed(1), 's');

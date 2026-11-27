@@ -12,13 +12,16 @@ function emit(type, data) { list.forEach(m => { if (!done[m.id] && m.check({ typ
 function fresh() { list.forEach(m => m.mem = {}); }
 const r4 = x => Math.round(x * 1e4) / 1e4, r3 = x => Math.round(x * 1e3) / 1e3, r2 = x => Math.round(x * 100) / 100;
 // 簡化的頁面狀態
+const trace = []; let tracing = false;
 let n = 1, K = 0, em = {};
 function tap(target) { // 與 js/hydrogen-spectrum.js 的 request 相同邏輯
+  if (tracing) trace.push('點 ' + target);
   if (n === Infinity) { const ph = HC.recombination(K, target); emit('emit', { from: Infinity, to: target, E: ph.E, lambda: ph.lambda, source: 'recomb', K, lines: Object.keys(em) }); n = target; K = 0; return; }
   if (target < n) { const t = HC.transition(n, target); em[n + '-' + target] = 1; const f = n; n = target; emit('emit', { from: f, to: target, E: t.E, lambda: t.lambda, source: 'tap', visible: t.region === 'VIS', lines: Object.keys(em) }); return; }
   fire(target === Infinity ? -HC.energy(n) : HC.energy(target) - HC.energy(n), 'tap');
 }
 function fire(E, source) {
+  if (tracing && source === 'gun') trace.push('射 ' + E + ' eV');
   const r = HC.absorb(n, E), lam = HC.HC_EV_NM / E;
   if (r.type === 'pass') { emit('pass', { from: n, bare: n === Infinity, E, lambda: lam, visible: lam >= 380 && lam <= 750, source }); return r; }
   if (r.type === 'absorb') { const f = n; n = r.to; emit('absorb', { from: f, to: r.to, E, lambda: lam, source }); return r; }
@@ -39,6 +42,8 @@ const say = (id, how) => console.log((done[id] ? '✓ ' : '✗ ') + id + '：' +
 // 預設狀態不觸發任何任務
 discharge(13.4, 6, 3); emit('absorption', { hot: false });
 console.log('預設狀態觸發的任務：', Object.keys(done).length ? Object.keys(done) : '無');
+const assert = require('node:assert/strict');
+assert.deepEqual(Object.keys(done), []);
 fresh(); for (const k in done) delete done[k];
 
 reset(); tap(3); tap(2); say('hydrogen-spectrum-1', '點 n = 3（吸收），再點 n = 2（放出 Hα 656.47 nm）');
@@ -61,6 +66,28 @@ reset(); fire(r3(HC.ionizationEnergy(1) + Kneed), 'gun'); tap(3); say('hydrogen-
 reset(); tap(Infinity); fire(1.89, 'gun'); say('hydrogen-spectrum-h1', '游離後再射入任何光子（只剩質子，光子穿過）');
 reset(); fire(r4(HC.energy(3) - HC.energy(1)), 'gun'); tap(1); say('hydrogen-spectrum-h2', '自己射入 12.0874 eV（1 → 3），再點 n = 1 放回同樣的光子');
 reset(); discharge(8, 3, 11); say('hydrogen-spectrum-h3', '放電管 K = 8 eV（< 10.2 eV）跑 2.5 秒以上：1000 次撞擊、0 個光子');
-console.log('完成', Object.keys(done).length, '/', list.length);
+console.log('舊任務達成', Object.keys(done).length, '/', list.filter(m => !/-h(?:[4-9]|10)$/.test(m.id)).length);
 
-if (list.some(m => !done[m.id])) process.exitCode = 1;
+const added = /-h(?:[4-9]|10)$/;
+assert.deepEqual(Object.keys(done).filter(k => added.test(k)), [], '舊任務操作路徑');
+assert.ok(list.filter(m => !added.test(m.id)).every(m => done[m.id]), '每個舊例都應成立');
+const line = (a, b) => HC.transition(Math.max(a, b), Math.min(a, b)).E;
+const gun = E => { const value = r4(E); assert.ok(value >= 0.05 && value <= 20); fire(value, 'gun'); return value; };
+const cases = [
+  miss => { tap(2); gun(4.2); tap(4); gun(miss ? 4.2002 : 4.2); },
+  miss => { tap(2); const e = line(2, 5); gun(e - 0.02); gun(e + (miss ? 0.0205 : 0.02)); gun(e); },
+  miss => { tap(3); tap(1); tap(miss ? 7 : 6); tap(2); },
+  miss => { for (const upper of (miss ? [6, 5, 7] : [5, 6, 7])) { tap(upper); tap(3); } },
+  miss => { const e = line(1, 5); gun(e / 2); gun(e / 2 + (miss ? 0.0003 : 0)); gun(e); },
+  miss => { tap(6); tap(5); gun(line(5, 12)); gun(line(6, 5) + (miss ? 0.0003 : 0)); },
+  miss => { tap(2); gun(line(2, 6) + (miss ? 0.0004 : 0)); tap(1); }
+];
+for (const [index, demo] of cases.entries()) {
+  const id = 'hydrogen-spectrum-h' + (index + 4);
+  for (const miss of [false, true]) {
+    reset(); fresh(); for (const key in done) delete done[key];
+    trace.length = 0; tracing = true; demo(miss); tracing = false;
+    assert.deepEqual(Object.keys(done).filter(k => /-h\d+$/.test(k)), miss ? [] : [id]);
+    console.log(id, miss ? '近失' : '達成', trace.join(' → '));
+  }
+}

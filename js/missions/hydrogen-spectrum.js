@@ -18,6 +18,9 @@
   const H_ALPHA = 656.4696;                 // nm（真空）
   const chainBreak = function (ev) { return ev.type === 'absorb' || ev.type === 'ionize' || ev.type === 'reset'; };
 
+  // 光子槍可輸入到 0.0001 eV；容許兩筆各自取整。點能階的波長比只留浮點誤差。
+  const closeEV = (a, b) => Math.abs(a - b) <= 0.00016;
+
   LabMission.register('hydrogen-spectrum', [
     {
       id: 'hydrogen-spectrum-1', level: 1,
@@ -160,6 +163,98 @@
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'discharge' && d.K < gap(1, 2) && d.imp >= 1000 - 1e-9 && d.ph === 0;
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h4', level: 4, hidden: true,
+      riddle: { zh: '同一枚硬幣開了兩扇門，找回的零錢卻不同。', en: 'One coin opens two doors and comes back with different change.' },
+      desc: { zh: '從 n=2、4 依序用同能量光子游離，兩電子的動能差等於兩束縛態的能階差。', en: 'Ionise levels 2 and 4 with equal photon energies and recover their level spacing from the difference in electron kinetic energies.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'reset') delete mem.first;
+        if (ev.type !== 'ionize' || d.source !== 'gun') return false;
+        if (d.from === 2) mem.first = d;
+        return d.from === 4 && mem.first && closeEV(d.E, mem.first.E) && closeEV(d.K - mem.first.K, gap(2, 4));
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h5', level: 6, hidden: true,
+      riddle: { zh: '門縫的兩旁都透著光，正中央倒暗了。', en: 'Light leaks past both sides of the keyhole but vanishes at its centre.' },
+      desc: { zh: '在 n=2，用光子槍於 2→5 線兩側對稱失諧、各穿透一次，再射入線中心使原子吸收。', en: 'Bracket the 2 to 5 line with symmetric detuned photons that pass, then obtain absorption at line centre.' },
+      check: function (ev, mem) {
+        const d = ev.data, center = gap(2, 5);
+        if (ev.type === 'pass' && d.source === 'gun' && d.from === 2) {
+          mem.previous = mem.last; mem.last = d.E;
+          return false;
+        }
+        const ok = ev.type === 'absorb' && d.source === 'gun' && d.from === 2 && d.to === 5 &&
+          closeEV(d.E, center) && mem.previous < center - 0.005 && mem.last > center + 0.005 &&
+          mem.last < center + (gap(2, 6) - center) / 2 && closeEV((mem.previous + mem.last) / 2, center);
+        delete mem.last; delete mem.previous;
+        return ok;
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h6', level: 5, hidden: true,
+      riddle: { zh: '兩把梯子一起放大，影子卻朝另一頭伸長。', en: 'Stretch both ladders and their shadows lengthen the other way.' },
+      desc: { zh: '比較 3→1 與 6→2，初、末量子數都加倍時，真空波長變為四倍。', en: 'Compare 3 to 1 with 6 to 2: doubling both quantum numbers quadruples the vacuum wavelength.' },
+      check: function (ev, mem) {
+        if (ev.type === 'reset') delete mem.short;
+        const d = ev.data;
+        if (ev.type !== 'emit' || d.source !== 'tap') return false;
+        if (d.from === 3 && d.to === 1) mem.short = d.lambda;
+        return d.from === 6 && d.to === 2 && Math.abs(d.lambda / mem.short - 4) < 1e-8;
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h7', level: 7, hidden: true,
+      riddle: { zh: '遠方的柵欄還有空隙，越往山頭越窄。', en: 'Gaps remain between the fence posts, narrowing uphill.' },
+      desc: { zh: '依序測帕申系 5、6、7→3，核對相鄰光子能量間隔為正且遞減。', en: 'Measure successive Paschen lines from levels 5, 6 and 7; the successive positive photon-energy spacings shrink.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'reset') { delete mem.e5; delete mem.e6; }
+        if (ev.type !== 'emit' || d.source !== 'tap' || d.to !== 3) return false;
+        if (d.from === 5) { mem.e5 = d.E; delete mem.e6; }
+        if (d.from === 6 && mem.e5) mem.e6 = d.E;
+        return d.from === 7 && d.E > mem.e6 && d.E - mem.e6 < mem.e6 - mem.e5;
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h8', level: 7, hidden: true,
+      riddle: { zh: '兩張半票各自過站，一張全票留下來了。', en: 'Two half tickets pass separately; a whole ticket stays behind.' },
+      desc: { zh: '在基態分開射入兩個等能半份光子（皆穿透），再用它們的總能量單光子激發到 n=5。', en: 'Send two separate equal half-energy photons through the ground-state atom, then excite level 5 with one photon carrying their combined energy.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'pass' && d.from === 1 && d.source === 'gun') {
+          mem.first = mem.second; mem.second = d.E; return false;
+        }
+        const ok = ev.type === 'absorb' && d.source === 'gun' && d.from === 1 && d.to === 5 &&
+          closeEV(mem.first, mem.second) && closeEV(mem.first + mem.second, d.E);
+        delete mem.first; delete mem.second;
+        return ok;
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h9', level: 9, hidden: true,
+      riddle: { zh: '最柔的一束光，也能把高處的風箏線剪斷。', en: 'Even a gentle ray can cut the string of a high kite.' },
+      desc: { zh: '測出 6→5 的紅外線，再用同能量光子游離高激發態，驗出電子帶走的剩餘動能。', en: 'Measure the infrared 6 to 5 line, then use its energy to ionise a Rydberg state and verify the leftover electron kinetic energy.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type === 'reset') delete mem.ir;
+        if (ev.type === 'emit' && d.from === 6 && d.to === 5) mem.ir = d.E;
+        return ev.type === 'ionize' && d.source === 'gun' && d.from >= 10 && closeEV(d.E, mem.ir) &&
+          d.K > 0 && closeEV(d.K, mem.ir - RY / (d.from * d.from));
+      }
+    },
+    {
+      id: 'hydrogen-spectrum-h10', level: 10, hidden: true,
+      riddle: { zh: '借來的燈照出更藍的影子，舊抽屜裡少了一樣東西。', en: 'A borrowed lamp casts a bluer shadow; something is missing from an old drawer.' },
+      desc: { zh: '從 n=2 自訂光子激發到 n=6，再放光回基態；驗出放光比入射多出的能量來自原先的激發能。', en: 'Pump level 2 to 6 manually, then emit to the ground state; the outgoing photon gains the initial excitation energy.' },
+      check: function (ev, mem) {
+        const d = ev.data, pump = mem.pump;
+        delete mem.pump;
+        if (ev.type === 'absorb' && d.from === 2 && d.to === 6 && d.source === 'gun') mem.pump = d.E;
+        return ev.type === 'emit' && d.from === 6 && d.to === 1 && closeEV(d.E - pump, gap(1, 2));
       }
     }
   ]);

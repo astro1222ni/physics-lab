@@ -47,6 +47,20 @@
     return best;
   }
 
+  const sameSettings = (a, b, keys) => keys.every(k => a[k] === b[k]);
+  const matches = (value, target, tolerance) => Math.abs(value / target - 1) <= tolerance;
+  // 只在學生主動暫停時取最近的平衡樣本。體積至 1 nm³、溫度至 0.1 K；
+  // 配比為整數顆及整數百分比。量測值另留有限粒子、撞壁與碰撞統計的誤差。
+  function snapshots(ev, mem, count, test) {
+    if (ev.type !== 'sample') return false;
+    const d = ev.data;
+    if (!steady(d) || d.window < 300) return false;
+    const samples = mem.samples || (mem.samples = []);
+    samples.push(d);
+    if (samples.length > count) samples.shift();
+    return samples.length === count && test(samples);
+  }
+
   LabMission.register('ideal-gas', [
     {
       id: 'ideal-gas-1', level: 1,
@@ -204,6 +218,63 @@
         return ev.type === 'measure' && d.window >= 300 - 1e-9 &&
           (d.vrmsA < 100 || (d.vrmsB != null && d.vrmsB < 100));
       }
+    },
+    {
+      id: 'ideal-gas-h4', level: 3, hidden: true,
+      riddle: { zh: '屋裡多了一倍住客，門房的秤卻沒有動。', en: 'Twice as many tenants move in; the scale at the door stays still.' },
+      desc: { zh: '同種純氣體等溫，分子數、體積同時加倍，量得壓力不變。', en: 'Double both particle count and volume of a pure isothermal gas and recover the same pressure.' },
+      check: (ev, mem) => snapshots(ev, mem, 2, ([a, b]) => !a.mix && !b.mix && a.mode === 'isothermal' &&
+        sameSettings(a, b, ['mode', 'spA', 'Tset']) && b.N === 2 * a.N && matches(b.V / a.V, 2, 0.0005) && matches(b.P / a.P, 1, 0.05))
+    },
+    {
+      id: 'ideal-gas-h5', level: 5, hidden: true,
+      riddle: { zh: '隔壁桌添了椅子，這桌交給牆的帳照舊。', en: 'The next table adds chairs; this table pays the wall the same as before.' },
+      desc: { zh: '固定混合氣體的體積、溫度與 A 粒子數，只加倍 B 的數量；量得 A 分壓不變、B 分壓加倍。', en: 'At fixed volume and temperature, double only species B and measure unchanged A partial pressure and doubled B partial pressure.' },
+      check: (ev, mem) => snapshots(ev, mem, 2, ([a, b]) => a.mix && b.mix && a.mode === 'isochoric' &&
+        sameSettings(a, b, ['mode', 'spA', 'spB', 'Tset', 'nA']) && matches(b.V / a.V, 1, 0.0005) &&
+        b.nB === 2 * a.nB && matches(b.pa / a.pa, 1, 0.06) && matches(b.pb / a.pb, 2, 0.06))
+    },
+    {
+      id: 'ideal-gas-h6', level: 6, hidden: true,
+      riddle: { zh: '天平兩端一樣重，點名簿卻厚薄懸殊。', en: 'The pans balance, but the attendance books are very different sizes.' },
+      desc: { zh: '等容混合兩種質量相差至少四倍的原子，使兩群總質量相等；由分壓驗出粒子數比例。', en: 'Balance the total masses of two species at least fourfold apart in atomic mass; their measured partial pressures follow particle counts.' },
+      check: (ev, mem) => snapshots(ev, mem, 1, ([d]) => d.mode === 'isochoric' && d.mix && d.mB >= 4 * d.mA &&
+        matches(d.nB * d.mB / (d.nA * d.mA), 1, 0.015) && matches(d.pb / d.pa, d.nB / d.nA, 0.07))
+    },
+    {
+      id: 'ideal-gas-h7', level: 7, hidden: true,
+      riddle: { zh: '兩隊訪客同樣常來敲門，候客室裡的人數卻不同。', en: 'Two parties knock equally often, yet their waiting rooms are unequally full.' },
+      desc: { zh: '等容配出兩種質量相差至少四倍、理論撞壁通量相等的氣體，並用實測方均根速率核對通量比。', en: 'Balance Maxwellian wall fluxes of two species at least fourfold apart in mass and confirm the ratio with measured rms speeds.' },
+      check: (ev, mem) => snapshots(ev, mem, 1, ([d]) => d.mode === 'isochoric' && d.mix && d.mB >= 4 * d.mA &&
+        matches(d.nB / d.nA, Math.sqrt(d.mB / d.mA), 0.012) && matches(d.nB * d.vrmsB / (d.nA * d.vrmsA), 1, 0.05))
+    },
+    {
+      id: 'ideal-gas-h8', level: 8, hidden: true,
+      riddle: { zh: '腳步急了，下一次碰面前的路卻還是一樣長。', en: 'The footsteps quicken but the distance to the next encounter stays the same.' },
+      desc: { zh: '同一批等容純氣體升到四倍絕對溫度，每粒子碰撞頻率約加倍，速率除以碰撞頻率所得的平均自由程近似不變。', en: 'Quadruple temperature at fixed density: collision frequency doubles while mean free path inferred from speed and frequency stays constant.' },
+      check: (ev, mem) => snapshots(ev, mem, 2, ([a, b]) => !a.mix && !b.mix && a.mode === 'isochoric' &&
+        sameSettings(a, b, ['mode', 'epoch']) && matches(b.V / a.V, 1, 0.0005) && matches(b.Tset / a.Tset, 4, 0.0005) &&
+        matches(b.collRate / a.collRate, 2, 0.10) && matches((b.vrmsA / a.vrmsA) / (b.collRate / a.collRate), 1, 0.10))
+    },
+    {
+      id: 'ideal-gas-h9', level: 9, hidden: true,
+      riddle: { zh: '一桌人分成兩桌，整鍋的份量還能原封不動。', en: 'Twice the diners can share a pot of exactly the original size.' },
+      desc: { zh: '固定容積，純氣體分子數加倍、溫度減半，每粒子平均動能減半而總平動內能相同。', en: 'At fixed volume double the number of particles and halve temperature; mean energy halves while total translational energy is conserved between preparations.' },
+      check: (ev, mem) => snapshots(ev, mem, 2, ([a, b]) => !a.mix && !b.mix && a.mode === 'isochoric' &&
+        sameSettings(a, b, ['mode', 'spA']) && matches(b.V / a.V, 1, 0.0005) && b.N === 2 * a.N &&
+        matches(b.Tset / a.Tset, 0.5, 0.0005) && matches(b.N * b.keA / (a.N * a.keA), 1, 0.05))
+    },
+    {
+      id: 'ideal-gas-h10', level: 10, hidden: true,
+      riddle: { zh: '活塞走得一段比一段遠，工錢卻照抄了上一筆。', en: 'The piston travels farther on the second leg and earns its first wage again.' },
+      desc: { zh: '同一純氣體連續兩次等溫膨脹，體積各放大相同倍率，以活塞功驗證兩段做功相等且符合 NkT ln(V末/V初)。', en: 'Use two consecutive equal-ratio isothermal expansions to measure equal work and verify the logarithmic work law.' },
+      check: (ev, mem) => snapshots(ev, mem, 3, ([a, b, c]) => {
+        if (a.mix || a.mode !== 'isothermal' || ![b, c].every(d => sameSettings(a, d, ['mode', 'epoch', 'tChanges', 'Tset']) &&
+          ['isochoric', 'isobaric', 'adiabatic'].every(m => a.modeTime[m] === d.modeTime[m]))) return false;
+        const r = b.V / a.V, first = a.Wcum - b.Wcum, second = b.Wcum - c.Wcum;
+        return r >= 1.35 && matches(c.V / b.V, r, 0.0005) && matches(second / first, 1, 0.10) &&
+          matches(first, a.N * 1.380649e-23 * a.Tset * Math.log(r), 0.10);
+      })
     }
   ]);
 })();

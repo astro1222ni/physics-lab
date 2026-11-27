@@ -71,7 +71,7 @@ function setUI(u, ch) {
   return u;
 }
 const cycleEv = u => ({ type: 'cycle', data: Object.assign(C.report(C.fromDisplay(u)), { laps: 1 }) });
-function hits(ev) { return missions.filter(m => { try { return m.check(ev, {}); } catch (e) { return false; } }).map(m => m.id); }
+function hits(ev) { return missions.filter(m => m.check(ev, {})).map(m => m.id); }
 
 // ---- 1. 預設狀態、只切換種類、只按逆向、只記錄預設循環：不會完成任務 ----
 console.log('預設狀態（' + GAS0 + '）與只切換種類：');
@@ -110,10 +110,30 @@ const SOL = {
   'heat-engine-h2': { say: '卡諾逆向 T_h 305 K、T_c 300 K', steps: [{ type: 'carnot', reverse: true, carnot: { Th: 305, Tc: 300 } }] },
   'heat-engine-h3': { say: '自訂：把預設長方形的頂點 2、4 拖成逆時針 (8,300)→(20,300)→(20,700)→(8,700)', steps: [{ type: 'custom', pts: [[8, 300], [20, 300], [20, 700], [8, 700]] }] }
 };
+// 每組都是連續按「記錄」的設定。反例只改最後一筆的一個可輸入值。
+const recorded = (type, options) => ({ type, record: true, ...options });
+const ot = (options) => recorded('otto', options), ca = (options) => recorded('carnot', options);
+const st = (options) => recorded('stirling', options), di = (T1) => recorded('diesel', { diesel: { T1 } });
+const br = rp => recorded('brayton', { gas: 'mono', brayton: { rp, T1: 300, T3: 1200 } });
+const newRuns = [
+  [[ot({ n: 0.6 }), ot({ n: 1.20 })], ot({ n: 1.19 })],
+  [[ca({ carnot: { VA: 3 } }), ca({ carnot: { VA: 6 } })], ca({ carnot: { VA: 6.01 } })],
+  [[st({ regen: true }), st({ reverse: true })], st({ reverse: true, stirling: { Tc: 301 } })],
+  [[st({ stirling: { r: 2.5 } }), st({ stirling: { r: 6.25 } })], st({ stirling: { r: 6.24 } })],
+  [[di(200), di(400)], di(399)],
+  [[br(3.24), br(9.88), br(5.66)], br(5.70)],
+  [[ot({ gas: 'mono', otto: { r: 8, T1: 250, T3: 1500 } }), recorded('brayton', { brayton: { rp: 5.66, T1: 250, T3: 1000 } })],
+    recorded('brayton', { brayton: { rp: 5.66, T1: 250, T3: 1002 } })]
+];
+newRuns.forEach(([steps], i) => { SOL['heat-engine-h' + (i + 4)] = { steps, say: JSON.stringify(steps) }; });
+function isolated(id, achieved) {
+  const extra = achieved.filter(k => k !== id && (newIds.has(k) || (newIds.has(id) && /-h\d+$/.test(k))));
+  if (extra.length) bad(id + ' 連帶觸發 ' + extra);
+}
+const newIds = new Set(newRuns.map((_, i) => 'heat-engine-h' + (i + 4)));
 console.log('\n每個任務的解答：');
-let pub = 0, hid = 0;
+
 missions.forEach(m => {
-  if (m.hidden) hid += m.level; else pub += m.level;
   const s = SOL[m.id];
   if (!s) { bad(m.id + ' 沒有解答'); return; }
   const u = defaults(), rows = [];
@@ -123,29 +143,33 @@ missions.forEach(m => {
     const ev = cycleEv(u), d = ev.data;
     info = d.engine ? 'η ' + (d.eta * 100).toFixed(3) + '%，η/η_C ' + (d.ratio * 100).toFixed(2) + '%，W ' + d.Wout.toFixed(1) + ' J，Q_in ' + d.Qin.toFixed(0) + ' J，T ' + d.Tmin.toFixed(0) + '–' + d.Tmax.toFixed(0) + ' K'
       : 'K_R ' + d.KR.toFixed(3) + '，W ' + d.Wout.toFixed(1) + ' J';
-    if (hits(ev).indexOf(m.id) >= 0) ok = true;
+    const cycleHits = hits(ev); isolated(m.id, cycleHits); if (cycleHits.includes(m.id)) ok = true;
     if (st.record) {
       rows.push(d);
-      if (hits({ type: 'record', data: { row: d, rows: rows.slice() } }).indexOf(m.id) >= 0) ok = true;
+      const recordHits = hits({ type: 'record', data: { row: d, rows: rows.slice() } });
+      isolated(m.id, recordHits); if (recordHits.includes(m.id)) ok = true;
     }
   });
-  if (ok) console.log('  ✓ ' + m.id + '（' + m.level + ' 星' + (m.hidden ? '，隱藏' : '') + '）' + s.say + '　→ ' + info);
+  if (ok) console.log('  ✓ ' + m.id + '（' + m.level + ' 級' + (m.hidden ? '，隱藏' : '') + '）' + s.say + '　→ ' + info);
   else bad(m.id + ' 解答不成立：' + s.say + '　→ ' + info);
 });
-console.log('\n公開任務 ' + missions.filter(m => !m.hidden).length + ' 個共 ' + pub + ' 顆星；隱藏任務 ' + missions.filter(m => m.hidden).length + ' 個共 ' + hid + ' 顆星；合計 ' + (pub + hid) + ' 顆星。');
+console.log('已驗證 ' + missions.length + ' 個任務。');
 
 // ---- 3. 比較任務的反例：條件不符時不應完成 ----
 console.log('\n反例：');
 function neg(id, say, steps) {
   const u = defaults(), rows = [];
-  let hit = false;
+  const rejected = new Set();
+  const inspect = ev => {
+    for (const key of hits(ev)) if (key === id || (newIds.has(id) && /-h\d+$/.test(key))) rejected.add(key);
+  };
   steps.forEach(st => {
     setUI(u, st);
     const ev = cycleEv(u);
-    if (hits(ev).indexOf(id) >= 0) hit = true;
-    if (st.record) { rows.push(ev.data); if (hits({ type: 'record', data: { row: ev.data, rows: rows.slice() } }).indexOf(id) >= 0) hit = true; }
+    inspect(ev);
+    if (st.record) { rows.push(ev.data); inspect({ type: 'record', data: { row: ev.data, rows: rows.slice() } }); }
   });
-  if (hit) bad(id + ' 不該完成：' + say); else console.log('  ✓ ' + id + ' 不完成：' + say);
+  if (rejected.size) bad([...rejected].join('、') + ' 不該完成：' + say); else console.log('  ✓ ' + id + ' 不完成：' + say);
 }
 neg('heat-engine-7', '奧圖 r 12（雙原子）與狄塞爾 r 18', [{ type: 'otto', otto: { r: 12 }, record: true }, { type: 'diesel', diesel: { r: 18 }, record: true }]);
 neg('heat-engine-7', '壓縮比相同但氣體不同', [{ type: 'otto', otto: { r: 12 }, record: true }, { type: 'diesel', gas: 'mono', diesel: { r: 12 }, record: true }]);
@@ -155,5 +179,6 @@ neg('heat-engine-12', '史特林加回熱器（本來就等於卡諾）', [{ typ
 neg('heat-engine-h3', '自訂預設長方形（順時針）', [{ type: 'custom' }]);
 neg('heat-engine-h1', '自訂長方形（沒有交叉）', [{ type: 'custom' }]);
 
+newRuns.forEach(([steps, miss], i) => neg('heat-engine-h' + (i + 4), JSON.stringify(miss), steps.slice(0, -1).concat(miss)));
 console.log(fail ? '\n有 ' + fail + ' 個問題。' : '\n全部通過。');
 process.exitCode = fail ? 1 : 0;

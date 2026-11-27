@@ -7,6 +7,24 @@
   const rel = function (a, b) { return Math.abs(a / b - 1); };
   const liquid = function (q) { return q && q.kind === 'sens' && q.p === 1; };
 
+  // 與 specific-heat-core 的定溫環境和燒杯熱導一致（排行榜僅載任務定義）。
+  const roomTemperature = 25, beakerConductance = 3;
+  const same = (a, b, keys) => keys.every(k => a[k] === b[k]);
+  function mixes(ev, mem, compare) {
+    if (ev.type !== 'mix') return false;
+    const prior = mem.prior, current = ev.data;
+    mem.prior = current;
+    return prior && !prior.loss && !current.loss && compare(prior, current);
+  }
+  // 固體、水、杯採核心的常熱容量模型；熵差中的溫度用 K。
+  function entropyGain(d) {
+    const tf = d.Tf + 273.15;
+    return d.m1 * d.c1 * Math.log(tf / (d.T1 + 273.15)) +
+      (d.m2 * CW + d.Ccup) * Math.log(tf / (d.T2 + 273.15));
+  }
+  // 輸入精度為質量 0.001 kg、杯熱容量與功率 0.1、混合初溫 0.01 °C。
+  // 手動在曲線上取點另留 0.4 °C 與 4% 時距容差，平台則用實際相分率。
+
   LabMission.register('specific-heat', [
     {
       id: 'specific-heat-1', level: 1,
@@ -113,6 +131,79 @@
       id: 'specific-heat-h3', level: 7, hidden: true,
       riddle: { zh: '給予與失去，終於握手言和。', en: 'Giving and losing finally shake hands.' },
       check: function (ev) { const d = ev.data; return ev.type === 'steady' && d.loss && d.P > 0; }
+    },
+    {
+      id: 'specific-heat-h4', level: 3, hidden: true,
+      riddle: { zh: '匙羹改寫了時刻表，目的地照舊。', en: 'The spoon rewrites the timetable but keeps the destination.' },
+      desc: { zh: '有杯熱容量的絕熱金屬量熱實驗先靜置再攪拌；終溫相同（差 <0.01 °C），攪拌後達到平衡所需時間不到靜置的一半：攪拌只改變熱傳快慢，不改變平衡終點。', en: 'Repeat an insulated metal mixing run with a finite cup capacity, first still and then stirred; the final temperature is unchanged while the time to equilibrium drops below half: stirring changes the rate, not the endpoint.' },
+      check: (ev, mem) => mixes(ev, mem, (a, b) => !a.stir && b.stir && b.sub !== 'h2o' && b.Ccup > 0 &&
+        Math.abs(b.T1 - b.T2) >= 20 && same(a, b, ['mat', 'sub', 'm1', 'm2', 'T1', 'T2', 'Ccup']) &&
+        Math.abs(a.Tf - b.Tf) < 0.01 && b.t > 0 && b.t < 0.5 * a.t)
+    },
+    {
+      id: 'specific-heat-h5', level: 5, hidden: true,
+      riddle: { zh: '杯子默默留了一份，抄黑板的人只記到一半。', en: 'The cup keeps a share; the entry on the blackboard is only half full.' },
+      desc: { zh: '使杯與杯中水熱容量相等，用熱金屬量熱；忽略杯會將樣品比熱低估一半。', en: 'Match cup and water heat capacities and recover only half the metal specific heat if the cup is omitted.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'mix' || d.loss || d.sub === 'h2o' || d.T1 - d.T2 < 30 || d.ice || d.steam) return false;
+        const apparent = d.m2 * CW * (d.Tf - d.T2) / (d.m1 * (d.T1 - d.Tf));
+        return Math.abs(d.Ccup - d.m2 * CW) <= 0.06 && rel(apparent, d.c1 / 2) < 0.001;
+      }
+    },
+    {
+      id: 'specific-heat-h6', level: 6, hidden: true,
+      riddle: { zh: '又添了一筐雪，春天卻只領走同一捧。', en: 'Another basket of snow arrives; spring takes away the same handful.' },
+      desc: { zh: '以相同熱水投入兩份 0 °C 冰，第二份冰加倍，兩次都有冰剩餘且融化質量相同。', en: 'Mix the same warm water with ice at zero twice, doubling the initial ice mass; both runs retain ice and melt the same mass.' },
+      check: (ev, mem) => mixes(ev, mem, (a, b) => a.mat === 'ice' && b.mat === 'ice' && a.T1 === 0 && b.T1 === 0 &&
+        same(a, b, ['m2', 'T2', 'Ccup']) && Math.abs(b.m1 - 2 * a.m1) < 0.0001 && a.ice > 0 && b.ice > 0 &&
+        a.m1 - a.ice >= 0.01 && Math.abs((a.m1 - a.ice) - (b.m1 - b.ice)) < 0.0001)
+    },
+    {
+      id: 'specific-heat-h7', level: 4, hidden: true,
+      riddle: { zh: '兩個廚房的鐘，在同一刻冒出第一個泡。', en: 'The first bubble appears on the same tick in two kitchens.' },
+      desc: { zh: '同初溫的冰，質量與功率一起加倍，從開始加熱到開始沸騰的時間相同。', en: 'Double both ice mass and heater power from the same subzero start and recover the same boiling-onset time.' },
+      check: function (ev, mem) {
+        const b = ev.data;
+        if (ev.type !== 'phase' || b.kind !== 'boil-start' || b.sub !== 'h2o' || b.loss || b.T0 >= 0) return false;
+        const a = mem.start; mem.start = b;
+        return a && a.T0 === b.T0 && Math.abs(b.m - 2 * a.m) < 0.0001 &&
+          Math.abs(b.P - 2 * a.P) < 0.06 && Math.abs(b.t - a.t) <= 0.2;
+      }
+    },
+    {
+      id: 'specific-heat-h8', level: 8, hidden: true,
+      riddle: { zh: '燈還亮著，水銀卻把剩下的路一折再折。', en: 'The lamp stays lit as the mercury folds the remaining distance twice.' },
+      desc: { zh: '有散熱且加熱器開啟，讓熱水降溫，記下相對穩態的超溫連續兩次減半，兩段半衰時間相等。', en: 'With the heater on, cool hot water toward its steady temperature and record two successive halvings of excess temperature at equal intervals.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'record' || !d.loss || d.sub !== 'h2o' || !liquid(d.p1) || !liquid(d.p2)) return false;
+        const steadyT = roomTemperature + d.P / beakerConductance;
+        const excess = d.T0 - steadyT;
+        return excess >= 20 && Math.abs(d.p1.T - steadyT - excess / 2) <= 0.4 &&
+          Math.abs(d.p2.T - steadyT - excess / 4) <= 0.4 && rel(d.dt, d.p1.t) <= 0.04;
+      }
+    },
+    {
+      id: 'specific-heat-h9', level: 9, hidden: true,
+      riddle: { zh: '結霜的窗外，藏著另一盞暖燈。', en: 'Beyond the frosted window, another lamp gives warmth.' },
+      desc: { zh: '開啟環境熱交換，讓室溫環境與加熱器對融冰各出一半熱量，以兩點間的融化質量核對。', en: 'With environmental exchange enabled, make the room and heater supply equal shares of the latent heat measured between two melting fractions.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'record' || !d.loss || d.sub !== 'h2o' || d.p1.kind !== 'lat' || d.p2.kind !== 'lat' ||
+            d.p1.i !== 0 || d.p2.i !== 0 || d.p2.x - d.p1.x < 0.20) return false;
+        const meltHeat = d.m * LF * (d.p2.x - d.p1.x);
+        return Math.abs(d.P - beakerConductance * roomTemperature) <= 0.06 && rel(d.P * d.dt, meltHeat / 2) <= 0.01;
+      }
+    },
+    {
+      id: 'specific-heat-h10', level: 10, hidden: true,
+      riddle: { zh: '兩封信寄到同一地址，沿途散去的秩序卻不一樣。', en: 'Two letters reach one address; the disorder left along the way differs.' },
+      desc: { zh: '兩組絕熱混合達同一終溫；擴大冷熱初溫差，核對兩物體總熵增隨之增加。', en: 'Reach the same final temperature in two insulated mixing runs and verify greater total entropy production for the wider initial temperature gap.' },
+      check: (ev, mem) => mixes(ev, mem, (a, b) => b.sub !== 'h2o' && same(a, b, ['mat', 'sub', 'm1', 'm2', 'Ccup']) &&
+        !a.ice && !b.ice && !a.steam && !b.steam && a.T1 - a.T2 >= 20 && b.T1 > a.T1 && b.T2 < a.T2 &&
+        b.T1 - b.T2 >= 1.4 * (a.T1 - a.T2) && Math.abs(a.Tf - b.Tf) <= 0.02 &&
+        entropyGain(a) > 0 && entropyGain(b) > entropyGain(a))
     }
   ]);
 })();
