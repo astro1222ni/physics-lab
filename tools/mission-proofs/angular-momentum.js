@@ -33,7 +33,7 @@ function pull(st, r1, u) {
   return evs;
 }
 /** 鬆手（或已經繩斷）後一直跑到離開畫面，回傳 letgo（若是鬆手）與 exit 事件 */
-function letgo(st) {
+function letgo(st, target) {
   const evs = [];
   if (st.phase !== 'free') {
     C.holeRelease(st, 'letgo');
@@ -47,7 +47,7 @@ function letgo(st) {
   }
   const f = st.free, q = C.freeClosest(f, TARGET.x, TARGET.y), k = C.holeKin(st);
   evs.push({ type: 'exit', data: { why: f.why, m: st.m, r: f.r, x0: f.x, y0: f.y, vx: f.vx, vy: f.vy, v: Math.hypot(f.vx, f.vy),
-    vr: (f.x * f.vx + f.y * f.vy) / Math.hypot(f.x, f.y), rperp: k.rperp, L: k.L, miss: q.miss, tau: q.tau } });
+    vr: (f.x * f.vx + f.y * f.vy) / Math.hypot(f.x, f.y), rperp: k.rperp, L: k.L, miss: q.miss, tau: q.tau, target: !!target } });
   return evs;
 }
 /** 繩長固定時，等它轉到位置角 θ（頁面上是暫停後用滑桿輸入 θ） */
@@ -173,13 +173,15 @@ expect(4, [couple({ M2: 2, w2: -8 })], false, '角動量抵銷後兩盤靜止');
   const r = 1, th = C.aimAngle(r, TARGET.x, TARGET.y) / D2R;
   const thR = Math.round(th * 10) / 10;
   const st = holeStart({ m: 0.5, r0: r, v0: 1 }); setTheta(st, thR);
-  const ev = letgo(st);
-  expect(10, ev, true, '預設條件，暫停後把 θ 設為 ' + thR + '°（arctan 方向 − arccos(r/D) = ' + th.toFixed(3) + '°）→ 偏差 ' + (ev[1].data.miss * 100).toFixed(2) + ' cm');
+  const ev = letgo(st, true);
+  expect(10, ev, true, '預設條件，打開目標靶並把 θ 設為 ' + thR + '°（arctan 方向 − arccos(r/D) = ' + th.toFixed(3) + '°）→ 偏差 ' + (ev[1].data.miss * 100).toFixed(2) + ' cm');
+  const stHide = holeStart({ m: 0.5, r0: r, v0: 1 }); setTheta(stHide, thR);
+  expect(10, letgo(stHide, false), false, '未打開目標靶即使對準靶心也不通過');
   const stI = holeStart({ m: 0.5, r0: r, v0: 1 }); setTheta(stI, Math.round(th));
-  const evI = letgo(stI);
+  const evI = letgo(stI, true);
   expect(10, evI, true, '只用整數度 θ = ' + Math.round(th) + '° 也可以 → 偏差 ' + (evI[1].data.miss * 100).toFixed(2) + ' cm');
   const st2 = holeStart({ m: 0.5, r0: r, v0: 1 }); setTheta(st2, thR + 2);
-  expect(10, letgo(st2), false, 'θ 差 2°');
+  expect(10, letgo(st2, true), false, 'θ 差 2°');
 }
 // 11 收繩途中鬆手，r⊥ = 0.300
 {

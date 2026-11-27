@@ -16,7 +16,7 @@
       id: 'doppler-1', level: 1,
       title: { zh: '聽見音調變高', en: 'Hear the pitch go up' },
       desc: { zh: '波源朝觀察者駛來時按「暫停」，讀到比 f 高的 f′（f′/f > 1.01）。', en: 'While the source is coming toward the listener, press “Pause” and read an f′ higher than f (f′/f > 1.01).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'measure' && d.n >= 1 && d.vs > 0 && d.ratio > 1.01; }
+      check: function (ev) { const d = ev.data; return ev.type === 'measure' && d.n >= 1 && d.vs > 0 && d.us > 0 && d.ratio > 1.01; }
     },
     {
       id: 'doppler-2', level: 2,

@@ -125,6 +125,17 @@ skipped = measure([2, 5]);
 const aliasRejected = skipped.ns.join(',') === '1,2' && !adjacentMission.check({ type: 'analysis', data: skipped }, {});
 log('   ' + (aliasRejected ? '通過反例' : '反例失敗') + '：只量第 2、5 級，擬合誤判為第 1、2 級，任務仍不通過');
 if (!aliasRejected) process.exitCode = 1;
+// 反例：手機 App 量三個共鳴點，不得通過「同一支音叉」任務 3 與任務 5
+fresh(); st.src = 'app'; st.f = 512; strike();
+const appThree = measure([1, 2, 3]);
+const m3 = defs.find(m => m.id === 'resonance-tube-3');
+const m5 = defs.find(m => m.id === 'resonance-tube-5');
+if (m3.check({ type: 'analysis', data: appThree }, {}) || m5.check({ type: 'analysis', data: appThree }, {})) {
+  log('   反例失敗：手機 App 竟通過音叉專屬任務 3 或 5');
+  process.exitCode = 1;
+} else {
+  log('   通過反例：手機 App 量 3 個共鳴點不通過音叉專屬任務 3 與 5');
+}
 
 // ---------- 逐一證明 ----------
 fresh(); strike();

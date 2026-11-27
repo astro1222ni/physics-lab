@@ -68,7 +68,7 @@
       len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]));
     }
     orb = {
-      raw: o, pts: pts, len: len, total: len[len.length - 1], closed: o.closed, hitGlass: o.hitGlass, hitGun: o.hitGun,
+      raw: o, pts: pts, len: len, total: len[len.length - 1], closed: o.closed, hitGlass: o.hitGlass, hitGun: o.hitGun, hitLimit: !!o.hitLimit,
       end: o.end ? [o.end[0] * 100, o.end[1] * 100, o.end[2] * 100] : null, turns: o.turns,
       xMin: o.xMin * 100, xMax: o.xMax * 100, yMax: o.yMax * 100, D: o.D * 100, maxDist: o.maxDist * 100,
       T: o.T, v: o.v
@@ -792,7 +792,9 @@
     if (st.V < C.GLOW_V) return T('電壓太低，看不到', 'voltage too low to glow');
     if (!orb) return '—';
     if (st.alpha > 0) return orb.hitGlass ? T('螺旋 ' + orb.turns.toFixed(1) + ' 圈後打到玻璃', 'helix, hits glass after ' + orb.turns.toFixed(1) + ' turns')
-      : T('螺旋 ' + orb.turns.toFixed(1) + ' 圈', 'helix, ' + orb.turns.toFixed(1) + ' turns');
+      : orb.hitGun ? T('螺旋 ' + orb.turns.toFixed(1) + ' 圈後打回電子槍', 'helix, hits the gun after ' + orb.turns.toFixed(1) + ' turns')
+        : orb.hitLimit ? T('螺旋 ' + orb.turns.toFixed(1) + ' 圈（已達追跡範圍上限）', 'helix, ' + orb.turns.toFixed(1) + ' turns (trace limit reached)')
+          : T('螺旋 ' + orb.turns.toFixed(1) + ' 圈', 'helix, ' + orb.turns.toFixed(1) + ' turns');
     if (orb.closed) return T('完整的圓', 'complete circle');
     if (orb.hitGlass) return st.I <= 0 ? T('直線，打到玻璃', 'straight, hits the glass') : T('圓太大，打到玻璃', 'circle too big, hits the glass');
     return '—';

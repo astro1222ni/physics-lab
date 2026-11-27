@@ -259,14 +259,17 @@
    *   type：'landB'（B 落地）、'bumpA'（A 撞到前方擋板／滑輪）、'bumpA0'（A 撞到後方擋板／地板）、
    *         'bumpB'（B 撞到滑輪）、'jerk'（鬆掉的繩子突然拉緊）、'stop'（速度變為零）
    */
-  function pulleyTimeline(sys) {
+  function pulleyTimeline(sys, opts) {
+    opts = opts || {};
+    const tMax = opts.tMax > 0 ? opts.tMax : T_MAX;
+    const tAfter = opts.tAfter > 0 ? opts.tAfter : T_AFTER;
     const g = sys.g, mA = sys.mA, mB = sys.mB, M = mA + mB;
     const D = mB * g + sys.GA;
     const fk = sys.muK * sys.NA, fs = sys.muS * sys.NA;
     const segs = [], events = [];
     let t = 0, xA = 0, xB = 0, vA = sys.v0, vB = sys.v0, taut = true;
     let end = null;
-    let limit = T_MAX;
+    let limit = tMax;
     /** 超過模擬時間上限：在 limit 時刻凍結（之後的運動不再模擬） */
     function cut(seg) {
       if (!(seg.t1 > limit)) return false;
@@ -283,7 +286,7 @@
     }
     function impact(e) {
       events.push(e);
-      if (e.type !== 'stop' && e.type !== 'jerk') limit = Math.min(limit, Math.max(e.t + T_AFTER, 0));
+      if (e.type !== 'stop' && e.type !== 'jerk') limit = Math.min(limit, Math.max(e.t + tAfter, 0));
     }
 
     for (let iter = 0; iter < MAX_SEGS && !end; iter++) {
@@ -454,18 +457,32 @@
       segs.push({ t0: tStop, t1: Infinity, x: xs, v: 0, a: 0, dyn: s1, rest: true });
       end = { t: tStop, frozen: false, reason: 'rest' };
     } else {
+      const vFin = v0 + a * tFin;
+      const dEdge = d + 0.45; // 過終點線後繼續滑至場地右緣再結束，不於計時線瞬間凍結
+      const tEdge = rootAfter(0, v0, a, dEdge);
       segs.push({ t0: 0, t1: tFin, x: 0, v: v0, a: a, dyn: s0 });
-      events.push({ t: tFin, type: 'finish', v: v0 + a * tFin });
-      segs.push({ t0: tFin, t1: Infinity, x: d, v: v0 + a * tFin, a: 0, dyn: s0, frozen: true });
-      end = { t: tFin, frozen: true, reason: 'finish' };
+      events.push({ t: tFin, type: 'finish', v: vFin });
+      if (tStop < tEdge) {
+        segs.push({ t0: tFin, t1: tStop, x: d, v: vFin, a: a, dyn: s0 });
+        const xs = v0 * tStop + 0.5 * a * tStop * tStop;
+        events.push({ t: tStop, type: 'stop', v: 0 });
+        const s1 = trainDynamics(p, 0);
+        segs.push({ t0: tStop, t1: Infinity, x: xs, v: 0, a: 0, dyn: s1, rest: true });
+        end = { t: tStop, frozen: false, reason: 'rest' };
+      } else {
+        const vEdge = v0 + a * tEdge;
+        segs.push({ t0: tFin, t1: tEdge, x: d, v: vFin, a: a, dyn: s0 });
+        segs.push({ t0: tEdge, t1: Infinity, x: dEdge, v: vEdge, a: 0, dyn: s0, frozen: true });
+        end = { t: tEdge, frozen: true, reason: 'edge' };
+      }
     }
     return { kind: 'train', segs: segs, events: events, end: end, p: p };
   }
 
   /** 由模式與參數建立完整時間軸 */
-  function timeline(mode, p) {
+  function timeline(mode, p, opts) {
     if (mode === 3) return trainTimeline(p);
-    return pulleyTimeline(pulleySystem(mode, p));
+    return pulleyTimeline(pulleySystem(mode, p), opts);
   }
 
   function segAt(tl, t) {

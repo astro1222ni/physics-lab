@@ -27,6 +27,7 @@ const out = [];
     const s = runNuclei({ N0: 1600, half: 3, rate: 0.75 * speed }, s => s.t >= 4.8);
     const data = { mode: 'nuclei', started: true, k: Math.floor(s.t / 3), tOverT: s.t / 3, speed, N: s.nP };
     if (!checkMission(1, 'mark', data, {})) throw Error('整數半衰期刻度應可直接完成');
+    if (checkMission(1, 'mark', { ...data, started: false }, {})) throw Error('未經使用者啟動的自動執行不應完成任務 1');
   }
   out.push('M1 以一般或加快的速度超過一個半衰期再暫停');
 }

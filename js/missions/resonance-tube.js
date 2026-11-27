@@ -12,6 +12,7 @@
   //   guess：神秘音叉核對 { fTrue, fGuess, errPct, clusters, consistent }
   // 長度單位 m；src = 'fork'（音叉）、'app'（手機）、'mystery'（神秘音叉，分析時不知道頻率）。
   const known = function (d) { return d.src !== 'mystery'; };
+  const fork = function (d) { return d.src === 'fork'; };
   const valid = function (g) { return g.count >= 2 && g.consistent; };
   const an = function (ev) { return ev.type === 'analysis' && valid(ev.data); };
 
@@ -32,7 +33,7 @@
       id: 'resonance-tube-3', level: 3,
       title: { zh: '第二個共鳴點', en: 'The second resonance' },
       desc: { zh: '同一支音叉、同一個條件下，記錄第 1 次與第 2 次共鳴的位置。', en: 'With the same fork and conditions, record the positions of the 1st and 2nd resonances.' },
-      check: function (ev) { const d = ev.data; return an(ev) && d.ns.indexOf(1) >= 0 && d.ns.indexOf(2) >= 0; }
+      check: function (ev) { const d = ev.data; return an(ev) && fork(d) && d.ns.indexOf(1) >= 0 && d.ns.indexOf(2) >= 0; }
     },
     {
       id: 'resonance-tube-4', level: 4,
@@ -59,7 +60,7 @@
       id: 'resonance-tube-5', level: 5,
       title: { zh: '三條橡皮筋', en: 'Three rubber bands' },
       desc: { zh: '同一支音叉找出並記錄至少 3 個不同的共鳴位置，聲速誤差 3% 以內。', en: 'With one fork, find and record at least 3 different resonances, with the speed of sound within 3%.' },
-      check: function (ev) { const d = ev.data; return an(ev) && known(d) && d.count >= 3 && Math.abs(d.errPct) <= 3; }
+      check: function (ev) { const d = ev.data; return an(ev) && fork(d) && d.count >= 3 && Math.abs(d.errPct) <= 3; }
     },
     {
       id: 'resonance-tube-6', level: 6,
@@ -79,7 +80,7 @@
       desc: { zh: '同一支音叉，在相差至少 15 °C 的兩個室溫下各測出聲速（誤差都在 1% 以內）。比較共鳴位置往哪裡移。', en: 'With the same fork, measure the speed of sound at two room temperatures at least 15 °C apart (both within 1%). Which way do the resonances move?' },
       check: function (ev) {
         if (ev.type !== 'analysis') return false;
-        const gs = ev.data.groups.filter(function (g) { return valid(g) && known(g) && Math.abs(g.errPct) <= 1; });
+        const gs = ev.data.groups.filter(function (g) { return valid(g) && fork(g) && Math.abs(g.errPct) <= 1; });
         return gs.some(function (a) { return gs.some(function (b) { return a.src === b.src && a.f === b.f && b.Tc - a.Tc >= 15; }); });
       }
     },
@@ -101,7 +102,7 @@
       desc: { zh: '同一支音叉、同一室溫，在內徑相差至少 2 cm 的兩支管子各量出管口修正，兩者都與理論值相差 2 mm 以內。', en: 'With the same fork and temperature, measure the end correction in two tubes whose inner diameters differ by at least 2 cm; both within 2 mm of theory.' },
       check: function (ev) {
         if (ev.type !== 'analysis') return false;
-        const gs = ev.data.groups.filter(function (g) { return valid(g) && known(g) && Math.abs(g.e - g.eTheory) <= 0.002; });
+        const gs = ev.data.groups.filter(function (g) { return valid(g) && fork(g) && Math.abs(g.e - g.eTheory) <= 0.002; });
         return gs.some(function (a) { return gs.some(function (b) { return a.src === b.src && a.f === b.f && a.Tc === b.Tc && b.d - a.d >= 0.02 - 1e-9; }); });
       }
     },
@@ -111,7 +112,7 @@
       desc: { zh: '在「含誤差」模式下，同一支音叉至少 2 個共鳴點、每個共鳴點都量 3 次以上取平均，聲速誤差 0.3% 以內。', en: 'In “With errors” mode, with one fork, measure at least 2 resonances 3 or more times each and average; get the speed of sound within 0.3%.' },
       check: function (ev) {
         const d = ev.data;
-        return an(ev) && known(d) && d.noisy && d.perCluster.every(function (k) { return k >= 3; }) && Math.abs(d.errPct) <= 0.3;
+        return an(ev) && fork(d) && d.noisy && d.perCluster.every(function (k) { return k >= 3; }) && Math.abs(d.errPct) <= 0.3;
       }
     },
     {

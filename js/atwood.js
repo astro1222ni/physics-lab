@@ -1938,7 +1938,8 @@
   function rebuild(keepView) {
     state.p = readParams(state.mode);
     state.geo = C.geometry(state.mode, state.p);
-    state.tl = C.timeline(state.mode, state.p);
+    const extra = state.extraT || 0;
+    state.tl = C.timeline(state.mode, state.p, extra ? { tMax: 60 + extra, tAfter: 10 + extra } : null);
     state.measure = C.firstMeasure(state.tl);
     // 最大的力（決定受力圖比例）
     let Fm = 1;
@@ -1955,6 +1956,7 @@
   }
   function putBack(msg) {
     stopWhirr();
+    if (state.extraT) { state.extraT = 0; rebuild(true); }
     state.phase = 'ready';
     state.t = 0;
     state.hand = null;
@@ -2167,10 +2169,11 @@
     const end = state.tl.end;
     let msg = '';
     if (state.timing === 'hand' && !state.hand && state.measure) msg = T('沒有按停錶，這次沒有記錄。', 'The stopwatch was not stopped, so nothing was recorded.') + ' ';
-    if (end.frozen && end.reason === 'finish') msg += T('前方木塊通過終點，記錄完成（之後的運動不模擬）。', 'The front block crossed the finish line; the run is recorded (motion after that is not simulated).');
-    else if (end.frozen) msg += T('之後的往返運動不再模擬。', 'The remaining back-and-forth motion is not simulated.');
-    else if (!state.measure) msg += T('這次運動中途停下或折返，沒有完整走完一段，無法量測。', 'The motion stopped or turned back before reaching the end, so there is nothing to measure.');
-    else msg += T('運動結束。按「放回起點」或改變條件再試一次。', 'The motion is over. Press “Put back” or change the set-up to try again.');
+    if (end.frozen && (end.reason === 'finish' || end.reason === 'edge')) msg += T('前方木塊已通過終點（過線時刻已記錄）並離開觀察區。', 'The front block crossed the finish line (time recorded) and left the track view.');
+    else if (end.frozen && end.reason === 'time') msg += T('觀測時間截止（t = ' + num(end.t, 1) + ' s，物體可能尚未完全靜止）。可按「繼續觀察（+15 s）」延長時間，或按「放回起點」重試。', 'Observation window ended at t = ' + num(end.t, 1) + ' s (motion may still be ongoing). Press “Keep watching (+15 s)” to extend, or “Put back” to try again.');
+    else if (end.frozen) msg += T('觀測時間截止，之後的往返運動未繼續模擬。', 'Observation window ended; remaining motion is not simulated.');
+    else if (!state.measure) msg += T('物體已靜止：這次運動中途停下或折返，沒有完整走完一段，無法量測。', 'The bodies are at rest: the motion stopped or turned back before reaching the end, so there is nothing to measure.');
+    else msg += T('物體已靜止，運動結束。按「放回起點」或改變條件再試一次。', 'The bodies have come to rest. Press “Put back” or change the set-up to try again.');
     setStatus(msg);
   }
 
@@ -2288,6 +2291,8 @@
     const lap = $('lap');
     lap.hidden = state.timing !== 'hand';
     lap.disabled = !(state.timing === 'hand' && !state.hand && !state.staticRun && (state.phase === 'running' || state.phase === 'paused'));
+    const more = $('moreTime');
+    if (more) more.hidden = !(state.phase === 'done' && state.tl && state.tl.end && state.tl.end.frozen && state.tl.end.reason === 'time');
   }
 
   function stopWatch() {
@@ -2318,6 +2323,18 @@
     putBack(); release();
   });
   $('reset').addEventListener('click', function () { putBack(); requestDraw(); });
+  if ($('moreTime')) {
+    $('moreTime').addEventListener('click', function () {
+      if (state.phase !== 'done' || !state.tl || !state.tl.end || state.tl.end.reason !== 'time') return;
+      state.extraT = (state.extraT || 0) + 15;
+      rebuild(true);
+      state.phase = 'running';
+      setStatus(T('已延長觀測時間 15 秒。', 'Observation window extended by 15 s.'));
+      updateButtons();
+      startLoop();
+      requestDraw();
+    });
+  }
   $('lap').addEventListener('click', stopWatch);
   cv.addEventListener('pointerdown', function () { if (state.timing === 'hand') stopWatch(); });
   document.addEventListener('keydown', function (e) {

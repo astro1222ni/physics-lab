@@ -1266,7 +1266,20 @@
   /** 小球：在手中、空中或地板上 */
   function ballZ(st) {
     if (S.ball.st === 'hand') return HB;
-    if (S.ball.st === 'floor') return 0;
+    if (S.ball.st === 'floor') {
+      const bn = S.ball.bounce;
+      if (!bn) return 0;
+      let tau = S.t - bn.t0;
+      if (tau <= 0) return 0;
+      let v = bn.v0;
+      for (let i = 0; i < 3 && v > 0.12; i++) {
+        const dur = 2 * v / bn.g;
+        if (tau < dur) return Math.max(0, v * tau - 0.5 * bn.g * tau * tau);
+        tau -= dur;
+        v *= bn.e;
+      }
+      return 0;
+    }
     return Math.max(0, E.ballHeight(S.track, S.ball, S.t));
   }
   function drawBall(st) {
@@ -2394,8 +2407,20 @@
     });
     const aConst = as.every(function (a) { return Math.abs(a - as[0]) < 1e-12; });
     const t = tl - b.tr, t0 = E.fallTime(HB, 0);
+    const carAtLand = E.stateAt(S.track, tl);
+    const vRel = Math.abs((b.vb - G * t) - carAtLand.v);
+    const gBounce = Math.max(0.5, G + carAtLand.a);
+    let bounceDur = 0;
+    let bounce = null;
+    if (!reducedMotion && vRel > 0.3) {
+      const eRest = 0.42;
+      let v = vRel * eRest;
+      for (let i = 0; i < 3 && v > 0.12; i++) { bounceDur += 2 * v / gBounce; v *= eRest; }
+      if (bounceDur > 0) bounce = { t0: tl, v0: vRel * eRest, e: eRest, g: gBounce };
+    }
     b.st = 'floor';
-    b.pickAt = tl + 1.5;
+    b.bounce = bounce;
+    b.pickAt = tl + Math.max(1.5, bounceDur + 0.6);
     b.result = { t: t, aConst: aConst, a: aConst ? as[0] : null, mystery: b.mystery };
     landSound();
     if (!reducedMotion) S.fx.push({ type: 'land', t0: performance.now(), dur: 450 });

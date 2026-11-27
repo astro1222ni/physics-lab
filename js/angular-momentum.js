@@ -366,14 +366,15 @@
     H.exited = true;
     S.running = false;
     const f = H.st.free, q = C.freeClosest(f, TARGET.x, TARGET.y), k = C.holeKin(H.st);
-    const hit = q.miss <= TARGET.r;
+    const hit = H.show.target && q.miss <= TARGET.r;
     setStatus(hit
       ? T('命中目標靶！（偏差 ' + num(q.miss * 100, 1) + ' cm）小球沿直線滑出桌面。按「重新開始」再試一次。', 'Bullseye! (missed by ' + num(q.miss * 100, 1) + ' cm) The ball slid off the table in a straight line. Press “Start again” to try again.')
       : T('小球沿直線等速滑出桌面：力臂 r⊥ = ' + num(k.rperp, 3) + ' m 一直不變，所以 L 也不變。按「重新開始」再試一次。',
         'The ball slid off the table in a straight line at constant speed: the lever arm r⊥ = ' + num(k.rperp, 3) + ' m never changed, so neither did L. Press “Start again” to try again.'));
     emit('exit', {
       why: f.why, m: H.st.m, r: f.r, x0: f.x, y0: f.y, vx: f.vx, vy: f.vy, v: Math.hypot(f.vx, f.vy),
-      vr: (f.x * f.vx + f.y * f.vy) / Math.hypot(f.x, f.y), rperp: k.rperp, L: k.L, miss: q.miss, tau: q.tau
+      vr: (f.x * f.vx + f.y * f.vy) / Math.hypot(f.x, f.y), rperp: k.rperp, L: k.L, miss: q.miss, tau: q.tau,
+      target: !!H.show.target
     });
     updateButtons();
   }

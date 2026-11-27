@@ -128,12 +128,16 @@
   function X(x) { return V.cx + x * V.k; }
   function Y(y) { return V.cy - y * V.k; }
 
+  const APERTURE_HALF = 14; // 元件固定實體半孔徑（cm），不隨視窗長寬比改變光束開口
+  const YH_MIN = 20;        // 畫布半高至少容納 20 cm（等比例縮放繪圖）
+
   function layout() {
     const narrow = cw < 560;
-    const XW = narrow ? 47.5 : 50;           // 中心到左右邊緣的距離（cm）
-    const k = cw / (2 * XW);
+    const XW0 = narrow ? 47.5 : 50;          // 中心到左右邊緣的最少距離（cm）
+    const k = Math.min(cw / (2 * XW0), ch / (2 * YH_MIN));
+    const XW = cw / 2 / k;
     const YH = ch / 2 / k;
-    return { narrow: narrow, XW: XW, k: k, YH: YH, cx: cw / 2, cy: Math.round(ch / 2) + 0.5, A: Math.min(16, YH * 0.72) };
+    return { narrow: narrow, XW: XW, k: k, YH: YH, cx: cw / 2, cy: Math.round(ch / 2) + 0.5, A: APERTURE_HALF };
   }
 
   function resize() {

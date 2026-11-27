@@ -170,6 +170,12 @@ console.log('  反例 m = 0.20、k = 0.40：', check('free-fall-8', 'record', ex
   report('free-fall-9', ok > N * 0.5, `含誤差（μ 0.010、f 0.050 N、M 0.50 kg）h = 12、24、36、48 cm 各記錄完一張表 → 斜率 ${sm.slope.toFixed(3)}，成功率 ${pctOf(ok, N)}`);
   const ideal = summary([12, 24, 36, 48].map(h => experiment({ h }).point));
   console.log('  反例（理想）任務 9：', check('free-fall-9', 'summary', ideal), '斜率', ideal.slope.toFixed(4));
+  // 反例：只有兩個高度各做兩次（雖有 4 筆且 sinθ 差 ≥ 0.20，但不同高度數不足 4）
+  const dup2 = summary([12, 12, 48, 48].map((h, idx) => experiment({ h, ideal: false, mu: 0.01, seed: 500 + idx }).point));
+  if (check('free-fall-9', 'summary', dup2)) failures.push('free-fall-9: 2 heights repeated passed');
+  // 反例：混入自由落體點，但斜面點本身高度不同數不足或斜率不符（只有 3 個斜面高度＋1 個自由落體）
+  const mix3 = summary([12, 24, 48].map((h, idx) => experiment({ h, ideal: false, mu: 0.01, seed: 510 + idx }).point).concat([experiment({ mode: 'fall', m: 1, ideal: false, seed: 520 }).point]));
+  if (check('free-fall-9', 'summary', mix3)) failures.push('free-fall-9: 3 inclines + 1 free-fall passed');
 }
 
 // ---------- 10 頻率未知的計時器（所有隱藏頻率 22.0–38.0 Hz 都做得到）----------

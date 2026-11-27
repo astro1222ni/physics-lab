@@ -117,9 +117,13 @@
       check: function (ev) {
         if (ev.type !== 'summary' || ev.data.n < 4) return false;
         const pts = ev.data.points;
+        if (!pts.every(function (p) { return !p.ideal && (p.mode !== 'incline' || p.mu >= 0.01 - EPS); })) return false;
         const inc = pts.filter(function (p) { return p.mode === 'incline'; });
-        return pts.every(function (p) { return !p.ideal && (p.mode !== 'incline' || p.mu >= 0.01 - EPS); }) &&
-          inc.length >= 4 && spreadOf(inc) >= 0.2 - EPS && Math.abs(ev.data.slope / G - 1) <= 0.02 + EPS;
+        const uniq = {};
+        inc.forEach(function (p) { uniq[Math.round(p.sin * 1e4)] = true; });
+        if (Object.keys(uniq).length < 4 || spreadOf(inc) < 0.2 - EPS) return false;
+        const fit = lineOf(inc);
+        return !!fit && Math.abs(fit.slope / G - 1) <= 0.02 + EPS;
       }
     },
     {

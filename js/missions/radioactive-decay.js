@@ -10,7 +10,7 @@
       id: 'radioactive-decay-1', level: 1,
       title: { zh: '第一個半衰期', en: 'The first half-life' },
       desc: { zh: '開始一次原子核衰變實驗，讓它跑完一個半衰期。', en: 'Run a decay experiment with nuclei for one full half-life.' },
-      check: function (ev) { return ev.type === 'mark' && ev.data.mode === 'nuclei' && ev.data.k >= 1 - 1e-9; }
+      check: function (ev) { return ev.type === 'mark' && ev.data.mode === 'nuclei' && ev.data.started && ev.data.k >= 1 - 1e-9; }
     },
     {
       id: 'radioactive-decay-2', level: 2,

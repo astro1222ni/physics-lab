@@ -153,6 +153,7 @@
         <div class="bar">
           <button id="play" type="button" class="primary" data-en="Release">釋放</button>
           <button id="lap" type="button" hidden disabled data-en="Stop watch">停錶</button>
+          <button id="moreTime" type="button" hidden data-en="Keep watching (+15 s)">繼續觀察（+15 s）</button>
           <button id="reset" type="button" data-en="Put back" title="把物體放回起點，量測紀錄保留" data-en-title="Put the bodies back at the start; the measurement table is kept">放回起點</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
@@ -395,9 +396,9 @@
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en-html="Strings are light and inextensible, pulleys light and frictionless, \(g = 9.8\ \mathrm{m/s^2}\). The motion is made of pieces of constant acceleration solved exactly (no step-by-step numerical error). Each piece ends at an event — a stop, a landing, a stopper, the string going slack or snapping taut — where the forces are decided again, including the static-friction test.">繩子輕而不可伸長、滑輪輕而無摩擦，\(g = 9.8\ \mathrm{m/s^2}\)。運動分成好幾段等加速度運動，每一段都用解析解精確計算（沒有逐步累積的數值誤差）。每一段在某個事件結束——停下、落地、撞到擋板、繩子鬆掉或突然拉緊——再重新判斷受力，包括靜摩擦力撐不撐得住。</li>
-        <li data-en="Floors and stoppers are perfectly inelastic, and a slack string snapping taut is a perfectly inelastic interaction along the string. Once the speed after a jerk is below 2 mm/s, or 10 s after the first impact, the simulation stops (the remaining motion is too small or too long to matter).">地板與擋板是完全非彈性的；鬆掉的繩子突然拉緊，沿繩方向也是完全非彈性。繩子拉緊後速度小於 2 mm/s，或第一次撞擊後超過 10 s，就停止模擬（剩下的運動太小或太久）。</li>
+        <li data-en="Floors and stoppers are perfectly inelastic, and a slack string snapping taut is a perfectly inelastic interaction along the string. Once the speed after a jerk is below 2 mm/s the bodies are treated as at rest; otherwise the default observation window pauses at 60 s or 10 s after the first impact (marked as observation window reached, with a “Keep watching” button to extend it).">地板與擋板是完全非彈性的；鬆掉的繩子突然拉緊，沿繩方向也是完全非彈性。繩子拉緊後速度小於 2 mm/s 時視為靜止；若尚未靜止，預設觀測時間窗會在 60 s 或第一次撞擊後 10 s 暫停（狀態列會區分「觀測時間截止」與「已靜止」，並可按「繼續觀察」延長時間）。</li>
         <li data-en="When several surfaces could share the load of a body at rest (blocks at rest in a row, or a block resting against a stopper), the split of static friction is not fixed by Newton’s laws alone. The simulation assumes the load builds up gradually: the block that receives the force uses its own static friction first and passes on the rest.">靜止時若有幾個面可以分擔受力（靜止的一列木塊，或靠在擋板上的木塊），靜摩擦力如何分配無法只由牛頓定律決定。本模擬假設外力是慢慢加上的：直接受力的木塊先用掉自己的靜摩擦力，剩下的才傳下去。</li>
-        <li data-en="In the push/pull experiment the timing stops and the picture freezes when the front block crosses the finish line; what happens after that is not simulated.">推拉連體實驗中，前方木塊通過終點線時計時停止、畫面凍結，之後的運動不模擬。</li>
+        <li data-en="In the push/pull experiment the timer records the exact moment the front block crosses the finish line, and the blocks continue sliding to the edge of the track before the run ends.">推拉連體實驗中，前方木塊通過終點線時計時器記下精確過線時刻，木塊仍會依原加速度繼續滑行至場地邊界再結束。</li>
         <li data-en="The photogate timer reads to 0.001 s. The hand stopwatch is stopped by you, so it includes your real reaction time; a run that used slow motion or was paused is marked in the table and is not a fair hand measurement.">光電計時器讀到 0.001 s；手按碼錶由你親手停錶，包含你真實的反應時間（用過慢動作或暫停的那一次會在表格中標示，不算公平的手按量測）。</li>
         <li data-en="The sizes of the bodies only grow with mass so you can tell them apart; they do not affect the motion.">物體的大小只是隨質量變大以便分辨，不影響運動。</li>
       </ul>

@@ -68,7 +68,9 @@
       check: function (ev) {
         if (ev.type !== 'series' || ev.data.exp !== 1) return false;
         const pts = ev.data.points;
-        if (pts.length < 5 || !same(pts, 'M')) return false;
+        if (pts.length < 5 || !same(pts, 'M') || !same(pts, 'mu') || !same(pts, 'thDeg')) return false;
+        // 避免靠未平衡的摩擦力壓低加速度：所有點須維持同一傾角與摩擦，且摩擦已平衡（含無摩擦水平軌）
+        if (Math.abs(Math.tan(pts[0].thDeg * Math.PI / 180) - pts[0].mu) > 0.005 + EPS) return false;
         const top = pts.reduce(function (b, p) { return p.F > b.F ? p : b; }, pts[0]);
         return top.a <= 0.75 * top.F / top.M;
       }

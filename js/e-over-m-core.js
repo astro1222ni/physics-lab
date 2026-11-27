@@ -154,7 +154,7 @@
     const v0 = speed(opts.V, em);
     const B0 = centreField(N, R, opts.I);
     const cfg = { N: N, R: R, I: opts.I, uniform: !!opts.uniform, sep: opts.sep };
-    const out = { pts: [], closed: false, hitGlass: false, hitGun: false, end: null, turns: 0,
+    const out = { pts: [], closed: false, hitGlass: false, hitGun: false, hitLimit: false, end: null, turns: 0,
       xMin: Infinity, xMax: -Infinity, yMin: Infinity, yMax: -Infinity, zMin: Infinity, zMax: -Infinity,
       D: 0, maxDist: 0, B0: B0, r0: radius(opts.V, B0, em), T: B0 > 0 ? period(B0, em) : Infinity, v: v0 };
     if (!(v0 > 0)) return out;
@@ -214,8 +214,9 @@
       }
       if (++sinceSample >= sampleEvery || last) { out.pts.push(p.slice()); bound(p); sinceSample = 0; }
       if (last) { out.closed = true; out.end = p.slice(); break; }
-      if (alpha !== 0 && ang >= limitAng) { out.end = p.slice(); break; }
+      if (alpha !== 0 && ang >= limitAng) { out.hitLimit = true; out.end = p.slice(); break; }
     }
+    if (!out.closed && !out.hitGlass && !out.hitGun && !out.hitLimit) { out.hitLimit = true; out.end = p.slice(); }
     out.turns = ang / (2 * Math.PI);
     out.D = out.xMax - out.xMin;
     // 轉角 0：繞了將近一圈後回到電子槍（打在槍管後端）也算完整的圓

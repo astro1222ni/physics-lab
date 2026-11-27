@@ -63,4 +63,18 @@ out('L3', DC.wavelengthAhead(2, 340, 140));
     return { type: 'boom', data: { ...o, clean: true, tBoom: r.tBoom } };
   };
   if (!m.check(heard(340), mem)) throw Error(m.id);
+  // 1：波源朝觀察者駛來（us > 0）應通過；波源已遠離（us < 0）但觀察者高速追趕導致 f′/f > 1.01 不應通過
+  const m1 = missions.find(entry => entry.id === 'doppler-1');
+  const aOk = DC.arrivals(P(appr), 2.5)[0];
+  if (!aOk || !m1.check({ type: 'measure', data: { n: 1, vs: appr.vs, us: aOk.us, ratio: aOk.fp / 2 } }, {})) {
+    throw Error('doppler-1 正例應通過');
+  }
+  const chase = { vs: 120, sx: 200, ox: -250, oy: -50, vo: 220 };
+  const aChase = DC.arrivals(P(chase), 2.0)[0];
+  if (!aChase || !(aChase.fp / 2 > 1.01) || !(aChase.us < 0)) {
+    throw Error('doppler-1 反例條件未成立');
+  }
+  if (m1.check({ type: 'measure', data: { n: 1, vs: chase.vs, us: aChase.us, ratio: aChase.fp / 2 } }, {})) {
+    throw Error('doppler-1 反例：波源遠離但觀察者追趕升調不應通過');
+  }
 }

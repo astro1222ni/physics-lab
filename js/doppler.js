@@ -44,7 +44,7 @@
     run: null                       // 這一趟的統計（任務模式用）：見 newRun()
   };
   function newRun() {
-    return { ratioMax: -Infinity, ratioMin: Infinity, heardTime: 0, boom: false, tBoom: null, two: false, minDist: Infinity, clean: true };
+    return { ratioMax: -Infinity, ratioMin: Infinity, heardTime: 0, boom: false, tBoom: null, two: false, minDist: Infinity, clean: true, tSrcLeave: null, tWaveDone: null };
   }
   state.run = newRun();
   let view3 = null; // 目前的 3D 檢視（切回 2D 時釋放）；見最後的「3D 檢視」
@@ -1002,10 +1002,18 @@
     if (state.hist.length > 6000) state.hist.splice(0, state.hist.length - 6000);
     updateSound(arr);
 
-    // 結束：波源駛離畫面夠遠，或移動的觀察者走出畫面
+    // 結束：波源駛離畫面後，仍等到離開前發出的聲波傳抵觀察者再收尾；或移動的觀察者走出畫面
     const S = DC.sourceAt(p, state.t), O = DC.observerAt(p, state.t);
     if (state.vs > 0 && S.x > WX / 2 + 0.45 * WX) {
-      finish(T('波源已經遠離畫面。按「重新開始」再看一次。', 'The source has driven far away. Press “Restart” to watch again.'));
+      if (run.tSrcLeave == null) {
+        run.tSrcLeave = state.t;
+        const travel = Math.hypot(O.x - S.x, O.y - S.y) / Math.max(1, state.v);
+        run.tWaveDone = state.t + Math.min(1.6 * WX / Math.max(1, state.v), travel + 0.5);
+        setStatus(T('波源已駛離畫面，先前發出的聲波仍在傳播中…', 'The source has left the picture; wavefronts already emitted are still travelling…'));
+      }
+      if (state.t >= run.tWaveDone) {
+        finish(T('波源已遠離畫面，先前發出的聲波也已通過觀察者。按「重新開始」再看一次。', 'The source has driven far away and its last waves have passed the listener. Press “Restart” to watch again.'));
+      }
     } else if (state.vo !== 0 && Math.abs(O.x) > WX / 2 - 8) {
       finish(T('觀察者走出畫面了。按「重新開始」再看一次，或把觀察者拖回畫面中。', 'The listener has walked out of the picture. Press “Restart” to watch again, or drag the listener back in.'));
     }

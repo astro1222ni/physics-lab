@@ -30,7 +30,7 @@
   const rng = MC.mulberry32((Date.now() ^ 0x5bd1e995) >>> 0);
   const state = {
     mode: 'vernier', names: true, zoomV: 4, zoomM: 2,
-    v: { N: 20, kind: 'outer', zeroOn: false, item: null, s: 30, zeroCheck: false, pan: null, overlay: null, anim: null, touching: false, checked: false },
+    v: { N: 20, kind: 'outer', zeroOn: false, item: null, s: 30, zeroCheck: false, zeroVerified: false, pan: null, overlay: null, anim: null, touching: false, checked: false },
     m: { kind: 'wire', zeroOn: false, item: null, s: 3, zeroCheck: false, overlay: null, anim: null, touching: false, clicks: 0, push: 0, checked: false },
     x: { instr: 'v20', sigma: 0.02, bias: 0, uMode: 'AB', rod: null, rodId: 0, sets: { v20: [], v50: [], micro: [] }, last: { v20: null, v50: null, micro: null } },
     score: null,
@@ -899,7 +899,7 @@
   function newVernierItem() {
     const V = state.v;
     V.item = MC.makeVernierItem(rng, V.N, V.kind, V.zeroOn);
-    V.zeroCheck = false; V.overlay = null; V.anim = null; V.pan = null; V.checked = false;
+    V.zeroCheck = false; V.zeroVerified = false; V.overlay = null; V.anim = null; V.pan = null; V.checked = false;
     vInitS();
     $('ans').value = '';
     clearFeedback();
@@ -1135,15 +1135,17 @@
     resultSound(res.ok);
     // 成績
     const S = state.score, sv = S.v;
-    if (!V.zeroCheck) {
+    if (V.zeroCheck) {
+      if (res.ok) V.zeroVerified = true;
+    } else {
       sv.tries++;
       if (res.ok) {
         sv.ok++;
         sv.run.push({ N: N, kind: V.kind, zeroOn: V.zeroOn, zeroMm: it.zeroUm / 1000 });
         if (sv.run.length > 40) sv.run.shift();
         S.count[V.kind]++; S.count['v' + N]++;
-        if (it.zeroUm > 0) S.count.vPos++;
-        if (it.zeroUm < 0) S.count.vNeg++;
+        if (V.zeroVerified && it.zeroUm > 0) S.count.vPos++;
+        if (V.zeroVerified && it.zeroUm < 0) S.count.vNeg++;
       } else sv.run = [];
       sv.best = Math.max(sv.best, sv.run.length);
     }

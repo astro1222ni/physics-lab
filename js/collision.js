@@ -11,7 +11,8 @@
   const XC = L / 2;       // 碰撞點安排在軌道中央
   const MARGIN = 0.3;     // 起始位置距畫面邊緣
   const LEAD = 2;         // 理想的碰撞前時間（s）
-  const AFTER = 3.5;      // 碰撞後再播放多久（s）
+  const AFTER = 3.5;      // 碰撞後基本觀測時間（s）
+  const MAX_END = 20;     // 單趟最長觀測時間窗（s，慢車滑出前可延長至此上限）
   const STROBE = 0.25;    // 質心標記間隔（s）
   const ARROW_M_PER_MPS = 0.4; // 速度箭頭：1 m/s 畫成 0.4 m 長
 
@@ -70,7 +71,20 @@
     state.sim = CC.createSim({ m1: p.m1, m2: p.m2, v1: p.v1, v2: p.v2, e: p.e, w1: w1, w2: w2, x1: x1, x2: x2,
       k: spring ? state.k : 0, L0: L0 });
     state.sum = CC.summary(p.m1, p.m2, p.v1, p.v2, state.sim.e); // 理想彈簧：e = 1
-    state.tEnd = isFinite(state.sim.tc) ? state.sim.tr + AFTER : 4;
+    // 計算移動中的車完整離開畫面所需時間，不提前在 3.5 s／4 s 切斷慢車，最多延長至 MAX_END
+    const exitTime = function (x, w, v) {
+      if (Math.abs(v) < 0.02) return 0;
+      const dist = v > 0 ? (L + 0.2 - (x - w / 2)) : ((x + w / 2) - (-0.2));
+      return dist > 0 ? dist / Math.abs(v) : 0;
+    };
+    if (isFinite(state.sim.tc)) {
+      const sr = CC.stateAt(state.sim, state.sim.tr);
+      const tOut = Math.max(exitTime(sr.x1, w1, state.sim.after.v1), exitTime(sr.x2, w2, state.sim.after.v2));
+      state.tEnd = Math.min(MAX_END, Math.max(state.sim.tr + AFTER, state.sim.tr + tOut + 0.2));
+    } else {
+      const tOut = Math.max(exitTime(x1, w1, p.v1), exitTime(x2, w2, p.v2));
+      state.tEnd = Math.min(MAX_END, Math.max(4, tOut + 0.2));
+    }
     state.t = 0;
     state.running = false;
     state.ended = false;
@@ -1215,6 +1229,12 @@
         (s.lost > 1e-9 ? 'kinetic energy falls by ' + num(s.lost, 2) + ' J (' + pct + '%).' : 'total kinetic energy is unchanged too (elastic collision).'));
     }
     if (state.running && !state.ended && state.slow) msg += T('（慢動作）', ' (slow motion)');
+    if (state.ended && state.t >= state.tEnd - 1e-9 && !offscreen(st)) {
+      const vRef = state.cmFrame ? state.sum.vcm : 0;
+      if (Math.abs(st.v1 - vRef) > 0.02 || Math.abs(st.v2 - vRef) > 0.02) {
+        msg += T('（已達 ' + num(state.tEnd, 1) + ' s 觀測時間窗上限）', ' (observation window limit of ' + num(state.tEnd, 1) + ' s reached)');
+      }
+    }
     $('status').textContent = msg;
   }
 

@@ -94,7 +94,7 @@ expect(5, [params({ r: 0.5, T: 3 }), params({ r: 0.5, T: 1 }), params({ r: 2, T:
 committed = DEFAULT;
 expect(5, [params({ r: 0.5, v: 2 }), params({ r: 2, v: 2 }), params({ r: 2, v: 4 })], true, '固定速率：(0.5, v 2) 與 (2, v 4)，a = 8');
 // 6 影子的極值
-expect(6, [params({ r: 1, T: 3.14 })], true, '固定週期：r = 1.00、T = 3.14 → rω = ' + (setting({ r: 1, T: 3.14 }).v).toFixed(4) + '、rω² = ' + setting({ r: 1, T: 3.14 }).a.toFixed(4));
+expect(6, [params({ r: 1, T: 3.14 })], false, '固定週期模式（未選保持速率 v）不應通過');
 expect(6, [params({ r: 1, v: 2 })], true, '固定速率：r = 1.00、v = 2.00');
 // 7 兩倍半徑
 {

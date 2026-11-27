@@ -53,6 +53,11 @@ report('newton-second-5', check('newton-second-5', 'run', e), `M 2.000、m 0.035
 // 6：M 固定 0.5，m 0.05–0.25
 let runs = [0.05, 0.1, 0.15, 0.2, 0.25].map(m => run({ M: 0.5, m, thDeg: 1.15 }));
 report('newton-second-6', check('newton-second-6', 'series', series(1, 'F', runs)), `M 0.500，m = 0.05…0.25 → 最後一點 a/(mg/M) = ${(runs[4].aMeas / (0.25 * G / 0.5)).toFixed(3)}`);
+// 6 反例：未平衡摩擦硬加大 μ 壓低最大拉力點加速度，或中途改變 μ / θ
+const bad6Mu = [0.02, 0.03, 0.04, 0.05, 0.06].map(m => run({ M: 0.5, m, mu: 0.05, thDeg: 0 }));
+const bad6Mix = [0.05, 0.1, 0.15, 0.2].map(m => run({ M: 0.5, m, mu: 0.02, thDeg: 1.15 })).concat([run({ M: 0.5, m: 0.22, mu: 0.05, thDeg: 0 })]);
+if (check('newton-second-6', 'series', series(1, 'F', bad6Mu))) throw new Error('newton-second-6：未平衡摩擦靠 μ 壓低加速度不應通過');
+if (check('newton-second-6', 'series', series(1, 'F', bad6Mix))) throw new Error('newton-second-6：中途改變摩擦與傾角不應通過');
 // 7：M+m = 0.60，用移動槽碼 m = 0.02…0.06
 runs = [0.02, 0.03, 0.04, 0.05, 0.06].map(m => run({ M: r3(0.6 - m), m, mu: 0.02, thDeg: 1.15 }));
 let f = NS.fitLine(runs.map(x => x.m * G), runs.map(x => x.aMeas));

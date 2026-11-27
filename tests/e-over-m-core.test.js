@@ -171,6 +171,9 @@ test('螺旋線（電子槍轉角 α）：投影半徑 r cos α、每圈沿 B �
   const T = o.turns;
   assert.ok(T > 3 && o.hitGlass, '多圈後打到玻璃');
   close(o.zMax / T, h.pitch, 0.02, '平均每圈前進螺距');
+  // 螺旋在撞壁前達到圈數上限時標示 hitLimit，不會誤當成撞壁
+  const oLim = C.orbit({ V: 100, I: 1.92, uniform: true, alpha: 4 * Math.PI / 180, maxTurns: 3 });
+  assert.ok(oLim.hitLimit && !oLim.hitGlass && !oLim.hitGun, '達圈數上限應標示 hitLimit');
 });
 
 test('真實線圈磁場：小圓與均勻場幾乎相同，大圓因離軸磁場變弱而偏大', () => {

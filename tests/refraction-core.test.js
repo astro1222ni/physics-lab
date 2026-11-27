@@ -63,6 +63,21 @@ test('全反射條件：只在 n1 > n2 且 θ1 ≥ θc 時發生；臨界角時�
     if (n1 > n2) {
       close(deg(RC.refractionAngle(n1, n2, tc - 1e-9)), 90, 1e-2, '略小於臨界角時 θ2 → 90°');
       assert.ok(RC.isTIR(n1, n2, tc), '恰好在臨界角');
+      assert.ok(RC.isCritical(n1, n2, tc), '恰好臨界角應區分為 critical');
+      close(RC.refractionAngle(n1, n2, tc), Math.PI / 2, 1e-12, '恰好臨界角折射角為 90° 掠射');
+      const fc = RC.fresnel(n1, n2, tc);
+      assert.strictEqual(fc.critical, true);
+      assert.strictEqual(fc.tir, true);
+      close(fc.theta2, Math.PI / 2, 1e-12, 'fresnel 臨界角回傳 90° 掠射');
+      assert.strictEqual(fc.R, 1);
+      assert.strictEqual(fc.T, 0);
+      const infoC = RC.interfaceInfo(n1, n2, tc, 532);
+      assert.strictEqual(infoC.critical, true);
+      close(infoC.th2, Math.PI / 2, 1e-12, 'interfaceInfo 臨界角不回傳 NaN');
+      const fOver = RC.fresnel(n1, n2, Math.min(Math.PI / 2, tc + 0.02));
+      assert.strictEqual(fOver.critical, false);
+      assert.strictEqual(fOver.tir, true);
+      assert.ok(Number.isNaN(fOver.theta2), '超臨界回傳 NaN');
     }
   }
 });

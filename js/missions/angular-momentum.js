@@ -94,7 +94,7 @@
       title: { zh: '命中目標靶', en: 'Hit the target' },
       desc: { zh: '打開「目標靶」，選好位置角 θ 再鬆手，讓小球直線滑過靶心 (−1.50, 1.10) m（偏差 3 cm 內）。',
         en: 'Show the target, choose the position angle θ and let go so that the ball slides straight through the bullseye at (−1.50, 1.10) m (within 3 cm).' },
-      check: function (ev) { return ev.type === 'exit' && ev.data.why === 'letgo' && ev.data.miss <= 0.03; }
+      check: function (ev) { return ev.type === 'exit' && ev.data.why === 'letgo' && ev.data.target && ev.data.miss <= 0.03; }
     },
     {
       id: 'angular-momentum-11', level: 9,

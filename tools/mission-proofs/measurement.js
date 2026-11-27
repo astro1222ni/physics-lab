@@ -33,15 +33,17 @@ function checkV(S, item, str, zeroCheck) {
   const exp = MC.expectedUm(item, zeroCheck);
   const res = MC.checkVernier(str, exp);
   const rUm = zeroCheck ? item.zeroUm : item.readingUm;
-  if (!zeroCheck) {
+  if (zeroCheck) {
+    if (res.ok) item.zeroVerified = true;
+  } else {
     S.v.tries++;
     if (res.ok) {
       S.v.ok++;
       S.v.run.push({ N: item.N, kind: item.kind, zeroOn: item.zeroOn, zeroMm: item.zeroUm / 1000 });
       if (S.v.run.length > 40) S.v.run.shift();
       S.count[item.kind]++; S.count['v' + item.N]++;
-      if (item.zeroUm > 0) S.count.vPos++;
-      if (item.zeroUm < 0) S.count.vNeg++;
+      if (item.zeroVerified && item.zeroUm > 0) S.count.vPos++;
+      if (item.zeroVerified && item.zeroUm < 0) S.count.vNeg++;
     } else S.v.run = [];
   }
   return {
@@ -189,6 +191,17 @@ function assertSlider(name, v, lo, hi) { if (v < lo - 1e-9 || v > hi + 1e-9 || M
     // 只輸入 R（沒修正）不算
     const it = vItem(rng, 20, 'outer', true);
     if (checkV(newScore(), it, MC.fixed(it.readingUm / 1000, 2), false).data.ok) fails.push('measurement-6：沒修正零點也算對');
+    // 沒先檢查零點就直接輸入修正值，不能累計正／負誤差成功次數
+    const SNoZero = newScore();
+    let p2 = false, n2 = false, k2 = 0, ev2 = null;
+    while (!(p2 && n2) && k2 < 50) {
+      k2++;
+      const it2 = vItem(rng, 20, 'outer', true);
+      ev2 = checkV(SNoZero, it2, ansV(it2, false), false);
+      if (it2.zeroUm > 0) p2 = true;
+      if (it2.zeroUm < 0) n2 = true;
+    }
+    if (fire('measurement-6', ev2)) fails.push('measurement-6：未先檢查零點直接輸入修正值也過關');
   }
   // measurement-7：測微器連續 3 次估讀位完全正確
   {

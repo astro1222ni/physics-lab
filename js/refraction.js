@@ -1186,7 +1186,10 @@
     }
     const f = RC.fresnel(state.n1, state.n2, state.th1);
     const out = [T('入射角 ', 'Angle of incidence ') + fmtA(state.th1) + (state.th1 > 0.05 * DEG ? (state.side < 0 ? T('（雷射在法線左側）', ' (laser left of the normal)') : T('（雷射在法線右側）', ' (laser right of the normal)')) : '')];
-    out.push(f.tir ? T('全反射，沒有折射光', 'total internal reflection, no refracted ray') : T('折射角 ', 'angle of refraction ') + fmtA(f.theta2));
+    out.push(f.critical
+      ? T('臨界角，折射角 90°（沿界面掠射，穿透率 0%）', 'critical angle, angle of refraction 90° (grazing ray, 0% transmittance)')
+      : f.tir ? T('全反射，沒有折射光', 'total internal reflection, no refracted ray')
+        : T('折射角 ', 'angle of refraction ') + fmtA(f.theta2));
     out.push(T('反射率 ', 'reflectance ') + fmtPct(f.R));
     if (!f.tir) out.push(T('穿透率 ', 'transmittance ') + fmtPct(f.T));
     return out.join(sep) + T('。', '.');
@@ -1222,8 +1225,8 @@
     const thc = RC.criticalAngle(n1, n2), thb = RC.brewsterAngle(n1, n2);
     setText('r1', fmtA2(th));
     setText('r1r', fmtA2(th));
-    const exactCrit = isFinite(thc) && Math.abs(th - thc) < 1e-9;
-    setText('r2', f.tir ? (exactCrit ? T('90°（恰為臨界角）', '90° (exactly critical)') : T('無（全反射）', 'None (TIR)')) : fmtA2(f.theta2));
+    const exactCrit = !!f.critical || (isFinite(thc) && Math.abs(th - thc) < 1e-9);
+    setText('r2', f.tir ? (exactCrit ? T('90°（臨界）', '90° (critical)') : T('無（全反射）', 'None (TIR)')) : fmtA2(f.theta2));
     $('r2').classList.toggle('flag', f.tir);
     if (isFinite(thc)) setText('rc', fmtA2(thc));
     else $('rc').innerHTML = T('無', 'None') + ' <small>(n<sub>1</sub> ≤ n<sub>2</sub>)</small>';
@@ -1578,7 +1581,7 @@
       window.LabMission.emit('setup', {
         stillHere: function () { return state.n1 === observed[0] && state.n2 === observed[1] && state.th1 === observed[2] && state.mode === observed[3]; },
         mode: state.mode, nm: state.nm,
-        n1: state.n1, n2: state.n2, th1: toDeg(state.th1), th2: toDeg(a.th2), tir: a.tir,
+        n1: state.n1, n2: state.n2, th1: toDeg(state.th1), th2: toDeg(a.th2), tir: a.tir, critical: a.critical,
         crit: toDeg(a.crit), brew: toDeg(a.brew), dev: toDeg(a.dev),
         R: a.R, T: a.T, Rs: a.Rs, Rp: a.Rp, lam1: a.lam1, lam2: a.lam2, v1: a.v1, v2: a.v2, depth: a.depth / state.nm,
         nCore: state.nCore, nClad: state.nClad, thIn: toDeg(state.thIn), thR: toDeg(b.thR), phi: toDeg(b.phi),

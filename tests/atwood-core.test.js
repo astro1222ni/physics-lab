@@ -259,13 +259,24 @@ test('推拉連體：F ≤ μs Σm g 不動；靜止時摩擦力總和 = F，由
   assert.ok(r3.moving, '剛超過最大靜摩擦就動');
 });
 
-test('推拉連體：抵達終點的時間與速度', () => {
+test('推拉連體：抵達終點的時間與速度（過線後繼續滑行至場地邊界，不瞬間凍結）', () => {
   const p = P3({ F: 20, muK: 0.1, d: 1, v0: 0.3 });
   const tl = C.timeline(3, p);
   const a = (20 - 0.1 * 6 * g) / 6;
   const ms = C.firstMeasure(tl);
   close(0.3 * ms.t + 0.5 * a * ms.t * ms.t, 1, 1e-10, 'd = v0t + at²/2');
   close(C.accelFromTime(1, ms.t, 0.3), a, 1e-9);
+  assert.ok(tl.end.t > ms.t, '過線後仍持續滑行');
+  const stAfter = C.stateAt(tl, (ms.t + tl.end.t) / 2);
+  assert.ok(stAfter.x > 1 && stAfter.v > ms.v && !stAfter.seg.frozen, '過線後仍在加速前進');
+});
+
+test('觀測時間窗：預設 60 s / 撞後 10 s 截止並標記 reason=time，可用 opts 延長繼續觀察', () => {
+  const p = P1({ m1: 0.5, m2: 0.5, v0: 0.5 });
+  const tl0 = C.timeline(1, p);
+  const tl1 = C.timeline(1, p, { tMax: 75, tAfter: 25 });
+  assert.strictEqual(tl0.end.reason, 'time');
+  assert.ok(tl1.end.t > tl0.end.t + 10, '延長觀測時間窗後模擬時間隨之延伸');
 });
 
 // ---------------- 所有模式：每個物體 ΣF = ma、第三定律、繩子限制 ----------------

@@ -34,10 +34,18 @@
 
   const EPS = 1e-12;
 
-  /** 折射角 θ2（rad）；全反射（含恰好在臨界角）時回傳 NaN */
+  /** 是否恰好在臨界角（n1 > n2 且 n1 sinθ1 ≈ n2）：折射角為 90° 掠射，法向透射功率為 0 */
+  function isCritical(n1, n2, th1) {
+    return n1 > n2 && Math.abs(n1 * Math.sin(th1) - n2) <= n2 * EPS;
+  }
+
+  /** 折射角 θ2（rad）；恰好臨界角時為 π/2（90° 掠射），超臨界全反射時回傳 NaN */
   function refractionAngle(n1, n2, th1) {
     const s = n1 * Math.sin(th1) / n2;
-    if (s >= 1 - EPS && n1 > n2) return NaN;
+    if (n1 > n2) {
+      if (Math.abs(s - 1) <= EPS) return Math.PI / 2;
+      if (s > 1 + EPS) return NaN;
+    }
     return Math.asin(Math.min(1, s));
   }
 
@@ -71,11 +79,14 @@
    */
   function fresnel(n1, n2, th1) {
     const cosI = Math.cos(th1);
+    if (isCritical(n1, n2, th1)) {
+      return { theta2: Math.PI / 2, tir: true, critical: true, rs: 1, rp: 1, ts: 2, tp: 2 * n1 / n2, Rs: 1, Rp: 1, Ts: 0, Tp: 0, R: 1, T: 0 };
+    }
     if (isTIR(n1, n2, th1)) {
-      return { theta2: NaN, tir: true, rs: NaN, rp: NaN, ts: 0, tp: 0, Rs: 1, Rp: 1, Ts: 0, Tp: 0, R: 1, T: 0 };
+      return { theta2: NaN, tir: true, critical: false, rs: NaN, rp: NaN, ts: 0, tp: 0, Rs: 1, Rp: 1, Ts: 0, Tp: 0, R: 1, T: 0 };
     }
     if (n1 === n2) { // 同一種介質：沒有界面，光直線前進
-      return { theta2: th1, tir: false, rs: 0, rp: 0, ts: 1, tp: 1, Rs: 0, Rp: 0, Ts: 1, Tp: 1, R: 0, T: 1 };
+      return { theta2: th1, tir: false, critical: false, rs: 0, rp: 0, ts: 1, tp: 1, Rs: 0, Rp: 0, Ts: 1, Tp: 1, R: 0, T: 1 };
     }
     const th2 = refractionAngle(n1, n2, th1);
     const cosT = Math.cos(th2);
@@ -88,7 +99,7 @@
     const k = cosI > 1e-15 ? (n2 * cosT) / (n1 * cosI) : 0;
     const Ts = k * ts * ts, Tp = k * tp * tp;
     return {
-      theta2: th2, tir: false,
+      theta2: th2, tir: false, critical: false,
       rs: rs, rp: rp, ts: ts, tp: tp,
       Rs: Rs, Rp: Rp, Ts: Ts, Tp: Tp,
       R: (Rs + Rp) / 2, T: (Ts + Tp) / 2
@@ -200,10 +211,10 @@
   function interfaceInfo(n1, n2, th1, lambda0) {
     const f = fresnel(n1, n2, th1);
     return {
-      th2: f.theta2, tir: f.tir,
+      th2: f.theta2, tir: f.tir, critical: f.critical,
       crit: criticalAngle(n1, n2),
       brew: n1 === n2 ? NaN : brewsterAngle(n1, n2),
-      dev: f.tir ? NaN : Math.abs(th1 - f.theta2),
+      dev: f.critical ? Math.abs(th1 - Math.PI / 2) : (f.tir ? NaN : Math.abs(th1 - f.theta2)),
       R: f.R, T: f.T, Rs: f.Rs, Rp: f.Rp,
       lam1: wavelengthIn(lambda0, n1), lam2: wavelengthIn(lambda0, n2),
       v1: speed(n1), v2: speed(n2),
@@ -256,6 +267,7 @@
     FIBRE_MODEL: FIBRE_MODEL,
     refractionAngle: refractionAngle,
     criticalAngle: criticalAngle,
+    isCritical: isCritical,
     isTIR: isTIR,
     brewsterAngle: brewsterAngle,
     normalReflectance: normalReflectance,
