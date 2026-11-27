@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { summarize, compareFailures } = require('../tools/fluke-scan.cjs');
+const { summarize, compareFailures, failureLine } = require('../tools/fluke-scan.cjs');
 
 const hit = (id, level, step, hidden = false) => ({ id, level, step, hidden });
 const page = (accidental = [], confirmed = [], pending = []) => ({ accidental, confirmed, pending });
@@ -45,4 +45,11 @@ const previous = summarize([run(42, {
 const diff = compareFailures(summary.failed, previous.failed);
 assert.deepEqual(diff.added, [summary.failed.find(item => item.id === '提前').key]);
 assert.deepEqual(diff.removed, [previous.failed.find(item => item.id === '上次的任務').key]);
-console.log('多種子誤觸判定、去重與前後比對通過。');
+
+// 重現指令補 --steps：有 --until 插在它前面、沒有就接在最後、已經有 --steps 不重複、預設步數不補。
+const line = (repro, steps) => failureLine({ type: 'confirmed', slug: 'tides', seeds: [1], issue: { msg: '錯', repro } }, steps).split('｜重現：')[1];
+assert.equal(line('node tools/playtest.cjs tides --seed=1 --until=16', 30), 'node tools/playtest.cjs tides --seed=1 --steps=30 --until=16');
+assert.equal(line('node tools/playtest.cjs tides --seed=1', 30), 'node tools/playtest.cjs tides --seed=1 --steps=30');
+assert.equal(line('node tools/playtest.cjs tides --seed=1 --steps=30 --until=16', 30), 'node tools/playtest.cjs tides --seed=1 --steps=30 --until=16');
+assert.equal(line('node tools/playtest.cjs tides --seed=1 --until=16', 150), 'node tools/playtest.cjs tides --seed=1 --until=16');
+console.log('多種子誤觸判定、去重、前後比對與重現指令通過。');

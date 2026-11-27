@@ -5,24 +5,77 @@
  * 用法：
  *   node tools/fluke-scan.cjs <代號>[,<代號>…] [--seeds 1112,1,7,42,2026] [--steps 150]
  *        [--min-level 3] [--min-step 25] [--compare <上次的 JSON>] [--json <輸出檔>] [--keep]
+ *        [--timeout 30]
  *   -h、--help   顯示本說明
  *   --keep       保留每個種子的試玩報告、快取及日誌
+ *   --timeout    單一種子最多跑幾分鐘（預設 30），超過就停掉該種子、整批算未完成
  *
  * 隱藏任務一旦誤觸就不合格。一般任務達到最低等級且早於指定步數才列為不合格。
  * 同站同任務只計一次，有任何種子不合格就列為不合格。試玩已確認的問題也列為不合格。
  * 待確認項目按各站各種子的報告筆數計算。比較以站別及項目身分判斷新增與消失。
- * 預設報告為 .shots/fluke-scan.json。Windows 的各種子暫存放在 F:\測試暫存。
- * 結束碼：0 全部合格，1 有不合格項目，2 參數錯誤或掃描未完成。
+ * 預設報告為 .shots/fluke-scan.json。各種子暫存放在環境變數 LAB_TEMP_DIR；沒設時 Windows 有 F 槽
+ * 就放 F:\測試暫存（不存在會自動建立），否則放系統暫存。按 Ctrl+C 或被終止時，會停掉試玩子行程並清掉暫存。
+ * 結束碼：0 全部合格，1 有不合格項目，2 參數錯誤或掃描未完成，130 被中止。
  */
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const PLAYTEST = path.join(__dirname, 'playtest.cjs');
-const DEFAULTS = { seeds: [1112, 1, 7, 42, 2026], steps: 150, minLevel: 3, minStep: 25 };
+const DEFAULTS = { seeds: [1112, 1, 7, 42, 2026], steps: 150, minLevel: 3, minStep: 25, timeout: 30 };
+
+let liveCache;
+function liveModules() {
+  if (!liveCache) {
+    const w = {};
+    new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
+    liveCache = new Set(w.LAB_LIVE_MODULES || []);
+  }
+  return liveCache;
+}
+
+function tempBaseDir() {
+  let base;
+  if (process.env.LAB_TEMP_DIR) base = path.resolve(process.env.LAB_TEMP_DIR);
+  else if (process.platform === 'win32' && fs.existsSync('F:/')) base = 'F:/測試暫存';
+  else base = os.tmpdir();
+  fs.mkdirSync(base, { recursive: true });
+  return base;
+}
+
+// 停掉子行程連同它開的瀏覽器（Windows 要用 taskkill /T 才會連孫行程一起停）。
+function killTree(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
+  } else {
+    try { child.kill('SIGKILL'); } catch (_) { /* 已結束 */ }
+  }
+}
+
+function removeTemp(temp, tempBase) {
+  try {
+    const actual = fs.realpathSync(temp);
+    if (path.dirname(actual) !== fs.realpathSync(tempBase) || !path.basename(actual).startsWith('fluke_')) {
+      console.error('⚠ 暫存目錄與建立時的位置不符，沒有刪除：' + actual);
+      return;
+    }
+    fs.rmSync(actual, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch (err) {
+    if (err.code !== 'ENOENT') console.error('⚠ 暫存目錄沒清乾淨（' + err.message + '）：' + temp);
+  }
+}
+
+function writeAtomic(file, text) {
+  const tmp = file + '.' + process.pid + '.tmp';
+  fs.writeFileSync(tmp, text);
+  fs.renameSync(tmp, file);
+}
+
+const active = { child: null, temp: null, tempBase: null, keep: false, stopping: false };
 
 function integer(value, label, min = 0) {
   const n = Number(value);
@@ -35,13 +88,18 @@ function integer(value, label, min = 0) {
 function parseArgs(args) {
   const opts = { ...DEFAULTS, json: path.join(ROOT, '.shots', 'fluke-scan.json'), keep: false };
   const slugs = new Set();
-  const numbers = { '--steps': ['steps', 1], '--min-level': ['minLevel', 1], '--min-step': ['minStep', 0] };
+  const numbers = { '--steps': ['steps', 1], '--min-level': ['minLevel', 1], '--min-step': ['minStep', 0], '--timeout': ['timeout', 1] };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (!arg.startsWith('-')) {
-      for (const slug of arg.split(',').map(s => s.trim())) {
-        if (!/^[a-z0-9-]+$/.test(slug) || !fs.statSync(path.join(ROOT, slug + '.html'), { throwIfNoEntry: false })?.isFile()) {
+      for (const slug of arg.split(',').map(s => s.trim().replace(/\.html$/, ''))) {
+        if (!/^[a-z0-9_-]+$/.test(slug) || !fs.statSync(path.join(ROOT, slug + '.html'), { throwIfNoEntry: false })?.isFile()) {
           throw new Error('找不到實驗：' + (slug || '（空白代號）'));
+        }
+        // 實驗頁＝在上線清單裡，或有自己的任務檔（製作中的實驗也能掃）；index、about 這類頁不是。
+        const hasMissions = slug !== 'index' && fs.existsSync(path.join(ROOT, 'js/missions', slug + '.js'));
+        if (!liveModules().has(slug) && !hasMissions) {
+          throw new Error(slug + ' 不是實驗頁（不在上線清單，也沒有任務檔）');
         }
         slugs.add(slug);
       }
@@ -111,7 +169,7 @@ function compareFailures(current, previous) {
   };
 }
 
-async function runSeed(dir, seed, { slugs, steps }) {
+async function runSeed(dir, seed, { slugs, steps, timeout }) {
   fs.mkdirSync(dir);
   const log = path.join(dir, 'playtest.log');
   const fd = fs.openSync(log, 'w');
@@ -122,8 +180,16 @@ async function runSeed(dir, seed, { slugs, steps }) {
       const child = spawn(process.execPath, [PLAYTEST, ...slugs, '--seed=' + seed, '--steps=' + steps, '--no-shots', '--quiet'], {
         cwd: ROOT, env: { ...process.env, LAB_PLAYTEST_DIR: dir }, stdio: ['ignore', fd, fd], windowsHide: true
       });
-      child.once('error', reject);
-      child.once('close', (code, signal) => resolve(code ?? signal));
+      active.child = child;
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; killTree(child); }, timeout * 60000);
+      child.once('error', err => { clearTimeout(timer); reject(err); });
+      child.once('close', (code, signal) => {
+        clearTimeout(timer);
+        active.child = null;
+        if (timedOut) reject(new Error('超過 ' + timeout + ' 分鐘沒跑完，已停掉'));
+        else resolve(code ?? signal);
+      });
     });
     if (status !== 0 && status !== 1) throw new Error('試玩工具結束狀態為 ' + status);
     const reportPath = path.join(dir, 'playtest-report.json');
@@ -155,7 +221,10 @@ function failureLine(item, steps) {
   const command = seed => 'node tools/playtest.cjs ' + item.slug + ' --seed=' + seed + stepsArg;
   if (item.type === 'confirmed') {
     const { msg, repro } = item.issue;
-    const how = repro?.startsWith('node tools/playtest.cjs ') ? repro.replace(/ --until=/, stepsArg + ' --until=') : repro;
+    let how = repro;
+    if (stepsArg && repro?.startsWith('node tools/playtest.cjs ') && !/ --steps[= ]/.test(repro)) {
+      how = / --until=/.test(repro) ? repro.replace(/ --until=/, stepsArg + ' --until=') : repro + stepsArg;
+    }
     return '✗ ' + item.slug + ' ' + msg + '（種子 ' + item.seeds.join('、') + '）｜重現：' + (how || command(item.seeds[0]));
   }
   const hits = item.hits.filter(hit => hit.failed);
@@ -181,21 +250,18 @@ async function main(args) {
     }
   }
   const startedAt = new Date().toISOString();
-  const tempBase = process.platform === 'win32' ? 'F:/測試暫存' : os.tmpdir();
+  const tempBase = tempBaseDir();
   const temp = fs.mkdtempSync(path.join(tempBase, 'fluke_' + startedAt.replace(/[:.]/g, '-') + '_'));
+  Object.assign(active, { temp, tempBase, keep: opts.keep });
   const runs = [];
   try {
     for (const seed of opts.seeds) {
       runs.push(await runSeed(path.join(temp, 'seed-' + seed), seed, opts));
     }
   } finally {
-    if (!opts.keep) {
-      const actual = fs.realpathSync(temp);
-      if (path.dirname(actual) !== fs.realpathSync(tempBase) || !path.basename(actual).startsWith('fluke_')) {
-        throw new Error('暫存目錄與建立時的位置不符：' + actual);
-      }
-      fs.rmSync(actual, { recursive: true, force: true });
-    }
+    // 清理失敗只印警告，不蓋掉掃描本身的錯誤。
+    if (!opts.keep) removeTemp(temp, tempBase);
+    active.temp = null;
   }
   const summary = summarize(runs, opts);
   const comparison = previous ? compareFailures(summary.failed, previous) : null;
@@ -205,7 +271,7 @@ async function main(args) {
     runs, summary, comparison
   };
   fs.mkdirSync(path.dirname(opts.json), { recursive: true });
-  fs.writeFileSync(opts.json, JSON.stringify(result, null, 2) + '\n');
+  writeAtomic(opts.json, JSON.stringify(result, null, 2) + '\n');
   const added = new Set(comparison?.added);
   for (const item of summary.failed) {
     const tag = comparison ? (added.has(item.key) ? '（新）' : '（上次就有）') : '';
@@ -217,9 +283,20 @@ async function main(args) {
   return summary.failed.length ? 1 : 0;
 }
 
-module.exports = { summarize, compareFailures };
+function onStop(signal) {
+  if (active.stopping) return;
+  active.stopping = true;
+  killTree(active.child);
+  if (active.temp && !active.keep) removeTemp(active.temp, active.tempBase);
+  console.error('✗ 收到 ' + signal + '，已停掉試玩' + (active.temp && !active.keep ? '並清掉暫存' : ''));
+  process.exit(130);
+}
+
+module.exports = { summarize, compareFailures, failureLine };
 
 if (require.main === module) {
+  const signals = process.platform === 'win32' ? ['SIGINT', 'SIGTERM', 'SIGBREAK'] : ['SIGINT', 'SIGTERM'];
+  for (const signal of signals) process.on(signal, () => onStop(signal));
   main(process.argv.slice(2)).then(code => { process.exitCode = code; }, err => {
     console.error('✗ ' + err.message);
     process.exitCode = 2;
