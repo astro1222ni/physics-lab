@@ -247,13 +247,5 @@
         });
       }
     }
-  ].map(function (mission) {
-    if (!mission.hidden || !mission.desc) return mission;
-    // 兩款既有任務面板都讀 riddle.zh/en。每次繪製時依目前玩家紀錄選字，
-    // 可處理重新登入及讀回舊進度，也讓尚未取得星星的預覽維持謎面。
-    const clue = mission.riddle;
-    const text = () => LabMission._state?.done?.[mission.id] ? mission.desc : clue;
-    mission.riddle = { get zh() { return text().zh; }, get en() { return text().en; } };
-    return mission;
-  }));
+  ]);
 })();
