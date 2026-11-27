@@ -653,8 +653,8 @@
     if (CVP) {
       ctx.save(); ctx.setLineDash([2, 3]); curvePath(g, CVP.c, CVP.d);
       ctx.strokeStyle = alpha(C['cs-rough'], 0.9); ctx.lineWidth = 1.8; ctx.stroke(); ctx.restore();
-      const yE = g.Y(CVP.d[CVP.d.length - 1]);
-      D.haloText(ctx, T('點線：實際播出的分音（< 4 kHz）', 'dotted: partials actually played (< 4 kHz)'), g.px1 - 4, Math.min(g.py1 - 6, yE + 14 * fs), C['cs-rough'], 'right', 'alphabetic', fnt(12, 600));
+      // 說明放在圖的右上角（D 很大的地方幾乎沒有曲線，不會壓到谷底的比值標籤）
+      D.haloText(ctx, T('點線：實際播出的分音（< 4 kHz）', 'dotted: partials actually played (< 4 kHz)'), g.px1 - 4, g.py0 + 14 * fs, C['cs-rough'], 'right', 'alphabetic', fnt(12, 600));
     }
     // 純音：山頂與一個臨界頻帶
     if (state.timbre.mode === 'pure') {
