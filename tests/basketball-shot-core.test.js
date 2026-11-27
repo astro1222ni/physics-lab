@@ -91,6 +91,9 @@ verify('球心須離籃板上下緣至少一個半徑，邊界外不發出打板
   near(contact.board.y,upper-.00001);near(contact.board.x,x);
   assert.ok(contact.events.some(e=>e.type==='board'));
   for(const y of [lower-.00001,upper+.00001,3.86])assert.ok(aimedAt(y).events.every(e=>e.type!=='board'));
+  const grazed=run({distance:4.23,height:1.8,angle:35,speed:11.5,drag:false});
+  const m=C.measurement({...base,distance:4.23,height:1.8,angle:35,speed:11.5,drag:false},grazed,null);
+  assert.equal(m.firstContact,'board');assert.equal(m.board,null);assert.equal(m.final.how,'board-out');
 });
 verify('最小速率的切線角可到框心，低於此速率無實數解',()=>{
   assert.equal(C.measurement({...base,drag:true},run({drag:true})).minimum,null);

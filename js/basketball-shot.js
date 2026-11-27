@@ -94,7 +94,8 @@
     const d = state.data, isShot = mode === 'shot';
     const present = completed === state;
     const items = [[T('最高點','Apex height'), unit(d.H,' m')], [T('飛行時間','Flight time'), unit(d.T,' s')]];
-    const virtual=d.rimHit?T('若沒碰框 · ','Without rim contact · '):'';
+    const boardGrazed = isShot && d.firstContact === 'board' && !d.board;
+    const virtual = d.rimHit ? T('若沒碰框 · ','Without rim contact · ') : boardGrazed ? T('若沒碰板 · ','Without board contact · ') : '';
     if (isShot) {
       items.push([T('實際站位角度','Court bearing'),unit(d.bearing,'°',1)], [T('最後結果','Final result'),finalLabel(d)], [virtual+T('穿越框高的位置','Crossing position'),unit(d.crossing?.x,' m',3)],
         [T('球面至框緣最小間隙','Closest ball-to-rim clearance'),unit(100*d.margin,' cm',2)]);
@@ -114,8 +115,8 @@
     readings('readout', items);
     $('strip').replaceChildren(...[
       [present?T('本球結果','Result'):T('預測結果','Prediction'),isShot?outcome(d):unit(d.R,' m')],
-      isShot?[d.rimHit?T('若沒碰框 · 下降角','No rim · descent'):T('下降角','Descent angle'),unit(d.crossing?.angle,'°',2)]:[T('落地角','Landing angle'),unit(d.landingAngle,'°',2)],
-      isShot?[d.rimHit?T('若沒碰框 · 開口','No rim · opening'):T('有效開口','Opening'),unit(d.opening==null?null:100*d.opening,' cm',1)]:[T('最高點','Apex'),unit(d.H,' m')]
+      isShot?[d.rimHit?T('若沒碰框 · 下降角','No rim · descent'):boardGrazed?T('若沒碰板 · 下降角','No board · descent'):T('下降角','Descent angle'),unit(d.crossing?.angle,'°',2)]:[T('落地角','Landing angle'),unit(d.landingAngle,'°',2)],
+      isShot?[d.rimHit?T('若沒碰框 · 開口','No rim · opening'):boardGrazed?T('若沒碰板 · 開口','No board · opening'):T('有效開口','Opening'),unit(d.opening==null?null:100*d.opening,' cm',1)]:[T('最高點','Apex'),unit(d.H,' m')]
     ].map(([lab,val]) => {
       const box = document.createElement('div'), name = document.createElement('span'), v = document.createElement('strong');
       box.className = 'court-stat'; name.textContent = lab; v.textContent = val; box.append(name,v); return box;
@@ -125,7 +126,7 @@
     const delta = (a,b,suffix,n=2) => (a-b>0?'+':'')+unit(a-b,suffix,n);
     readings('comparison', !prev ? [] : [
       [T('出手速率差','Release speed change'),delta(d.speed,prev.speed,' m/s',3)],
-      ...(isShot ? [[T('站位角度差','Bearing change'),delta(d.bearing,prev.bearing,'°',1)],[T('下降角（基準 → 本球）','Descent (reference → current)'),(prev.rimHit?T('若沒碰框 ','Without rim contact '):'')+unit(prev.crossing?.angle,'°')+' → '+virtual+unit(d.crossing?.angle,'°')]] :
+      ...(isShot ? [[T('站位角度差','Bearing change'),delta(d.bearing,prev.bearing,'°',1)],[T('下降角（基準 → 本球）','Descent (reference → current)'),(prev.rimHit?T('若沒碰框 ','Without rim contact '):prev.firstContact==='board'&&!prev.board?T('若沒碰板 ','Without board contact '):'')+unit(prev.crossing?.angle,'°')+' → '+virtual+unit(d.crossing?.angle,'°')]] :
         [[T('射程差','Range change'),delta(d.R,prev.R,' m')]]),
       [T('最高點差','Apex change'),delta(d.H,prev.H,' m')] ]);
     $('reference').disabled = !!flight;
@@ -173,6 +174,7 @@
     if(isShot){
       $('gapValue').textContent=unit(d.margin*100,' cm',2);
       $('lensNote').textContent=d.rimHit?T('虛線球顯示若沒碰框時的落點。','Dashed ball shows the crossing without rim contact.'):
+        boardGrazed?T('球先擦過籃板邊緣彈出；圖上為若沒碰板時的假想落點。','Ball grazed the backboard edge; diagram shows the crossing without board contact.'):
         d.crossing?T('十字為框心，圓點為球心。','Cross marks the hoop centre. Dot marks the ball centre.'):
         T('球心未從上方穿越框高。','The centre never descends through hoop height.');
     }

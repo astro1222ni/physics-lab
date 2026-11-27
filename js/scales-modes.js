@@ -393,12 +393,25 @@
     let h = '<thead><tr><th>' + T('級', 'Deg.') + '</th><th>' + T('音名', 'Note') + '</th><th>' + T('首調', 'Mov. do') + '</th><th>' + T('固定', 'Fixed do') + '</th><th>' + T('頻率（Hz）', 'Freq. (Hz)') + '</th><th>' +
       T('和主音的比', 'Ratio') + '</th><th>' + T('音分', 'Cents') + '</th>' + (just ? '<th>' + T('和平均律差', 'vs equal') + '</th>' : '') + '</tr></thead><tbody>';
     const playing = state.play && state.play.idx >= 0 ? state.play.list[state.play.idx] : null;
+    let matched = false;
     A.notes.forEach(function (x, i) {
+      const on = playing != null && playing === x.semis;
+      if (on) matched = true;
       const r = x.ratio;
       const rt = r.p != null ? r.p + '/' + r.q : (r.et % 12 === 0 ? String(Math.pow(2, r.et / 12)) : '2<sup>' + r.et + '/12</sup>');
-      h += '<tr' + (playing != null && playing === x.semis ? ' class="on"' : '') + '><td' + (i === 0 || i === A.n ? ' class="t"' : '') + '>' + esc(x.degree) + '</td><td>' + esc(x.nameOct) + '</td><td>' + esc(x.movDo) + '</td><td>' + esc(x.fixedDo) +
+      h += '<tr' + (on ? ' class="on"' : '') + '><td' + (i === 0 || i === A.n ? ' class="t"' : '') + '>' + esc(x.degree) + '</td><td>' + esc(x.nameOct) + '</td><td>' + esc(x.movDo) + '</td><td>' + esc(x.fixedDo) +
         '</td><td>' + fx(x.freq, 2) + '</td><td>' + rt + '</td><td>' + fx(x.cents, 1) + '</td>' + (just ? '<td>' + sg(x.dev, 1) + '</td>' : '') + '</tr>';
     });
+    if (playing != null && !matched) {
+      const desc = SM.analyze(state.tonicName, [0, 2, 3, 5, 7, 8, 10], 'aeolian', { tuning: state.tuning });
+      const x = desc.notes.find(function (n) { return n.semis === playing; });
+      if (x) {
+        const r = x.ratio;
+        const rt = r.p != null ? r.p + '/' + r.q : (r.et % 12 === 0 ? String(Math.pow(2, r.et / 12)) : '2<sup>' + r.et + '/12</sup>');
+        h += '<tr class="on"><td>' + esc(x.degree) + T('（下行）', ' (desc.)') + '</td><td>' + esc(x.nameOct) + '</td><td>' + esc(x.movDo) + '</td><td>' + esc(x.fixedDo) +
+          '</td><td>' + fx(x.freq, 2) + '</td><td>' + rt + '</td><td>' + fx(x.cents, 1) + '</td>' + (just ? '<td>' + sg(x.dev, 1) + '</td>' : '') + '</tr>';
+      }
+    }
     setHTML('noteTable', h + '</tbody>');
     setHTML('tableHint', just
       ? T('純律：以主音為準的 5 限純律，比值都是小整數比；最後一欄是和十二平均律差幾音分。', 'Just intonation (5-limit, built on the tonic): every ratio is a small whole-number ratio; the last column is the difference from equal temperament in cents.')
@@ -596,11 +609,19 @@
       else { g.addColorStop(0, alpha(base, 0.75)); g.addColorStop(1, alpha(base, 1)); }
       ctx.fillStyle = g; ctx.fill();
       ctx.strokeStyle = alpha(C.text, inS ? 0.18 : 0.1); ctx.lineWidth = 1; ctx.stroke();
+      const isDescAlt = pc === playingPc && !inS;
       if (pc === playingPc || (state.flash && state.flash.pc === pc && now - state.flash.t0 < 450)) {
-        ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = alpha(C.accent, 0.5); ctx.fill(); ctx.restore();
+        ctx.save();
+        if (isDescAlt) {
+          ctx.fillStyle = alpha(C['sm-ref'], D.dark ? 0.55 : 0.42); ctx.fill();
+          ctx.strokeStyle = C['sm-ref']; ctx.lineWidth = 2; ctx.stroke();
+        } else {
+          ctx.globalAlpha = 0.5; ctx.fillStyle = alpha(C.accent, 0.5); ctx.fill();
+        }
+        ctx.restore();
       }
       const q = pt(pc, (R + r0) / 2);
-      D.haloText(ctx, pcName(pc), q.x, q.y, inS ? (isT ? C['sm-tonic'] : C.text) : alpha(C.muted, 0.9), 'center', 'middle', fnt(inS ? 13.5 : 12, inS ? 700 : 500));
+      D.haloText(ctx, pcName(pc), q.x, q.y, inS ? (isT ? C['sm-tonic'] : C.text) : (isDescAlt ? C.text : alpha(C.muted, 0.9)), 'center', 'middle', fnt(inS || isDescAlt ? 13.5 : 12, inS || isDescAlt ? 700 : 500));
     }
     // 外框亮邊
     const gl = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.05, cx, cy, R);

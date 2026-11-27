@@ -396,9 +396,9 @@
       fl.forEach(function (f, ti) {
         P.forEach(function (x) {
           const fk = f * x.rho, amp = Math.max(0.0002, g * x.a / sum);
-          if (fk >= HF_SKIP) return;
-          const h = AU.sustain({ f0: fk, partials: [1], gain: amp, attack: 0.06, onEnd: voiceEnded });
-          if (h) p.voices.push({ ti: ti, rho: x.rho, amp: amp, h: h, muted: false });
+          const mute = fk >= HF_SKIP;
+          const h = AU.sustain({ f0: fk, partials: [1], gain: mute ? 0.0001 : amp, attack: 0.06, onEnd: voiceEnded });
+          if (h) p.voices.push({ ti: ti, rho: x.rho, amp: amp, h: h, muted: mute });
         });
       });
     }
