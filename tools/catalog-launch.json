@@ -3,6 +3,14 @@
   "note": "首頁改版前的 182 個既有實驗。Git 最早始於 2026-11-11；此首次建站批次不計入後續新上架徽章，不修改真實上架日。每筆證據重查全歷史。",
   "subjectLaunchNote": "新科目首批上架的實驗顯示七日新增徽章，並免計七日新增比例。subject 對應實驗目錄的科目欄 d；path 是實驗頁檔名。上架日不寫在這裡：一律取該檔第一次進入主線（HEAD 歷史）的 commit 日期，未 commit 時算今天。",
   "subjectLaunches": {
+    "han-character-formation": {
+      "subject": "chn",
+      "path": "han-character-formation.html"
+    },
+    "sexagenary-cycle": {
+      "subject": "hist",
+      "path": "sexagenary-cycle.html"
+    },
     "supply-demand": {
       "subject": "civ",
       "path": "supply-demand.html"

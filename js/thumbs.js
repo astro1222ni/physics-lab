@@ -188,6 +188,8 @@
     "beats-tuning": "aafd9bf1",
     "reverb-room": "d00a0ef5",
     "adsr-envelope": "7de08115",
+    "han-character-formation": "1c295078",
+    "sexagenary-cycle": "c74c2397",
     "supply-demand": "9a5c81fc",
     "sir-epidemic": "49062e4c",
     "basketball-shot": "583fecc1",

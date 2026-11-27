@@ -7,6 +7,7 @@
  */
 'use strict';
 const fs = require('fs');
+const vm = require('node:vm');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const { W, subjects, read, asset, text, esc, readCatalogText, formulaLabel, marker, miniCard } = require('./home-data.cjs');
@@ -115,7 +116,15 @@ for (const x of list) {
   // 還沒進 HEAD 歷史（未 commit、準備今天上線）的實驗，上架日算今天。
   x.l = firstDates[x.s]?.date || directory.launchDate || (dirty.has(x.s + '.html') ? today : undefined);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.l || '') || !Number.isFinite(Date.parse(x.l)) || new Date(x.l + 'T00:00:00Z').toISOString().slice(0, 10) !== x.l || x.l > today) throw new Error('缺少有效上架日（Git 全歷史／目錄上線日）：' + x.s);
-  x.n = (read('js/missions/' + x.s + '.js').match(/\bid:\s*['"][a-z0-9-]+['"]/g) || []).length;
+  // 和 LabMission.register 一樣，合併同一站分次註冊的任務，並依實際代號去重。
+  const missionIds = new Set();
+  const registry = { LabMission: { register(slug, missions) {
+    if (slug !== x.s) throw new Error('任務所屬實驗不符：' + slug);
+    for (const mission of missions) missionIds.add(mission.id);
+  } } };
+  registry.window = registry;
+  vm.runInNewContext(read('js/missions/' + x.s + '.js'), registry, { filename: x.s + '.js' });
+  x.n = missionIds.size;
 }
 // 建站舊站不顯示新徽章。新科首批顯示徽章，其餘新增站照常檢查每科 30% 上限。
 const freshness = checkFresh(list, today, siteDates, subjectLaunches);

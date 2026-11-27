@@ -23,7 +23,7 @@
  "photoelectric": "969322aa69",
  "hydrogen-spectrum": "78c71393a9",
  "radioactive-decay": "cfc00472ec",
- "index": "2b4784fb76",
+ "index": "04ab02d437",
  "free-fall": "9d2605e21b",
  "ripple-tank": "93838f4dbf",
  "resonance-tube": "13db9bbcd1",
@@ -199,5 +199,9 @@
  "health": "715c0f832f",
  "physical-education": "cf996ee2a7",
  "sir-epidemic": "53968642e0",
- "basketball-shot": "41209658e3"
+ "basketball-shot": "81dd21d980",
+ "chinese": "824ab0dae7",
+ "history": "2ae4235dd6",
+ "han-character-formation": "8f778f95fd",
+ "sexagenary-cycle": "b29022465a"
 }

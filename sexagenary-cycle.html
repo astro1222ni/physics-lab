@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Gears of the Sexagenary Cycle | Astro Ni Lab">干支紀年：天干地支的齒輪｜讓倪動手</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="轉動十齒與十二齒木輪，找出下一個甲午；用史料對照西元、民國、干支與生肖。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sexagenary-cycle.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sexagenary-cycle.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/sexagenary-cycle.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sexagenary-cycle.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="干支紀年：天干地支的齒輪｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="轉動十齒與十二齒木輪，找出下一個甲午；用史料對照西元、民國、干支與生肖。">
+  <meta property="og:url" content="https://lab.astroni.org/sexagenary-cycle.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/sexagenary-cycle.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="干支紀年：天干地支的齒輪的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"干支紀年：天干地支的齒輪","alternateName":"Gears of the Sexagenary Cycle","description":"轉動十齒與十二齒木輪，找出下一個甲午；用史料對照西元、民國、干支與生肖。","url":"https://lab.astroni.org/sexagenary-cycle.html","image":"https://lab.astroni.org/img/og/sexagenary-cycle.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["時間與曆法（Chronology）","紀年與週期（Calendar Cycles）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"歷史","url":"https://lab.astroni.org/history.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"歷史","item":"https://lab.astroni.org/history.html"},{"@type":"ListItem","position":4,"name":"時間與曆法","item":"https://lab.astroni.org/history.html#chronology"},{"@type":"ListItem","position":5,"name":"紀年與週期","item":"https://lab.astroni.org/history.html#ch-calendar-cycles"},{"@type":"ListItem","position":6,"name":"干支紀年：天干地支的齒輪","item":"https://lab.astroni.org/sexagenary-cycle.html"}]}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="lab.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <style>
+    .gz-wrap {max-width:none;display:flex;flex-direction:column;--gz-brass:#93601f;--gz-ink:#24574f;--gz-wash:color-mix(in srgb,var(--gz-brass) 8%,var(--surface))}
+    .gz-wrap>.top {order:-3;margin-bottom:12px}.gz-wrap>.lab {order:-2;margin-bottom:14px}
+    .gz-wrap>.lab-tools,.gz-wrap>.stats-bar,.gz-wrap>.ms-wrap {order:-1}
+    .gz-wrap .top h1,.gz-wrap .gz-title,.gz-note h2 {font-family:inherit}
+    .gz-wrap .top p {margin-bottom:0}.gz-wrap [hidden] {display:none!important}
+    .gz-lab {grid-template-columns:minmax(0,1fr) minmax(310px,31%);gap:14px;align-items:start}
+    .gz-stage {padding:0;overflow:hidden;min-width:0;border-top:3px solid var(--gz-brass)}
+    .gz-head,.gz-bar,.gz-row,.gz-switch {display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .gz-head {padding:9px 14px;justify-content:space-between;gap:2px 10px}
+    .gz-head h2 {margin:0;font-size:calc(19px * var(--fs,1))}
+    .gz-id {display:flex;align-items:baseline;flex-wrap:wrap;gap:0 12px}.gz-id small {font:650 calc(14px * var(--fs,1))/1.25 system-ui;color:var(--muted);font-variant-numeric:tabular-nums}
+    .gz-stage button,.gz-card button,.gz-card input,.gz-card select,.gz-bar select,.gz-note summary {min-height:44px;min-width:44px;font:600 calc(15px * var(--fs,1))/1.28 system-ui}
+    .gz-stage button,.gz-card button,.gz-bar select,.gz-card select,.gz-card input {border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:6px 10px}
+    .gz-wrap button,.gz-wrap select,.gz-note summary {cursor:pointer}.gz-wrap button:disabled {opacity:.45;cursor:default}
+    .gz-wrap button:focus-visible,.gz-wrap select:focus-visible,.gz-wrap input:focus-visible,.gz-wrap canvas:focus-visible {outline:3px solid var(--accent);outline-offset:-3px}
+    .gz-wrap :is(.gz-switch button[aria-pressed="true"],button.gz-primary) {color:#fff;background:#28594f;border-color:#28594f}
+    .gz-wrap .gz-switch {gap:2px}.gz-wrap .gz-switch button {padding:5px 8px}
+    .gz-scene {position:relative;isolation:isolate;height:clamp(300px,46vh,510px);width:100%;overflow:hidden;background:var(--canvas-bg)}
+    .gz-scene canvas,#modelHost {position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;display:block}
+    #wheelCanvas {touch-action:none;cursor:grab;font-size:calc(14px * var(--fs,1))} #wheelCanvas.dragging {cursor:grabbing}
+    @media(min-width:900px) {#wheelCanvas {font-size:calc(15px * var(--fs,1))}}
+    #modelHost canvas {touch-action:none}.gz-stage .v3nav-hint {display:none}
+    #modelMsg {position:absolute;left:10%;right:10%;top:42%;background:var(--surface);text-align:center;padding:10px;border-radius:8px}
+    .gz-read {margin:0;display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,1.39fr) minmax(0,.85fr) minmax(0,.73fr);background:var(--gz-wash);border-block:1px solid var(--border)}
+    .gz-read div {padding:8px 12px;min-width:0}.gz-read div+div {border-left:1px solid var(--border)}
+    .gz-read dt,.gz-muted {color:var(--muted);font-size:calc(14px * var(--fs,1))}
+    .gz-read dd {margin:2px 0 0;font-size:calc(20px * var(--fs,1));line-height:1.22;font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .gz-bar {padding:7px 12px}.gz-bar label {font-size:calc(15px * var(--fs,1))}
+    .gz-caption {margin:0;padding:0 13px 8px;color:var(--muted);font-size:calc(14px * var(--fs,1));line-height:1.5}
+    .gz-card h2,.gz-note h2 {margin:0 0 8px}.gz-card h2 {font-size:calc(18px * var(--fs,1))}
+    .gz-card p {margin:6px 0;line-height:1.5}.gz-card form,.gz-card .gz-row {margin:5px 0}
+    .gz-card form {display:flex;flex-wrap:wrap;align-items:end;gap:6px}.gz-card label {display:grid;gap:3px;font-size:calc(14px * var(--fs,1));font-weight:600}
+    .gz-card input {width:6.2em;max-width:100%;font-variant-numeric:tabular-nums}
+    .gz-card,.gz-lab>.panel,.gz-wrap .labdeck,.gz-wrap .labdeck-pane {min-width:0}
+    .gz-record {margin:10px 0 2px;padding:8px 10px;border-left:3px solid var(--gz-brass);background:var(--gz-wash)}
+    .gz-record strong,.gz-record span {display:block}.gz-record a,.gz-sources a {display:inline-flex;align-items:center;min-height:44px}
+    .gz-card .gz-selectwide {width:100%;min-width:0}.gz-card .gz-selectwide select {max-width:100%}
+    .gz-pair-strip {display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;margin:8px 0}
+    .gz-pair-strip i {display:grid;place-items:center;min-height:21px;border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--muted);font:550 calc(13px * var(--fs,1))/1.2 system-ui;font-variant-numeric:tabular-nums}
+    .gz-pair-strip .gz-stem {background:var(--gz-brass);color:#fff}.gz-pair-strip .gz-branch {outline:2px solid var(--accent);outline-offset:-2px}
+    .gz-pair-strip .gz-match {font-weight:800;outline-color:var(--text)}
+    .gz-note {padding:16px 20px}.gz-note p {max-width:83ch}.gz-note details {border-top:1px solid var(--border);padding:6px 0}
+    .gz-note summary {display:list-item;align-content:center;font-weight:700}.gz-note summary::marker {color:var(--gz-brass)}
+    .gz-note .katex-display {margin:.4em 0;text-align:left;overflow-x:auto;overflow-y:hidden}
+    .gz-zodiac {display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:5px;max-width:820px;padding:0;list-style:none}
+    .gz-zodiac li {padding:5px 8px;background:var(--gz-wash);border-left:2px solid var(--gz-brass)}
+    .gz-sources {padding-inline-start:1.25em}
+    .gz-wrap .labdeck-tabs {flex-wrap:wrap}.gz-wrap .labdeck-tabs button,html.labdeck-drawer .labdeck:has(.gz-card) .labdeck-tabs button {font-size:calc(15px * var(--fs,1));min-height:44px}
+    body:has(.gz-wrap) .ms-info {z-index:1120}
+    html.labside-active[lang="en"] .labside-rail>button:not(.labside-fold),html.labside-active[lang="en"] .labside-rail>.fb-tab {height:108px;letter-spacing:0}
+    @media(min-width:1240px) and (max-width:1490px) {html.labside-docked .gz-lab {grid-template-columns:minmax(0,1fr)}html.labside-docked .gz-lab>.panel {position:static;max-height:none}}
+    @media(max-width:880px) {
+      .gz-wrap {padding:6px 7px 18px}.gz-lab {grid-template-columns:minmax(0,1fr);gap:6px}
+      .gz-head {padding:4px 8px;justify-content:flex-start;column-gap:14px}.gz-head h2 {font-size:calc(17px * var(--fs,1))}.gz-id {display:grid}.gz-id small {font-size:calc(13px * var(--fs,1))}
+      .gz-scene {height:auto;aspect-ratio:1.4}.gz-read div {padding:6px 5px}.gz-read dt {font-size:calc(13px * var(--fs,1))}.gz-read dd {font-size:calc(17px * var(--fs,1))}
+      .gz-bar {padding:4px 5px;gap:4px}.gz-bar button,.gz-bar select {padding:4px 6px}.gz-note {padding:12px}
+    }
+    @media(orientation:landscape) and (max-height:600px) {
+      .gz-wrap {padding:2px 5px 15px}.gz-wrap .top {margin:0;display:flex;align-items:center;gap:8px;min-height:44px;padding-right:100px}.gz-wrap .top p {display:none}
+      html.labdeck-drawer .gz-lab {width:100%;max-width:none}.gz-id {display:flex}
+      .gz-wrap .top .crumbs {margin:0;padding:0;font-size:0;white-space:nowrap}.gz-wrap .top .crumbs a {display:none}
+      .gz-wrap .top .crumbs a[href="history.html"] {display:inline-flex;align-items:center;min-height:44px;font-size:calc(14px * var(--fs,1))}
+      .gz-wrap .top h1 {font-size:calc(18px * var(--fs,1));line-height:1.18;margin:0}.gz-head {padding:0 6px}
+      .gz-scene {aspect-ratio:auto;height:clamp(172px,59.5vh,300px)}.gz-read div {padding:2px 5px}
+      .gz-bar {padding-block:0}
+      .gz-caption {display:none}.gz-stage .v3nav {bottom:3px;left:3px}.gz-stage .v3nav-lbl {display:none}
+      html.labside-active[lang="en"] .labside-rail {top:2px}html.labside-active[lang="en"] .labside-rail>button:not(.labside-fold),html.labside-active[lang="en"] .labside-rail>.fb-tab {height:84px}
+    }
+    @media(orientation:landscape) and (min-width:800px) and (max-width:1000px) and (min-height:330px) and (max-height:450px) {
+      /* The board is wide enough for a mode selector beside the wheels. Keep the playback keys in the first screen. */
+      .gz-stage {position:relative}
+      .gz-head {position:absolute;left:7px;top:33px;z-index:2;display:grid;justify-content:stretch;
+        width:clamp(68px,16%,86px);gap:4px;padding:0}
+      .gz-id {display:grid;gap:0;line-height:1.15}
+      .gz-head h2,.gz-id small {color:var(--text);font-size:calc(13px * var(--fs,1))}
+      .gz-id {padding:3px 4px;border-radius:4px;background:var(--surface)}
+      .gz-switch {display:grid;gap:2px}.gz-wrap .gz-switch button {padding-inline:2px}
+    }
+  </style>
+</head>
+<body data-en-ready>
+<main class="wrap gz-wrap">
+  <header class="top">
+    <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;history.html&quot;&gt;History&lt;/a&gt; / &lt;a href=&quot;history.html#chronology&quot;&gt;Chronology&lt;/a&gt; / &lt;a href=&quot;history.html#ch-calendar-cycles&quot;&gt;Calendar Cycles&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="history.html">歷史</a> / <a href="history.html#chronology">時間與曆法</a> / <a href="history.html#ch-calendar-cycles">紀年與週期</a></nav>
+    <h1 data-en="Gears of the Sexagenary Cycle">干支紀年：天干地支的齒輪</h1>
+    <p data-en="The war that began in 1894 is named for a Jia-Wu year. Turn the wheels: when will that name appear again?">1894 年開戰的甲午戰爭，以當年的干支命名。轉動齒輪，下一個甲午在哪一年？</p>
+  </header>
+  <div class="lab gz-lab">
+    <section class="stage gz-stage">
+      <div class="gz-head"><div class="gz-id"><h2 class="gz-title" data-en="Calendar mechanism">干支紀年儀</h2><small id="dialIndex"></small></div>
+        <div class="gz-switch" role="group" aria-label="畫面" data-en-aria-label="View">
+          <button id="flatBtn" aria-pressed="true" data-en="2D dial">2D 齒輪</button><button id="modelBtn" aria-pressed="false" data-en="3D model">3D 木輪</button>
+        </div>
+      </div>
+      <div class="gz-scene" id="scene">
+        <canvas tabindex="0" id="wheelCanvas" aria-label="可拖曳的齒輪與時間軸，方向鍵可逐年移動" data-en-aria-label="Draggable gears and timeline. Use arrow keys to move by one year."></canvas>
+        <div id="modelHost" hidden></div><span id="modelMsg" role="status" hidden></span>
+      </div>
+      <dl class="gz-read">
+        <div><dt data-en="Civil year">西元紀年</dt><dd id="civilOut"></dd></div>
+        <div><dt data-en="ROC year">民國</dt><dd id="rocOut"></dd></div>
+        <div><dt data-en="Stem–branch">干支</dt><dd id="pairOut"></dd></div>
+        <div><dt data-en="Zodiac">生肖</dt><dd id="animalOut"></dd></div>
+      </dl>
+      <div class="gz-bar"><label for="stride" data-en="Step">步幅</label><select id="stride"></select>
+        <button id="prev" aria-label="後退所選年數" data-en-aria-label="Back by the selected step">−</button><button id="next" aria-label="前進所選年數" data-en-aria-label="Forward by the selected step">＋</button>
+        <button id="play"></button><button id="soundBtn" aria-pressed="false"></button><button id="home3d" hidden data-en="Reset view">重設視角</button>
+      </div>
+      <!-- 手機直放：操作台緊接在這裡（站長 11/21 自查準則：畫布底到操作台 ≤ 80 px）；寬螢幕時 labdeck 會把它搬到右欄頂端 -->
+      <div data-deck-anchor></div>
+      <p id="gesture" class="gz-caption"></p>
+    </section>
+    <aside class="panel">
+      <section class="card gz-card" data-deck="查年代|Years" data-deck-order="0">
+        <h2 data-en="Find a year">查年代</h2>
+        <form id="yearForm"><label><span data-en="Era">紀年</span><select id="era"><option value="ad" data-en="AD">西元</option><option value="bc" data-en="BC">西元前</option><option value="roc" data-en="ROC">民國</option><option value="before" data-en="Before ROC">民國前</option></select></label>
+          <label><span data-en="Year number">年數</span><input type="number" min="1" step="1" id="yearInput" inputmode="numeric" required></label>
+          <button class="gz-primary" data-en="Go to year">前往年份</button></form>
+        <p class="gz-muted" id="yearMessage" role="status"></p>
+        <label class="gz-selectwide"><span data-en="Historical records and reference years">史料與紀年基準</span><select id="eventSelect"></select></label>
+        <div class="gz-record" id="record" hidden><strong id="recordTitle"></strong><span id="recordEra"></span><a id="recordSource" target="_blank" rel="noopener noreferrer"></a></div>
+        <p class="gz-muted" data-en="The pair names the lunar year beginning in that civil year. For dates near New Year, check the calendar boundary below.">干支取當年內開始的農曆年。若事件在年初，請參看下方的換年說明。</p>
+      </section>
+      <section class="card gz-card" data-deck="驗配對|Pairing" data-deck-order="1">
+        <h2 data-en="Test a pairing">查驗干支配對</h2><p data-en="Choose one stem and one branch. Which of the 60 positions contains both?">各選一個天干和地支，六十格裡有哪一格能讓兩者相遇？</p>
+        <form id="pairForm"><label><span data-en="Heavenly stem">天干</span><select id="stemPick"></select></label><label><span data-en="Earthly branch">地支</span><select id="branchPick"></select></label><button class="gz-primary" data-en="Check all 60">查驗六十格</button></form>
+        <div id="strip" class="gz-pair-strip" aria-hidden="true"></div><p id="pairResult" role="status"></p><button id="seek" data-en="Go to next match" hidden>前往下次出現</button>
+      </section>
+      <section class="card gz-card" data-deck="比年份|Compare" data-deck-order="2">
+        <h2 data-en="Compare two years">比較兩個年份</h2><p data-en="Pin the first year, move the wheels to the second, then predict the number of years between them.">記下起點，轉到另一年，再預測兩年相隔多久。</p>
+        <div class="gz-row"><button id="pin" data-en="Pin this year">記下起點</button><strong id="pinned"></strong></div>
+        <form id="compareForm"><label><span data-en="Predicted interval (years)">預測相隔年數</span><input id="guess" type="number" min="0" max="5999" step="1" inputmode="numeric" required></label><button class="gz-primary" id="checkGap" data-en="Check interval">驗算年距</button></form>
+        <p id="comparison" role="status"></p><button id="clear" data-en="Clear comparison">清除比較</button>
+      </section>
+    </aside>
+  </div>
+  <section class="card gz-note">
+    <h2 data-en="Where does the year begin?">這個「年」從哪一天開始？</h2>
+    <p data-en="Each civil year stands for the stem–branch year that begins within it. The lunar calendar changes at Lunar New Year; some traditions use the Start of Spring. This model compares year labels only. To date an event early in the year, check its actual month and day.">本實驗以「西元年對應的干支年」示意，取該西元年內開始的干支年。農曆以正月初一換年，部分傳統以立春為界。這裡不處理年初跨年；考證年初發生的事件，須再查事件的月日。</p>
+    <details><summary data-en="How the gears count years">齒輪怎麼數年份？</summary>
+      <p data-en="From Jia-Zi, advance both sequences one place per year. Positions counted from 1 keep the same parity on both wheels. Jia (1) can meet Zi (1) or Wu (7); it can never meet Chou (2). Exactly 60 of the 120 pairings occur. The wheels turn in opposite directions, so the two inscriptions run in opposite orders.">從甲子出發，天干和地支每年各進一位。位置從 1 起算，兩輪總是奇配奇、偶配偶。甲（1）能遇子（1）、午（7），遇不到丑（2）。120 種配法中恰好出現 60 種。齒輪反向轉動，因此兩輪上的字也反向排列。</p>
+      <p>\[ \operatorname{lcm}(10,12)=60 \]</p>
+      <p data-en="Use 1984 (Jia-Zi) as position 1. Let A equal the AD year, or 1 minus the BC year number. The nonnegative remainder k selects the stem and branch, both indexed from zero. The dial shows k + 1.">以 1984 甲子年為第 1 格。西元年份直接作為連續年數 A；西元前則取 1 減去年數。求出非負餘數 k 後，天干和地支都從索引 0 開始取值，盤面格號為 k + 1。</p>
+      <p>\[ \begin{gathered} k=(A-1984)\bmod 60 \\ s=k\bmod 10,\quad b=k\bmod 12 \end{gathered} \]</p>
+      <p data-en="1 BC is followed by AD 1. Year 1 of the Republic of China (ROC) is AD 1912. AD 1911 is one year before ROC 1. For A ≥ 1912 the ROC year is A − 1911. For earlier years the count before ROC is 1912 − A. Ancient years on the dial are arithmetic projections of the cycle.">西元前 1 年之後是西元 1 年。民國元年是西元 1912 年，前一年為民國前 1 年。A 大於或等於 1912 時，民國年數為 A − 1911；更早的年份，民國前年數為 1912 − A。轉盤上的古代年份是依週期回推的結果。</p>
+    </details>
+    <details><summary data-en="The twelve branches and animals">十二地支與生肖對照</summary><ul id="zodiacList" class="gz-zodiac"></ul></details>
+    <details><summary data-en="Historical and calendar sources">史料與曆法出處</summary><ul id="sources" class="gz-sources"></ul></details>
+  </section>
+  <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a> · <span data-en="All calculations run in your browser.">所有換算都在你的瀏覽器中完成。</span></footer>
+</main>
+<script src="vendor/katex/katex.min.js"></script><script src="vendor/katex/contrib/auto-render.min.js"></script><script src="js/math.js"></script>
+<script src="js/data/sexagenary-cycle-records.js"></script><script src="js/sexagenary-cycle-core.js"></script>
+<script src="js/sound.js"></script><script src="js/numinput.js"></script><script src="js/labdeck.js"></script><script src="js/drawkit.js"></script>
+<script src="js/view3d-nav.js"></script><script src="js/stepguide.js"></script><script src="js/labside.js"></script>
+<script src="js/sexagenary-cycle-3d.js"></script><script src="js/sexagenary-cycle.js"></script>
+<script src="js/firebase-config.js"></script><script src="js/missions.js" data-module="sexagenary-cycle"></script><script src="js/missions/sexagenary-cycle.js"></script>
+<script src="js/stats.js" data-module="sexagenary-cycle"></script><script src="js/comments.js"></script>
+</body>
+</html>

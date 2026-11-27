@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="js/settings.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-en="Chinese Character Formation | Astro Ni Lab">漢字構造：六書與部件｜讓倪動手</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="換一個部件，江、清、泡留下什麼線索？拼出漢字、用注音比聲符，再轉動龜甲對照古今字形。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/han-character-formation.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/han-character-formation.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/han-character-formation.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/han-character-formation.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="漢字構造：六書與部件｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="換一個部件，江、清、泡留下什麼線索？拼出漢字、用注音比聲符，再轉動龜甲對照古今字形。">
+  <meta property="og:url" content="https://lab.astroni.org/han-character-formation.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/han-character-formation.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="漢字構造：六書與部件的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"漢字構造：六書與部件","alternateName":"Chinese Character Formation","description":"換一個部件，江、清、泡留下什麼線索？拼出漢字、用注音比聲符，再轉動龜甲對照古今字形。","url":"https://lab.astroni.org/han-character-formation.html","image":"https://lab.astroni.org/img/og/han-character-formation.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["文字（Script）","漢字構造（Chinese Character Formation）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"國文","url":"https://lab.astroni.org/chinese.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"全科模擬實驗室","item":"https://lab.astroni.org/labs.html"},{"@type":"ListItem","position":3,"name":"國文","item":"https://lab.astroni.org/chinese.html"},{"@type":"ListItem","position":4,"name":"文字","item":"https://lab.astroni.org/chinese.html#script"},{"@type":"ListItem","position":5,"name":"漢字構造","item":"https://lab.astroni.org/chinese.html#ch-character-formation"},{"@type":"ListItem","position":6,"name":"漢字構造：六書與部件","item":"https://lab.astroni.org/han-character-formation.html"}]}</script>
+  <!-- SEO-END -->
+<link rel="stylesheet" href="lab.css">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<style>
+.han{max-width:1500px;display:flex;flex-direction:column}body.han-page{--han-glyph-font:"Noto Serif TC","PMingLiU","MingLiU",serif;--ink:var(--text);--seal:var(--pos);--leaf:var(--accent);--paper:color-mix(in srgb,var(--canvas-bg) 94%,var(--equi));--rule:color-mix(in srgb,var(--equi) 26%,var(--border))}
+:is(.han,.labdeck) .top{order:-3;margin:0 0 12px}:is(.han,.labdeck) .top h1,:is(.han,.labdeck) .top p{margin:3px 0}.glyph{font-family:var(--han-glyph-font)}
+:is(.han,.labdeck) .han-lab{order:-2;grid-template-columns:minmax(0,1fr) minmax(305px,31%);gap:12px;align-items:start}:is(.han,.labdeck) [hidden]{display:none!important}
+:is(.han,.labdeck) .stage{padding:0;min-width:0;overflow:hidden}:is(.han,.labdeck) .panel{min-width:0}:is(.han,.labdeck) .stage,:is(.han,.labdeck) .card{border-radius:12px}
+:is(.han,.labdeck) button,:is(.han,.labdeck) select,:is(.han,.labdeck) summary{font:600 calc(15px * var(--fs,1))/1.3 system-ui,"Microsoft JhengHei",sans-serif;min-height:44px}
+:is(.han,.labdeck) button,:is(.han,.labdeck) select{padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}:is(.han,.labdeck) button:hover,:is(.han,.labdeck) select:hover{border-color:var(--leaf)}:is(.han,.labdeck) button:focus-visible,:is(.han,.labdeck) select:focus-visible,:is(.han,.labdeck) summary:focus-visible{outline:3px solid var(--equi);outline-offset:2px}:is(.han,.labdeck) button:disabled{opacity:.5;cursor:default}
+:is(.han,.labdeck) button[aria-pressed=true],:is(.han,.labdeck) button.primary{background:var(--leaf);color:var(--surface);border-color:var(--leaf)}:is(.han,.labdeck) button.primary{font-weight:700}
+:is(.han,.labdeck) .modebar,:is(.han,.labdeck) .stagefoot,:is(.han,.labdeck) .actions,:is(.han,.labdeck) .answerline,:is(.han,.labdeck) .bookline{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+:is(.han,.labdeck) .modebar{padding:8px 12px;border-bottom:1px solid var(--border)}:is(.han,.labdeck) .modebar button{border-color:transparent;background:transparent;color:var(--muted);padding-inline:12px}:is(.han,.labdeck) .modebar button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--leaf);color:var(--leaf)}
+:is(.han,.labdeck) .scene{isolation:isolate;position:relative;width:100%;height:clamp(315px,36vw,452px);overflow:hidden;background:var(--paper)}
+#cv,:is(.han,.labdeck) .scene-layer,#shellHost,:is(.han,.labdeck) .ring{position:absolute;inset:0;width:100%;height:100%}#cv{display:block;max-height:none!important}:is(.han,.labdeck) .scene-layer{pointer-events:none}:is(.han,.labdeck) .scene-layer button{pointer-events:auto}
+:is(.han,.labdeck) .worktitle{position:absolute;top:7%;left:6.5%;font:700 calc(15px * var(--fs,1)) / 1.2 system-ui;color:var(--muted);letter-spacing:.06em}
+:is(.han,.labdeck) .frame{position:absolute;left:6.5%;width:29%;height:23%;display:flex;gap:12px;align-items:center;justify-content:center;border:1px solid var(--rule);border-left:4px solid var(--leaf);box-shadow:0 3px 0 var(--rule),0 7px 17px color-mix(in srgb,var(--ink) 10%,transparent);background:linear-gradient(145deg,var(--surface),var(--paper));color:var(--ink)}
+:is(.han,.labdeck) .frame[data-target="1"]{border-left-color:var(--equi)}:is(.han,.labdeck) .frame.chosen{outline:2px solid var(--leaf);outline-offset:3px}:is(.han,.labdeck) .frame.over{background:var(--accent-soft)}
+#slot0{top:26%}#slot1{top:58%}:is(.han,.labdeck) .frame .letter{position:absolute;top:5px;left:7px;font:700 calc(14px * var(--fs,1))/1.1 system-ui,sans-serif;color:var(--muted)}:is(.han,.labdeck) .frame .glyph{margin-top:calc(12px * var(--fs,1));font-size:clamp(28px,4vw,58px);line-height:1}:is(.han,.labdeck) .frame .markword{font-size:calc(15px * var(--fs,1))}
+:is(.han,.labdeck) .impression{position:absolute;left:48%;top:8%;width:44%;height:83%;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;align-items:center;text-align:center}
+:is(.han,.labdeck) .impression .overline,:is(.han,.labdeck) .impression .under{font-size:calc(15px * var(--fs,1));font-weight:700;color:var(--muted)}
+#bigChar{font-size:clamp(84px,11vw,165px);font-weight:600;color:var(--seal);line-height:1.15}#bigChar.missing{font:600 calc(26px * var(--fs,1)) system-ui;color:var(--muted)}
+:is(.han,.labdeck) .under{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}:is(.han,.labdeck) .under b{color:var(--ink);font-size:calc(19px * var(--fs,1))}
+:is(.han,.labdeck) .stagefoot{padding:9px 12px;background:var(--surface);border-top:1px solid var(--border);justify-content:space-between}:is(.han,.labdeck) .stagefoot p{margin:0;flex:1 1 180px;color:var(--muted);font-size:calc(14px * var(--fs,1))}
+:is(.han,.labdeck) .card h2,:is(.han,.labdeck) .study h2{margin:0 0 8px;font-size:calc(22px * var(--fs,1));line-height:1.35}:is(.han,.labdeck) .card h3{font-size:calc(16px * var(--fs,1));margin:12px 0 5px}
+:is(.han,.labdeck) .card p{margin:5px 0}:is(.han,.labdeck) .card label:not(.flag){display:block;margin:8px 0 4px;font-size:calc(15px * var(--fs,1));font-weight:650}:is(.han,.labdeck) .card select{max-width:100%;width:100%}
+:is(.han,.labdeck) .tray{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0}:is(.han,.labdeck) .tray button{min-width:45px;font:700 calc(22px * var(--fs,1))/1.1 var(--han-glyph-font);touch-action:none;cursor:grab}
+:is(.han,.labdeck) .tray .markword{font:600 calc(15px * var(--fs,1))/1.2 system-ui}:is(.han,.labdeck) .dragcopy{position:fixed;z-index:2500;pointer-events:none;border-radius:8px;padding:6px 13px;font:700 calc(30px * var(--fs,1))/1.1 var(--han-glyph-font);background:var(--surface);color:var(--leaf);border:2px solid var(--leaf);box-shadow:0 4px 18px #0003}
+:is(.han,.labdeck) .twocol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}html[lang=en] .han-page .twocol{grid-template-columns:minmax(0,1fr)}:is(.han,.labdeck) .hint,:is(.han,.labdeck) .links,:is(.han,.labdeck) .recordcount{font-size:calc(14px * var(--fs,1));color:var(--muted)}:is(.han,.labdeck) .actions{margin-top:8px}
+:is(.han,.labdeck) .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:8px 12px;background:var(--surface)}:is(.han,.labdeck) .metric{border-left:3px solid var(--rule);padding-left:8px;min-width:0}:is(.han,.labdeck) .metric span{display:block;color:var(--muted);font-size:calc(13px * var(--fs,1))}:is(.han,.labdeck) .metric strong{display:block;font-size:calc(18px * var(--fs,1));overflow-wrap:anywhere}
+:is(.han,.labdeck) .ring-node,:is(.han,.labdeck) .hub{position:absolute;transform:translate(-50%,-50%);display:grid;place-content:center;text-align:center}:is(.han,.labdeck) .ring-node{border-radius:50%;width:clamp(44px,5vw,64px);height:clamp(44px,5vw,64px);padding:0;background:var(--surface);box-shadow:0 2px 0 var(--rule);font:700 calc(23px * var(--fs,1))/1 "PMingLiU",serif}:is(.han,.labdeck) .hub{left:50%;top:50%;width:24%;height:32%;border:1px solid var(--rule);border-radius:11px;background:var(--paper);color:var(--leaf)}:is(.han,.labdeck) .hub b{font:700 calc(40px * var(--fs,1))/1.1 "PMingLiU",serif}:is(.han,.labdeck) .hub small{font-weight:700;font-size:calc(15px * var(--fs,1))}
+:is(.han,.labdeck) .flag{display:inline-flex;align-items:center;min-height:44px;gap:4px;cursor:pointer;font-size:calc(15px * var(--fs,1))}:is(.han,.labdeck) .flag input{width:18px;height:18px;accent-color:var(--leaf)}
+:is(.han,.labdeck) .feedback{border-left:3px solid var(--leaf);padding:5px 8px;background:var(--accent-soft);font-weight:650;overflow-wrap:anywhere}
+:is(.han,.labdeck) .study{margin-top:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px}:is(.han,.labdeck) .study p{margin:5px 0}:is(.han,.labdeck) .study blockquote{margin:8px 0;padding:3px 12px;border-left:3px solid var(--seal);font:600 calc(21px * var(--fs,1))/1.6 "PMingLiU",serif}:is(.han,.labdeck) .study summary{display:flex;align-items:center;cursor:pointer;color:var(--leaf)}:is(.han,.labdeck) .study summary::before{content:"▸";margin-right:.55em}:is(.han,.labdeck) .study details[open]>summary::before{content:"▾"}
+:is(.han,.labdeck) .links{display:flex;gap:10px 18px;flex-wrap:wrap}:is(.han,.labdeck) .links a{display:inline-flex;align-items:center;min-height:44px}:is(.han,.labdeck) .sequence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0}:is(.han,.labdeck) .sequence figure{margin:0;padding:6px;border:1px solid var(--border);border-radius:7px;background:var(--paper);text-align:center}:is(.han,.labdeck) .sequence img,:is(.han,.labdeck) .sequence b{height:45px;width:100%;object-fit:contain;display:block;font:700 38px/45px "PMingLiU",serif}:is(.han,.labdeck) .sequence img{background:#faf6ea;border-radius:4px}:is(.han,.labdeck) .sequence figcaption{font-size:calc(13px * var(--fs,1));color:var(--muted)}#shellHost canvas{display:block;width:100%;height:100%;touch-action:none}#shellFallback{position:absolute;inset:15% 25%;width:50%;height:70%;object-fit:contain;background:#efe3c7;border-radius:24%}
+:is(.han,.labdeck) .relatives{display:flex;align-items:center;gap:6px;flex-wrap:wrap}:is(.han,.labdeck) .relatives button{min-width:44px;font-size:calc(20px * var(--fs,1))}:is(.han,.labdeck) .examplebar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}:is(.han,.labdeck) .examplebar select{max-width:100%}:is(.han,.labdeck) .frame[aria-pressed=true] .letter{color:var(--surface)}
+:is(.han,.labdeck) .v3nav button{min-width:44px;min-height:44px}:is(.han,.labdeck) .v3nav-hint{display:none}
+#shellNav:empty{display:none}#shellNav .v3nav{position:static}
+.han-page .source-quote summary{min-height:44px;font-weight:650}
+.han-page #stageHint{margin:0;padding:2px 10px 5px;background:var(--surface);color:var(--muted);font-size:calc(14px * var(--fs,1));line-height:1.35}
+@media(max-width:880px) and (orientation:portrait){
+  .han-page .han #metrics{padding-block:4px 1px;line-height:1.25}
+  .han-page #stageHint{padding-block:2px;font-size:calc(13px * var(--fs,1))}
+}
+.han-page .edition-tag{display:inline-block;margin-inline-start:.5em;padding:.05em .5em;border:1px solid var(--rule);border-radius:.3em;color:var(--leaf);font:600 calc(13px * var(--fs,1))/1.5 system-ui;vertical-align:middle}
+.han-page .collation{font-size:calc(15px * var(--fs,1));line-height:1.6}
+.han-page .credit-details{margin-top:8px;border-top:1px solid var(--border);font-size:calc(14px * var(--fs,1));line-height:1.5}
+.han-page .credit-details summary{min-height:44px;align-content:center;color:var(--leaf);cursor:pointer}
+.han-page .credit-details dl{margin:0}.han-page .credit-details dd{margin:0 0 8px;overflow-wrap:anywhere}
+.han-page .credit-details a{display:inline-flex;align-items:center;min-height:44px}
+html[lang=en] #useCase{min-width:min(100%,17em)}
+:is(.han,.labdeck) .labdeck-tab,:is(.han,.labdeck) .labdeck-tabs button{min-height:44px}:is(.han,.labdeck) .bookline{justify-content:space-between}:is(.han,.labdeck) .study .katex-display{margin:6px 0}
+@media(max-width:880px) and (orientation:portrait){.han{padding:10px 8px 32px}:is(.han,.labdeck) .han-lab{display:flex;flex-direction:column;gap:8px}:is(.han,.labdeck) .stage,:is(.han,.labdeck) .panel{width:100%}:is(.han,.labdeck) .scene{height:300px}:is(.han,.labdeck) .modebar{gap:3px;padding:5px}:is(.han,.labdeck) .modebar button{padding:6px 8px}:is(.han,.labdeck) .top h1{font-size:calc(25px * var(--fs,1))}:is(.han,.labdeck) .stagefoot{padding:5px 8px}:is(.han,.labdeck) .metrics{padding:7px 8px}:is(.han,.labdeck) .metric strong{font-size:calc(17px * var(--fs,1))}:is(.han,.labdeck) .frame{gap:5px}:is(.han,.labdeck) .stagefoot p{font-size:calc(13px * var(--fs,1))}}
+@media(orientation:landscape) and (max-height:600px){:is(.han,.labdeck) .han-lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,36%)}:is(.han,.labdeck) .scene{height:clamp(205px,58dvh,300px)!important}:is(.han,.labdeck) .stagefoot p{display:none}:is(.han,.labdeck) .top p{display:none}:is(.han,.labdeck) .modebar{padding:2px 6px}:is(.han,.labdeck) .metrics{padding:2px 7px}:is(.han,.labdeck) .hub b{font-size:calc(28px * var(--fs,1))}:is(.han,.labdeck) .ring-node{width:44px;height:44px}:is(.han,.labdeck) .v3nav{bottom:2px}:is(.han,.labdeck) .stagefoot{padding:2px 7px}}
+@media(prefers-reduced-motion:reduce){:is(.han,.labdeck) *{scroll-behavior:auto!important;transition:none!important}}
+html.labdeck-on body.han-page .labdeck-tabs button{min-height:44px;font-size:calc(15px * var(--fs,1))}
+html[lang="en"] body.han-page .labside-rail>button:not(.labside-fold),html[lang="en"] body.han-page .labside-rail>.fb-tab{height:110px;letter-spacing:0}
+html.labdeck-panel:not(.labside-railed) body.han-page .labdeck-pane>.card{padding-inline-end:34px}
+body.han-page .metric strong .glyph,body.han-page .metric strong .glyph span{display:inline;color:inherit;font:inherit}
+@media(orientation:landscape) and (max-height:600px){
+  html.labdeck-drawer .han{padding:2px 6px 18px}
+  html.labdeck-drawer .han .han-lab{display:block;width:100%!important;max-width:none!important;margin:0}
+  .han .top{margin:0 0 3px}.han .top .crumbs{display:flex;align-items:center;gap:3px;white-space:nowrap;overflow-x:auto;max-width:calc(100% - 95px);padding:0;scrollbar-width:none}
+  .han .top .crumbs a{flex:none}.han .top h1{font-size:calc(21px * var(--fs,1));margin:0}
+  .han .scene{height:clamp(182px,54dvh,270px)!important}
+  .han .stagefoot,.han .modebar{min-height:44px}
+  html[lang="en"] body.han-page .labside-rail{top:2px}
+  html[lang="en"] body.han-page .labside-rail>button:not(.labside-fold),html[lang="en"] body.han-page .labside-rail>.fb-tab{height:100px;min-height:100px}
+}
+</style>
+</head>
+<body class="han-page" data-en-ready>
+<main class="wrap han">
+<header class="top">
+<nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;labs.html&quot;&gt;Simulation Lab&lt;/a&gt; / &lt;a href=&quot;chinese.html&quot;&gt;Chinese&lt;/a&gt; / &lt;a href=&quot;chinese.html#script&quot;&gt;Script&lt;/a&gt; / &lt;a href=&quot;chinese.html#ch-character-formation&quot;&gt;Chinese Character Formation&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="labs.html">全科模擬實驗室</a> / <a href="chinese.html">國文</a> / <a href="chinese.html#script">文字</a> / <a href="chinese.html#ch-character-formation">漢字構造</a></nav>
+<h1 data-en="Chinese Character Formation">漢字構造：六書與部件</h1>
+<p data-en="Why does the graph for river contain the graph for craft? Swap a component and follow the clues to meaning and sound.">江水的「江」，為什麼有個「工」？換一塊部件，看看字義和讀音各跟著誰走。</p>
+</header>
+<div class="lab han-lab">
+<section class="stage">
+<div class="modebar" role="group" aria-label="觀察方式" data-en-aria-label="Views">
+<button id="buildView" aria-pressed="true" data-en="Build">部件拼字台</button><button id="familyView" aria-pressed="false" data-en="Sound families">聲符家族</button><button id="shellView" aria-pressed="false" data-en="3D shell">龜甲展台 3D</button></div>
+<div id="scene" class="scene">
+<canvas id="cv" aria-hidden="true"></canvas>
+<div id="buildLayer" class="scene-layer">
+<span class="worktitle" data-en="Component frame">部件字框</span>
+<button id="slot0" class="frame" data-target="0"><span class="letter" data-en="Frame A">A 框</span><span class="glyph" lang="zh-Hant" data-no-convert></span></button>
+<button id="slot1" class="frame" data-target="1"><span class="letter" data-en="Frame B">B 框</span><span class="glyph" lang="zh-Hant" data-no-convert></span></button>
+<div class="impression"><span class="overline" data-en="Assembled character">組成的字</span><b id="bigChar" class="glyph" lang="zh-Hant" data-no-convert></b><div class="under"><b id="bigTone"></b><span id="bigGloss"></span></div></div>
+</div>
+<div id="familyLayer" class="ring" hidden><div class="hub"><b id="hubChar" lang="zh-Hant" data-no-convert></b><small id="hubTone"></small></div><div id="ringNodes"></div></div>
+<div id="shellHost" hidden></div><img id="shellFallback" hidden alt="" src="img/han-character-formation/wood-oracle.svg">
+</div>
+<div id="metrics" class="metrics" aria-live="polite"></div>
+<p id="stageHint"></p>
+<!-- 手機直放：操作台緊接在字框下面，即時讀數留在字框下面、說明排在操作台後面（站長 11/21 自查準則：畫布底到操作台 ≤ 80 px） -->
+<div data-deck-anchor></div>
+<div class="stagefoot"><div id="shellNav" hidden></div><button id="home3d" hidden data-en="Reset view">重設視角</button><button id="soundBtn" aria-pressed="false"></button></div>
+</section>
+<aside class="panel">
+<section class="card" data-deck="操作|Operate" data-deck-order="0">
+<div id="buildTools"><h2 data-en="Type case">部件盤</h2>
+<div class="hint" data-en="Drag a tile to A or B, or tap a frame and then a tile.">拖字塊進 A、B 框，或先點字框再點字塊。</div>
+<div id="tray" class="tray"></div>
+<div class="twocol"><div><label for="allParts" data-en="All components">全部部件</label><select id="allParts" lang="zh-Hant" data-no-convert></select></div>
+<div><label for="catalog" data-en="Load a character">載入字例</label><select id="catalog" lang="zh-Hant" data-no-convert></select></div></div>
+<div class="actions"><button id="emptySlot" data-en="Empty frame">清空此框</button><button id="swap" data-en="Swap A and B">交換 A、B</button></div>
+<h3 data-en="Your analysis">我的判讀</h3>
+<div class="twocol"><div><label for="typeGuess" data-en="Construction">造字法</label><select id="typeGuess"></select></div>
+<div><label for="roleGuess" data-en="Which frame gives sound?">哪一框提示讀音？</label><select id="roleGuess"></select></div></div>
+<div class="actions"><button class="primary" id="buildCheck" data-en="Check construction">核對構形</button><button id="showAnswer" hidden data-en="Show answer">看答案</button></div></div>
+<div id="familyTools" hidden><h2 data-en="Compare readings">比對國語讀音</h2>
+<label for="family" data-en="Sound component">選聲符家族</label><select id="family" lang="zh-Hant" data-no-convert></select>
+<p id="soundPair"></p><p class="hint" data-en="Select all matching features. Leave all boxes empty if none match.">勾選注音中相同的部分。三項都沒相符時可留白。</p>
+<div class="answerline" id="flags"></div><button class="primary" id="compareCheck" data-en="Check reading">核對讀音</button></div>
+<div id="shellTools" hidden><h2 data-en="Script over time">字形的變化</h2>
+<label for="specimen" data-en="Choose a specimen">選擇展字</label><select id="specimen" lang="zh-Hant" data-no-convert></select>
+<div class="actions" id="shellViews" role="group" aria-label="龜甲視角" data-en-aria-label="Shell views"><button id="frontShell" data-pose="front" aria-pressed="true" data-en="Front">正面</button><button id="backShell" data-pose="back" aria-pressed="false" data-en="Back">背面</button><button id="turnShell" data-pose="side" aria-pressed="false" data-en="Side">側面</button></div>
+<p data-en="Shang diviners drilled and chiselled the back of a turtle plastron. Heating the pits produced a vertical crack with a diagonal branch on the front. Divination records could be engraved beside these cracks.">商代用龜腹甲占卜，先在背面鑽鑿凹穴，再加熱，使正面裂出「卜」形兆紋，卜辭可刻在兆紋旁。</p>
+<div class="links"><a href="https://museum.sinica.edu.tw/resources/item/61/" target="_blank" rel="noopener" data-en="How Shang divination worked (Academia Sinica)">中研院史語所〈殷商占卜的取材與過程〉</a></div>
+<div class="sequence"><figure><img id="oracleImg" alt=""><figcaption data-en="Oracle bone">甲骨文</figcaption></figure><figure><img id="sealImg" alt=""><figcaption data-en="Small seal">小篆</figcaption></figure><figure><b id="modernGlyph" lang="zh-Hant" data-no-convert></b><figcaption data-en="Modern">今楷書</figcaption></figure></div>
+<p id="glyphNote"></p><details class="credit-details" id="glyphCredits"><summary data-en="Sources and credits for these forms">本字圖版出處與致謝</summary><dl>
+<dt><a id="oracleLink" target="_blank" rel="noopener" data-en="Oracle tracing and license">甲骨字形與授權</a></dt><dd id="oracleCredit"></dd>
+<dt><a id="sealLink" target="_blank" rel="noopener" data-en="Seal form and license">小篆字形與授權</a></dt><dd id="sealCredit"></dd>
+</dl></details></div>
+<p id="feedback" class="feedback" hidden role="status"></p>
+</section>
+<section class="card" data-deck="筆記|Notebook" data-deck-order="1"><h2 data-en="My notebook">我的判讀筆記</h2>
+<p class="hint" data-en="Each checked character is recorded once per activity for this visit.">本次已核對的字，每種操作各記一次。</p><div id="notebook"></div><button id="clearBook" data-en="Clear all">全部清除</button></section>
+</aside></div>
+<section class="study" id="sourceCard"><h2 data-en="Read the entry">讀原典</h2><div id="entryBody"></div></section>
+<section class="study"><details id="six"><summary data-en="How the six categories work">怎麼讀六書？</summary>
+<p data-en="A pictograph draws an outline, an indicative graph marks a position, a compound ideograph combines meanings, and a phonosemantic graph includes a sound clue. To identify each component’s role, read the transmitted Shuowen, including entries added by Xu Xuan and his colleagues.">象形描形，指事標出所在，會意合義，形聲以形旁提示意義、以聲符提示讀音。可從傳世《說文》的說解（含徐鉉等人新附字）判讀部件的角色。</p>
+<p data-en="Xu Shen illustrates derivative cognates with the characters for old age, each of which glosses the other. Interpretations of this category differ. For phonetic loans, he gives titles for officeholders as examples of existing graphs used for another word. Both concern relations between words or uses.">轉注以「考、老」為例，兩字在《說文》互訓，歷來對轉注的解釋有分歧。假借是借已有字形記另一個同音或近音的詞，許慎舉「令、長」為例。這兩類要看字義或用法之間的關係。</p>
+<div class="examplebar"><label for="useCase" data-en="Compare a use">比讀用字</label><select id="useCase"><option value="old" data-en="Two entries for old age">考與老</option><option value="wheat" data-en="From wheat to coming">來麥與往來</option></select></div>
+<p id="caseText"></p><div class="examplebar"><button data-case-guess="old" data-en="Derivative cognates">轉注</button><button data-case-guess="wheat" data-en="Phonetic loan">假借</button><span id="caseFeedback" role="status"></span></div>
+<div id="caseLinks" class="links"></div>
+<div class="links"><a href="https://zh.wikisource.org/wiki/說文解字/15" target="_blank" rel="noopener" data-en="Xu Shen’s postface">許慎〈敘〉</a><a href="https://dict.revised.moe.edu.tw/dictView.jsp?ID=89728&amp;la=0&amp;powerMode=0" target="_blank" rel="noopener" data-en="MOE entry on phonetic loans">教育部「假借」條</a></div>
+</details><details><summary data-en="Reading the three sound clues">聲母、韻母與聲調怎麼比？</summary>
+<p data-en="Compare the selected modern Taiwan Mandarin readings of the sound component and the whole character. Include the medial in the final. Tone 1 has no mark. A missing initial or unwritten final is marked separately and earns no match. A present-day mismatch says nothing by itself about ancient pronunciation.">以聲符和整字在例詞中的現代國語注音逐項比對。韻母包含介音，一聲不標調號。零聲母或未另標韻符時，該欄記為未能由符號對比。今音比對看不出古音是否相同。</p>
+<p>\[N=\sum_{i=1}^{3} m_i,\qquad m_i\in\{0,1\}\]</p><p data-en="A match contributes 1. A difference or an unmarked feature contributes 0.">每項明示且相同記 1，相異或未另標記 0。</p>
+<div class="links"><a href="https://language.moe.gov.tw/001/Upload/files/SITE_CONTENT/M0001/deploy/html_ch/index.html" target="_blank" rel="noopener" data-en="MOE Zhuyin handbook">教育部《國語注音符號手冊》</a></div></details>
+<details><summary data-en="Sources and scope">字庫、版本與出處</summary>
+<p data-en="Xu Shen explained characters through small seal script in the Eastern Han. Later finds, including oracle-bone and bronze inscriptions, have revised some of his explanations. This lab uses the received Shuowen as an introduction to character formation.">《說文》是東漢許慎依小篆所作的說解，其中一部分已由甲骨文、金文等出土文字修正；本台依傳世《說文》歸類，是教學上的入門分法。</p>
+<p data-en="The two component frames simplify the task. Many characters have three or more components, and in regular script a component may change shape or lose strokes.">拼字台的字框只放兩個部件，是簡化；不少字由三個以上部件組成，或部件在楷書中變形、省筆。</p>
+<p data-en="Zhu Junsheng counts 7,697 phonosemantic graphs. Dividing by the 9,353 main entries in Xu Shen’s postface gives 82.3%. This denominator excludes the 1,163 variant forms and the entries later added by Xu Xuan and his colleagues.">朱駿聲《說文通訓定聲》卷首〈六書爻列〉列形聲字 7,697 個。以許慎〈敘〉所記正文 9,353 字為分母，約占 82.3%。這個分母不含另列的 1,163 個重文，也不含後來徐鉉等人的新附字。</p>
+<div class="links"><a href="https://upload.wikimedia.org/wikipedia/commons/8/8e/NLC511-023031404016309-25305_%E8%AA%AA%E6%96%87%E9%80%9A%E8%A8%93%E5%AE%9A%E8%81%B2_%E9%99%84%E8%AA%AA%E9%9B%85_%E5%8F%A4%E4%BB%8A%E9%9F%BB%E5%87%96_%E8%A1%8C%E7%8B%80_%E4%B8%80.pdf" target="_blank" rel="noopener" data-en="Zhu’s original count (scan)">朱駿聲統計原頁（影本）</a><a href="https://www.shidianguji.com/zh/mid-page/7254762659717906444" target="_blank" rel="noopener" data-en="Xu’s headword and variant totals">許慎記正文與重文總數</a></div>
+<p data-en="This curated collection has 80 graphs and six sound families. It follows the received explanations, including components that supply both meaning and sound. The two frames hold analytical components, whose shapes and positions may change in modern writing. Combinations outside this collection can still be attested characters.">本台選收 80 字、6 個聲符家族，依傳世《說文》說解歸類，含「亦聲」的兼具角色。字框記錄構件，部件在楷書中的位置與形狀可能改變。字庫以外的組合仍可能是實有的字。</p>
+<p data-en="Quotations follow the Shuowen project’s transcription of the received text, including additions by Xu Xuan and his colleagues. Edition notes beside two quotations link to the Siku facsimile. Modern readings follow the Ministry of Education’s Revised Mandarin Chinese Dictionary, sixth online edition (2021).">引文採「說文解字」專案的數位轉錄，含徐鉉等人的新附字。「月」「青」條旁附四庫本影像與校記。今音依教育部《重編國語辭典修訂本》臺灣學術網路第六版（2021）。</p>
+<p data-en="The shell is an original teaching model. It displays one documented Shang tracing at a time. The sequence compares individual forms across scripts.">龜腹甲是原創教具模型，一次展示一個有據的商代字形。三欄呈現各時期的一個字例。</p>
+<div class="links"><a href="https://github.com/shuowenjiezi/shuowen" target="_blank" rel="noopener" data-en="Shuowen source text">《說文》數位底本</a><a href="https://www.nopss.gov.cn/BIG5/n1/2025/0507/c459958-40474956.html" target="_blank" rel="noopener" data-en="Research on sound components">葉玉英〈字裡藏音，古韻流長〉</a><a href="https://museum.sinica.edu.tw/collection/7/" target="_blank" rel="noopener" data-en="Academia Sinica’s Yinxu collection">中研院史語所殷墟典藏</a></div></details></section>
+<footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a></footer></main>
+<script src="vendor/katex/katex.min.js"></script><script src="vendor/katex/contrib/auto-render.min.js"></script><script src="js/math.js"></script>
+<script src="js/data/han-character-formation-lexicon.js"></script><script src="js/data/han-character-formation-sources.js"></script><script src="js/han-character-formation-core.js"></script>
+<script src="js/sound.js"></script><script src="js/numinput.js"></script><script src="js/labdeck.js"></script><script src="js/drawkit.js"></script><script src="js/view3d-nav.js"></script><script src="js/stepguide.js"></script><script src="js/labside.js"></script><script src="js/han-character-formation-3d.js"></script><script src="js/han-character-formation.js"></script>
+<script src="js/firebase-config.js"></script>
+<script>
+  // Standalone previews share the same page and mission definitions as the live lab.
+  // Only the published site uses the live backend. A test may inject its local mock.
+  if (location.hostname !== 'lab.astroni.org') window.LAB_FIREBASE = {};
+</script>
+<script src="js/missions.js" data-module="han-character-formation"></script><script src="js/missions/han-character-formation.js"></script><script src="js/stats.js" data-module="han-character-formation"></script><script src="js/comments.js"></script>
+</body></html>

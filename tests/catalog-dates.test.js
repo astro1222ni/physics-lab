@@ -8,6 +8,8 @@ const firstLabs = [
   { s: 'supply-demand', d: 'civ', l: firstDay },
   { s: 'sir-epidemic', d: 'health', l: firstDay },
   { s: 'basketball-shot', d: 'pe', l: firstDay },
+  { s: 'han-character-formation', d: 'chn', l: firstDay },
+  { s: 'sexagenary-cycle', d: 'hist', l: firstDay },
   { s: 'perspective-drawing', d: 'art', l: firstDay }
 ];
 const subjects = new Set(firstLabs.map(lab => lab.d));
@@ -70,4 +72,4 @@ assert.throws(() => verifyEntry('supply-demand', { ...first, subject: 'art' }), 
 assert.throws(() => verifyEntry('missing', first), /科目目錄不符/);
 assert.throws(() => verifyEntry('projectile', { ...history.projectile, subject: 'physics' }), /科目目錄不符/);
 assert.throws(() => launchCohorts({ modules: { 'supply-demand': first } }, [original], catalog, history), /首次建站批次/);
-console.log('四科首批的 Git 證據、七日徽章、建站舊站與後續新增的 30% 門檻全部通過。');
+console.log('六科首批的 Git 證據、七日徽章、建站舊站與後續新增的 30% 門檻全部通過。');

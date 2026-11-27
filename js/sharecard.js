@@ -25,6 +25,7 @@
   const ver = self ? ((self.getAttribute('src') || '').match(/\?v=\d+/) || [''])[0] : '';
   // 各科代表色（卡片固定用深底，所以取亮一點的色）
   const SC = { phy: '#5eb8ff', chem: '#ff8a65', bio: '#7bd88f', earth: '#c9a46a', math: '#b39dff', info: '#4dd0c8', geog: '#e6c15a', music: '#ff7fb6',
+    chn: '#d2bed3', hist: '#cabfae',
     civ: '#fde68a', health: '#99f6e4', pe: '#fdba74', art: '#f9a8d4' };
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }

@@ -59,6 +59,8 @@
     { id: 'info', zh: '資訊科技', en: 'Information Technology', short: '資訊' },
     { id: 'geog', zh: '地理', en: 'Geography', short: '地理' },
     { id: 'music', zh: '音樂', en: 'Music', short: '音樂' },
+    { id: 'chn', zh: '國文', en: 'Chinese', short: '國文' },
+    { id: 'hist', zh: '歷史', en: 'History', short: '歷史' },
     { id: 'civ', zh: '公民與社會', en: 'Civics and Society', short: '公民' },
     { id: 'health', zh: '健康與護理', en: 'Health and Nursing', short: '健護' },
     { id: 'pe', zh: '體育', en: 'Physical Education', short: '體育' },
@@ -74,7 +76,7 @@
     data: 'info', algo: 'info', prog: 'info', system: 'info', network: 'info', ai: 'info',
     mapping: 'geog', gis: 'geog', climate: 'geog', landform: 'geog', population: 'geog', economy: 'geog',
     tone: 'music', tuning: 'music', harmony: 'music', instruments: 'music', rhythm: 'music', audio: 'music',
-    markets: 'civ', prevention: 'health', 'sport-skills': 'pe', 'visual-expression': 'art' };
+    script: 'chn', chronology: 'hist', markets: 'civ', prevention: 'health', 'sport-skills': 'pe', 'visual-expression': 'art' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -171,6 +173,52 @@
       explore: { 1: nm('聽見聲音', 'Hearing the sound'), 5: nm('音階的旅人', 'Traveller of scales'), 10: nm('樂器的花園', 'Garden of instruments'), 20: nm('節奏的舞者', 'Dancer of rhythm'), 40: nm('和聲的行者', 'Walker of harmony'), 60: nm('聲音的星空', 'The starry sky of sound'), all: nm('音樂全覽', 'All of music') },
       full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('純律的和諧', 'Harmony of just intonation'), 10: nm('平均律的鍵盤', 'The well-tempered keyboard'), 20: nm('傅立葉的耳朵', "Fourier's ear"), 40: nm('交響的織體', 'Texture of the symphony'), 60: nm('畢達哥拉斯的天籟', "Pythagoras's music of the heavens"), all: nm('萬物皆有聲', 'Everything sings') },
       chapter: { 1: nm('讀通一章', 'One chapter of music'), 5: nm('從一根弦到樂團', 'From one string to an orchestra'), 10: nm('音樂的物理', 'The physics of music'), all: nm('音樂的全書', 'The whole book of music') }
+    },
+    chn: {
+      stars: {
+        10: nm('初識部件', 'First component'), 100: nm('解字筆記', 'Character notes'),
+        1000: nm('六書讀本', 'Guide to the six categories'), 10000: nm('字形考釋', 'Interpreting character forms'),
+        100000: nm('古文字研究者', 'Palaeographer'), 1000000: nm('一部字書', 'A dictionary of characters')
+      },
+      explore: {
+        1: nm('展開竹簡', 'Unrolling bamboo slips'), 5: nm('甲骨摹本', 'An oracle bone tracing'),
+        10: nm('篆文印譜', 'An album of seal scripts'), 20: nm('形聲家族', 'Families of phonetic compounds'),
+        40: nm('碑帖讀者', 'Reader of rubbings'), 60: nm('文字的來路', 'Tracing the history of writing'),
+        all: nm('國文全覽', 'All of Chinese')
+      },
+      full: {
+        1: nm('辨出形旁', 'Finding the semantic component'), 3: nm('比對聲符', 'Comparing phonetic components'),
+        5: nm('認讀小篆', 'Reading small seal script'), 10: nm('校讀異文', 'Collating textual variants'),
+        20: nm('編次字例', 'Arranging character examples'), 40: nm('釋讀古文字', 'Deciphering ancient graphs'),
+        60: nm('編成字譜', 'Compiling a character atlas'), all: nm('國文實驗全通', 'Every Chinese lab mastered')
+      },
+      chapter: {
+        1: nm('解字札記', 'Notes on characters'), 5: nm('字形手冊', 'A handbook of character forms'),
+        10: nm('古今字例集', 'Characters through time'), all: nm('國文全書', 'The complete Chinese collection')
+      }
+    },
+    hist: {
+      stars: {
+        10: nm('讀出年份', 'Reading a year'), 100: nm('排好年序', 'Putting years in order'),
+        1000: nm('對讀年表', 'Comparing chronologies'), 10000: nm('紀年考證', 'Checking historical dates'),
+        100000: nm('史料研究者', 'Historical researcher'), 1000000: nm('編年史家', 'Chronicler')
+      },
+      explore: {
+        1: nm('翻開年表', 'Opening a chronology'), 5: nm('史料摘記', 'Source notes'),
+        10: nm('行過一甲子', 'Through a sixty-year cycle'), 20: nm('年代的座標', 'Coordinates in time'),
+        40: nm('檔案閱覽室', 'The archive reading room'), 60: nm('沿著史跡', 'Following historical traces'),
+        all: nm('歷史全覽', 'All of history')
+      },
+      full: {
+        1: nm('辨認歲次', 'Identifying a cycle year'), 3: nm('算出年距', 'Measuring intervals'),
+        5: nm('核對年代', 'Verifying dates'), 10: nm('對讀史料', 'Comparing sources'),
+        20: nm('考訂異說', 'Evaluating conflicting accounts'), 40: nm('繫事於年', 'Dating historical events'),
+        60: nm('編成通史', 'Writing a general history'), all: nm('歷史實驗全通', 'Every history lab mastered')
+      },
+      chapter: {
+        1: nm('紀年筆記', 'Dating notes'), 5: nm('史料選讀', 'Selected historical sources'),
+        10: nm('編年索引', 'Chronological index'), all: nm('歷史全書', 'The complete history collection')
+      }
     },
     civ: {
       stars: { 10: nm('第一筆交易', 'The first trade'), 100: nm('讀懂價格', 'Reading prices'), 1000: nm('供需交會', 'Where supply meets demand'), 10000: nm('市場觀察員', 'Market observer'), 100000: nm('公共議題研究者', 'Public policy researcher'), 1000000: nm('公民經濟學家', 'Civic economist') },
@@ -341,6 +389,8 @@
     { id: 'branch-instruments', tier: 5, cat: 'branch', name: nm('克拉尼的沙圖', "Chladni's sand figures"), desc: nm('完成樂器的科學分支所有實驗的所有任務。', 'Complete every mission in The Science of Instruments.'), check: function (c) { return c.branchDone['instruments']; } },
     { id: 'branch-rhythm', tier: 5, cat: 'branch', name: nm('梅爾策爾的節拍器', "Maelzel's metronome"), desc: nm('完成節奏與曲式分支所有實驗的所有任務。', 'Complete every mission in Rhythm and Form.'), check: function (c) { return c.branchDone['rhythm']; } },
     { id: 'branch-audio', tier: 5, cat: 'branch', name: nm('賽賓的音樂廳', "Sabine's concert hall"), desc: nm('完成空間、錄音與數位音樂分支所有實驗的所有任務。', 'Complete every mission in Rooms, Recording and Digital Music.'), check: function (c) { return c.branchDone['audio']; } },
+    { id: 'branch-script', tier: 5, cat: 'branch', name: nm('許慎的《說文解字》', 'Xu Shen’s Shuowen Jiezi'), desc: nm('完成「文字」分支所有實驗的所有任務。', 'Complete every mission in Script.'), check: function (c) { return c.branchDone['script']; } },
+    { id: 'branch-chronology', tier: 5, cat: 'branch', name: nm('司馬遷的〈十二諸侯年表〉', 'Sima Qian’s Chronological Table of the Twelve Feudal Lords'), desc: nm('完成「時間與曆法」分支所有實驗的所有任務。', 'Complete every mission in Chronology.'), check: function (c) { return c.branchDone['chronology']; } },
     { id: 'branch-markets', tier: 5, cat: 'branch', name: nm('馬歇爾的剪刀', "Marshall's scissors"), desc: nm('完成「市場與經濟生活」分支所有實驗的所有任務。', 'Complete every mission in Markets and Economic Life.'), check: function (c) { return c.branchDone['markets']; } },
     { id: 'branch-prevention', tier: 5, cat: 'branch', name: nm('南丁格爾的提燈', "Nightingale's lamp"), desc: nm('完成「健康促進與疾病預防」分支所有實驗的所有任務。', 'Complete every mission in Health Promotion and Disease Prevention.'), check: function (c) { return c.branchDone['prevention']; } },
     { id: 'branch-sport-skills', tier: 5, cat: 'branch', name: nm('奈史密斯的桃籃', "Naismith's peach basket"), desc: nm('完成「運動技能與原理」分支所有實驗的所有任務。', 'Complete every mission in Sports Skills and Principles.'), check: function (c) { return c.branchDone['sport-skills']; } },

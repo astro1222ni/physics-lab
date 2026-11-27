@@ -137,6 +137,22 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/music.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/chinese.html</loc>
+    <lastmod>2026-11-27</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/chinese.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/chinese.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/chinese.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/chinese.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/history.html</loc>
+    <lastmod>2026-11-27</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/history.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/history.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/history.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/history.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/civics.html</loc>
     <lastmod>2026-11-27</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/civics.html"/>
@@ -1623,6 +1639,22 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/adsr-envelope.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/adsr-envelope.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/adsr-envelope.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/han-character-formation.html</loc>
+    <lastmod>2026-11-27</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/han-character-formation.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/han-character-formation.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/han-character-formation.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/han-character-formation.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/sexagenary-cycle.html</loc>
+    <lastmod>2026-11-27</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sexagenary-cycle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sexagenary-cycle.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/sexagenary-cycle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sexagenary-cycle.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/supply-demand.html</loc>

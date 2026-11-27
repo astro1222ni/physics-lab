@@ -1,0 +1,22 @@
+{
+  "subject": "chn",
+  "updated": "11/27",
+  "branches": [
+    {
+      "id": "script",
+      "zh": "文字",
+      "en": "Script",
+      "showChapterHeading": true,
+      "chapters": [
+        {
+          "id": "ch-character-formation",
+          "zh": "漢字構造",
+          "en": "Chinese Character Formation",
+          "modules": [
+            "han-character-formation"
+          ]
+        }
+      ]
+    }
+  ]
+}

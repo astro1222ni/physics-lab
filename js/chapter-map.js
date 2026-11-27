@@ -134,6 +134,8 @@ window.LAB_CHAPTERS = [
 {"id":"ch-polyrhythm","zh":"節奏型","en":"Rhythmic Patterns","b":"rhythm","m":["polyrhythm"]},
 {"id":"ch-room-acoustics","zh":"空間聲學","en":"Room Acoustics","b":"audio","m":["reverb-room"]},
 {"id":"ch-synthesis","zh":"合成器與效果器","en":"Synthesizers and Effects","b":"audio","m":["adsr-envelope"]},
+{"id":"ch-character-formation","zh":"漢字構造","en":"Chinese Character Formation","b":"script","m":["han-character-formation"]},
+{"id":"ch-calendar-cycles","zh":"紀年與週期","en":"Calendar Cycles","b":"chronology","m":["sexagenary-cycle"]},
 {"id":"ch-market-prices","zh":"市場機能與價格管制","en":"Market Prices and Price Controls","b":"markets","m":["supply-demand"]},
 {"id":"ch-communicable-disease","zh":"傳染病防治","en":"Preventing Infectious Diseases","b":"prevention","m":["sir-epidemic"]},
 {"id":"ch-shooting-throwing","zh":"投籃與投擲動作","en":"Shooting and Throwing Techniques","b":"sport-skills","m":["basketball-shot"]},

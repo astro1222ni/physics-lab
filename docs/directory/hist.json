@@ -1,0 +1,22 @@
+{
+  "subject": "hist",
+  "updated": "11/27",
+  "branches": [
+    {
+      "id": "chronology",
+      "zh": "時間與曆法",
+      "en": "Chronology",
+      "showChapterHeading": true,
+      "chapters": [
+        {
+          "id": "ch-calendar-cycles",
+          "zh": "紀年與週期",
+          "en": "Calendar Cycles",
+          "modules": [
+            "sexagenary-cycle"
+          ]
+        }
+      ]
+    }
+  ]
+}

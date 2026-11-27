@@ -158,7 +158,7 @@ for (const { d } of dirs) {
       liveN += live.length; planN += (c.modules || []).length - live.length;
       if (!live.length) continue;
       anyLive = true;
-      if (solo) chapters += '        <section class="chapter solo" id="' + c.id + '" style="--n:' + live.length + '">\n';
+      if (solo && !b.showChapterHeading) chapters += '        <section class="chapter solo" id="' + c.id + '" style="--n:' + live.length + '">\n';
       else chapters += '        <section class="chapter" id="' + c.id + '" aria-labelledby="h-' + c.id + '" style="--n:' + live.length + '">\n' +
         '          <h3 class="chapter-head" id="h-' + c.id + '">' + HD.formulaLabel(HD.readCatalogText(c.zh), HD.readCatalogText(c.en)) + '</h3>\n';
       chapters += '          <div class="modules">\n' + live.map(mo => liveWhere[mo].card).join('') + '          </div>\n        </section>\n';

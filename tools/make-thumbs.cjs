@@ -18,7 +18,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { launch } = require('G:/physics-lab/tools/browser.cjs');
+const { launch } = require('./browser.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'img', 'thumbs');
@@ -27,6 +27,8 @@ const W = 720, H = 405;
 // click：依序點擊的按鈕；wait：擷取前等待的毫秒數；canvas：主畫布（預設頁面第一個 canvas）；
 // eval：點擊前先在頁面執行的程式（例如用測試介面直接插針）；anchor：畫布比 16:9 高時，裁切位置（0 = 上緣、0.5 = 置中、1 = 下緣）
 const PREP = {
+  'han-character-formation': { canvas: '#scene', wait: 2000 },
+  'sexagenary-cycle': { canvas: '#wheelCanvas', wait: 2000 },
   'hanoi':             { canvas: '#view3 canvas', wait: 2500 },
   'projectile':        { click: ['#run'], wait: 2600, anchor: 1 },
   'newton-second':     { click: ['#go'], wait: 1800, anchor: 0 },
@@ -158,6 +160,7 @@ server.listen(0, '127.0.0.1', async () => {
       for (const theme of THEMES) {
         const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 }, deviceScaleFactor: 2, colorScheme: theme });
         await ctx.route(u => !u.href.startsWith(base), r => r.abort());
+        await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') });
         await ctx.addInitScript(o => {
           localStorage.setItem('lab-settings', JSON.stringify({ lang: o.lang, theme: 'auto', fs: 1 }));
           localStorage.setItem('lab-welcome-v1', 'skip');

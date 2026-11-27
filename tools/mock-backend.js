@@ -30,7 +30,7 @@
     return v;
   }
   const get = (db, path) => path.split('/').reduce((o, k) => (o == null ? null : o[k]), db) ?? null;
-  const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math', 'info', 'geog', 'music', 'civ', 'health', 'pe', 'art'];
+  const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math', 'info', 'geog', 'music', 'chn', 'hist', 'civ', 'health', 'pe', 'art'];
   const TW = 8 * 3600000, DAY = 86400000;
 
   // ---------- 規則：匿名作答統計 qstats（龍騰網頁講義、學習分支共用；11/21） ----------

@@ -161,14 +161,14 @@ if (NO_OG) process.exit(0);
 
 // ---------- 分享卡圖片（Playwright 畫 HTML 模板，存 JPG） ----------
 (async () => {
-  const { launch } = require('G:/physics-lab/tools/browser.cjs'); // 指定的 Intel 內顯、低優先啟動器
+  const { launch } = require('./browser.cjs'); // 指定的 Intel 內顯、低優先啟動器
   const outDir = path.join(ROOT, 'img/og');
   fs.mkdirSync(outDir, { recursive: true });
   const verFile = path.join(outDir, 'versions.json');
   const vers = fs.existsSync(verFile) ? JSON.parse(fs.readFileSync(verFile, 'utf8')) : {};
   const thumb = slug => path.join(ROOT, 'img/thumbs', slug + '-hant-light.webp');
   const dataUrl = f => 'data:image/webp;base64,' + fs.readFileSync(f).toString('base64');
-  const TOKENS = { mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e',
+  const TOKENS = { script: '#654760', chronology: '#585047', mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e',
     cell: '#7e22ce', genetics: '#3f6212', physiology: '#be123c', ecology: '#047857', evolution: '#854d0e', // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
     // 化學（lab.css 化學段）
     matter: '#7e22ce', reaction: '#b45309', equilibrium: '#047857', acidbase: '#be185d', organic: '#4d7c0f',
@@ -251,7 +251,7 @@ if (NO_OG) process.exit(0);
     labs.filter(l => fs.existsSync(thumb(l.slug))).forEach(l => (byBranch[l.branch.id] = byBranch[l.branch.id] || []).push(l));
     const pick = [];
     for (let i = 0; pick.length < 9 && i < 20; i++) Object.keys(byBranch).forEach(b => { if (pick.length < 9 && byBranch[b][i]) pick.push(byBranch[b][i]); });
-    const v = crypto.createHash('sha1').update(pick.map(l => l.slug + (vers[l.slug] || '')).join()).digest('hex').slice(0, 10);
+    const v = crypto.createHash('sha1').update(labs.length + '|' + pick.map(l => l.slug + (vers[l.slug] || '')).join()).digest('hex').slice(0, 10);
     if (FORCE || vers.index !== v || !fs.existsSync(path.join(outDir, 'index.jpg'))) {
       const html = `<style>${CSS}.text{top:150px;width:470px}h1{font-size:60px}</style><div class="card" style="--c:#196558">
         <div class="brand">ASTRO NI LAB・讓倪動手</div>
