@@ -101,8 +101,12 @@ expect('slit-interference-12', [{ a: 6, d: 120, lam: 600, y: y12b }, { a: 6, d: 
 expectNot('slit-interference-12', [{ a: 20, d: 100, lam: 750, y: y12 }, { a: 20, d: 100, lam: 600, y: y12 }, { a: 20, d: 100, lam: 500, y: y12 }], 'a = 20 時高級亮紋太暗');
 expectNot('slit-interference-h1', [{ a: 60 }], '尚未放置游標');
 expect('slit-interference-h1', [{ a: 60, y: yAt(1100, 120, 1, 30, 700) }], '把游標放到消失的第二級');
-expect('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1300, 50, 1, 50, 700) }], '光柵 N = 6、a 5、d 50，游標在 d sinθ = 1300 nm');
-expect('slit-interference-h2', [{ mode: 'grating', N: 5, white: true, a: 10, d: 40, y: yAt(1200, 40, 1, 50, 700) }], '光柵 N = 5、a 10、d 40，1200 nm');
+// h2（11/27 收緊）：只算第三級的頭剛踩上第二級的那一點，d sinθ = 1140–1170 nm
+expect('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1150, 50, 1, 50, 700) }], '光柵 N = 6、a 5、d 50，游標在 d sinθ = 1150 nm');
+expect('slit-interference-h2', [{ mode: 'grating', N: 5, white: true, a: 10, d: 40, y: yAt(1145, 40, 1, 50, 700) }], '光柵 N = 5、a 10、d 40，1145 nm');
+expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1300, 50, 1, 50, 700) }], '舊達成例 1300 nm（重疊區中段）不再算');
+expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1185, 50, 1, 50, 700) }], '近失：1185 nm，離頭太遠');
+expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(1125, 50, 1, 50, 700) }], '近失：1125 nm，第三級還沒到');
 expectNot('slit-interference-h2', [{ mode: 'grating', N: 6, white: true, a: 5, d: 50, y: yAt(900, 50, 1, 50, 700) }], '只有第 2 級的地方不算');
 expect('slit-interference-h3', [{ white: true, a: 5, d: 400, y: yAt(5000, 400, 1, 30, 700) }], 'a = 5、d = 400，游標在 d sinθ = 5 μm（y ≈ 12.5 mm）');
 expectNot('slit-interference-h3', [{ white: true, a: 40, d: 120, y: yAt(5000, 120, 1, 50, 700) }], '預設縫寬太寬：高級條紋太暗');

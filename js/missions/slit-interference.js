@@ -171,8 +171,10 @@
       riddle: { zh: '第二道彩虹的尾巴，被第三道彩虹的頭輕輕踩住；伸手指著那一處，別讓它暗得看不見。', en: 'The tail of the second rainbow is gently stepped on by the head of the third; point right at that spot, and do not let it fade into the dark.' },
       check: function (ev) {
         const d = ev.data;
+        // 11/27 收緊（原本 1140–1500 nm 整段重疊區都算，亂按種子 1112 拖曳時誤觸）：
+        // 指在第三級的頭（3 × 380 nm）剛踩上第二級尾巴的那一點，d sinθ = 1140–1170 nm（留 30 nm 給游標像素精度，手機一格約 12 nm）
         return white(ev) && d.mode === 'grating' && d.cursorPlaced && Math.abs(d.pathD) >= 1140 - EPS &&
-          Math.abs(d.pathD) <= 1500 + EPS && d.I >= 0.02 - EPS;
+          Math.abs(d.pathD) <= 1170 + EPS && d.I >= 0.02 - EPS;
       }
     },
     {

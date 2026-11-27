@@ -153,10 +153,22 @@
       check: function (ev, mem) {
         const d = ev.data;
         if (!isC(ev)) return false;
-        // 在惠斯登電橋下親手調過電阻即可；之後再閉合開關或調電源讓 Ig 反向也算。
-        if (d.preset !== 'wheatstone') { mem.rMoved = false; return false; }
-        if (d.action === 'R') mem.rMoved = true;
-        return !!mem.rMoved && d.allClosed && d.Ig != null && d.Ig >= 1e-3 - 1e-9;
+        // 天秤的另一頭（11/27 收緊：原本調過電阻、Ig ≥ 1 mA 就算，亂按 5 個種子有 4 個誤觸）：
+        // 惠斯登電橋開關全閉、不平衡（|Ig| ≥ 1 mA），先記一筆；再把左右兩臂整個對調（R1↔R3、R2↔Rx），
+        // 電源不變，檢流計電流大小相同、方向相反（相對誤差 0.1%）。左右鏡射讓 C、D 兩點的電位互換，Ig 恰好反號。
+        // 「經過平衡點讓指針反向」不採用：一般任務 L7、L10 用任一臂的滑桿找平衡時都會經過，會被順手完成。
+        if (d.preset !== 'wheatstone' || !d.allClosed || d.Ig == null || !d.parts) { mem.list = []; return false; }
+        const p = d.parts;
+        if (!p.R1 || !p.R2 || !p.R3 || !p.Rx || Math.abs(d.Ig) < 1e-3 - 1e-9) return false;
+        const cur = { R1: p.R1.R, R2: p.R2.R, R3: p.R3.R, Rx: p.Rx.R, emf: d.emf, r: d.r, Ig: d.Ig };
+        const list = mem.list = mem.list || [];
+        const hit = list.some(function (a) {
+          return a.R1 === cur.R3 && a.R3 === cur.R1 && a.R2 === cur.Rx && a.Rx === cur.R2 &&
+            a.emf === cur.emf && a.r === cur.r && Math.abs(a.Ig + cur.Ig) <= 1e-3 * Math.abs(a.Ig);
+        });
+        list.push(cur);
+        if (list.length > 12) list.shift();
+        return hit;
       }
     },
     {

@@ -77,8 +77,9 @@
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     @media (orientation: landscape) and (max-height: 600px) {
       html.labdeck-drawer .stage { padding-inline-end: 38px; }
+      /* 11/27：高度改由 js 照螢幕可用高度算（layout 的 drawer 分支），寬度不再壓成 (100dvh − 82px) × 1.14（390 高時只剩 351 px） */
       html.labdeck-drawer .stage #cv {
-        max-width: min(100%, calc((100dvh - 82px) * 1.14)) !important;
+        max-width: 100% !important;
         margin-inline: 0 !important;
       }
     }

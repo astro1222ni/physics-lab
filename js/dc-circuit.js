@@ -146,7 +146,15 @@
     const padT = narrow ? 26 : 50, padB = narrow ? 34 : 46; // 上方留給最上排燈泡的光暈與選取外框
     let schH = Math.round(cw * 0.62);
     let u = Math.min((cw - 2 * padX) / 6, (schH - padT - padB) / 4);
-    if (narrow) { u = (cw - 2 * padX) / 6; schH = Math.round(4 * u + padT + padB); } // 手機：高度貼合電路，不留空白
+    const drawer = !!(window.LabDeck && window.LabDeck.mode === 'drawer');
+    if (drawer) {
+      // 手機橫放（drawer）：高度照螢幕可用高度，寬度維持左欄全寬、電路置中；
+      // 原本高度跟寬度走，畫布整塊放不進一屏，labdeck 只好縮窄成 351×329（不到螢幕寬 45%）
+      const pb = cv.parentElement && cv.parentElement.querySelector('.playbar');
+      const reserve = (pb && pb.offsetHeight ? pb.offsetHeight : 44) + 16; // 播放列＋上下留白，畫布＋播放列剛好一屏
+      schH = Math.max(200, Math.min(Math.round(cw * 0.62), window.innerHeight - stripH - reserve));
+      u = Math.min((cw - 2 * padX) / 6, (schH - padT - padB) / 4);
+    } else if (narrow) { u = (cw - 2 * padX) / 6; schH = Math.round(4 * u + padT + padB); } // 手機：高度貼合電路，不留空白
     return {
       narrow: narrow, schH: schH, stripH: stripH, u: u,
       ox: (cw - 6 * u) / 2, oy: padT + ((schH - padT - padB) - 4 * u) / 2,

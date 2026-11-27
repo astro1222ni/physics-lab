@@ -54,7 +54,26 @@ c = set(K.preset('internal'), { R: 1, E: { emf: 6, r: 2 } }); emit('L9a: interna
 set(c, { R: 4 }); emit('L9b: internal r=2, R=4', c, 'R', NaN);
 c = set(K.preset('wheatstone'), { R1: 10, R2: 30, R3: 15, Rx: 45 }); emit('L10: wheatstone 10/30/15/45, ε=6, r=0', c, 'R', NaN);
 c = set(K.preset('single'), { R1: 2, E: { emf: 6.28, r: 0 } }); emit('h2: single ε=6.28 V, R=2 Ω → 3.14 A', c, 'emf', NaN);
-c = set(K.preset('wheatstone'), { Rx: 20 }); emit('h3: wheatstone Rx=20 (指針反向)', c, 'R', NaN);
+// h3（11/27 收緊）：不平衡的電橋記一筆，再把左右兩臂整個對調（R1↔R3、R2↔Rx），Ig 大小相同、方向相反
+c = set(K.preset('wheatstone'), { Rx: 20 }); emit('h3 舊達成例：Rx 40→20 一步跨過（不可再觸發）', c, 'R', NaN);
+assert.ok(!done['dc-circuit-h3'], 'h3 舊達成例（一次大跳）不可觸發');
+c = K.preset('wheatstone');
+for (const rx of [33, 32, 31, 30, 29, 28]) { set(c, { Rx: rx }); emit('h3 近失：一般任務 L7 式拖 Rx 經過零點，Rx=' + rx, c, 'R', NaN); }
+c = K.preset('wheatstone');
+for (const r2 of [24, 25, 26, 27, 28]) { set(c, { R2: r2 }); emit('h3 近失：拖 R2 經過零點，R2=' + r2, c, 'R', NaN); }
+assert.ok(!done['dc-circuit-h3'], 'h3：任一臂拖過平衡點不可觸發');
+const h3m = () => { missions.find(m => m.id === 'dc-circuit-h3').mem = {}; }; // 每組近失從乾淨的紀錄開始（網頁上換情境也會清掉）
+h3m(); c = K.preset('wheatstone'); emit('h3：預設 10/20/15/40 不平衡，記一筆', c, 'R', NaN);
+set(c, { R1: 15, R3: 10 }); emit('h3 近失：只對調 R1↔R3（R2、Rx 沒換）', c, 'R', NaN);
+set(c, { R2: 40, Rx: 21 }); emit('h3 近失：R2=40、Rx=21（差一格，不是完整鏡射）', c, 'R', NaN);
+assert.ok(!done['dc-circuit-h3'], 'h3 近失不可觸發');
+h3m(); c = K.preset('wheatstone'); set(c, { E: { emf: 6.5 } }); emit('h3：預設電阻、ε=6.5 V 記一筆', c, 'emf', NaN);
+set(c, { R1: 15, R2: 40, R3: 10, Rx: 20, E: { emf: 6 } }); emit('h3 近失：四臂鏡射但電源 6 V（和上一筆不同）', c, 'R', NaN);
+assert.ok(!done['dc-circuit-h3'], 'h3 電源不同不可觸發');
+h3m(); c = K.preset('wheatstone'); emit('h3：預設 10/20/15/40，Ig 一個方向', c, 'R', NaN);
+set(c, { R1: 15, R3: 10 }); emit('h3：對調 R1↔R3', c, 'R', NaN);
+set(c, { R2: 40, Rx: 20 }); emit('h3: wheatstone 左右兩臂整個對調 15/40/10/20，Ig 反號', c, 'R', NaN);
+assert.ok(done['dc-circuit-h3'], 'h3 達成例');
 const hidden = missions.filter(m => m.hidden);
 assert.deepEqual(hidden.filter(m => done[m.id]).map(m => m.id), hidden.slice(0, 3).map(m => m.id),
   '各情境預設、一般任務與舊隱藏達成例');

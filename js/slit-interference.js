@@ -812,7 +812,8 @@
   /** 文字中夾下標（例如 I/I0 的 0）：parts = [[文字, 是否下標], …]；回傳總寬度 */
   function richText(ctx, parts, x, y, align, measureOnly) {
     const base = ctx.font, size = parseFloat((String(base).match(/(\d+(?:\.\d+)?)px/) || [0, 12])[1]);
-    const subFont = String(base).replace(/(\d+(?:\.\d+)?)px/, (size * 0.74).toFixed(1) + 'px');
+    // 下標約主字的 0.74 倍，但不小於 9.2 px（全站畫布字高下限；11 px 主字原本下標只剩 8.1 px）
+    const subFont = String(base).replace(/(\d+(?:\.\d+)?)px/, Math.min(size, Math.max(size * 0.74, 9.2)).toFixed(1) + 'px');
     let w = 0;
     const widths = parts.map(function (pt) { ctx.font = pt[1] ? subFont : base; const v = ctx.measureText(pt[0]).width; w += v; return v; });
     ctx.font = base;
