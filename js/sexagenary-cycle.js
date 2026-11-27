@@ -40,7 +40,7 @@
   }
   function showYear(displayed){
     const d=K.describe(displayed);
-    $('dialIndex').textContent=T('第 '+(d.k+1)+' / 60 格','Position '+(d.k+1)+' / 60');
+    $('dialIndex').textContent=T('第 '+(d.k+1)+' / 60 格','Position '+(d.k+1)+' / 60');
     $('civilOut').textContent=displayed<0?T('前 '+(-displayed)+' 年',(-displayed)+' BC'):T(displayed+' 年','AD '+displayed);
     $('rocOut').textContent=rocName(d.roc);
     $('pairOut').textContent=pairName(d);$('animalOut').textContent=T(d.animal,d.animalEn);

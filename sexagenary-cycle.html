@@ -44,9 +44,9 @@
     .gz-id {display:flex;align-items:baseline;flex-wrap:wrap;gap:0 12px}.gz-id small {font:650 calc(14px * var(--fs,1))/1.25 system-ui;color:var(--muted);font-variant-numeric:tabular-nums}
     .gz-stage button,.gz-card button,.gz-card input,.gz-card select,.gz-bar select,.gz-note summary {min-height:44px;min-width:44px;font:600 calc(15px * var(--fs,1))/1.28 system-ui}
     .gz-stage button,.gz-card button,.gz-bar select,.gz-card select,.gz-card input {border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:6px 10px}
-    .gz-wrap button,.gz-wrap select,.gz-note summary {cursor:pointer}.gz-wrap button:disabled {opacity:.45;cursor:default}
-    .gz-wrap button:focus-visible,.gz-wrap select:focus-visible,.gz-wrap input:focus-visible,.gz-wrap canvas:focus-visible {outline:3px solid var(--accent);outline-offset:-3px}
-    .gz-wrap :is(.gz-switch button[aria-pressed="true"],button.gz-primary) {color:#fff;background:#28594f;border-color:#28594f}
+    :is(.gz-wrap,.labdeck) button,:is(.gz-wrap,.labdeck) select,.gz-note summary {cursor:pointer}:is(.gz-wrap,.labdeck) button:disabled {opacity:.45;cursor:default}
+    :is(.gz-wrap,.labdeck) button:focus-visible,:is(.gz-wrap,.labdeck) select:focus-visible,:is(.gz-wrap,.labdeck) input:focus-visible,:is(.gz-wrap,.labdeck) canvas:focus-visible {outline:3px solid var(--accent);outline-offset:-3px}
+    :is(.gz-wrap,.labdeck) :is(.gz-switch button[aria-pressed="true"],button.gz-primary) {color:#fff;background:#28594f;border-color:#28594f}
     .gz-wrap .gz-switch {gap:2px}.gz-wrap .gz-switch button {padding:5px 8px}
     .gz-scene {position:relative;isolation:isolate;height:clamp(300px,46vh,510px);width:100%;overflow:hidden;background:var(--canvas-bg)}
     .gz-scene canvas,#modelHost {position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;display:block}

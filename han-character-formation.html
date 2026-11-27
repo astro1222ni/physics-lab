@@ -97,6 +97,8 @@ body.han-page .metric strong .glyph,body.han-page .metric strong .glyph span{dis
   html[lang="en"] body.han-page .labside-rail{top:2px}
   html[lang="en"] body.han-page .labside-rail>button:not(.labside-fold),html[lang="en"] body.han-page .labside-rail>.fb-tab{height:100px;min-height:100px}
 }
+/* 部件與字例兩個選單：每欄放不下 175 px（最長字例「水　ㄕㄨㄟˇ　水流」連內距與箭頭）就自動上下排，手機橫放與平板橫放才不會截字 */
+html:not([lang=en]) #buildTools .twocol{grid-template-columns:repeat(auto-fit,minmax(min(100%,175px),1fr))}
 </style>
 </head>
 <body class="han-page" data-en-ready>
