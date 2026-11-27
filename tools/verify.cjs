@@ -9,6 +9,12 @@
  *   node tools/verify.cjs --fresh    任務證明不用快取、全部重算
  *   省 CPU：任務證明有快取（沒改過就不重算）；瀏覽器用 Intel 內顯（tools/browser.cjs）；整支低於標準優先權。
  *   node tools/verify.cjs kepler     介面稽核、頁面檢查與試玩只看指定頁面
+ *   node tools/verify.cjs --accept kepler,atwood   一鍵驗收（11/27 小幫手清單 A3；npm run accept -- 代號）：只跑這幾站要用的
+ *                                    單元測試（全部）、任務證明（只跑這幾站的）、靜態稽核（只看這幾站）、導覽與目錄檢查、
+ *                                    任務不變檢查 mission-guard（本分支改過的任務檔）、頁面檢查、試玩（改過的重玩；還沒有紀錄的直接玩）、
+ *                                    版面自查 layout-audit --font。
+ *                                    不跑介面稽核（只有提醒，要看用 --audit）。輸出精簡：只印不合格項目，最後一行是結論。
+ *   node tools/verify.cjs --brief    任何模式都可加：不印通過的步驟，只印不合格項目與結論
  *   試玩（tools/playtest.cjs）：只重玩「有改過」的實驗（頁面、它自己的程式、任務檔或排除清單變了），沒改過的沿用上次結果，
  *   和任務證明的快取一樣（紀錄在 .shots/playtest-cache.json）。第一次沒有紀錄時只記下目前版本、不試玩；
  *   要建立或更新全站紀錄：npm run playtest（全部約 1.5–2 小時）。
@@ -31,7 +37,14 @@ const args = process.argv.slice(2);
 const QUICK = args.includes('--quick');
 const FRESH = args.includes('--fresh'); // 任務證明全部重算，不用快取
 const AUDIT = args.includes('--audit'); // 只跑靜態稽核與介面稽核（改介面時快速看提醒）
-const only = args.filter(a => !a.startsWith('--'));
+const ACCEPT = args.some(a => a === '--accept' || a.startsWith('--accept='));
+const BRIEF = ACCEPT || args.includes('--brief');
+const T0 = Date.now();
+// 代號可用空格或逗號分開；--accept=a,b 也可以
+const only = args.filter(a => !a.startsWith('--')).concat(args.filter(a => a.startsWith('--accept=')).map(a => a.slice(9)))
+  .flatMap(a => a.split(',')).map(a => a.trim().replace(/\.html$/, '')).filter(Boolean);
+if (ACCEPT && !only.length) { console.error('用法：node tools/verify.cjs --accept 代號[,代號…]（npm run accept -- 代號）'); process.exit(2); }
+{ const miss = only.filter(s => !fs.existsSync(path.join(ROOT, s + '.html'))); if (miss.length) { console.error('✗ 找不到頁面：' + miss.join('、') + '（不加 .html）'); process.exit(2); } }
 const report = { at: new Date().toISOString(), steps: {}, errors: [], warnings: [] };
 const err = (area, msg) => report.errors.push({ area, msg });
 const warn = (area, page, msg) => report.warnings.push({ area, page, msg });
@@ -47,8 +60,9 @@ function run(label, cmd, cmdArgs) {
   const r = spawnSync(cmd, cmdArgs, { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20 });
   const ok = r.status === 0;
   report.steps[label] = { ok, sec: Math.round((Date.now() - t) / 1000) };
-  console.log((ok ? '✓ ' : '✗ ') + label + '（' + report.steps[label].sec + ' 秒）');
-  if (!ok) { console.log(((r.stdout || '') + (r.stderr || '')).split('\n').filter(l => /✗|Error|錯|失敗|FAIL|assert/i.test(l)).slice(0, 30).join('\n')); err(label, '沒有通過'); }
+  const detail = ok ? '' : ((r.stdout || '') + (r.stderr || '')).split('\n').filter(l => /✗|Error|錯|失敗|FAIL|assert/i.test(l)).slice(0, 30).join('\n');
+  if (!BRIEF) console.log((ok ? '✓ ' : '✗ ') + label + '（' + report.steps[label].sec + ' 秒）');
+  if (!ok) { if (!BRIEF) console.log(detail); err(label, '沒有通過' + (BRIEF && detail.trim() ? '\n      ' + detail.trim().split('\n').join('\n      ') : '')); }
   return { ok, out: (r.stdout || '') + (r.stderr || '') };
 }
 
@@ -58,7 +72,8 @@ if (!AUDIT) run('單元測試', process.execPath, [path.join(ROOT, 'tools/run-te
 // 2. 任務證明（每支都要結束碼 0）
 if (!AUDIT) {
   const dir = path.join(ROOT, 'tools/mission-proofs');
-  const files = fs.readdirSync(dir).filter(f => /\.c?js$/.test(f)).sort();
+  const slugOf = f => f.replace(/\.c?js$/, '').replace(/-\d+$/, '');
+  const files = fs.readdirSync(dir).filter(f => /\.c?js$/.test(f) && (!ACCEPT || only.includes(slugOf(f)))).sort();
   const bad = [];
   const t = Date.now();
   // 快取：證明腳本、它用到的 js 檔、該實驗的頁面程式都沒變，上次又通過，就不重算（省 CPU；--fresh 全部重算）
@@ -88,8 +103,8 @@ if (!AUDIT) {
   fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
   fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 1));
   report.steps['任務證明'] = { ok: !bad.length, sec: Math.round((Date.now() - t) / 1000), n: files.length, cached: skipped };
-  console.log((bad.length ? '✗ ' : '✓ ') + `任務證明 ${files.length - bad.length}/${files.length}（${report.steps['任務證明'].sec} 秒` + (skipped ? `，${skipped} 支沒改過、沿用上次結果` : '') + '）');
-  bad.forEach(b => { console.log('    ' + b); err('任務證明', b); });
+  if (!BRIEF) console.log((bad.length ? '✗ ' : '✓ ') + `任務證明 ${files.length - bad.length}/${files.length}（${report.steps['任務證明'].sec} 秒` + (skipped ? `，${skipped} 支沒改過、沿用上次結果` : '') + '）');
+  bad.forEach(b => { if (!BRIEF) console.log('    ' + b); err('任務證明', b); });
 }
 
 // 3. 靜態稽核（不開瀏覽器）
@@ -100,7 +115,7 @@ if (!AUDIT) {
   const subjectHTML = (w.LAB_SUBJECTS || []).map(s => read(s.page + '.html')).join('\n');
   const thumbs = exists('js/thumbs.js') ? read('js/thumbs.js') : '';
   const SUPS = /[⁰⁴-₟⃗]/;
-  for (const s of LIVE) {
+  for (const s of (ACCEPT ? only.filter(x => LIVE.includes(x) || exists('js/missions/' + x + '.js')) : LIVE)) {
     for (const f of [s + '.html', 'js/' + s + '.js', 'js/missions/' + s + '.js']) if (!exists(f)) err('檔案', s + ' 缺少 ' + f);
     if ((subjectHTML.match(new RegExp('data-module="' + s + '"', 'g')) || []).length !== 1) err('首頁', s + ' 的科目頁卡片不是恰好一張');
     if (!new RegExp('data-thumb="' + s + '"').test(subjectHTML)) warn('首頁', s, '卡片沒有縮圖（npm run thumbs -- ' + s + '）');
@@ -109,7 +124,7 @@ if (!AUDIT) {
     if (!(w.LAB_MISSION_MODULES || []).some(m => (m.id || m) === s)) warn('任務', s, '不在 LAB_MISSION_MODULES');
     if (!(w.LAB_MODULE_BRANCH || {})[s]) err('任務', s + ' 不在 LAB_MODULE_BRANCH');
   }
-  for (const p of ENTRY.concat(['leaderboard', 'about'], LIVE)) {
+  for (const p of (ACCEPT ? only : ENTRY.concat(['leaderboard', 'about'], LIVE))) {
     const f = p + '.html';
     if (!exists(f)) continue;
     const h = read(f);
@@ -133,19 +148,31 @@ if (!AUDIT) {
   if (!exists('robots.txt')) warn('國際能見度', '-', '沒有 robots.txt');
   const nE = report.errors.filter(e => ['檔案', '首頁', '頁面', '字元', '任務'].includes(e.area)).length;
   report.steps['靜態稽核'] = { ok: !nE };
-  console.log((nE ? '✗ ' : '✓ ') + '靜態稽核（錯誤 ' + nE + '、提醒 ' + report.warnings.length + '）');
+  if (!BRIEF) console.log((nE ? '✗ ' : '✓ ') + '靜態稽核（錯誤 ' + nE + '、提醒 ' + report.warnings.length + '）');
 }
 
 // 試玩：tools/playtest.cjs --changed（像學生一樣從介面玩：任務說明對介面、亂按、預設不觸發任務、數值合理性）
 // 確定是問題的列為錯誤（擋發布），待人工確認的列進提醒；沒改過的實驗沿用上次結果
+const isLab = s => LIVE.includes(s) || fs.existsSync(path.join(ROOT, 'js/missions/' + s + '.js'));
 function playtest() {
-  const pages = only.length ? only.filter(s => LIVE.includes(s)) : [];
+  const pages = only.length ? only.filter(isLab) : [];
   if (only.length && !pages.length) return; // 指定的頁面都不是實驗（例如只查首頁）
   const t = Date.now();
-  const r = spawnSync(process.execPath, [path.join(ROOT, 'tools/playtest.cjs'), '--changed', '--quiet'].concat(pages), { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 4 * 3600 * 1000 });
+  const PT = s => spawnSync(process.execPath, [path.join(ROOT, 'tools/playtest.cjs'), '--quiet'].concat(s), { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 4 * 3600 * 1000 });
+  const readRep = () => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, '.shots/playtest-report.json'), 'utf8')); } catch (e) { return null; } };
+  let r = PT(['--changed'].concat(pages));
+  let rep = readRep();
+  // 驗收時：只記過版本、還沒真的玩過的站（none），直接玩一次，不可當作通過
+  if (ACCEPT && rep && r.status !== 2 && !r.error) {
+    const none = pages.filter(s => rep.pages[s] && rep.pages[s].none);
+    if (none.length) {
+      const r2 = PT(none);
+      const rep2 = readRep();
+      if (r2.status === 2 || r2.error || !rep2) r = r2;
+      else rep = { at: rep.at, pages: Object.assign({}, rep.pages, rep2.pages) };
+    }
+  }
   const sec = Math.round((Date.now() - t) / 1000);
-  let rep = null;
-  try { rep = JSON.parse(fs.readFileSync(path.join(ROOT, '.shots/playtest-report.json'), 'utf8')); } catch (e) { rep = null; }
   if (r.status === 2 || r.error || !rep || Date.parse(rep.at) < t - 1000) {
     const tail = (((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-3).join(' / ')).slice(0, 300);
     report.steps['試玩'] = { ok: false, sec };
@@ -161,14 +188,47 @@ function playtest() {
     (p.pending || []).forEach(i => { nP++; warn('試玩', slug, '待人工確認：' + i.msg); });
   }
   report.steps['試玩'] = { ok: !nC, sec, ran, cached, none };
+  if (none && ACCEPT) err('試玩', none + ' 站沒有試玩結果');
   const note = (r.stdout || '').split('\n').find(l => /^試玩：/.test(l));
-  console.log((nC ? '✗ ' : '✓ ') + '試玩（' + sec + ' 秒；重玩 ' + ran + ' 個、沿用上次結果 ' + cached + ' 個' + (none ? '、還沒有紀錄 ' + none + ' 個' : '') + '）：確定是問題 ' + nC + '、待人工確認 ' + nP +
+  if (!BRIEF) console.log((nC ? '✗ ' : '✓ ') + '試玩（' + sec + ' 秒；重玩 ' + ran + ' 個、沿用上次結果 ' + cached + ' 個' + (none ? '、還沒有紀錄 ' + none + ' 個' : '') + '）：確定是問題 ' + nC + '、待人工確認 ' + nP +
     (note && !ran ? '\n    ' + note : ''));
+}
+
+// 版面自查（tools/layout-audit.cjs --font，11/27 A2）：驗收時跑，不合格列為錯誤
+function layout() {
+  const pages = only.filter(isLab);
+  if (!pages.length) return;
+  const t = Date.now();
+  const r = spawnSync(process.execPath, [path.join(ROOT, 'tools/layout-audit.cjs'), pages.join(','), '--font'], { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 3600 * 1000 });
+  const sec = Math.round((Date.now() - t) / 1000);
+  const out = ((r.stdout || '') + (r.stderr || '')).trim();
+  report.steps['版面自查'] = { ok: r.status === 0, sec };
+  if (r.status === 0) { if (!BRIEF) console.log('✓ 版面自查（' + sec + ' 秒）'); return; }
+  if (r.status !== 1 || r.error) { err('版面自查', '工具沒有跑完：' + (r.error ? r.error.code : '結束碼 ' + r.status) + '　' + out.split('\n').slice(-3).join(' / ').slice(0, 300)); return; }
+  // 「✗ 站名」底下縮排的每一行是一項不合格
+  let cur = null;
+  for (const l of out.split('\n')) {
+    if (/^✗ /.test(l)) cur = l.slice(2).trim();
+    else if (cur && /^\s{2,}\S/.test(l)) err('版面自查', cur + '：' + l.trim());
+    else cur = null;
+  }
+  if (!report.errors.some(e => e.area === '版面自查')) err('版面自查', '不合格（' + out.split('\n').pop() + '）');
+  if (!BRIEF) console.log('✗ 版面自查（' + sec + ' 秒）');
 }
 
 function finish() {
   fs.mkdirSync(path.join(ROOT, '.shots'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, '.shots/verify-report.json'), JSON.stringify(report, null, 1));
+  if (BRIEF) {
+    const all = Math.round((Date.now() - T0) / 1000);
+    const who = ACCEPT ? '驗收 ' + only.join('、') : (QUICK ? '快速檢查' : AUDIT ? '稽核' : '總檢查') + (only.length ? ' ' + only.join('、') : '');
+    const nW = report.warnings.length;
+    report.errors.forEach(e => console.log('✗ ' + e.area + '：' + e.msg));
+    console.log((report.errors.length ? '\n✗ ' + who + '：' + report.errors.length + ' 項不合格，不可上線' : '✓ ' + who + '：全部通過，可以上線') +
+      '（' + Object.keys(report.steps).join('、') + '；' + Math.floor(all / 60) + ' 分 ' + (all % 60) + ' 秒）' +
+      (nW ? '。另有 ' + nW + ' 項提醒不擋上線，在 .shots/verify-report.json' : ''));
+    process.exit(report.errors.length ? 1 : 0);
+  }
   const byArea = {};
   report.warnings.forEach(x => { byArea[x.area] = (byArea[x.area] || 0) + 1; });
   console.log('\n提醒（待改清單）：' + (Object.keys(byArea).map(k => k + ' ' + byArea[k]).join('、') || '無'));
@@ -179,7 +239,14 @@ function finish() {
 
 run('科目導覽檢查', process.execPath, [path.join(ROOT, 'tools/fix-crumbs.cjs'), '--check']);
 run('科目目錄檢查', process.execPath, [path.join(ROOT, 'tools/apply-directory.cjs'), '--check']);
-if (QUICK) finish();
+if (ACCEPT) {
+  // 驗收：頁面檢查 → 試玩 → 版面自查（瀏覽器都經 tools/browser.cjs 排隊，一次一個）
+  run('任務不變檢查', process.execPath, [path.join(ROOT, 'tools/mission-guard.cjs')]); // A9：本分支改過的任務檔，代號、等級、隱藏與否不可改
+  run('頁面檢查', process.execPath, [path.join(ROOT, 'tools/check-pages.cjs')].concat(only));
+  playtest();
+  layout();
+  finish();
+} else if (QUICK) finish();
 else {
   // 4. 介面稽核（Playwright，390 px 淺色繁體）：觸控目標、文字對比、說明文字、頁面重量
   const { launch } = require('G:/physics-lab/tools/browser.cjs');
@@ -271,7 +338,7 @@ else {
     await browser.close();
     server.close();
     report.steps['介面稽核'] = { ok: true, sec: Math.round((Date.now() - t) / 1000) };
-    console.log('✓ 介面稽核（' + report.steps['介面稽核'].sec + ' 秒，結果列在提醒）');
+    if (!BRIEF) console.log('✓ 介面稽核（' + report.steps['介面稽核'].sec + ' 秒，結果列在提醒）');
     // 5. 頁面檢查（四種組合：錯誤、左右捲動、KaTeX、英文殘留中文、上標字元）
     if (!AUDIT) run('頁面檢查', process.execPath, [path.join(ROOT, 'tools/check-pages.cjs')].concat(only));
     // 6. 試玩（只重玩有改過的實驗；上一個瀏覽器關掉後才開，同一時間只有一個）

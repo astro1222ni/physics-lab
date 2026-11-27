@@ -59,7 +59,8 @@
 | `js/drawkit.js` | 共用繪圖工具 `LabDraw`（立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動）；新畫面一律用它 |
 | `js/thumbs.js`、`js/home.js`、`js/home-core.js`、`js/subject.js`、`img/thumbs/` | 動態縮圖、首頁個人狀態與推薦、科目頁章數與分支黏頂列 |
 | `tools/seo.cjs`、`img/og/`、`sitemap.xml`、`robots.txt` | `npm run seo`：分享卡、每頁說明與 Open Graph、hreflang、結構化資料、網站地圖 |
-| `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查、試玩） |
+| `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查、試玩）；`npm run accept -- 代號[,代號]`：一鍵驗收（11/27 A3：只跑這幾站的任務證明、靜態稽核、頁面檢查、試玩、layout-audit --font，加全部單元測試與任務不變檢查 `tools/mission-guard.cjs`（A9：本分支改過的任務檔，代號、等級、隱藏與否不可改）；只印不合格項目，最後一行是結論）；任何模式加 `--brief` 也只印不合格 |
+| `tools/wt.cjs` | 工作樹開收（11/27 A10）：`node tools/wt.cjs new <名稱>` 從 origin/main 開 `G:/physics-lab-wt/<名稱>` 並接 node_modules 連結點；`done <名稱>` 先查殘留行程與改名探測（有程式在用就停）、有未 commit 的檔就停，只拆連結點再 `git worktree remove`（不加 --force），分支預設保留；`list` 看全部工作樹狀態。**收工作樹一律用它，不要手動 rm** |
 | `tools/playtest.cjs`、`tools/playtest/exclude.cjs` | `npm run playtest [-- 代號…]`：自動試玩（像學生亂按、比對任務用字、抓錯誤與不合理數值），報告 `.shots/playtest-report.json`；verify 只重玩改過的實驗 |
 | `docs/WORLD-CLASS.md`、`docs/auto-optimize-log.md` | 世界一流標準、待改清單、自動優化規則與紀錄（每週五 04:00 自動優化，11/13 站長改） |
 
