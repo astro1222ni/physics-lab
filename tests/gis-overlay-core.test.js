@@ -133,6 +133,11 @@ test('加權疊合：分數在 0–100；門檻處 0.5 分；權重同乘一個�
   // 最高分的格子
   let m = -1; for (let k = 0; k < N; k++) m = Math.max(m, A.score[k]);
   near(A.best, m, 1e-12);
+  // 權重全為 0 時不給最佳格
+  const Z = K.weighted(c, { slope: 0, flood: 0, fault: 0, road: 0, town: 0 });
+  assert.strictEqual(Z.weights, 0);
+  assert.strictEqual(Z.bestK, -1);
+  assert.strictEqual(Z.bestXY, null);
 });
 
 test('三種設施的預設條件都找得到地，而且答案不一樣', () => {

@@ -40,7 +40,7 @@
     {
       id: 'contour-map-3', level: 2,
       title: { zh: '從海邊到山頂', en: 'From the shore to the summit' },
-      desc: { zh: '拉一條剖面線：一端在海裡，另一端在最高峰（高度和最高點相差 20 m 以內）。', en: 'Draw a profile line with one end in the sea and the other on the highest summit (within 20 m of its height).' },
+      desc: { zh: '拉一條至少 500 m 長的剖面線：一端在海裡，另一端在最高峰（高度和最高點相差 20 m 以內）。', en: 'Draw a profile line at least 500 m long with one end in the sea and the other on the highest summit (within 20 m of its height).' },
       check: function (ev) {
         const d = M(ev), P = pf(d);
         return !!P && P.L >= 500 && ((P.hA <= d.sea && P.hB >= d.max - 20) || (P.hB <= d.sea && P.hA >= d.max - 20));
@@ -55,7 +55,7 @@
     {
       id: 'contour-map-5', level: 3,
       title: { zh: '朝南的山坡', en: 'A south-facing slope' },
-      desc: { zh: '找一處朝正南（坡向 175°–185°）、坡度至少 30% 的山坡。在北回歸線以北、坡度相同且無地形遮蔽時，朝南坡面全年平均曬到較多太陽。', en: 'Find a slope facing due south (aspect 175°–185°) and at least 30% steep. North of the Tropic of Cancer, for equal steepness and unobstructed skies, south-facing slopes receive more annual sunlight.' },
+      desc: { zh: '找一處朝正南（坡向 175°–185°）、坡度至少 30% 的山坡。在北回歸線以北（例如臺灣中北部），一年累計下來，朝南的坡面曬到的太陽最多。', en: 'Find a slope facing due south (aspect 175°–185°) and at least 30% steep. North of the Tropic of Cancer (such as central and northern Taiwan), south-facing slopes receive the most sunlight over a year.' },
       check: function (ev) { const d = M(ev), p = pr(d); return !!p && p.land && p.pct >= 30 && within(p.aspect, 175, 185); }
     },
     {

@@ -281,8 +281,14 @@
         pf: a && a.id !== 'new' ? pull(a, t, st.b, st.mode, st.mountains) : null, pt: b && b.id !== 'new' ? pull(b, t, st.b, st.mode, st.mountains) : null,
         off, area: ar ? ar.area[ti] : null };
     }
-    let area = null;
-    if (ar) { area = {}; list.forEach((c, i) => { area[c.id] = ar.area[i]; }); }
+    let area = null, areaNoTown = null;
+    if (ar) {
+      area = {}; list.forEach((c, i) => { area[c.id] = ar.area[i]; });
+      if (st.town) {
+        const baseAr = areas(CITIES, st.b, st.mode, ar.grid.step, st.mountains);
+        areaNoTown = {}; CITIES.forEach((c, i) => { areaNoTown[c.id] = baseAr.area[i]; });
+      }
+    }
     const extra = {};
     if (st.mountains && st.mode === 'hsr' && pair) {
       extra.mtn = true;
@@ -294,7 +300,7 @@
       extra.detour = extra.ratio == null ? 0 : extra.ratio - 1;
       extra.southToHualien = side(west) === 'west' && roadRoute(west,CITIES.find(c => c.id === 'hua')).gate === 'south';
     }
-    return { ...extra, view: st.view, mode: st.mode, b: st.b, from: st.from, to: st.to, order: fl.map(o => list[o.j].id), shares, pair, town, area, flows: fl, list };
+    return { ...extra, view: st.view, mode: st.mode, b: st.b, from: st.from, to: st.to, order: fl.map(o => list[o.j].id), shares, pair, town, area, areaNoTown, flows: fl, list };
   }
 
   return {

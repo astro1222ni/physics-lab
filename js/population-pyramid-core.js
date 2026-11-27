@@ -164,7 +164,7 @@
         m1[a] = nm; f1[a] = nf;
       }
     }
-    return { year: y, m: m1, f: f1, births: B, deaths: deaths, net: moved, tfr: p.tfr };
+    return { year: y, m: m1, f: f1, births: B, deaths: deaths, net: moved, netSet: p.net || 0, tfr: p.tfr };
   }
 
   // ---------- 初始人口 ----------

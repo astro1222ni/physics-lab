@@ -176,7 +176,7 @@
     },
     {
       id: 'climograph-h8', level: 8, hidden: true,
-      riddle: { zh: '季風與莽原之間有一條看不見的線，踩在上面。', en: 'Between monsoon and savanna runs an invisible line. Stand on it.' },
+      riddle: { zh: '季風與莽原之間有一條看不見的線——調整最乾月的雨量，踩在上面。', en: 'Between monsoon and savanna runs an invisible line — adjust the driest month’s rainfall to stand on it.' },
       check: function (ev) {
         const d = M(ev), s = d && ST(d.base);
         // 要親手調整最乾的那個月（不是改別的月份碰巧碰到），而且那個月真的有下雨

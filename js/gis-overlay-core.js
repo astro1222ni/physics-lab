@@ -220,7 +220,7 @@
       S[k] = W > 0 ? 100 * s / W : 0;
       valid++; sum += S[k];
       if (S[k] >= 70) hi++;
-      if (S[k] > best + 1e-12) { best = S[k]; bestK = k; }
+      if (W > 0 && S[k] > best + 1e-12) { best = S[k]; bestK = k; }
     }
     return {
       score: S, best: best, bestK: bestK, bestXY: bestK >= 0 ? xyOf(bestK) : null,

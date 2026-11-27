@@ -134,7 +134,7 @@
             <dt data-en="A–B straight line">A–B 直線距離</dt><dd id="rKm">—</dd>
             <dt data-en="By car">開車</dt><dd id="rCar">—</dd>
             <dt data-en="Fastest with HSR">搭高鐵最快</dt><dd id="rHsr">—</dd>
-            <dt data-en="Break point from A" title="雷利法則：兩城引力相等的點" data-en-title="Reilly's law: where the two pulls are equal">分界點離 A</dt><dd id="rBrk" class="big">—</dd>
+            <dt data-en="Break point (straight line)" title="雷利法則：兩城連線上的分界點；交通時間模式請看勢力範圍圖" data-en-title="Reilly's law break point along the straight line; for travel-time mode see Trade areas">分界點（直線距離）</dt><dd id="rBrk" class="big">—</dd>
           </dl>
         </section>
         <section class="card">
@@ -190,7 +190,8 @@
       <h3 data-en="Simplifications">簡化</h3>
       <ul>
         <li data-en="Each county or city is one point near its government seat, with its population rounded to 10,000 (end of 2024). Outlying islands are left out.">每個縣市只用縣市政府附近的一個點，人口取到萬人的約略值（2024 年底）；外島沒有列入。</li>
-        <li data-en="With the mountain barrier off, driving time is straight-line distance × 1.3 divided by 60 km/h. Ignoring the mountains overestimates interaction between eastern and western cities. With the barrier on, cross-mountain drives go via the Xueshan Tunnel or the South Link, as described above in “Driving around the mountains”. For high-speed rail, drive to the nearest station, allow 25 minutes for boarding and alighting, travel between stations at 200 km/h, then drive to the destination. Actual timetables and roads differ.">關掉「中央山脈擋路」時，開車時間＝直線距離 × 1.3 ÷ 時速 60 公里，沒有考慮山脈，會高估東西部城市之間的互動；打開後，跨山的車要繞雪隧或南迴，見上方「開車如何繞過中央山脈？」。高鐵的走法是開車到最近的高鐵站、上下車等候 25 分鐘、站間平均時速 200 公里、再開車。和真正的時刻表與道路不同。</li>
+        <li data-en="With the mountain barrier off, driving time is straight-line distance × 1.3 divided by 60 km/h (teaching settings for ordinary roads). For example, Taipei–Hsinchu City is 65.6 km straight line → × 1.3 ÷ 60 km/h ≈ 85 min by car; with high-speed rail (drive to stations + 25 min boarding + 55.0 km at 200 km/h ≈ 17 min) ≈ 57 min. Ignoring the mountains overestimates interaction between eastern and western cities. With the barrier on, cross-mountain drives go via the Xueshan Tunnel or the South Link, as described above in “Driving around the mountains”. Actual timetables and roads differ.">關掉「中央山脈擋路」時，一般路段為教學設定：開車時間＝直線距離 × 1.3 ÷ 時速 60 公里，高鐵為開車到最近站＋上下車等候 25 分鐘＋站間平均時速 200 公里＋再開車。以臺北–新竹市為例：直線 65.6 km，開車 65.6 × 1.3 ÷ 60 ≈ 85 分鐘；搭高鐵（兩端接駁約 16 分＋等候 25 分＋站間 55.0 km 約 17 分）約 57 分鐘。沒有考慮山脈會高估東西部城市互動；打開「中央山脈擋路」後跨山繞雪隧或南迴，見上方「開車如何繞過中央山脈？」。和真正的時刻表與道路不同。</li>
+        <li data-en="Minimum distance cap: 1 km (or 1 minute). Pairs closer than 1 are evaluated at 1 so interaction does not blow up as distance approaches zero.">距離下限為 1 km（或 1 分鐘）：兩地太近時模型以 1 計，避免距離趨近 0 時互動量無限發散。</li>
         <li data-en="The model has no k and no real trip data: only the relative sizes of the flows mean anything.">模型沒有常數 k，也沒有真實的旅次資料；只有流量之間的相對大小有意義。</li>
         <li data-en="The coastline is a simplified outline for illustration.">海岸線是簡化的示意輪廓。</li>
       </ul>

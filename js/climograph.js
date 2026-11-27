@@ -291,14 +291,14 @@
     // 門檻線標籤（左側，避免重疊）
     let lastY = -99;
     tLab.filter(function (l) { return !l[2]; }).sort(function (a, b) { return a[0] - b[0]; }).forEach(function (l) {
-      const y = Math.max(l[0], lastY + 17);
-      D.pill(ctx, l[1], g.x0 + 4, y - 2, C['cl-mark'], 'left', '600 11px ' + FONT);
+      const y = Math.max(l[0], lastY + 19);
+      D.pill(ctx, l[1], g.x0 + 4, y - 2, C['cl-mark'], 'left', '600 12px ' + FONT);
       lastY = y;
     });
     lastY = 1e9;
     tLab.filter(function (l) { return l[2]; }).sort(function (a, b) { return b[0] - a[0]; }).forEach(function (l) {
-      const y = Math.min(l[0], lastY - 17);
-      D.pill(ctx, l[1], g.x1 - 4, y - 2, C['cl-rain'], 'right', '600 11px ' + FONT);
+      const y = Math.min(l[0], lastY - 19);
+      D.pill(ctx, l[1], g.x1 - 4, y - 2, C['cl-rain'], 'right', '600 12px ' + FONT);
       lastY = y;
     });
     // 座標軸文字
@@ -412,8 +412,8 @@
     labs.sort(function (a, b) { return a[0] - b[0]; });
     let ly = -99;
     labs.forEach(function (l) {
-      const y = Math.max(g.y0 + 18, Math.max(l[0] + 8, ly + 18));
-      D.pill(ctx, l[1], g.x1 - 4, Math.min(g.y1 - 2, y), l[2] ? C['cl-dry'] : C.muted, 'right', (l[2] ? '700 ' : '600 ') + '11px ' + FONT);
+      const y = Math.max(g.y0 + 18, Math.max(l[0] + 8, ly + 20));
+      D.pill(ctx, l[1], g.x1 - 4, Math.min(g.y1 - 2, y), l[2] ? C['cl-dry'] : C.muted, 'right', (l[2] ? '700 ' : '600 ') + '12px ' + FONT);
       ly = y;
     });
     // 區域名稱
@@ -436,7 +436,7 @@
     state.pins.forEach(function (p) {
       const c = classOf(p), x = dX(g, c.s.MAT), y = dY(g, Math.min(g.ytop, c.s.MAP));
       D.ball(ctx, x, y, 6.5, typeColor(c.code), { ring: C[PIN_COLORS[p.c]] });
-      D.pill(ctx, pinLabel(p) + ' ' + c.code, x, y - 10, C[PIN_COLORS[p.c]], 'center', '600 11px ' + FONT);
+      D.pill(ctx, pinLabel(p) + ' ' + c.code, x, y - 10, C[PIN_COLORS[p.c]], 'center', '600 12px ' + FONT);
     });
     // 目前的點與它到界線的距離
     const x = dX(g, s.MAT), y = dY(g, Math.min(g.ytop, s.MAP)), yl = dY(g, Math.max(0, Math.min(g.ytop, s.dryLine)));
@@ -449,9 +449,9 @@
     // 界線在點的上方：界線標籤放線上方、名稱放點下方；反過來也一樣
     const ly1 = above ? Math.min(yl, y - 12) - 6 : Math.max(yl, y + 12) + 22;
     const ny = above ? y + 34 : y - 14;
-    D.pill(ctx, lineTxt, x, Math.max(g.y0 + 18, Math.min(g.y1 - 2, ly1)), C['cl-dry'], 'center', '600 11px ' + FONT);
+    D.pill(ctx, lineTxt, x, Math.max(g.y0 + 18, Math.min(g.y1 - 2, ly1)), C['cl-dry'], 'center', '600 12px ' + FONT);
     D.pill(ctx, nm, x, Math.max(g.y0 + 18, Math.min(g.y1 - 2, ny)), C.text, 'center', '700 12px ' + FONT);
-    if (k.group === 'E') D.pill(ctx, T('最熱月低於 10 °C：先判成 E，不看這張圖', 'Warmest month below 10 °C: E comes first, this chart does not apply'), (g.x0 + g.x1) / 2, g.y0 + 24, C.muted, 'center', '600 11px ' + FONT);
+    if (k.group === 'E') D.pill(ctx, T('最熱月低於 10 °C：先判成 E，不看這張圖', 'Warmest month below 10 °C: E comes first, this chart does not apply'), (g.x0 + g.x1) / 2, g.y0 + 24, C.muted, 'center', '600 12px ' + FONT);
     if (kbOn()) {
       ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5;
       D.roundRect(ctx, 2, 2, W - 4, H - 4, 8); ctx.stroke(); ctx.restore();
@@ -557,9 +557,9 @@
     const boxes = [];
     ctx.font = '600 12px ' + FONT;
     labels.forEach(function (l) {
-      const font = (l.small ? '500 11px ' : '600 12px ') + FONT;
+      const font = (l.small ? '500 12px ' : '600 12px ') + FONT;
       ctx.font = font;
-      const w = ctx.measureText(l.t).width + 12, h = 18;
+      const w = ctx.measureText(l.t).width + 12, h = 19;
       const cands = [[l.x + rr + 6, l.y + h / 2], [l.x - rr - 6 - w, l.y + h / 2], [l.x - w / 2, l.y - rr - 5], [l.x - w / 2, l.y + rr + 5 + h]];
       for (let i = 0; i < cands.length; i++) {
         const bx = Math.max(2, Math.min(W - w - 2, cands[i][0])), by = Math.max(h + 2, Math.min(H - 2, cands[i][1]));
@@ -893,24 +893,63 @@
     const dT = Math.hypot(xCol(g, i) - x, yT(g, state.T[m]) - y);
     return { i: i, m: m, kind: dT <= touchR(e) ? 'T' : 'P', g: g };
   }
-  function nearestStation(x, y, rad) {
-    const g = mapGeom();
-    let best = null, bd = rad;
+  function nearbyStations(x, y, rad) {
+    const g = mapGeom(), hits = [];
     stationsInView().forEach(function (s) {
       const q = g.tw ? g.xy(s.lon, s.lat) : (s.reg === 'tw' ? g.xy(121, 23.7) : g.xy(s.lon, s.lat));
       const d = Math.hypot(q[0] - x, q[1] - y);
-      if (d < bd) { bd = d; best = s; }
+      if (d < rad) hits.push({ s: s, d: d });
     });
-    return best;
+    hits.sort(function (a, b) { return a.d - b.d; });
+    return hits.map(function (h) { return h.s; });
   }
+  function nearestStation(x, y, rad) { const h = nearbyStations(x, y, rad); return h.length ? h[0] : null; }
+  let pickMenu = null;
+  function closePickMenu() { if (pickMenu) { pickMenu.remove(); pickMenu = null; } }
+  function openPickMenu(list, clientX, clientY) {
+    closePickMenu();
+    const box = document.createElement('div');
+    box.setAttribute('role', 'menu');
+    box.style.cssText = 'position:fixed;z-index:999;min-width:140px;padding:4px;border-radius:8px;border:1px solid var(--border);background:var(--surface);box-shadow:0 6px 20px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:2px;font-size:calc(13px * var(--fs, 1));';
+    list.forEach(function (s) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'menuitem');
+      btn.style.cssText = 'text-align:left;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:var(--text);cursor:pointer;font:inherit;white-space:nowrap;';
+      btn.textContent = stName(s) + '（' + s.elev + ' m）';
+      btn.addEventListener('mouseenter', function () { btn.style.background = 'var(--surface2, rgba(128,128,128,.16))'; });
+      btn.addEventListener('mouseleave', function () { btn.style.background = 'transparent'; });
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        closePickMenu();
+        acted();
+        selectStation(s.id);
+        afterChange(true);
+      });
+      box.appendChild(btn);
+    });
+    document.body.appendChild(box);
+    const r = box.getBoundingClientRect();
+    box.style.left = Math.max(8, Math.min(window.innerWidth - r.width - 8, clientX + 8)) + 'px';
+    box.style.top = Math.max(8, Math.min(window.innerHeight - r.height - 8, clientY - 8)) + 'px';
+    pickMenu = box;
+  }
+  document.addEventListener('pointerdown', function (ev) { if (pickMenu && !pickMenu.contains(ev.target)) closePickMenu(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closePickMenu(); });
   cv.addEventListener('pointerdown', function (e) {
+    closePickMenu();
     const p = evXY(e);
     if (state.view === 'map') {
-      const s = nearestStation(p[0], p[1], touchR(e) + 4);
-      if (!s) return;
+      const hits = nearbyStations(p[0], p[1], touchR(e) + 4);
+      if (!hits.length) return;
       acted();
-      if (state.scope === 'world' && s.reg === 'tw') { setScope('tw'); emit('clim', snapshot()); return; }
-      selectStation(s.id);
+      if (state.scope === 'world' && hits[0].reg === 'tw') { setScope('tw'); emit('clim', snapshot()); return; }
+      if (state.scope === 'tw' && hits.length > 1) {
+        const g = mapGeom(), p0 = g.xy(hits[0].lon, hits[0].lat);
+        const close = hits.filter(function (s) { const q = g.xy(s.lon, s.lat); return Math.hypot(q[0] - p0[0], q[1] - p0[1]) <= 14; });
+        if (close.length > 1) { openPickMenu(close, e.clientX, e.clientY); return; }
+      }
+      selectStation(hits[0].id);
       afterChange(true);
       return;
     }

@@ -156,7 +156,7 @@
       check: function (ev) {
         const d = V(ev);
         if (!d || !d.town || d.view !== 'areas' || !d.area || d.b < 2) return false;
-        return Object.keys(d.area).some(function (k) { return k !== 'new' && d.area[k] === 0; });
+        return Object.keys(d.area).some(function (k) { return k !== 'new' && d.area[k] === 0 && (!d.areaNoTown || d.areaNoTown[k] > 0); });
       }
     },
     {

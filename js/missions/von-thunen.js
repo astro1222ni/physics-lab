@@ -42,7 +42,7 @@
     {
       id: 'von-thunen-4', level: 3,
       title: { zh: '一百公里的邊疆', en: 'A frontier at 100 km' },
-      desc: { zh: '讓農業的最外緣（地租降到 0 的地方）離城 100 公里，差 1 公里以內。', en: 'Put the edge of farming (where rent falls to 0) 100 km from the city, within 1 km.' },
+      desc: { zh: '讓農業沿陸路方向的最外緣（地租降到 0 的地方）離城 100 公里，差 1 公里以內。', en: 'Put the overland edge of farming (where rent falls to 0) 100 km from the city, within 1 km.' },
       check: function (ev) { const d = V(ev); return !!d && Math.abs(d.frontier - 100) <= 1; }
     },
     {
@@ -54,7 +54,7 @@
     {
       id: 'von-thunen-6', level: 4,
       title: { zh: '不再燒柴', en: 'No more firewood' },
-      desc: { zh: '四種作物都種，但只改數值，讓林木圈從地圖上消失。', en: 'Keep all four crops but, by changing the numbers only, make the forestry ring disappear.' },
+      desc: { zh: '四種作物都保留可選，但只改數值，讓林木圈從地圖上消失。', en: 'Keep all four crops enabled but, by changing the numbers only, make the forestry ring disappear.' },
       check: function (ev) { const d = V(ev); return !!d && d.allOn && !d.present.wood && d.rings.length > 0; }
     },
     {
@@ -84,7 +84,7 @@
     {
       id: 'von-thunen-11', level: 6,
       title: { zh: '鐵路通車', en: 'The railway arrives' },
-      desc: { zh: '沒有河、四種作物的產量、價格、成本都照邱念的設定，只改運費，讓全區總地租變成原來的 2 倍（差 2% 以內）。', en: 'No river, and yields, prices and costs as von Thünen set them: change only freight to double the total rent (within 2%).' },
+      desc: { zh: '沒有河、四種作物的產量、價格、成本都維持本實驗的預設值，只改運費，讓全區總地租變成原來的 2 倍（差 2% 以內）。', en: 'No river, with yields, prices and costs kept at this lab’s defaults: change only freight to double the total rent (within 2%).' },
       check: function (ev) { const d = V(ev); return !!d && !d.river && d.allOn && !d.changedYPC && Math.abs(d.totalRent / TOTAL0 - 2) <= 0.04; }
     },
     {

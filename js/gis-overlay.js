@@ -446,6 +446,8 @@
       setText('rBest', num(W.best, 1));
       setText('rBestAt', T('東 ' + num(p[0], 2) + ' km、北 ' + num(p[1], 2) + ' km', num(p[0], 2) + ' km east, ' + num(p[1], 2) + ' km north'));
       setText('rBestOk', B.mask[W.bestK] ? T('通過', 'yes') : T('沒有：' + K.CRIT.filter(function (c) { return !pass(W.bestK, c); }).map(cn).join('、') + '不通過', 'no: fails ' + K.CRIT.filter(function (c) { return !pass(W.bestK, c); }).map(cn).join(', ')));
+    } else if (W.weights <= 0) {
+      setText('rBest', T('先給權重', 'Set weights first')); setText('rBestAt', '—'); setText('rBestOk', '—');
     } else { setText('rBest', '—'); setText('rBestAt', '—'); setText('rBestOk', '—'); }
     setText('rHi', area(W.area70));
     document.querySelectorAll('#facSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-fac') === state.fac ? 'true' : 'false'); });
@@ -459,7 +461,8 @@
     updateProbe();
     $('srNow').textContent = state.method === 'bool'
       ? T('可以蓋的面積 ' + area(B.area) + '，分成 ' + B.patches + ' 塊。', 'Suitable area ' + area(B.area) + ' in ' + B.patches + ' pieces.')
-      : T('最高分 ' + num(W.best, 1) + '。', 'Best score ' + num(W.best, 1) + '.');
+      : W.weights <= 0 ? T('請先給權重。', 'Set weights first.')
+      : W.bestK >= 0 ? T('最高分 ' + num(W.best, 1) + '。', 'Best score ' + num(W.best, 1) + '.') : T('沒有允許的土地使用。', 'No allowed land use.');
   }
   function updateProbe() {
     const k = state.probe;
@@ -540,7 +543,9 @@
         ? T('可以蓋' + T(FAC[state.fac][0], '') + '的地：' + area(B.area) + '，分成 ' + B.patches + ' 塊，最大一塊 ' + area(B.largest) + '。', 'Suitable for a ' + FAC[state.fac][1] + ': ' + area(B.area) + ' in ' + B.patches + ' pieces; the largest is ' + area(B.largest) + '.')
         : T('沒有任何一格同時通過每一條：條件太嚴了，放寬一條試試看。', 'No cell passes every rule: the rules are too strict. Try relaxing one.'));
     } else {
-      setStatus(W.bestK >= 0 ? T('適宜度最高 ' + num(W.best, 1) + ' 分；70 分以上的地有 ' + area(W.area70) + '。', 'Best score ' + num(W.best, 1) + '; ' + area(W.area70) + ' scores 70 or more.') : T('每一格都是 0 分：沒有允許的土地使用。', 'Every cell scores 0: no land use is allowed.'));
+      setStatus(W.weights <= 0
+        ? T('先給權重：目前所有權重都是 0，無法選出最高分。', 'Set weights first: all weights are 0, so there is no top score.')
+        : W.bestK >= 0 ? T('適宜度最高 ' + num(W.best, 1) + ' 分；70 分以上的地有 ' + area(W.area70) + '。', 'Best score ' + num(W.best, 1) + '; ' + area(W.area70) + ' scores 70 or more.') : T('每一格都是 0 分：沒有允許的土地使用。', 'Every cell scores 0: no land use is allowed.'));
     }
   }
   function sliderChanged(e) {

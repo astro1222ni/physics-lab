@@ -243,7 +243,7 @@
     ctx.restore();
     (v.small ? [0, 0.4, 0.8] : [0, 0.2, 0.4, 0.6, 0.8]).forEach(function (n, i) {
       const k = (1 + n) / (1 - n), r = Math.min(v.rx * 0.97, v.ry * 0.97 / k);
-      D.haloText(ctx, (i === 0 || !v.small ? 'NDVI ' : '') + num(n, 1), X(r) - 2, Y(r * k) - 2, C.muted, 'right', 'bottom', font(10, 600));
+      D.haloText(ctx, (i === 0 || !v.small ? 'NDVI ' : '') + num(n, 1), X(r) - 2, Y(r * k) - 2, C.muted, 'right', 'bottom', font(12, 600));
     });
     if (PX) {
       const x = X(PX.bands[K.B.red]), y = Y(PX.bands[K.B.nir]);

@@ -58,8 +58,8 @@
     {
       id: 'urban-heat-island-7', level: 4,
       title: { zh: '雲的棉被', en: 'A blanket of cloud' },
-      desc: { zh: '人口 100 萬以上、無風的深夜（0–4 點），讓雲把熱島強度削到 Oke 值的一半以下。', en: 'With at least 1 million people, no wind, and the middle of the night (0–4 h), let cloud cut the intensity to under half the Oke value.' },
-      check: function (ev) { const d = V(ev); return !!d && d.P >= 1e6 && d.wind <= 0.01 && night(d.hour) && d.max <= 0.5 * d.oke && d.cloud >= 0.5; }
+      desc: { zh: '人口 100 萬以上、無風的深夜（0–4 點），讓雲把熱島強度削到同設定無雲時的一半以下。', en: 'With at least 1 million people, no wind, and the middle of the night (0–4 h), let cloud cut the intensity to under half its cloud-free value under the same settings.' },
+      check: function (ev) { const d = V(ev); const ref = d && d.maxNoCloud != null ? d.maxNoCloud : (d ? d.oke : 0); return !!d && d.P >= 1e6 && d.wind <= 0.01 && night(d.hour) && ref > 0.1 && d.max <= 0.5 * ref && d.cloud >= 0.5; }
     },
     {
       id: 'urban-heat-island-8', level: 4,

@@ -24,7 +24,7 @@
     {
       id: 'gps-trilateration-1', level: 1,
       title: { zh: '登山客出發', en: 'Off on a hike' },
-      desc: { zh: '在平面練習裡拖曳登山客，看三個圓怎麼跟著改變。', en: 'In the tower practice, drag the hiker and watch the circles change.' },
+      desc: { zh: '在平面練習裡點一下或拖曳登山客，看三個圓怎麼跟著改變。', en: 'In the tower practice, tap or drag the hiker and watch the circles change.' },
       check: function (ev) { const d = V(ev); return !!d && d.mode === 'plane' && d.act === 'drag'; }
     },
     {

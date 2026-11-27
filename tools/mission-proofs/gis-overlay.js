@@ -85,6 +85,13 @@ witness('3', snap({ layer: 'flood' }, 'layer'), '淹水圖層');
 {
   const W = K.weighted(state({}).cfg, state({}).w);
   witness('4', snap({ method: 'weight', probe: W.bestK }, 'probe'), '加權疊合，點最高分的格子 ' + W.bestK);
+  // 權重全為 0 時不算最高分
+  expect('4 反例：權重全為 0 時不給最佳、不通過', !byId('4').check(snap({ method: 'weight', probe: W.bestK, set: (c, w) => { Object.keys(w).forEach(q => { w[q] = 0; }); } }, 'probe')));
+  // 同分格子皆接受（只留 flood 權重，多格同得 100 分）
+  const sTie = state({ method: 'weight', set: (c, w) => { w.slope = 0; w.fault = 0; w.road = 0; w.town = 0; w.flood = 3; } });
+  const Wt = K.weighted(sTie.cfg, sTie.w);
+  const tieK = findK(q => q !== Wt.bestK && Wt.score[q] >= Wt.best - 1e-9);
+  expect('4 同分格子皆接受', tieK >= 0 && byId('4').check(snap({ method: 'weight', probe: tieK, set: (c, w) => { w.slope = 0; w.fault = 0; w.road = 0; w.town = 0; w.flood = 3; } }, 'probe')), '主最高 ' + Wt.bestK + '、同分格 ' + tieK);
 }
 {
   const st = SL.stage.find(v => K.floodStats(v).town >= 1.5);
@@ -97,7 +104,9 @@ witness('3', snap({ layer: 'flood' }, 'layer'), '淹水圖層');
 }
 witness('7', snap({ set: c => { c.fault.v = 2000; } }), '焚化廠離斷層 2 km：' + K.boolean(state({ set: c => { c.fault.v = 2000; } }).cfg).sitesBig + ' 塊夠大的地');
 witness('8', snap({ fac: 'school', set: c => { c.stage = 3; } }), '學校、河水上漲 3 m：剩一塊');
+expect('8 反例：加權模式不算', !byId('8').check(snap({ fac: 'school', method: 'weight', set: c => { c.stage = 3; } })));
 witness('9', snap({ fac: 'school', set: c => { c.fault.v = 1100; } }), '學校、離斷層 1.1 km：16 格');
+expect('9 反例：加權模式不算', !byId('9').check(snap({ fac: 'school', method: 'weight', set: c => { c.fault.v = 1100; } })));
 witness('10', snap({ method: 'weight', set: (c, w) => { w.slope = 0; } }), '焚化廠、坡度權重 0：最高分的格子太陡');
 witness('11', snap({ set: c => { c.town.v = 5000; } }), '焚化廠離住家 5 km：最大一塊 ' + K.boolean(state({ set: c => { c.town.v = 5000; } }).cfg).largest + ' km²');
 witness('12', snap({ fac: 'solar', set: c => { c.slope.v = 2; } }), '太陽能場坡度 ≤ 2%：最大一塊 ' + K.boolean(state({ fac: 'solar', set: c => { c.slope.v = 2; } }).cfg).largest + ' km²');

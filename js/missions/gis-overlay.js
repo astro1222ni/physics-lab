@@ -66,7 +66,7 @@
       id: 'gis-overlay-4', level: 3,
       title: { zh: '最高分的地方', en: 'The top score' },
       desc: { zh: '切到加權疊合，點最高分的那一格。', en: 'Switch to the weighted overlay and tap the top-scoring cell.' },
-      check: function (ev) { const d = V(ev); return !!d && d.method === 'weight' && !!d.probe && d.probe.k === d.weight.bestK; }
+      check: function (ev) { const d = V(ev); return !!d && d.method === 'weight' && d.weight.bestK >= 0 && !!d.probe && d.probe.score >= d.weight.best - 1e-9; }
     },
     {
       id: 'gis-overlay-5', level: 3,
@@ -90,13 +90,13 @@
       id: 'gis-overlay-8', level: 5,
       title: { zh: '只剩一塊', en: 'Only one piece left' },
       desc: { zh: '布林疊合、六個條件都用上：可以蓋的地剛好連成一塊。', en: 'Boolean overlay with all six rules on: the suitable land forms exactly one piece.' },
-      check: function (ev) { const d = V(ev); return !!d && allOn(d) && d.bool.patches === 1; }
+      check: function (ev) { const d = V(ev); return !!d && d.method === 'bool' && allOn(d) && d.bool.patches === 1; }
     },
     {
       id: 'gis-overlay-9', level: 5,
       title: { zh: '剛好一平方公里', en: 'Exactly one square kilometre' },
       desc: { zh: '布林疊合、六個條件都用上：可以蓋的面積剛好 1 平方公里（16 格）。', en: 'Boolean overlay with all six rules on: exactly 1 km² (16 cells) is suitable.' },
-      check: function (ev) { const d = V(ev); return !!d && allOn(d) && d.bool.cells === 16; }
+      check: function (ev) { const d = V(ev); return !!d && d.method === 'bool' && allOn(d) && d.bool.cells === 16; }
     },
     {
       id: 'gis-overlay-10', level: 6,
@@ -156,7 +156,7 @@
     {
       id: 'gis-overlay-h8', level: 7, hidden: true,
       riddle: { zh: '考了第一名，卻被一條規則刷掉。', en: 'Top of the class, yet thrown out by a single rule.' },
-      check: function (ev) { const d = V(ev); return !!d && d.method === 'weight' && !d.weight.bestOk && !!d.probe && d.probe.k === d.weight.bestK; }
+      check: function (ev) { const d = V(ev); return !!d && d.method === 'weight' && d.weight.bestK >= 0 && !!d.probe && d.probe.score >= d.weight.best - 1e-9 && !d.probe.ok; }
     },
     {
       id: 'gis-overlay-h9', level: 8, hidden: true,

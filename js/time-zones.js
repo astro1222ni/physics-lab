@@ -323,7 +323,7 @@
     if (state.zones) drawZoneStrip(c, strip);
   }
 
-  function stripH() { return cvSize.w / 24 >= 30 ? 30 : 16; }
+  function stripH() { return cvSize.w / 24 >= 30 ? 32 : 20; }
   function drawZoneStrip(c, strip) {
     const w = cvSize.w;
     c.save();
@@ -331,28 +331,50 @@
     c.fillRect(0, 0, w, strip);
     c.strokeStyle = D.alpha(C['border'], 0.9); c.lineWidth = 1;
     c.beginPath(); c.moveTo(0, strip + 0.5); c.lineTo(w, strip + 0.5); c.stroke();
-    const zw = w / 24, two = strip >= 28, fs = zw >= 40 ? 11 : zw >= 22 ? 9.5 : 9;
-    const every = zw >= 18 ? 1 : 2;
+    const zw = w / 24, two = strip >= 30, fs = 11;
+    const every = zw >= 26 ? 1 : zw >= 16 ? 2 : 3;
     const tz = K.zoneOf(state.probe.lon);
     c.textAlign = 'center'; c.textBaseline = 'middle';
+    let selBox = null;
     for (let z = -12; z <= 12; z++) {
-      if (Math.abs(z) !== 12 && (z % every) !== 0) continue;
+      const me = z === tz;
+      if (!me && Math.abs(z) !== 12 && (z % every) !== 0) continue;
       zoneRanges(z).forEach(function (r) {
         const wd = r[1] - r[0];
-        if (wd < 8) return;
-        const cx = (r[0] + r[1]) / 2, me = z === tz;
+        const cx = (r[0] + r[1]) / 2;
+        if (me) { if (!selBox || wd > selBox.wd) selBox = { cx: cx, wd: wd, z: z }; return; }
+        if (wd < 20) return;
         const lab = (z > 0 ? '+' : z < 0 ? '−' : '±') + Math.abs(z);
-        c.font = (me ? '800 ' : '600 ') + fs + 'px ' + FONT;
-        c.fillStyle = me ? C['accent'] : C['muted'];
-        if (c.measureText(lab).width < wd + 6) c.fillText(lab, cx, two ? 8.5 : strip / 2 + 0.5);
+        c.font = '600 ' + fs + 'px ' + FONT;
+        c.fillStyle = C['muted'];
+        if (c.measureText(lab).width <= wd - 4) c.fillText(lab, cx, two ? 9 : strip / 2 + 0.5);
         if (two) {
           const clock = hm(K.local(state.day, state.utc, z).clock);
-          c.font = (me ? '800 ' : '600 ') + (fs - 0.5) + 'px ' + FONT;
-          c.fillStyle = me ? C['accent'] : C['text'];
-          const t = wd >= 30 ? clock : clock.slice(0, 2);
-          if (c.measureText(t).width < wd - 1) c.fillText(t, cx, 21.5);
+          c.font = '600 ' + fs + 'px ' + FONT;
+          c.fillStyle = C['text'];
+          const t = c.measureText(clock).width <= wd - 6 ? clock : clock.slice(0, 2);
+          if (c.measureText(t).width <= wd - 4) c.fillText(t, cx, 23);
         }
       });
+    }
+    // 選中的那一區一定以大字（12 px）清楚畫出，加底色與細框避免被鄰區遮擋
+    if (selBox) {
+      const z = selBox.z, lab = (z > 0 ? '+' : z < 0 ? '−' : '±') + Math.abs(z);
+      const clock = hm(K.local(state.day, state.utc, z).clock);
+      c.font = '800 12px ' + FONT;
+      const lw = c.measureText(lab).width, cw = two ? c.measureText(clock).width : 0;
+      const bw = Math.max(lw, cw) + 12;
+      const sx = Math.max(bw / 2 + 2, Math.min(w - bw / 2 - 2, selBox.cx));
+      c.fillStyle = D.alpha(C['surface'], 0.96);
+      c.fillRect(sx - bw / 2, 1, bw, strip - 2);
+      c.strokeStyle = D.alpha(C['accent'], 0.6); c.lineWidth = 1;
+      c.strokeRect(sx - bw / 2 + 0.5, 1.5, bw - 1, strip - 3);
+      c.fillStyle = C['accent'];
+      c.fillText(lab, sx, two ? 9.5 : strip / 2 + 0.5);
+      if (two) {
+        c.font = '700 12px ' + FONT;
+        c.fillText(clock, sx, 23);
+      }
     }
     c.restore();
   }

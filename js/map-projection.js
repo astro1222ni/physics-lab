@@ -625,7 +625,7 @@
     } else ['rGc', 'rRh', 'rGcB', 'rRhB', 'rStr'].forEach(function (id) { setHTML(id, '—'); });
     // 臺灣的變形（圓錐）
     const tw = taiwanError();
-    setHTML('twHint', tw ? T('臺灣本島（北緯 21.9°–25.3°）範圍內：比例誤差最大 <b>', 'Over Taiwan (21.9°–25.3° N): largest scale error <b>') + num(tw.scale * 100, 3) + '%</b>' + T('，面積誤差最大 <b>', ', largest area error <b>') + num(tw.area * 100, 3) + '%</b>' + T('。', '.') : '—');
+    setHTML('twHint', tw ? T('臺灣（21.9°–25.3°N、120°–122°E 範圍內取樣的最大值）：比例誤差最大 <b>', 'Over Taiwan (maximum sampled in 21.9°–25.3° N, 120°–122° E): largest scale error <b>') + num(tw.scale * 100, 3) + '%</b>' + T('，面積誤差最大 <b>', ', largest area error <b>') + num(tw.area * 100, 3) + '%</b>' + T('。', '.') : '—');
     // 變形著色的圖例
     $('heatKey').hidden = state.heat === 'none';
     if (state.heat !== 'none') {

@@ -106,6 +106,7 @@ console.log('\n[公開任務]');
   expect('7 做得到', c7 != null, '100 萬人、無風、凌晨 2 點：雲量 ' + c7 + ' 成以上');
   counter('7', snap(st(Object.assign({ P: 1e6 }, NIGHT, { cloud: 1, wind: 1 })), 'cloud'), '有風時不算（風也會減弱熱島）');
   counter('7', snap(st(Object.assign({ P: 1e6 }, NIGHT, { cloud: 0, hour: 13 })), 'hour'), '白天不算');
+  counter('7', snap(st(Object.assign({ P: 1e6 }, NIGHT, { cloud: 0.5, green: 0.5, cool: 1 })), 'cloud'), '只靠綠地與涼屋頂把強度拉到 Oke 一半以下、雲量 5 成還沒削掉一半，不算');
   const e8 = snap(st({ P: 1e6, wind: 9 }), 'wind');
   witness('8', e8, '100 萬人、西風 9 m/s（臨界 ' + f1(e8.data.ucrit) + ' m/s）');
   counter('8', snap(st({ P: 1e6, wind: 8.5 }), 'wind'), '8.5 m/s 還有熱島');

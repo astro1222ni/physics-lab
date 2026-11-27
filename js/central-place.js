@@ -671,7 +671,7 @@
     setText('sA', ok ? area(S1.area) : '—');
     setText('sN', ok ? num(S1.perK, S1.perK >= 100 ? 0 : 1) + T(' 家', ' shops') : T('0 家', 'none'));
     setText('sFar', ok ? km(S1.d / R3) + (S1.status === 'gaps' ? T('（買不到）', ' (cannot buy)') : '') : '—');
-    setText('sMean', S1.mean != null ? km(S1.mean) : '—');
+    setText('sMean', S1.mean != null ? km(S1.mean) : (ok ? T('商品圈沒蓋滿，不適用', 'Range does not cover all; N/A') : '—'));
     setText('sCov', pct(S1.coverage, 1));
     const growing = state.grow.s != null && ok;
     $('sGrow').hidden = !growing;

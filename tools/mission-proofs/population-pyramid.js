@@ -47,7 +47,7 @@ function snap(o, act) {
     act: act || 'year', running: s.running, mode: s.mode, view: s.past ? 'past' : 'proj', real: !!s.past || (s.year === START && s.mode !== 'stable'),
     year: y, tfr: s.mode === 'ndc' ? (i > 0 ? T.traj[i].tfr : K.DATA.asfr.tfr) : s.tfr,
     e0: s.e0, net: s.mode === 'custom' ? s.net : 0, srb: s.srb,
-    total: d.total, total2025: BASE_TOTAL, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
+    total: d.total, total2025: BASE_TOTAL, total2050: !s.past ? T.inds[2050 - START].total : null, total2075: !s.past ? T.inds[2075 - START].total : null, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
     depPrev: !s.past && i > 0 ? T.inds[i - 1].dep : null, aging: d.aging, median: d.median,
     sexRatio: d.sexRatio, p100: d.p100, shape: d.shape,
     cmp: s.cmp, cmpDist: cmp ? K.distance(pop, cmp) : null,
@@ -91,6 +91,7 @@ console.log('\n[公開任務]');
 {
   witness('1', snap({ year: 2050 }, 'year'), '國發會中推估 2050 年');
   expect('2049 年還不算', !byId('1').check(snap({ year: 2049 }, 'year')));
+  expect('跳到 2080 年不算 2050 年', !byId('1').check(snap({ year: 2080 }, 'year')));
   expect('看過去的年份不算', !byId('1').check(snap({ past: 2024 }, 'past')));
 }
 {
@@ -124,11 +125,13 @@ witness('3', snap({ cohort: 1985, cohortFrom: 40 }, 'cohort'), '2025 年點 40 �
   const o = { mode: 'custom', tfr: 2.1, net: 0 };
   witness('8', snap(Object.assign({ year: 2075 }, o), 'year'), '2075 年人口是 2025 年的 ' + (ind(o, 2075).total / BASE_TOTAL).toFixed(3) + ' 倍');
   expect('有淨遷入就不算', !byId('8').check(snap({ mode: 'custom', tfr: 2.1, net: 5, year: 2075 }, 'year')));
+  expect('跳到 2080 年不算 2075 年', !byId('8').check(snap(Object.assign({ year: 2080 }, o), 'year')));
 }
 {
   const n = NETS.find(n => ind({ mode: 'custom', tfr: 1.0, net: n }, 2075).total >= BASE_TOTAL);
   witness('9', snap({ mode: 'custom', tfr: 1.0, net: n, year: 2075 }, 'year'), '總生育率 1.0、每年淨遷入 ' + n + ' 千人');
   expect('少 5 千人就不夠', !byId('9').check(snap({ mode: 'custom', tfr: 1.0, net: n - 5, year: 2075 }, 'year')));
+  expect('跳到 2080 年不算 2075 年', !byId('9').check(snap({ mode: 'custom', tfr: 1.0, net: n, year: 2080 }, 'year')));
 }
 {
   witness('10', snap({ mode: 'stable', tfr: 2.1 }, 'param'), '總生育率 2.1、平均壽命 81.5 歲，每年 ' + (100 * trajOf(Object.assign({}, DEF, { mode: 'stable', tfr: 2.1 })).r).toFixed(3) + '%');

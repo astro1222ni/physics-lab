@@ -308,9 +308,11 @@
     setOut(el.yr, String(state.year));
     if (+el.yr.value !== state.year) el.yr.value = state.year;
     const d = curInd(), p = curPop(), i = idx();
+    const gr = state.mode === 'stable' && !state.past ? stableR : (!state.past && i > 0 ? inds[i].total / inds[i - 1].total - 1 : null);
+    const grTxt = gr == null ? null : (gr > 0 ? '+' : '') + num(gr * 100, 2) + T('%／年', '% / yr');
     setText('hYear', state.mode === 'stable' && !state.past ? T('人口・第 ' + idx() + ' 年', 'Population · year ' + idx()) : T('人口・' + dispYear() + ' 年', 'Population · ' + dispYear()));
     setText('rTot', people(d.total));
-    setHTML('rShape', shapeName(d.shape));
+    setHTML('rShape', shapeName(d.shape) + (grTxt ? T('（實際 ', ' (actual ') + grTxt + T('）', ')') : ''));
     setText('rY', num(d.pct0_14, 1) + '%'); setText('rW', num(d.pct15_64, 1) + '%'); setText('rO', num(d.pct65, 1) + '%');
     setHTML('rStage', stageName(d.stage));
     setText('rDep', num(d.dep, 1) + T('（扶幼 ' + num(d.depY, 1) + '、扶老 ' + num(d.depO, 1) + '）', ' (young ' + num(d.depY, 1) + ', old ' + num(d.depO, 1) + ')'));
@@ -324,9 +326,15 @@
     setText('rTfr', tfrNow == null ? '—' : num(tfrNow, tfrNow < 1 ? 3 : 2));
     setText('rB', flows ? people(flows.births) : '—');
     setText('rD', flows ? people(flows.deaths) : '—');
-    setText('rN', flows ? signedPeople(flows.net) : '—');
-    const gr = state.mode === 'stable' && !state.past ? stableR : (!state.past && i > 0 ? inds[i].total / inds[i - 1].total - 1 : null);
-    setText('rG', gr == null ? '—' : (gr > 0 ? '+' : '') + num(gr * 100, 2) + T('%／年', '% / yr'));
+    const clampedMig = flows && flows.netSet != null && Math.abs(flows.net - flows.netSet) >= 1;
+    setText('rN', !flows ? '—' : clampedMig
+      ? T('設定 ' + signedPeople(flows.netSet) + '、實際 ' + signedPeople(flows.net), 'set ' + signedPeople(flows.netSet) + ', actual ' + signedPeople(flows.net))
+      : signedPeople(flows.net));
+    setText('rDelta', flows
+      ? T('出生 ' + people(flows.births) + ' − 死亡 ' + people(flows.deaths) + ' ＋ 淨遷移 ' + signedPeople(flows.net) + ' ＝ ' + signedPeople(flows.births - flows.deaths + flows.net),
+        'births ' + people(flows.births) + ' − deaths ' + people(flows.deaths) + ' + net ' + signedPeople(flows.net) + ' = ' + signedPeople(flows.births - flows.deaths + flows.net))
+      : '—');
+    setText('rG', grTxt == null ? '—' : grTxt);
     const co = cohortInfo();
     if (!co) { setText('rCoh', T('點金字塔上的一條長條', 'Tap a bar in the pyramid')); setText('rCohA', '—'); setText('rCohN', '—'); }
     else {
@@ -349,7 +357,7 @@
       act: act || 'year', running: state.running, mode: state.mode, view: state.past ? 'past' : 'proj', real: isReal(),
       year: dispYear(), tfr: state.mode === 'ndc' ? (i > 0 ? traj[i].tfr : K.DATA.asfr.tfr) : state.tfr,
       e0: state.e0, net: state.mode === 'custom' ? state.net : 0, srb: state.srb,
-      total: d.total, total2025: BASE_TOTAL, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
+      total: d.total, total2025: BASE_TOTAL, total2050: !state.past ? inds[2050 - START].total : null, total2075: !state.past ? inds[2075 - START].total : null, pct0_14: d.pct0_14, pct65: d.pct65, dep: d.dep,
       depPrev: !state.past && i > 0 ? inds[i - 1].dep : null, aging: d.aging, median: d.median,
       sexRatio: d.sexRatio, p100: d.p100, shape: d.shape,
       cmp: state.cmp, cmpDist: cmp ? K.distance(curPop(), cmp) : null,

@@ -147,9 +147,13 @@
       };
     }
     const peakParked = parks.some(p => Math.hypot((r.peakBaseK % N) - p.i, Math.floor(r.peakBaseK / N) - p.j) <= PARK_R);
+    const cf = cloudFactor(o.cloud || 0);
+    const maxNoCloud = cf > 1e-9 ? r.max / cf : compute(Object.assign({}, o, { cloud: 0 })).max;
+    let parkCells = 0;
+    for (let k = 0; k < r.lc.park.length; k++) if (r.lc.park[k]) parkCells++;
     return {
-      P: o.P, wind: o.wind || 0, hour: o.hour, cloud: o.cloud || 0, green: o.green || 0, cool: o.cool || 0, parks: parks.length,
-      max: r.max, center: r.center, centerNoPark, peakKm: r.peakKm, peakBaseKm: r.peakBaseKm, peakParked, area2: r.area2,
+      P: o.P, wind: o.wind || 0, hour: o.hour, cloud: o.cloud || 0, green: o.green || 0, cool: o.cool || 0, parks: parks.length, parkArea: parkCells * CELL * CELL,
+      max: r.max, maxNoCloud, center: r.center, centerNoPark, peakKm: r.peakKm, peakBaseKm: r.peakBaseKm, peakParked, area2: r.area2,
       oke: r.oke, ucrit: r.ucrit, maxBase: r.maxBase, mitig: r.maxBase > 1e-9 ? 1 - r.max / r.maxBase : 0, rural: r.rural, R: radiusKm(o.P), probe: pr
     };
   }

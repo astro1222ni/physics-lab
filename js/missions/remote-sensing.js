@@ -16,7 +16,7 @@
   if (!window.LabMission) return;
   const V = function (ev) { return ev.type === 'rs' ? ev.data : null; };
   const img = function (d) { return d.view === 'image'; };
-  const clear = function (d) { return d.drought === 0 && d.haze <= 0.005; };
+  const clear = function (d) { return d.drought === 0 && d.haze <= 1e-9; };
 
   LabMission.register('remote-sensing', [
     {
@@ -58,7 +58,7 @@
     {
       id: 'remote-sensing-7', level: 4,
       title: { zh: '最綠的季節', en: 'The greenest season' },
-      desc: { zh: '在 NDVI 圖層，沒有乾旱、沒有霧霾，找一天讓稻田的平均 NDVI 至少 0.75（停在那一天，不是播放中經過）。', en: 'On the NDVI layer, with no drought and no haze, stop on a day when the paddies average an NDVI of at least 0.75 (not just passing while playing).' },
+      desc: { zh: '在 NDVI 圖層，沒有乾旱、霧霾調到 0，找一天讓稻田的平均 NDVI 至少 0.75（停在那一天，不是播放中經過）。', en: 'On the NDVI layer, with no drought and haze set to 0, stop on a day when the paddies average an NDVI of at least 0.75 (not just passing while playing).' },
       check: function (ev) { const d = V(ev); return !!d && img(d) && d.layer === 'ndvi' && !d.playing && clear(d) && d.mean.paddy >= 0.75; }
     },
     {
@@ -82,13 +82,13 @@
     {
       id: 'remote-sensing-11', level: 5,
       title: { zh: '隔著一層霧', en: 'Through the haze' },
-      desc: { zh: '在 NDVI 圖層，讓霧霾把稻田的平均 NDVI 拉低至少 0.08（和同一天沒有霧霾時比）。', en: 'On the NDVI layer, let haze lower the paddy average by at least 0.08 compared with the same day without haze.' },
+      desc: { zh: '在 NDVI 圖層，於無霧霾時稻田平均 NDVI 至少 0.5 的日子，讓霧霾把稻田的平均 NDVI 拉低至少 0.08（和同一天沒有霧霾時比）。', en: 'On the NDVI layer, on a day when haze-free paddies average an NDVI of at least 0.5, let haze lower the paddy average by at least 0.08 compared with the same day without haze.' },
       check: function (ev) { const d = V(ev); return !!d && img(d) && d.layer === 'ndvi' && d.paddyC >= 0.5 && d.paddyC - d.mean.paddy >= 0.08; }
     },
     {
       id: 'remote-sensing-12', level: 6,
       title: { zh: '一年兩穫', en: 'Two harvests a year' },
-      desc: { zh: '在 NDVI 圖層，沒有乾旱、沒有霧霾，用日期滑桿找到第二期稻作最茂盛的時候：第 190 天以後，稻田的平均 NDVI 至少 0.72。', en: 'On the NDVI layer, with no drought and no haze, use the day slider to find the second crop at its best: after day 190, a paddy average NDVI of at least 0.72.' },
+      desc: { zh: '在 NDVI 圖層，沒有乾旱、霧霾調到 0，用日期滑桿找到第二期稻作最茂盛的時候：第 190 天以後，稻田的平均 NDVI 至少 0.72。', en: 'On the NDVI layer, with no drought and haze set to 0, use the day slider to find the second crop at its best: after day 190, a paddy average NDVI of at least 0.72.' },
       check: function (ev) { const d = V(ev); return !!d && img(d) && d.layer === 'ndvi' && d.act === 'day' && !d.playing && clear(d) && d.day >= 190 && d.mean.paddy >= 0.72; }
     },
 

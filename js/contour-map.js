@@ -405,15 +405,15 @@
     ctx.fillStyle = C['text']; ctx.strokeStyle = C['text']; ctx.lineWidth = 1;
     ctx.fillRect(x0, y0 - 4, L / 2, 4);
     ctx.strokeRect(x0 + 0.5, y0 - 4 + 0.5, L - 1, 4);
-    ctx.font = '600 ' + (small ? 10 : 11) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText('0', x0, y0 - 8); ctx.fillText('1', x0 + L / 2, y0 - 8); ctx.fillText('2 km', x0 + L + (small ? 6 : 8), y0 - 8);
+    ctx.font = '600 11px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('0', x0, y0 - 8); ctx.fillText('1', x0 + L / 2, y0 - 8); ctx.fillText('2 km', x0 + L + (small ? 8 : 10), y0 - 8);
     // 指北針（右上）
-    const nx = g.ox + g.side - 18, ny = g.oy + 16;
-    ctx.fillStyle = D.alpha(C['surface'], 0.82);
-    ctx.beginPath(); ctx.arc(nx, ny + 6, 14, 0, 2 * Math.PI); ctx.fill();
+    const nx = g.ox + g.side - 20, ny = g.oy + 22;
+    ctx.fillStyle = D.alpha(C['surface'], 0.85);
+    ctx.beginPath(); ctx.arc(nx, ny + 4, 16, 0, 2 * Math.PI); ctx.fill();
     ctx.fillStyle = C['text'];
-    ctx.beginPath(); ctx.moveTo(nx, ny - 4); ctx.lineTo(nx + 5, ny + 11); ctx.lineTo(nx, ny + 7); ctx.lineTo(nx - 5, ny + 11); ctx.closePath(); ctx.fill();
-    ctx.font = '700 9px ' + FONT; ctx.fillText('N', nx, ny + 21 > g.oy + 34 ? ny - 6 : ny - 6);
+    ctx.beginPath(); ctx.moveTo(nx, ny - 3); ctx.lineTo(nx + 5, ny + 12); ctx.lineTo(nx, ny + 8); ctx.lineTo(nx - 5, ny + 12); ctx.closePath(); ctx.fill();
+    ctx.font = '700 12px ' + FONT; ctx.fillText('N', nx, ny - 5);
     ctx.restore();
   }
   function drawProfileLine(g) {
@@ -462,8 +462,12 @@
     ctx.beginPath(); ctx.arc(p[0], p[1], 2.4, 0, 2 * Math.PI); ctx.fill();
     const h = TR.h(state.probe[0], state.probe[1]);
     const txt = num(h, 0) + ' m · ' + num(s.pct, 1) + '%';
-    const right = p[0] < g.ox + g.side - 110;
-    D.pill(ctx, txt, p[0] + (right ? 12 : -12), p[1] - 12, C['cm-probe'], right ? 'left' : 'right', '600 11px ' + FONT);
+    const pFont = '600 12px ' + FONT;
+    ctx.font = pFont;
+    const tw = ctx.measureText(txt).width + 18;
+    const right = p[0] + tw + 14 <= g.ox + g.side;
+    const py = p[1] - 14 < g.oy + 22 ? p[1] + 24 : p[1] - 12;
+    D.pill(ctx, txt, p[0] + (right ? 12 : -12), py, C['cm-probe'], right ? 'left' : 'right', pFont);
     ctx.restore();
   }
 
@@ -493,7 +497,7 @@
       c.fillText(T('在地圖上拖一條線，這裡就會畫出地形剖面', 'Drag a line across the map to draw its profile here'), W / 2, H / 2);
       c.restore(); return;
     }
-    const pl = 46, pr = 14, pt = 24, pb = 26;
+    const pl = 52, pr = 14, pt = 26, pb = 28;
     const aw = W - pl - pr, ah = H - pt - pb;
     const lo = Math.min(P.minH, state.sea) - 10, hi = Math.max(P.maxH + K.EYE, state.sea) + 10;
     const V = state.vexag;
@@ -502,17 +506,17 @@
     const x0 = pl, yb = pt + ah;                 // 剖面圖的左下角
     const X = function (d) { return x0 + d * s; }, Y = function (h) { return yb - (h - lo) * V * s; };
     // 高度格線與刻度
-    const hs = niceStep(hi - lo, Math.max(2, Math.floor(ph / 34)));
+    const hs = niceStep(hi - lo, Math.max(2, Math.floor(ph / 38)));
     c.strokeStyle = D.alpha(C['text'], 0.1); c.lineWidth = 1;
-    c.fillStyle = C['muted']; c.font = '500 10.5px ' + FONT; c.textAlign = 'right';
+    c.fillStyle = C['muted']; c.font = '500 12px ' + FONT; c.textAlign = 'right';
     for (let v = Math.ceil(lo / hs) * hs; v <= hi; v += hs) {
       const y = Math.round(Y(v)) + 0.5;
       c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + pw, y); c.stroke();
       c.fillText(num(v, 0), x0 - 5, y);
     }
-    c.save(); c.translate(11, yb - ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center';
+    c.save(); c.translate(12, yb - ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center';
     c.fillText(T('高度（m）', 'height (m)'), 0, 0); c.restore();
-    const ds = niceStep(P.L, Math.max(2, Math.floor(pw / 70)));
+    const ds = niceStep(P.L, Math.max(2, Math.floor(pw / 82)));
     c.textAlign = 'center'; c.textBaseline = 'top';
     const ticks = [];
     for (let d = 0; d <= P.L + 1e-6; d += ds) ticks.push(d);
@@ -577,15 +581,20 @@
       c.beginPath(); c.arc((xa + xb) / 2, (ya + yb2) / 2, 3.2, 0, 2 * Math.PI); c.fill();
       const app = K.apparentDeg(P.maxDeg, V);
       const lbl = T('最陡 ', 'steepest ') + num(P.maxDeg, 0) + '°' + (V > 1 ? T('，圖上看起來 ', ', looks ') + num(app, 0) + '°' : '');
-      const lx = Math.max(x0 + 60, Math.min(x0 + pw - 60, (xa + xb) / 2));
-      D.pill(c, lbl, lx, Math.max(pt - 6, Math.min(yb - 4, Math.min(ya, yb2) - 10)), C['cm-block'], 'center', '600 10.5px ' + FONT);
+      const lFont = '600 12px ' + FONT;
+      c.font = lFont;
+      const lw = c.measureText(lbl).width + 14;
+      const lx = Math.max(x0 + lw / 2, Math.min(W - pr - lw / 2, (xa + xb) / 2));
+      const topY = Math.min(ya, yb2) - 10;
+      const ly = topY < pt + 16 ? Math.min(yb - 6, Math.max(ya, yb2) + 22) : Math.min(yb - 6, topY);
+      D.pill(c, lbl, lx, ly, C['cm-block'], 'center', lFont);
     }
     // A、B 標示與垂直誇大
     c.font = '700 12px ' + FONT; c.fillStyle = C['cm-prof']; c.textBaseline = 'bottom';
-    c.textAlign = 'left'; c.fillText('A', X(0) + 3, Math.max(14, Y(Math.max(P.hA, state.sea)) - 6));
-    c.textAlign = 'right'; c.fillText('B', X(P.L) - 3, Math.max(14, Y(Math.max(P.hB, state.sea)) - 6));
-    c.font = '600 11px ' + FONT; c.fillStyle = C['muted']; c.textAlign = 'right'; c.textBaseline = 'top';
-    c.fillText(T('垂直誇大 ×', 'vertical exaggeration ×') + num(V, V % 1 ? 1 : 0), W - pr, 5);
+    c.textAlign = 'left'; c.fillText('A', X(0) + 3, Math.max(16, Y(Math.max(P.hA, state.sea)) - 6));
+    c.textAlign = 'right'; c.fillText('B', X(P.L) - 3, Math.max(16, Y(Math.max(P.hB, state.sea)) - 6));
+    c.font = '600 12px ' + FONT; c.fillStyle = C['muted']; c.textAlign = 'right'; c.textBaseline = 'top';
+    c.fillText(T('垂直誇大 ×', 'vertical exaggeration ×') + num(V, V % 1 ? 1 : 0), W - pr, 4);
     c.restore();
   }
 

@@ -23,7 +23,7 @@
     {
       id: 'river-meander-1', level: 1,
       title: { zh: '讓河流流五十年', en: 'Fifty years of flow' },
-      desc: { zh: '按「播放」，讓時間走過 50 年。', en: 'Press Play and let 50 years go by.' },
+      desc: { zh: '走過 50 年（按「播放」或「往前 1 年」單步都算）。', en: 'Let 50 years go by (Play or single-year Step both count).' },
       check: function (ev) { const d = M(ev); return !!d && d.t >= 50; }
     },
     {

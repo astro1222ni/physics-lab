@@ -241,7 +241,7 @@
     ctx.beginPath(); ctx.moveTo(x - 9 * ux, y - 9 * uy); ctx.lineTo(x + 9 * ux, y + 9 * uy); ctx.stroke();
     ctx.restore();
     ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = C['gm-break']; ctx.fillRect(-4.5, -4.5, 9, 9); ctx.strokeStyle = C.surface; ctx.lineWidth = 1.5; ctx.strokeRect(-4.5, -4.5, 9, 9); ctx.restore();
-    captions.push({ text: T('分界點', 'Break point'), x, y, gap: 14, side: ux >= 0 ? 1 : -1,
+    captions.push({ text: state.mode !== 'km' ? T('分界點（直線）', 'Break point (straight)') : T('分界點', 'Break point'), x, y, gap: 14, side: ux >= 0 ? 1 : -1,
       color: C['gm-break'], face: font(11, 700), priority: 100, pill: true });
   }
   function drawFlows() {
@@ -367,13 +367,13 @@
     const narrow = W < 330;
     if (!narrow) [10, 100, 400].forEach(function (pp) {
       const ly = Math.log10(A.pop * pp) - state.b * Math.log10(km ? 6 : 15);
-      if (ly < ymax - 0.15 && ly > ymin) D.haloText(ctx, T('對方 ' + pp + ' 萬人', pp >= 100 ? (pp / 100) + ' million people' : (pp * 10) + 'k people'), X(km ? 6 : 15) + 4, Y(ly) - 4, C.muted, 'left', 'bottom', font(10, 600));
+      if (ly < ymax - 0.15 && ly > ymin) D.haloText(ctx, T('對方 ' + pp + ' 萬人', pp >= 100 ? (pp / 100) + ' million people' : (pp * 10) + 'k people'), X(km ? 6 : 15) + 4, Y(ly) - 4, C.muted, 'left', 'bottom', font(11, 600));
     });
     flows.slice(0, narrow ? 2 : 4).concat(flows.filter(function (o) { return L[o.j].id === state.to; })).forEach(function (o) {
-      const c = L[o.j], x = X(o.d), right = x > x0 + 0.62 * W;
-      D.haloText(ctx, cname(c), x + (right ? -8 : 6), Y(Math.log10(o.T)) + (right ? -9 : 0), c.id === state.to ? C['gm-break'] : C.text, right ? 'right' : 'left', 'middle', font(11, 600));
+      const c = L[o.j], x = X(o.d), right = x > x0 + 0.62 * W, isSel = c.id === state.to;
+      D.haloText(ctx, cname(c), x + (right ? -8 : 6), Y(Math.log10(o.T)) + (right ? -9 : 0), isSel ? C['gm-break'] : C.text, right ? 'right' : 'left', 'middle', font(isSel ? 12 : 11, isSel ? 700 : 600));
     });
-    D.pill(ctx, narrow ? cname(A) + '　b = ' + num(state.b, 1) : T('從 ' + cname(A) + ' 出發；虛線斜率 = −b = −', 'From ' + cname(A) + '; dashed slope = −b = −') + num(state.b, 1), x0 + W - 6, y0 + 16, C['gm-flow'], 'right', font(11, 700));
+    D.pill(ctx, narrow ? cname(A) + '　b = ' + num(state.b, 1) : T('從 ' + cname(A) + ' 出發；虛線斜率 = −b = −', 'From ' + cname(A) + '; dashed slope = −b = −') + num(state.b, 1), x0 + W - 6, y0 + 16, C['gm-flow'], 'right', font(12, 700));
     ctx.strokeStyle = D.alpha(C.text, 0.3); ctx.strokeRect(x0, y0, W, H);
   }
 
@@ -403,9 +403,10 @@
     setOut(el.b, num(state.b, 1)); setOut(el.pop, String(state.pop));
     const a = byId(state.from), pi = pairInfo();
     if (pi) {
-      setText('rKm', num(pi.km, 0) + ' km');
-      setText('rCar', minutes(pi.car));
-      setText('rHsr', pi.hsr < pi.car - 0.5 ? minutes(pi.hsr) : T('不比開車快', 'no faster than driving'));
+      const cap = T('（太近，模型以 1 計）', ' (too close, capped at 1)');
+      setText('rKm', num(pi.km, pi.km < 1 ? 2 : 0) + ' km' + (pi.km < 1 ? cap : ''));
+      setText('rCar', minutes(pi.car) + (pi.car < 1 ? cap : ''));
+      setText('rHsr', pi.hsr < pi.car - 0.5 ? (minutes(pi.hsr) + (pi.hsr < 1 ? cap : '')) : T('不比開車快', 'no faster than driving'));
       setText('rBrk', num(pi.frac * pi.km, 0) + ' km（' + num(100 * pi.frac, 0) + '%）');
     } else ['rKm', 'rCar', 'rHsr', 'rBrk'].forEach(function (id) { setText(id, '—'); });
     setText('flowH', T(cname(a) + ' 的互動流向', 'Where ' + cname(a) + '’s interaction goes'));
@@ -415,7 +416,7 @@
     let h = '<colgroup><col><col><col><col></colgroup><tr><th>' + T('城市', 'City') + '</th><th>' + (travelTime ? T('時間', 'Time') : T('距離', 'Dist.')) + '</th><th></th><th>' + T('占比', 'Share') + '</th></tr>';
     flows.slice(0, 8).forEach(function (o) {
       const c = L[o.j];
-      h += '<tr><td>' + cname(c) + '</td><td>' + dUnit(o.d) + '</td><td class="bar"><i style="width:' + Math.max(2, Math.round(100 * o.share / mx)) + '%' + (c.id === 'new' ? ';background:var(--gm-town)' : '') + '"></i></td><td>' + pct(o.share) + '</td></tr>';
+      h += '<tr><td>' + cname(c) + '</td><td>' + dUnit(o.d) + (o.d < 1 ? T('（以 1 計）', ' (≥1)') : '') + '</td><td class="bar"><i style="width:' + Math.max(2, Math.round(100 * o.share / mx)) + '%' + (c.id === 'new' ? ';background:var(--gm-town)' : '') + '"></i></td><td>' + pct(o.share) + '</td></tr>';
     });
     setHTML('flowTab', h);
     setHTML('legend', legendHTML());

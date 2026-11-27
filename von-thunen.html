@@ -166,7 +166,7 @@
         </section>
         <section class="card">
           <h2 data-en="Transport">交通</h2>
-          <div class="slider"><label for="tm" data-en="Transport cost factor (all crops)" title="所有作物的運費一起乘上這個倍率：1 是邱念的設定，0.5 是運費減半（例如鐵路）" data-en-title="Multiplies every crop's freight: 1 is von Thünen's setting, 0.5 halves it (a railway, say)">運輸技術（運費倍率）</label><output></output>
+          <div class="slider"><label for="tm" data-en="Transport cost factor (all crops)" title="所有作物的運費一起乘上這個倍率：1 是本實驗的預設值，0.5 是運費減半（例如鐵路）" data-en-title="Multiplies every crop's freight: 1 is this lab's default, 0.5 halves it (a railway, say)">運輸技術（運費倍率）</label><output></output>
             <input id="tm" type="range" min="0.25" max="2" step="0.01" value="1" data-decimals="3"></div>
           <div data-share-skip><button type="button" class="toggle" id="riverBtn" aria-pressed="false"><span class="dot"></span><span data-en="River">河流</span></button></div>
           <div class="slider" id="kRow"><label for="tk" data-en="River freight (× land freight)" title="坐船運一噸一公里的運費，是陸運的幾倍" data-en-title="The cost of shipping one tonne one km by river, as a fraction of the land cost">河運費率（陸運的幾倍）</label><output></output>
@@ -195,7 +195,7 @@
             <dt data-en="Farmland">農地面積</dt><dd id="rFarm">—</dd>
             <dt data-en="Total rent" title="整個平原一年的地租加起來（地主的總收入）" data-en-title="All the rent on the plain in a year (the landowners' total income)">全區總地租</dt><dd id="rTotal">—</dd>
           </dl>
-          <button type="button" id="reset" data-en="Back to von Thünen's settings">回到邱念的設定</button>
+          <button type="button" id="reset" data-en="Back to default settings">回到本實驗的預設值</button>
         </section>
         <p class="sr-only" id="srNow" aria-live="polite"></p>
       </aside>
@@ -217,7 +217,7 @@
         <li data-en-html="\(R\): the rent one hectare can pay in a year — what is left after paying for production and transport.">\(R\)：一公頃土地一年付得起的地租，也就是收入扣掉生產成本與運費後剩下的錢。</li>
         <li data-en-html="\(Y\): yield (tonnes per hectare); \(p\): price in the city; \(c\): production cost per tonne; \(f\): freight per tonne per km; \(d\): distance to the city.">\(Y\)：每公頃產量（噸）；\(p\)：城裡的價格；\(c\)：每噸的生產成本；\(f\)：每噸每公里的運費；\(d\)：離城的距離。</li>
         <li data-en-html="For each crop the rent falls along a straight line: it starts at \(Y(p-c)\) at the city and drops by \(Yf\) for every km. The line reaches zero at \(d = (p-c)/f\).">每一種作物的地租都是一條直線：在城裡是 \(Y(p-c)\)，每遠一公里少 \(Yf\)；在 \(d = (p-c)/f\) 降到 0。</li>
-        <li data-en-html="Where the two currently highest-bidding lines cross, the land changes hands (a crossing below a higher-bidding third crop does not change land use). Steep lines (heavy, bulky or perishable produce with high yields) win near the city; gentle lines win farther out. That is why the rings appear, and why their order depends on \(Yf\), not on price alone.">當下出價最高的兩條作物線交叉的地方，土地才會換一種用途（若有第三種作物在當地出價更高，另兩條線的交點不會切換用途）。坡度陡的（又重、占體積或容易壞、產量又高的作物）在城市附近勝出；坡度緩的在外圈勝出。圈就是這樣出現的，而圈的順序看的是 \(Yf\)，不只是價格。</li>
+        <li data-en-html="Land use changes only where two lines cross on the upper envelope (the highest-bidding crop among all crops). For example, with the default settings at 30 km, forestry and grazing both bid 300, but grain bids 520, so land use does not change there. Steep lines (heavy, bulky or perishable produce with high yields) win near the city; gentle lines win farther out. That is why the rings appear, and why their order depends on \(Yf\), not on price alone.">只有交點位在「所有作物中出價最高的那條包絡線」上，土地才會換一種用途（例如預設值在 30 km 處，林木與放牧同為 300，但穀物 520 更高，那裡不換用途）。坡度陡的（又重、占體積或容易壞、產量又高的作物）在城市附近勝出；坡度緩的在外圈勝出。圈就是這樣出現的，而圈的順序看的是 \(Yf\)，不只是價格。</li>
       </ul>
       <h3 data-en="Von Thünen's rings">邱念的圈</h3>
       <div class="tablewrap"><table>

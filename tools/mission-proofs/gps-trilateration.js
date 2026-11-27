@@ -47,7 +47,7 @@ function snap(s, act) {
     sky: {
       lat: s.lat, lon: s.lon, t: s.t, mask: s.mask, wall: s.wall, mp: s.mp, sig: s.sig, clock: s.clock, ctau: s.ctau,
       nVis: vis.length, nUsed: used.length, nExcl: vis.length - used.length, maxEl, pAll: dAll ? dAll.p : null, playing: s.playing,
-      dop: d ? { p: d.p, h: d.h, v: d.v, t: d.t } : null, hrms: sc ? sc.hrms : null, biasH: sc ? sc.biasH : null, biasV: sc ? Math.abs(sc.bias[2]) : null
+      dop: d ? { p: d.p, h: d.h, v: d.v, t: d.t } : null, hrms: sc ? sc.hrms : null, biasH: sc ? sc.biasH : null, biasV: sc ? Math.abs(sc.bias[2]) : null, mpBiasH: sc ? sc.mpBiasH : null
     }
   } };
 }
@@ -121,8 +121,10 @@ expect('預設偏 0.2 μs 不夠 200 m', !byId('7').check(snap(st({ mode: 'sky',
   witness('8', snap(s, 'sky'), '大樓 45°、時間 ' + s.t + ' 分');
 }
 {
-  const s = findT({ mode: 'sky', mp: 30 }, x => snap(x).data.sky.biasH >= 6);
-  witness('9', snap(s, 'sky'), '多路徑 30 m、時間 ' + s.t + ' 分：偏 ' + snap(s).data.sky.biasH.toFixed(2) + ' m');
+  const s = findT({ mode: 'sky', mp: 30 }, x => snap(x).data.sky.mpBiasH >= 6);
+  witness('9', snap(s, 'sky'), '多路徑 30 m、時間 ' + s.t + ' 分：mpBiasH ' + snap(s).data.sky.mpBiasH.toFixed(2) + ' m');
+  expect('9 反例：多路徑 0、時鐘偏差大（biasH 很大）時不算', !byId('9').check(snap(st({ mode: 'sky', clock: 'assume', ctau: 0.5, mp: 0 }), 'sky')));
+  expect('9 反例：多路徑極小（1 m）但時鐘偏差大時仍不算', !byId('9').check(snap(st({ mode: 'sky', clock: 'assume', ctau: 0.5, mp: 1 }), 'sky')));
 }
 {
   let w = null;

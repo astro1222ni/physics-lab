@@ -331,7 +331,15 @@
       ctx.strokeStyle = C['rm-art']; ctx.lineWidth = Math.max(2, R.W * g.sc * 0.8); ctx.setLineDash([6, 4]);
       ctx.beginPath(); ctx.moveTo(sx(preview.a[0], g), sy(preview.a[1], g)); ctx.lineTo(sx(preview.b[0], g), sy(preview.b[1], g)); ctx.stroke();
       ctx.restore();
-      D.pill(ctx, T('省下 ' + km(preview.saved, 1), 'saves ' + km(preview.saved, 1)), sx((preview.a[0] + preview.b[0]) / 2, g), sy((preview.a[1] + preview.b[1]) / 2, g) - 10, C['rm-art'], 'center', '600 11px ' + FONT);
+      const lbl = T('省下 ' + km(preview.saved, 1), 'saves ' + km(preview.saved, 1));
+      const pFont = '600 12px ' + FONT;
+      ctx.font = pFont;
+      const pw = ctx.measureText(lbl).width + 16;
+      const mx = sx((preview.a[0] + preview.b[0]) / 2, g), my = sy((preview.a[1] + preview.b[1]) / 2, g);
+      const py = my - 12 < 24 ? Math.min(h - 8, my + 24) : my - 10;
+      const align = mx - pw / 2 < 6 ? 'left' : mx + pw / 2 > w - 6 ? 'right' : 'center';
+      const px = align === 'left' ? Math.max(6, mx) : align === 'right' ? Math.min(w - 6, mx) : mx;
+      D.pill(ctx, lbl, px, py, C['rm-art'], align, pFont);
     }
     // 截彎的漣漪
     const now = performance.now();
@@ -592,7 +600,7 @@
     setText('rCuts', String(R.cuts));
     setText('rArt', String(R.artCuts));
     let lakes = 0, marsh = 0;
-    R.oxbows.forEach(function (o) { if (R.t - o.t0 < K.FILL_YR) lakes++; else marsh++; });
+    (R.oxTimes || R.oxbows.map(function (o) { return o.t0; })).forEach(function (t0) { if (R.t - t0 < K.FILL_YR) lakes++; else marsh++; });
     setText('rLakes', String(lakes)); setText('rMarsh', String(marsh));
     const lc = R.lastCut;
     setText('rLast', lc ? T(yearsTxt(lc.t) + (lc.art ? '，人工截彎' : '，自然截彎') + '，截下 ' + km(lc.len, 1) + ' 的舊河道（' + num(R.t - lc.t, 0) + ' 年前）',
@@ -731,7 +739,7 @@
     if (state.running) state.running = false;
     const target = R.t + 1;
     let g = 0;
-    while (R.t < target - 1e-9 && g++ < 5000) { K.step(R); record(); noticeCuts(); }
+    while (R.t < target - 1e-9 && g++ < 5000) { K.step(R, target - R.t); record(); noticeCuts(); }
     setStatus(T('往前一年：' + yearsTxt(R.t) + '，彎曲度 ' + num(K.sinuosity(R), 3) + '。', 'One more year: ' + yearsTxt(R.t) + ', sinuosity ' + num(K.sinuosity(R), 3) + '.'));
     afterChange(true, 'step');
   });

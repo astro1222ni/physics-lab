@@ -46,7 +46,7 @@
     const o = opts || {};
     const W = o.W != null ? o.W : 80, k = o.k != null ? o.k : 8, seed = o.seed != null ? o.seed : 1;
     const r = {
-      W, k, seed, t: 0, x: [], y: [], oxbows: [], hist: [], cuts: 0, artCuts: 0, nextHist: HIST_DT, rnd: rng(seed), lastCut: null, events: [],
+      W, k, seed, t: 0, x: [], y: [], oxbows: [], oxTimes: [], hist: [], cuts: 0, artCuts: 0, nextHist: HIST_DT, rnd: rng(seed), lastCut: null, events: [],
       // 任務用的紀錄：這條河曾經到過的最大彎曲度、兩次自然截彎的最短間隔（年）、最近一次自然截彎的時間、人工拉直的時刻
       maxSin: 1, minGap: Infinity, minGap3: Infinity, minGap4: Infinity, lastNat: null, prevNat: null, prev2Nat: null, straightAt: null
     };
@@ -168,6 +168,8 @@
     r.x.splice(i + 1, j - i - 1); r.y.splice(i + 1, j - i - 1);
     r.oxbows.push(ox);
     if (r.oxbows.length > OX_MAX) r.oxbows.shift();
+    if (!r.oxTimes) r.oxTimes = [];
+    r.oxTimes.push(r.t);
     if (artificial) r.artCuts++; else r.cuts++;
     r.lastCut = { t: r.t, len: L, art: !!artificial, x: (r.x[i] + r.x[i + 1]) / 2, y: (r.y[i] + r.y[i + 1]) / 2 };
     r.events.push(r.lastCut);
@@ -342,11 +344,12 @@
   // 任務快照（頁面與證明腳本共用）
   function snapshot(r, extra) {
     const e = extra || {};
-    const live = r.oxbows.filter(o => r.t - o.t0 < FILL_YR).length;
+    const times = r.oxTimes || r.oxbows.map(o => o.t0);
+    const live = times.filter(t0 => r.t - t0 < FILL_YR).length;
     return Object.assign({
       t: r.t, W: r.W, k: r.k, seed: r.seed, sin: sinuosity(r), L: length(r), lambda: wavelength(r),
-      cuts: r.cuts, artCuts: r.artCuts, oxbows: r.oxbows.length, lakes: live,
-      oldest: r.oxbows.length ? r.t - Math.min.apply(null, r.oxbows.map(o => o.t0)) : 0,
+      cuts: r.cuts, artCuts: r.artCuts, oxbows: times.length, lakes: live,
+      oldest: times.length ? r.t - times[0] : 0,
       lastCut: r.lastCut ? Object.assign({}, r.lastCut) : null,
       lastArt: r.lastArt ? Object.assign({}, r.lastArt) : null,
       maxSin: r.maxSin, minGap: isFinite(r.minGap) ? r.minGap : null, minGap3: isFinite(r.minGap3) ? r.minGap3 : null, minGap4: isFinite(r.minGap4) ? r.minGap4 : null,

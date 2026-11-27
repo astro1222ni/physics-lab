@@ -171,8 +171,22 @@
       treeIcon(c[0], c[1], Math.max(5, Math.min(9, r * 0.6)));
     });
     ctx.restore();
-    // 外框
-    ctx.strokeStyle = D.alpha(C.text, 0.35); ctx.lineWidth = 1; ctx.strokeRect(v.x0 + 0.5, v.y0 + 0.5, v.M - 1, v.M - 1);
+    // 外框（西、南、北固定郊區溫度，東邊有風時下風外推用淡虛線示意）
+    ctx.save();
+    ctx.strokeStyle = D.alpha(C.text, 0.35); ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
+    ctx.lineTo(v.x0 + 0.5, v.y0 + 0.5);
+    ctx.lineTo(v.x0 + 0.5, v.y0 + v.M - 0.5);
+    ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
+    ctx.stroke();
+    if (state.wind > 0) ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = D.alpha(C.text, state.wind > 0 ? 0.28 : 0.35);
+    ctx.beginPath();
+    ctx.moveTo(v.x0 + v.M - 0.5, v.y0 + 0.5);
+    ctx.lineTo(v.x0 + v.M - 0.5, v.y0 + v.M - 0.5);
+    ctx.stroke();
+    ctx.restore();
     // 最熱點
     if (R.max > 0.05) {
       const pk = G(v, (R.maxK % N) + 0.5, Math.floor(R.maxK / N) + 0.5);
@@ -492,7 +506,7 @@
     $('legend').innerHTML = legendHTML();
     $('parkBtn').disabled = !state.probe;
     $('clearBtn').disabled = !state.parks.length;
-    setText('parkHint', state.parks.length ? T('公園 ' + state.parks.length + ' / ' + K.MAX_PARKS + ' 座（種第 4 座時，最早的那座會被移走）。', state.parks.length + ' of ' + K.MAX_PARKS + ' parks (a fourth one replaces the oldest).') : T('先點地圖放溫度計，再在那裡種公園（直徑 2 km）。', 'Tap the map to place the thermometer, then plant a park (2 km across) there.'));
+    setText('parkHint', state.parks.length ? T('有效公園 ' + state.parks.length + ' / ' + K.MAX_PARKS + ' 座，實際面積 ' + num(s.parkArea, 1) + ' km²（種第 4 座時，最早的那座會被移走）。', state.parks.length + ' of ' + K.MAX_PARKS + ' parks, actual area ' + num(s.parkArea, 1) + ' km² (a fourth one replaces the oldest).') : T('先點地圖放溫度計，再在那裡種公園（直徑 2 km）。', 'Tap the map to place the thermometer, then plant a park (2 km across) there.'));
     setText('cvHint', state.view === 'map' ? T('點地圖移動溫度計；方向鍵也可以（Shift 一次 2.5 km）。', 'Tap the map to move the thermometer, or use the arrow keys (Shift for 2.5 km).') : state.view === 'profile' ? T('點剖面，把溫度計放在這條東西線上。', 'Tap the profile to put the thermometer on this line.') : state.view === 'surface' ? T('高度和顏色都是比郊區高多少度。', 'Height and colour both show how much warmer than the countryside.') : T('實心點是這座城市現在的熱島強度；空心點是 Oke 公式的預測。', 'The solid dot is this city now; the hollow dot is Oke’s prediction.'));
     $('srNow').textContent = T('熱島強度 ', 'Heat-island intensity ') + dT(s.max);
   }
@@ -573,6 +587,10 @@
   $('parkBtn').addEventListener('click', function () {
     if (!state.probe) return;
     acted();
+    if (state.parks.some(function (p) { return p.i === state.probe.i && p.j === state.probe.j; })) {
+      setStatus(T('這裡已經有公園，不用重複種。', 'There is already a park here.'));
+      return;
+    }
     if (state.parks.length >= K.MAX_PARKS) state.parks.shift();
     state.parks.push({ i: state.probe.i, j: state.probe.j });
     afterChange(true, 'park');

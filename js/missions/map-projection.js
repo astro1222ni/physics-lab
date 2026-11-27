@@ -57,7 +57,7 @@
     {
       id: 'map-projection-6', level: 4,
       title: { zh: '高爾－彼得斯的赤道', en: 'The equator of Gall–Peters' },
-      desc: { zh: '選「等積圓柱」，把標準緯線 φs 調到 45°（高爾－彼得斯投影），在赤道附近（南北緯 2° 以內）放量測點：形狀被壓扁，角度變形至少 38.5°。', en: 'Choose “Cylindrical equal-area”, set the standard parallel φs to 45° (the Gall–Peters projection) and measure near the equator (within 2° N or S): shapes are squashed, with an angle distortion of at least 38.5°.' },
+      desc: { zh: '選「等積圓柱」，把標準緯線 φs 調到 45°（高爾－彼得斯投影），在赤道附近（南北緯 2° 以內）放量測點：形狀被東西向壓縮、南北向拉長，角度變形至少 38.5°。', en: 'Choose “Cylindrical equal-area”, set the standard parallel φs to 45° (the Gall–Peters projection) and measure near the equator (within 2° N or S): shapes are compressed east–west and stretched north–south, with an angle distortion of at least 38.5°.' },
       check: function (ev) { const d = M(ev); return !!d && d.proj === 'cea' && near(d.phiS, 45, 0.5) && d.probe && d.probe.visible && Math.abs(d.probe.lat) <= 2 && d.probe.omega >= 38.5; }
     },
     {
@@ -69,7 +69,7 @@
     {
       id: 'map-projection-8', level: 5,
       title: { zh: '給臺灣的圓錐', en: 'A cone for Taiwan' },
-      desc: { zh: '選「蘭伯特等角圓錐」，調整兩條標準緯線，讓臺灣本島範圍內的比例誤差最大不超過 0.1%。', en: 'Choose “Lambert conformal conic” and adjust the two standard parallels so that the largest scale error over Taiwan is at most 0.1%.' },
+      desc: { zh: '選「蘭伯特等角圓錐」，調整兩條標準緯線，讓臺灣（21.9°–25.3°N、120°–122°E 範圍內取樣的最大值）比例誤差最大不超過 0.1%。', en: 'Choose “Lambert conformal conic” and adjust the two standard parallels so that the maximum sampled scale error over Taiwan (21.9°–25.3° N, 120°–122° E) is at most 0.1%.' },
       check: function (ev) { const d = M(ev); return !!d && d.proj === 'lcc' && d.tw && d.tw.scale <= 0.001; }
     },
     {
@@ -93,7 +93,7 @@
     {
       id: 'map-projection-12', level: 9,
       title: { zh: '最好的兩條標準緯線', en: 'The best two standard parallels' },
-      desc: { zh: '用「蘭伯特等角圓錐」，把臺灣本島範圍內的比例誤差壓到 0.025% 以下（可以點數字直接輸入，精確到 0.01°）。', en: 'With the Lambert conformal conic, push the largest scale error over Taiwan below 0.025% (tap the numbers to type them, to 0.01°).' },
+      desc: { zh: '用「蘭伯特等角圓錐」，把臺灣（21.9°–25.3°N、120°–122°E 範圍內取樣的最大值）比例誤差壓到 0.025% 以下（可以點數字直接輸入，精確到 0.01°）。', en: 'With the Lambert conformal conic, push the maximum sampled scale error over Taiwan (21.9°–25.3° N, 120°–122° E) below 0.025% (tap the numbers to type them, to 0.01°).' },
       check: function (ev) { const d = M(ev); return !!d && d.proj === 'lcc' && d.tw && d.tw.scale <= 0.00025; }
     },
 

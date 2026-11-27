@@ -93,7 +93,7 @@ console.log('\n[公開任務]');
   let d7 = range(1, 365).filter(d => snap(st({ day: d })).data.mean.paddy >= 0.75);
   witness('7', snap(st({ day: d7[0], layer: 'ndvi' }), 'day'), '稻田平均 NDVI ≥ 0.75 的日子：第 ' + d7[0] + '–' + d7[d7.length - 1] + ' 天（' + d7.length + ' 天）');
   expect('7 反例：預設的第 70 天不夠綠', firing(snap(st(), 'day')).indexOf('7') < 0, snap(st()).data.mean.paddy.toFixed(3));
-  expect('7 反例：同一天加一點霧霾、或播放中經過都不算', firing(snap(st({ day: 111, haze: 0.01, layer: 'ndvi' }), 'param')).indexOf('7') < 0 && firing(snap(st({ day: 111, layer: 'ndvi', playing: true }), 'day')).indexOf('7') < 0);
+  expect('7 反例：同一天霧霾 0.005 或 0.01、或播放中經過都不算', firing(snap(st({ day: 111, haze: 0.005, layer: 'ndvi' }), 'param')).indexOf('7') < 0 && firing(snap(st({ day: 111, haze: 0.01, layer: 'ndvi' }), 'param')).indexOf('7') < 0 && firing(snap(st({ day: 111, layer: 'ndvi', playing: true }), 'day')).indexOf('7') < 0);
   const d8 = range(1, 365).filter(d => snap(st({ day: d })).data.meanW.paddy >= 0.2);
   witness('8', snap(st({ day: d8[0], layer: 'ndwi' }), 'day'), '稻田平均 NDWI ≥ 0.2 的日子：' + d8.join(','));
   const r9 = findPix(range(140, 170), PADDY.filter((k, i) => i % 7 === 0), P => P.stage === 'ripe' && P.ndvi < 0.45);
@@ -104,6 +104,7 @@ console.log('\n[公開任務]');
   expect('11 反例：霧霾 0.06 不夠', firing(snap(st({ day: 111, haze: 0.06, layer: 'ndvi' }), 'param')).indexOf('11') < 0);
   const d12 = range(190, 365).filter(d => snap(st({ day: d })).data.mean.paddy >= 0.72);
   witness('12', snap(st({ day: d12[0], layer: 'ndvi' }), 'day'), '第二期 ≥ 0.72：第 ' + d12[0] + '–' + d12[d12.length - 1] + ' 天（' + d12.length + ' 天）');
+  expect('12 反例：霧霾 0.005 不算', firing(snap(st({ day: d12[0], haze: 0.005, layer: 'ndvi' }), 'day')).indexOf('12') < 0);
 }
 
 console.log('\n[隱藏任務]');
