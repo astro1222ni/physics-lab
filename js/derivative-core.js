@@ -97,9 +97,10 @@
   /** 局部截斷誤差的階數；0 表示間隔夠小時差商在數學上精確。 */
   function errorOrder(id, a, k, symmetric) {
     if (d1(id, a, k) == null) return null;
-    if (!symmetric && d2(id, a, k) !== 0) return 1;
-    if (id === 'sin' && Math.abs(a % Math.PI) === Math.PI / 2 && symmetric) return 0;
-    return d3(id, a, k) === 0 ? 0 : 2;
+    // 滑桿值是十進位小數，解析上為 0 的 f″、f‴ 算出來可能是 1e-16，所以用容差判定 0
+    const zero = function (v) { return Math.abs(v) < 1e-9; };
+    if (!symmetric && !zero(d2(id, a, k))) return 1;
+    return zero(d3(id, a, k)) ? 0 : 2;
   }
 
   /** 差商的主要誤差項（泰勒展開的第一項）：前向 h·f″(a)/2，對稱 h²·f‴(a)/6 */

@@ -16,6 +16,8 @@ test('sin 在原點的兩種差商有相同二階誤差，線性區段局部精�
     ok(D.errorOrder('sin', 0, null, symmetric) === 2);
     ok(D.errorOrder('abs', 1, null, symmetric) === 0);
     ok(D.errorOrder('abs', 0, null, symmetric) === null);
+    // 浮點：0.5·6·0.2 − 0.6 算出 1.1e-16，解析上 f″(0.2) = 0
+    ok(D.errorOrder('cubic', 0.2, { a: 0.5, b: -0.3, c: 0, d: 0 }, false) === 2);
   }
 });
 
