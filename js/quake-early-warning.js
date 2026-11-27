@@ -358,11 +358,19 @@
         { x: X + 9, yb: Y + 5, al: 'left', b: [X + 9, Y - 9, X + 9 + w, Y + 9] },
         { x: X - 9, yb: Y + 5, al: 'right', b: [X - 9 - w, Y - 9, X - 9, Y + 9] },
         { x: cx, yb: Y - 10, al: 'center', b: [cx - w / 2, Y - 24, cx + w / 2, Y - 6] },
-        { x: cx, yb: Y + 22, al: 'center', b: [cx - w / 2, Y + 8, cx + w / 2, Y + 26] }
+        { x: cx, yb: Y + 22, al: 'center', b: [cx - w / 2, Y + 8, cx + w / 2, Y + 26] },
+        // 四個斜角（手機橫放地圖小、標籤擠時用）
+        { x: X - 7, yb: Y - 8, al: 'right', b: [X - 7 - w, Y - 22, X - 7, Y - 4] },
+        { x: X - 7, yb: Y + 18, al: 'right', b: [X - 7 - w, Y + 4, X - 7, Y + 22] },
+        { x: X + 7, yb: Y - 8, al: 'left', b: [X + 7, Y - 22, X + 7 + w, Y - 4] },
+        { x: X + 7, yb: Y + 18, al: 'left', b: [X + 7, Y + 4, X + 7 + w, Y + 22] }
       ];
       const inside = function (b) { return b[0] >= 2 && b[2] <= M.W - 2 && b[1] >= 2 && b[3] <= M.H - 2; };
       const hits = function (b) { return placed.some(function (p) { return b[0] < p[2] && b[2] > p[0] && b[1] < p[3] && b[3] > p[1]; }); };
-      let pick = cands.filter(function (k) { return inside(k.b) && !hits(k.b); })[0] || cands.filter(function (k) { return inside(k.b); })[0] || cands[0];
+      // 都會碰到時，選重疊面積最小的（不要直接退回第一個，以免蓋住震央標籤）
+      const lap = function (b) { return placed.reduce(function (sum, p) { const ix = Math.min(b[2], p[2]) - Math.max(b[0], p[0]), iy = Math.min(b[3], p[3]) - Math.max(b[1], p[1]); return sum + (ix > 0 && iy > 0 ? ix * iy : 0); }, 0); };
+      const ok = cands.filter(function (k) { return inside(k.b); });
+      let pick = ok.filter(function (k) { return !hits(k.b); })[0] || ok.slice().sort(function (p, q) { return lap(p.b) - lap(q.b); })[0] || cands[0];
       placed.push(pick.b);
       D.pill(ctx, label, pick.x, pick.yb, sel ? C.accent : (run && t < s.Ta ? C.text : col), pick.al, (sel ? '700 ' : '600 ') + '12px ' + FONT);
     });

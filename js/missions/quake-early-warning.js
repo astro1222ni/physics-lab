@@ -91,9 +91,9 @@
     {
       id: 'quake-early-warning-12', level: 8,
       title: { zh: '沒有人措手不及', en: 'Nobody caught off guard' },
-      desc: { zh: '規模 7 以上、深度 20 km 以內、初報準確的地震：至少 6 個城市搖到 4 級以上，而且每一個搖到 4 級以上的城市都提早收到警報。', en: 'A magnitude 7+ earthquake no deeper than 20 km, with an accurate first estimate: at least 6 cities shake at intensity 4 or more, and every one of them is warned in advance.' },
+      desc: { zh: '預警系統不比現在好（至少 6 站、計算至少 4 秒、站距至少 20 km），規模 7 以上、深度 20 km 以內、初報準確的地震：至少 6 個城市搖到 4 級以上，而且每一個搖到 4 級以上的城市都提早收到警報。', en: 'With a warning system no better than today’s (at least 6 stations, at least 4 s of processing, stations at least 20 km apart), a magnitude 7+ earthquake no deeper than 20 km, with an accurate first estimate: at least 6 cities shake at intensity 4 or more, and every one of them is warned in advance.' },
       check: function (ev) {
-        const d = any(ev); if (!d || d.M < 7 || d.h > 20 || d.dM !== 0) return false;
+        const d = any(ev); if (!d || d.M < 7 || d.h > 20 || d.dM !== 0 || d.n < 6 || d.proc < 4 || d.spacing < 20) return false;
         const hit = CITY_IDS.filter(function (k) { return d.cities[k].I >= 4; });
         return hit.length >= 6 && hit.every(function (k) { return d.cities[k].best > 0; });
       }
@@ -152,8 +152,8 @@
       id: 'quake-early-warning-h8', level: 10, hidden: true,
       title: { zh: '十二盞燈', en: 'Twelve lamps' },
       riddle: { zh: '從北到南、隔著海峽，十二盞燈都亮了，沒有一盞遲到。', en: 'From north to south and across the strait, all twelve lamps lit up — not one of them late.' },
-      desc: { zh: '一場地震、一般的預警系統（至少 6 站、計算至少 4 秒），十二個城市全部收到區域型警報，而且每一個都在 S 波之前。', en: 'One earthquake and an ordinary system (at least 6 stations and 4 s of computing): all twelve cities get the regional alert, every one of them before the S wave.' },
-      check: function (ev) { const d = any(ev); return !!d && d.n >= 6 && d.proc >= 4 && CITY_IDS.every(function (k) { const c = d.cities[k]; return c.alerted && c.lead > 0; }); }
+      desc: { zh: '一場深度 40 km 以內的地震、一般的預警系統（至少 6 站、計算至少 4 秒、站距至少 20 km），十二個城市全部收到區域型警報，而且每一個都在 S 波之前。', en: 'One earthquake no deeper than 40 km and an ordinary system (at least 6 stations, 4 s of computing, stations at least 20 km apart): all twelve cities get the regional alert, every one of them before the S wave.' },
+      check: function (ev) { const d = any(ev); return !!d && d.h <= 40 && d.n >= 6 && d.proc >= 4 && d.spacing >= 20 && CITY_IDS.every(function (k) { const c = d.cities[k]; return c.alerted && c.lead > 0; }); }
     },
     {
       id: 'quake-early-warning-h9', level: 8, hidden: true,

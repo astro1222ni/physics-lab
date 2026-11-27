@@ -1680,7 +1680,8 @@
     }
     if (state.acted) emit('event', {
       kind: kind, t: tc, year: e.cal.year, month: e.cal.month, day: e.cal.day,
-      eclipse: e.ecl ? e.ecl.type : 'none', eclKind: e.eclKind || '', central: !!(e.ecl && e.ecl.central), gap: e.gap == null ? null : e.gap
+      eclipse: e.ecl ? e.ecl.type : 'none', eclKind: e.eclKind || '', central: !!(e.ecl && e.ecl.central), gap: e.gap == null ? null : e.gap,
+      fast: !state.tween && state.running && state.rate > 24   // 播放快於每秒 1 天時記到的（跳躍按鈕不算快）
     });
   }
 

@@ -3,7 +3,8 @@
  * 事件（js/moon-phases.js 只在使用者操作過之後才回報；載入頁面與自動播放不算）：
  *   'state'：放開滑桿、拖曳結束、鍵盤移動、跳躍結束、按暫停、改勾選框時，data 為目前的物理量；
  *   'event'：時間前進時經過朔、上弦、望、下弦（寫進事件紀錄的那一刻），
- *            data = { kind: 'new'|'fq'|'full'|'lq', t, year, month, day, eclipse: 'none'|食的種類, eclKind: 'solar'|'lunar'|'', central, gap }；
+ *            data = { kind: 'new'|'fq'|'full'|'lq', t, year, month, day, eclipse: 'none'|食的種類, eclKind: 'solar'|'lunar'|'', central, gap, fast }；
+ *            fast：播放速度快於每秒 1 天時記到的（11/27 試玩：最快每秒 30 天，亂按幾秒就經過一個食季，10、11、h9 不算這種）
  *   'step'：「+1 恆星月」「+1 朔望月」「下一次新月／滿月」跳躍結束，data.kind = 'sid'|'syn'|'new'|'full'；
  *   'cam'：3D 檢視按下視角按鈕，data.preset = 'edge'|'sun'|'top'|'moon'（從地球看月球）。
  * 'state' 的 data：dLam（月球與太陽的黃經差，度）, illum（被照亮的比例 0–1）, phase（'new'|'waxC'|'fq'|'waxG'|'full'|'wanG'|'lq'|'wanC'）,
@@ -17,6 +18,8 @@
 
   const isState = function (ev) { return ev.type === 'state'; };
   const eclEvent = function (ev, kind, type) { return ev.type === 'event' && ev.data.eclKind === kind && ev.data.eclipse === type; };
+  /** 看得清楚的時間前進：跳躍按鈕或每秒 1 天以內的播放 */
+  const watched = function (ev) { return !ev.data.fast; };
 
   LabMission.register('moon-phases', [
     {
@@ -87,15 +90,15 @@
     {
       id: 'moon-phases-10', level: 6,
       title: { zh: '只擦過半影', en: 'Only the penumbra' },
-      desc: { zh: '讓時間前進經過一次滿月，記錄到一次「半影月食」：月球只經過地球的半影，沒有碰到本影。', en: 'Let time run through a full moon and record a penumbral lunar eclipse: the Moon passes only through the penumbra, missing the umbra.' },
-      check: function (ev) { return eclEvent(ev, 'lunar', 'penumbral'); }
+      desc: { zh: '讓時間前進經過一次滿月（播放不快於每秒 1 天，或用「下一次滿月」等按鈕），記錄到一次「半影月食」：月球只經過地球的半影，沒有碰到本影。', en: 'Let time run through a full moon (playing no faster than 1 day per second, or with buttons such as “Next full moon”) and record a penumbral lunar eclipse: the Moon passes only through the penumbra, missing the umbra.' },
+      check: function (ev) { return eclEvent(ev, 'lunar', 'penumbral') && watched(ev); }
     },
     {
       id: 'moon-phases-11', level: 8,
       title: { zh: '食季', en: 'Eclipse season' },
-      desc: { zh: '讓時間前進，在 16 天之內先後記錄到一次日食與一次月食（同一個食季）。', en: 'Let time run and record a solar eclipse and a lunar eclipse within 16 days of each other (the same eclipse season).' },
+      desc: { zh: '讓時間前進（播放不快於每秒 1 天，或用「下一次新月」「下一次滿月」等按鈕），在 16 天之內先後記錄到一次日食與一次月食（同一個食季）。', en: 'Let time run (playing no faster than 1 day per second, or with buttons such as “Next new moon” and “Next full moon”) and record a solar eclipse and a lunar eclipse within 16 days of each other (the same eclipse season).' },
       check: function (ev, mem) {
-        if (ev.type !== 'event' || !ev.data.eclKind || ev.data.eclipse === 'none') return false;
+        if (ev.type !== 'event' || !ev.data.eclKind || ev.data.eclipse === 'none' || !watched(ev)) return false;
         const list = mem.list = (mem.list || []).filter(function (e) { return Math.abs(ev.data.t - e.t) < 40; });
         const ok = list.some(function (e) { return e.k !== ev.data.eclKind && Math.abs(ev.data.t - e.t) <= 16; });
         list.push({ k: ev.data.eclKind, t: ev.data.t });
@@ -169,7 +172,7 @@
       id: 'moon-phases-h9', level: 9, hidden: true,
       riddle: { zh: '半個月之內，白天與黑夜都被完全遮住一次。', en: 'Within half a month, both the day and the night are completely covered once.' },
       check: function (ev, mem) {
-        if (ev.type !== 'event' || ev.data.eclipse !== 'total' || !ev.data.eclKind) return false;
+        if (ev.type !== 'event' || ev.data.eclipse !== 'total' || !ev.data.eclKind || !watched(ev)) return false;
         const list = mem.tot = (mem.tot || []).filter(function (e) { return Math.abs(ev.data.t - e.t) < 40; });
         const ok = list.some(function (e) { return e.k !== ev.data.eclKind && Math.abs(ev.data.t - e.t) <= 16; });
         list.push({ k: ev.data.eclKind, t: ev.data.t });

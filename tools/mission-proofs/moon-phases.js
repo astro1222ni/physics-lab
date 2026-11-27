@@ -74,7 +74,7 @@ function session(opts) {
       const g = K.greatestEclipse(el, tc, eclKind);
       if (g.res.type !== 'none') ecl = g.res; else eclKind = '';
     }
-    emit('event', { kind, t: tc, year: c.year, month: c.month, day: c.day, eclipse: ecl ? ecl.type : 'none', eclKind, central: !!(ecl && ecl.central), gap: null });
+    emit('event', { kind, t: tc, year: c.year, month: c.month, day: c.day, eclipse: ecl ? ecl.type : 'none', eclKind, central: !!(ecl && ecl.central), gap: null, fast: !!(opts && opts.fast) });
   }
   /** 時間由 t 前進到 t1（播放或跳躍），照頁面 detectEvents 找出經過的主要月相 */
   function advanceTo(t1) {
@@ -322,6 +322,15 @@ missions.forEach(m => {
   const m7 = missions.find(x => x.id === 'moon-phases-7');
   if (m7.check({ type: 'state', data: d }, {})) { fail++; console.log('✗ 預設交點下的滿月不應該是月全食'); }
   else console.log('✓ 預設交點（Ω = 100°）下的滿月沒有月食：月球黃緯 ' + d.lat.toFixed(2) + '°');
+})();
+// 快轉（播放快於每秒 1 天）記到的日月食：10、11、h9 不算（11/27 試玩：速度打到最大，亂按幾秒就經過一個食季）
+(function () {
+  const ids = ['moon-phases-10', 'moon-phases-11', 'moon-phases-h9'];
+  const leak = ids.filter(id => passes(id, SOL[id][1], { fast: true }));
+  const roam = ids.filter(id => passes(id, S => { S.play(3 * 365.25); }, { fast: true }));
+  const slow = ids.filter(id => !passes(id, SOL[id][1]));
+  if (leak.length || roam.length || slow.length) { fail++; console.log('✗ 快轉：' + leak.concat(roam).join('、') + ' 不該通過；' + slow.join('、') + ' 正常速度應該通過'); }
+  else console.log('✓ 快轉記到的日月食不算 10、11、h9（同樣的解法快轉不通過；預設狀態快轉 3 年也不通過）；正常速度照樣做得到');
 })();
 // 選了臺灣以外的地點：綁臺灣天空的任務不判定，其餘任務照樣做得到
 (function () {

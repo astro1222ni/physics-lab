@@ -143,6 +143,8 @@ no('6', ev({ site: 'HUA' }), '沒開現地型');
   const n4 = r ? Object.values(r.e.data.cities).filter(c => c.I >= 4).length : 0;
   ex('12', r && r.e, r && ('M ' + r.o.o.M + '、' + r.e.data.lon.toFixed(1) + '°E、' + r.e.data.lat.toFixed(1) + '°N：' + n4 + ' 個城市 4 級以上，全部提早收到'));
   no('12', ev({}), '2024 花蓮（花蓮市在盲區）');
+  no('12', ev({ spacing: 5, proc: 0 }), '2024 花蓮、站距 5 km、計算 0 秒（系統比現在好，11/27 試玩亂按誤觸）');
+  no('12', ev({ n: 1, proc: 0 }), '2024 花蓮、1 站就發、計算 0 秒');
 }
 
 // ---------- 隱藏任務 ----------
@@ -190,6 +192,8 @@ no('6', ev({ site: 'HUA' }), '沒開現地型');
   const r = find('h8', function* () { for (let lon = 119.4; lon <= 122.4; lon += 0.1) for (let lat = 21.8; lat <= 25.4; lat += 0.1) yield { o: { preset: '', M: 8, h: 30, lon: lon, lat: lat, site: 'HCN' } }; }, ['h1', 'h4', 'h9']);
   ex('h8', r && r.e, r && ('M 8、深 30 km、' + r.e.data.lon.toFixed(1) + '°E、' + r.e.data.lat.toFixed(1) + '°N：最短的預警 ' + f1(Math.min.apply(null, Object.values(r.e.data.cities).map(c => c.lead))) + ' s'));
   no('h8', ev({ M0: 8 }), '花蓮 M 8：花蓮市在盲區');
+  no('h8', ev({ preset: 'hualien2024', keepQuake: true, h: 63 }), '花蓮、深度拉到 63 km（深源地震沒有盲區，11/27 試玩亂按一下深度就誤觸）');
+  no('h8', ev({ preset: 'hualien2024', keepQuake: true, h: 30, spacing: 5 }), '花蓮、深 30 km、站距 5 km');
   no('h8', examples.h7, 'h7 的達成例（3 站、1 秒）');
 }
 {

@@ -209,7 +209,7 @@
     g.strokeStyle = D.alpha(color, 0.6); g.lineWidth = 1; g.stroke();
     g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, bx + pw / 2, by + ph / 2 + 0.5);
   }
-  /** 10 的 n 次方（畫布用小字上標） */
+  /** 10 的 n 次方（畫布用小字上標；上標是字級的 0.72 倍，所以刻度用 13 px，上標才有 9.4 px） */
   function pow10(g, n, x, y, color, font, align) { return D.supText(g, '10', String(n).replace('-', '−'), x, y, color, font, align); }
 
   // ---------------------------------------------------------------------
@@ -688,7 +688,7 @@
     const yy = function (s) { return Fm.y1 - (Math.log10(s) - ly0) / (ly1 - ly0) * (Fm.y1 - Fm.y0); };
     g.font = '12px ' + FONT; g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
     const ystep = ly1 - ly0 > 10 ? 2 : 1;
-    for (let e = ly0; e <= ly1; e += ystep) { const y = yy(Math.pow(10, e)); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); pow10(g, e, Fm.x0 - 6, y + 4, C.muted, '12px ' + FONT, 'right'); }
+    for (let e = ly0; e <= ly1; e += ystep) { const y = yy(Math.pow(10, e)); g.beginPath(); g.moveTo(Fm.x0, y); g.lineTo(Fm.x1, y); g.stroke(); pow10(g, e, Fm.x0 - 6, y + 4, C.muted, '13px ' + FONT, 'right'); }
     [0.01, 0.1, 1, 10].forEach(function (d) { const x = xx(d); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); D.haloText(g, String(d), x, Fm.y1 + 12, C.muted, 'center', 'middle', '12px ' + FONT); });
     D.haloText(g, T('距離 d（AU）', 'Distance d (AU)'), (Fm.x0 + Fm.x1) / 2, H - 4, C.muted, 'center', 'alphabetic', '600 12px ' + FONT);
     D.haloText(g, 'W/m²', Fm.x0 - 6, 10, C.muted, 'right', 'middle', '600 12px ' + FONT);
@@ -814,7 +814,7 @@
     const t = lifes(), e0 = 0, e1 = 12;
     const xx = function (y) { return Fm.x0 + (Math.log10(Math.max(1, y)) - e0) / (e1 - e0) * (Fm.x1 - Fm.x0); };
     g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
-    for (let e = e0; e <= e1; e += 2) { const x = xx(Math.pow(10, e)); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); pow10(g, e, x, Fm.y1 + 16, C.muted, '12px ' + FONT, 'center'); }
+    for (let e = e0; e <= e1; e += 2) { const x = xx(Math.pow(10, e)); g.beginPath(); g.moveTo(x, Fm.y0); g.lineTo(x, Fm.y1); g.stroke(); pow10(g, e, x, Fm.y1 + 16, C.muted, '13px ' + FONT, 'center'); }
     D.haloText(g, T('年（對數）', 'Years (log)'), Fm.x1, H - 4, C.muted, 'right', 'alphabetic', '600 12px ' + FONT);
     const rows = [
       { k: 'chem', zh: '化學燃燒（煤）', en: 'Chemical (coal)', c: C['se-chem'] },
