@@ -136,6 +136,8 @@ async function shownHydronium(d) {
 }
 
 async function perform(d, a) {
+  // 在同一步先選操作台分頁，保留重播步號與各任務的截止步。
+  if (a.deckTab) await expertActions.named(d, { role: 'tab', name: a.deckTab });
   if (Object.hasOwn(expertActions, a.op)) return expertActions[a.op](d, a);
   switch (a.op) {
     case 'expand': return d.expand(a.publicOnly);
