@@ -299,9 +299,11 @@
     // 頁面照樣滿版不讓出空白；側標籤和解題卡（或提示框）左右重疊的時候縮成細把手，點一下、往左撥照樣打開側板，捲離解題卡就恢復
     const edge=by('edge'),slimCheck=()=>{const e=edge.getBoundingClientRect();if(!e.height)return;
       const full=parseFloat(getComputedStyle(document.body).getPropertyValue('--edge-w'))||34,left=innerWidth-full,hit=el=>{if(!el||el.hidden||!el.getClientRects().length)return false;const r=el.getBoundingClientRect();return r.width>0&&r.right>left+1&&r.top<e.bottom&&r.bottom>e.top;};
-      const protectedAreas=document.querySelectorAll('.problem-grid,#workpad,#experiment,.ms-near');
+      const protectedAreas=document.querySelectorAll('.problem-grid,#workpad,#lesson-art,#caption,#experiment,.ms-near');
       edge.classList.toggle('edge-slim',Array.from(protectedAreas).some(hit));};
     let slimQ=0;const slimSoon=()=>{if(!slimQ)slimQ=requestAnimationFrame(()=>{slimQ=0;slimCheck();});};
+    const watchLayout=new ResizeObserver(slimSoon);
+    for(const id of ['explanation','workpad','lesson-art','caption']){const el=by(id);if(el)watchLayout.observe(el);}
     addEventListener('scroll',slimSoon,{passive:true});addEventListener('resize',slimSoon);setInterval(()=>{if(!document.hidden)slimCheck();},700);slimCheck();
     by('side-header').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-x0>35)setSide(side.tab,false);},{passive:true});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&side.open)setSide(side.tab,false);});

@@ -145,7 +145,6 @@ html.learn-class:has(body.exam-page){scroll-behavior:auto}
 .exam-page{--edge-w:34px}
 @media(max-width:600px){.exam-page{--edge-w:24px}.exam-page #edge i{font-size:10px;padding:0 2px;border-radius:6px;letter-spacing:-.02em}}
 /* 側標籤和解題卡、提示框左右重疊時縮成細把手（exam.js 加 .edge-slim；11/27 exam-audit：手機上蓋到解題畫布、進度條、提示框的 ×） */
-.exam-page #edge{transition:width .2s ease}
 .exam-page #edge.edge-slim{width:7px;min-width:0;padding:0;border-width:2px 0 2px 2px;border-radius:6px 0 0 6px;overflow:hidden}
 .exam-page #edge.edge-slim>*{visibility:hidden}
 .exam-page #edge.edge-slim:before{inset:0 0 0 -6px}
