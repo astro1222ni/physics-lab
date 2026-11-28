@@ -137,9 +137,11 @@
   const bstat = document.createElement('canvas'), bsctx = bstat.getContext('2d');
   let BL = null;
   function resizeBench1() {
-    const W = Math.max(bcv.clientWidth, Number(getComputedStyle(bcv).getPropertyValue('--drawing-min-width')));
-    if (!W) return;
-    const D = W >= 600 ? BLAY.wide : BLAY.narrow;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const frame = bcv.parentElement;
+    const W = landscape ? Math.floor(Math.min(frame.clientWidth, (frame.clientHeight - 40) * BLAY.wide.W / BLAY.wide.H)) : Math.max(bcv.clientWidth, Number(getComputedStyle(bcv).getPropertyValue('--drawing-min-width')));
+    if (W <= 0) return;
+    const D = landscape || W >= 600 ? BLAY.wide : BLAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s) + (D === BLAY.wide ? 40 : 34);
     if (bcv.style.height !== H + 'px') bcv.style.height = H + 'px';
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -476,13 +478,13 @@
     LD.haloText(g, tn(PRESET_NAMES[B.preset] || PRESET_NAMES.custom) + (B.step ? T('（處理 ' + B.step + ' 次）', ' (' + B.step + ' treatment' + (B.step > 1 ? 's' : '') + ')') : ''), 8, yb + 12, C.text, 'left', 'alphabetic', '600 12px ' + FF);
   }
   /** 離子符號：Ca 加上標 2+ */
-  function supWidth(g, k, lab) { g.font = '600 11px ' + FF; const w = g.measureText(k).width; g.font = '600 8px ' + FF; return w + g.measureText(k === 'Na' ? '+' : '2+').width; }
+  function supWidth(g, k, lab) { g.font = '600 12px ' + FF; const w = g.measureText(k).width; g.font = '600 10px ' + FF; return w + g.measureText(k === 'Na' ? '+' : '2+').width; }
   function drawIonLabel(g, k, x, y) {
     g.font = '600 12px ' + FF; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     g.lineJoin = 'round'; g.lineWidth = 3.5; g.strokeStyle = LD.alpha(C['canvas-bg'], 0.9);
     g.strokeText(k, x, y); g.fillStyle = C.text; g.fillText(k, x, y);
     const w = g.measureText(k).width, sup = k === 'Na' ? '+' : '2+';
-    g.font = '600 8px ' + FF; g.strokeText(sup, x + w, y - 5); g.fillText(sup, x + w, y - 5);
+    g.font = '600 10px ' + FF; g.strokeText(sup, x + w, y - 5); g.fillText(sup, x + w, y - 5);
     return w + g.measureText(sup).width;
   }
   function drawBench1() {
@@ -538,9 +540,11 @@
   const front = document.createElement('canvas'), fctx = front.getContext('2d');
   let L = null;
   function resizeBench() {
-    const W = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
+    const frame = cv.parentElement;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const W = landscape ? Math.floor(Math.min(frame.clientWidth, frame.clientHeight * LAY.wide.W / LAY.wide.H)) : cv.clientWidth;
     if (!W) return;
-    const D = W >= 600 ? LAY.wide : LAY.narrow;
+    const D = landscape || W >= 600 ? LAY.wide : LAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s) + (D === LAY.wide ? 0 : 22);
     if (cv.style.height !== H + 'px') cv.style.height = H + 'px';
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -965,7 +969,7 @@
       g.strokeStyle = LD.alpha(C.surface, C.dark ? 0.35 : 0.7); g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(mx - tw, my - 2 * md + 3); g.quadraticCurveTo(mx, my + 2 * md + 3, mx + tw, my - 2 * md + 3); g.stroke();
     }
-    g.font = '700 ' + Math.round(R * 0.17) + 'px ' + FF;
+    g.font = '700 ' + Math.max(Math.ceil(9.2 / L.s), Math.round(R * 0.17)) + 'px ' + FF;
     g.textAlign = 'left'; g.textBaseline = 'middle';
     const i0 = Math.ceil((vr - 1.9) * 10), i1 = Math.floor((vr + 1.9) * 10);
     for (let i = Math.max(0, i0); i <= Math.min(500, i1); i++) {
@@ -996,7 +1000,7 @@
     parts.forEach(function (p) {
       if (p.t != null) { g.font = '600 ' + px + 'px ' + FF; w += g.measureText(p.t).width; return; }
       p.f.replace(RICH, function (m, a, d, sup) {
-        g.font = (a ? '600 ' + px : '600 ' + (px * 0.72).toFixed(1)) + 'px ' + FF;
+        g.font = (a ? '600 ' + px : '600 ' + Math.max(9.2, px * 0.72).toFixed(1)) + 'px ' + FF;
         w += g.measureText(a || d || sup).width;
         return m;
       });
@@ -1016,8 +1020,8 @@
       if (p.t != null) { draw(p.t, '600 ' + px + 'px ' + FF, 0); return; }
       p.f.replace(RICH, function (m, a, d, sup) {
         if (a) draw(a, '600 ' + px + 'px ' + FF, 0);
-        else if (d) draw(d, '600 ' + (px * 0.72).toFixed(1) + 'px ' + FF, px * 0.22);
-        else draw(sup, '600 ' + (px * 0.72).toFixed(1) + 'px ' + FF, -px * 0.4);
+        else if (d) draw(d, '600 ' + Math.max(9.2, px * 0.72).toFixed(1) + 'px ' + FF, px * 0.22);
+        else draw(sup, '600 ' + Math.max(9.2, px * 0.72).toFixed(1) + 'px ' + FF, -px * 0.4);
         return m;
       });
     });

@@ -176,14 +176,6 @@
             <button id="cpBtn" type="button" class="primary" data-en="Insert">插入</button>
           </div>
           <p class="msg" id="cpMsg" aria-live="polite" data-en="0 to 10FFFF in hexadecimal; the character goes after the selected one.">0 到 10FFFF 的十六進位數字；新的字放在選取的字後面。</p>
-          <dl class="readout">
-            <dt data-en="Characters (code points)">字元數（碼位）</dt><dd id="rN">—</dd>
-            <dt data-en="UTF-16 code units (JavaScript length)">UTF-16 碼元（JavaScript 的 length）</dt><dd id="rUnits">—</dd>
-            <dt>UTF-8</dt><dd id="rU8">—</dd>
-            <dt>UTF-16</dt><dd id="rU16">—</dd>
-            <dt>Big5</dt><dd id="rB5">—</dd>
-          </dl>
-          <p class="hint" data-en="The text stays in your browser; nothing is sent anywhere. Big5 is built from your browser’s own decoder when the page opens.">文字只在你的瀏覽器裡計算，不會傳到任何地方。Big5 的對照是頁面打開時用你的瀏覽器內建的解碼器建立的。</p>
           <details><summary style="min-height:44px" data-en="String and byte comparison">字串與位元組對照</summary>
             <label><span data-en="Seed">種子</span> <input id="sampleSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
             <label><span data-en="Characters">字元數</span> <input id="sampleLength" type="number" min="1" max="40" step="1" value="10" style="min-height:44px;width:7em"></label>
@@ -192,6 +184,14 @@
             <label><span data-en="UTF-16 byte order">UTF-16 位元組順序</span> <select id="byteOrder" style="min-height:44px"><option value="be" data-en="Big-endian">大端序</option><option value="le" data-en="Little-endian">小端序</option></select></label>
             <output id="u16Bytes" aria-live="polite"></output>
           </details>
+          <dl class="readout">
+            <dt data-en="Characters (code points)">字元數（碼位）</dt><dd id="rN">—</dd>
+            <dt data-en="UTF-16 code units (JavaScript length)">UTF-16 碼元（JavaScript 的 length）</dt><dd id="rUnits">—</dd>
+            <dt>UTF-8</dt><dd id="rU8">—</dd>
+            <dt>UTF-16</dt><dd id="rU16">—</dd>
+            <dt>Big5</dt><dd id="rB5">—</dd>
+          </dl>
+          <p class="hint" data-en="The text stays in your browser; nothing is sent anywhere. Big5 is built from your browser’s own decoder when the page opens.">文字只在你的瀏覽器裡計算，不會傳到任何地方。Big5 的對照是頁面打開時用你的瀏覽器內建的解碼器建立的。</p>
         </section>
 
         <section class="card">

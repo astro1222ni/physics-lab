@@ -2053,6 +2053,8 @@ a.ms-near-more { display: flex; align-items: center; justify-content: center; mi
 .labdeck-pane > .card:not(.labdeck-first) { border-top: 1px solid var(--border); padding-top: 8px; }
 .labdeck-pane > .card:not(.labdeck-first) > h2 { display: block; margin: 0 0 4px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
 .labdeck .slider { margin: 0; gap: 0 8px; align-items: center; } /* 11/21 站長：滑桿上下不要留沒意義的空白，相鄰間距約 52 px */
+.labdeck .slider[hidden] { display: none !important; }
+.labdeck .slider label :is(sup, sub) { line-height: 0; }
 .labdeck .slider .lab-num { min-height: 24px !important; height: 24px; } /* 看不見的 ::after 仍把觸控範圍放大到約 44 px */
 .labdeck .slider input[type="range"] { height: 28px !important; margin: 0; }
 /* 「接通電源」這類主開關放在分頁最上面（data-deck-top），不用往下找 */

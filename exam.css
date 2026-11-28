@@ -183,7 +183,7 @@ html.exam-imm-framed{overflow:hidden}
 html.exam-imm-page body.exam-page .lab-account,html.exam-imm-page body.exam-page .lab-gear{z-index:31} /* 沉浸時頂列黏住，登入鍵和齒輪不可被頂列底色蓋掉 */
 html.exam-imm-page body.exam-page .response-column{top:var(--mast-h,0px)}
 @media(min-width:1024px) and (min-height:601px){
-  .exam-page #learn-unit{width:100%;max-width:2000px;padding:0 calc(var(--edge-w) + 12px) 18px clamp(16px,2vw,36px)}
+  .exam-page #learn-unit{width:100%;max-width:2000px;padding:0 clamp(16px,2vw,36px) 18px}
   #exam-nav{gap:2px 4px;margin-bottom:12px}#exam-nav a{padding:0 9px}
   .exam-heading{padding:12px 22px}
   .problem-grid{grid-template-columns:minmax(0,1fr) clamp(330px,27%,440px)}
@@ -219,4 +219,58 @@ html.exam-imm-page body.exam-page .response-column{top:var(--mast-h,0px)}
   .exam-tools{grid-column:2;grid-row:1;display:flex;align-items:center;border-bottom:1px solid var(--border)}.exam-page .exam-tools .lab-tools{margin:0;padding-right:calc(var(--edge-w) + 8px)}.exam-page .exam-tools .lab-tools .lab-tool{min-height:40px;padding:4px 10px}
   html:not(.exam-imm-page) .exam-heading{padding-right:12px}
   html.exam-imm-page body.exam-page .response-column{max-height:calc(100dvh - var(--mast-h,0px))}
+}
+
+/* 長題保留原字級與完整題圖。只有超出的題文或選項自己捲動，送出鍵跟選項分開配置。 */
+#exam-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  --form-room: max(156px, calc(var(--question-room, 100dvh) - 34px));
+}
+#exam-answer fieldset {
+  min-width: 0;
+}
+#answer-fields {
+  max-height: max(52px, calc(var(--form-room) - var(--answer-chrome, 90px)));
+  overflow-y: auto;
+}
+#send-answer { flex: none; align-self: flex-start; }
+@media (max-width: 800px) and (orientation: portrait) {
+  #exam-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 2px;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+  }
+  #exam-nav a { flex: none; min-width: 44px; }
+  .exam-paper { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .exam-heading { grid-column: 1; grid-row: 1; padding: 8px 10px; }
+  .exam-tools { grid-column: 2; grid-row: 1; align-self: center; }
+  .exam-page .exam-tools .lab-tools { margin: 0; padding: 0 8px 0 0; }
+  .problem-grid { grid-column: 1 / -1; }
+  .exam-source { max-height: max(120px, calc(var(--question-room) * .46)); overflow-y: auto; }
+  #exam-answer { --form-room: max(156px, calc(var(--question-room) * .54 - 22px)); }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .exam-page #learn-unit {
+    display: grid;
+    grid-template: auto auto auto auto / auto minmax(0, 1fr);
+    align-content: start;
+  }
+  .exam-page :is(.learn-mast, main, #credit) { grid-column: 1 / -1; }
+  .exam-page .learn-crumbs { grid-column: 1; grid-row: 2; align-self: center; }
+  #exam-nav { grid-column: 2; grid-row: 2; min-width: 0; }
+  html:is(.exam-imm-page, .learn-class) #exam-nav { grid-column: 1 / -1; }
+  .problem-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .response-column { padding: 6px 10px; }
+  .exam-source { max-height: max(156px, var(--question-room)); overflow-y: auto; }
+  #exam-answer { --form-room: max(150px, calc(var(--question-room) - 14px)); }
+}
+@media (max-width: 850px) {
+  #answer-fields:has(> .exam-choice) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #answer-fields:has(.has-art) { grid-template-columns: 1fr; }
+  .exam-choice { gap: 5px; padding: 4px 6px; min-width: 0; overflow-wrap: anywhere; }
 }

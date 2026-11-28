@@ -268,7 +268,7 @@
     const bw = Math.min(150, cw * 0.58), bh = bw * 0.92;
     const top = 10, meterH = 40;
     const yb = top + meterH + 30;
-    const R = Math.min(cw * 0.42, 88);
+    const R = Math.min(cw * 0.42, document.documentElement.classList.contains('labdeck-drawer') ? 76 : 88);
     const zy = yb + bh + 40 + R;
     const sy = zy + R + 66;
     return { cw: cw, bw: bw, bh: bh, top: top, meterH: meterH, yb: yb, R: R, zy: zy, sy: sy, H: Math.round(sy + 16 + 52), cx: [cw * 0.5, cw * 1.5] };
@@ -278,6 +278,7 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     G = layout(w);
+    G.minText = 9.2 * w / Math.max(1, cv.clientWidth);
     W = w; H = G.H;
     cv.style.height = H + 'px';
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -287,13 +288,13 @@
   /** 有下標、上標的文字片段：量寬度 */
   function partsWidth(c, parts, px, weight) {
     let w = 0;
-    parts.forEach(function (p) { c.font = (weight || '') + ' ' + (p.sub || p.sup ? px * 0.72 : px) + 'px ' + FONT; w += c.measureText(p.t).width; });
+    parts.forEach(function (p) { c.font = (weight || '') + ' ' + (Math.max(G.minText, p.sub || p.sup ? px * 0.72 : px)) + 'px ' + FONT; w += c.measureText(p.t).width; });
     return w;
   }
   function drawParts(c, parts, x, y, px, color, weight) {
     let cx = x;
     parts.forEach(function (p) {
-      const s = p.sub || p.sup ? px * 0.72 : px;
+      const s = Math.max(G.minText, p.sub || p.sup ? px * 0.72 : px);
       c.font = (weight || '') + ' ' + s + 'px ' + FONT;
       c.fillStyle = color;
       c.textAlign = 'left'; c.textBaseline = 'middle';
@@ -425,7 +426,7 @@
     c.fillStyle = LD.mix('#b9d3a7', '#e9ffd8', fresh); c.fill();
     c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 1; c.stroke();
     c.fillStyle = '#1f3020';
-    c.font = '600 12px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.font = '600 ' + Math.max(12, G.minText) + 'px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
     c.fillText('pH', x + 10, my + h / 2 + 1);
     c.font = '700 19px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace'; c.textAlign = 'right';
     c.fillText(num(r.pH, 2), x + w - 10, my + h / 2 + 1);
@@ -520,7 +521,7 @@
     gl.addColorStop(0, 'rgba(255,255,255,0.35)'); gl.addColorStop(0.5, 'rgba(255,255,255,0)'); gl.addColorStop(1, 'rgba(0,0,0,0.12)');
     c.fillStyle = gl; LD.roundRect(c, x0, y, x1 - x0, h, 6); c.fill();
     // 刻度
-    c.fillStyle = col.muted; c.font = '11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillStyle = col.muted; c.font = Math.max(11, G.minText) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'top';
     for (let k = 0; k <= 14; k++) {
       const x = phX(k);
       if (W < 480 && k % 2 && k !== 7 && k !== 11) { c.fillRect(Math.round(x), y + h, 1, 3); continue; }
@@ -534,9 +535,9 @@
     c.strokeStyle = LD.alpha(col.text, 0.6); c.lineWidth = 1;
     c.beginPath(); c.moveTo(nx, y - 3); c.lineTo(nx, y + h + 3); c.stroke();
     const ly = y + h + 26;
-    LD.haloText(c, T('← 酸性', '← acidic'), x0, ly, col.muted, 'left', 'middle', '12px ' + FONT);
-    LD.haloText(c, T('鹼性 →', 'basic →'), x1, ly, col.muted, 'right', 'middle', '12px ' + FONT);
-    LD.haloText(c, T('中性 ', 'neutral ') + num(sol.A.neutral, 2), Math.max(x0 + 90, Math.min(x1 - 90, nx)), ly, col.text, 'center', 'middle', '600 12px ' + FONT);
+    LD.haloText(c, T('← 酸性', '← acidic'), x0, ly, col.muted, 'left', 'middle', Math.max(12, G.minText) + 'px ' + FONT);
+    LD.haloText(c, T('鹼性 →', 'basic →'), x1, ly, col.muted, 'right', 'middle', Math.max(12, G.minText) + 'px ' + FONT);
+    LD.haloText(c, T('中性 ', 'neutral ') + num(sol.A.neutral, 2), Math.max(x0 + 90, Math.min(x1 - 90, nx)), ly, col.text, 'center', 'middle', '600 ' + Math.max(12, G.minText) + 'px ' + FONT);
     // 兩杯的位置
     // 兩個標籤靠太近時左右推開，用細線連到真正的位置
     const xs = IDS.map(function (id) { return phX(sol[id].pH); });
@@ -613,7 +614,7 @@
     for (let k = -8; k <= 0; k++) {
       if (GW < 480 && k % 2) continue;
       if (k === 0) { LD.haloText(c, '1', X(k), Tp + ph + 15, col.muted, 'center', 'middle', '11px ' + FONT); continue; }
-      LD.supText(c, '10', num(k, 0), X(k), Tp + ph + 19, col.muted, '11px ' + FONT, 'center');
+      LD.supText(c, '10', num(k, 0), X(k), Tp + ph + 19, col.muted, '13px ' + FONT, 'center');
     }
     LD.haloText(c, T('濃度 C（M，對數刻度）', 'Concentration C (M, log scale)'), L + pw / 2, GH - 8, col.muted, 'center', 'middle', '12px ' + FONT);
     c.save(); c.translate(12, Tp + ph / 2); c.rotate(-Math.PI / 2);

@@ -686,7 +686,7 @@
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     const uw = unit ? Math.max(14, fs * 0.9) : 0;
     ctx.fillText(text, x + w - 6 - uw, y + h / 2 + 1);
-    if (unit) { ctx.font = '600 ' + (fs * 0.55).toFixed(1) + 'px ' + FF; ctx.textAlign = 'left'; ctx.fillText(unit, x + w - uw - 2, y + h / 2 + 2); }
+    if (unit) { ctx.font = '600 ' + Math.max(9.2, fs * 0.55).toFixed(1) + 'px ' + FF; ctx.textAlign = 'left'; ctx.fillText(unit, x + w - uw - 2, y + h / 2 + 2); }
     ctx.restore();
   }
   function post(x, y, color, label) {

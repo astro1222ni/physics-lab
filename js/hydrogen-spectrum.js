@@ -134,7 +134,7 @@
   // ---------- 畫布與版面 ----------
   const cv = $('cv');
   const ctx = cv.getContext('2d');
-  let dpr = 1, cw = 300, ch = 300;
+  let dpr = 1, cw = 300, ch = 300, displayScale = 1;
   let L = null, G = null, S = null;
   const bg = document.createElement('canvas');
   const bgctx = bg.getContext('2d');
@@ -200,6 +200,7 @@
     // 橫放沿用並排子圖；繪圖座標和實體像素分別依寬度換算。
     const w = matchMedia('(orientation: landscape) and (max-height: 600px)').matches ? 760 : displayWidth;
     const scale = displayWidth / w;
+    displayScale = scale;
     dpr = Math.min(window.devicePixelRatio || 1, 3) * scale;
     cw = w;
     L = layout();
@@ -224,7 +225,7 @@
     c.arcTo(x, y, x + w, y, r);
     c.closePath();
   }
-  function font(w, px) { return (w ? w + ' ' : '') + px + 'px system-ui, -apple-system, "Segoe UI", sans-serif'; }
+  function font(w, px) { return (w ? w + ' ' : '') + Math.max(px, 9.2 / displayScale) + 'px system-ui, -apple-system, "Segoe UI", sans-serif'; }
 
   /**
    * 標籤（drawkit 的圓角底框 pill）；c.textAlign 決定水平對齊，垂直置中於 y。

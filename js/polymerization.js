@@ -30,7 +30,7 @@
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const reducedMotion = LD.reducedMotion();
   const FONT = LD.FONT;
-  function fsz(px) { return px * (window.LabSettings && window.LabSettings.get('fs') || 1); }
+  function fsz(px) { return Math.max(minLabelPx, px * (window.LabSettings && window.LabSettings.get('fs') || 1)); }
   function fnt(px, w) { return (w || '600') + ' ' + fsz(px).toFixed(1) + 'px ' + FONT; }
 
   // ======================= 數字格式 =======================
@@ -469,7 +469,7 @@
   function emitTick() { if (userActed) emit('tick', evData()); }
 
   // ======================= 版面 =======================
-  let W = 0, H = 0, LY = null;
+  let W = 0, H = 0, LY = null, minLabelPx = 9;
   function resize() {
     const w = Math.max(cv.clientWidth, Number(getComputedStyle(cv).getPropertyValue('--drawing-min-width')));
     if (!w) return;
@@ -479,6 +479,7 @@
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     W = w; H = h;
+    minLabelPx = 9.2 * w / Math.max(1, cv.clientWidth);
     if (w < 560) {
       const ah = Math.round(h * 0.46);
       LY = { narrow: true, ax: 0, ay: 0, aw: w, ah: ah, mx: w / 2, my: ah + (h - ah) / 2 + 8, mR: Math.min(w / 2 - 14, (h - ah) / 2 - 22) };
@@ -894,8 +895,8 @@
         g.stroke();
         if (m === 1) {
           const lab = e <= 3 ? String(Math.pow(10, e)) : null;
-          if (axis === 'y') { if (lab) LD.haloText(g, lab, x0 - 5, pos + 4, col.muted, 'right', 'alphabetic', fnt(11, '400')); else LD.supText(g, '10', String(e), x0 - 5, pos + 4, col.muted, fnt(11, '400'), 'right'); }
-          else { if (lab) LD.haloText(g, lab, pos, y1 + 5 + fsz(11), col.muted, 'center', 'alphabetic', fnt(11, '400')); else LD.supText(g, '10', String(e), pos, y1 + 5 + fsz(11), col.muted, fnt(11, '400'), 'center'); }
+          if (axis === 'y') { if (lab) LD.haloText(g, lab, x0 - 5, pos + 4, col.muted, 'right', 'alphabetic', fnt(11, '400')); else LD.supText(g, '10', String(e), x0 - 5, pos + 4, col.muted, fnt(13, '400'), 'right'); }
+          else { if (lab) LD.haloText(g, lab, pos, y1 + 5 + fsz(11), col.muted, 'center', 'alphabetic', fnt(11, '400')); else LD.supText(g, '10', String(e), pos, y1 + 5 + fsz(11), col.muted, fnt(13, '400'), 'center'); }
         }
       }
     }

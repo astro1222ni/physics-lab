@@ -178,10 +178,6 @@
           <div class="row2">
             <button type="button" id="clearPts" class="wide" title="拿掉所有的點，自己放" data-en-title="Remove every point and place your own" data-en="Clear points">清空資料</button>
           </div>
-          <p class="hint" data-en="Tap an empty spot to add a point, tap a point to remove it, drag to move it; drag the star to move the query point. Points snap to a 0.05 grid; at most 80 points. Each press of a preset gives a new random set.">點空白處放點、點一下點把它移除、拖曳可以移動；拖曳星形移動查詢點。座標吸附在 0.05 的格點上，最多 80 個點。每按一次預設資料，就換一份新的亂數資料。</p>
-          <dl class="readout" style="margin-top:10px">
-            <dt data-en="Points n (A / B / C)">點數 n（A／B／C）</dt><dd id="rN">—</dd>
-          </dl>
           <details><summary style="min-height:44px" data-en="Compare class counts with a fixed seed">固定種子比較類別比例</summary>
             <label><span data-en="Seed">種子</span> <input id="classSeed" type="number" min="1" max="999999" step="1" value="1" style="min-height:44px;width:7em"></label>
             <label><span data-en="Class A count (0 uses default)">A 類點數（0 沿用預設）</span> <input id="countA" type="number" min="0" max="26" step="1" value="0" style="min-height:44px;width:7em"></label>
@@ -190,6 +186,10 @@
             <label><span data-en="Distribution">分布</span> <select id="clusterShape" style="min-height:44px"><option value="blobs" data-en="Two clusters">兩團</option><option value="three" data-en="Three clusters">三團</option><option value="moons" data-en="Moons">月牙</option></select></label>
             <button type="button" id="classApply" data-en="Generate sample">產生樣本</button>
           </details>
+          <p class="hint" data-en="Tap an empty spot to add a point, tap a point to remove it, drag to move it; drag the star to move the query point. Points snap to a 0.05 grid; at most 80 points. Each press of a preset gives a new random set.">點空白處放點、點一下點把它移除、拖曳可以移動；拖曳星形移動查詢點。座標吸附在 0.05 的格點上，最多 80 個點。每按一次預設資料，就換一份新的亂數資料。</p>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Points n (A / B / C)">點數 n（A／B／C）</dt><dd id="rN">—</dd>
+          </dl>
         </section>
 
         <section class="card" data-deck="分類設定|Classifier settings" data-deck-order="2">

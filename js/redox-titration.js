@@ -165,11 +165,11 @@
   let L = null;
 
   function resizeBench() {
-    const frameWidth = cv.parentElement.clientWidth;
-    const W = matchMedia('(orientation: landscape) and (max-height: 600px)').matches
-      ? Math.max(640, frameWidth) : cv.clientWidth;
+    const frame = cv.parentElement;
+    const landscape = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    const W = landscape ? Math.floor(Math.min(frame.clientWidth, frame.clientHeight * LAY.wide.W / LAY.wide.H)) : cv.clientWidth;
     if (!W) return;
-    const D = W >= 600 ? LAY.wide : LAY.narrow;
+    const D = landscape || W >= 600 ? LAY.wide : LAY.narrow;
     const s = W / D.W, H = Math.round(D.H * s);
     if (cv.style.height !== H + 'px') cv.style.height = H + 'px';
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -692,7 +692,7 @@
       g.beginPath(); g.moveTo(mx - tw, my + 1.5); g.quadraticCurveTo(mx, my + 2 * md + 1.5, mx + tw, my + 1.5); g.stroke();
     }
     g.strokeStyle = LD.alpha(C.text, C.dark ? 0.85 : 0.8);
-    g.font = '700 ' + Math.round(R * 0.17) + 'px ' + FF;
+    g.font = '700 ' + Math.max(Math.ceil(9.2 / L.s), Math.round(R * 0.17)) + 'px ' + FF;
     g.textAlign = 'left'; g.textBaseline = 'middle';
     const i0 = Math.ceil((vr - 1.9) * 10), i1 = Math.floor((vr + 1.9) * 10);
     for (let i = Math.max(0, i0); i <= Math.min(500, i1); i++) {
@@ -730,7 +730,7 @@
     parts.forEach(function (p) {
       if (p.t != null) { g.font = '600 ' + px + 'px ' + FF; w += g.measureText(p.t).width; return; }
       p.f.replace(RICH, function (m, a, d, sup) {
-        g.font = (a ? '600 ' + px : '600 ' + (px * 0.72).toFixed(1)) + 'px ' + FF;
+        g.font = (a ? '600 ' + px : '600 ' + Math.max(9.2, px * 0.72).toFixed(1)) + 'px ' + FF;
         w += g.measureText(a || d || sup).width;
         return m;
       });
@@ -750,8 +750,8 @@
       if (p.t != null) { draw(p.t, '600 ' + px + 'px ' + FF, 0); return; }
       p.f.replace(RICH, function (m, a, d, sup) {
         if (a) draw(a, '600 ' + px + 'px ' + FF, 0);
-        else if (d) draw(d, '600 ' + (px * 0.72).toFixed(1) + 'px ' + FF, px * 0.22);
-        else draw(sup, '600 ' + (px * 0.72).toFixed(1) + 'px ' + FF, -px * 0.4);
+        else if (d) draw(d, '600 ' + Math.max(9.2, px * 0.72).toFixed(1) + 'px ' + FF, px * 0.22);
+        else draw(sup, '600 ' + Math.max(9.2, px * 0.72).toFixed(1) + 'px ' + FF, -px * 0.4);
         return m;
       });
     });

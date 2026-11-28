@@ -173,6 +173,9 @@
     cw = w;
     narrow = cw < 560;
     ch = Math.round(narrow ? cw * 1.08 : Math.min(cw * 0.68, 600));
+    if (document.documentElement.classList.contains('labdeck-drawer')) {
+      ch = Math.min(ch, innerHeight - 16);
+    }
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
@@ -327,7 +330,7 @@
     if (typeof parts === 'string') parts = [[parts, false]];
     font = font || '600 12px ' + D.FONT;
     const size = parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
-    const subFont = font.replace(/(\d+(?:\.\d+)?)px/, Math.round(size * 0.74) + 'px');
+    const subFont = font.replace(/(\d+(?:\.\d+)?)px/, Math.max(9, Math.round(size * 0.74)) + 'px');
     ctx.textBaseline = 'middle';
     const ws = parts.map(function (p) { ctx.font = p[1] ? subFont : font; return ctx.measureText(p[0]).width; });
     const tw = ws.reduce(function (a, b) { return a + b; }, 0);
@@ -1215,7 +1218,7 @@
   function fillSup(c, text, x, y, align) {
     const parts = String(text).split(/\^(-?\d+)/); // 偶數索引為一般文字，奇數索引為上標
     const base = c.font, m = base.match(/(\d+(?:\.\d+)?)px/), px = m ? +m[1] : 12;
-    const small = base.replace(/(\d+(?:\.\d+)?)px/, (px * 0.72).toFixed(1) + 'px');
+    const small = base.replace(/(\d+(?:\.\d+)?)px/, Math.max(9, px * 0.72).toFixed(1) + 'px');
     let width = 0;
     parts.forEach(function (p, i) { c.font = i % 2 ? small : base; width += c.measureText(p).width; });
     const keep = c.textAlign;

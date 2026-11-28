@@ -70,7 +70,7 @@
     {const pl=by('point-label'),kind=Q.key?(single?'single':'multi'):'open',b=make('b'),pt=make('span');pl.dataset.type=kind;b.className='qtype';pt.className='qpts';b.textContent=kind==='single'?T('單選','Single choice'):kind==='multi'?T('多選','Multiple response'):T('非選','Constructed response');pt.textContent=T(points+' 分',points+' points');pl.replaceChildren(b,pt);}
     by('exam-title').textContent=tr(Q.title);
     if(Q.group){
-      const d=by('passage');d.hidden=false;d.open=Q.open??q===23;d.querySelector('summary').textContent=tr(Q.group);
+      const d=by('passage');d.hidden=false;d.open=(Q.open??q===23)&&!matchMedia('(max-width: 800px), (max-height: 600px)').matches;d.querySelector('summary').textContent=tr(Q.group);
       const body=d.querySelector('div');for(const para of Q.passage)body.append(paragraph(tr(para)));
       if((year===114&&q===49)||Q.figs==='fig12-14'){const im=make('img');im.src='img/exam114/fig12-14'+(LabSettings.lang==='en'?'-en':'')+'.png';im.alt=T('圖 12 神經細胞、圖 13 傳訊放大圖、圖 14 膜電容與三條並聯支路','Original figures 12–14: neurons, magnified signaling, membrane capacitor and three parallel branches');body.append(im);}
     }
@@ -111,6 +111,24 @@
     ExamScene.interactive(by('experiment-body'),q,()=>milestone('experiment'));
     by('lab-link').href=Q.lab+'.html';by('lab-link').textContent=T('去 Lab 試：','Try the lab: ')+tr(Q.labName)+' ↗';
     by('credit').textContent=T('試題出處：大學入學考試中心 '+year+' 學年度學科能力測驗自然考科第 '+q+' 題；全國資料：大考中心 '+year+' 學測選項分析及答對率統計。','Source: CEEC '+year+' GSAT Natural Sciences, question '+q+'. National data: CEEC '+year+' GSAT option analysis and score statistics.');
+  }
+  function sizeAnswerArea(){
+    const grid=document.querySelector('.problem-grid');
+    const legend=by('exam-answer').querySelector('legend'), send=by('send-answer');
+    // 導覽列、題名、上課模式和字級都可能換行。用文件座標，捲動時不改變兩欄高度。
+    const fit=()=>{
+      const top=grid.getBoundingClientRect().top+scrollY;
+      grid.style.setProperty('--question-room',Math.floor(innerHeight-top-4)+'px');
+      const chrome=legend.offsetHeight+parseFloat(getComputedStyle(legend).marginBottom)+
+        send.offsetHeight+parseFloat(getComputedStyle(send).marginTop);
+      grid.style.setProperty('--answer-chrome',Math.ceil(chrome)+'px');
+    };
+    const observer=new ResizeObserver(fit);
+    for(const el of document.querySelectorAll('.learn-mast,.learn-crumbs,#exam-nav,.exam-heading,.exam-tools'))observer.observe(el);
+    observer.observe(legend);
+    observer.observe(send);
+    addEventListener('resize',fit);
+    fit();
   }
   function statistics(){
     const body=by('national-body');body.replaceChildren();
@@ -281,7 +299,8 @@
     // 頁面照樣滿版不讓出空白；側標籤和解題卡（或提示框）左右重疊的時候縮成細把手，點一下、往左撥照樣打開側板，捲離解題卡就恢復
     const edge=by('edge'),slimCheck=()=>{const e=edge.getBoundingClientRect();if(!e.height)return;
       const full=parseFloat(getComputedStyle(document.body).getPropertyValue('--edge-w'))||34,left=innerWidth-full,hit=el=>{if(!el||el.hidden||!el.getClientRects().length)return false;const r=el.getBoundingClientRect();return r.width>0&&r.right>left+1&&r.top<e.bottom&&r.bottom>e.top;};
-      edge.classList.toggle('edge-slim',!by('explanation').hidden&&hit(by('workpad'))||[...document.querySelectorAll('.ms-near')].some(hit));};
+      const protectedAreas=document.querySelectorAll('.problem-grid,#workpad,#experiment,.ms-near');
+      edge.classList.toggle('edge-slim',Array.from(protectedAreas).some(hit));};
     let slimQ=0;const slimSoon=()=>{if(!slimQ)slimQ=requestAnimationFrame(()=>{slimQ=0;slimCheck();});};
     addEventListener('scroll',slimSoon,{passive:true});addEventListener('resize',slimSoon);setInterval(()=>{if(!document.hidden)slimCheck();},700);slimCheck();
     by('side-header').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});by('side-header').addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-x0>35)setSide(side.tab,false);},{passive:true});
@@ -295,7 +314,7 @@
     setSide('steps',wide()&&saved!=='0',false);badge(); // 手機、窄螢幕一律先收成把手，不蓋題目
   }
   document.addEventListener('DOMContentLoaded',()=>{
-    buildProblem();feedback(true);buildSide();
+    buildProblem();feedback(true);buildSide();sizeAnswerArea();
     by('exam-answer').onsubmit=check;by('explain').onclick=()=>openSolution(true);
     by('class-mode').onclick=()=>{const url=new URL(location.href);if(params.get('class')==='1')url.searchParams.delete('class');else url.searchParams.set('class','1');location.assign(url.href);};
     by('class-mode').setAttribute('aria-pressed',String(params.get('class')==='1'));

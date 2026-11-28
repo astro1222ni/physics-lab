@@ -147,11 +147,13 @@
             <input id="za" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="4"></div>
           <div class="slider"><label for="zb" data-en="Imaginary part b">虛部 b</label><output id="zbo"></output>
             <input id="zb" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="4"></div>
-          <p class="sub2" data-en="or in polar form r(cos θ + i sin θ)">或用極式 r(cos θ + i sin θ)</p>
-          <div class="slider"><label for="zr" data-en="Modulus r = |z|">絕對值 r = |z|</label><output id="zro"></output>
-            <input id="zr" type="range" min="0" max="5.66" step="0.05" value="1.4142" data-decimals="4"></div>
-          <div class="slider"><label for="zt" data-en="Argument θ (degrees)">幅角 θ（度）</label><output id="zto"></output>
-            <input id="zt" type="range" min="-180" max="180" step="1" value="45" data-decimals="4"></div>
+          <details open>
+            <summary class="sub2" data-en="Polar form r(cos θ + i sin θ)">極式 r(cos θ + i sin θ)</summary>
+            <div class="slider"><label for="zr" data-en="Modulus r = |z|">絕對值 r = |z|</label><output id="zro"></output>
+              <input id="zr" type="range" min="0" max="5.66" step="0.05" value="1.4142" data-decimals="4"></div>
+            <div class="slider"><label for="zt" data-en="Argument θ (degrees)">幅角 θ（度）</label><output id="zto"></output>
+              <input id="zt" type="range" min="-180" max="180" step="1" value="45" data-decimals="4"></div>
+          </details>
         </section>
 
         <section class="card" id="cardW" data-deck="複數 w|The number w" data-deck-order="30">

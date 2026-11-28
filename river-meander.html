@@ -96,9 +96,7 @@
       .rm .river-controls .playbar:not(.section-nav) button { min-width: 0; padding: 2px 4px; font-size: calc(13px * var(--fs, 1)); overflow-wrap: anywhere; }
     }
     @media (orientation: landscape) and (max-height: 600px) {
-      .river-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(128px, 32%); gap: 6px; align-items: center; }
-      #cv { max-height: calc(100dvh - 190px); }
-      .river-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+      .river-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
       .rm .river-controls .playbar { display: contents; }
       .rm.cutmode .river-controls .section-nav { display: none; }
       .river-controls button { min-width: 44px; padding: 3px 4px; font-size: calc(12px * var(--fs, 1)); text-wrap: balance; overflow-wrap: anywhere; }

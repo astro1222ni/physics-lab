@@ -192,7 +192,10 @@
     if (on) { select(cur, false); syncTabs(); }
     // 晚一拍才通知畫布重算：同一刻別的程式（例如 lab-layout.js 的兩欄恢復）也在聽視窗變化，等它們排好再量，不會量到一條縫
     setTimeout(function () {
-      if (was === 'drawer' || m === 'drawer') { fitN = 0; fit(); }
+      // 剛搬完欄位，canvas.width 還可能是搬動前的尺寸。等各站 resize /
+      // ResizeObserver 畫完再決定操作台是否真的需要讓寬。
+      if (was === 'drawer' || m === 'drawer') fitN = 0;
+      if (was === 'drawer' && m !== 'drawer') unfit();
       dispatchEvent(new Event('resize'));
       fitSoon();
     }, 0);
@@ -288,7 +291,9 @@
     const extraW = br.width - r.width;                                       // 畫布那一塊裡、畫布以外的左右邊距
     const full = st.clientWidth - (parseFloat(getComputedStyle(st).paddingLeft) || 0) - (parseFloat(getComputedStyle(st).paddingRight) || 0);
     const minW = blk._deckBase ? blk._deckBase.minW : 0;
-    const w = Math.round(Math.min(full, Math.max(full * 0.45, minW, avail / aspect + extraW)));
+    // 正常保留上下 16px；接近寬度門檻時可用到一整屏的高度，且仍維持原比例。
+    const readable = Math.min(innerWidth * 0.45, innerHeight / aspect) + extraW;
+    const w = Math.round(Math.min(full, Math.max(readable, minW, avail / aspect + extraW)));
     const cur = parseFloat(blk.style.maxWidth) || full;
     if (Math.abs(cur - w) > 3) {
       fitEl = blk;

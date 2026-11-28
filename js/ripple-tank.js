@@ -1951,7 +1951,8 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopHum(); else { lastNow = 0; requestDraw(); } });
   if (window.ResizeObserver) {
     let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } renderAnalysis(); }).observe(cv);
+    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(cv);
+    new ResizeObserver(renderAnalysis).observe(gcv);
   } else window.addEventListener('resize', resize);
   resize();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));

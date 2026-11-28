@@ -1012,7 +1012,7 @@
     ctx.strokeStyle = colors.accent;
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(gx, gy, R - 5.5, at - 0.06, at + 0.06); ctx.stroke();
-    ctx.font = '600 ' + (narrow ? 8 : 9) + 'px system-ui, sans-serif';
+    ctx.font = '600 ' + '9px system-ui, sans-serif';
     ctx.fillStyle = colors.muted;
     ctx.fillText('kPa', gx, gy + R * 0.64);
     // 指針（量到的壓力）：尖細的指針＋淡淡的影子
@@ -1353,7 +1353,7 @@
   }
   /** 畫「v 加下標」的標籤；bar 為 true 時在 v 上方畫一橫（平均速率） */
   function vLabel(c, x, y, sub, bar, col, prefix) {
-    const f1 = 'italic 600 12px system-ui, sans-serif', f2 = '600 9px system-ui, sans-serif';
+    const f1 = 'italic 600 12px system-ui, sans-serif', f2 = '600 9.5px system-ui, sans-serif';
     c.font = f1;
     const w1 = c.measureText('v').width;
     c.font = f2;

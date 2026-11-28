@@ -124,13 +124,6 @@
     .ig3-hud.br { bottom: 10px; right: 10px; }
     .ig3-hud.tc { top: calc(44px + 4px * var(--fs, 1)); left: 50%; transform: translateX(-50%); }
     .ig3-ring { position: absolute; left: 0; top: 0; border: 1.5px solid var(--text); border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--canvas-bg) 60%, transparent); }
-    @media (orientation: landscape) and (max-height: 600px) {
-      html.labdeck-drawer .stage { padding-inline-end: 38px; }
-      html.labdeck-drawer .stage #cv {
-        max-width: min(100%, calc((100dvh - 82px) * 1.1)) !important;
-        margin-inline: 0 !important;
-      }
-    }
     .labdeck .speedbox { margin-bottom: 4px; }
   </style>
 </head>
