@@ -948,7 +948,7 @@
       c.fillStyle = rg; c.beginPath(); c.arc(j[0], j[1], 6.5, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#000000'; c.beginPath(); c.arc(j[0], j[1], 2.6, 0, Math.PI * 2); c.fill();
     });
-    c.font = '600 ' + (L.fs - 2) + 'px ' + FONT;
+    c.font = '600 ' + Math.max(9.5, L.fs - 2) + 'px ' + FONT;
     c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = alpha(colors.dark ? colors.text : '#ffffff', 0.78);
     c.fillText('+', jx - 11, jp[0][1]); c.fillText('COM', jx - 11, jp[1][1]);
     // 探針線在電表面板上的一段（其餘畫在電路下面）、插頭
