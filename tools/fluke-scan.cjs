@@ -14,7 +14,7 @@
  * 隱藏任務一旦誤觸就不合格。一般任務達到最低等級且早於指定步數才列為不合格。
  * 同站同任務只計一次，有任何種子不合格就列為不合格。試玩已確認的問題也列為不合格。
  * 已人工確認可以保留的誤觸寫在 tools/playtest/fluke-allow.cjs（每筆有原因、決定日期、雜湊），命中的改列「保留（已確認）」，
- * 不算不合格；任務判定、提示句或任務檔共用小函式改了，雜湊對不上就自動失效、照舊列不合格。
+ * 不算不合格；整份任務檔或列入的相依檔案變動時核對雜湊。失效項目即使未誤觸，也會顯示原因。
  * 待確認項目按各站各種子的報告筆數計算。比較以站別及項目身分判斷新增與消失。
  * 預設報告為 .shots/fluke-scan.json。各種子暫存放在環境變數 LAB_TEMP_DIR；沒設時 Windows 有 F 槽
  * 就放 F:\測試暫存（不存在會自動建立），否則放系統暫存。按 Ctrl+C 或被終止時，會停掉試玩子行程並清掉暫存。
@@ -43,61 +43,172 @@ function liveModules() {
   return liveCache;
 }
 
-// 用沙盒執行任務檔（同 tools/mission-guard.cjs），攔下 LabMission.register 的任務清單。
-function loadMissions(slug, root = ROOT) {
+// 每個詞各佔一格；詞間若有換行只記一次（含多行註解內的換行），保留 ASI 語意。
+function jsTokens(source, filename) {
+  // 先確認是合法的 Script，下方以同一語法環境辨別斜線，全程只編譯。
+  new vm.Script(source, { filename });
+  const trivia = /(?:\s+|\/\/[^\r\n\u2028\u2029]*|\/\*[\s\S]*?\*\/)+/y;
+  const legacyComment = /(?:<!--|-->|#!)[^\r\n\u2028\u2029]*/y;
+  const quoted = /"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'/y;
+  const regexLiteral = /\/(?:\\[^\r\n\u2028\u2029]|\[(?:\\[^\r\n\u2028\u2029]|[^\]\\\r\n\u2028\u2029])*\]|[^/\\[\r\n\u2028\u2029])+\/[a-z]*/y;
+  const number = /0[xX][\da-fA-F_]+n?|0[bB][01_]+n?|0[oO][0-7_]+n?|(?:\d[\d_]*(?:\.[\d_]*)?|\.[\d_]+)(?:[eE][+-]?[\d_]+)?n?/y;
+  const word = /(?:[$_\p{ID_Start}]|\\u(?:\{[\da-fA-F]+\}|[\da-fA-F]{4}))(?:[$\u200C\u200D\p{ID_Continue}]|\\u(?:\{[\da-fA-F]+\}|[\da-fA-F]{4}))*/uy;
+  const punct = />>>=|===|!==|>>>|<<=|>>=|\*\*=|&&=|\|\|=|\?\?=|\.\.\.|=>|\?\.(?!\d)|\+\+|--|\*\*|<<|>>|&&|\|\||\?\?|[=!<>+*/%&|^-]=|[\s\S]/uy;
+  const templatePart = /(?:\\[\s\S]|\$(?!\{)|[^\\$`])*(?:`|\$\{)/y;
+  const tokens = [];
+  let i = 0;
+
+  function match(pattern) {
+    pattern.lastIndex = i;
+    return pattern.exec(source)?.[0];
+  }
+
+  function isDivision() {
+    // 除號（含 /=）後允許換行，正規式本體內則不允許。由 V8 判斷詞法環境，
+    // 可區分 if (x) /.../ 與 f(x) / y，亦不必猜測右大括號的用途。
+    const after = i + (source[i + 1] === '=' ? 2 : 1);
+    try {
+      new vm.Script(source.slice(0, after) + '\n' + source.slice(after), { filename });
+      return true;
+    } catch (err) {
+      if (!(err instanceof SyntaxError)) throw err;
+      return false;
+    }
+  }
+
+  function template() {
+    let prefix = '`';
+    do {
+      i++; // 起始反引號，或上一段運算式的右大括號
+      const part = match(templatePart);
+      if (!part) throw new Error(filename + ' 的樣板字串無法切分');
+      tokens.push(prefix + part);
+      i += part.length;
+      if (part.endsWith('`')) return;
+      code(true);
+      prefix = '}';
+    } while (i < source.length);
+  }
+
+  function code(inTemplate) {
+    let braces = 0;
+    while (i < source.length) {
+      // 傳統 Script 可含 HTML 單行註解；行首的 --> 和運算式 x-- > y 意義不同。
+      const lineStart = !tokens.length || tokens.at(-1) === null;
+      if (source.startsWith('<!--', i) || (lineStart && source.startsWith('-->', i)) || (i === 0 && source.startsWith('#!'))) {
+        i += match(legacyComment).length;
+        continue;
+      }
+      const space = match(trivia);
+      if (space) {
+        i += space.length;
+        if (!lineStart && i < source.length && /[\r\n\u2028\u2029]/.test(space)) tokens.push(null);
+        continue;
+      }
+      if (inTemplate && source[i] === '}' && braces === 0) return;
+      if (source[i] === '`') { template(); continue; }
+
+      let value;
+      if (source[i] === '/') {
+        const candidate = match(regexLiteral);
+        if (candidate && !isDivision()) value = candidate;
+      }
+      value ??= match(quoted) ?? match(word) ?? match(number) ?? match(punct);
+      tokens.push(value);
+      i += value.length;
+      if (value === '{') braces++;
+      if (value === '}') braces--;
+    }
+  }
+
+  code(false);
+  if (tokens.at(-1) === null) tokens.pop(); // 檔尾只有註解或空白
+  return tokens;
+}
+
+// 有些站用工廠函式產生任務。只在有時限的獨立環境取登記資料，傳出的只有 JSON 文字。
+function missionMetadata(source, filename, slug, id) {
+  const context = vm.createContext(Object.create(null), { microtaskMode: 'afterEvaluate', codeGeneration: { strings: false, wasm: false } });
+  const options = { timeout: 3000, filename };
+  vm.runInContext(`
+    globalThis.window = globalThis.self = globalThis;
+    const flukeMetadata = [];
+    globalThis.LabMission = {
+      register(site, list) {
+        if (site !== ${JSON.stringify(slug)}) return;
+        for (const mission of list) {
+          if (mission.id === ${JSON.stringify(id)}) {
+            flukeMetadata.push({ id: mission.id, level: mission.level, hidden: mission.hidden === true, riddle: mission.riddle ?? null });
+          }
+        }
+      },
+      starsOf(level, mission) { return mission?.hidden ? level * 2 : level; }
+    };
+  `, context, options);
+  vm.runInContext(source, context, options);
+  const matches = JSON.parse(vm.runInContext('JSON.stringify(flukeMetadata)', context, options));
+  if (!matches.length) throw new Error(slug + ' 的任務檔裡找不到任務 ' + id);
+  if (matches.length !== 1) throw new Error(slug + ' 的任務代號重複：' + id);
+  return matches[0];
+}
+
+function missionHash(slug, id, root = ROOT, deps = []) {
   const file = path.join(root, 'js/missions', slug + '.js');
-  const src = fs.readFileSync(file, 'utf8');
-  const list = [];
-  const LabMission = { register: (id, l) => { if (id === slug) list.push(...(l || [])); }, starsOf: (level, m) => (m && m.hidden ? level * 2 : level) };
-  const sb = { LabMission, console: { log() {}, warn() {}, error() {} }, Math, JSON, Number, Object, Array, String, Boolean, Set, Map, RegExp, Date, Infinity, NaN, isFinite, isNaN, parseFloat, parseInt };
-  sb.window = sb; sb.globalThis = sb; sb.self = sb;
-  vm.runInContext(src, vm.createContext(sb), { filename: file, timeout: 3000 });
-  return { src, list };
+  const source = fs.readFileSync(file, 'utf8');
+  const mission = missionMetadata(source, file, slug, id);
+  const files = [[slug, jsTokens(source, file)]];
+  if (!Array.isArray(deps)) throw new Error('deps 必須是相依檔案路徑陣列');
+  for (const dep of deps) {
+    if (typeof dep !== 'string' || /[\\:\0]/.test(dep) || dep.split('/').some(s => !s || s === '..' || s === '.')) {
+      throw new Error('deps 必須使用專案內的 JavaScript 相對路徑');
+    }
+    const target = fs.realpathSync(path.join(root, dep));
+    const relative = path.relative(fs.realpathSync(root), target);
+    if (relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) throw new Error('相依檔案位於專案外：' + dep);
+    files.push([dep, jsTokens(fs.readFileSync(target, 'utf8'), dep)]);
+  }
+  return crypto.createHash('sha256').update(JSON.stringify({ mission, files })).digest('hex').slice(0, 16);
 }
 
-// 去掉註解與多餘空白（只用來算雜湊，改說明文字不會讓保留清單失效）。
-function squash(text) {
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1').replace(/\s+/g, ' ').trim();
+function entryProblem(entry, slug, id) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return '保留清單項目必須是物件';
+  if (![entry.reason, entry.decided, entry.hash].every(s => typeof s === 'string' && s.trim())) return '缺少原因、決定日期或雜湊';
+  if (!/^[a-f0-9]{16}$/.test(entry.hash)) return '雜湊必須是 16 碼十六進位小寫字元';
+  const required = slug === 'tides' && id === 'tides-h2';
+  for (const name of ['maxSeeds', 'minStep']) {
+    if ((required || Object.hasOwn(entry, name)) && !(Number.isSafeInteger(entry[name]) && entry[name] > 0)) {
+      return name + ' 必須是正整數';
+    }
+  }
+  return null;
 }
 
-// 保留清單的雜湊：任務的判定函式、提示句、等級與隱藏與否，加上 LabMission.register 之前的共用小函式（判定常呼叫它們）。
-// 改到任何程式就失效（寧可多失效、要人重看，也不要漏）。
-function missionHash(slug, id, root = ROOT) {
-  const { src, list } = loadMissions(slug, root);
-  const m = list.find(x => x.id === id);
-  if (!m) throw new Error(slug + ' 的任務檔裡找不到任務 ' + id);
-  const at = src.indexOf('LabMission.register(');
-  const body = JSON.stringify({
-    level: m.level, hidden: m.hidden === true, riddle: m.riddle ?? null,
-    check: typeof m.check === 'function' ? squash(m.check.toString()) : null,
-    helpers: squash(at === -1 ? '' : src.slice(0, at))
-  });
-  return crypto.createHash('sha256').update(body).digest('hex').slice(0, 16);
-}
-
-// 讀保留清單，逐筆重算雜湊；對不上、缺欄位或任務不見的標上失效原因。回傳 Map：項目 key → 清單內容。
 function resolveAllow(slugs, list = require(ALLOW), root = ROOT) {
   const out = new Map();
   for (const slug of slugs) {
     for (const [id, entry] of Object.entries(list[slug] || {})) {
-      const item = { reason: entry.reason, decided: entry.decided, maxSeeds: entry.maxSeeds, minStep: entry.minStep, invalid: null };
-      if (!entry.reason || !entry.decided || !entry.hash) item.invalid = '缺少原因、決定日期或雜湊';
-      else {
+      let invalid = entryProblem(entry, slug, id);
+      if (!invalid) {
         try {
-          const now = missionHash(slug, id, root);
-          if (now !== entry.hash) item.invalid = '任務判定或提示句改過（雜湊 ' + entry.hash + ' → ' + now + '），要重新確認';
+          const now = missionHash(slug, id, root, entry.deps);
+          if (now !== entry.hash) invalid = '任務或相依檔案改過（雜湊 ' + entry.hash + ' → ' + now + '），要重新確認';
         } catch (err) {
-          item.invalid = err.message;
+          invalid = err.message;
         }
       }
-      out.set(JSON.stringify(['accidental', slug, id]), item);
+      out.set(JSON.stringify(['accidental', slug, id]), { ...entry, slug, id, invalid });
     }
   }
   return out;
 }
 
+function validStep(step, steps) {
+  return Number.isSafeInteger(step) && step >= 0 && step <= steps; // 第 0 步代表第一次操作前
+}
+
 // 命中清單時是否仍在護欄內（命中的種子數、最早步數）；超出就回傳原因。
-function allowGuard(entry, hits) {
+function allowGuard(entry, hits, steps) {
+  if (hits.some(hit => !validStep(hit.step, steps))) return '資料不完整：命中紀錄缺少有效步數';
   const seeds = new Set(hits.map(hit => hit.seed));
   if (entry.maxSeeds != null && seeds.size > entry.maxSeeds) return seeds.size + ' 個種子命中，超過保留上限 ' + entry.maxSeeds + ' 個';
   const first = Math.min(...hits.map(hit => hit.step));
@@ -199,7 +310,7 @@ function parseArgs(args) {
   return { ...opts, slugs: [...slugs] };
 }
 
-function summarize(runs, { minLevel, minStep } = DEFAULTS, allow = new Map()) {
+function summarize(runs, { minLevel, minStep, steps = DEFAULTS.steps } = DEFAULTS, allow = new Map()) {
   const missions = new Map();
   const issues = new Map();
   let pending = 0;
@@ -209,7 +320,7 @@ function summarize(runs, { minLevel, minStep } = DEFAULTS, allow = new Map()) {
       for (const { id, level, hidden, step } of page.accidental) {
         const key = JSON.stringify(['accidental', slug, id]);
         if (!missions.has(key)) missions.set(key, { key, type: 'accidental', slug, id, level, hidden, hits: [] });
-        const failed = hidden === true || (level >= minLevel && step < minStep);
+        const failed = !validStep(step, steps) || hidden === true || (level >= minLevel && step < minStep);
         missions.get(key).hits.push({ seed, step, failed });
       }
       for (const issue of page.confirmed) {
@@ -223,21 +334,28 @@ function summarize(runs, { minLevel, minStep } = DEFAULTS, allow = new Map()) {
   const failed = [];
   const retained = [];
   const allowed = [];
+  const invalid = new Map();
+  for (const [key, entry] of allow) {
+    if (entry.invalid) invalid.set(key, { slug: entry.slug, id: entry.id, reason: entry.invalid });
+  }
   for (const item of missions.values()) {
     const bad = item.hits.filter(hit => hit.failed);
     if (!bad.length) { retained.push(item); continue; }
     // 保留清單只認誤觸（試玩確認的問題在下面照報），而且要雜湊對得上、在護欄內。
     const entry = allow.get(item.key);
-    const why = entry && (entry.invalid || allowGuard(entry, bad));
+    const why = entry && (entry.invalid || allowGuard(entry, item.hits, steps));
     if (entry && !why) {
       item.allowed = { reason: entry.reason, decided: entry.decided };
       allowed.push(item);
     } else {
-      if (why) item.allowInvalid = why;
+      if (why) {
+        item.allowInvalid = why;
+        invalid.delete(item.key); // 原不合格行已有原因，毋須另列。
+      }
       failed.push(item);
     }
   }
-  return { failed: failed.concat([...issues.values()]), retained, allowed, pending };
+  return { failed: failed.concat([...issues.values()]), retained, allowed, invalidAllow: [...invalid.values()], pending };
 }
 
 function compareFailures(current, previous) {
@@ -308,33 +426,48 @@ function failureLine(item, steps) {
     return '✗ ' + item.slug + ' ' + msg + '（種子 ' + item.seeds.join('、') + '）｜重現：' + (how || command(item.seeds[0]));
   }
   const hits = item.hits.filter(hit => hit.failed);
+  const total = new Set(item.hits.map(hit => hit.seed)).size;
+  const incomplete = hits.find(hit => !validStep(hit.step, steps));
+  if (incomplete) {
+    return '✗ ' + item.slug + ' ' + item.id + '（共 ' + total + ' 個種子命中）：種子 ' + incomplete.seed +
+      ' 資料不完整，無法判定最早步數｜重現：' + command(incomplete.seed) +
+      (item.allowInvalid ? '（保留清單已失效：' + item.allowInvalid + '）' : '');
+  }
   const first = hits.reduce((a, b) => b.step < a.step ? b : a);
   const until = first.step > 0 ? ' --until=' + first.step : ' --until=1（第一次操作前）';
   const seeds = [...new Set(hits.map(hit => hit.seed))];
   return '✗ ' + item.slug + ' ' + item.id + '（' + item.level + ' 級' + (item.hidden ? '，隱藏' : '') +
-    '）：種子 ' + seeds.join('、') + ' 誤觸，最早第 ' + first.step + ' 步｜重現：' + command(first.seed) + until +
+    '）：種子 ' + seeds.join('、') + ' 誤觸（共 ' + total + ' 個種子命中），最早第 ' + first.step + ' 步｜重現：' + command(first.seed) + until +
     (item.allowInvalid ? '（保留清單已失效：' + item.allowInvalid + '）' : '');
 }
 
 function allowedLine(item) {
-  const hits = item.hits.filter(hit => hit.failed);
+  const hits = item.hits;
   const first = hits.reduce((a, b) => b.step < a.step ? b : a);
   const seeds = [...new Set(hits.map(hit => hit.seed))];
+  const badSeeds = [...new Set(hits.filter(hit => hit.failed).map(hit => hit.seed))];
+  const detail = badSeeds.length === seeds.length ? '' : '，達原不合格條件的種子 ' + badSeeds.join('、');
   return '◎ ' + item.slug + ' ' + item.id + ' 保留（已確認，' + item.allowed.decided + '）：種子 ' + seeds.join('、') +
-    ' 誤觸，最早第 ' + first.step + ' 步｜' + item.allowed.reason;
+    ' 誤觸，最早第 ' + first.step + ' 步（共 ' + seeds.length + ' 個種子命中' + detail + '）｜' + item.allowed.reason;
+}
+
+function invalidAllowLine(item) {
+  return '⚠ ' + item.slug + ' ' + item.id + '（保留清單已失效：' + item.reason + '）';
 }
 
 async function main(args) {
+  if (args.some(arg => arg === '--hash' || arg.startsWith('--hash='))) {
+    const match = /^([a-z0-9_-]+):([a-z0-9_-]+)$/.exec(args[1] || '');
+    if (args.length !== 2 || args[0] !== '--hash' || !match) {
+      throw new Error('--hash 只接受一個 <代號>:<任務>，例如 tides:tides-h2');
+    }
+    const [, slug, id] = match;
+    console.log(missionHash(slug, id, ROOT, require(ALLOW)[slug]?.[id]?.deps));
+    return 0;
+  }
   if (args.includes('-h') || args.includes('--help')) {
     const header = fs.readFileSync(__filename, 'utf8').split('*/', 1)[0];
     console.log(header.split('\n').slice(2).map(line => line.replace(/^ \* ?/, '')).join('\n').trimEnd());
-    return 0;
-  }
-  const hashAt = args.indexOf('--hash');
-  if (hashAt !== -1) {
-    const [slug, id] = (args[hashAt + 1] || '').split(':');
-    if (!/^[a-z0-9_-]+$/.test(slug || '') || !id) throw new Error('--hash 的寫法是 <代號>:<任務>，例如 tides:tides-h2');
-    console.log(missionHash(slug, id));
     return 0;
   }
   const opts = parseArgs(args);
@@ -375,6 +508,7 @@ async function main(args) {
     console.log(failureLine(item, opts.steps) + tag);
   }
   for (const item of summary.allowed) console.log(allowedLine(item));
+  for (const item of summary.invalidAllow) console.log(invalidAllowLine(item));
   const diff = comparison ? '，比上次新增 ' + comparison.added.length + '、消失 ' + comparison.removed.length : '';
   console.log((summary.failed.length ? '✗' : '✓') + ' 掃了 ' + opts.slugs.length + ' 站 × ' + opts.seeds.length + ' 個種子：不合格 ' + summary.failed.length +
     ' 項、保留 ' + summary.retained.length + ' 項、' +
@@ -391,7 +525,7 @@ function onStop(signal) {
   process.exit(130);
 }
 
-module.exports = { summarize, compareFailures, failureLine, allowedLine, missionHash, resolveAllow };
+module.exports = { summarize, compareFailures, failureLine, allowedLine, invalidAllowLine, missionHash, resolveAllow };
 
 if (require.main === module) {
   const signals = process.platform === 'win32' ? ['SIGINT', 'SIGTERM', 'SIGBREAK'] : ['SIGINT', 'SIGTERM'];

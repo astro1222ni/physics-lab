@@ -8,9 +8,10 @@
  * 每一筆都要寫：
  *   reason   為什麼可以保留
  *   decided  決定的日期與誰決定
- *   hash     任務判定函式＋提示句＋任務檔共用小函式的雜湊（用 node tools/fluke-scan.cjs --hash <代號>:<任務> 算）
+ *   hash     整份任務檔、指定任務資料與 deps 詞法序列的雜湊（用 node tools/fluke-scan.cjs --hash <代號>:<任務> 算）
  *            任一改了雜湊就對不上，這筆自動失效、照舊列不合格，要重新確認後才能換新雜湊。
- * 另可加（Antigravity 11/28 建議的護欄，超過就失效）：
+ *   deps     可選填，專案內的 JavaScript 相依檔案路徑陣列
+ * 以下護欄須為正整數，tides-h2 兩項都必填：
  *   maxSeeds 最多幾個種子命中
  *   minStep  命中不可早於第幾步
  */
@@ -22,7 +23,9 @@ module.exports = {
     'tides-h2': {
       reason: '4 級隱藏任務；三方確認判定合理、收緊擋不住亂按（打字字庫 3/7 落在 0 附近），只在種子 1112 第 150 步偶發一次',
       decided: '2026-11-28 站長授權主串、Codex、Antigravity 三方決定',
-      hash: '6571f1b09699243c',
+      hash: 'b217197dc0a856cd',
+      // tides.js 組成 high 事件的 gap 與 prevH，tides-core.js 計算相連高潮的時刻與高度。
+      deps: ['js/tides.js', 'js/tides-core.js'],
       maxSeeds: 1,
       minStep: 100
     }
