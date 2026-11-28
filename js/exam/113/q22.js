@@ -72,98 +72,98 @@ ExamTracks.Q22=[
  {
   "id": "Q22_01",
   "row": "wrong",
-  "duration": 6.33,
+  "duration": 6.18,
   "disp": "這題全對只有 31%，三個錯的選項，每個都有兩成以上的人勾。",
   "en": "Only 31% got this fully right, and each of the three wrong choices drew at least 20%."
  },
  {
   "id": "Q22_02",
   "row": "wrong",
-  "duration": 5.25,
+  "duration": 7.01,
   "disp": "D 有 26%：150 MeV 的質子，能量那麼大，速率會不會跟光一樣快？",
   "en": "D drew 26%: a 150 MeV proton has so much energy, could it be as fast as light?"
  },
  {
   "id": "Q22_03",
   "row": "wrong",
-  "duration": 7.57,
+  "duration": 7.92,
   "disp": "不會。質子有質量，再怎麼加速，都只能接近光速；光子沒有質量，在真空中一定是光速。",
   "en": "No. A proton has mass, so however hard you push it, it only approaches light speed. A photon has no mass and always moves at light speed in vacuum."
  },
  {
   "id": "Q22_04",
   "row": "wrong2",
-  "duration": 5.11,
+  "duration": 4.71,
   "disp": "A、B 各 22%。A：質子跟 α 射線的粒子一樣？",
   "en": "A and B each drew 22%. A: are protons the same particles as alpha rays?"
  },
  {
   "id": "Q22_05",
   "row": "wrong2",
-  "duration": 5.96,
+  "duration": 6.13,
   "disp": "α 粒子是氦原子核，兩個質子加兩個中子，質量大約是質子的 4 倍。",
   "en": "An alpha particle is a helium nucleus, two protons and two neutrons, about 4 times the proton’s mass."
  },
  {
   "id": "Q22_06",
   "row": "wrong2",
-  "duration": 4.62,
+  "duration": 6.99,
   "disp": "B：150 除以 4 等於 37.5，所以粒子數密度是 37.5 倍？",
   "en": "B: 150 divided by 4 is 37.5, so the number density is 37.5 times larger?"
  },
  {
   "id": "Q22_07",
   "row": "wrong2",
-  "duration": 5.13,
+  "duration": 5.88,
   "disp": "圖上標的是「一顆」粒子的能量；光看一顆的能量，推不出一束裡面有幾顆。",
   "en": "The graph labels the energy of one particle. From that alone you cannot tell how many particles are in the beam."
  },
  {
   "id": "Q22_08",
   "row": "solve",
-  "duration": 7.17,
+  "duration": 7.47,
   "disp": "C：光子的能量 E 等於 h f，能量跟頻率成正比；20 除以 4 等於 5，頻率也是 5 倍。對。",
   "en": "C: a photon’s energy is E = hf, proportional to frequency. 20 divided by 4 is 5, so the frequency is 5 times larger. Right."
  },
  {
   "id": "Q22_09",
   "row": "solve",
-  "duration": 3.06,
+  "duration": 2.89,
   "disp": "E：看圖 8 最右邊，15 公分的地方。",
   "en": "E: look at the far right of figure 8, at 15 cm."
  },
  {
   "id": "Q22_10",
   "row": "solve",
-  "duration": 7.9,
+  "duration": 7.94,
   "disp": "電子束 2 公分就沒了，質子束 13 公分左右也掉到零，只剩兩條 X 光的曲線還在。對。",
   "en": "The electron beam is gone by 2 cm and the proton beam drops to zero near 13 cm. Only the two X-ray curves are still there. Right."
  },
  {
   "id": "Q22_11",
   "row": "solve",
-  "duration": 1.18,
+  "duration": 1.16,
   "disp": "答案 C、E。",
   "en": "The answer is C and E."
  },
  {
   "id": "Q22_12",
   "row": "story",
-  "duration": 9.11,
+  "duration": 9.74,
   "disp": "我上光電效應的時候說過：光子的能量看頻率；同樣頻率的光，強度看每秒打過來的光子有多少，這兩件事不要搞混。",
   "en": "When I taught the photoelectric effect I said: a photon’s energy depends on frequency; for light of one frequency, intensity depends on how many photons arrive each second. Don’t mix them up."
  },
  {
   "id": "Q22_13",
   "row": "story",
-  "duration": 4.34,
+  "duration": 4.62,
   "disp": "B 就是把「一顆有多少能量」跟「總共有幾顆」混在一起了。",
   "en": "B mixes up “how much energy one has” with “how many there are.”"
  },
  {
   "id": "Q22_14",
   "row": "trick",
-  "duration": 3.17,
+  "duration": 3.68,
   "disp": "秒殺口訣：一顆看能量，一束還要看有幾顆。",
   "en": "The quick rule: one particle tells you energy; for the beam you also need the count."
  }

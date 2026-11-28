@@ -57,63 +57,63 @@ ExamTracks.Q25=[
  {
   "id": "Q25_01",
   "row": "wrong",
-  "duration": 3.95,
+  "duration": 4.88,
   "disp": "錯最多的是 B，18%，A 也有 14%。",
   "en": "The top wrong picks are B at 18% and A at 14%."
  },
  {
   "id": "Q25_02",
   "row": "wrong",
-  "duration": 6.62,
+  "duration": 7.43,
   "disp": "A 是 3.6 乘以 10 的 6 次方焦耳，那只是把 1 度電換成焦耳，還沒乘上性能係數。",
   "en": "A, \\(3.6\\times10^{6}\\) J, is just one kilowatt-hour in joules, before multiplying by the coefficient of performance."
  },
  {
   "id": "Q25_03",
   "row": "wrong",
-  "duration": 6.25,
+  "duration": 8.52,
   "disp": "B 是 7.2 乘以 10 的 6 次方焦耳，等於把 2.5 當成 2 來算；題目給 2.5，就乘 2.5。",
   "en": "B, \\(7.2\\times10^{6}\\) J, is what you get if 2.5 is taken as 2. The question gives 2.5, so multiply by 2.5."
  },
  {
   "id": "Q25_04",
   "row": "solve",
-  "duration": 6.85,
+  "duration": 7.87,
   "disp": "先換單位：1 度電就是 1 千瓦用 1 小時，1000 瓦乘 3600 秒，3.6 乘以 10 的 6 次方焦耳。",
   "en": "Convert first: one kilowatt-hour is 1000 watts for one hour, 1000 W × 3600 s = \\(3.6\\times10^{6}\\) J."
  },
  {
   "id": "Q25_05",
   "row": "solve",
-  "duration": 8.31,
+  "duration": 8.86,
   "disp": "性能係數等於從冰箱裡面搬走的熱，除以輸入的功，所以搬走的熱等於 2.5 乘以 3.6 乘以 10 的 6 次方。",
   "en": "COP is the heat taken out of the fridge divided by the work input, so the heat moved is 2.5 × \\(3.6\\times10^{6}\\)."
  },
  {
   "id": "Q25_06",
   "row": "solve",
-  "duration": 3.95,
+  "duration": 3.35,
   "disp": "等於 9.0 乘以 10 的 6 次方焦耳，答案 C。",
   "en": "That is \\(9.0\\times10^{6}\\) J. The answer is C."
  },
  {
   "id": "Q25_07",
   "row": "solve",
-  "duration": 8.78,
+  "duration": 11.13,
   "disp": "你看，性能係數 2.5，表示付 1 焦耳的電能，可以從冰箱裡搬走 2.5 焦耳的熱，比 1 還多，這就是冰箱、冷氣厲害的地方。",
   "en": "A COP of 2.5 means 1 J of electrical energy moves 2.5 J of heat out of the fridge, more than 1. That is what makes fridges and air conditioners so clever."
  },
  {
   "id": "Q25_08",
   "row": "joke",
-  "duration": 8.96,
+  "duration": 10.05,
   "disp": "我上電功率的時候說過，一度電是 3.6 乘以 10 的 6 次方焦耳，然後講到用電安全：帥哥美女少看一點，就不會被電到。",
   "en": "When I taught electric power, I said one kilowatt-hour is \\(3.6\\times10^{6}\\) J, and then for electrical safety: look at good-looking people less, and you won’t get zapped."
  },
  {
   "id": "Q25_09",
   "row": "trick",
-  "duration": 5.21,
+  "duration": 7.09,
   "disp": "秒殺口訣：度換焦耳乘 3.6 乘以 10 的 6 次方，再乘性能係數。",
   "en": "The quick rule: kilowatt-hours to joules, times \\(3.6\\times10^{6}\\), then times the COP."
  }

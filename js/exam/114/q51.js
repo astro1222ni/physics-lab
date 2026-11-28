@@ -137,133 +137,133 @@ ExamTracks.Q51=[
  {
   "id": "Q51_11",
   "row": "wrong",
-  "duration": 3.56,
+  "duration": 4.69,
   "disp": "第一小題，很多人會卡在：為什麼問最長波長？",
   "en": "In Part 1, many people get stuck on: why the longest wavelength?"
  },
  {
   "id": "Q51_12",
   "row": "wrong",
-  "duration": 2.96,
+  "duration": 3.14,
   "disp": "因為波長越長，光子能量越小。",
   "en": "Because the longer the wavelength, the lower the photon energy."
  },
  {
   "id": "Q51_13",
   "row": "wrong",
-  "duration": 5.98,
+  "duration": 6.04,
   "disp": "能量剛好等於能隙的那一顆，波長就是最長的；再長一點，能量就不夠了。",
   "en": "The photon whose energy exactly equals the band gap has the longest wavelength; any longer, and the energy falls short."
  },
  {
   "id": "Q51_14",
   "row": "solveA",
-  "duration": 5.82,
+  "duration": 6.43,
   "disp": "光子能量 E 等於 h f，也等於 h c 除以 λ，所以 λ 等於 h c 除以 E。",
   "en": "Photon energy E = hf, which is also hc/λ, so λ = hc/E."
  },
  {
   "id": "Q51_15",
   "row": "solveA",
-  "duration": 9.38,
+  "duration": 9.62,
   "disp": "能隙 3.2 電子伏特，先換成焦耳：3.2×\\(1.6\\times10^{-19}\\)，大約 \\(5.1\\times10^{-19}\\) 焦耳。",
   "en": "Convert the 3.2 eV band gap to joules first: 3.2 × \\(1.6\\times10^{-19}\\), about \\(5.1\\times10^{-19}\\) joules."
  },
  {
   "id": "Q51_16",
   "row": "solveA",
-  "duration": 8.02,
+  "duration": 8.51,
   "disp": "h c 是 \\(6.63\\times10^{-34}\\)，乘以 \\(3\\times10^{8}\\)，大約 \\(2.0\\times10^{-25}\\)。",
   "en": "hc is \\(6.63\\times10^{-34}\\) times \\(3\\times10^{8}\\), about \\(2.0\\times10^{-25}\\)."
  },
  {
   "id": "Q51_17",
   "row": "solveA",
-  "duration": 5.2,
+  "duration": 6.17,
   "disp": "相除，大約 \\(3.9\\times10^{-7}\\) 公尺，也就是 390 奈米。",
   "en": "Divide: about \\(3.9\\times10^{-7}\\) m, or 390 nm."
  },
  {
   "id": "Q51_18",
   "row": "solveB",
-  "duration": 3.84,
+  "duration": 3.6,
   "disp": "第二小題：摻雜以後，400 奈米的光就能用了。",
   "en": "Part 2: after doping, 400 nm light works."
  },
  {
   "id": "Q51_19",
   "row": "solveB",
-  "duration": 9.88,
+  "duration": 11.08,
   "disp": "400 比 390 長，波長越長、光子能量越小；連能量比較小的光子都跳得過去，表示能隙變小了，小於 3.2 電子伏特。",
   "en": "400 is longer than 390, and longer wavelength means lower photon energy; if even lower-energy photons can jump it, the band gap has shrunk below 3.2 eV."
  },
  {
   "id": "Q51_20",
   "row": "solveB",
-  "duration": 3.96,
+  "duration": 4.18,
   "disp": "算一下，1240÷400，大約 3.1 電子伏特。",
   "en": "Quick check: 1240÷400 is about 3.1 eV."
  },
  {
   "id": "Q51_21",
   "row": "work",
-  "duration": 3.72,
+  "duration": 3.54,
   "disp": "能隙這個概念，跟光電效應的功函數很像。",
   "en": "The band gap is a lot like the work function in the photoelectric effect."
  },
  {
   "id": "Q51_22",
   "row": "work",
-  "duration": 8.79,
+  "duration": 10.52,
   "disp": "講光電效應的時候我說過，功函數是電子掙脫束縛，需要的最小能量；能隙是電子從價帶跳到導電帶，需要的最小能量。",
   "en": "As I said about the photoelectric effect, the work function is the minimum energy for an electron to break free; the band gap is the minimum energy to jump from the valence to the conduction band."
  },
  {
   "id": "Q51_23",
   "row": "work",
-  "duration": 3.05,
+  "duration": 3.48,
   "disp": "光子的能量要超過它，事情才會發生。",
   "en": "The photon's energy must exceed it for anything to happen."
  },
  {
   "id": "Q51_25",
   "row": "trick",
-  "duration": 6.84,
+  "duration": 6.38,
   "disp": "秒殺公式：光子能量的電子伏特數，等於 1240 除以波長的奈米數。",
   "en": "The shortcut formula: photon energy in eV equals 1240 divided by the wavelength in nanometers."
  },
  {
   "id": "Q51_26",
   "row": "trick",
-  "duration": 4.44,
+  "duration": 4.38,
   "disp": "1240÷3.2，大約 388，一步到位。",
   "en": "1240÷3.2 is about 388, in one step."
  },
  {
   "id": "Q51_27",
   "row": "trick",
-  "duration": 10.36,
+  "duration": 10.17,
   "disp": "注意喔，1240 只能配電子伏特和奈米；非選擇題還是要把 h c 除以 λ 的式子寫出來，1240 拿來驗算。",
   "en": "Careful: 1240 only pairs with eV and nm; on written-answer items, still write out λ = hc/E, and use 1240 to check."
  },
  {
   "id": "Q51_28",
   "row": "why",
-  "duration": 1.28,
+  "duration": 1.47,
   "disp": "為什麼要摻雜？",
   "en": "Why dope it?"
  },
  {
   "id": "Q51_29",
   "row": "why",
-  "duration": 9.88,
+  "duration": 11.12,
   "disp": "因為 390 奈米已經是紫外線，室內的燈光裡幾乎沒有；能隙變小以後，可見光邊邊的紫光也能用，光觸媒在室內就比較有用武之地。",
   "en": "Because 390 nm is already ultraviolet, which indoor lighting barely has; with a smaller band gap, violet light at the edge of the visible spectrum works too, so photocatalysts become more useful indoors."
  },
  {
   "id": "Q51_30",
   "row": "joke",
-  "duration": 8.02,
+  "duration": 8.28,
   "disp": "388 奈米是紫外線，人眼看不到；所以光觸媒在太陽底下默默工作，你完全不知道它在加班。",
   "en": "388 nm is ultraviolet, invisible to us; so the photocatalyst quietly works in the sunshine, and you have no idea it's putting in overtime."
  }

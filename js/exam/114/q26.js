@@ -107,105 +107,105 @@ ExamTracks.Q26=[
  {
   "id": "Q26_06",
   "row": "wrong",
-  "duration": 7.0,
+  "duration": 7.94,
   "disp": "選 E 的人想：原子核裡的質子都帶正電，互相排斥，光靠強力應該撐不住，再找弱力來幫忙吧？",
   "en": "Those who chose E thought: protons in the nucleus are all positive and repel each other, so the strong force alone can't hold them, and the weak force must help?"
  },
  {
   "id": "Q26_07",
   "row": "flip",
-  "duration": 1.01,
+  "duration": 1.27,
   "disp": "剛好相反。",
   "en": "It's exactly the opposite."
  },
  {
   "id": "Q26_08",
   "row": "flip",
-  "duration": 7.67,
+  "duration": 10.11,
   "disp": "強力是 4 種力裡面最強的，在原子核那麼小的距離裡，它比質子之間的電力強得多，一個就撐得住，不用弱力幫忙。",
   "en": "The strong force is the strongest of the 4; at nuclear distances it's far stronger than the electric force between protons, so it holds on alone, no help needed."
  },
  {
   "id": "Q26_09",
   "row": "flip",
-  "duration": 4.1,
+  "duration": 5.34,
   "disp": "弱力管的是另一件事：β 衰變，讓中子變成質子。",
   "en": "The weak force handles something else: beta decay, turning a neutron into a proton."
  },
  {
   "id": "Q26_10",
   "row": "flip",
-  "duration": 6.5,
+  "duration": 6.84,
   "disp": "弱力那一課我講過，沒有弱交互作用，就沒有 β 衰變，也就沒有太陽的核融合。",
   "en": "As I said in the weak-force lesson: without the weak interaction, there's no beta decay, and no fusion in the Sun."
  },
  {
   "id": "Q26_11",
   "row": "flip",
-  "duration": 1.02,
+  "duration": 0.95,
   "disp": "所以 E 錯。",
   "en": "So E is wrong."
  },
  {
   "id": "Q26_17",
   "row": "solve",
-  "duration": 1.18,
+  "duration": 1.04,
   "disp": "B 為什麼對？",
   "en": "Why is B right?"
  },
  {
   "id": "Q26_18",
   "row": "solve",
-  "duration": 12.1,
+  "duration": 13.63,
   "disp": "我在課堂上是這樣講的：把尺度縮小到原子來看：腳底的原子和地板的原子靠太近，靜電庫侖排斥力就會變大，把你往上推，這就是正向力，本質是電磁力。",
   "en": "In class I put it this way: zoom down to atoms. When your sole's atoms get too close to the floor's, the Coulomb repulsion grows and pushes you up. That's the normal force, electromagnetic at heart."
  },
  {
   "id": "Q26_19",
   "row": "solve",
-  "duration": 3.84,
+  "duration": 4.39,
   "disp": "所以接觸力打破砂鍋問到底，追本溯源都是電磁力。",
   "en": "So dig all the way down, and contact forces all come from electromagnetism."
  },
  {
   "id": "Q26_20",
   "row": "joke",
-  "duration": 4.34,
+  "duration": 4.73,
   "disp": "你站在地板上沒掉下去，是兩邊的原子在互相嫌棄。",
   "en": "You don't fall through the floor because the atoms on both sides can't stand each other."
  },
  {
   "id": "Q26_21",
   "row": "others",
-  "duration": 8.19,
+  "duration": 9.22,
   "disp": "A，強力只在原子核的範圍，大約 \\(10^{-15}\\) 公尺，比原子小了大約 10 萬倍，不會涵蓋整個原子，錯。",
   "en": "A: the strong force acts only within the nucleus, about \\(10^{-15}\\) m, roughly 100,000 times smaller than an atom, so it doesn't cover the whole atom. Wrong."
  },
  {
   "id": "Q26_22",
   "row": "others",
-  "duration": 8.88,
+  "duration": 9.56,
   "disp": "C，萬有引力在原子之間小到可以忽略；摩擦力是兩邊的原子伸出友誼的手、拉來拉去，那隻手也是電磁力，錯。",
   "en": "C: gravity between atoms is negligible; friction is atoms on both sides reaching out friendly hands and tugging, and those hands are electromagnetic too. Wrong."
  },
  {
   "id": "Q26_23",
   "row": "others",
-  "duration": 4.92,
+  "duration": 4.63,
   "disp": "D，電子繞原子核，靠的是靜電吸引力，不是萬有引力，錯。",
   "en": "D: electrons orbit the nucleus by electrostatic attraction, not gravity. Wrong."
  },
  {
   "id": "Q26_24",
   "row": "others",
-  "duration": 0.8,
+  "duration": 0.94,
   "disp": "答案 B。",
   "en": "The answer is B."
  },
  {
   "id": "Q26_25",
   "row": "trick",
-  "duration": 8.48,
+  "duration": 9.7,
   "disp": "秒殺：日常生活摸得到、推得動的力，除了重力，追本溯源幾乎都是電磁力；強力和弱力，只在原子核裡面上班。",
   "en": "The shortcut: everyday forces you can touch and push, apart from gravity, almost all come down to electromagnetism; the strong and weak forces only clock in inside the nucleus."
  }

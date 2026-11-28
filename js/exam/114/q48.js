@@ -90,91 +90,91 @@ ExamTracks.Q48=[
  {
   "id": "Q48_07",
   "row": "wrong",
-  "duration": 3.16,
+  "duration": 2.93,
   "disp": "選 A 的人，直接拿 27÷17。",
   "en": "Those who chose A just did 27÷17."
  },
  {
   "id": "Q48_08",
   "row": "wrong",
-  "duration": 3.44,
+  "duration": 3.74,
   "disp": "可是式子裡的 T，寫得清清楚楚：絕對溫度。",
   "en": "But the T in the formula is clearly labeled: absolute temperature."
  },
  {
   "id": "Q48_09",
   "row": "wrong",
-  "duration": 4.78,
+  "duration": 5.26,
   "disp": "攝氏溫度不能拿來相除，不然攝氏 0 度的時候，電壓不就變成 0 了？",
   "en": "You can't divide Celsius temperatures; otherwise at 0 ℃, the voltage would be 0, wouldn't it?"
  },
  {
   "id": "Q48_10",
   "row": "wrong",
-  "duration": 3.54,
+  "duration": 3,
   "disp": "攝氏溫度表示：我不是從零起跳的。",
   "en": "Celsius says: I don't start from zero."
  },
  {
   "id": "Q48_11",
   "row": "solve",
-  "duration": 7.06,
+  "duration": 7.88,
   "disp": "因為濃度不變，log 那一項是定值，α 和 e 也是定值，所以 E 跟絕對溫度 T 成正比。",
   "en": "With concentrations fixed, the log term is constant, and so are α and e, so E is proportional to the absolute temperature T."
  },
  {
   "id": "Q48_12",
   "row": "solve",
-  "duration": 11.98,
+  "duration": 13.42,
   "disp": "攝氏換成絕對溫度，數字要加 273.15，我上課講過，高中生記到 273 就可以了：27 度是 300 克耳文，17 度是 290 克耳文。",
   "en": "Converting Celsius to absolute temperature adds 273.15; as I said in class, 273 is enough for high schoolers: 27 ℃ is 300 K, 17 ℃ is 290 K."
  },
  {
   "id": "Q48_13",
   "row": "solve",
-  "duration": 3.88,
+  "duration": 4.2,
   "disp": "所以電壓變成 300/290 倍，答案 C。",
   "en": "So the voltage becomes 300/290 times. The answer is C."
  },
  {
   "id": "Q48_16",
   "row": "others",
-  "duration": 4.62,
+  "duration": 5.34,
   "disp": "B、D 是上下顛倒；E 的 38 比 36，跟這個式子沒有關係。",
   "en": "B and D are upside down; E's 38 over 36 has nothing to do with this formula."
  },
  {
   "id": "Q48_18",
   "row": "trick",
-  "duration": 8.48,
+  "duration": 8.93,
   "disp": "秒殺口訣：公式裡的 T 只要拿來相乘、相除，一律用絕對溫度；只有算溫差的時候，攝氏和絕對溫度才一樣。",
   "en": "The shortcut: whenever T in a formula is multiplied or divided, use absolute temperature; only for temperature differences are Celsius and Kelvin the same."
  },
  {
   "id": "Q48_19",
   "row": "kelvin",
-  "duration": 1.86,
+  "duration": 2.15,
   "disp": "為什麼是 273？",
   "en": "Why 273?"
  },
  {
   "id": "Q48_20",
   "row": "kelvin",
-  "duration": 10.55,
+  "duration": 10.52,
   "disp": "課堂上我是這樣講的：科學家把氣體的體積對攝氏溫度畫圖，都是直線，往回延伸，總是交在−273.15 ℃。",
   "en": "In class I explain it like this: plot gas volume against Celsius temperature and you get straight lines that, extended back, always meet at −273.15 ℃."
  },
  {
   "id": "Q48_21",
   "row": "kelvin",
-  "duration": 3.85,
+  "duration": 3.73,
   "disp": "克耳文就把那裡當成新的原點，叫做 0 K。",
   "en": "Kelvin made that point the new origin and called it 0 K."
  },
  {
   "id": "Q48_22",
   "row": "kelvin",
-  "duration": 4.9,
+  "duration": 5.53,
   "disp": "所以溫度要拿來相乘、相除，一定要從這個真正的原點算起。",
   "en": "So to multiply or divide temperatures, you must count from this true origin."
  }

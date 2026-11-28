@@ -137,105 +137,105 @@ ExamTracks.Q24=[
  {
   "id": "Q24_06",
   "row": "wrong",
-  "duration": 5.44,
+  "duration": 5.82,
   "disp": "選 B 的人想：氫原子只有 1 個電子，那它一次只能放出一種光吧？",
   "en": "Those who chose B thought: hydrogen has only 1 electron, so it can only emit one kind of light at a time, right?"
  },
  {
   "id": "Q24_07",
   "row": "flip",
-  "duration": 3.4,
+  "duration": 4.89,
   "disp": "電子只有一個沒錯，可是它有好多層能階可以跳。",
   "en": "Yes, just one electron, but it has many levels to jump between."
  },
  {
   "id": "Q24_08",
   "row": "flip",
-  "duration": 9.24,
+  "duration": 9.76,
   "disp": "從第 3 層跳到第 2 層，放出一種顏色；從第 3 層直接跳到第 1 層，又是另一種；也可以先 3 到 2、再 2 到 1，連放兩顆。",
   "en": "Level 3 to level 2 gives one color; 3 straight to 1 gives another; or 3 to 2, then 2 to 1, emitting two photons in a row."
  },
  {
   "id": "Q24_09",
   "row": "flip",
-  "duration": 5.0,
+  "duration": 5.31,
   "disp": "每一種跳法，能量差不一樣，光子的波長就不一樣，所以 B 是對的。",
   "en": "Each jump has a different energy difference, so a different photon wavelength. B is right."
  },
  {
   "id": "Q24_10",
   "row": "cold",
-  "duration": 3.08,
+  "duration": 3.29,
   "disp": "那電子跳上去以後，為什麼又會掉下來？",
   "en": "So once an electron jumps up, why does it fall back down?"
  },
  {
   "id": "Q24_11",
   "row": "cold",
-  "duration": 2.03,
+  "duration": 2.89,
   "disp": "我上課講過：高處不勝寒。",
   "en": "As I said in class: it's cold up at the top."
  },
  {
   "id": "Q24_12",
   "row": "cold",
-  "duration": 6.8,
+  "duration": 7.62,
   "disp": "能量越高的狀態越不穩定，電子跳上去以後，很快又掉回比較低的能階，掉下來就放出光子。",
   "en": "Higher-energy states are less stable; after jumping up, the electron soon drops to a lower level, emitting a photon as it falls."
  },
  {
   "id": "Q24_15",
   "row": "solve",
-  "duration": 1.0,
+  "duration": 0.88,
   "disp": "錯的是 D。",
   "en": "The wrong one is D."
  },
  {
   "id": "Q24_16",
   "row": "solve",
-  "duration": 9.24,
+  "duration": 10.9,
   "disp": "我上課講波耳模型，第一個假設的關鍵字叫做定態：電子在特定的軌道上，不會輻射出電磁波，當然也不會吸收電磁波。",
   "en": "When I teach the Bohr model, the key word in the first postulate is stationary state: in an allowed orbit, the electron neither radiates nor absorbs electromagnetic waves."
  },
  {
   "id": "Q24_17",
   "row": "solve",
-  "duration": 4.08,
+  "duration": 4.2,
   "disp": "所以電子待在能階上，不需要外界一直補充能量。",
   "en": "So an electron sitting on a level needs no constant energy supply from outside."
  },
  {
   "id": "Q24_18",
   "row": "solve",
-  "duration": 4.16,
+  "duration": 4.85,
   "disp": "外界給光子，是讓它跳上去用的，不是讓它待著用的。",
   "en": "Photons from outside are for jumping up, not for staying put."
  },
  {
   "id": "Q24_19",
   "row": "joke",
-  "duration": 4.62,
+  "duration": 4.65,
   "disp": "電子待在能階上，不用一直餵它光子，它又不是寵物。",
   "en": "You don't have to keep feeding it photons. It's not a pet."
  },
  {
   "id": "Q24_20",
   "row": "others",
-  "duration": 6.15,
+  "duration": 6.88,
   "disp": "A、C、E 都是對的：電子可以在不同能階；吸收能量往上跳；往下跳放出光子。",
   "en": "A, C, and E are all right: electrons can sit on different levels, absorb energy to jump up, and emit photons coming down."
  },
  {
   "id": "Q24_21",
   "row": "others",
-  "duration": 1.32,
+  "duration": 0.94,
   "disp": "答案 D。",
   "en": "The answer is D."
  },
  {
   "id": "Q24_22",
   "row": "trick",
-  "duration": 4.98,
+  "duration": 6.1,
   "disp": "秒殺口訣：往上跳要吸能量，往下跳放光子，待著不用付錢。",
   "en": "The shortcut: jumping up costs energy, dropping down releases a photon, and staying put is free."
  }

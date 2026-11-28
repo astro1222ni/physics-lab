@@ -68,77 +68,77 @@ ExamTracks.Q27=[
  {
   "id": "Q27_01",
   "row": "wrong",
-  "duration": 5.02,
+  "duration": 5.46,
   "disp": "這題答對 51%；C、D、E 各有 14%，A 只有 6%。",
   "en": "51% got this right; C, D and E drew 14% each, and A only 6%."
  },
  {
   "id": "Q27_02",
   "row": "wrong",
-  "duration": 10.4,
+  "duration": 10.69,
   "disp": "D 是 1000 牛頓。如果只算 50 乘 15 等於 750，那是動量的變化，單位是公斤公尺每秒，還要再除以 0.03 秒，才是力。",
   "en": "D is 1000 N. Working out 50 × 15 = 750 gives the change in momentum, in kg·m/s. You still have to divide by 0.03 s to get a force."
  },
  {
   "id": "Q27_03",
   "row": "wrong",
-  "duration": 7.38,
+  "duration": 8.02,
   "disp": "E 是 250 牛頓，如果把 30 毫秒誤當成 3 秒，就會算出這個數字；1 毫秒是千分之一秒。",
   "en": "E, 250 N, is what you get by mistaking 30 ms for 3 s. One millisecond is a thousandth of a second."
  },
  {
   "id": "Q27_04",
   "row": "solve",
-  "duration": 7.4,
+  "duration": 7.87,
   "disp": "這題接著上一題：駕駛人碰到氣囊的時候，氣囊剛好充到飽和壓力的一半，就是 30 毫秒。",
   "en": "This builds on the last question: when the driver reaches the airbag it is at half the saturation pressure, which is 30 ms."
  },
  {
   "id": "Q27_05",
   "row": "solve",
-  "duration": 8.49,
+  "duration": 10.09,
   "disp": "以向東為正，速度從 108 公里每小時，也就是 30 公尺每秒，降到 54 公里每小時，15 公尺每秒。",
   "en": "Take east as positive. The speed drops from 108 km/h, which is 30 m/s, to 54 km/h, which is 15 m/s."
  },
  {
   "id": "Q27_06",
   "row": "solve",
-  "duration": 6.89,
+  "duration": 8.32,
   "disp": "力是定力，加速度就是速度變化除以時間：負 15 除以 0.030，等於負 500 公尺每秒平方。",
   "en": "The force is constant, so the acceleration is change in velocity over time: −15 ÷ 0.030 = −500 \\(\\mathrm{m/s}^{2}\\)."
  },
  {
   "id": "Q27_07",
   "row": "solve",
-  "duration": 5.83,
+  "duration": 6.66,
   "disp": "再乘上質量 50 公斤，力的大小是 25000 牛頓，方向向西，答案 B。",
   "en": "Times the 50 kg mass gives 25,000 N, pointing west. The answer is B."
  },
  {
   "id": "Q27_08",
   "row": "story",
-  "duration": 6.53,
+  "duration": 7,
   "disp": "25000 牛頓，大約是 2.5 公噸東西的重量，這是安全帶和車體一起在擋住你。",
   "en": "25,000 N is about the weight of 2.5 tonnes. That is the seat belt and the car body holding you back together."
  },
  {
   "id": "Q27_09",
   "row": "story",
-  "duration": 9.46,
+  "duration": 11.67,
   "disp": "我上動量的時候說過：同樣的動量變化，只要多爭取一倍的時間，平均力就減半；安全帶、安全氣囊都有一點彈性，就是在幫你爭取時間。",
   "en": "When I taught momentum I said: for the same change in momentum, buy twice the time and the average force is halved. Seat belts and airbags both give a little, and that is them buying you time."
  },
  {
   "id": "Q27_10",
   "row": "story",
-  "duration": 5.52,
+  "duration": 5.93,
   "disp": "所以只有安全氣囊、沒有綁安全帶，保護就差很多；兩個要一起用，一定要綁。",
   "en": "So an airbag without a seat belt protects far less. They work together. Always buckle up."
  },
  {
   "id": "Q27_11",
   "row": "trick",
-  "duration": 4.34,
+  "duration": 5.48,
   "disp": "秒殺口訣：力乘時間等於動量變化，毫秒記得換成秒。",
   "en": "The quick rule: force times time equals change in momentum, and convert milliseconds to seconds."
  }

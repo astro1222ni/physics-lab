@@ -117,98 +117,98 @@ ExamTracks.Q21=[
  {
   "id": "Q21_10",
   "row": "wrong",
-  "duration": 4.87,
+  "duration": 5.5,
   "disp": "選 B 的人，是把 \\(8\\times10^{7}\\) 立方公尺，直接當成公斤用了。",
   "en": "Those who chose B used \\(8\\times10^{7}\\) cubic meters as if it were kilograms."
  },
  {
   "id": "Q21_11",
   "row": "wrong",
-  "duration": 4.13,
+  "duration": 4.82,
   "disp": "可是 1 立方公尺的水，有 1000 公斤，一下就差了 1000 倍。",
   "en": "But 1 cubic meter of water is 1,000 kg, so they're off by 1,000 times right away."
  },
  {
   "id": "Q21_12",
   "row": "solve",
-  "duration": 9.6,
+  "duration": 10.9,
   "disp": "因為把東西抬高，要給它的能量，就是重力位能的增加量 m g h；上課我也提醒過，嚴格說起來，m g h 是位能的變化量。",
   "en": "Lifting something takes energy equal to its gain in gravitational potential energy, mgh; as I noted in class, strictly speaking mgh is the change in potential energy."
  },
  {
   "id": "Q21_13",
   "row": "solve",
-  "duration": 7.07,
+  "duration": 7.3,
   "disp": "一座水庫的水，質量等於密度乘以體積：1000×\\(8\\times10^{7}\\)，是 \\(8\\times10^{10}\\) 公斤。",
   "en": "One reservoir's water has mass equal to density times volume: 1,000 × \\(8\\times10^{7}\\), or \\(8\\times10^{10}\\) kg."
  },
  {
   "id": "Q21_14",
   "row": "solve",
-  "duration": 7.07,
+  "duration": 7.83,
   "disp": "抬到 4000 公尺：\\(8\\times10^{10}\\)，乘以 10，再乘以 4000，等於 \\(3.2\\times10^{15}\\) 焦耳。",
   "en": "Lifted 4,000 m: \\(8\\times10^{10}\\) × 10 × 4,000 = \\(3.2\\times10^{15}\\) joules."
  },
  {
   "id": "Q21_15",
   "row": "solve",
-  "duration": 10.24,
+  "duration": 11.92,
   "disp": "總能量除以一座要的能量：\\(4.3\\times10^{17}\\)，除以 \\(3.2\\times10^{15}\\)，大約 130 座，數量級是 \\(10^{2}\\)，答案 A。",
   "en": "Total energy over energy per reservoir: \\(4.3\\times10^{17}\\) ÷ \\(3.2\\times10^{15}\\), about 130 reservoirs, order of magnitude \\(10^{2}\\). The answer is A."
  },
  {
   "id": "Q21_16",
   "row": "check",
-  "duration": 2.11,
+  "duration": 2.5,
   "disp": "驗算一下，可以拿上一題來比。",
   "en": "Let's check it against the last question."
  },
  {
   "id": "Q21_17",
   "row": "check",
-  "duration": 9.82,
+  "duration": 10.83,
   "disp": "融化 1 公斤的冰，要 \\(3.2\\times10^{5}\\) 焦耳；把 1 公斤的水抬高 4000 公尺，只要 \\(4\\times10^{4}\\) 焦耳，剛好是 1/8。",
   "en": "Melting 1 kg of ice takes \\(3.2\\times10^{5}\\) joules; lifting 1 kg of water 4,000 m takes only \\(4\\times10^{4}\\) joules, exactly 1/8."
  },
  {
   "id": "Q21_18",
   "row": "check",
-  "duration": 7.78,
+  "duration": 8.05,
   "disp": "所以能抬的水，是能融的冰的 8 倍，大約 \\(10^{13}\\) 公斤，除以一座水庫，一樣大約 130 座。",
   "en": "So you can lift 8 times as much water as you can melt ice, about \\(10^{13}\\) kg; divided by one reservoir, again about 130."
  },
  {
   "id": "Q21_19",
   "row": "check",
-  "duration": 2.18,
+  "duration": 2.24,
   "disp": "兩題互相驗算，對得起來。",
   "en": "The two questions check each other, and they agree."
  },
  {
   "id": "Q21_22",
   "row": "joke",
-  "duration": 5.06,
+  "duration": 5.54,
   "disp": "題目要的是數量級，不是叫你真的把 130 座水庫搬上玉山。",
   "en": "The question wants an order of magnitude; it's not asking you to actually haul 130 reservoirs up Yushan."
  },
  {
   "id": "Q21_23",
   "row": "joke",
-  "duration": 2.86,
+  "duration": 2.81,
   "disp": "山頂的登山客應該會很困擾。",
   "en": "The hikers at the summit would be pretty annoyed."
  },
  {
   "id": "Q21_25",
   "row": "trick",
-  "duration": 3.72,
+  "duration": 4.4,
   "disp": "秒殺：看到幾立方公尺的水，先乘 1000 變公斤。",
   "en": "The shortcut: see cubic meters of water, multiply by 1,000 to get kilograms first."
  },
  {
   "id": "Q21_26",
   "row": "trick",
-  "duration": 3.67,
+  "duration": 4.23,
   "disp": "1 立方公尺的水就是 1 公噸，記這一句，就不會漏。",
   "en": "1 cubic meter of water is 1 metric ton. Remember that line and you won't miss it."
  }

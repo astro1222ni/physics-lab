@@ -128,105 +128,105 @@ ExamTracks.Q27=[
  {
   "id": "Q27_08",
   "row": "wrong",
-  "duration": 4.12,
+  "duration": 4.26,
   "disp": "A 說電流經由導線，從充電器流到手機。",
   "en": "A says current flows through a wire from the charger to the phone."
  },
  {
   "id": "Q27_09",
   "row": "wrong",
-  "duration": 3.4,
+  "duration": 3.17,
   "disp": "要是真的有電線，那就不叫無線充電了。",
   "en": "If there were a wire, it wouldn't be called wireless charging."
  },
  {
   "id": "Q27_17",
   "row": "solve",
-  "duration": 2.64,
+  "duration": 2.3,
   "disp": "無線充電靠的是電磁感應。",
   "en": "Wireless charging works by electromagnetic induction."
  },
  {
   "id": "Q27_18",
   "row": "solve",
-  "duration": 10.63,
+  "duration": 12.49,
   "disp": "充電器的電流一直在變，它產生的磁場就一直在變；這些磁力線穿過手機的線圈，手機線圈的磁通量跟著變，就感應出電流，幫電池充電。",
   "en": "The charger's current keeps changing, so its magnetic field keeps changing; those field lines pass through the phone's coil, its flux changes, and that induces a current to charge the battery."
  },
  {
   "id": "Q27_19",
   "row": "solve",
-  "duration": 4.18,
+  "duration": 3.76,
   "disp": "所以兩個線圈之間，一定有磁力線通過，D 對。",
   "en": "So magnetic field lines must pass between the two coils. D is right."
  },
  {
   "id": "Q27_20",
   "row": "others",
-  "duration": 5.06,
+  "duration": 5.09,
   "disp": "B，磁場如果始終不變，磁通量不變，就不會有感應電流，錯。",
   "en": "B: if the magnetic field never changed, the flux wouldn't change, and there'd be no induced current. Wrong."
  },
  {
   "id": "Q27_21",
   "row": "others",
-  "duration": 7.52,
+  "duration": 6.91,
   "disp": "C，能量在傳的過程中，有一部分變成熱散掉了，手機拿到的一定比充電器輸出的少，錯。",
   "en": "C: some energy is lost as heat along the way, so the phone always gets less than the charger puts out. Wrong."
  },
  {
   "id": "Q27_22",
   "row": "others",
-  "duration": 7.97,
+  "duration": 8.99,
   "disp": "E，兩邊的線圈都有電流流過，電流的熱效應讓兩邊都會發熱；你充電充一陣子，手機背面是不是也熱熱的？",
   "en": "E: current flows in both coils, and its heating effect warms both sides; after charging a while, isn't the back of your phone warm too?"
  },
  {
   "id": "Q27_23",
   "row": "others",
-  "duration": 0.42,
+  "duration": 0.47,
   "disp": "錯。",
   "en": "Wrong."
  },
  {
   "id": "Q27_24",
   "row": "others",
-  "duration": 1.22,
+  "duration": 1.05,
   "disp": "答案 D。",
   "en": "The answer is D."
  },
  {
   "id": "Q27_25",
   "row": "life",
-  "duration": 2.19,
+  "duration": 2.16,
   "disp": "同樣的原理，你每天都在用。",
   "en": "You use the same principle every day."
  },
  {
   "id": "Q27_26",
   "row": "life",
-  "duration": 10.99,
+  "duration": 13.15,
   "disp": "去火鍋店，桌上那台電磁爐，磁場一直在變，不鏽鋼鍋底就感應出電流，電流在金屬裡流動就會發熱，這叫電流的熱效應；所以電磁爐一定要用交流電。",
   "en": "At a hot pot place, the induction cooker's field keeps changing, inducing current in the steel pot's base; current in metal heats it up, the heating effect of current. That's why induction cookers need AC."
  },
  {
   "id": "Q27_27",
   "row": "life",
-  "duration": 5.84,
+  "duration": 5.46,
   "disp": "悠遊卡嗶一下，卡片裡的線圈從讀卡機感應到電，才有辦法回傳資料。",
   "en": "Tap your EasyCard, and its coil picks up power by induction from the reader, so it can send data back."
  },
  {
   "id": "Q27_28",
   "row": "trick",
-  "duration": 3.05,
+  "duration": 2.81,
   "disp": "秒殺口訣：有變化，才有感應。",
   "en": "The shortcut: no change, no induction."
  },
  {
   "id": "Q27_29",
   "row": "trick",
-  "duration": 5.78,
+  "duration": 7.21,
   "disp": "我上課講過，動磁生電的「動」，是變動、變化的意思；磁通量不變，什麼都不會發生。",
   "en": "As I said in class, the \"moving\" in \"a moving magnet makes electricity\" means changing; if the flux doesn't change, nothing happens."
  }

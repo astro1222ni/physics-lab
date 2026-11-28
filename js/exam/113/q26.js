@@ -48,56 +48,56 @@ ExamTracks.Q26=[
  {
   "id": "Q26_01",
   "row": "wrong",
-  "duration": 5.37,
+  "duration": 5.15,
   "disp": "這題 77% 的人答對，錯的人大多選 D 或 E，各 9%。",
   "en": "77% got this right. Most of the rest chose D or E, 9% each."
  },
  {
   "id": "Q26_02",
   "row": "wrong",
-  "duration": 7.39,
+  "duration": 7.29,
   "disp": "D 是 40 毫秒，很像把橫軸 80 毫秒直接砍一半；可是題目要取一半的，是壓力，不是時間。",
   "en": "D, 40 ms, looks like halving the 80 ms axis. But the question halves the pressure, not the time."
  },
  {
   "id": "Q26_03",
   "row": "wrong",
-  "duration": 6.22,
+  "duration": 8.08,
   "disp": "E 是 50 毫秒，那時候早就超過一半了；可是題目問「至少」要多久，要找最早達到的那個時間。",
   "en": "E, 50 ms, is well past half by then. But the question asks for the least time, so find the earliest moment it gets there."
  },
  {
   "id": "Q26_04",
   "row": "solve",
-  "duration": 4.59,
+  "duration": 6,
   "disp": "先找飽和壓力：曲線最後平平的，大約 260 kPa。",
   "en": "First find the saturation pressure: the curve levels off at about 260 kPa."
  },
  {
   "id": "Q26_05",
   "row": "solve",
-  "duration": 7.38,
+  "duration": 7.55,
   "disp": "一半大約 130 kPa。從縱軸 130 橫著畫過去，碰到曲線，再往下看時間。",
   "en": "Half is about 130 kPa. Draw across from 130 on the vertical axis to the curve, then read down to the time."
  },
  {
   "id": "Q26_06",
   "row": "solve",
-  "duration": 2.36,
+  "duration": 2.63,
   "disp": "大約 30 毫秒，答案 C。",
   "en": "About 30 ms. The answer is C."
  },
  {
   "id": "Q26_07",
   "row": "solve",
-  "duration": 4.2,
+  "duration": 4.67,
   "disp": "你看安全氣囊多拚，30 毫秒，比你眨一下眼睛還快。",
   "en": "Look how hard the airbag works: 30 ms, faster than a blink."
  },
  {
   "id": "Q26_08",
   "row": "trick",
-  "duration": 4.78,
+  "duration": 6.04,
   "disp": "秒殺口訣：題目說一半的是什麼，就在那個軸上取一半，再讀另一個軸。",
   "en": "The quick rule: halve whichever quantity the question halves, on its own axis, then read the other axis."
  }

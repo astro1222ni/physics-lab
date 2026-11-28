@@ -92,84 +92,84 @@ ExamTracks.Q24=[
  {
   "id": "Q24_01",
   "row": "wrong",
-  "duration": 7.08,
+  "duration": 7.11,
   "disp": "錯最多的是 E，有 31%：冷媒的溫度比室溫低，也可以把熱直接傳給外面的空氣？",
   "en": "The top wrong pick is E, at 31%: even though the refrigerant is colder than the room, it can pass heat straight to the air?"
  },
  {
   "id": "Q24_02",
   "row": "wrong",
-  "duration": 8.06,
+  "duration": 9.14,
   "disp": "沒有外界作功，熱只會自己從高溫流向低溫；冷媒要把熱丟出去，得先被壓縮機壓到比室溫還熱。",
   "en": "Without outside work, heat flows on its own only from hot to cold. To dump heat, the refrigerant must first be compressed until it is hotter than the room."
  },
  {
   "id": "Q24_03",
   "row": "wrong",
-  "duration": 9.8,
+  "duration": 10.73,
   "disp": "D 有 23%：冷媒冷卻食物時是低溫高壓？在冰箱裡面吸熱的時候，冷媒已經降壓，是低溫低壓，這樣才會汽化吸熱。",
   "en": "D drew 23%: is the refrigerant cold and high-pressure while cooling food? Inside the fridge it has already been depressurized, cold and low-pressure, so it vaporizes and absorbs heat."
  },
  {
   "id": "Q24_04",
   "row": "wrong",
-  "duration": 6.3,
+  "duration": 7.33,
   "disp": "B：壓縮機是把冷媒降溫？壓縮氣體，溫度是升高的，題目自己也寫了「提高其溫度」。",
   "en": "B: does the compressor cool the refrigerant? Compressing a gas heats it, and the passage itself says “raise its temperature.”"
  },
  {
   "id": "Q24_05",
   "row": "solve",
-  "duration": 6.2,
+  "duration": 7.25,
   "disp": "A：冰箱通電，壓縮機作功，把冰箱裡面的熱搬到背後的散熱片丟出去。對。",
   "en": "A: plugged in, the compressor does work and carries heat from inside the fridge out to the coils at the back. Right."
  },
  {
   "id": "Q24_06",
   "row": "room",
-  "duration": 7.27,
+  "duration": 7.99,
   "disp": "C 是對的，可是有 39% 的人沒勾：打開冰箱門，冷氣跑出來，房間不是會變涼嗎？",
   "en": "C is correct, yet 39% left it blank: with the fridge door open and cold air pouring out, shouldn’t the room cool down?"
  },
  {
   "id": "Q24_07",
   "row": "room",
-  "duration": 4.68,
+  "duration": 4.87,
   "disp": "想想能量守恆。這個房間密閉又隔熱，熱跑不出去。",
   "en": "Think about energy conservation. The room is sealed and insulated, so heat cannot escape."
  },
  {
   "id": "Q24_08",
   "row": "room",
-  "duration": 5.88,
+  "duration": 6.2,
   "disp": "冰箱從房間這頭把熱搬走，又從背後把熱丟回同一個房間，等於白搬。",
   "en": "The fridge takes heat from the room at the front and dumps it back into the same room at the back. It moves heat in a circle."
  },
  {
   "id": "Q24_09",
   "row": "room",
-  "duration": 9.04,
+  "duration": 11.17,
   "disp": "可是插頭一直有電能送進來，這些電能最後都變成熱，留在房間裡，所以平均室溫會比原來高。對。答案 A、C。",
   "en": "But the plug keeps feeding in electrical energy, and it all ends up as heat that stays in the room. So the average room temperature ends up higher. Right. The answer is A and C."
  },
  {
   "id": "Q24_10",
   "row": "story",
-  "duration": 6.04,
+  "duration": 7.16,
   "disp": "我上課說過：自然而然，熱是從高溫流向低溫；你要違反自然的趨勢，就要付出代價。",
   "en": "As I said in class: on its own, heat flows from hot to cold. If you want to go against nature, you have to pay."
  },
  {
   "id": "Q24_11",
   "row": "story",
-  "duration": 2.72,
+  "duration": 2.73,
   "disp": "冰箱付的代價，就是你家的電費。",
   "en": "For a fridge, the price is your electricity bill."
  },
  {
   "id": "Q24_12",
   "row": "trick",
-  "duration": 4.07,
+  "duration": 4.67,
   "disp": "秒殺口訣：冰箱是在搬熱，不是在造冷；搬熱要付電費。",
   "en": "The quick rule: a fridge moves heat, it does not make cold. Moving heat costs electricity."
  }

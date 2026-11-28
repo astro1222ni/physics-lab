@@ -100,91 +100,91 @@ ExamTracks.Q50=[
  {
   "id": "Q50_08",
   "row": "wrong",
-  "duration": 4.78,
+  "duration": 4.96,
   "disp": "選 D 的人想：光不夠力，那就開亮一點、照大一點，總跳得上去吧？",
   "en": "Those who chose D thought: if the light isn't strong enough, make it brighter or bigger, and the electrons will make it up eventually?"
  },
  {
   "id": "Q50_09",
   "row": "flip",
-  "duration": 0.66,
+  "duration": 0.71,
   "disp": "不行。",
   "en": "Nope."
  },
  {
   "id": "Q50_10",
   "row": "flip",
-  "duration": 4.2,
+  "duration": 5.15,
   "disp": "我上課講光電效應說過：一顆光子，打出一顆電子。",
   "en": "When I teach the photoelectric effect, I say: one photon knocks out one electron."
  },
  {
   "id": "Q50_11",
   "row": "flip",
-  "duration": 6.58,
+  "duration": 7.12,
   "disp": "教室的燈全部打開，光強度變強，只是光子變多，每一顆光子的能量還是一樣。",
   "en": "Turn on every light in the classroom and the intensity goes up, but that's just more photons; each photon's energy stays the same."
  },
  {
   "id": "Q50_12",
   "row": "flip",
-  "duration": 7.07,
+  "duration": 8.01,
   "disp": "這不是拔河，大家一起拉就拉得動；這是跳高，一個一個跳，一顆不夠高，一百萬顆來排隊也沒用。",
   "en": "This isn't tug-of-war, where everyone pulls together; it's the high jump, one at a time. If one can't clear the bar, a million in line won't help."
  },
  {
   "id": "Q50_13",
   "row": "flip",
-  "duration": 2.24,
+  "duration": 2.19,
   "disp": "要換顏色，不是換瓦數。",
   "en": "Change the color, not the wattage."
  },
  {
   "id": "Q50_17",
   "row": "solve",
-  "duration": 8.74,
+  "duration": 9.94,
   "disp": "光子能量等於 h 乘以頻率 f，所以頻率越高，每一顆光子的能量越大，就可能讓原本跳不上去的電子跳上去，E 對。",
   "en": "Photon energy is h times frequency f, so higher frequency means more energy per photon, which can lift electrons that couldn't make it before. E is right."
  },
  {
   "id": "Q50_18",
   "row": "solve",
-  "duration": 6.5,
+  "duration": 6.22,
   "disp": "價帶在下、導電帶在上，電子在價帶的能量比較低，要吸收能量才跳得上去，B 對。",
   "en": "The valence band is below and the conduction band above; electrons in the valence band have lower energy and must absorb energy to jump up. B is right."
  },
  {
   "id": "Q50_19",
   "row": "others",
-  "duration": 8.77,
+  "duration": 9.5,
   "disp": "A，講能階那一課我說過：躍遷是有條件的，不是隨隨便便的；給的能量不夠能隙，電子就跳不上去，錯。",
   "en": "A: as I said in the energy-level lesson, transitions come with conditions, not just any old way; if the energy given is less than the band gap, the electron can't jump. Wrong."
  },
  {
   "id": "Q50_20",
   "row": "others",
-  "duration": 4.4,
+  "duration": 3.69,
   "disp": "C，改變入射角，光子的頻率不變，能量也不變，錯。",
   "en": "C: changing the angle of incidence doesn't change the photon's frequency, so its energy stays the same. Wrong."
  },
  {
   "id": "Q50_21",
   "row": "others",
-  "duration": 1.2,
+  "duration": 0.99,
   "disp": "答案 B、E。",
   "en": "The answer is B and E."
  },
  {
   "id": "Q50_22",
   "row": "trick",
-  "duration": 4.1,
+  "duration": 4.92,
   "disp": "秒殺口訣：能不能跳，看頻率；跳出來多少個，看強度。",
   "en": "The shortcut: whether they jump depends on frequency; how many jump depends on intensity."
  },
  {
   "id": "Q50_23",
   "row": "trick",
-  "duration": 3.38,
+  "duration": 3.85,
   "disp": "這就是光電效應那一套，換一個場景再考一次。",
   "en": "It's the photoelectric effect all over again, just in a new setting."
  }

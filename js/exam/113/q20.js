@@ -90,84 +90,84 @@ ExamTracks.Q20=[
  {
   "id": "Q20_01",
   "row": "wrong",
-  "duration": 5.74,
+  "duration": 7.01,
   "disp": "錯最多的是 A，21%：只有重力可以到無窮遠，所以星系靠重力形成。",
   "en": "The top wrong pick is A, 21%: only gravity reaches to infinity, so galaxies form by gravity."
  },
  {
   "id": "Q20_02",
   "row": "wrong",
-  "duration": 3.69,
+  "duration": 4.59,
   "disp": "星系確實是重力聚起來的，錯在「只有」兩個字。",
   "en": "Galaxies really are pulled together by gravity. The mistake is the word “only.”"
  },
  {
   "id": "Q20_03",
   "row": "wrong",
-  "duration": 6.61,
+  "duration": 6.82,
   "disp": "兩個點電荷之間的電力，跟重力一樣，都跟距離平方成反比，作用範圍都可以到無窮遠。",
   "en": "The electric force between two point charges, like gravity, falls off as one over distance squared, and its range is also infinite."
  },
  {
   "id": "Q20_04",
   "row": "wrong",
-  "duration": 7.58,
+  "duration": 6.81,
   "disp": "那為什麼大尺度是重力在管？因為天體幾乎是電中性，正負電抵消了；質量可不會抵消。",
   "en": "So why does gravity rule on large scales? Stars and planets are nearly neutral, so charges cancel. Mass never cancels."
  },
  {
   "id": "Q20_05",
   "row": "wrong2",
-  "duration": 5.45,
+  "duration": 5.92,
   "disp": "E 也有 20%：中子不帶電，所以中子跟中子之間沒有強力？",
   "en": "E drew 20%: neutrons have no charge, so there is no strong force between two neutrons?"
  },
  {
   "id": "Q20_06",
   "row": "wrong2",
-  "duration": 6.71,
+  "duration": 7.16,
   "disp": "強力不管你帶不帶電，質子跟質子、質子跟中子、中子跟中子都有，原子核才黏得住。",
   "en": "The strong force ignores charge. Proton–proton, proton–neutron and neutron–neutron all feel it. That is what holds the nucleus together."
  },
  {
   "id": "Q20_07",
   "row": "solve",
-  "duration": 5.5,
+  "duration": 5.46,
   "disp": "B：電子繞著原子核轉，靠的是電的吸引力，重力小到可以忽略。錯。",
   "en": "B: an electron orbits the nucleus because of electric attraction. Gravity is negligible. Wrong."
  },
  {
   "id": "Q20_08",
   "row": "solve",
-  "duration": 8.78,
+  "duration": 9.62,
   "disp": "C：單獨的中子平均大約十五分鐘就會衰變成質子、電子和反微中子，這是 β 衰變，靠的就是弱力。對。",
   "en": "C: a free neutron lives about fifteen minutes on average, then decays into a proton, an electron and an antineutrino. That is beta decay, caused by the weak force. Right."
  },
  {
   "id": "Q20_09",
   "row": "solve",
-  "duration": 6.18,
+  "duration": 6.02,
   "disp": "D：強力大約只在原子核那麼大的範圍，弱力更短，都比原子小得多。對。",
   "en": "D: the strong force acts only over about the size of a nucleus, and the weak force over even less. Both are far smaller than an atom. Right."
  },
  {
   "id": "Q20_10",
   "row": "solve",
-  "duration": 1.23,
+  "duration": 1.02,
   "disp": "答案 C、D。",
   "en": "The answer is C and D."
  },
  {
   "id": "Q20_11",
   "row": "solve",
-  "duration": 6.69,
+  "duration": 7.37,
   "disp": "114 學測第 26 題也考四種基本交互作用，連續兩年都考，這張比較表一定要熟。",
   "en": "Question 26 of the 2025 exam also tested the four fundamental interactions. Two years in a row: know the comparison table cold."
  },
  {
   "id": "Q20_12",
   "row": "trick",
-  "duration": 6.08,
+  "duration": 8.35,
   "disp": "秒殺口訣：長程兩個，重力、電磁力；短程兩個，強力、弱力；讓中子變質子的，是弱力。",
   "en": "The quick rule: two long-range forces, gravity and electromagnetism; two short-range, strong and weak; turning a neutron into a proton is the weak force."
  }

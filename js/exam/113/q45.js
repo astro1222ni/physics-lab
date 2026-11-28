@@ -62,70 +62,70 @@ ExamTracks.Q45=[
  {
   "id": "Q45_01",
   "row": "wrong",
-  "duration": 8.03,
+  "duration": 9.56,
   "disp": "這題全對 48%；B 有 67%、D 有 72% 的人勾，錯的選項各有 15% 到 18%。",
   "en": "48% got it fully right. B drew 67% and D 72%; each wrong choice drew 15% to 18%."
  },
  {
   "id": "Q45_02",
   "row": "wrong",
-  "duration": 5.16,
+  "duration": 5.56,
   "disp": "C：磁鐵跑得比較快，作用時間比較短，電流就比較小？剛好相反。",
   "en": "C: the magnet goes faster, the interaction is shorter, so the current is smaller? Exactly backwards."
  },
  {
   "id": "Q45_03",
   "row": "wrong",
-  "duration": 6.49,
+  "duration": 7.34,
   "disp": "同樣多的磁通量變化，在比較短的時間裡發生，變化率比較大，感應電動勢就比較大。",
   "en": "The same change in flux in less time means a bigger rate of change, so a bigger induced emf."
  },
  {
   "id": "Q45_04",
   "row": "solve",
-  "duration": 6.88,
+  "duration": 7.93,
   "disp": "法拉第定律：感應電動勢等於圈數乘以磁通量的變化率；感應電動勢再除以電阻 R，就是電流。",
   "en": "Faraday’s law: the emf equals the number of turns times the rate of change of flux. Divide the emf by R to get the current."
  },
  {
   "id": "Q45_05",
   "row": "solve",
-  "duration": 4.99,
+  "duration": 7.2,
   "disp": "D：同一個位置、迴路不變，磁鐵變快，磁通量變化率變大，電流變大。對。",
   "en": "D: at the same position with the same loop, a faster magnet means a bigger rate of change of flux, so a bigger current. Right."
  },
  {
   "id": "Q45_06",
   "row": "solve",
-  "duration": 8.38,
+  "duration": 10.54,
   "disp": "B：題目說磁力線只穿過環圈甲，乙裡面根本沒有磁通量；乙再大，磁通量的變化還是零，電阻也還是 R，電流不變。對。",
   "en": "B: the field lines pass only through loop A, so loop B has no flux at all. Make B bigger and its flux change is still zero, the resistance is still R, and the current is unchanged. Right."
  },
  {
   "id": "Q45_07",
   "row": "solve",
-  "duration": 6.08,
+  "duration": 7.46,
   "disp": "A：甲的面積變大，圈住的磁力線跟著變，磁通量就變了，不能保證電流不變。錯。",
   "en": "A: enlarging loop A changes which field lines it encloses, so the flux changes. The current is not guaranteed to stay the same. Wrong."
  },
  {
   "id": "Q45_08",
   "row": "solve",
-  "duration": 6.69,
+  "duration": 8.52,
   "disp": "E：圈數加倍，每一圈都產生一份電動勢，總電動勢加倍；電阻還是 R，電流也加倍。錯。",
   "en": "E: doubling the turns means each turn adds its own emf, so the total doubles. With R unchanged, the current doubles too. Wrong."
  },
  {
   "id": "Q45_09",
   "row": "solve",
-  "duration": 1.17,
+  "duration": 1.08,
   "disp": "答案 B、D。",
   "en": "The answer is B and D."
  },
  {
   "id": "Q45_10",
   "row": "trick",
-  "duration": 7.11,
+  "duration": 8.44,
   "disp": "秒殺口訣：電流看三件事，圈數、磁通量變得多快、電阻；這題只改乙，其他都不變，電流就不變。",
   "en": "The quick rule: the current depends on the turns, how fast the flux changes and the resistance. Here only loop B changes, everything else stays, so the current stays."
  }

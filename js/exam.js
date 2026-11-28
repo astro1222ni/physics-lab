@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const {number:q,question:Q,questions,year}=ExamPaper, unit='exam-'+year+'-'+q;
-  const R2_YEARS=new Set([115]); // 旁白放 R2 的年度（113、114 換新聲線時加進來）
+  const R2_YEARS=new Set([113,114,115]); // 旁白放 R2 的年度（11/27 三年都換八卦社正卦聲線 live_wow）
   const by=id=>document.getElementById(id), T=(z,e)=>LabSettings.t(z,e), tr=pair=>T(...pair);
   const make=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   const params=new URLSearchParams(location.search);

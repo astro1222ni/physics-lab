@@ -144,91 +144,91 @@ ExamTracks.Q21=[
  {
   "id": "Q21_01",
   "row": "wrong",
-  "duration": 2.74,
+  "duration": 3.29,
   "disp": "錯最多的是 E，有 22%。",
   "en": "The top wrong pick is E, at 22%."
  },
  {
   "id": "Q21_02",
   "row": "wrong",
-  "duration": 6.32,
+  "duration": 6.85,
   "disp": "照相機調鏡頭和感光元件的距離，這沒錯；可是眼睛不是靠縮放瞳孔來對焦。",
   "en": "A camera does move the lens relative to the sensor. But the eye does not focus by changing the pupil."
  },
  {
   "id": "Q21_03",
   "row": "wrong",
-  "duration": 5.53,
+  "duration": 5.75,
   "disp": "瞳孔就像相機的光圈，管的是光進來多少：大白天縮小，晚上放大。",
   "en": "The pupil is like the camera’s aperture. It controls how much light gets in: small in daylight, wide at night."
  },
  {
   "id": "Q21_04",
   "row": "wrong",
-  "duration": 4.9,
+  "duration": 5.79,
   "disp": "眼睛對焦，靠的是睫狀肌改變水晶體的厚薄，也就是改變焦距。",
   "en": "The eye focuses with the ciliary muscles, which change the thickness of the lens, that is, its focal length."
  },
  {
   "id": "Q21_05",
   "row": "wrong2",
-  "duration": 4.05,
+  "duration": 4.59,
   "disp": "C 也有 19%：換一個感光程度更高的元件。",
   "en": "C drew 19%: switch to a more sensitive sensor."
  },
  {
   "id": "Q21_06",
   "row": "wrong2",
-  "duration": 6.94,
+  "duration": 7.6,
   "disp": "感光度高，只是元件對光比較敏感；像沒有剛好落在感光元件上，換多貴的元件都一樣糊。",
   "en": "Higher sensitivity only means the sensor responds more to light. If the image does not land right on the sensor, even the most expensive sensor is still blurry."
  },
  {
   "id": "Q21_07",
   "row": "solve",
-  "duration": 5.94,
+  "duration": 7.08,
   "disp": "A、B 都用錯了現象：成像、配眼鏡矯正，靠的都是光的折射，不是干涉，也不是繞射。",
   "en": "A and B name the wrong effect. Forming an image and correcting vision with glasses both rely on refraction, not interference or diffraction."
  },
  {
   "id": "Q21_08",
   "row": "solve",
-  "duration": 6.99,
+  "duration": 9.01,
   "disp": "D：遠方的物體經過凸透鏡，在焦點附近形成倒立縮小的實像；眼睛也一樣，視網膜上的像是倒的。",
   "en": "D: a distant object seen through a convex lens forms a small, inverted real image near the focal point. The eye is the same: the image on the retina is upside down."
  },
  {
   "id": "Q21_09",
   "row": "solve",
-  "duration": 7.51,
+  "duration": 6.77,
   "disp": "那我們為什麼看到的是正的？大腦處理視網膜傳來的訊號，讓我們認得出東西真正的方向。",
   "en": "So why does the world look upright? The brain processes the signals from the retina so we recognize which way things really are."
  },
  {
   "id": "Q21_10",
   "row": "solve",
-  "duration": 0.6,
+  "duration": 1.05,
   "disp": "答案 D。",
   "en": "The answer is D."
  },
  {
   "id": "Q21_11",
   "row": "story",
-  "duration": 6.91,
+  "duration": 7.13,
   "disp": "我上課講過，一般正常的眼睛放鬆的時候，水晶體比較扁，焦距比較長，剛好適合看遠。",
   "en": "As I said in class, when a normal eye relaxes the lens is flatter and the focal length longer, just right for looking far away."
  },
  {
   "id": "Q21_12",
   "row": "story",
-  "duration": 10.04,
+  "duration": 11.31,
   "disp": "我常說，這是為了活下去：古早的人類要先看清楚遠方的獵物，還有遠方的敵人；牠都已經衝到你眼前了才看清楚，那就來不及了。",
   "en": "I like to say it is about survival: early humans had to spot prey far away, and enemies far away. If you only see it clearly once it is in your face, it is too late."
  },
  {
   "id": "Q21_13",
   "row": "trick",
-  "duration": 3.42,
+  "duration": 4.13,
   "disp": "秒殺口訣：瞳孔管亮暗，水晶體管清楚。",
   "en": "The quick rule: the pupil handles brightness, the lens handles sharpness."
  }

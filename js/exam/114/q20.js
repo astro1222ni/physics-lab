@@ -125,112 +125,112 @@ ExamTracks.Q20=[
  {
   "id": "Q20_09",
   "row": "wrong",
-  "duration": 5.62,
+  "duration": 5.27,
   "disp": "選 C 的人，多半是把 80 大卡直接拿來除，忘了大卡要換成焦耳。",
   "en": "Most who chose C divided by 80 kcal directly, forgetting to convert kcal to joules."
  },
  {
   "id": "Q20_10",
   "row": "wrong",
-  "duration": 8.22,
+  "duration": 8.5,
   "disp": "\\(4.3\\times10^{17}\\)÷80，大約 \\(5\\times10^{15}\\)，最接近 \\(10^{16}\\)，就掉進去了。",
   "en": "\\(4.3\\times10^{17}\\)÷80 is about \\(5\\times10^{15}\\), closest to \\(10^{16}\\), and in they fall."
  },
  {
   "id": "Q20_11",
   "row": "solve",
-  "duration": 4.21,
+  "duration": 5.21,
   "disp": "因為融化熱的意思是：每公斤的冰，融化要吸多少熱。",
   "en": "Heat of fusion means how much heat each kilogram of ice absorbs to melt."
  },
  {
   "id": "Q20_12",
   "row": "solve",
-  "duration": 7.84,
+  "duration": 8.18,
   "disp": "所以先把它換成焦耳：80×4 千，等於 32 萬，也就是每公斤 \\(3.2\\times10^{5}\\) 焦耳。",
   "en": "So convert it to joules first: 80 × 4,000 = 320,000, or \\(3.2\\times10^{5}\\) joules per kilogram."
  },
  {
   "id": "Q20_13",
   "row": "solve",
-  "duration": 11.82,
+  "duration": 12.34,
   "disp": "能融化的質量，就是總能量除以每公斤要的熱：\\(4.3\\times10^{17}\\)，除以 \\(3.2\\times10^{5}\\)，大約 \\(1.3\\times10^{12}\\) 公斤，答案 B。",
   "en": "The mass melted is total energy divided by heat per kilogram: \\(4.3\\times10^{17}\\) ÷ \\(3.2\\times10^{5}\\), about \\(1.3\\times10^{12}\\) kg. The answer is B."
  },
  {
   "id": "Q20_14",
   "row": "feel",
-  "duration": 8.32,
+  "duration": 9.6,
   "disp": "\\(10^{12}\\) 公斤的冰，大約 1.5 立方公里；堆成一個正方體，邊長大約 1.1 公里，比 2 棟臺北 101 疊起來還高。",
   "en": "\\(10^{12}\\) kg of ice is about 1.5 cubic kilometers; as a cube, each side is about 1.1 km, taller than 2 Taipei 101s stacked up."
  },
  {
   "id": "Q20_15",
   "row": "feel",
-  "duration": 3.34,
+  "duration": 2.77,
   "disp": "比特幣這個礦，挖得真的很熱門。",
   "en": "Bitcoin mining really is a hot topic."
  },
  {
   "id": "Q20_16",
   "row": "feel",
-  "duration": 1.42,
+  "duration": 2.46,
   "disp": "……不好笑，很不好笑。",
   "en": "...Not funny. Not funny at all."
  },
  {
   "id": "Q20_19",
   "row": "trick",
-  "duration": 3.48,
+  "duration": 3.27,
   "disp": "秒殺：數量級的題目，先看 10 的次方。",
   "en": "The shortcut: for order-of-magnitude questions, look at the powers of 10 first."
  },
  {
   "id": "Q20_20",
   "row": "trick",
-  "duration": 3.0,
+  "duration": 3.44,
   "disp": "17 次方減 5 次方，剩 12 次方。",
   "en": "17 minus 5 leaves the 12th power."
  },
  {
   "id": "Q20_21",
   "row": "trick",
-  "duration": 1.22,
+  "duration": 1.08,
   "disp": "前面的數字呢？",
   "en": "And the leading numbers?"
  },
  {
   "id": "Q20_22",
   "row": "trick",
-  "duration": 7.29,
+  "duration": 8.67,
   "disp": "我上課講過，四捨五入要在次方那邊做；換成前面的數字，就是看它有沒有超過根號 10，大約 3.16。",
   "en": "As I said in class, rounding happens on the exponent; for the leading number, check whether it's above √10, about 3.16."
  },
  {
   "id": "Q20_23",
   "row": "trick",
-  "duration": 5.78,
+  "duration": 6.24,
   "disp": "4.3÷3.2 大約 1.3，沒有超過，所以是 \\(10^{12}\\)。",
   "en": "4.3÷3.2 is about 1.3, not above it, so it's \\(10^{12}\\)."
  },
  {
   "id": "Q20_24",
   "row": "weight",
-  "duration": 5.82,
+  "duration": 5.4,
   "disp": "說到數量級，我上課問過學生：各位體重的數量級是多少公斤？",
   "en": "Speaking of orders of magnitude, I once asked my class: what's the order of magnitude of your weight in kilograms?"
  },
  {
   "id": "Q20_25",
   "row": "weight",
-  "duration": 3.11,
+  "duration": 2.62,
   "disp": "不要懷疑，大家都是 \\(10^{2}\\)。",
   "en": "No doubt about it: everyone's is \\(10^{2}\\)."
  },
  {
   "id": "Q20_26",
   "row": "weight",
-  "duration": 3.0,
+  "duration": 3.1,
   "disp": "有沒有人比 31.6 公斤還輕的？",
   "en": "Anyone here lighter than 31.6 kg?"
  }

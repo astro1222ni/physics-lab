@@ -60,84 +60,84 @@ ExamTracks.Q44=[
  {
   "id": "Q44_01",
   "row": "wrong",
-  "duration": 5.83,
+  "duration": 6.03,
   "disp": "這題答對只有 34%，是這一份考卷物理最難的單選題之一。",
   "en": "Only 34% got this right, one of the hardest physics single-choice items on the paper."
  },
  {
   "id": "Q44_02",
   "row": "wrong",
-  "duration": 5.35,
+  "duration": 6.07,
   "disp": "C、D 加起來有 44%，都在說電流方向「恆為」順時針或逆時針。",
   "en": "C and D together drew 44%. Both claim the current is always clockwise, or always counterclockwise."
  },
  {
   "id": "Q44_03",
   "row": "wrong",
-  "duration": 5.88,
+  "duration": 6.78,
   "disp": "可是磁鐵是穿過去的：靠近的時候，穿過環圈的磁通量變多；離開的時候，變少。",
   "en": "But the magnet passes right through: while it approaches, the flux through the loop increases; while it leaves, it decreases."
  },
  {
   "id": "Q44_04",
   "row": "wrong",
-  "duration": 5.13,
+  "duration": 5.97,
   "disp": "一個多、一個少，感應電流的方向一定會反過來，所以不會「恆為」同一個方向。",
   "en": "One increases, one decreases, so the induced current must reverse. It cannot always flow one way."
  },
  {
   "id": "Q44_05",
   "row": "wrong",
-  "duration": 6.62,
+  "duration": 7.9,
   "disp": "A、B 也錯：電流先往負的方向變大，再回到零，離開時又變正，不是一直變大或一直變小。",
   "en": "A and B are wrong too. The current first grows in the negative direction, returns to zero, then turns positive as the magnet leaves. It neither keeps growing nor keeps shrinking."
  },
  {
   "id": "Q44_06",
   "row": "solve",
-  "duration": 6.55,
+  "duration": 6.07,
   "disp": "那磁力呢？冷次定律說，感應電流要反抗磁通量的變化，多的就退，少的就補。",
   "en": "What about the force? Lenz’s law says the induced current opposes the change in flux: too much, push it back; too little, make up for it."
  },
  {
   "id": "Q44_07",
   "row": "solve",
-  "duration": 5.95,
+  "duration": 6.45,
   "disp": "磁鐵靠近，磁通量變多，環圈的感應磁場要反抗，就把磁鐵推開，力向上。",
   "en": "As the magnet approaches, the flux increases. The loop’s induced field opposes it and pushes the magnet away: the force is upward."
  },
  {
   "id": "Q44_08",
   "row": "solve",
-  "duration": 7.16,
+  "duration": 8.41,
   "disp": "磁鐵離開，磁通量變少，感應磁場要補回來，就把磁鐵拉回來；磁鐵在下面，拉回來也是向上。",
   "en": "As the magnet leaves, the flux decreases. The induced field makes up for it and pulls the magnet back. The magnet is below now, so pulling it back is also upward."
  },
  {
   "id": "Q44_09",
   "row": "solve",
-  "duration": 2.56,
+  "duration": 2.98,
   "disp": "進來推、出去拉，力都向上，答案 E。",
   "en": "Push on the way in, pull on the way out: the force is upward both times. The answer is E."
  },
  {
   "id": "Q44_10",
   "row": "energy",
-  "duration": 7.57,
+  "duration": 7.5,
   "disp": "為什麼一定是反抗？我上課講過，冷次定律是能量守恆的結果，天下沒有白吃的午餐。",
   "en": "Why must it oppose? As I said in class, Lenz’s law follows from energy conservation. There is no free lunch."
  },
  {
   "id": "Q44_11",
   "row": "energy",
-  "duration": 7.68,
+  "duration": 8.93,
   "disp": "如果感應的磁力反而幫磁鐵前進，電能跟磁鐵的動能就會一起憑空變多，那就變成永動機了，這不可能。",
   "en": "If the induced force helped the magnet along, electrical energy and the magnet’s kinetic energy would both grow out of nothing. That would be a perpetual motion machine. Impossible."
  },
  {
   "id": "Q44_12",
   "row": "trick",
-  "duration": 5.1,
+  "duration": 5.85,
   "disp": "秒殺口訣：來者推、去者拉，這題的磁力都跟磁鐵的運動方向相反。",
   "en": "The quick rule: push what comes, pull what goes. Here the magnetic force always opposes the magnet’s motion."
  }

@@ -110,98 +110,98 @@ ExamTracks.Q22=[
  {
   "id": "Q22_09",
   "row": "wrong",
-  "duration": 5.19,
+  "duration": 5.86,
   "disp": "選 D 的人，常常是把 200 天換成分鐘就停了，忘了再乘 60 變成秒。",
   "en": "Those who chose D often turned 200 days into minutes and stopped, forgetting to multiply by 60 for seconds."
  },
  {
   "id": "Q22_10",
   "row": "wrong",
-  "duration": 4.96,
+  "duration": 5.43,
   "disp": "分鐘拿來除，答案就大了 60 倍，剛好跑到 \\(10^{6}\\)。",
   "en": "Divide by minutes and the answer is 60 times too big, landing right on \\(10^{6}\\)."
  },
  {
   "id": "Q22_11",
   "row": "solve",
-  "duration": 1.48,
+  "duration": 1.17,
   "disp": "先算距離。",
   "en": "First, the distance."
  },
  {
   "id": "Q22_12",
   "row": "solve",
-  "duration": 9.4,
+  "duration": 10.94,
   "disp": "因為電磁波在真空中跑光速，所以距離等於光速乘以時間：\\(3\\times10^{8}\\)，乘以 600 秒，等於 \\(1.8\\times10^{11}\\) 公尺。",
   "en": "Electromagnetic waves travel at light speed in a vacuum, so distance is light speed times time: \\(3\\times10^{8}\\) × 600 s = \\(1.8\\times10^{11}\\) m."
  },
  {
   "id": "Q22_13",
   "row": "solve",
-  "duration": 6.71,
+  "duration": 7.51,
   "disp": "再算時間：200 天，每天 24 小時、每小時 3600 秒，大約 \\(1.7\\times10^{7}\\) 秒。",
   "en": "Then the time: 200 days, 24 hours a day, 3,600 seconds an hour, about \\(1.7\\times10^{7}\\) seconds."
  },
  {
   "id": "Q22_14",
   "row": "solve",
-  "duration": 6.26,
+  "duration": 6.55,
   "disp": "平均速率等於路徑長除以時間：大約 \\(1\\times10^{4}\\) 公尺每秒，答案 C。",
   "en": "Average speed is path length over time: about \\(1\\times10^{4}\\) m/s. The answer is C."
  },
  {
   "id": "Q22_15",
   "row": "path",
-  "duration": 1.28,
+  "duration": 1.58,
   "disp": "這裡用詞要小心。",
   "en": "Careful with the wording here."
  },
  {
   "id": "Q22_16",
   "row": "path",
-  "duration": 3.98,
+  "duration": 4.41,
   "disp": "第 14 課我講過，路徑長一定大於等於位移的量值。",
   "en": "In lesson 14 I said: path length is always greater than or equal to the magnitude of displacement."
  },
  {
   "id": "Q22_17",
   "row": "path",
-  "duration": 8.29,
+  "duration": 9.07,
   "disp": "平均速率用路徑長除以時間，平均速度用位移除以時間；題目問的是速率，所以用太空船實際飛過的距離。",
   "en": "Average speed is path length over time; average velocity is displacement over time. It asks for speed, so use the distance the spacecraft actually flew."
  },
  {
   "id": "Q22_20",
   "row": "feel",
-  "duration": 5.86,
+  "duration": 6.61,
   "disp": "每秒 1 萬公尺，大概是步槍子彈的 10 倍快；可是跟光比，還是慢了 3 萬倍。",
   "en": "10,000 m/s is about 10 times as fast as a rifle bullet; next to light, it's still 30,000 times slower."
  },
  {
   "id": "Q22_21",
   "row": "feel",
-  "duration": 2.52,
+  "duration": 2.21,
   "disp": "太空船表示：我真的盡力了。",
   "en": "The spacecraft says: I really did my best."
  },
  {
   "id": "Q22_23",
   "row": "trick",
-  "duration": 4.87,
+  "duration": 5.34,
   "disp": "秒殺：一天大約 8 萬 6 千秒，估數量級就當成 \\(10^{5}\\)。",
   "en": "The shortcut: a day is about 86,400 seconds; for an order-of-magnitude estimate, call it \\(10^{5}\\)."
  },
  {
   "id": "Q22_24",
   "row": "trick",
-  "duration": 4.48,
+  "duration": 4.57,
   "disp": "200 天就是 \\(2\\times10^{7}\\) 秒，一除就出來。",
   "en": "200 days is then \\(2\\times10^{7}\\) seconds; one division and you're done."
  },
  {
   "id": "Q22_25",
   "row": "trick",
-  "duration": 7.72,
+  "duration": 7.67,
   "disp": "注意喔，這是估數量級才能這樣抄；題目要兩位有效數字，就要乘實在的 86400。",
   "en": "Careful: this shortcut is only for estimating orders of magnitude; if the question wants 2 significant figures, multiply by the real 86,400."
  }

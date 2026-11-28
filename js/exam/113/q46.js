@@ -50,70 +50,70 @@ ExamTracks.Q46=[
  {
   "id": "Q46_01",
   "row": "solve",
-  "duration": 4.0,
+  "duration": 4.57,
   "disp": "這題是非選，統計表沒有列得分率，我們直接來畫。",
   "en": "This is a constructed-response item and the statistics list no score rate, so let’s just draw it."
  },
  {
   "id": "Q46_02",
   "row": "solve",
-  "duration": 6.4,
+  "duration": 6.64,
   "disp": "0 到 6 秒，磁鐵 S 極從上面進來，電流是負的，在 3 秒左右最負，6 秒回到零。",
   "en": "From 0 to 6 s the magnet’s S pole comes in from above. The current is negative, most negative around 3 s, back to zero at 6 s."
  },
  {
   "id": "Q46_03",
   "row": "solve",
-  "duration": 6.29,
+  "duration": 7.59,
   "disp": "磁鐵等速，而且兩端對稱；6 秒以後離開的過程，就是進來過程倒著放，方向相反。",
   "en": "The magnet moves at constant speed and its two ends are symmetric. Leaving after 6 s is entering played backwards, with the direction flipped."
  },
  {
   "id": "Q46_04",
   "row": "solve",
-  "duration": 7.7,
+  "duration": 8.01,
   "disp": "所以 6 到 12 秒，畫一個正的尖峰，形狀跟前半段一樣，以 6 秒、電流為零的那一點為中心，點對稱。",
   "en": "So from 6 to 12 s draw a positive peak with the same shape, point-symmetric about the point at 6 s, zero current."
  },
  {
   "id": "Q46_05",
   "row": "mark",
-  "duration": 5.92,
+  "duration": 6.57,
   "disp": "S 極在 3 秒到中心，磁鐵中心在 6 秒到中心，所以半根磁鐵走 3 秒。",
   "en": "The S pole reaches the center at 3 s and the magnet’s center at 6 s, so half a magnet takes 3 s."
  },
  {
   "id": "Q46_06",
   "row": "mark",
-  "duration": 9.45,
+  "duration": 11.98,
   "disp": "再過 3 秒，也就是 9 秒，N 極剛好離開環圈中心；在 9 秒這裡畫箭頭、寫上「N 極恰脫離環圈甲中心」，電流的尖峰大約就在這裡。",
   "en": "Three seconds later, at 9 s, the N pole just leaves the loop’s center. Draw an arrow at 9 s labeled “N pole just leaves the center of loop A”; the current peak is about there."
  },
  {
   "id": "Q46_07",
   "row": "why",
-  "duration": 5.47,
+  "duration": 5.95,
   "disp": "方向的理由：磁鐵離開，穿過環圈甲的磁通量變少；冷次定律，少了就補。",
   "en": "Why that direction: as the magnet leaves, the flux through loop A decreases. By Lenz’s law, a decrease gets made up."
  },
  {
   "id": "Q46_08",
   "row": "why",
-  "duration": 8.87,
+  "duration": 10.5,
   "disp": "進來的時候磁通量變多，感應電流反抗，是負的；離開的時候磁通量變少，感應電流要補，方向反過來，變成逆時針，也就是正的。",
   "en": "On the way in the flux increases and the induced current opposes it: negative. On the way out the flux decreases and the current makes up for it, so it reverses to counterclockwise, which is positive."
  },
  {
   "id": "Q46_09",
   "row": "why",
-  "duration": 6.47,
+  "duration": 7.26,
   "disp": "形狀的理由：等速、兩端對稱，對稱位置的磁通量一樣，變化率大小相等、正負相反。",
   "en": "Why that shape: constant speed and symmetric ends mean equal flux at mirror positions, so equal rates of change with opposite signs."
  },
  {
   "id": "Q46_10",
   "row": "trick",
-  "duration": 7.05,
+  "duration": 8.01,
   "disp": "秒殺口訣：這題進來負、出去正，對中心點對稱，尖峰大約在磁極經過中心的時候。",
   "en": "The quick rule: here, in negative and out positive, symmetric about the center point, with the peaks about when a pole crosses the center."
  }

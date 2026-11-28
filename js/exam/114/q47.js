@@ -91,112 +91,112 @@ ExamTracks.Q47=[
  {
   "id": "Q47_06",
   "row": "ai",
-  "duration": 7.72,
+  "duration": 7.38,
   "disp": "我最近常在想：以後很會考試的能力，可能越來越不值錢，因為人工智慧也很會考；重點是你會不會指揮它。",
   "en": "Lately I keep thinking: being great at exams may be worth less and less, since AI aces exams too; what matters is whether you can direct it."
  },
  {
   "id": "Q47_07",
   "row": "ai",
-  "duration": 2.64,
+  "duration": 2.6,
   "disp": "不過今天，我們還是先把這題考好。",
   "en": "But today, let's ace this question first."
  },
  {
   "id": "Q47_11",
   "row": "wrong",
-  "duration": 1.97,
+  "duration": 2.63,
   "disp": "選 C、D 的人，各有 3 成多。",
   "en": "C and D each drew over 30%."
  },
  {
   "id": "Q47_12",
   "row": "wrong",
-  "duration": 1.88,
+  "duration": 2.19,
   "disp": "式子長得很嚇人，對不對？",
   "en": "Scary-looking formula, right?"
  },
  {
   "id": "Q47_13",
   "row": "wrong",
-  "duration": 5.11,
+  "duration": 5.57,
   "disp": "題目的式子越長，出題老師越希望你被嚇到；你不被嚇到，他就輸了。",
   "en": "The longer the formula, the more the examiner hopes you'll panic; if you don't, they lose."
  },
  {
   "id": "Q47_14",
   "row": "solve",
-  "duration": 2.69,
+  "duration": 2.72,
   "disp": "這題一個字都不用背，只要會看單位。",
   "en": "You don't need to memorize anything here, just read the units."
  },
  {
   "id": "Q47_15",
   "row": "solve",
-  "duration": 2.41,
+  "duration": 2.53,
   "disp": "第一步：E 是電壓，單位是伏特。",
   "en": "Step 1: E is a voltage, in volts."
  },
  {
   "id": "Q47_16",
   "row": "solve",
-  "duration": 7.0,
+  "duration": 6.93,
   "disp": "我上課講單位的時候說過：電壓，就是每單位電量通過電池，可以獲得多少能量。",
   "en": "When I teach units, I say: voltage is how much energy each unit of charge gains passing through the battery."
  },
  {
   "id": "Q47_17",
   "row": "solve",
-  "duration": 6.49,
+  "duration": 8.41,
   "disp": "所以電量乘以電壓就是能量，1 庫侖乘以 1 伏特，等於 1 焦耳，所以 e 乘以 E，單位是焦耳，A 對。",
   "en": "So charge times voltage is energy: 1 coulomb times 1 volt is 1 joule. So e times E is in joules. A is right."
  },
  {
   "id": "Q47_18",
   "row": "solve",
-  "duration": 4.46,
+  "duration": 5.41,
   "disp": "第二步：log 裡面是濃度除以濃度，單位消掉了，log 沒有單位。",
   "en": "Step 2: inside the log is concentration over concentration; the units cancel, so the log has no units."
  },
  {
   "id": "Q47_19",
   "row": "solve",
-  "duration": 6.58,
+  "duration": 6.59,
   "disp": "所以 E 的單位，就是 α T 除以 e 的單位；α T 的單位，就等於 e 乘以 E，也是焦耳，E 對。",
   "en": "So E's units are those of αT over e; αT has the units of e times E, also joules. E is right."
  },
  {
   "id": "Q47_25",
   "row": "others",
-  "duration": 3.77,
+  "duration": 3.91,
   "disp": "B，T 是絕對溫度，單位是克耳文，不是能量。",
   "en": "B: T is absolute temperature, in kelvins, not energy."
  },
  {
   "id": "Q47_26",
   "row": "others",
-  "duration": 6.73,
+  "duration": 6.93,
   "disp": "C，α 除以 e，單位是伏特每克耳文；D，T 除以 e，是克耳文除以庫侖，都不是焦耳。",
   "en": "C: α over e is in volts per kelvin; D: T over e is kelvins per coulomb. Neither is joules."
  },
  {
   "id": "Q47_27",
   "row": "others",
-  "duration": 1.15,
+  "duration": 1.21,
   "disp": "答案 A、E。",
   "en": "The answer is A and E."
  },
  {
   "id": "Q47_28",
   "row": "trick",
-  "duration": 7.17,
+  "duration": 8.17,
   "disp": "秒殺：電量乘電壓就是能量，這也是電子伏特的由來：1 個基本電量，乘以 1 伏特，就是 1 電子伏特。",
   "en": "The shortcut: charge times voltage is energy, which is where the electron volt comes from: 1 elementary charge times 1 volt is 1 eV."
  },
  {
   "id": "Q47_29",
   "row": "trick",
-  "duration": 4.42,
+  "duration": 4.67,
   "disp": "式子越長，越要先看單位，單位會幫你刪掉一半的選項。",
   "en": "The longer the formula, the more you should check units first; units will cross out half the options for you."
  }

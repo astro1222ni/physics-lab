@@ -137,84 +137,84 @@ ExamTracks.Q19=[
  {
   "id": "Q19_02",
   "row": "wrong",
-  "duration": 5.13,
+  "duration": 5.36,
   "disp": "核融合是太陽在用的；題目說的核能電廠，發電原理是核分裂。",
   "en": "Fusion is what the Sun uses. The nuclear plants in the question run on fission."
  },
  {
   "id": "Q19_03",
   "row": "wrong",
-  "duration": 6.01,
+  "duration": 6.72,
   "disp": "融合是把小的原子核黏成大的，分裂是把很大的鈾原子核打成兩塊。",
   "en": "Fusion sticks small nuclei together; fission splits a big uranium nucleus in two."
  },
  {
   "id": "Q19_04",
   "row": "solve",
-  "duration": 5.91,
+  "duration": 6.67,
   "disp": "鈾 235 吸收一個中子，分裂成兩個比較小的原子核，再放出兩、三個中子。",
   "en": "Uranium-235 absorbs a neutron, splits into two smaller nuclei and releases two or three neutrons."
  },
  {
   "id": "Q19_05",
   "row": "solve",
-  "duration": 10.03,
+  "duration": 11.24,
   "disp": "反應完，產物的總質量比原來少了一點點；少掉的質量 Δm 變成釋放出來的能量，E 等於 Δm c 平方，這就是質能轉換，A 對。",
   "en": "Afterwards the products have a little less total mass. The missing mass Δm is released as energy, \\(E=\\Delta m\\,c^{2}\\). That is mass–energy conversion, so A is right."
  },
  {
   "id": "Q19_06",
   "row": "solve",
-  "duration": 9.28,
+  "duration": 11.01,
   "disp": "這些能量先變成碎片的動能，碎片撞來撞去變成熱，把水煮成高溫高壓的水蒸氣，推著渦輪轉，熱能變成動能，C 對。",
   "en": "The energy first appears as motion of the fragments; their collisions turn it into heat, which boils water into high-pressure steam that spins a turbine: heat to kinetic energy, so C is right."
  },
  {
   "id": "Q19_07",
   "row": "solve",
-  "duration": 3.39,
+  "duration": 3.87,
   "disp": "渦輪再帶著發電機轉，動能變成電能。",
   "en": "The turbine turns the generator, turning kinetic energy into electrical energy."
  },
  {
   "id": "Q19_08",
   "row": "solve",
-  "duration": 6.09,
+  "duration": 7.05,
   "disp": "B 聲能轉電能？電廠運轉當然有聲音，可是那是浪費掉的能量，不是拿來發電的。",
   "en": "B, sound to electricity? A running plant is noisy, but that sound is wasted energy, not what makes the electricity."
  },
  {
   "id": "Q19_09",
   "row": "solve",
-  "duration": 1.28,
+  "duration": 1.77,
   "disp": "答案 A、C、E。",
   "en": "The answer is A, C and E."
  },
  {
   "id": "Q19_10",
   "row": "feel",
-  "duration": 5.84,
+  "duration": 6.67,
   "disp": "我上課算過，一公克的質量完全變成能量，大約 9 乘以 10 的 13 次方焦耳。",
   "en": "I worked it out in class: one gram of mass fully converted gives about \\(9\\times10^{13}\\) joules."
  },
  {
   "id": "Q19_11",
   "row": "feel",
-  "duration": 5.49,
+  "duration": 6.14,
   "disp": "拿來開我們教室的兩台冷氣，加起來大約 7 千瓦，可以一直吹四百多年。",
   "en": "That would run the two air conditioners in our classroom, about 7 kW together, for over 400 years."
  },
  {
   "id": "Q19_12",
   "row": "feel",
-  "duration": 4.24,
+  "duration": 5.22,
   "disp": "當然，你也不可能一整天都待在教室吹冷氣嘛，總是要放學。",
   "en": "Of course, nobody stays in the classroom with the AC on all day. You do go home eventually."
  },
  {
   "id": "Q19_13",
   "row": "trick",
-  "duration": 4.39,
+  "duration": 5.42,
   "disp": "秒殺口訣：少一點質量，煮一鍋開水，轉一台發電機。",
   "en": "The quick rule: lose a little mass, boil some water, spin a generator."
  }

@@ -115,91 +115,91 @@ ExamTracks.Q25=[
  {
   "id": "Q25_08",
   "row": "wrong",
-  "duration": 5.04,
+  "duration": 4.29,
   "disp": "選 B 的人，看到一格一格很整齊的亮點，覺得很像干涉。",
   "en": "Those who chose B saw neat rows of bright dots and thought it looked like interference."
  },
  {
   "id": "Q25_09",
   "row": "wrong",
-  "duration": 8.72,
+  "duration": 8.91,
   "disp": "可是 A、B、C 這種二維的點陣、圓環，是電子或光碰到晶體、網格這類二維結構，才會出現的繞射圖。",
   "en": "But 2D dot grids and rings like A, B, and C are diffraction patterns, appearing when electrons or light hit 2D structures like crystals or meshes."
  },
  {
   "id": "Q25_10",
   "row": "wrong",
-  "duration": 4.93,
+  "duration": 5.64,
   "disp": "雙狹縫只有一個方向有兩條縫，條紋應該是一條一條平行的。",
   "en": "A double slit has two slits in one direction only, so the fringes should be parallel lines."
  },
  {
   "id": "Q25_11",
   "row": "solve",
-  "duration": 2.88,
+  "duration": 2.73,
   "disp": "而且電子是一顆一顆打上去的。",
   "en": "And electrons land one at a time."
  },
  {
   "id": "Q25_12",
   "row": "solve",
-  "duration": 8.44,
+  "duration": 9.24,
   "disp": "每一顆在屏上只留下一個小亮點，這是粒子的樣子；打得夠多，亮點聚集成明暗相間的條紋，這是波的樣子。",
   "en": "Each leaves a single dot on the screen, which is particle-like; with enough of them, the dots build bright and dark fringes, which is wave-like."
  },
  {
   "id": "Q25_13",
   "row": "solve",
-  "duration": 4.04,
+  "duration": 4.58,
   "disp": "D 就是這樣：一顆一顆的亮點，排出一條一條的條紋。",
   "en": "That's D: dots, one by one, forming fringes, line by line."
  },
  {
   "id": "Q25_14",
   "row": "solve",
-  "duration": 3.92,
+  "duration": 3.96,
   "disp": "E 只有一條亮帶，沒有明暗相間，不是干涉，錯。",
   "en": "E has only one bright band, no alternating bright and dark, so it's not interference. Wrong."
  },
  {
   "id": "Q25_15",
   "row": "solve",
-  "duration": 0.92,
+  "duration": 1.05,
   "disp": "答案 D。",
   "en": "The answer is D."
  },
  {
   "id": "Q25_16",
   "row": "dual",
-  "duration": 6.64,
+  "duration": 7.77,
   "disp": "我上課講物質波的時候說過：原本以為是波的光，有粒子性；原本以為是粒子的電子，也有波的特性。",
   "en": "When I teach matter waves, I say: light, once thought a wave, has particle properties; electrons, once thought particles, have wave properties too."
  },
  {
   "id": "Q25_17",
   "row": "dual",
-  "duration": 3.66,
+  "duration": 3.09,
   "disp": "這一題的圖，就是電子有波動性的證據。",
   "en": "The pattern in this question is evidence that electrons behave like waves."
  },
  {
   "id": "Q25_18",
   "row": "joke",
-  "duration": 3.63,
+  "duration": 4.7,
   "disp": "一顆電子看不出什麼，一群電子才看得出規矩。",
   "en": "One electron shows you nothing; a crowd of them shows the rules."
  },
  {
   "id": "Q25_19",
   "row": "joke",
-  "duration": 4.71,
+  "duration": 6.16,
   "disp": "就像一個學生遲到看不出什麼，全班都遲到，就知道是第一節物理課。",
   "en": "Like one student being late tells you nothing, but the whole class late? Must be first-period physics."
  },
  {
   "id": "Q25_21",
   "row": "trick",
-  "duration": 2.88,
+  "duration": 3.21,
   "disp": "秒殺口訣：一顆看粒子，一群看波。",
   "en": "The shortcut: one shows a particle, a crowd shows a wave."
  }

@@ -83,91 +83,91 @@ ExamTracks.Q23=[
  {
   "id": "Q23_01",
   "row": "wrong",
-  "duration": 2.92,
+  "duration": 3.25,
   "disp": "錯最多的是 C，有 41%。",
   "en": "The top wrong pick is C, at 41%."
  },
  {
   "id": "Q23_02",
   "row": "wrong",
-  "duration": 5.25,
+  "duration": 5.61,
   "disp": "癌細胞在 0 到 2 公分，4 MeV 的 X 光在表面也很強啊，為什麼不行？",
   "en": "The tumor is 0 to 2 cm deep and the 4 MeV X-ray is strong near the surface. Why not use it?"
  },
  {
   "id": "Q23_03",
   "row": "wrong",
-  "duration": 7.76,
+  "duration": 8.85,
   "disp": "因為 X 光不會在 2 公分停下來，它一路往深處走，雖然慢慢變弱，2 公分後面的正常細胞也一起被照。",
   "en": "Because X-rays do not stop at 2 cm. They keep going deeper, slowly weakening, so the healthy cells beyond 2 cm get dosed too."
  },
  {
   "id": "Q23_04",
   "row": "wrong",
-  "duration": 5.86,
+  "duration": 6.89,
   "disp": "電子束在 0 到 2 公分很強，過了 2 公分就幾乎是零，後面的正常細胞幾乎照不到。",
   "en": "The electron beam is strong from 0 to 2 cm and nearly zero past 2 cm, so the healthy cells behind barely get any."
  },
  {
   "id": "Q23_05",
   "row": "solve",
-  "duration": 4.68,
+  "duration": 6.59,
   "disp": "題目要的是兩件事：癌細胞吸收得多，旁邊的正常細胞吸收得少。",
   "en": "The question wants two things: a high dose in the tumor and a low dose in the healthy tissue around it."
  },
  {
   "id": "Q23_06",
   "row": "solve",
-  "duration": 3.87,
+  "duration": 4.09,
   "disp": "A：10 公分深，電子束早就到不了了。錯。",
   "en": "A: at 10 cm the electron beam never arrives. Wrong."
  },
  {
   "id": "Q23_07",
   "row": "solve",
-  "duration": 7.42,
+  "duration": 8.04,
   "disp": "B：質子束很特別，前面吸收得少，越深越高，大約 11 公分多衝到最高，13 公分左右就掉到零。",
   "en": "B: the proton beam is special. It deposits little at first, rises with depth, peaks a little past 11 cm, and drops to zero by about 13 cm."
  },
  {
   "id": "Q23_08",
   "row": "solve",
-  "duration": 8.08,
+  "duration": 9.85,
   "disp": "腫瘤在 10 到 11 公分，正好在尖峰前面的高劑量區；前面的組織照得比較少，13 公分以後幾乎照不到。對。",
   "en": "The tumor at 10 to 11 cm sits in the high-dose region just before the peak. The tissue in front gets less, and past 13 cm almost nothing. Right."
  },
  {
   "id": "Q23_09",
   "row": "solve",
-  "duration": 7.22,
+  "duration": 8.29,
   "disp": "D：2 到 10 公分這一整段，20 MeV 的 X 光一直維持高劑量，四條曲線裡面它最適合。對。",
   "en": "D: over the whole range from 2 to 10 cm, the 20 MeV X-ray stays at a high dose, the best fit of the four curves. Right."
  },
  {
   "id": "Q23_10",
   "row": "solve",
-  "duration": 6.28,
+  "duration": 6.11,
   "disp": "E：3 到 8 公分，電子束根本到不了，結合電子束沒有用。錯。答案 B、D。",
   "en": "E: the electron beam cannot reach 3 to 8 cm, so adding it does nothing. Wrong. The answer is B and D."
  },
  {
   "id": "Q23_11",
   "row": "story",
-  "duration": 6.69,
+  "duration": 6.81,
   "disp": "質子為什麼最後才爆發？質子跑得越慢，每走一公分，丟給組織的能量就越多。",
   "en": "Why does the proton peak at the end? The slower it goes, the more energy it hands to the tissue per centimeter."
  },
  {
   "id": "Q23_12",
   "row": "story",
-  "duration": 5.71,
+  "duration": 6.71,
   "disp": "快停下來的那一段丟得最兇，就形成一個尖峰，這個尖峰叫做布拉格峰。",
   "en": "Just before it stops it hands over the most, forming a spike called the Bragg peak."
  },
  {
   "id": "Q23_13",
   "row": "trick",
-  "duration": 5.53,
+  "duration": 6.45,
   "disp": "秒殺口訣：照這張圖，淺的用電子，深的用質子，一整段用高能 X 光。",
   "en": "The quick rule, from this graph: shallow, use electrons; deep, use protons; a long stretch, use high-energy X-rays."
  }
